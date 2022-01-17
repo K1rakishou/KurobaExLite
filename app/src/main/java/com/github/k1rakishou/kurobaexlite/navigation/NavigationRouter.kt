@@ -1,10 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
+import android.content.Intent
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.*
 
 class NavigationRouter(
   private val routerIndex: Int? = null,
@@ -17,7 +17,19 @@ class NavigationRouter(
   val screenUpdatesFlow: StateFlow<ScreenUpdate?>
     get() = _screenUpdatesFlow.asStateFlow()
 
-  fun pushScreen(navigationScreen: ComposeScreen) {
+  private val _intentsFlow = MutableSharedFlow<Intent>(extraBufferCapacity = Channel.UNLIMITED)
+  val intentsFlow: SharedFlow<Intent>
+    get() = _intentsFlow.asSharedFlow()
+
+  fun pushScreenOnce(navigationScreen: ComposeScreen) {
+    val indexOfPrev = navigationStack
+      .indexOfFirst { screen -> screen.screenKey == navigationScreen.screenKey }
+
+    if (indexOfPrev >= 0) {
+      // Already added
+      return
+    }
+
     navigationStack.add(navigationScreen)
     _screenUpdatesFlow.value = ScreenUpdate.Push(navigationScreen)
   }
@@ -73,6 +85,14 @@ class NavigationRouter(
     }
 
     return popTopScreen()
+  }
+
+  fun onNewIntent(intent: Intent) {
+    _intentsFlow.tryEmit(intent)
+
+    for (childRouter in childRouters.values) {
+      childRouter.onNewIntent(intent)
+    }
   }
 
   sealed class ScreenUpdate(val screen: ComposeScreen) {

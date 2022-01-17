@@ -19,7 +19,7 @@ abstract class ComposeScreen(
     navigationRouter: NavigationRouter,
     composeScreenBuilder: () -> ComposeScreen
   ) {
-    LaunchedEffect(key1 = Unit, block = { navigationRouter.pushScreen(composeScreenBuilder()) })
+    LaunchedEffect(key1 = Unit, block = { navigationRouter.pushScreenOnce(composeScreenBuilder()) })
   }
 
 }

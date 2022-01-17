@@ -13,20 +13,14 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 
 class MainScreen(
-  componentActivity: ComponentActivity
+  componentActivity: ComponentActivity,
+  private val rootNavigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable
   override fun Content() {
-    val rootNavigationRouter = remember {
-      NavigationRouter(
-        routerIndex = null,
-        parentRouter = null
-      )
-    }
-
     Surface(
       modifier = Modifier.fillMaxSize(),
       color = Color.LightGray

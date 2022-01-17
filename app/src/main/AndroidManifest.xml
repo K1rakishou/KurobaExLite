@@ -15,7 +15,9 @@
             android:name="com.github.k1rakishou.kurobaexlite.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.KurobaExLite.NoActionBar">
+            android:theme="@style/Theme.KurobaExLite.NoActionBar"
+            android:launchMode="singleTask">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
