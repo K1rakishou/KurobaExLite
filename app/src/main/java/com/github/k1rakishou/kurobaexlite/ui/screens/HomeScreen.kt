@@ -9,7 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.MergingScreenLayout
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 
 class HomeScreen(componentActivity: ComponentActivity) : ComposeScreen(componentActivity) {
   private val portraitChildScreens = listOf<ComposeScreen>(

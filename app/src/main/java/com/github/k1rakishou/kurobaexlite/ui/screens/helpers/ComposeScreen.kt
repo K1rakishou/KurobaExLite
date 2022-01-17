@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens
+package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable

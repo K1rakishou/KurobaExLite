@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
-import com.github.k1rakishou.kurobaexlite.ui.screens.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
