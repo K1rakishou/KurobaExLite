@@ -10,10 +10,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.MergingScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.SplitScreenLayout
 
-class HomeScreen(componentActivity: ComponentActivity) : ComposeScreen(componentActivity) {
+class HomeScreen(
+  componentActivity: ComponentActivity
+) : ComposeScreen(componentActivity) {
   private val portraitChildScreens = listOf<ComposeScreen>(
     DrawerScreen(componentActivity),
     CatalogScreen(componentActivity),
@@ -23,12 +25,12 @@ class HomeScreen(componentActivity: ComponentActivity) : ComposeScreen(component
 
   private val albumChildScreens = listOf<ComposeScreen>(
     DrawerScreen(componentActivity),
-    MergingScreenLayout(
+    SplitScreenLayout(
       componentActivity = componentActivity,
-      orientation = MergingScreenLayout.Orientation.Horizontal,
+      orientation = SplitScreenLayout.Orientation.Horizontal,
       childScreens = listOf(
-        CatalogScreen(componentActivity),
-        ThreadScreen(componentActivity)
+        SplitScreenLayout.ChildScreen(CatalogScreen(componentActivity), 0.4f),
+        SplitScreenLayout.ChildScreen(ThreadScreen(componentActivity), 0.6f)
       )
     ),
     AlbumScreen(componentActivity)

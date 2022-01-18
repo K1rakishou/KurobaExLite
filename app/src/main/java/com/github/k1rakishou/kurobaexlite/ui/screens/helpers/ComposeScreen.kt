@@ -15,13 +15,14 @@ abstract class ComposeScreen(
   abstract fun Content()
 
   @Composable
-  protected fun pushScreenOnce(
+  protected fun PushScreenOnce(
     navigationRouter: NavigationRouter,
     composeScreenBuilder: () -> ComposeScreen
   ) {
-    LaunchedEffect(key1 = Unit, block = { navigationRouter.pushScreenOnce(composeScreenBuilder()) })
+    LaunchedEffect(
+      key1 = Unit,
+      block = { navigationRouter.pushScreenOnce(composeScreenBuilder()) }
+    )
   }
 
 }
-
-inline class ScreenKey(val key: String)

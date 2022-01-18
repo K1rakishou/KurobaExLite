@@ -2,6 +2,8 @@ package com.github.k1rakishou.kurobaexlite
 
 import android.app.Application
 import android.util.Log
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import logcat.LogPriority
 import logcat.LogcatLogger
 import org.koin.core.KoinApplication
@@ -25,24 +27,24 @@ class KurobaExLiteApplication : Application() {
     val modules = mutableListOf<Module>()
 
     modules += module {
-      single {
-
-      }
+      single { UiInfoManager() }
+      single { ThemeEngine() }
     }
 
     return modules
   }
 
   class KurobaExLiteLogger : LogcatLogger {
+    private val globalTag = "KurobaExLite |"
 
     override fun log(priority: LogPriority, tag: String, message: String) {
       when (priority) {
-        LogPriority.VERBOSE -> Log.v(tag, message)
-        LogPriority.DEBUG -> Log.d(tag, message)
-        LogPriority.INFO -> Log.i(tag, message)
-        LogPriority.WARN -> Log.w(tag, message)
-        LogPriority.ERROR -> Log.e(tag, message)
-        LogPriority.ASSERT -> Log.e(tag, message)
+        LogPriority.VERBOSE -> Log.v("$globalTag $tag", message)
+        LogPriority.DEBUG -> Log.d("$globalTag $tag", message)
+        LogPriority.INFO -> Log.i("$globalTag $tag", message)
+        LogPriority.WARN -> Log.w("$globalTag $tag", message)
+        LogPriority.ERROR -> Log.e("$globalTag $tag", message)
+        LogPriority.ASSERT -> Log.e("$globalTag $tag", message)
       }
     }
 

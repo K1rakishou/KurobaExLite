@@ -9,13 +9,13 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.KurobaExLite">
+        android:theme="@style/DefaultTheme">
 
         <activity
             android:name="com.github.k1rakishou.kurobaexlite.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.KurobaExLite.NoActionBar"
+            android:theme="@style/DefaultTheme"
             android:launchMode="singleTask">
 
             <intent-filter>

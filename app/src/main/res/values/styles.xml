@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="DefaultTheme" parent="Theme.MaterialComponents.NoActionBar">
+        <!-- These colors define how the window will look like before the main activity is created. -->
+        <!-- Unfortunately we can\'t change these colors at runtime so it will always be like this.-->
+        <item name="android:statusBarColor">#090909</item>
+        <item name="android:navigationBarColor">#090909</item>
+        <item name="android:windowBackground">#171616</item>
+        <item name="windowActionModeOverlay">true</item>
+
+        <item name="colorPrimary">#212121</item>
+        <item name="colorPrimaryDark">#090909</item>
+        <item name="colorAccent">#707070</item>
+        <item name="colorSecondary">#212121</item>
+        <item name="colorError">#ff4444</item>
+        <item name="android:textColor">#aeaed6</item>
+        <item name="android:textColorHighlight">#707070</item>
+        <item name="colorControlHighlight">#707070</item>
+        <item name="android:colorControlHighlight">#707070</item>
+        <item name="colorControlActivated">#151515</item>
+    </style>
+
+</resources>
