@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.github.k1rakishou.kurobaexlite">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application
         android:name="com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication"
         android:allowBackup="true"

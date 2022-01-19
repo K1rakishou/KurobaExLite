@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens
+package com.github.k1rakishou.kurobaexlite.ui.screens.thread
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,7 +9,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 
-class CatalogScreen(componentActivity: ComponentActivity) : ComposeScreen(componentActivity) {
+class ThreadScreen(componentActivity: ComponentActivity) : ComposeScreen(componentActivity) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -19,11 +19,11 @@ class CatalogScreen(componentActivity: ComponentActivity) : ComposeScreen(compon
       modifier = Modifier
         .fillMaxSize()
     ) {
-      Text(text = "CatalogScreen")
+      Text(text = "ThreadScreen")
     }
   }
 
   companion object {
-    val SCREEN_KEY = ScreenKey("CatalogScreen")
+    val SCREEN_KEY = ScreenKey("ThreadScreen")
   }
 }

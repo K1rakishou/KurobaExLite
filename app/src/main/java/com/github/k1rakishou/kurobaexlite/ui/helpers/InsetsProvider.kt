@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 
-val LocalInsets = staticCompositionLocalOf<Insets> { error("Not initialized") }
+val LocalWindowInsets = staticCompositionLocalOf<Insets> { error("Not initialized") }
 
 @Composable
 fun ProvideWindowInsets(
@@ -44,13 +44,13 @@ fun ProvideWindowInsets(
     }
   }
 
-  CompositionLocalProvider(LocalInsets provides insetsRect.value) {
+  CompositionLocalProvider(LocalWindowInsets provides insetsRect.value) {
     content()
   }
 
 }
 
-data class Insets(
+class Insets(
   private val density: Density,
   val insetsRect: Rect
 ) {
@@ -62,5 +62,24 @@ data class Insets(
     get() = with(density) { insetsRect.top.toDp() }
   val bottomDp: Dp
     get() = with(density) { insetsRect.bottom.toDp() }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as Insets
+
+    if (insetsRect != other.insetsRect) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return insetsRect.hashCode()
+  }
+
+  override fun toString(): String {
+    return "Insets(insetsRect=$insetsRect)"
+  }
 
 }

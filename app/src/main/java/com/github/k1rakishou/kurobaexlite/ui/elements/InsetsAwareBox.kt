@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 
 @Composable
 fun InsetsAwareBox(
@@ -16,7 +16,7 @@ fun InsetsAwareBox(
   applyBottom: Boolean = true,
   content: @Composable () -> Unit
 ) {
-  val insets = LocalInsets.current
+  val insets = LocalWindowInsets.current
 
   Box(
     modifier = modifier.then(

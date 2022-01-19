@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens
+package com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,7 +9,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 
-class DrawerScreen(componentActivity: ComponentActivity) : ComposeScreen(componentActivity) {
+class BookmarksScreen(componentActivity: ComponentActivity) : ComposeScreen(componentActivity) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -19,11 +19,11 @@ class DrawerScreen(componentActivity: ComponentActivity) : ComposeScreen(compone
       modifier = Modifier
         .fillMaxSize()
     ) {
-      Text(text = "DrawerScreen")
+      Text(text = "BookmarksScreen")
     }
   }
 
   companion object {
-    val SCREEN_KEY = ScreenKey("DrawerScreen")
+    val SCREEN_KEY = ScreenKey("BookmarksScreen")
   }
 }

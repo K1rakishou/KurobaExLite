@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens
+package com.github.k1rakishou.kurobaexlite.ui.screens.album
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
