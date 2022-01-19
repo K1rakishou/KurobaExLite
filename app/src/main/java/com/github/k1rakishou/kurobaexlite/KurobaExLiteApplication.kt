@@ -7,9 +7,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
-import com.github.k1rakishou.kurobaexlite.model.CatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.ChanDataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.screens.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import com.squareup.moshi.Moshi
 import logcat.LogPriority
 import logcat.LogcatLogger
@@ -49,10 +51,12 @@ class KurobaExLiteApplication : Application() {
       single { SiteManager() }
       single { UiInfoManager() }
 
-      single { CatalogDataSource(get(), get(), get()) }
+      single { ChanDataSource(get(), get(), get()) }
       single { ThemeEngine() }
 
+      viewModel { HomeScreenViewModel() }
       viewModel { CatalogScreenViewModel(get(), get(), get()) }
+      viewModel { ThreadScreenViewModel(get(), get(), get()) }
     }
 
     return modules

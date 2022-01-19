@@ -9,7 +9,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 
 class PostCommentApplier {
 
-  fun textPartsToAnnotatedString(
+  fun processTextParts(
     chanTheme: ChanTheme,
     textParts: List<PostCommentParser.TextPart>
   ): AnnotatedString {
@@ -43,6 +43,10 @@ class PostCommentApplier {
           }
           is PostCommentParser.TextPartSpan.FgColorId -> {
             fgColor = Color(chanTheme.getColorByColorId(span.colorId))
+          }
+          is PostCommentParser.TextPartSpan.Spoiler -> {
+            bgColor = chanTheme.postSpoilerColorCompose
+            fgColor = chanTheme.postSpoilerColorCompose
           }
         }
 

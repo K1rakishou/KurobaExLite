@@ -10,17 +10,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
+import com.github.k1rakishou.kurobaexlite.ui.elements.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks.BookmarksScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.SplitScreenLayout
-import com.github.k1rakishou.kurobaexlite.ui.screens.thread.ThreadScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HomeScreen(
   componentActivity: ComponentActivity
 ) : ComposeScreen(componentActivity) {
+  private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
+
   private val portraitChildScreens = listOf<ComposeScreen>(
     BookmarksScreen(componentActivity),
     CatalogScreen(componentActivity),
@@ -59,10 +64,18 @@ class HomeScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        val indexOfCatalogScreen = childScreens.indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
+        homeScreenViewModel.updateCurrentPage(
+          screenKey = CatalogScreen.SCREEN_KEY,
+          animate = false
+        )
 
-        if (indexOfCatalogScreen >= 0) {
-          pagerState.scrollToPage(page = indexOfCatalogScreen)
+        homeScreenViewModel.currentPage.collect { currentPage ->
+          scrollToPageByScreenKey(
+            screenKey = currentPage.screenKey,
+            childScreens = childScreens,
+            pagerState = pagerState,
+            animate = currentPage.animate
+          )
         }
       })
 
@@ -72,6 +85,25 @@ class HomeScreen(
       count = childScreens.size
     ) { page ->
       childScreens[page].Content()
+    }
+  }
+
+  @OptIn(ExperimentalPagerApi::class)
+  private suspend fun scrollToPageByScreenKey(
+    screenKey: ScreenKey,
+    childScreens: List<ComposeScreen>,
+    pagerState: PagerState,
+    animate: Boolean
+  ) {
+    val indexOfPage = childScreens
+      .indexOfFirst { it.screenKey == screenKey }
+
+    if (indexOfPage >= 0) {
+      if (animate) {
+        pagerState.animateScrollToPage(page = indexOfPage)
+      } else {
+        pagerState.scrollToPage(page = indexOfPage)
+      }
     }
   }
 

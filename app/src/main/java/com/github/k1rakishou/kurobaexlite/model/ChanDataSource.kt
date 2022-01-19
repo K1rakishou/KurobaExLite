@@ -6,10 +6,12 @@ import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.CatalogPageDataJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.CatalogThreadDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.ThreadDataJson
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -18,11 +20,75 @@ import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 
-class CatalogDataSource(
+class ChanDataSource(
   private val siteManager: SiteManager,
   private val kurobaOkHttpClient: ProxiedOkHttpClient,
   private val moshi: Moshi
 ) {
+
+  suspend fun loadThread(
+    threadDescriptor: ThreadDescriptor,
+  ): Result<ThreadData> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val siteKey = threadDescriptor.catalogDescriptor.siteKey
+        val boardCode = threadDescriptor.catalogDescriptor.boardCode
+        val threadNo = threadDescriptor.threadNo
+
+        val site = siteManager.bySiteKey(siteKey)
+          ?: throw ChanDataSourceException("Unsupported site: ${siteKey}")
+
+        val threadInfo = site.threadInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support threads")
+        val postImageInfo = site.postImageInfo()
+
+        val threadUrl = threadInfo.threadUrl(boardCode, threadNo)
+
+        val request = Request.Builder()
+          .url(threadUrl)
+          .get()
+          .build()
+
+        val threadDataJsonJsonAdapter = moshi.adapter<ThreadDataJson>(ThreadDataJson::class.java)
+
+        val threadDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+          request,
+          threadDataJsonJsonAdapter
+        )
+
+        val threadDataJson = threadDataJsonResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert thread json into ThreadDataJson object")
+
+        val postDataList = mutableListWithCap<PostData>(initialCapacity = 16)
+
+        postDataList += threadDataJson.posts.map { threadPost ->
+          val postDescriptor = PostDescriptor.create(
+            siteKey = site.siteKey,
+            boardCode = boardCode,
+            threadNo = threadNo,
+            postNo = threadPost.no,
+            postSubNo = null
+          )
+
+          return@map PostData(
+            postDescriptor = postDescriptor,
+            postCommentUnparsed = threadPost.com ?: "",
+            images = parsePostImages(
+              postImageInfo = postImageInfo,
+              ext = threadPost.ext,
+              tim = threadPost.tim,
+              boardCode = boardCode
+            )
+          )
+        }
+
+        return@Try ThreadData(
+          threadDescriptor = threadDescriptor,
+          threadPosts = postDataList
+        )
+      }
+    }
+  }
 
   suspend fun loadCatalog(
     catalogDescriptor: CatalogDescriptor,
@@ -34,10 +100,10 @@ class CatalogDataSource(
         val boardCode = catalogDescriptor.boardCode
 
         val site = siteManager.bySiteKey(siteKey)
-          ?: throw CatalogException("Unsupported site: ${siteKey}")
+          ?: throw ChanDataSourceException("Unsupported site: ${siteKey}")
 
         val catalogInfo = site.catalogInfo()
-          ?: throw CatalogException("Site ${site.readableName} does not support catalog")
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support catalog")
         val postImageInfo = site.postImageInfo()
 
         val catalogUrl = catalogInfo.catalogUrl(boardCode)
@@ -57,7 +123,7 @@ class CatalogDataSource(
         )
 
         val catalogPagesDataJson = catalogPagesDataJsonResult.unwrap()
-          ?: throw CatalogException("Failed to convert catalog json into CatalogDataJson object")
+          ?: throw ChanDataSourceException("Failed to convert catalog json into CatalogDataJson object")
 
         val postDataList = mutableListWithCap<PostData>(initialCapacity = 150)
 
@@ -74,7 +140,12 @@ class CatalogDataSource(
             return@map PostData(
               postDescriptor = postDescriptor,
               postCommentUnparsed = catalogThread.com ?: "",
-              images = parsePostImages(postImageInfo, catalogThread, boardCode)
+              images = parsePostImages(
+                postImageInfo = postImageInfo,
+                ext = catalogThread.ext,
+                tim = catalogThread.tim,
+                boardCode = boardCode
+              )
             )
           }
         }
@@ -89,23 +160,24 @@ class CatalogDataSource(
 
   private fun parsePostImages(
     postImageInfo: Site.PostImageInfo?,
-    catalogThread: CatalogThreadDataJson,
+    ext: String?,
+    tim: Long?,
     boardCode: String
   ): List<PostImageData> {
-    if (postImageInfo == null || !catalogThread.ext.isNotNullNorBlank() || catalogThread.tim == null) {
+    if (postImageInfo == null || !ext.isNotNullNorBlank() || tim == null) {
       return emptyList()
     }
 
     val thumbnailUrl = postImageInfo.thumbnailUrl(
       boardCode = boardCode,
-      tim = catalogThread.tim,
-      extension = catalogThread.ext
+      tim = tim,
+      extension = ext
     ).toHttpUrlOrNull()
       ?: return emptyList()
 
     return listOf(PostImageData(thumbnailUrl))
   }
 
-  class CatalogException(message: String) : ClientException(message)
+  class ChanDataSourceException(message: String) : ClientException(message)
 
 }

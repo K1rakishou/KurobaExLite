@@ -5,17 +5,19 @@ import kotlinx.parcelize.Parcelize
 
 inline class SiteKey(val key: String)
 
+sealed class ChanDescriptor
+
 @Parcelize
 data class CatalogDescriptor(
   val siteKey: SiteKey,
   val boardCode: String
-) : Parcelable
+) : Parcelable, ChanDescriptor()
 
 @Parcelize
 data class ThreadDescriptor(
   val catalogDescriptor: CatalogDescriptor,
   val threadNo: Long
-) : Parcelable
+) : Parcelable, ChanDescriptor()
 
 @Parcelize
 data class PostDescriptor(
@@ -23,6 +25,8 @@ data class PostDescriptor(
   val postNo: Long,
   val postSubNo: Long? = null
 ) : Parcelable {
+  val catalogDescriptor: CatalogDescriptor
+    get() = threadDescriptor.catalogDescriptor
 
   companion object {
 

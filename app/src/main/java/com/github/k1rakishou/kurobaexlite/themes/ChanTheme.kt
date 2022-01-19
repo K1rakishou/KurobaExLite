@@ -65,22 +65,11 @@ abstract class ChanTheme {
   val dividerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(dividerColor) }
   val postSubjectColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSubjectColor) }
   val postHighlightedColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postHighlightedColor) }
-  val bookmarkCounterNotWatchingColorCompose by lazy(LazyThreadSafetyMode.NONE) {
-    Color(
-      bookmarkCounterNotWatchingColor
-    )
-  }
-  val bookmarkCounterHasRepliesColorCompose by lazy(LazyThreadSafetyMode.NONE) {
-    Color(
-      bookmarkCounterHasRepliesColor
-    )
-  }
-  val bookmarkCounterNormalColorCompose by lazy(LazyThreadSafetyMode.NONE) {
-    Color(
-      bookmarkCounterNormalColor
-    )
-  }
+  val bookmarkCounterNotWatchingColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterNotWatchingColor) }
+  val bookmarkCounterHasRepliesColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterHasRepliesColor) }
+  val bookmarkCounterNormalColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterNormalColor) }
   val postLinkColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postLinkColor) }
+  val postSpoilerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerColor) }
 
   open val mainFont: Typeface = ROBOTO_MEDIUM
 

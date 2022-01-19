@@ -67,6 +67,14 @@ class PostCommentParser {
             "wbr" -> {
               // no-op
             }
+            "s" -> {
+              for (childTextPart in childTextParts) {
+                childTextPart.spans.add(TextPartSpan.Spoiler)
+              }
+            }
+            else -> {
+              logcatError { "Unsupported tag found: '${htmlTag.tagName}'" }
+            }
           }
 
           currentTextParts.addAll(childTextParts)
@@ -94,6 +102,7 @@ class PostCommentParser {
     class FgColor(val color: Int) : TextPartSpan()
     class BgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
     class FgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
+    object Spoiler : TextPartSpan()
   }
 
 }
