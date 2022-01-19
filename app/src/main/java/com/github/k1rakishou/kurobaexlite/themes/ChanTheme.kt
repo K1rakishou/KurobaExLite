@@ -223,6 +223,19 @@ abstract class ChanTheme {
     )
   }
 
+  fun getColorByColorId(chanThemeColorId: ChanThemeColorId): Int {
+    return when (chanThemeColorId) {
+      ChanThemeColorId.PostSubject -> postSubjectColor
+      ChanThemeColorId.PostName -> postNameColor
+      ChanThemeColorId.Accent -> accentColor
+      ChanThemeColorId.PostInlineQuote -> postInlineQuoteColor
+      ChanThemeColorId.PostQuote -> postQuoteColor
+      ChanThemeColorId.BackColor -> backColorSecondary
+      ChanThemeColorId.PostLink -> postLinkColor
+      ChanThemeColorId.TextColor -> textColorPrimary
+    }
+  }
+
   data class DefaultColors(
     val disabledControlAlpha: Int,
     val controlNormalColor: Int,

@@ -1,20 +1,22 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.catalog
 
 import androidx.compose.runtime.*
+import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.model.CatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import logcat.asLog
 
 class CatalogScreenViewModel(
-  private val catalogDataSource: CatalogDataSource
+  private val catalogDataSource: CatalogDataSource,
+  private val postCommentParser: PostCommentParser,
+  private val postCommentApplier: PostCommentApplier
 ) : BaseViewModel() {
   val catalogScreenState = CatalogScreenState()
 
@@ -42,6 +44,11 @@ class CatalogScreenViewModel(
     catalogScreenState.catalogThreadsAsync = AsyncData.Data(
       CatalogThreadsState(catalogThreads = catalogData.catalogThreads)
     )
+  }
+
+  suspend fun parseComment(chanTheme: ChanTheme, postData: PostData): AnnotatedString {
+    val textParts = postCommentParser.parsePostComment(postData)
+    return postCommentApplier.textPartsToAnnotatedString(chanTheme, textParts)
   }
 
   class CatalogDisplayException(message: String) : ClientException(message)

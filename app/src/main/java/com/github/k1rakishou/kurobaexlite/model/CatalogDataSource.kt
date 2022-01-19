@@ -73,7 +73,7 @@ class CatalogDataSource(
 
             return@map PostData(
               postDescriptor = postDescriptor,
-              postCommentUnparsed = catalogThread.com,
+              postCommentUnparsed = catalogThread.com ?: "",
               images = parsePostImages(postImageInfo, catalogThread, boardCode)
             )
           }

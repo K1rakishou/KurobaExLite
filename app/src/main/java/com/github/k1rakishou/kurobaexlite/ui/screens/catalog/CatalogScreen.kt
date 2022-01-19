@@ -5,11 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -133,12 +131,23 @@ class CatalogScreen(componentActivity: ComponentActivity) : ComposeScreen(compon
     index: Int,
     totalCount: Int
   ) {
+    val chanTheme = LocalChanTheme.current
+
+    var postComment by remember(key1 = postData.postCommentUnparsed) {
+      mutableStateOf<AnnotatedString>(AnnotatedString(postData.postCommentUnparsed))
+    }
+
+    LaunchedEffect(
+      key1 = postData.postCommentUnparsed,
+      block = { postComment = viewModel.parseComment(chanTheme, postData) }
+    )
+
     KurobaComposeText(
       modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight(),
       fontSize = 14.sp,
-      text = postData.postCommentUnparsed ?: "",
+      text = postComment,
     )
 
     if (index < (totalCount - 1)) {
