@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 import android.os.SystemClock
 import androidx.compose.runtime.*
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.model.ChanDataSource
 import com.github.k1rakishou.kurobaexlite.model.ClientException
@@ -16,10 +17,11 @@ import logcat.logcat
 
 class CatalogScreenViewModel(
   private val chanDataSource: ChanDataSource,
+  globalConstants: GlobalConstants,
   postCommentParser: PostCommentParser,
   postCommentApplier: PostCommentApplier,
   themeEngine: ThemeEngine
-) : PostScreenViewModel(postCommentParser, postCommentApplier, themeEngine) {
+) : PostScreenViewModel(globalConstants, postCommentParser, postCommentApplier, themeEngine) {
   private val catalogScreenState = CatalogScreenState()
 
 
@@ -61,6 +63,8 @@ class CatalogScreenViewModel(
       postDataList = catalogData.catalogThreads,
       count = 16
     )
+
+    parseRemainingPostsAsync(catalogData.catalogThreads)
 
     val catalogThreadsState = CatalogThreadsState(
       catalogDescriptor = catalogDescriptor,

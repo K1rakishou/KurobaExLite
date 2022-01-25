@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.*
 import androidx.compose.material.ripple.rememberRipple
@@ -13,10 +14,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -28,7 +31,8 @@ private val defaultNoopClickCallback = { }
 @Composable
 fun KurobaComposeLoadingIndicator(
   modifier: Modifier = DefaultFillMaxSizeModifier,
-  overrideColor: Color? = null
+  overrideColor: Color? = null,
+  indicatorSize: Dp = 42.dp
 ) {
   Box(modifier = modifier) {
     val color = if (overrideColor == null) {
@@ -42,7 +46,7 @@ fun KurobaComposeLoadingIndicator(
       color = color,
       modifier = Modifier
         .align(Alignment.Center)
-        .size(42.dp, 42.dp)
+        .size(indicatorSize, indicatorSize)
     )
   }
 }
@@ -271,5 +275,23 @@ fun Modifier.kurobaClickable(
         onClick = onClick ?: defaultNoopClickCallback
       )
     )
+  }
+}
+
+@Composable
+fun KurobaComposeCardView(
+  modifier: Modifier = Modifier,
+  backgroundColor: Color? = null,
+  shape: Shape = RoundedCornerShape(2.dp),
+  content: @Composable () -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+
+  Card(
+    modifier = modifier,
+    shape = shape,
+    backgroundColor = backgroundColor ?: chanTheme.backColorCompose
+  ) {
+    content()
   }
 }

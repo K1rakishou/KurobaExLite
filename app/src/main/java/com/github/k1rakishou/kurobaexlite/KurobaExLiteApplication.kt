@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite
 
 import android.app.Application
 import android.util.Log
+import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
@@ -44,6 +45,7 @@ class KurobaExLiteApplication : Application() {
 
     modules += module {
       single { ProxiedOkHttpClient() }
+      single { GlobalConstants() }
       single { Moshi.Builder().build() }
 
       single { PostCommentParser() }
@@ -55,8 +57,8 @@ class KurobaExLiteApplication : Application() {
       single { ThemeEngine() }
 
       viewModel { HomeScreenViewModel() }
-      viewModel { CatalogScreenViewModel(get(), get(), get(), get()) }
-      viewModel { ThreadScreenViewModel(get(), get(), get(), get()) }
+      viewModel { CatalogScreenViewModel(get(), get(), get(), get(), get()) }
+      viewModel { ThreadScreenViewModel(get(), get(), get(), get(), get()) }
     }
 
     return modules

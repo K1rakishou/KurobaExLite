@@ -1,71 +1,131 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
+import android.os.SystemClock
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
-import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
+import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
+import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import logcat.asLog
+import logcat.logcat
 import java.util.*
 
 abstract class PostScreenViewModel(
+  protected val globalConstants: GlobalConstants,
   protected val postCommentParser: PostCommentParser,
   protected val postCommentApplier: PostCommentApplier,
   protected val themeEngine: ThemeEngine
 ) : BaseViewModel() {
+  private val scope = CoroutineScope(Dispatchers.Default)
+  private var currentParseJob: Job? = null
+
   abstract val postScreenState: PostScreenState
   abstract fun reload()
 
+  private var _parsingPostsAsync = mutableStateOf(false)
+  val parsingPostsAsync: State<Boolean>
+    get() = _parsingPostsAsync
+
   suspend fun parseComment(postData: PostData): PostData.ParsedPostData {
     val chanTheme = themeEngine.chanTheme
-
-    return withContext(Dispatchers.Default) {
-      val parsedPostData = postData.getOrCalculateParsedPostParts {
-        val textParts = postCommentParser.parsePostComment(postData)
-        val processedPostComment = postCommentApplier.processTextParts(chanTheme, textParts)
-
-        return@getOrCalculateParsedPostParts PostData.ParsedPostData(
-          parsedPostParts = textParts,
-          processedPostComment = processedPostComment,
-          processedPostSubject = parseAndProcessPostSubject(chanTheme, postData)
-        )
-      }
-
-      return@withContext parsedPostData
-    }
+    return withContext(Dispatchers.Default) { calculatePostData(postData, chanTheme, true) }
   }
 
   suspend fun parsePostsAround(
     startIndex: Int = 0,
     postDataList: List<PostData>,
-    count: Int = Int.MAX_VALUE
+    count: Int
   ) {
     val chanTheme = themeEngine.chanTheme
+
+    val startTime = SystemClock.elapsedRealtime()
+    logcat { "parsePostsAround() starting parsing ${postDataList.size} posts..." }
 
     withContext(Dispatchers.Default) {
       postDataList
         .bidirectionalSequence(startPosition = startIndex)
         .take(count)
-        .forEach { postData ->
-          postData.getOrCalculateParsedPostParts {
-            val textParts = postCommentParser.parsePostComment(postData)
-            val processedPostComment = postCommentApplier.processTextParts(chanTheme, textParts)
+        .forEach { postData -> calculatePostData(postData, chanTheme, false) }
+    }
 
-            return@getOrCalculateParsedPostParts PostData.ParsedPostData(
-              parsedPostParts = textParts,
-              processedPostComment = processedPostComment,
-              processedPostSubject = parseAndProcessPostSubject(chanTheme, postData)
-            )
+    val deltaTime = SystemClock.elapsedRealtime() - startTime
+    logcat { "parsePostsAround() starting parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
+  }
+
+  fun parseRemainingPostsAsync(
+    postDataList: List<PostData>,
+  ) {
+    currentParseJob?.cancel()
+    currentParseJob = null
+
+    if (postDataList.isEmpty()) {
+      return
+    }
+
+    val chunkSize = (postDataList.size / globalConstants.coresCount.coerceAtLeast(2))
+      .coerceAtLeast(postDataList.size)
+    val chanTheme = themeEngine.chanTheme
+
+    currentParseJob = scope.launch(Dispatchers.Default) {
+      val showPostsLoadingSnackbarJob = launch {
+        delay(125L)
+        _parsingPostsAsync.value = true
+      }
+
+      try {
+        val startTime = SystemClock.elapsedRealtime()
+        logcat { "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts... (chunkSize=$chunkSize)" }
+
+        supervisorScope {
+          val results = postDataList
+            .bidirectionalSequenceIndexed(startPosition = 0)
+            .chunked(chunkSize)
+            .mapIndexed { chunkIndex, postDataListChunk ->
+              return@mapIndexed async(Dispatchers.IO) {
+                postDataListChunk.forEachIndexed { originalPostIndexInChunk, postDataIndexed ->
+                  val postData = postDataIndexed.value
+                  val originalPostIndex = postDataIndexed.index
+
+                  if (LOG_EACH_POST_PARSE) {
+                    logcat {
+                      "parseRemainingPostsAsync() " +
+                        "thread=${Thread.currentThread().name}, " +
+                        "chunkIndex=$chunkIndex, " +
+                        "originalPostIndexInChunk=$originalPostIndexInChunk, " +
+                        "originalPostIndex=$originalPostIndex, " +
+                        "postNo=${postData.postNo}"
+                    }
+                  }
+
+                  calculatePostData(postData, chanTheme, false)
+                }
+              }
+            }
+
+          results.forEach { deferred ->
+            try {
+              deferred.await()
+            } catch (error: Throwable) {
+              logcatError { "deferred.await() threw ${error.asLog()}" }
+            }
           }
         }
+
+        val deltaTime = SystemClock.elapsedRealtime() - startTime
+        logcat { "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
+      } finally {
+        showPostsLoadingSnackbarJob.cancel()
+        _parsingPostsAsync.value = false
+      }
     }
   }
 
@@ -100,11 +160,34 @@ abstract class PostScreenViewModel(
     }
   }
 
+  private suspend fun calculatePostData(
+    postData: PostData,
+    chanTheme: ChanTheme,
+    isParsingOnBind: Boolean
+  ): PostData.ParsedPostData {
+    return postData.getOrCalculateParsedPostParts {
+      if (isParsingOnBind) {
+        logcat { "calculatePostData() parsing ${postData.postNo}" }
+      }
+
+      val textParts = postCommentParser.parsePostComment(postData)
+      val processedPostComment = postCommentApplier.processTextParts(chanTheme, textParts)
+
+      return@getOrCalculateParsedPostParts PostData.ParsedPostData(
+        parsedPostParts = textParts,
+        processedPostComment = processedPostComment,
+        processedPostSubject = parseAndProcessPostSubject(chanTheme, postData)
+      )
+    }
+  }
+
   interface PostScreenState {
     fun postDataAsync(): AsyncData<List<PostData>>
   }
 
   companion object {
     private val EMPTY_ANNOTATED_STRING = AnnotatedString("")
+
+    private const val LOG_EACH_POST_PARSE = false
   }
 }
