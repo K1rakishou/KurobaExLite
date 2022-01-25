@@ -47,18 +47,12 @@ abstract class PostScreenViewModel(
   ) {
     val chanTheme = themeEngine.chanTheme
 
-    val startTime = SystemClock.elapsedRealtime()
-    logcat { "parsePostsAround() starting parsing ${postDataList.size} posts..." }
-
     withContext(Dispatchers.Default) {
       postDataList
         .bidirectionalSequence(startPosition = startIndex)
         .take(count)
         .forEach { postData -> calculatePostData(postData, chanTheme, false) }
     }
-
-    val deltaTime = SystemClock.elapsedRealtime() - startTime
-    logcat { "parsePostsAround() starting parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
   }
 
   fun parseRemainingPostsAsync(
@@ -152,7 +146,7 @@ abstract class PostScreenViewModel(
       val postInfoPartAnnotatedString = AnnotatedString(
         text = postInfoPart,
         spanStyle = SpanStyle(
-          color = chanTheme.textColorSecondaryCompose,
+          color = chanTheme.textColorHintCompose,
         )
       )
 

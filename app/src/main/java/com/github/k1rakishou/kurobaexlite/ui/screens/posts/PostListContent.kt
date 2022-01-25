@@ -123,8 +123,7 @@ private fun LazyListScope.postList(
       val postData = postDataList[index]
 
       Column(
-        modifier = Modifier
-          .padding(horizontal = 4.dp)
+        modifier = Modifier.padding(horizontal = 8.dp)
       ) {
         PostCell(
           postsScreenViewModel = postsScreenViewModel,
@@ -149,31 +148,8 @@ private fun PostCell(
   postData: PostData,
   onPostCellClicked: (PostData) -> Unit
 ) {
-  var postComment by remember(
-    key1 = postData.postCommentParsedAndProcessed,
-    key2 = postData.postCommentUnparsed
-  ) {
-    val initial = if (postData.postCommentParsedAndProcessed != null) {
-      postData.postCommentParsedAndProcessed!!
-    } else {
-      AnnotatedString(postData.postCommentUnparsed)
-    }
-
-    mutableStateOf<AnnotatedString>(initial)
-  }
-
-  var postSubject by remember(
-    key1 = postData.postSubjectParsedAndProcessed,
-    key2 = postData.postSubjectUnparsed
-  ) {
-    val initial = if (postData.postSubjectParsedAndProcessed != null) {
-      postData.postSubjectParsedAndProcessed!!
-    } else {
-      AnnotatedString(postData.postSubjectUnparsed)
-    }
-
-    mutableStateOf<AnnotatedString>(initial)
-  }
+  var postComment by postComment(postData)
+  var postSubject by postSubject(postData)
 
   if (postData.postCommentParsedAndProcessed == null) {
     LaunchedEffect(
@@ -191,6 +167,7 @@ private fun PostCell(
       .fillMaxWidth()
       .wrapContentHeight()
       .kurobaClickable(onClick = { onPostCellClicked(postData) })
+      .padding(vertical = 8.dp)
   ) {
     PostCellTitle(postData = postData, postSubject = postSubject)
 
@@ -212,7 +189,6 @@ private fun PostCellTitle(
     modifier = Modifier
       .wrapContentHeight()
       .fillMaxWidth()
-      .padding(top = 4.dp)
   ) {
     if (postData.images.isNotNullNorEmpty()) {
       val image = postData.images.first()
@@ -232,7 +208,11 @@ private fun PostCellTitle(
           contentScale = ContentScale.Inside,
           content = { state ->
             if (state is AsyncImagePainter.State.Error) {
-              logcatError { "PostCellTitle() url=${image.thumbnailUrl}, postDescriptor=${postData.postDescriptor}, error=${state.result.throwable}" }
+              logcatError {
+                "PostCellTitle() url=${image.thumbnailUrl}, " +
+                  "postDescriptor=${postData.postDescriptor}, " +
+                  "error=${state.result.throwable}"
+              }
             }
 
             AsyncImageScope.DefaultContent(this, state)
@@ -259,7 +239,7 @@ private fun PostCellComment(
       modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()
-        .padding(vertical = 4.dp),
+        .padding(top = 4.dp),
       fontSize = 14.sp,
       text = postComment,
     )
@@ -269,4 +249,40 @@ private fun PostCellComment(
 @Composable
 private fun PostCellFooter() {
 
+}
+
+@Composable
+private fun postSubject(postData: PostData): MutableState<AnnotatedString> {
+  val postSubject = remember(
+    key1 = postData.postSubjectParsedAndProcessed,
+    key2 = postData.postSubjectUnparsed
+  ) {
+    val initial = if (postData.postSubjectParsedAndProcessed != null) {
+      postData.postSubjectParsedAndProcessed!!
+    } else {
+      AnnotatedString(postData.postSubjectUnparsed)
+    }
+
+    mutableStateOf<AnnotatedString>(initial)
+  }
+
+  return postSubject
+}
+
+@Composable
+private fun postComment(postData: PostData): MutableState<AnnotatedString> {
+  val postComment = remember(
+    key1 = postData.postCommentParsedAndProcessed,
+    key2 = postData.postCommentUnparsed
+  ) {
+    val initial = if (postData.postCommentParsedAndProcessed != null) {
+      postData.postCommentParsedAndProcessed!!
+    } else {
+      AnnotatedString(postData.postCommentUnparsed)
+    }
+
+    mutableStateOf<AnnotatedString>(initial)
+  }
+
+  return postComment
 }

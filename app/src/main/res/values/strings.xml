@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">KurobaExLite</string>
 
-    <string name="posts_screen_catalog_is_loading">Catalog is loading…</string>
-    <string name="posts_screen_thread_is_loading">Thread is loading…</string>
+    <string name="posts_screen_processing_posts">Processing posts…</string>
 </resources>

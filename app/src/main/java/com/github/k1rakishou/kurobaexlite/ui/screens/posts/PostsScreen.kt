@@ -46,17 +46,11 @@ abstract class PostsScreen(
             .padding(horizontal = 8.dp, vertical = 8.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          val text = if (isCatalogMode) {
-            stringResource(R.string.posts_screen_catalog_is_loading)
-          } else {
-            stringResource(R.string.posts_screen_thread_is_loading)
-          }
-
           KurobaComposeText(
             modifier = Modifier
               .wrapContentHeight()
               .weight(1f),
-            text = text
+            text = stringResource(R.string.posts_screen_processing_posts)
           )
 
           KurobaComposeLoadingIndicator(
