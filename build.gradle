@@ -8,6 +8,7 @@ buildscript {
         koin_version = "3.1.5"
         okhttp = "4.9.2"
         moshi = "1.13.0"
+        coil = "2.0.0-alpha06"
         ksp = "1.6.10-1.0.2"
     }
     repositories {

@@ -65,6 +65,8 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp:${okhttp}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlin_coroutines_version}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${kotlin_coroutines_version}"
+    implementation "io.coil-kt:coil:${coil}"
+    implementation "io.coil-kt:coil-compose:${coil}"
 
     implementation("com.squareup.moshi:moshi-kotlin:${moshi}")
     ksp("com.squareup.moshi:moshi-kotlin-codegen:${moshi}")

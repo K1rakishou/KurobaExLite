@@ -9,6 +9,7 @@ import kotlinx.coroutines.sync.withLock
 
 data class PostData(
   val postDescriptor: PostDescriptor,
+  val postSubjectUnparsed: String,
   val postCommentUnparsed: String,
   val images: List<PostImageData>?
 ) {
@@ -25,6 +26,8 @@ data class PostData(
 
   val postCommentParsedAndProcessed: AnnotatedString?
     get() = _parsedPostData?.processedPostComment
+  val postSubjectParsedAndProcessed: AnnotatedString?
+    get() = _parsedPostData?.processedPostSubject
 
   suspend fun getOrCalculateParsedPostParts(
     calcFunc: suspend () -> ParsedPostData
@@ -41,7 +44,8 @@ data class PostData(
 
   class ParsedPostData(
     val parsedPostParts: List<PostCommentParser.TextPart>,
-    val processedPostComment: AnnotatedString
+    val processedPostComment: AnnotatedString,
+    val processedPostSubject: AnnotatedString
   )
 
 }

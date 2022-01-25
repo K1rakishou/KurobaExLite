@@ -72,6 +72,7 @@ class ChanDataSource(
 
           return@map PostData(
             postDescriptor = postDescriptor,
+            postSubjectUnparsed = threadPost.sub ?: "",
             postCommentUnparsed = threadPost.com ?: "",
             images = parsePostImages(
               postImageInfo = postImageInfo,
@@ -139,6 +140,7 @@ class ChanDataSource(
 
             return@map PostData(
               postDescriptor = postDescriptor,
+              postSubjectUnparsed = catalogThread.sub ?: "",
               postCommentUnparsed = catalogThread.com ?: "",
               images = parsePostImages(
                 postImageInfo = postImageInfo,
@@ -171,7 +173,7 @@ class ChanDataSource(
     val thumbnailUrl = postImageInfo.thumbnailUrl(
       boardCode = boardCode,
       tim = tim,
-      extension = ext
+      extension = "jpg"
     ).toHttpUrlOrNull()
       ?: return emptyList()
 

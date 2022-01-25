@@ -11,6 +11,7 @@ data class ThreadDataJson(
 data class ThreadPostDataJson(
   val no: Long,
   val com: String?,
+  val sub: String?,
   val ext: String?,
   val tim: Long?
 )

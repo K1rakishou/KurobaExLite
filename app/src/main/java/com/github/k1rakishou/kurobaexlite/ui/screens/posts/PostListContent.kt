@@ -1,17 +1,28 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.AsyncImageScope
+import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.ui.elements.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -111,29 +122,15 @@ private fun LazyListScope.postList(
     itemContent = { index ->
       val postData = postDataList[index]
 
-      var postComment by remember(key1 = postData) {
-        val initial = if (postData.postCommentParsedAndProcessed != null) {
-          postData.postCommentParsedAndProcessed!!
-        } else {
-          AnnotatedString(postData.postCommentUnparsed)
-        }
-
-        mutableStateOf<AnnotatedString>(initial)
-      }
-
-      if (postData.postCommentParsedAndProcessed == null) {
-        LaunchedEffect(
-          key1 = postData.postCommentUnparsed,
-          block = {
-            postComment = postsScreenViewModel.parseComment(postData)
-          }
-        )
-      }
-
       Column(
-        modifier = Modifier.padding(horizontal = 4.dp)
+        modifier = Modifier
+          .padding(horizontal = 4.dp)
       ) {
-        PostCell(onPostCellClicked, postData, postComment)
+        PostCell(
+          postsScreenViewModel = postsScreenViewModel,
+          postData = postData,
+          onPostCellClicked = onPostCellClicked
+        )
 
         if (index < (totalCount - 1)) {
           KurobaComposeDivider(
@@ -148,17 +145,128 @@ private fun LazyListScope.postList(
 
 @Composable
 private fun PostCell(
-  onPostCellClicked: (PostData) -> Unit,
+  postsScreenViewModel: PostScreenViewModel,
   postData: PostData,
-  postComment: AnnotatedString
+  onPostCellClicked: (PostData) -> Unit
 ) {
-  KurobaComposeText(
+  var postComment by remember(
+    key1 = postData.postCommentParsedAndProcessed,
+    key2 = postData.postCommentUnparsed
+  ) {
+    val initial = if (postData.postCommentParsedAndProcessed != null) {
+      postData.postCommentParsedAndProcessed!!
+    } else {
+      AnnotatedString(postData.postCommentUnparsed)
+    }
+
+    mutableStateOf<AnnotatedString>(initial)
+  }
+
+  var postSubject by remember(
+    key1 = postData.postSubjectParsedAndProcessed,
+    key2 = postData.postSubjectUnparsed
+  ) {
+    val initial = if (postData.postSubjectParsedAndProcessed != null) {
+      postData.postSubjectParsedAndProcessed!!
+    } else {
+      AnnotatedString(postData.postSubjectUnparsed)
+    }
+
+    mutableStateOf<AnnotatedString>(initial)
+  }
+
+  if (postData.postCommentParsedAndProcessed == null) {
+    LaunchedEffect(
+      key1 = postData.postCommentUnparsed,
+      block = {
+        val parsedPostData = postsScreenViewModel.parseComment(postData)
+        postComment = parsedPostData.processedPostComment
+        postSubject = parsedPostData.processedPostSubject
+      }
+    )
+  }
+
+  Column(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
       .kurobaClickable(onClick = { onPostCellClicked(postData) })
-      .padding(vertical = 4.dp),
-    fontSize = 14.sp,
-    text = postComment,
-  )
+  ) {
+    PostCellTitle(postData = postData, postSubject = postSubject)
+
+    PostCellComment(postComment = postComment)
+
+    PostCellFooter()
+  }
+
+}
+
+@Composable
+private fun PostCellTitle(
+  postData: PostData,
+  postSubject: AnnotatedString
+) {
+  val chanTheme = LocalChanTheme.current
+
+  Row(
+    modifier = Modifier
+      .wrapContentHeight()
+      .fillMaxWidth()
+      .padding(top = 4.dp)
+  ) {
+    if (postData.images.isNotNullNorEmpty()) {
+      val image = postData.images.first()
+
+      Box(
+        modifier = Modifier
+          .wrapContentSize()
+          .background(chanTheme.backColorSecondaryCompose)
+      ) {
+        AsyncImage(
+          modifier = Modifier.size(60.dp),
+          model = ImageRequest.Builder(LocalContext.current)
+            .data(image.thumbnailUrl)
+            .crossfade(true)
+            .build(),
+          contentDescription = null,
+          contentScale = ContentScale.Inside,
+          content = { state ->
+            if (state is AsyncImagePainter.State.Error) {
+              logcatError { "PostCellTitle() url=${image.thumbnailUrl}, postDescriptor=${postData.postDescriptor}, error=${state.result.throwable}" }
+            }
+
+            AsyncImageScope.DefaultContent(this, state)
+          }
+        )
+      }
+
+      Spacer(modifier = Modifier.width(4.dp))
+    }
+
+    Text(
+      text = postSubject,
+      fontSize = 14.sp
+    )
+  }
+}
+
+@Composable
+private fun PostCellComment(
+  postComment: AnnotatedString
+) {
+  if (postComment.isNotNullNorBlank()) {
+    KurobaComposeText(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .padding(vertical = 4.dp),
+      fontSize = 14.sp,
+      text = postComment,
+    )
+  }
+}
+
+@Composable
+private fun PostCellFooter() {
+
 }

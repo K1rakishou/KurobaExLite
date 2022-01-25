@@ -12,6 +12,7 @@ data class CatalogPageDataJson(
 @JsonClass(generateAdapter = true)
 data class CatalogThreadDataJson(
   val no: Long,
+  val sub: String?,
   val com: String?,
   val ext: String?,
   val tim: Long?
