@@ -17,8 +17,8 @@ import org.koin.java.KoinJavaComponent.inject
 
 class MainScreen(
   componentActivity: ComponentActivity,
-  private val rootNavigationRouter: NavigationRouter
-) : ComposeScreen(componentActivity) {
+  rootNavigationRouter: NavigationRouter
+) : ComposeScreen(componentActivity, rootNavigationRouter) {
   private val uiInfoManager by inject<UiInfoManager>(UiInfoManager::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -39,15 +39,14 @@ class MainScreen(
         uiInfoManager.updateMaxParentSize(availableWidth, availableHeight)
 
         PushScreenOnce(
-          navigationRouter = rootNavigationRouter,
-          composeScreenBuilder = { HomeScreen(componentActivity) }
+          navigationRouter = navigationRouter,
+          composeScreenBuilder = { HomeScreen(componentActivity, navigationRouter) }
         )
 
         RootRouterHost(
-          componentActivity = componentActivity,
-          rootNavigationRouter = rootNavigationRouter,
+          rootNavigationRouter = navigationRouter,
           onTransitionFinished = { executedScreenUpdate ->
-            if (executedScreenUpdate.isPop() && !rootNavigationRouter.hasScreens()) {
+            if (executedScreenUpdate.isPop() && !navigationRouter.hasScreens()) {
               componentActivity.finish()
             }
           }

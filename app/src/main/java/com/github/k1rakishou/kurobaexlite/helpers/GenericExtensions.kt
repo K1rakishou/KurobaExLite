@@ -8,11 +8,8 @@ import java.io.InterruptedIOException
 import java.util.*
 import javax.net.ssl.SSLException
 import kotlin.collections.ArrayList
-import kotlin.collections.Collection
 import kotlin.collections.HashMap
 import kotlin.collections.LinkedHashMap
-import kotlin.collections.MutableList
-import kotlin.collections.MutableMap
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.coroutines.resume
@@ -173,4 +170,8 @@ inline fun Any.logcatError(
   message: () -> String
 ) {
   logcat(priority = LogPriority.ERROR, tag = tag, message = message)
+}
+
+fun lerpFloat(from: Float, to: Float, progress: Float): Float {
+  return from + progress * (to - from)
 }

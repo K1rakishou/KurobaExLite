@@ -65,7 +65,7 @@ class ThreadScreenViewModel(
   class ThreadDisplayException(message: String) : ClientException(message)
 
   class ThreadScreenState(
-    private val threadPostsAsyncState: MutableState<AsyncData<ThreadPostsState>> = mutableStateOf(AsyncData.Loading)
+    private val threadPostsAsyncState: MutableState<AsyncData<ThreadPostsState>> = mutableStateOf(AsyncData.Empty)
   ) : PostScreenState {
     internal var threadPostsAsync by threadPostsAsyncState
 
@@ -76,6 +76,7 @@ class ThreadScreenViewModel(
       return when (val asyncDataStateValue = threadPostsAsyncState.value) {
         is AsyncData.Data -> AsyncData.Data(asyncDataStateValue.data.threadPosts)
         is AsyncData.Error -> AsyncData.Error(asyncDataStateValue.error)
+        AsyncData.Empty -> AsyncData.Empty
         AsyncData.Loading -> AsyncData.Loading
       }
     }

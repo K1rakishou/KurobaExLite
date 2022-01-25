@@ -13,6 +13,8 @@ class NavigationRouter(
   private val navigationStack = mutableListOf<ComposeScreen>()
   private val childRouters = mutableMapOf<String, NavigationRouter>()
 
+  private val backPressHandlers = mutableListOf<OnBackPressHandler>()
+
   private val _screenUpdatesFlow = MutableStateFlow<ScreenUpdate?>(null)
   val screenUpdatesFlow: StateFlow<ScreenUpdate?>
     get() = _screenUpdatesFlow.asStateFlow()
@@ -62,29 +64,11 @@ class NavigationRouter(
     return navigationStack.isNotEmpty()
   }
 
-  fun childRouter(routerIndex: Int? = null): NavigationRouter {
-    return childRouter(key = DEFAULT_ROUTER_KEY, routerIndex = routerIndex)
-  }
-
   fun childRouter(key: String, routerIndex: Int? = null): NavigationRouter {
     return childRouters.getOrPut(
       key = key,
       defaultValue = { NavigationRouter(routerIndex = routerIndex, parentRouter = this) }
     )
-  }
-
-  fun onBackPressed(): Boolean {
-    if (childRouters.isNotEmpty()) {
-      val handled = childRouters.entries
-        .sortedBy { (_, value) -> value.routerIndex ?: Int.MAX_VALUE }
-        .any { (_, innerChildRouter) -> innerChildRouter.onBackPressed() }
-
-      if (handled) {
-        return true
-      }
-    }
-
-    return popTopScreen()
   }
 
   fun onNewIntent(intent: Intent) {
@@ -93,6 +77,41 @@ class NavigationRouter(
     for (childRouter in childRouters.values) {
       childRouter.onNewIntent(intent)
     }
+  }
+
+  fun addOnBackPressedHandler(handler: OnBackPressHandler) {
+    backPressHandlers += handler
+  }
+
+  fun removeOnBackPressedHandler(handler: OnBackPressHandler) {
+    backPressHandlers -= handler
+  }
+
+  fun onBackPressed(): Boolean {
+    if (backPressHandlers.isEmpty()) {
+      return false
+    }
+
+    for (backPressHandler in backPressHandlers) {
+      if (backPressHandler.onBackPressed()) {
+        return true
+      }
+    }
+
+    if (childRouters.isEmpty()) {
+      return false
+    }
+
+    val routersSorted = childRouters.entries
+      .sortedBy { (_, navigationRouter) -> navigationRouter.routerIndex ?: 0 }
+
+    for ((_, navigationRouter) in routersSorted) {
+      if (navigationRouter.onBackPressed()) {
+        return true
+      }
+    }
+
+    return false
   }
 
   sealed class ScreenUpdate(val screen: ComposeScreen) {
@@ -104,8 +123,13 @@ class NavigationRouter(
       }
     }
 
+    class Set(screen: ComposeScreen) : ScreenUpdate(screen)
     class Push(screen: ComposeScreen) : ScreenUpdate(screen)
     class Pop(screen: ComposeScreen) : ScreenUpdate(screen)
+  }
+
+  interface OnBackPressHandler {
+    fun onBackPressed(): Boolean
   }
 
   companion object {

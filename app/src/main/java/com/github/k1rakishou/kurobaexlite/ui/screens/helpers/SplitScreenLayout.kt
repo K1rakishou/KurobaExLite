@@ -5,18 +5,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 
 class SplitScreenLayout(
   componentActivity: ComponentActivity,
+  navigationRouter: NavigationRouter,
   private val orientation: Orientation,
-  private val childScreens: List<ChildScreen>
-) : ComposeScreen(componentActivity) {
+  private val childScreensBuilder: (NavigationRouter) -> List<ChildScreen>
+) : ComposeScreen(componentActivity, navigationRouter) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable
   override fun Content() {
-    val weights = remember(key1 = childScreens) { calculateWeights() }
+    val childScreens = remember { childScreensBuilder.invoke(navigationRouter) }
+    val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 
     when (orientation) {
       Orientation.Horizontal -> {
@@ -52,7 +55,7 @@ class SplitScreenLayout(
     }
   }
 
-  private fun calculateWeights(): FloatArray {
+  private fun calculateWeights(childScreens: List<ChildScreen>): FloatArray {
     val allNulls = childScreens.all { it.weight == null }
     if (allNulls) {
       return FloatArray(childScreens.size) { 1f / childScreens.size.toFloat() }

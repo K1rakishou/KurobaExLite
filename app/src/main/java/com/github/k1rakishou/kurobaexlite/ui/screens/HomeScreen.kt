@@ -4,10 +4,12 @@ import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.PagerState
@@ -22,34 +24,98 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HomeScreen(
-  componentActivity: ComponentActivity
-) : ComposeScreen(componentActivity) {
+  componentActivity: ComponentActivity,
+  navigationRouter: NavigationRouter
+) : ComposeScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
 
-  private val portraitChildScreens = listOf<ComposeScreen>(
-    BookmarksScreen(componentActivity),
-    CatalogScreen(componentActivity),
-    ThreadScreen(componentActivity)
-  )
+  private val portraitChildScreens by lazy {
+    return@lazy listOf<ComposeScreen>(
+      BookmarksScreen(componentActivity, navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY.key)),
+      CatalogScreen(componentActivity, navigationRouter.childRouter(CatalogScreen.SCREEN_KEY.key)),
+      ThreadScreen(componentActivity, navigationRouter.childRouter(ThreadScreen.SCREEN_KEY.key))
+    )
+  }
 
-  private val albumChildScreens = listOf<ComposeScreen>(
-    BookmarksScreen(componentActivity),
-    SplitScreenLayout(
-      componentActivity = componentActivity,
-      orientation = SplitScreenLayout.Orientation.Horizontal,
-      childScreens = listOf(
-        SplitScreenLayout.ChildScreen(CatalogScreen(componentActivity), 0.4f),
-        SplitScreenLayout.ChildScreen(ThreadScreen(componentActivity), 0.6f)
+  private val albumChildScreens by lazy {
+    return@lazy listOf<ComposeScreen>(
+      BookmarksScreen(componentActivity, navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY.key)),
+      SplitScreenLayout(
+        componentActivity = componentActivity,
+        navigationRouter= navigationRouter.childRouter(SplitScreenLayout.SCREEN_KEY.key),
+        orientation = SplitScreenLayout.Orientation.Horizontal,
+        childScreensBuilder = { router ->
+          return@SplitScreenLayout listOf(
+            SplitScreenLayout.ChildScreen(
+              CatalogScreen(componentActivity, router.childRouter(CatalogScreen.SCREEN_KEY.key)),
+              0.4f
+            ),
+            SplitScreenLayout.ChildScreen(
+              ThreadScreen(componentActivity, router.childRouter(ThreadScreen.SCREEN_KEY.key)),
+              0.6f
+            )
+          )
+        }
       )
     )
-  )
+  }
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   override fun Content() {
-    val childScreens = with(LocalConfiguration.current) {
+    val childScreens = getChildScreens()
+    val pagerState = rememberPagerState()
+
+    SetDefaultScreen(childScreens, pagerState)
+    HandleBackPresses()
+
+    HorizontalPager(
+      modifier = Modifier.fillMaxSize(),
+      state = pagerState,
+      count = childScreens.size
+    ) { page ->
+      LaunchedEffect(
+        key1 = currentPage,
+        block = {
+          val screenKey = childScreens[currentPage].screenKey
+          homeScreenViewModel.updateCurrentPage(screenKey, false)
+        }
+      )
+
+      childScreens[page].Content()
+    }
+  }
+
+  @Composable
+  private fun HandleBackPresses() {
+    DisposableEffect(key1 = Unit, effect = {
+      val handler = object : NavigationRouter.OnBackPressHandler {
+        override fun onBackPressed(): Boolean {
+          val currentPage = homeScreenViewModel.currentPage
+
+          if (currentPage != null && currentPage.screenKey != CatalogScreen.SCREEN_KEY) {
+            homeScreenViewModel.updateCurrentPage(
+              screenKey = CatalogScreen.SCREEN_KEY,
+              animate = true
+            )
+            return true
+          }
+
+          return false
+        }
+      }
+
+      navigationRouter.addOnBackPressedHandler(handler)
+
+      onDispose { navigationRouter.removeOnBackPressedHandler(handler) }
+    })
+  }
+
+  @Composable
+  private fun getChildScreens(): List<ComposeScreen> {
+    return with(LocalConfiguration.current) {
       remember(key1 = orientation) {
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {
           portraitChildScreens
@@ -58,9 +124,14 @@ class HomeScreen(
         }
       }
     }
+  }
 
-    val pagerState = rememberPagerState()
-
+  @OptIn(ExperimentalPagerApi::class)
+  @Composable
+  private fun HomeScreen.SetDefaultScreen(
+    childScreens: List<ComposeScreen>,
+    pagerState: PagerState
+  ) {
     LaunchedEffect(
       key1 = Unit,
       block = {
@@ -69,7 +140,7 @@ class HomeScreen(
           animate = false
         )
 
-        homeScreenViewModel.currentPage.collect { currentPage ->
+        homeScreenViewModel.currentPageFlow.collect { currentPage ->
           scrollToPageByScreenKey(
             screenKey = currentPage.screenKey,
             childScreens = childScreens,
@@ -78,14 +149,6 @@ class HomeScreen(
           )
         }
       })
-
-    HorizontalPager(
-      modifier = Modifier.fillMaxSize(),
-      state = pagerState,
-      count = childScreens.size
-    ) { page ->
-      childScreens[page].Content()
-    }
   }
 
   @OptIn(ExperimentalPagerApi::class)

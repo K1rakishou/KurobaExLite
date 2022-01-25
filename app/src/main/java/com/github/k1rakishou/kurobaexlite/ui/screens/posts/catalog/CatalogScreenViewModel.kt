@@ -20,7 +20,7 @@ class CatalogScreenViewModel(
   override val postScreenState: PostScreenState = catalogScreenState
 
   override fun reload() {
-    TODO("Not yet implemented")
+    // TODO(KurobaEx): 
   }
 
   suspend fun loadCatalog(
@@ -60,7 +60,7 @@ class CatalogScreenViewModel(
   class CatalogDisplayException(message: String) : ClientException(message)
 
   class CatalogScreenState(
-    private val catalogThreadsAsyncState: MutableState<AsyncData<CatalogThreadsState>> = mutableStateOf(AsyncData.Loading)
+    private val catalogThreadsAsyncState: MutableState<AsyncData<CatalogThreadsState>> = mutableStateOf(AsyncData.Empty)
   ) : PostScreenState {
     internal var catalogThreadsAsync by catalogThreadsAsyncState
 
@@ -71,6 +71,7 @@ class CatalogScreenViewModel(
       return when (val asyncDataStateValue = catalogThreadsAsyncState.value) {
         is AsyncData.Data -> AsyncData.Data(asyncDataStateValue.data.catalogThreads)
         is AsyncData.Error -> AsyncData.Error(asyncDataStateValue.error)
+        AsyncData.Empty -> AsyncData.Empty
         AsyncData.Loading -> AsyncData.Loading
       }
     }

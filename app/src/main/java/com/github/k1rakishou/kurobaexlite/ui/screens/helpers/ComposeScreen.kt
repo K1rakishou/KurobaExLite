@@ -6,7 +6,8 @@ import androidx.compose.runtime.LaunchedEffect
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 
 abstract class ComposeScreen(
-  protected val componentActivity: ComponentActivity
+  protected val componentActivity: ComponentActivity,
+  protected val navigationRouter: NavigationRouter
 ) {
 
   abstract val screenKey: ScreenKey

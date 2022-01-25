@@ -48,4 +48,12 @@ class MainActivity : ComponentActivity() {
       viewModel.rootNavigationRouter.onNewIntent(intent)
     }
   }
+
+  override fun onBackPressed() {
+    if (viewModel.rootNavigationRouter.onBackPressed()) {
+      return
+    }
+
+    finish()
+  }
 }

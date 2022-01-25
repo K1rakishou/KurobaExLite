@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -46,6 +47,21 @@ internal fun PostListContent(
     contentPadding = contentPadding,
     content = {
       when (postListAsync) {
+        AsyncData.Empty -> {
+          item(key = "empty_indicator") {
+            val text = if (isCatalogMode) {
+              "No catalog selected"
+            } else {
+              "No thread selected"
+            }
+
+            KurobaComposeText(
+              modifier = Modifier.fillParentMaxSize(),
+              text = text,
+              textAlign = TextAlign.Center
+            )
+          }
+        }
         AsyncData.Loading -> {
           item(key = "loading_indicator") {
             KurobaComposeLoadingIndicator(

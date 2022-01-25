@@ -13,10 +13,16 @@ class HomeScreenViewModel : BaseViewModel() {
     extraBufferCapacity = Channel.UNLIMITED
   )
 
-  val currentPage: SharedFlow<CurrentPage>
+  val currentPageFlow: SharedFlow<CurrentPage>
     get() = _currentPage.asSharedFlow()
+  val currentPage: CurrentPage?
+    get() = _currentPage.replayCache.firstOrNull()
 
   fun updateCurrentPage(screenKey: ScreenKey, animate: Boolean) {
+    if (screenKey == currentPage?.screenKey) {
+      return
+    }
+
     _currentPage.tryEmit(CurrentPage(screenKey, animate))
   }
 
