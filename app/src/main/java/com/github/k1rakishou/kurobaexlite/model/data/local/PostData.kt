@@ -15,12 +15,16 @@ data class PostData(
   private val mutex = Mutex()
 
   @GuardedBy("mutex")
+  @Volatile
   private var _parsedPostData: ParsedPostData? = null
 
   val postNo: Long
     get() = postDescriptor.postNo
   val postSubNo: Long?
     get() = postDescriptor.postSubNo
+
+  val postCommentParsedAndProcessed: AnnotatedString?
+    get() = _parsedPostData?.processedPostComment
 
   suspend fun getOrCalculateParsedPostParts(
     calcFunc: suspend () -> ParsedPostData

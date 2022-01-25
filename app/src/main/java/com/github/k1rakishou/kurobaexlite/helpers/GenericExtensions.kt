@@ -175,3 +175,115 @@ inline fun Any.logcatError(
 fun lerpFloat(from: Float, to: Float, progress: Float): Float {
   return from + progress * (to - from)
 }
+
+
+inline fun <T, R> List<T>.bidirectionalMap(
+  startPosition: Int = size / 2,
+  crossinline mapper: (T) -> R
+): List<R> {
+  return this.bidirectionalSequence(startPosition)
+    .map { element -> mapper(element) }
+    .toList()
+}
+
+fun <T> List<T>.bidirectionalSequenceIndexed(startPosition: Int = size / 2): Sequence<IndexedValue<T>> {
+  return sequence<IndexedValue<T>> {
+    if (isEmpty()) {
+      return@sequence
+    }
+
+    if (size == 1) {
+      yield(IndexedValue(index = 0, value = first()))
+      return@sequence
+    }
+
+    var position = startPosition
+    var index = 0
+    var increment = true
+
+    var reachedLeftSide = false
+    var reachedRightSide = false
+
+    while (true) {
+      val element = getOrNull(position)
+      if (element == null) {
+        if (reachedLeftSide && reachedRightSide) {
+          break
+        }
+
+        if (position <= 0) {
+          reachedLeftSide = true
+        }
+
+        if (position >= lastIndex) {
+          reachedRightSide = true
+        }
+      }
+
+      if (element != null) {
+        yield(IndexedValue(index = position, value = element))
+      }
+
+      ++index
+
+      if (increment) {
+        position += index
+      } else {
+        position -= index
+      }
+
+      increment = increment.not()
+    }
+  }
+}
+
+fun <T> List<T>.bidirectionalSequence(startPosition: Int = size / 2): Sequence<T> {
+  return sequence<T> {
+    if (isEmpty()) {
+      return@sequence
+    }
+
+    if (size == 1) {
+      yield(first())
+      return@sequence
+    }
+
+    var position = startPosition
+    var index = 0
+    var increment = true
+
+    var reachedLeftSide = false
+    var reachedRightSide = false
+
+    while (true) {
+      val element = getOrNull(position)
+      if (element == null) {
+        if (reachedLeftSide && reachedRightSide) {
+          break
+        }
+
+        if (position <= 0) {
+          reachedLeftSide = true
+        }
+
+        if (position >= lastIndex) {
+          reachedRightSide = true
+        }
+      }
+
+      if (element != null) {
+        yield(element)
+      }
+
+      ++index
+
+      if (increment) {
+        position += index
+      } else {
+        position -= index
+      }
+
+      increment = increment.not()
+    }
+  }
+}

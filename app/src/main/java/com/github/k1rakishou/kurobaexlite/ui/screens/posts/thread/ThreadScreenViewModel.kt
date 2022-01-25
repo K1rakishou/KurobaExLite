@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 
+import android.os.SystemClock
 import androidx.compose.runtime.*
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.*
@@ -7,15 +8,18 @@ import com.github.k1rakishou.kurobaexlite.model.ChanDataSource
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import kotlinx.coroutines.launch
 import logcat.asLog
+import logcat.logcat
 
 class ThreadScreenViewModel(
   private val chanDataSource: ChanDataSource,
   postCommentParser: PostCommentParser,
-  postCommentApplier: PostCommentApplier
-) : PostScreenViewModel(postCommentParser, postCommentApplier) {
+  postCommentApplier: PostCommentApplier,
+  themeEngine: ThemeEngine
+) : PostScreenViewModel(postCommentParser, postCommentApplier, themeEngine) {
   val threadScreenState = ThreadScreenState()
 
   override val postScreenState: PostScreenState = threadScreenState
@@ -36,6 +40,7 @@ class ThreadScreenViewModel(
       return
     }
 
+    val startTime = SystemClock.elapsedRealtime()
     threadScreenState.threadPostsAsync = AsyncData.Loading
 
     val threadDataResult = chanDataSource.loadThread(threadDescriptor)
@@ -54,12 +59,23 @@ class ThreadScreenViewModel(
       return
     }
 
+    parsePostsAround(
+      startIndex = 0,
+      postDataList = threadData.threadPosts,
+      count = 16
+    )
+
     val threadPostsState = ThreadPostsState(
       threadDescriptor = threadDescriptor,
       threadPosts = threadData.threadPosts
     )
 
     threadScreenState.threadPostsAsync = AsyncData.Data(threadPostsState)
+
+    logcat {
+      "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+        "threadPosts=${threadData.threadPosts.size}"
+    }
   }
 
   class ThreadDisplayException(message: String) : ClientException(message)

@@ -55,8 +55,8 @@ class KurobaExLiteApplication : Application() {
       single { ThemeEngine() }
 
       viewModel { HomeScreenViewModel() }
-      viewModel { CatalogScreenViewModel(get(), get(), get()) }
-      viewModel { ThreadScreenViewModel(get(), get(), get()) }
+      viewModel { CatalogScreenViewModel(get(), get(), get(), get()) }
+      viewModel { ThreadScreenViewModel(get(), get(), get(), get()) }
     }
 
     return modules

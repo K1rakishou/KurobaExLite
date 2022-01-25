@@ -12,8 +12,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
-import com.github.k1rakishou.kurobaexlite.ui.elements.PagerState
-import com.github.k1rakishou.kurobaexlite.ui.elements.rememberPagerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey

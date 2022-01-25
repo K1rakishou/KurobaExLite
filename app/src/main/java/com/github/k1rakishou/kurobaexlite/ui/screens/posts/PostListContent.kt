@@ -16,8 +16,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.ui.elements.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 @Composable
 internal fun PostListContent(
@@ -111,21 +109,26 @@ private fun LazyListScope.postList(
     count = totalCount,
     key = { index -> postDataList[index].postDescriptor },
     itemContent = { index ->
-      val chanTheme = LocalChanTheme.current
       val postData = postDataList[index]
 
-      var postComment by remember(key1 = postData.postCommentUnparsed) {
-        mutableStateOf<AnnotatedString>(AnnotatedString(postData.postCommentUnparsed))
+      var postComment by remember(key1 = postData) {
+        val initial = if (postData.postCommentParsedAndProcessed != null) {
+          postData.postCommentParsedAndProcessed!!
+        } else {
+          AnnotatedString(postData.postCommentUnparsed)
+        }
+
+        mutableStateOf<AnnotatedString>(initial)
       }
 
-      LaunchedEffect(
-        key1 = postData.postCommentUnparsed,
-        block = {
-          postComment = withContext(Dispatchers.Default) {
-            postsScreenViewModel.parseComment(chanTheme, postData)
+      if (postData.postCommentParsedAndProcessed == null) {
+        LaunchedEffect(
+          key1 = postData.postCommentUnparsed,
+          block = {
+            postComment = postsScreenViewModel.parseComment(postData)
           }
-        }
-      )
+        )
+      }
 
       Column(
         modifier = Modifier.padding(horizontal = 4.dp)

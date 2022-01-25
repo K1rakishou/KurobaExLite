@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
+import android.os.SystemClock
 import androidx.compose.runtime.*
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.*
@@ -8,15 +9,20 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import logcat.asLog
+import logcat.logcat
 
 class CatalogScreenViewModel(
   private val chanDataSource: ChanDataSource,
   postCommentParser: PostCommentParser,
-  postCommentApplier: PostCommentApplier
-) : PostScreenViewModel(postCommentParser, postCommentApplier) {
+  postCommentApplier: PostCommentApplier,
+  themeEngine: ThemeEngine
+) : PostScreenViewModel(postCommentParser, postCommentApplier, themeEngine) {
   private val catalogScreenState = CatalogScreenState()
+
+
   override val postScreenState: PostScreenState = catalogScreenState
 
   override fun reload() {
@@ -31,6 +37,7 @@ class CatalogScreenViewModel(
       return
     }
 
+    val startTime = SystemClock.elapsedRealtime()
     catalogScreenState.catalogThreadsAsync = AsyncData.Loading
 
     val catalogDataResult = chanDataSource.loadCatalog(catalogDescriptor)
@@ -49,12 +56,23 @@ class CatalogScreenViewModel(
       return
     }
 
+    parsePostsAround(
+      startIndex = 0,
+      postDataList = catalogData.catalogThreads,
+      count = 16
+    )
+
     val catalogThreadsState = CatalogThreadsState(
       catalogDescriptor = catalogDescriptor,
       catalogThreads = catalogData.catalogThreads
     )
 
     catalogScreenState.catalogThreadsAsync = AsyncData.Data(catalogThreadsState)
+
+    logcat {
+      "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+        "catalogThreads=${catalogData.catalogThreads.size}"
+    }
   }
 
   class CatalogDisplayException(message: String) : ClientException(message)

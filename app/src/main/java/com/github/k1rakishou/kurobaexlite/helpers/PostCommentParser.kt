@@ -4,6 +4,7 @@ import androidx.annotation.VisibleForTesting
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlNode
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlParser
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -18,7 +19,6 @@ class PostCommentParser {
       .availableProcessors()
       .coerceAtLeast(4)
   ).asCoroutineDispatcher()
-
 
   suspend fun parsePostComment(postData: PostData): List<TextPart> {
     return withContext(dispatcher) {
@@ -36,10 +36,10 @@ class PostCommentParser {
   @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
   fun parsePostCommentInternal(postData: PostData): List<TextPart> {
     val htmlNodes = htmlParser.parse(postData.postCommentUnparsed).nodes
-    return processNodes(htmlNodes)
+    return processNodes(postData.postDescriptor, htmlNodes)
   }
 
-  private fun processNodes(htmlNodes: List<HtmlNode>): MutableList<TextPart> {
+  private fun processNodes(postDescriptor: PostDescriptor, htmlNodes: List<HtmlNode>): MutableList<TextPart> {
     if (htmlNodes.isEmpty()) {
       return mutableListOf()
     }
@@ -51,7 +51,7 @@ class PostCommentParser {
       when (htmlNode) {
         is HtmlNode.Tag -> {
           val htmlTag = htmlNode.htmlTag
-          val childTextParts = processNodes(htmlTag.children)
+          val childTextParts = processNodes(postDescriptor, htmlTag.children)
 
           when (htmlTag.tagName) {
             "br" -> {
@@ -73,7 +73,7 @@ class PostCommentParser {
               }
             }
             else -> {
-              logcatError { "Unsupported tag found: '${htmlTag.tagName}'" }
+              logcatError { "Unsupported tag with name '${htmlTag.tagName}' found. (postDescriptor=$postDescriptor, htmlTag=$htmlTag)" }
             }
           }
 
