@@ -1,5 +1,5 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
-package com.github.k1rakishou.kurobaexlite.ui.elements
+package com.github.k1rakishou.kurobaexlite.ui.elements.pager
 
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
@@ -11,15 +11,11 @@ import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 

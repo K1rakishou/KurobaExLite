@@ -5,18 +5,10 @@ import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.gestures.FlingBehavior
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -27,13 +19,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.snapper.ExperimentalSnapperApi
-import dev.chrisbanes.snapper.SnapOffsets
-import dev.chrisbanes.snapper.SnapperFlingBehavior
-import dev.chrisbanes.snapper.SnapperFlingBehaviorDefaults
-import dev.chrisbanes.snapper.SnapperLayoutInfo
-import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
-import kotlinx.coroutines.flow.collect
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
+import dev.chrisbanes.snapper.*
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 

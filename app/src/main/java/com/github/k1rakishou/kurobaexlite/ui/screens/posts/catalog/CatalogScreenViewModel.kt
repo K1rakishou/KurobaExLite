@@ -20,7 +20,7 @@ class CatalogScreenViewModel(
   override val postScreenState: PostScreenState = catalogScreenState
 
   override fun reload() {
-    // TODO(KurobaEx): 
+    // TODO(KurobaEx):
   }
 
   suspend fun loadCatalog(
