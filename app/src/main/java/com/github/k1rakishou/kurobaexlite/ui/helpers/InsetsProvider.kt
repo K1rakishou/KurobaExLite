@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 
-val LocalWindowInsets = staticCompositionLocalOf<Insets> { error("Not initialized") }
+val LocalWindowInsets = compositionLocalOf<Insets> { error("Not initialized") }
 
 @Composable
 fun ProvideWindowInsets(
@@ -18,7 +18,7 @@ fun ProvideWindowInsets(
   content: @Composable () -> Unit
 ) {
   val density = LocalDensity.current
-  val insetsRect = remember { mutableStateOf(Insets(density, Rect(Offset.Zero, Offset.Zero))) }
+  var insetsRect by remember { mutableStateOf(Insets(density, Rect(Offset.Zero, Offset.Zero))) }
 
   DisposableEffect(key1 = Unit) {
     val listener = OnApplyWindowInsetsListener { view, insets ->
@@ -29,9 +29,9 @@ fun ProvideWindowInsets(
         insets.systemWindowInsetBottom.toFloat()
       )
 
-      insetsRect.value = Insets(density, rect)
+      insetsRect = Insets(density, rect)
 
-      ViewCompat.onApplyWindowInsets(
+      return@OnApplyWindowInsetsListener ViewCompat.onApplyWindowInsets(
         view,
         insets.replaceSystemWindowInsets(0, 0, 0, 0)
       )
@@ -44,7 +44,7 @@ fun ProvideWindowInsets(
     }
   }
 
-  CompositionLocalProvider(LocalWindowInsets provides insetsRect.value) {
+  CompositionLocalProvider(LocalWindowInsets provides insetsRect) {
     content()
   }
 

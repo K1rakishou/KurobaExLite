@@ -1,11 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 
 class SplitScreenLayout(
   componentActivity: ComponentActivity,
@@ -18,6 +22,7 @@ class SplitScreenLayout(
 
   @Composable
   override fun Content() {
+    val chanTheme = LocalChanTheme.current
     val childScreens = remember { childScreensBuilder.invoke(navigationRouter) }
     val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 
@@ -33,6 +38,15 @@ class SplitScreenLayout(
                 .weight(weight = weight)
             ) {
               childScreen.composeScreen.Content()
+
+              if (index >= 0 && index < childScreens.size) {
+                Divider(
+                  modifier = Modifier
+                    .fillMaxHeight()
+                    .width(1.dp)
+                    .background(chanTheme.dividerColorCompose)
+                )
+              }
             }
           }
         }
@@ -48,6 +62,15 @@ class SplitScreenLayout(
                 .weight(weight = weight)
             ) {
               childScreen.composeScreen.Content()
+
+              if (index >= 0 && index < childScreens.size) {
+                Divider(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(chanTheme.dividerColorCompose)
+                )
+              }
             }
           }
         }

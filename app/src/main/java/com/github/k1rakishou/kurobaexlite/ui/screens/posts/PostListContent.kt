@@ -37,10 +37,7 @@ internal fun PostListContent(
   val windowInsets = LocalWindowInsets.current
   val chanTheme = LocalChanTheme.current
 
-  val contentPadding = remember(key1 = windowInsets) {
-    PaddingValues(top = windowInsets.topDp, bottom = windowInsets.bottomDp)
-  }
-
+  val contentPadding = PaddingValues(top = windowInsets.topDp, bottom = windowInsets.bottomDp)
   val lazyListState = rememberLazyListState()
   val postListAsync = postsScreenViewModel.postScreenState.postDataAsync()
 

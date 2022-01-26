@@ -60,9 +60,21 @@ fun ScreenTransition(
             alphaAnimated = animationProgress
           }
         }
-        is NavigationRouter.ScreenUpdate.Set -> {
+        is NavigationRouter.ScreenUpdate.Replace -> {
           scaleAnimated = 1f
-          alphaAnimated = 1f
+
+          animate(
+            initialValue = 1f,
+            targetValue = 0f,
+            initialVelocity = 0f,
+            animationSpec = FloatTweenSpec(
+              duration = 250,
+              delay = 0,
+              easing = FastOutSlowInEasing
+            )
+          ) { animationProgress, _ ->
+            alphaAnimated = animationProgress
+          }
         }
       }
 

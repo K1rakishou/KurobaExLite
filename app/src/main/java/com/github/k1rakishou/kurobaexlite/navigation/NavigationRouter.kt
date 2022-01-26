@@ -123,7 +123,7 @@ class NavigationRouter(
       }
     }
 
-    class Set(screen: ComposeScreen) : ScreenUpdate(screen)
+    class Replace(screen: ComposeScreen) : ScreenUpdate(screen)
     class Push(screen: ComposeScreen) : ScreenUpdate(screen)
     class Pop(screen: ComposeScreen) : ScreenUpdate(screen)
   }
