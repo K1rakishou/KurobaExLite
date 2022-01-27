@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -18,6 +19,7 @@ import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.AsyncImageScope
 import coil.request.ImageRequest
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
@@ -36,8 +38,12 @@ internal fun PostListContent(
 ) {
   val windowInsets = LocalWindowInsets.current
   val chanTheme = LocalChanTheme.current
+  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
-  val contentPadding = PaddingValues(top = windowInsets.topDp, bottom = windowInsets.bottomDp)
+  val contentPadding = remember(key1 = windowInsets) {
+    PaddingValues(top = toolbarHeight + windowInsets.topDp, bottom = windowInsets.bottomDp)
+  }
+
   val lazyListState = rememberLazyListState()
   val postListAsync = postsScreenViewModel.postScreenState.postDataAsync()
 
@@ -202,7 +208,7 @@ private fun PostCellTitle(
             .crossfade(true)
             .build(),
           contentDescription = null,
-          contentScale = ContentScale.Inside,
+          contentScale = ContentScale.Fit,
           content = { state ->
             if (state is AsyncImagePainter.State.Error) {
               logcatError {

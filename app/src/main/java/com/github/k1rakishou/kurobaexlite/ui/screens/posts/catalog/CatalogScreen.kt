@@ -29,6 +29,12 @@ class CatalogScreen(
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
 
   override val screenKey: ScreenKey = SCREEN_KEY
+  override val isCatalogScreen: Boolean = true
+
+  @Composable
+  override fun postDataAsync(): AsyncData<List<PostData>> {
+    return catalogScreenViewModel.postScreenState.postDataAsync()
+  }
 
   @Composable
   override fun Content() {
@@ -47,7 +53,7 @@ class CatalogScreen(
 
       val parsingPosts by catalogScreenViewModel.parsingPostsAsync
       if (parsingPosts) {
-        CatalogOrThreadLoadingIndicator(isCatalogMode = true)
+        CatalogOrThreadLoadingIndicator()
       }
     }
   }

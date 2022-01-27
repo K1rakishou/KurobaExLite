@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
@@ -20,6 +22,12 @@ class ThreadScreen(
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
 
   override val screenKey: ScreenKey = SCREEN_KEY
+  override val isCatalogScreen: Boolean = false
+
+  @Composable
+  override fun postDataAsync(): AsyncData<List<PostData>> {
+    return threadScreenViewModel.postScreenState.postDataAsync()
+  }
 
   @Composable
   override fun Content() {
@@ -36,7 +44,7 @@ class ThreadScreen(
 
       val parsingPosts by threadScreenViewModel.parsingPostsAsync
       if (parsingPosts) {
-        CatalogOrThreadLoadingIndicator(isCatalogMode = false)
+        CatalogOrThreadLoadingIndicator()
       }
     }
   }

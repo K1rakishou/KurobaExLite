@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 import androidx.annotation.GuardedBy
 import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -42,9 +43,26 @@ data class PostData(
     }
   }
 
+  fun formatToolbarTitle(catalogMode: Boolean): String? {
+    if (catalogMode) {
+      return "${postDescriptor.siteKey}/${postDescriptor.boardCode}/"
+    }
+
+    val parsedPostData = _parsedPostData
+      ?: return null
+
+    if (parsedPostData.parsedPostSubject.isNotNullNorBlank()) {
+      return parsedPostData.parsedPostSubject
+    }
+
+    return parsedPostData.parsedPostComment.take(64)
+  }
+
   class ParsedPostData(
     val parsedPostParts: List<PostCommentParser.TextPart>,
+    val parsedPostComment: String,
     val processedPostComment: AnnotatedString,
+    val parsedPostSubject: String,
     val processedPostSubject: AnnotatedString
   )
 

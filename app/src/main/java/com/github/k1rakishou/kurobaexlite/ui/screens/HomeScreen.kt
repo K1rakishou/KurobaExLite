@@ -2,20 +2,28 @@ package com.github.k1rakishou.kurobaexlite.ui.screens
 
 import android.content.res.Configuration
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.dimensionResource
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.SplitScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
@@ -30,7 +38,7 @@ class HomeScreen(
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
 
   private val portraitChildScreens by lazy {
-    return@lazy listOf<ComposeScreen>(
+    return@lazy listOf<ComposeScreenWithToolbar>(
       BookmarksScreen(componentActivity, navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY.key)),
       CatalogScreen(componentActivity, navigationRouter.childRouter(CatalogScreen.SCREEN_KEY.key)),
       ThreadScreen(componentActivity, navigationRouter.childRouter(ThreadScreen.SCREEN_KEY.key))
@@ -38,12 +46,11 @@ class HomeScreen(
   }
 
   private val albumChildScreens by lazy {
-    return@lazy listOf<ComposeScreen>(
+    return@lazy listOf<ComposeScreenWithToolbar>(
       BookmarksScreen(componentActivity, navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY.key)),
       SplitScreenLayout(
         componentActivity = componentActivity,
         navigationRouter= navigationRouter.childRouter(SplitScreenLayout.SCREEN_KEY.key),
-        orientation = SplitScreenLayout.Orientation.Horizontal,
         childScreensBuilder = { router ->
           return@SplitScreenLayout listOf(
             SplitScreenLayout.ChildScreen(
@@ -65,6 +72,8 @@ class HomeScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   override fun Content() {
+    val chanTheme = LocalChanTheme.current
+    val insets = LocalWindowInsets.current
     val childScreens = getChildScreens()
     val pagerState = rememberPagerState()
 
@@ -84,7 +93,39 @@ class HomeScreen(
         }
       )
 
-      childScreens[page].Content()
+      val childScreen = childScreens[page]
+
+      Box(modifier = Modifier.fillMaxSize()) {
+        childScreen.Content()
+        ScreenToolbarContainer(insets, chanTheme, childScreen)
+      }
+    }
+  }
+
+  @Composable
+  private fun ScreenToolbarContainer(
+    insets: Insets,
+    chanTheme: ChanTheme,
+    childScreen: ComposeScreenWithToolbar
+  ) {
+    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+    val toolbarTotalHeight = remember(key1 = insets.topDp) { insets.topDp + toolbarHeight }
+
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(toolbarTotalHeight)
+        .background(chanTheme.primaryColorCompose)
+    ) {
+      Spacer(modifier = Modifier.height(insets.topDp))
+
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(toolbarHeight)
+      ) {
+        childScreen.Toolbar(this)
+      }
     }
   }
 
@@ -114,7 +155,7 @@ class HomeScreen(
   }
 
   @Composable
-  private fun getChildScreens(): List<ComposeScreen> {
+  private fun getChildScreens(): List<ComposeScreenWithToolbar> {
     return with(LocalConfiguration.current) {
       remember(key1 = orientation) {
         if (orientation == Configuration.ORIENTATION_PORTRAIT) {

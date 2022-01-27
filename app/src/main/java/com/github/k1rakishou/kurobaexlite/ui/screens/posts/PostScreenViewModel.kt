@@ -125,14 +125,13 @@ abstract class PostScreenViewModel(
 
   private fun parseAndProcessPostSubject(
     chanTheme: ChanTheme,
-    postData: PostData
+    postData: PostData,
+    postSubjectParsed: String
   ): AnnotatedString {
-    val postSubjectUnescaped = HtmlUnescape.unescape(postData.postSubjectUnparsed)
-
     return buildAnnotatedString {
-      if (postSubjectUnescaped.isNotEmpty()) {
+      if (postSubjectParsed.isNotEmpty()) {
         val subjectAnnotatedString = AnnotatedString(
-          text = postSubjectUnescaped,
+          text = postSubjectParsed,
           spanStyle = SpanStyle(
             color = chanTheme.postSubjectColorCompose,
           )
@@ -166,11 +165,14 @@ abstract class PostScreenViewModel(
 
       val textParts = postCommentParser.parsePostComment(postData)
       val processedPostComment = postCommentApplier.processTextParts(chanTheme, textParts)
+      val postSubjectParsed = HtmlUnescape.unescape(postData.postSubjectUnparsed)
 
       return@getOrCalculateParsedPostParts PostData.ParsedPostData(
         parsedPostParts = textParts,
+        parsedPostComment = processedPostComment.text,
         processedPostComment = processedPostComment,
-        processedPostSubject = parseAndProcessPostSubject(chanTheme, postData)
+        parsedPostSubject = postSubjectParsed,
+        processedPostSubject = parseAndProcessPostSubject(chanTheme, postData, postSubjectParsed)
       )
     }
   }

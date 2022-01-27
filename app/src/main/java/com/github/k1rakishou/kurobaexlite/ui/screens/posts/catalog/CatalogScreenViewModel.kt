@@ -24,7 +24,6 @@ class CatalogScreenViewModel(
 ) : PostScreenViewModel(globalConstants, postCommentParser, postCommentApplier, themeEngine) {
   private val catalogScreenState = CatalogScreenState()
 
-
   override val postScreenState: PostScreenState = catalogScreenState
 
   override fun reload() {

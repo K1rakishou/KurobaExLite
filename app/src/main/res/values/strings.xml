@@ -2,4 +2,6 @@
     <string name="app_name">KurobaExLite</string>
 
     <string name="posts_screen_processing_posts">Processing posts…</string>
+    <string name="toolbar_loading_title">Loading...</string>
+    <string name="toolbar_loading_subtitle">Error</string>
 </resources>

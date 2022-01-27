@@ -14,11 +14,42 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 class SplitScreenLayout(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  private val orientation: Orientation,
   private val childScreensBuilder: (NavigationRouter) -> List<ChildScreen>
-) : ComposeScreen(componentActivity, navigationRouter) {
+) : ComposeScreenWithToolbar(componentActivity, navigationRouter) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
+
+  @Composable
+  override fun Toolbar(boxScope: BoxScope) {
+    val chanTheme = LocalChanTheme.current
+    val childScreens = remember { childScreensBuilder.invoke(navigationRouter) }
+    val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
+
+    with(boxScope) {
+      Row(modifier = Modifier.fillMaxSize()) {
+        for ((index, childScreen) in childScreens.withIndex()) {
+          val weight = weights[index]
+
+          Box(
+            modifier = Modifier
+              .fillMaxHeight()
+              .weight(weight = weight)
+          ) {
+            childScreen.composeScreen.Toolbar(this)
+
+            if (index >= 0 && index < childScreens.size) {
+              Divider(
+                modifier = Modifier
+                  .fillMaxHeight()
+                  .width(1.dp)
+                  .background(chanTheme.dividerColorCompose)
+              )
+            }
+          }
+        }
+      }
+    }
+  }
 
   @Composable
   override fun Content() {
@@ -26,52 +57,24 @@ class SplitScreenLayout(
     val childScreens = remember { childScreensBuilder.invoke(navigationRouter) }
     val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 
-    when (orientation) {
-      Orientation.Horizontal -> {
-        Row(modifier = Modifier.fillMaxSize()) {
-          for ((index, childScreen) in childScreens.withIndex()) {
-            val weight = weights[index]
+    Row(modifier = Modifier.fillMaxSize()) {
+      for ((index, childScreen) in childScreens.withIndex()) {
+        val weight = weights[index]
 
-            Box(
+        Box(
+          modifier = Modifier
+            .fillMaxHeight()
+            .weight(weight = weight)
+        ) {
+          childScreen.composeScreen.Content()
+
+          if (index >= 0 && index < childScreens.size) {
+            Divider(
               modifier = Modifier
                 .fillMaxHeight()
-                .weight(weight = weight)
-            ) {
-              childScreen.composeScreen.Content()
-
-              if (index >= 0 && index < childScreens.size) {
-                Divider(
-                  modifier = Modifier
-                    .fillMaxHeight()
-                    .width(1.dp)
-                    .background(chanTheme.dividerColorCompose)
-                )
-              }
-            }
-          }
-        }
-      }
-      Orientation.Vertical -> {
-        Column(modifier = Modifier.fillMaxSize()) {
-          for ((index, childScreen) in childScreens.withIndex()) {
-            val weight = weights[index]
-
-            Box(
-              modifier = Modifier
-                .fillMaxHeight()
-                .weight(weight = weight)
-            ) {
-              childScreen.composeScreen.Content()
-
-              if (index >= 0 && index < childScreens.size) {
-                Divider(
-                  modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .background(chanTheme.dividerColorCompose)
-                )
-              }
-            }
+                .width(1.dp)
+                .background(chanTheme.dividerColorCompose)
+            )
           }
         }
       }
@@ -120,13 +123,8 @@ class SplitScreenLayout(
     return weights
   }
 
-  enum class Orientation {
-    Horizontal,
-    Vertical
-  }
-
   class ChildScreen(
-    val composeScreen: ComposeScreen,
+    val composeScreen: ComposeScreenWithToolbar,
     val weight: Float? = null
   )
 
