@@ -67,9 +67,10 @@ fun BoxScope.PostsScreenToolbar(
 }
 
 sealed class ToolbarMenuItem {
+  abstract val menuItemId: Int
 
   data class TextMenu(
-    val id: Int,
+    override val menuItemId: Int,
     @StringRes val textId: Int,
     @StringRes val subTextId: Int? = null
   ) : ToolbarMenuItem()

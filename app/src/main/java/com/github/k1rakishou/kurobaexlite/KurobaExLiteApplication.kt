@@ -47,12 +47,10 @@ class KurobaExLiteApplication : Application() {
       single { ProxiedOkHttpClient() }
       single { GlobalConstants(this@KurobaExLiteApplication) }
       single { Moshi.Builder().build() }
-
       single { PostCommentParser() }
       single { PostCommentApplier() }
       single { SiteManager() }
-      single { UiInfoManager() }
-
+      single { UiInfoManager(this@KurobaExLiteApplication) }
       single { ChanDataSource(get(), get(), get()) }
       single { ThemeEngine() }
 

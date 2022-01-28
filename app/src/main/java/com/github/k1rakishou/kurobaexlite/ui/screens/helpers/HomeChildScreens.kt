@@ -4,7 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.base.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
@@ -18,6 +19,7 @@ class HomeChildScreens(
   private val navigationRouter: NavigationRouter
 ) {
   private val globalConstants by inject<GlobalConstants>(GlobalConstants::class.java)
+  private val uiInfoManager by inject<UiInfoManager>(UiInfoManager::class.java)
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
 
   private val portraitScreens by lazy {
@@ -76,14 +78,14 @@ class HomeChildScreens(
   }
 
   fun getChildScreens(): List<ComposeScreenWithToolbar> {
-    return when (globalConstants.mainUiLayoutMode()) {
+    return when (uiInfoManager.mainUiLayoutMode()) {
       MainUiLayoutMode.Portrait -> portraitScreens
       MainUiLayoutMode.TwoWaySplit -> twoWaySplitScreens
     }
   }
 
   fun getInitialScreenIndex(childScreens: List<ComposeScreen>): Int {
-    return when (globalConstants.mainUiLayoutMode()) {
+    return when (uiInfoManager.mainUiLayoutMode()) {
       MainUiLayoutMode.Portrait -> {
         childScreens
           .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
@@ -122,7 +124,7 @@ class HomeChildScreens(
   }
 
   fun mainScreenKey(): ScreenKey {
-    if (globalConstants.mainUiLayoutMode().isSplit) {
+    if (uiInfoManager.mainUiLayoutMode().isSplit) {
       return SplitScreenLayout.SCREEN_KEY
     }
 

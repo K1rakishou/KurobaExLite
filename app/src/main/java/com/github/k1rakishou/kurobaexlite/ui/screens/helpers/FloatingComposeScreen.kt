@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +28,25 @@ abstract class FloatingComposeScreen(
     alpha = 0.6f
   )
 
+  val horizPaddingDp by lazy {
+    if (uiInfoManager.isTablet) {
+      HPADDING_TABLET_COMPOSE
+    } else {
+      HPADDING_COMPOSE
+    }
+  }
+
+  val vertPaddingDp by lazy {
+    if (uiInfoManager.isTablet) {
+      VPADDING_TABLET_COMPOSE
+    } else {
+      VPADDING_COMPOSE
+    }
+  }
+
+  val horizPaddingPx by lazy { with(uiInfoManager.composeDensity) { horizPaddingDp.toPx() } }
+  val vertPaddingPx by lazy { with(uiInfoManager.composeDensity) { vertPaddingDp.toPx() } }
+
   open val contentAlignment: Alignment = Alignment.Center
 
   @CallSuper
@@ -47,29 +65,14 @@ abstract class FloatingComposeScreen(
           onClick = { pop() }
         )
     ) {
-      val horizPadding = remember {
-        if (globalConstants.isTablet) {
-          HPADDING_TABLET_COMPOSE
-        } else {
-          HPADDING_COMPOSE
-        }
-      }
-
-      val vertPadding = remember {
-        if (globalConstants.isTablet) {
-          VPADDING_TABLET_COMPOSE
-        } else {
-          VPADDING_COMPOSE
-        }
-      }
-
       Box(
         modifier = Modifier
+          .fillMaxSize()
           .padding(
-            start = insets.leftDp + horizPadding,
-            end = insets.rightDp + horizPadding,
-            top = insets.topDp + vertPadding,
-            bottom = insets.bottomDp + vertPadding,
+            start = insets.leftDp + horizPaddingDp,
+            end = insets.rightDp + horizPaddingDp,
+            top = insets.topDp + vertPaddingDp,
+            bottom = insets.bottomDp + vertPaddingDp,
           ),
         contentAlignment = contentAlignment,
       ) {

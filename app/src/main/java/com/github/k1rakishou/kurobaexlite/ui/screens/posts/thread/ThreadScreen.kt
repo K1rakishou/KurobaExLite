@@ -17,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
+import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ThreadScreen(
@@ -49,7 +50,8 @@ class ThreadScreen(
             FloatingMenuScreen(
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
-              menuItems = toolbarMenuItems
+              menuItems = toolbarMenuItems,
+              onMenuItemClicked = { menuItem -> processClickedToolbarMenuItem(menuItem) }
             )
           )
         })
@@ -80,12 +82,16 @@ class ThreadScreen(
   private fun ThreadPostListScreen() {
     PostListContent(
       isCatalogMode = isCatalogScreen,
-      mainUiLayoutMode = globalConstants.mainUiLayoutMode(),
+      mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(),
       postsScreenViewModel = threadScreenViewModel,
       onPostCellClicked = { postData ->
         // TODO(KurobaEx):
       }
     )
+  }
+
+  private fun processClickedToolbarMenuItem(menuItem: ToolbarMenuItem) {
+    logcat { "thread processClickedToolbarMenuItem id=${menuItem.menuItemId}" }
   }
 
   companion object {

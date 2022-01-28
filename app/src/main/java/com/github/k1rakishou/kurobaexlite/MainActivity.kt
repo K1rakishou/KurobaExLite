@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -55,5 +56,13 @@ class MainActivity : ComponentActivity() {
     }
 
     finish()
+  }
+
+  override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+    if (ev != null) {
+      uiInfoManager.setLastTouchPosition(ev.x, ev.y)
+    }
+
+    return super.dispatchTouchEvent(ev)
   }
 }

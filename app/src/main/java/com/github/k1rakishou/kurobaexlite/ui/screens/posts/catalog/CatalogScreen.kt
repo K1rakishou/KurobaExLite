@@ -23,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
+import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class CatalogScreen(
@@ -37,8 +38,9 @@ class CatalogScreen(
   private val toolbarMenuItems: List<ToolbarMenuItem> by lazy {
     listOf(
       ToolbarMenuItem.TextMenu(
-        id = ACTION_OPEN_THREAD_BY_IDENTIFIER,
-        textId = R.string.catalog_toolbar_open_thread_by_identifier
+        menuItemId = ACTION_OPEN_THREAD_BY_IDENTIFIER,
+        textId = R.string.catalog_toolbar_open_thread_by_identifier,
+        subTextId = R.string.catalog_toolbar_open_thread_by_identifier_subtitle
       )
     )
   }
@@ -62,7 +64,8 @@ class CatalogScreen(
             FloatingMenuScreen(
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
-              menuItems = toolbarMenuItems
+              menuItems = toolbarMenuItems,
+              onMenuItemClicked = { menuItem -> processClickedToolbarMenuItem(menuItem) }
             )
           )
         }
@@ -99,7 +102,7 @@ class CatalogScreen(
   private fun CatalogPostListScreen() {
     PostListContent(
       isCatalogMode = isCatalogScreen,
-      mainUiLayoutMode = globalConstants.mainUiLayoutMode(),
+      mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(),
       postsScreenViewModel = catalogScreenViewModel,
       onPostCellClicked = { postData ->
         homeScreenViewModel.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY,)
@@ -112,6 +115,10 @@ class CatalogScreen(
         threadScreenViewModel.loadThreadFromCatalog(threadDescriptor)
       }
     )
+  }
+
+  private fun processClickedToolbarMenuItem(menuItem: ToolbarMenuItem) {
+    logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemId}" }
   }
 
   companion object {
