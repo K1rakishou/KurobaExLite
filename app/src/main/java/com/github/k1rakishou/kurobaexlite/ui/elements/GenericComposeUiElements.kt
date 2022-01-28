@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.elements
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -329,4 +330,18 @@ fun KurobaComposeIcon(
     colorFilter = ColorFilter.tint(tintColor),
     contentDescription = null
   )
+}
+
+fun Modifier.consumeClicks(consume: Boolean = true): Modifier {
+  if (!consume) {
+    return this
+  }
+
+  return composed {
+    clickable(
+      interactionSource = remember { MutableInteractionSource() },
+      indication = null,
+      onClick = { /** no-op */ }
+    )
+  }
 }

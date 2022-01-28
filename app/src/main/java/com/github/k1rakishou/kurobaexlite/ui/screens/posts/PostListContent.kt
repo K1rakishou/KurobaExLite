@@ -22,6 +22,7 @@ import coil.compose.AsyncImageScope
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.base.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
@@ -34,6 +35,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 @Composable
 internal fun PostListContent(
   isCatalogMode: Boolean,
+  mainUiLayoutMode: MainUiLayoutMode,
   postsScreenViewModel: PostScreenViewModel,
   onPostCellClicked: (PostData) -> Unit
 ) {
@@ -102,6 +104,8 @@ internal fun PostListContent(
         }
         is AsyncData.Data -> {
           postList(
+            isCatalogMode = isCatalogMode,
+            mainUiLayoutMode = mainUiLayoutMode,
             postsScreenViewModel = postsScreenViewModel,
             postListAsync = postListAsync,
             onPostCellClicked = onPostCellClicked
@@ -113,6 +117,8 @@ internal fun PostListContent(
 }
 
 private fun LazyListScope.postList(
+  isCatalogMode: Boolean,
+  mainUiLayoutMode: MainUiLayoutMode,
   postsScreenViewModel: PostScreenViewModel,
   postListAsync: AsyncData.Data<List<PostData>>,
   onPostCellClicked: (PostData) -> Unit
@@ -126,13 +132,29 @@ private fun LazyListScope.postList(
     itemContent = { index ->
       val postData = postDataList[index]
 
+      val padding = remember(key1 = mainUiLayoutMode) {
+        when (mainUiLayoutMode) {
+          MainUiLayoutMode.Portrait -> {
+            PaddingValues(horizontal = 8.dp)
+          }
+          MainUiLayoutMode.TwoWaySplit -> {
+            if (isCatalogMode) {
+              PaddingValues(start = 8.dp, end = 4.dp)
+            } else {
+              PaddingValues(start = 4.dp, end = 8.dp)
+            }
+          }
+        }
+      }
+
       Column(
-        modifier = Modifier.padding(horizontal = 8.dp)
+        modifier = Modifier
+          .kurobaClickable(onClick = { onPostCellClicked(postData) })
+          .padding(padding)
       ) {
         PostCell(
           postsScreenViewModel = postsScreenViewModel,
-          postData = postData,
-          onPostCellClicked = onPostCellClicked
+          postData = postData
         )
 
         if (index < (totalCount - 1)) {
@@ -149,8 +171,7 @@ private fun LazyListScope.postList(
 @Composable
 private fun PostCell(
   postsScreenViewModel: PostScreenViewModel,
-  postData: PostData,
-  onPostCellClicked: (PostData) -> Unit
+  postData: PostData
 ) {
   var postComment by postComment(postData)
   var postSubject by postSubject(postData)
@@ -170,7 +191,6 @@ private fun PostCell(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
-      .kurobaClickable(onClick = { onPostCellClicked(postData) })
       .padding(vertical = 8.dp)
   ) {
     PostCellTitle(postData = postData, postSubject = postSubject)

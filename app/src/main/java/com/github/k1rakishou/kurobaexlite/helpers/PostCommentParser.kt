@@ -73,7 +73,8 @@ class PostCommentParser {
               }
             }
             else -> {
-              logcatError { "Unsupported tag with name '${htmlTag.tagName}' found. (postDescriptor=$postDescriptor, htmlTag=$htmlTag)" }
+              // TODO(KurobaEx):
+//              logcatError { "Unsupported tag with name '${htmlTag.tagName}' found. (postDescriptor=$postDescriptor, htmlTag=$htmlTag)" }
             }
           }
 

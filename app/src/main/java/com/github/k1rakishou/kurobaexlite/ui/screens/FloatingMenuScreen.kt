@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.ToolbarMenuItem
 
 class FloatingMenuScreen(
   componentActivity: ComponentActivity,

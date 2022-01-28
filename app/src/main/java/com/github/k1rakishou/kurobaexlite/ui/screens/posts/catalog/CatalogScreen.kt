@@ -14,9 +14,13 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.*
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -95,6 +99,7 @@ class CatalogScreen(
   private fun CatalogPostListScreen() {
     PostListContent(
       isCatalogMode = isCatalogScreen,
+      mainUiLayoutMode = globalConstants.mainUiLayoutMode(),
       postsScreenViewModel = catalogScreenViewModel,
       onPostCellClicked = { postData ->
         homeScreenViewModel.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY,)

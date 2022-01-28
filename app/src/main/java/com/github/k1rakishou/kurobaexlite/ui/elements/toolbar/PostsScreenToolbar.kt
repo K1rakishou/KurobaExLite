@@ -1,11 +1,11 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts
+package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.kurobaClickable
@@ -23,36 +22,36 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 fun BoxScope.PostsScreenToolbar(
   isCatalogScreen: Boolean,
   postListAsync: AsyncData<List<PostData>>,
-  onToolbarOverflowMenuClicked: () -> Unit
+  onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
   val chanTheme = LocalChanTheme.current
 
-  val toolbarTitle = when (postListAsync) {
-    AsyncData.Empty -> null
-    AsyncData.Loading -> stringResource(R.string.toolbar_loading_title)
-    is AsyncData.Error -> stringResource(R.string.toolbar_loading_subtitle)
-    is AsyncData.Data -> {
-      val originalPost = postListAsync.data.firstOrNull()
-      remember(key1 = originalPost) { originalPost?.formatToolbarTitle(catalogMode = isCatalogScreen) }
-    }
-  }
+  KurobaToolbarLayout(
+    leftIcon = {
 
-  if (toolbarTitle.isNotNullNorBlank()) {
-    Row(
-      modifier = Modifier
-        .wrapContentSize()
-        .align(Alignment.CenterStart)
-        .padding(horizontal = 4.dp)
-    ) {
-      Text(
-        modifier = Modifier.weight(1f),
-        text = toolbarTitle,
-        color = Color.White,
-        fontSize = 16.sp
-      )
+    },
+    middlePart = {
+      val toolbarTitle = when (postListAsync) {
+        AsyncData.Empty -> null
+        AsyncData.Loading -> stringResource(R.string.toolbar_loading_title)
+        is AsyncData.Error -> stringResource(R.string.toolbar_loading_subtitle)
+        is AsyncData.Data -> {
+          val originalPost = postListAsync.data.firstOrNull()
+          remember(key1 = originalPost) {
+            originalPost?.formatToolbarTitle(catalogMode = isCatalogScreen)
+          }
+        }
+      }
 
-      Spacer(modifier = Modifier.width(4.dp))
-
+      if (toolbarTitle != null) {
+        Text(
+          text = toolbarTitle,
+          color = Color.White,
+          fontSize = 16.sp
+        )
+      }
+    },
+    rightIcons = {
       KurobaComposeIcon(
         modifier = Modifier
           .size(24.dp)
@@ -64,7 +63,7 @@ fun BoxScope.PostsScreenToolbar(
         colorBehindIcon = chanTheme.primaryColorCompose
       )
     }
-  }
+  )
 }
 
 sealed class ToolbarMenuItem {

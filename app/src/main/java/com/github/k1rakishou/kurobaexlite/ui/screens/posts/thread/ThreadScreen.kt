@@ -11,12 +11,12 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreenToolbar
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.ToolbarMenuItem
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ThreadScreen(
@@ -80,6 +80,7 @@ class ThreadScreen(
   private fun ThreadPostListScreen() {
     PostListContent(
       isCatalogMode = isCatalogScreen,
+      mainUiLayoutMode = globalConstants.mainUiLayoutMode(),
       postsScreenViewModel = threadScreenViewModel,
       onPostCellClicked = { postData ->
         // TODO(KurobaEx):

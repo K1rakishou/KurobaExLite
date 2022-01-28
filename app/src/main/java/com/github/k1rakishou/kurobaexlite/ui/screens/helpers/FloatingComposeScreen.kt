@@ -22,37 +22,30 @@ abstract class FloatingComposeScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
+  private val backgroundColor = Color(
+    red = 0f,
+    green = 0f,
+    blue = 0f,
+    alpha = 0.6f
+  )
 
   open val contentAlignment: Alignment = Alignment.Center
 
   @CallSuper
   @Composable
   final override fun Content() {
-    DisposableEffect(
-      key1 = Unit,
-      effect = {
-        val handler = object : NavigationRouter.OnBackPressHandler {
-          override fun onBackPressed(): Boolean {
-            return this@FloatingComposeScreen.onBackPressed()
-          }
-        }
-
-        navigationRouter.addOnBackPressedHandler(handler)
-
-        onDispose {
-          navigationRouter.removeOnBackPressedHandler(handler)
-        }
-      }
-    )
-
     val insets = LocalWindowInsets.current
-    val backgroundColor = remember { Color(red = 0f, green = 0f, blue = 0f, alpha = 0.6f) }
+
+    HandleBackPresses()
 
     Box(
       modifier = Modifier
         .fillMaxSize()
         .background(backgroundColor)
-        .kurobaClickable(hasClickIndication = false, onClick = { pop() })
+        .kurobaClickable(
+          hasClickIndication = false,
+          onClick = { pop() }
+        )
     ) {
       val horizPadding = remember {
         if (globalConstants.isTablet) {
@@ -83,6 +76,26 @@ abstract class FloatingComposeScreen(
         FloatingContent()
       }
     }
+  }
+
+  @Composable
+  private fun HandleBackPresses() {
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        val handler = object : NavigationRouter.OnBackPressHandler {
+          override fun onBackPressed(): Boolean {
+            return this@FloatingComposeScreen.onBackPressed()
+          }
+        }
+
+        navigationRouter.addOnBackPressedHandler(handler)
+
+        onDispose {
+          navigationRouter.removeOnBackPressedHandler(handler)
+        }
+      }
+    )
   }
 
   @Composable

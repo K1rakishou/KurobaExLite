@@ -1,10 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
 
-import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
+import com.github.k1rakishou.kurobaexlite.base.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
@@ -75,60 +75,20 @@ class HomeChildScreens(
     )
   }
 
-  private val threeWaySplitScreens by lazy {
-    return@lazy listOf<ComposeScreenWithToolbar>(
-      SplitScreenLayout(
-        componentActivity = componentActivity,
-        navigationRouter= navigationRouter.childRouter(SplitScreenLayout.SCREEN_KEY.key),
-        isStartScreen = true,
-        childScreensBuilder = { router ->
-          return@SplitScreenLayout listOf(
-            SplitScreenLayout.ChildScreen(
-              composeScreen = BookmarksScreen(
-                componentActivity = componentActivity,
-                navigationRouter = navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY.key),
-                isStartScreen = false
-              ),
-              weight = 0.2f
-            ),
-            SplitScreenLayout.ChildScreen(
-              composeScreen = CatalogScreen(
-                componentActivity = componentActivity,
-                navigationRouter = router.childRouter(CatalogScreen.SCREEN_KEY.key),
-                isStartScreen = false
-              ),
-              weight = 0.4f
-            ),
-            SplitScreenLayout.ChildScreen(
-              composeScreen = ThreadScreen(
-                componentActivity = componentActivity,
-                navigationRouter = router.childRouter(ThreadScreen.SCREEN_KEY.key),
-                isStartScreen = false
-              ),
-              weight = 0.4f
-            )
-          )
-        }
-      )
-    )
-  }
-
   fun getChildScreens(): List<ComposeScreenWithToolbar> {
-    return when (currentLayoutMode()) {
-      LayoutMode.Portrait -> portraitScreens
-      LayoutMode.TwoWaySplit -> twoWaySplitScreens
-      LayoutMode.ThreeWaySplit -> threeWaySplitScreens
+    return when (globalConstants.mainUiLayoutMode()) {
+      MainUiLayoutMode.Portrait -> portraitScreens
+      MainUiLayoutMode.TwoWaySplit -> twoWaySplitScreens
     }
   }
 
   fun getInitialScreenIndex(childScreens: List<ComposeScreen>): Int {
-    return when (currentLayoutMode()) {
-      LayoutMode.Portrait -> {
+    return when (globalConstants.mainUiLayoutMode()) {
+      MainUiLayoutMode.Portrait -> {
         childScreens
           .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
       }
-      LayoutMode.TwoWaySplit,
-      LayoutMode.ThreeWaySplit -> {
+      MainUiLayoutMode.TwoWaySplit -> {
         childScreens
           .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
       }
@@ -162,37 +122,11 @@ class HomeChildScreens(
   }
 
   fun mainScreenKey(): ScreenKey {
-    if (currentLayoutMode().isSplit) {
+    if (globalConstants.mainUiLayoutMode().isSplit) {
       return SplitScreenLayout.SCREEN_KEY
     }
 
     return CatalogScreen.SCREEN_KEY
-  }
-
-  private fun currentLayoutMode(): LayoutMode {
-    val isTablet = globalConstants.isTablet
-    val orientation = componentActivity.resources.configuration.orientation
-
-
-    if (isTablet) {
-      if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-        return LayoutMode.TwoWaySplit
-      }
-
-      return LayoutMode.ThreeWaySplit
-    } else {
-      if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-        return LayoutMode.Portrait
-      }
-
-      return LayoutMode.TwoWaySplit
-    }
-  }
-
-  enum class LayoutMode(val isSplit: Boolean) {
-    Portrait(false),
-    TwoWaySplit(true),
-    ThreeWaySplit(true)
   }
 
 }
