@@ -1,16 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenTransition
 
 @Composable
 fun RootRouterHost(
   rootNavigationRouter: NavigationRouter,
-  onBackPressed: () -> Boolean = { false },
-  onTransitionFinished: (NavigationRouter.ScreenUpdate) -> Unit = { }
+  onBackPressed: () -> Boolean = { false }
 ) {
   DisposableEffect(key1 = Unit) {
     val handler = object : NavigationRouter.OnBackPressHandler {
@@ -26,15 +22,29 @@ fun RootRouterHost(
     }
   }
 
-  val screenUpdateState by rootNavigationRouter.screenUpdatesFlow.collectAsState()
-  val screenUpdate = screenUpdateState
-    ?: return
+  val screenUpdateTransactionState by rootNavigationRouter.screenUpdatesFlow.collectAsState()
+  val screenUpdateTransaction = screenUpdateTransactionState ?: return
 
-  ScreenTransition(
-    screenUpdate = screenUpdate,
-    onTransitionFinished = onTransitionFinished
-  ) {
-    screenUpdate.screen.Content()
+  if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
+    for (secondaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {
+      key(secondaryScreenUpdate.screen.screenKey) {
+        ScreenTransition(
+          screenUpdate = secondaryScreenUpdate,
+          content = { secondaryScreenUpdate.screen.Content() }
+        )
+      }
+    }
+  }
+
+  if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
+    for (secondaryScreenUpdate in screenUpdateTransaction.floatingScreenUpdates) {
+      key(secondaryScreenUpdate.screen.screenKey) {
+        ScreenTransition(
+          screenUpdate = secondaryScreenUpdate,
+          content = { secondaryScreenUpdate.screen.Content() }
+        )
+      }
+    }
   }
 }
 
@@ -42,8 +52,7 @@ fun RootRouterHost(
 fun RouterHost(
   navigationRouter: NavigationRouter,
   defaultScreen: @Composable () -> Unit,
-  onBackPressed: () -> Boolean = { false },
-  onTransitionFinished: (NavigationRouter.ScreenUpdate) -> Unit = { }
+  onBackPressed: () -> Boolean = { false }
 ) {
   DisposableEffect(key1 = Unit) {
     val handler = object : NavigationRouter.OnBackPressHandler {
@@ -59,18 +68,33 @@ fun RouterHost(
     }
   }
 
-  val screenUpdateState by navigationRouter.screenUpdatesFlow.collectAsState()
-  val screenUpdate = screenUpdateState
+  val screenUpdateTransactionState by navigationRouter.screenUpdatesFlow.collectAsState()
+  val screenUpdateTransaction = screenUpdateTransactionState
 
-  if (screenUpdate == null) {
+  if (screenUpdateTransaction == null) {
     defaultScreen()
     return
   }
 
-  ScreenTransition(
-    screenUpdate = screenUpdate,
-    onTransitionFinished = onTransitionFinished
-  ) {
-    screenUpdate.screen.Content()
+  if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
+    for (secondaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {
+      key(secondaryScreenUpdate.screen.screenKey) {
+        ScreenTransition(
+          screenUpdate = secondaryScreenUpdate,
+          content = { secondaryScreenUpdate.screen.Content() }
+        )
+      }
+    }
+  }
+
+  if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
+    for (secondaryScreenUpdate in screenUpdateTransaction.floatingScreenUpdates) {
+      key(secondaryScreenUpdate.screen.screenKey) {
+        ScreenTransition(
+          screenUpdate = secondaryScreenUpdate,
+          content = { secondaryScreenUpdate.screen.Content() }
+        )
+      }
+    }
   }
 }

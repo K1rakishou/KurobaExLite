@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.navigation
 
 import android.content.Intent
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -10,58 +11,128 @@ class NavigationRouter(
   private val routerIndex: Int? = null,
   private val parentRouter: NavigationRouter?
 ) {
-  private val navigationStack = mutableListOf<ComposeScreen>()
+  private val navigationScreensStack = mutableListOf<ComposeScreen>()
+  private val floatingScreensStack = mutableListOf<FloatingComposeScreen>()
   private val childRouters = mutableMapOf<String, NavigationRouter>()
-
   private val backPressHandlers = mutableListOf<OnBackPressHandler>()
 
-  private val _screenUpdatesFlow = MutableStateFlow<ScreenUpdate?>(null)
-  val screenUpdatesFlow: StateFlow<ScreenUpdate?>
+  private val _screenUpdatesFlow = MutableStateFlow<ScreenUpdateTransaction?>(null)
+  val screenUpdatesFlow: StateFlow<ScreenUpdateTransaction?>
     get() = _screenUpdatesFlow.asStateFlow()
 
   private val _intentsFlow = MutableSharedFlow<Intent>(extraBufferCapacity = Channel.UNLIMITED)
   val intentsFlow: SharedFlow<Intent>
     get() = _intentsFlow.asSharedFlow()
 
-  fun pushScreenOnce(navigationScreen: ComposeScreen) {
-    val indexOfPrev = navigationStack
-      .indexOfFirst { screen -> screen.screenKey == navigationScreen.screenKey }
+  fun pushScreen(newComposeScreen: ComposeScreen) {
+    val indexOfPrev = navigationScreensStack
+      .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
       // Already added
       return
     }
 
-    navigationStack.add(navigationScreen)
-    _screenUpdatesFlow.value = ScreenUpdate.Push(navigationScreen)
+    val navigationScreenUpdates = combineScreenUpdates(
+      oldScreens = navigationScreensStack,
+      newScreenUpdate = ScreenUpdate.Push(newComposeScreen)
+    )
+    val floatingScreenUpdates = floatingScreensStack
+      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
+
+    navigationScreensStack.add(newComposeScreen)
+    logcat.logcat(tag = "ScreenTransition") { "pushScreen(${newComposeScreen.screenKey.key})" }
+
+    _screenUpdatesFlow.value = ScreenUpdateTransaction(
+      navigationScreenUpdates = navigationScreenUpdates,
+      floatingScreenUpdates = floatingScreenUpdates
+    )
   }
 
-  fun pushOrReplaceTopScreen(navigationScreen: ComposeScreen) {
+  fun presentScreen(floatingComposeScreen: FloatingComposeScreen) {
+    if (parentRouter != null) {
+      parentRouter.presentScreen(floatingComposeScreen)
+      return
+    }
 
+    val indexOfPrev = floatingScreensStack
+      .indexOfFirst { screen -> screen.screenKey == floatingComposeScreen.screenKey }
+
+    if (indexOfPrev >= 0) {
+      // Already added
+      return
+    }
+
+    val navigationScreenUpdates = navigationScreensStack
+      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
+    val floatingScreenUpdates = combineScreenUpdates(
+      oldScreens = floatingScreensStack,
+      newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.In)
+    )
+
+    floatingScreensStack.add(floatingComposeScreen)
+    logcat.logcat(tag = "ScreenTransition") { "presentScreen(${floatingComposeScreen.screenKey.key})" }
+
+    _screenUpdatesFlow.value = ScreenUpdateTransaction(
+      navigationScreenUpdates = navigationScreenUpdates,
+      floatingScreenUpdates = floatingScreenUpdates
+    )
   }
 
-  fun popTopScreen(): Boolean {
-    val removedScreen = navigationStack.removeLastOrNull()
+  fun stopPresenting(): Boolean {
+    if (parentRouter != null) {
+      return parentRouter.stopPresenting()
+    }
+
+    val floatingComposeScreen = floatingScreensStack.removeLastOrNull()
       ?: return false
 
-    _screenUpdatesFlow.value = ScreenUpdate.Pop(removedScreen)
+    val navigationScreenUpdates = navigationScreensStack
+      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
+    val floatingScreenUpdates = combineScreenUpdates(
+      oldScreens = floatingScreensStack,
+      newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.Out)
+    )
+
+    logcat.logcat(tag = "ScreenTransition") { "stopPresenting(${floatingComposeScreen.screenKey.key})" }
+
+    _screenUpdatesFlow.value = ScreenUpdateTransaction(
+      navigationScreenUpdates = navigationScreenUpdates,
+      floatingScreenUpdates = floatingScreenUpdates
+    )
+
     return true
   }
 
-  fun popUntil(predicate: (ComposeScreen) -> Boolean) {
-
+  private fun combineScreenUpdates(
+    oldScreens: List<ComposeScreen>,
+    newScreenUpdate: ScreenUpdate
+  ): List<ScreenUpdate> {
+    return oldScreens.map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) } + newScreenUpdate
   }
 
-  fun topScreen(): ComposeScreen? {
-    return navigationStack.lastOrNull()
+  fun topNavigationScreen(): ComposeScreen? {
+    return navigationScreensStack.lastOrNull()
   }
 
-  fun screenByKey(screenKey: ScreenKey): ComposeScreen {
-    return navigationStack.last { navigationScreen -> navigationScreen.screenKey == screenKey }
+  fun topFloatingScreen(): ComposeScreen? {
+    return floatingScreensStack.lastOrNull()
+  }
+
+  fun screenByKey(screenKey: ScreenKey): ComposeScreen? {
+    val screen = navigationScreensStack
+      .lastOrNull { navigationScreen -> navigationScreen.screenKey == screenKey }
+
+    if (screen != null) {
+      return screen
+    }
+
+    return floatingScreensStack
+      .lastOrNull { navigationScreen -> navigationScreen.screenKey == screenKey }
   }
 
   fun hasScreens(): Boolean {
-    return navigationStack.isNotEmpty()
+    return navigationScreensStack.isNotEmpty() || floatingScreensStack.isNotEmpty()
   }
 
   fun childRouter(key: String, routerIndex: Int? = null): NavigationRouter {
@@ -92,21 +163,19 @@ class NavigationRouter(
       return false
     }
 
-    for (backPressHandler in backPressHandlers) {
-      if (backPressHandler.onBackPressed()) {
-        return true
+    if (childRouters.isNotEmpty()) {
+      val routersSorted = childRouters.entries
+        .sortedBy { (_, navigationRouter) -> navigationRouter.routerIndex ?: 0 }
+
+      for ((_, navigationRouter) in routersSorted) {
+        if (navigationRouter.onBackPressed()) {
+          return true
+        }
       }
     }
 
-    if (childRouters.isEmpty()) {
-      return false
-    }
-
-    val routersSorted = childRouters.entries
-      .sortedBy { (_, navigationRouter) -> navigationRouter.routerIndex ?: 0 }
-
-    for ((_, navigationRouter) in routersSorted) {
-      if (navigationRouter.onBackPressed()) {
+    for (backPressHandler in backPressHandlers) {
+      if (backPressHandler.onBackPressed()) {
         return true
       }
     }
@@ -114,8 +183,12 @@ class NavigationRouter(
     return false
   }
 
-  sealed class ScreenUpdate(val screen: ComposeScreen) {
+  data class ScreenUpdateTransaction(
+    val navigationScreenUpdates: List<ScreenUpdate>,
+    val floatingScreenUpdates: List<ScreenUpdate>
+  )
 
+  sealed class ScreenUpdate(val screen: ComposeScreen) {
     fun isPop(): Boolean {
       return when (this) {
         is Pop -> true
@@ -123,17 +196,43 @@ class NavigationRouter(
       }
     }
 
-    class Replace(screen: ComposeScreen) : ScreenUpdate(screen)
-    class Push(screen: ComposeScreen) : ScreenUpdate(screen)
-    class Pop(screen: ComposeScreen) : ScreenUpdate(screen)
+    data class Set(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
+      override fun toString(): String = "Set(key=${composeScreen.screenKey.key})"
+    }
+    data class Push(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
+      override fun toString(): String = "Push(key=${composeScreen.screenKey.key})"
+    }
+    data class Pop(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
+      override fun toString(): String = "Pop(key=${composeScreen.screenKey.key})"
+    }
+    data class Fade(val composeScreen: ComposeScreen, val fadeType: FadeType) : ScreenUpdate(composeScreen) {
+      override fun toString(): String = "Fade(key=${composeScreen.screenKey.key}, fadeType=$fadeType)"
+    }
+
+    enum class FadeType {
+      In,
+      Out
+    }
+
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (javaClass != other?.javaClass) return false
+
+      other as ScreenUpdate
+
+      if (screen != other.screen) return false
+
+      return true
+    }
+
+    override fun hashCode(): Int {
+      return screen.hashCode()
+    }
+
   }
 
   interface OnBackPressHandler {
     fun onBackPressed(): Boolean
-  }
-
-  companion object {
-    private const val DEFAULT_ROUTER_KEY = "default_router"
   }
 
 }

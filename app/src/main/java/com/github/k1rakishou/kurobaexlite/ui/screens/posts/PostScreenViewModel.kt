@@ -15,7 +15,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import kotlinx.coroutines.*
-import logcat.asLog
 import logcat.logcat
 import java.util.*
 
@@ -65,8 +64,8 @@ abstract class PostScreenViewModel(
       return
     }
 
-    val chunkSize = (postDataList.size / globalConstants.coresCount.coerceAtLeast(2))
-      .coerceAtLeast(postDataList.size)
+    val chunksCount = globalConstants.coresCount.coerceAtLeast(2)
+    val chunkSize = (postDataList.size / chunksCount).coerceAtLeast(chunksCount)
     val chanTheme = themeEngine.chanTheme
 
     currentParseJob = scope.launch(Dispatchers.Default) {
@@ -77,41 +76,32 @@ abstract class PostScreenViewModel(
 
       try {
         val startTime = SystemClock.elapsedRealtime()
-        logcat { "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts... (chunkSize=$chunkSize)" }
+        logcat {
+          "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts... " +
+            "(chunksCount=$chunksCount, chunkSize=$chunkSize)"
+        }
 
         supervisorScope {
-          val results = postDataList
+          postDataList
             .bidirectionalSequenceIndexed(startPosition = 0)
             .chunked(chunkSize)
             .mapIndexed { chunkIndex, postDataListChunk ->
               return@mapIndexed async(Dispatchers.IO) {
+                logcat {
+                  "parseRemainingPostsAsync() running chunk ${chunkIndex} with " +
+                    "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
+                }
+
                 postDataListChunk.forEachIndexed { originalPostIndexInChunk, postDataIndexed ->
                   val postData = postDataIndexed.value
-                  val originalPostIndex = postDataIndexed.index
-
-                  if (LOG_EACH_POST_PARSE) {
-                    logcat {
-                      "parseRemainingPostsAsync() " +
-                        "thread=${Thread.currentThread().name}, " +
-                        "chunkIndex=$chunkIndex, " +
-                        "originalPostIndexInChunk=$originalPostIndexInChunk, " +
-                        "originalPostIndex=$originalPostIndex, " +
-                        "postNo=${postData.postNo}"
-                    }
-                  }
-
                   calculatePostData(postData, chanTheme, false)
                 }
+
+                logcat { "parseRemainingPostsAsync() chunk ${chunkIndex} processing finished" }
               }
             }
-
-          results.forEach { deferred ->
-            try {
-              deferred.await()
-            } catch (error: Throwable) {
-              logcatError { "deferred.await() threw ${error.asLog()}" }
-            }
-          }
+            .toList()
+            .awaitAll()
         }
 
         val deltaTime = SystemClock.elapsedRealtime() - startTime
@@ -179,11 +169,5 @@ abstract class PostScreenViewModel(
 
   interface PostScreenState {
     fun postDataAsync(): AsyncData<List<PostData>>
-  }
-
-  companion object {
-    private val EMPTY_ANNOTATED_STRING = AnnotatedString("")
-
-    private const val LOG_EACH_POST_PARSE = false
   }
 }

@@ -45,7 +45,7 @@ class KurobaExLiteApplication : Application() {
 
     modules += module {
       single { ProxiedOkHttpClient() }
-      single { GlobalConstants() }
+      single { GlobalConstants(this@KurobaExLiteApplication) }
       single { Moshi.Builder().build() }
 
       single { PostCommentParser() }

@@ -31,7 +31,7 @@ class CatalogScreenViewModel(
   }
 
   suspend fun loadCatalog(
-    catalogDescriptor: CatalogDescriptor = CatalogDescriptor(Chan4.SITE_KEY, "a"),
+    catalogDescriptor: CatalogDescriptor = CatalogDescriptor(Chan4.SITE_KEY, "vg"),
     forced: Boolean = false
   ) {
     if (!forced && catalogScreenState.currentCatalogDescriptorOrNull == catalogDescriptor) {

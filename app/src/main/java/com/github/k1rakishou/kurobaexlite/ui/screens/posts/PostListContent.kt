@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -62,9 +63,9 @@ internal fun PostListContent(
         AsyncData.Empty -> {
           item(key = "empty_indicator") {
             val text = if (isCatalogMode) {
-              "No catalog selected"
+              stringResource(R.string.post_list_no_catalog_selected)
             } else {
-              "No thread selected"
+              stringResource(R.string.post_list_no_thread_selected)
             }
 
             KurobaComposeText(
@@ -94,7 +95,7 @@ internal fun PostListContent(
                 .fillParentMaxSize()
                 .padding(8.dp),
               errorMessage = errorMessage,
-              buttonText = "Reload",
+              buttonText = stringResource(R.string.post_list_reload),
               onButtonClicked = { postsScreenViewModel.reload() }
             )
           }

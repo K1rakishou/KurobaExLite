@@ -43,14 +43,7 @@ class MainScreen(
           composeScreenBuilder = { HomeScreen(componentActivity, navigationRouter) }
         )
 
-        RootRouterHost(
-          rootNavigationRouter = navigationRouter,
-          onTransitionFinished = { executedScreenUpdate ->
-            if (executedScreenUpdate.isPop() && !navigationRouter.hasScreens()) {
-              componentActivity.finish()
-            }
-          }
-        )
+        RootRouterHost(navigationRouter)
       }
     }
   }

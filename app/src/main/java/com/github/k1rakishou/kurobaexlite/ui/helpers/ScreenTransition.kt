@@ -14,26 +14,60 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 @Composable
 fun ScreenTransition(
   screenUpdate: NavigationRouter.ScreenUpdate,
-  onTransitionFinished: (NavigationRouter.ScreenUpdate) -> Unit,
   content: @Composable () -> Unit
 ) {
-  var scaleAnimated by remember { mutableStateOf(0f) }
-  var alphaAnimated by remember { mutableStateOf(0f) }
+  val scaleInitial = when (screenUpdate) {
+    is NavigationRouter.ScreenUpdate.Push -> .85f
+    is NavigationRouter.ScreenUpdate.Pop -> 1f
+    is NavigationRouter.ScreenUpdate.Fade -> 1f
+    is NavigationRouter.ScreenUpdate.Set -> 1f
+  }
+
+  val alphaInitial = when (screenUpdate) {
+    is NavigationRouter.ScreenUpdate.Push -> 0f
+    is NavigationRouter.ScreenUpdate.Pop -> 1f
+    is NavigationRouter.ScreenUpdate.Fade -> {
+      when (screenUpdate.fadeType) {
+        NavigationRouter.ScreenUpdate.FadeType.In -> 0f
+        NavigationRouter.ScreenUpdate.FadeType.Out -> 1f
+      }
+    }
+    is NavigationRouter.ScreenUpdate.Set -> 1f
+  }
+
+  val canRenderInitial = when (screenUpdate) {
+    is NavigationRouter.ScreenUpdate.Push -> false
+    is NavigationRouter.ScreenUpdate.Pop -> true
+    is NavigationRouter.ScreenUpdate.Fade -> {
+      when (screenUpdate.fadeType) {
+        NavigationRouter.ScreenUpdate.FadeType.In -> false
+        NavigationRouter.ScreenUpdate.FadeType.Out -> true
+      }
+    }
+    is NavigationRouter.ScreenUpdate.Set -> true
+  }
+
+  var scaleAnimated by remember { mutableStateOf(scaleInitial) }
+  var alphaAnimated by remember { mutableStateOf(alphaInitial) }
+  var canRender by remember { mutableStateOf(canRenderInitial) }
+
+  val animationDuration = 250
 
   LaunchedEffect(
     key1 = screenUpdate,
     block = {
       when (screenUpdate) {
         is NavigationRouter.ScreenUpdate.Push -> {
-          val scaleStart = .7f
+          val scaleStart = .85f
           val scaleEnd = 1f
+          canRender = true
 
           animate(
             initialValue = 0f,
             targetValue = 1f,
             initialVelocity = 0f,
             animationSpec = FloatTweenSpec(
-              duration = 250,
+              duration = animationDuration,
               delay = 0,
               easing = FastOutSlowInEasing
             )
@@ -44,14 +78,14 @@ fun ScreenTransition(
         }
         is NavigationRouter.ScreenUpdate.Pop -> {
           val scaleStart = 1f
-          val scaleEnd = .7f
+          val scaleEnd = .85f
 
           animate(
             initialValue = 1f,
             targetValue = 0f,
             initialVelocity = 0f,
             animationSpec = FloatTweenSpec(
-              duration = 250,
+              duration = animationDuration,
               delay = 0,
               easing = FastOutSlowInEasing
             )
@@ -59,38 +93,62 @@ fun ScreenTransition(
             scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
             alphaAnimated = animationProgress
           }
+
+          canRender = false
         }
-        is NavigationRouter.ScreenUpdate.Replace -> {
+        is NavigationRouter.ScreenUpdate.Fade -> {
           scaleAnimated = 1f
 
+          val initialValue = when (screenUpdate.fadeType) {
+            NavigationRouter.ScreenUpdate.FadeType.In -> 0f
+            NavigationRouter.ScreenUpdate.FadeType.Out -> 1f
+          }
+
+          val targetValue = when (screenUpdate.fadeType) {
+            NavigationRouter.ScreenUpdate.FadeType.In -> 1f
+            NavigationRouter.ScreenUpdate.FadeType.Out -> 0f
+          }
+
+          canRender = true
+
           animate(
-            initialValue = 1f,
-            targetValue = 0f,
+            initialValue = initialValue,
+            targetValue = targetValue,
             initialVelocity = 0f,
             animationSpec = FloatTweenSpec(
-              duration = 250,
+              duration = animationDuration,
               delay = 0,
               easing = FastOutSlowInEasing
             )
           ) { animationProgress, _ ->
             alphaAnimated = animationProgress
           }
+
+          canRender = when (screenUpdate.fadeType) {
+            NavigationRouter.ScreenUpdate.FadeType.In -> true
+            NavigationRouter.ScreenUpdate.FadeType.Out -> false
+          }
+        }
+        is NavigationRouter.ScreenUpdate.Set -> {
+          scaleAnimated = 1f
+          alphaAnimated = 1f
+          canRender = true
         }
       }
-
-      onTransitionFinished(screenUpdate)
     }
   )
 
-  Box(
-    modifier = Modifier
-      .fillMaxSize()
-      .graphicsLayer(
-        alpha = alphaAnimated,
-        scaleX = scaleAnimated,
-        scaleY = scaleAnimated
-      )
-  ) {
-    content()
+  if (canRender) {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .graphicsLayer(
+          alpha = alphaAnimated,
+          scaleX = scaleAnimated,
+          scaleY = scaleAnimated
+        )
+    ) {
+      content()
+    }
   }
 }

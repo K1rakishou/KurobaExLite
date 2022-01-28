@@ -14,8 +14,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 class SplitScreenLayout(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
+  isStartScreen: Boolean,
   private val childScreensBuilder: (NavigationRouter) -> List<ChildScreen>
-) : ComposeScreenWithToolbar(componentActivity, navigationRouter) {
+) : HomeNavigationScreen(componentActivity, navigationRouter, isStartScreen) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
 

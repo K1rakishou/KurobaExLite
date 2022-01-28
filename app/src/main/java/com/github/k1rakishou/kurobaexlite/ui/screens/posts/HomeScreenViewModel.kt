@@ -6,24 +6,32 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import java.util.concurrent.atomic.AtomicReference
 
 class HomeScreenViewModel : BaseViewModel() {
-  private val _currentPage = MutableSharedFlow<CurrentPage>(
-    replay = 1,
-    extraBufferCapacity = Channel.UNLIMITED
-  )
+  private val currentPageValue = AtomicReference<CurrentPage?>()
+  private val _currentPageFlow = MutableSharedFlow<CurrentPage>(extraBufferCapacity = Channel.UNLIMITED)
 
   val currentPageFlow: SharedFlow<CurrentPage>
-    get() = _currentPage.asSharedFlow()
+    get() = _currentPageFlow.asSharedFlow()
   val currentPage: CurrentPage?
-    get() = _currentPage.replayCache.firstOrNull()
+    get() = currentPageValue.get()
 
-  fun updateCurrentPage(screenKey: ScreenKey, animate: Boolean) {
+  fun updateCurrentPage(
+    screenKey: ScreenKey,
+    animate: Boolean = true,
+    notifyListeners: Boolean = true
+  ) {
     if (screenKey == currentPage?.screenKey) {
       return
     }
 
-    _currentPage.tryEmit(CurrentPage(screenKey, animate))
+    val newCurrentPage = CurrentPage(screenKey, animate)
+    currentPageValue.set(newCurrentPage)
+
+    if (notifyListeners) {
+      _currentPageFlow.tryEmit(newCurrentPage)
+    }
   }
 
   data class CurrentPage(

@@ -2,6 +2,10 @@
     <string name="app_name">KurobaExLite</string>
 
     <string name="posts_screen_processing_posts">Processing posts…</string>
-    <string name="toolbar_loading_title">Loading...</string>
+    <string name="toolbar_loading_title">Loading…</string>
     <string name="toolbar_loading_subtitle">Error</string>
+    <string name="post_list_no_catalog_selected">No catalog selected</string>
+    <string name="post_list_no_thread_selected">No thread selected</string>
+    <string name="post_list_reload">Reload</string>
+    <string name="catalog_toolbar_open_thread_by_identifier">Open thread by any identifier</string>
 </resources>

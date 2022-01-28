@@ -1,6 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -14,7 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import java.util.*
 
@@ -247,6 +252,7 @@ fun KurobaComposeDivider(modifier: Modifier = Modifier) {
 @OptIn(ExperimentalFoundationApi::class)
 fun Modifier.kurobaClickable(
   enabled: Boolean = true,
+  hasClickIndication: Boolean = true,
   bounded: Boolean = true,
   onLongClick: (() -> Unit)? = null,
   onClick: (() -> Unit)? = null
@@ -258,18 +264,24 @@ fun Modifier.kurobaClickable(
   return composed {
     val chanTheme = LocalChanTheme.current
 
-    val color = remember(key1 = chanTheme) {
-      if (chanTheme.isLightTheme) {
-        Color(0x40000000)
-      } else {
-        Color(0x40ffffff)
+    val indication = if (enabled && hasClickIndication) {
+      val color = remember(key1 = chanTheme) {
+        if (chanTheme.isLightTheme) {
+          Color(0x40000000)
+        } else {
+          Color(0x40ffffff)
+        }
       }
+
+      rememberRipple(bounded = bounded, color = color)
+    } else {
+      null
     }
 
     return@composed then(
       Modifier.combinedClickable(
         enabled = enabled,
-        indication = rememberRipple(bounded = bounded, color = color),
+        indication = indication,
         interactionSource = remember { MutableInteractionSource() },
         onLongClick = onLongClick,
         onClick = onClick ?: defaultNoopClickCallback
@@ -294,4 +306,27 @@ fun KurobaComposeCardView(
   ) {
     content()
   }
+}
+
+@Composable
+fun KurobaComposeIcon(
+  modifier: Modifier = Modifier,
+  @DrawableRes drawableId: Int,
+  colorBehindIcon: Color? = null
+) {
+  val chanTheme = LocalChanTheme.current
+  val tintColor = remember(key1 = chanTheme) {
+    if (colorBehindIcon == null) {
+      Color(ThemeEngine.resolveDrawableTintColor(chanTheme))
+    } else {
+      Color(ThemeEngine.resolveDrawableTintColor(ThemeEngine.isDarkColor(colorBehindIcon.value)))
+    }
+  }
+
+  Image(
+    modifier = modifier,
+    painter = painterResource(id = drawableId),
+    colorFilter = ColorFilter.tint(tintColor),
+    contentDescription = null
+  )
 }
