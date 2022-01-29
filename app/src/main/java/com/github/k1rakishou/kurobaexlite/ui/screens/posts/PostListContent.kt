@@ -97,7 +97,7 @@ internal fun PostListContent(
                 .fillParentMaxSize()
                 .padding(8.dp),
               errorMessage = errorMessage,
-              buttonText = stringResource(R.string.post_list_reload),
+              buttonText = stringResource(R.string.reload),
               onButtonClicked = { postsScreenViewModel.reload() }
             )
           }

@@ -2,46 +2,64 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
 import android.os.SystemClock
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.*
-import com.github.k1rakishou.kurobaexlite.model.ChanDataSource
+import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import logcat.asLog
 import logcat.logcat
 
 class CatalogScreenViewModel(
-  private val chanDataSource: ChanDataSource,
+  private val chanThreadManager: ChanThreadManager,
   globalConstants: GlobalConstants,
   postCommentParser: PostCommentParser,
   postCommentApplier: PostCommentApplier,
   themeEngine: ThemeEngine
 ) : PostScreenViewModel(globalConstants, postCommentParser, postCommentApplier, themeEngine) {
   private val catalogScreenState = CatalogScreenState()
+  private var loadCatalogJob: Job? = null
 
   override val postScreenState: PostScreenState = catalogScreenState
 
   override fun reload() {
-    // TODO(KurobaEx):
+    val currentlyOpenedCatalog = chanThreadManager.currentlyOpenedCatalog
+
+    loadCatalog(
+      catalogDescriptor = currentlyOpenedCatalog,
+      forced = true
+    )
   }
 
-  suspend fun loadCatalog(
-    catalogDescriptor: CatalogDescriptor = CatalogDescriptor(Chan4.SITE_KEY, "vg"),
+  fun loadCatalog(
+    catalogDescriptor: CatalogDescriptor?,
     forced: Boolean = false
   ) {
-    if (!forced && catalogScreenState.currentCatalogDescriptorOrNull == catalogDescriptor) {
+    loadCatalogJob?.cancel()
+    loadCatalogJob = null
+
+    loadCatalogJob = viewModelScope.launch { loadCatalogInternal(catalogDescriptor, forced) }
+  }
+
+  private suspend fun loadCatalogInternal(
+    catalogDescriptor: CatalogDescriptor?,
+    forced: Boolean = false
+  ) {
+    if (!forced && chanThreadManager.currentlyOpenedCatalog == catalogDescriptor) {
       return
     }
 
     val startTime = SystemClock.elapsedRealtime()
     catalogScreenState.catalogThreadsAsync = AsyncData.Loading
 
-    val catalogDataResult = chanDataSource.loadCatalog(catalogDescriptor)
+    val catalogDataResult = chanThreadManager.loadCatalog(catalogDescriptor)
     if (catalogDataResult.isFailure) {
       val error = catalogDataResult.exceptionOrThrow()
       logcatError { "loadCatalog() error=${error.asLog()}" }
@@ -51,6 +69,11 @@ class CatalogScreenViewModel(
     }
 
     val catalogData = catalogDataResult.unwrap()
+    if (catalogData == null || catalogDescriptor == null) {
+      catalogScreenState.catalogThreadsAsync = AsyncData.Empty
+      return
+    }
+
     if (catalogData.catalogThreads.isEmpty()) {
       val error = CatalogDisplayException("Catalog /${catalogDescriptor}/ has no posts")
       catalogScreenState.catalogThreadsAsync = AsyncData.Error(error)
@@ -84,9 +107,6 @@ class CatalogScreenViewModel(
     private val catalogThreadsAsyncState: MutableState<AsyncData<CatalogThreadsState>> = mutableStateOf(AsyncData.Empty)
   ) : PostScreenState {
     internal var catalogThreadsAsync by catalogThreadsAsyncState
-
-    val currentCatalogDescriptorOrNull: CatalogDescriptor?
-      get() = (catalogThreadsAsync as? AsyncData.Data)?.data?.catalogDescriptor
 
     override fun postDataAsync(): AsyncData<List<PostData>> {
       return when (val asyncDataStateValue = catalogThreadsAsyncState.value) {

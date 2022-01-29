@@ -7,14 +7,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
-import com.github.k1rakishou.kurobaexlite.ui.screens.FloatingMenuScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import logcat.logcat
@@ -31,7 +32,12 @@ class ThreadScreen(
   override val isCatalogScreen: Boolean = false
 
   private val toolbarMenuItems: List<ToolbarMenuItem> by lazy {
-    listOf()
+    listOf(
+      ToolbarMenuItem.TextMenu(
+        menuItemId = ACTION_RELOAD,
+        textId = R.string.reload
+      )
+    )
   }
 
   @Composable
@@ -92,9 +98,15 @@ class ThreadScreen(
 
   private fun processClickedToolbarMenuItem(menuItem: ToolbarMenuItem) {
     logcat { "thread processClickedToolbarMenuItem id=${menuItem.menuItemId}" }
+
+    when (menuItem.menuItemId) {
+      ACTION_RELOAD -> threadScreenViewModel.reload()
+    }
   }
 
   companion object {
     val SCREEN_KEY = ScreenKey("ThreadScreen")
+
+    private const val ACTION_RELOAD = 0
   }
 }

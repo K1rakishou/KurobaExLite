@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
+package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope

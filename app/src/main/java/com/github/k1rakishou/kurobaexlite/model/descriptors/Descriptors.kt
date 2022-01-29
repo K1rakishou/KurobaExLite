@@ -58,6 +58,20 @@ data class ThreadDescriptor(
     }
   }
 
+  companion object {
+    fun create(siteKey: SiteKey, boardCode: String, threadNo: Long): ThreadDescriptor {
+      require(threadNo > 0L) { "Bad threadNo: $threadNo" }
+
+      return ThreadDescriptor(
+        catalogDescriptor = CatalogDescriptor(
+          siteKey = siteKey,
+          boardCode = boardCode
+        ),
+        threadNo = threadNo
+      )
+    }
+  }
+
 }
 
 @Parcelize

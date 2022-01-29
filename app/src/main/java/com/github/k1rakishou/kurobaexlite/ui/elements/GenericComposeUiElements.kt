@@ -1,17 +1,20 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,8 +22,11 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -240,13 +246,30 @@ fun KurobaComposeTextBarButton(
 }
 
 @Composable
-fun KurobaComposeDivider(modifier: Modifier = Modifier) {
+fun KurobaComposeDivider(
+  modifier: Modifier = Modifier,
+  thickness: Dp = 1.dp,
+  startIndent: Dp = 0.dp
+) {
   val chanTheme = LocalChanTheme.current
 
-  Divider(
-    modifier = modifier,
-    color = chanTheme.dividerColorCompose,
-    thickness = 1.dp
+  val indentMod = if (startIndent.value != 0f) {
+    Modifier.padding(start = startIndent)
+  } else {
+    Modifier
+  }
+
+  val targetThickness = if (thickness == Dp.Hairline) {
+    (1f / LocalDensity.current.density).dp
+  } else {
+    thickness
+  }
+
+  Box(
+    modifier
+      .then(indentMod)
+      .height(targetThickness)
+      .background(color = chanTheme.dividerColorCompose)
   )
 }
 
@@ -342,6 +365,62 @@ fun Modifier.consumeClicks(consume: Boolean = true): Modifier {
       interactionSource = remember { MutableInteractionSource() },
       indication = null,
       onClick = { /** no-op */ }
+    )
+  }
+}
+
+
+@Composable
+fun KurobaComposeTextField(
+  value: String,
+  modifier: Modifier = Modifier,
+  onValueChange: (String) -> Unit,
+  maxLines: Int = Int.MAX_VALUE,
+  singleLine: Boolean = false,
+  keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+  keyboardActions: KeyboardActions = KeyboardActions(),
+  textStyle: TextStyle = LocalTextStyle.current,
+  enabled: Boolean = true,
+  label: @Composable (() -> Unit)? = null
+) {
+  val chanTheme = LocalChanTheme.current
+  val view = LocalView.current
+
+  DisposableEffect(
+    key1 = view,
+    effect = {
+      if (view.isAttachedToWindow) {
+        view.requestApplyInsets()
+      }
+
+      onDispose {
+        if (view.isAttachedToWindow) {
+          view.requestApplyInsets()
+        }
+      }
+    }
+  )
+
+  val textSelectionColors = remember(key1 = chanTheme.accentColorCompose) {
+    TextSelectionColors(
+      handleColor = chanTheme.accentColorCompose,
+      backgroundColor = chanTheme.accentColorCompose.copy(alpha = 0.4f)
+    )
+  }
+
+  CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
+    TextField(
+      modifier = modifier,
+      enabled = enabled,
+      value = value,
+      label = label,
+      onValueChange = onValueChange,
+      maxLines = maxLines,
+      singleLine = singleLine,
+      keyboardOptions = keyboardOptions,
+      keyboardActions = keyboardActions,
+      colors = chanTheme.textFieldColors(),
+      textStyle = textStyle
     )
   }
 }

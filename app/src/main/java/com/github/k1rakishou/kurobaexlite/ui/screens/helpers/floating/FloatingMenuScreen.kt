@@ -1,6 +1,5 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens
+package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating
 
-import android.graphics.Point
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,15 +12,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeCardView
+import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.elements.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.FloatingComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 class FloatingMenuScreen(
   componentActivity: ComponentActivity,
@@ -30,94 +27,81 @@ class FloatingMenuScreen(
   private val onMenuItemClicked: (ToolbarMenuItem) -> Unit
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
 
-  override val screenKey: ScreenKey = SCREEN_KEY
-
   private val lastTouchPosition = uiInfoManager.lastTouchPosition
+  private val customAlignment by lazy {
+    return@lazy Alignment { size, space, _ ->
+      val availableWidth = uiInfoManager.maxParentWidth
+      val availableHeight = uiInfoManager.maxParentHeight
+
+      val biasX = (lastTouchPosition.x.toFloat() / availableWidth.toFloat()).coerceIn(0f, 1f)
+      val biasY = (lastTouchPosition.y.toFloat() / availableHeight.toFloat()).coerceIn(0f, 1f)
+
+      val horizPadding = horizPaddingPx.toInt()
+      val vertPadding = vertPaddingPx.toInt()
+
+      val offsetX = ((space.width - size.width).toFloat() * biasX).toInt()
+        .coerceIn(horizPadding, availableWidth - horizPadding)
+      val offsetY = ((space.height - size.height).toFloat() * biasY).toInt()
+        .coerceIn(vertPadding, availableHeight - vertPadding)
+
+      return@Alignment IntOffset(x = offsetX, y = offsetY)
+    }
+  }
+
+  override val screenKey: ScreenKey = SCREEN_KEY
+  override val contentAlignment: Alignment = customAlignment
 
   @Composable
-  override fun BoxScope.FloatingContent() {
-    val isTablet = uiInfoManager.isTablet
-    val maxWidthDp = with(LocalDensity.current) {
-      val maxWidth = if (isTablet) {
-        uiInfoManager.maxParentWidth - (uiInfoManager.maxParentWidth / 4)
+  override fun FloatingContent() {
+    val availableWidth = with(LocalDensity.current) {
+      if (uiInfoManager.isPortraitOrientation) {
+        (maxAvailableWidthPx() / 1.5f).toDp()
       } else {
-        uiInfoManager.maxParentWidth
+        (maxAvailableWidthPx() / 2f).toDp()
       }
-
-      return@with maxWidth.toDp()
     }
 
-    val maxHeightDp = with(LocalDensity.current) {
-      val maxHeight = if (isTablet) {
-        uiInfoManager.maxParentHeight - (uiInfoManager.maxParentHeight / 4)
-      } else {
-        uiInfoManager.maxParentHeight
-      }
+    LazyColumn(
+      modifier = Modifier.width(availableWidth),
+      content = {
+        items(
+          count = menuItems.size,
+          key = { index -> menuItems.get(index).menuItemId }
+        ) { index ->
+          val menuItem = menuItems.get(index)
 
-      return@with maxHeight.toDp()
-    }
-
-    KurobaComposeCardView(
-      modifier = Modifier
-        .wrapContentSize()
-        .widthIn(max = maxWidthDp)
-        .heightIn(max = maxHeightDp)
-        .align(alignment = { size, space, _ ->
-          val availableWidth = uiInfoManager.maxParentWidth
-          val availableHeight = uiInfoManager.maxParentHeight
-
-          calculateAlignment(size, space, availableWidth, availableHeight, lastTouchPosition)
-        })
-    ) {
-      LazyColumn(
-        content = {
-          items(
-            count = menuItems.size,
-            key = { index -> menuItems.get(index).menuItemId }
-          ) { index ->
-            val menuItem = menuItems.get(index)
-
+          Column(
+            modifier = Modifier
+              .wrapContentHeight()
+              .fillMaxWidth()
+              .kurobaClickable(
+                onClick = {
+                  onMenuItemClicked(menuItem)
+                  stopPresenting()
+                }
+              )
+          ) {
             Box(
               modifier = Modifier
-                .wrapContentSize()
-                .defaultMinSize(minWidth = 256.dp, minHeight = 32.dp)
-                .kurobaClickable(
-                  onClick = {
-                    onMenuItemClicked(menuItem)
-                    pop()
-                  }
-                )
-                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .heightIn(min = 32.dp)
             ) {
               when (menuItem) {
                 is ToolbarMenuItem.TextMenu -> BuildTextMenuItem(menuItem)
               }
             }
+
+            if (index < menuItems.lastIndex) {
+              KurobaComposeDivider(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .padding(horizontal = 6.dp)
+              )
+            }
           }
         }
-      )
-    }
-  }
-
-  private fun calculateAlignment(
-    size: IntSize,
-    space: IntSize,
-    availableWidth: Int,
-    availableHeight: Int,
-    lastTouchPosition: Point
-  ): IntOffset {
-    val biasX = (lastTouchPosition.x.toFloat() / availableWidth.toFloat()).coerceIn(0f, 1f)
-    val biasY = (lastTouchPosition.y.toFloat() / availableHeight.toFloat()).coerceIn(0f, 1f)
-
-    val horizPadding = horizPaddingPx.toInt()
-    val vertPadding = vertPaddingPx.toInt()
-
-    val offsetX = ((space.width - size.width).toFloat() * biasX).toInt()
-      .coerceIn(horizPadding, availableWidth - horizPadding)
-    val offsetY = ((space.height - size.height).toFloat() * biasY).toInt()
-      .coerceIn(vertPadding, availableHeight - vertPadding)
-
-    return IntOffset(x = offsetX, y = offsetY)
+      }
+    )
   }
 
   @Composable

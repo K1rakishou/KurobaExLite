@@ -14,8 +14,8 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RootRouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 class MainScreen(
   componentActivity: ComponentActivity,

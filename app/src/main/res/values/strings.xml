@@ -1,14 +1,34 @@
 <resources>
     <string name="app_name">KurobaExLite</string>
 
-    <string name="posts_screen_processing_posts">Processing posts…</string>
+    <string name="lorem_ipsum">
+        The standard Lorem Ipsum passage, used since the 1500s
+"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    </string>
+
+    <string name="tripple_lorem_ipsum">
+        The standard Lorem Ipsum passage, used since the 1500s
+"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        The standard Lorem Ipsum passage, used since the 1500s
+"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+        The standard Lorem Ipsum passage, used since the 1500s
+"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+    </string>
+
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="reload">Reload</string>
+
+    <string name="posts_screen_processing_posts">Processing %1$s posts…</string>
     <string name="toolbar_loading_title">Loading…</string>
     <string name="toolbar_loading_subtitle">Error</string>
     <string name="post_list_no_catalog_selected">No catalog selected</string>
     <string name="post_list_no_thread_selected">No thread selected</string>
-    <string name="post_list_reload">Reload</string>
 
     <string name="catalog_toolbar_open_thread_by_identifier">Open thread by any identifier</string>
-    <string name="catalog_toolbar_open_thread_by_identifier_subtitle">Allows opening threads by url/threadId/etc</string>
+    <string name="catalog_toolbar_open_thread_by_identifier_subtitle">Allows opening threads by url/threadId/etc.</string>
+
+    <string name="catalog_screen_enter_identifier">Enter catalog/thread identifier</string>
+    <string name="catalog_screen_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
 
 </resources>

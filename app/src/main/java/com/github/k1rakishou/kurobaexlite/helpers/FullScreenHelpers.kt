@@ -79,31 +79,4 @@ object FullScreenHelpers {
     return (decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_IMMERSIVE) != 0
   }
 
-  fun calculateDesiredBottomInset(
-    view: View,
-    bottomInset: Int
-  ): Int {
-    val hasKeyboard = isKeyboardShown(view, bottomInset)
-    return if (hasKeyboard) {
-      0
-    } else {
-      bottomInset
-    }
-  }
-
-  fun calculateDesiredRealBottomInset(
-    view: View,
-    bottomInset: Int
-  ): Int {
-    val hasKeyboard = isKeyboardShown(view, bottomInset)
-    return if (hasKeyboard) {
-      bottomInset
-    } else {
-      0
-    }
-  }
-
-  fun isKeyboardShown(view: View, bottomInset: Int) =
-    bottomInset / view.resources.displayMetrics.heightPixels.toDouble() > .25
-
 }

@@ -16,7 +16,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayou
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeNavigationScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 class BookmarksScreen(
   componentActivity: ComponentActivity,

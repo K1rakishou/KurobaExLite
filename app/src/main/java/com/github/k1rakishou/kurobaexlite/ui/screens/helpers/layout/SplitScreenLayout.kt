@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
+package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
@@ -10,6 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeNavigationScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 class SplitScreenLayout(
   componentActivity: ComponentActivity,

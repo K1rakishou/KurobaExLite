@@ -23,10 +23,10 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeChildScreens
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -130,6 +130,7 @@ class HomeScreen(
         .fillMaxWidth()
         .height(toolbarTotalHeight)
         .background(chanTheme.primaryColorCompose)
+        .consumeClicks()
     ) {
       Spacer(modifier = Modifier.height(insets.topDp))
 

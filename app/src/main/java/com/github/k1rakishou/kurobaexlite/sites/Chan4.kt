@@ -1,6 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import okhttp3.HttpUrl
 
 class Chan4 : Site {
   private val chan4CatalogInfo by lazy { CatalogInfo() }
@@ -13,6 +17,49 @@ class Chan4 : Site {
   override fun catalogInfo(): Site.CatalogInfo = chan4CatalogInfo
   override fun threadInfo(): Site.ThreadInfo? = chan4ThreadInfo
   override fun postImageInfo(): Site.PostImageInfo = chan4PostImageInfo
+
+  override fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor? {
+    val parts = url.pathSegments
+    if (parts.isEmpty()) {
+      return null
+    }
+
+    val boardCode = parts[0]
+
+    if (parts.size < 3) {
+      // Board mode
+      return ResolvedDescriptor.CatalogOrThread(CatalogDescriptor(siteKey, boardCode))
+    }
+
+    // Thread mode
+    val threadNo = (parts[2].toIntOrNull() ?: -1).toLong()
+    var postId = -1L
+    val fragment = url.fragment
+
+    if (fragment != null) {
+      val index = fragment.indexOf("p")
+      if (index >= 0) {
+        postId = (fragment.substring(index + 1).toIntOrNull() ?: -1).toLong()
+      }
+    }
+
+    if (threadNo < 0L) {
+      return null
+    }
+
+    val threadDescriptor = ThreadDescriptor.create(
+      siteKey = siteKey,
+      boardCode = boardCode,
+      threadNo = threadNo
+    )
+
+    if (postId <= 0) {
+      return ResolvedDescriptor.CatalogOrThread(threadDescriptor)
+    }
+
+    val postDescriptor = PostDescriptor(threadDescriptor, postId)
+    return ResolvedDescriptor.Post(postDescriptor)
+  }
 
   class CatalogInfo : Site.CatalogInfo {
     override fun catalogUrl(boardCode: String): String {

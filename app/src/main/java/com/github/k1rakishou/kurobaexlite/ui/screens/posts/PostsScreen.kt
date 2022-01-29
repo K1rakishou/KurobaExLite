@@ -35,6 +35,7 @@ abstract class PostsScreen(
     val insets = LocalWindowInsets.current
     val padding = 8.dp
     val bottomOffset = insets.bottomDp + padding
+    val postsCount = (postDataAsync() as? AsyncData.Data)?.data?.size?.toString() ?: "???"
 
     KurobaComposeCardView(
       modifier = Modifier
@@ -58,7 +59,7 @@ abstract class PostsScreen(
             modifier = Modifier
               .wrapContentHeight()
               .weight(1f),
-            text = stringResource(R.string.posts_screen_processing_posts)
+            text = stringResource(R.string.posts_screen_processing_posts, postsCount)
           )
 
           KurobaComposeLoadingIndicator(

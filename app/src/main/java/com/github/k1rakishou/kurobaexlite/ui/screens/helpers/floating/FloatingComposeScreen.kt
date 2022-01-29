@@ -1,21 +1,24 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
+package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.CallSuper
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeCardView
+import com.github.k1rakishou.kurobaexlite.ui.elements.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.elements.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 
 abstract class FloatingComposeScreen(
   componentActivity: ComponentActivity,
@@ -62,7 +65,7 @@ abstract class FloatingComposeScreen(
         .background(backgroundColor)
         .kurobaClickable(
           hasClickIndication = false,
-          onClick = { pop() }
+          onClick = { stopPresenting() }
         )
     ) {
       Box(
@@ -76,9 +79,64 @@ abstract class FloatingComposeScreen(
           ),
         contentAlignment = contentAlignment,
       ) {
-        FloatingContent()
+        val maxWidthDp = maxAvailableWidth()
+        val maxHeightDp = maxAvailableHeight()
+
+        KurobaComposeCardView(
+          modifier = Modifier
+            .wrapContentSize()
+            .widthIn(max = maxWidthDp)
+            .heightIn(max = maxHeightDp)
+            .consumeClicks()
+        ) {
+          FloatingContent()
+        }
       }
     }
+  }
+
+  @Composable
+  open fun maxAvailableHeight(): Dp {
+    val isTablet = uiInfoManager.isTablet
+
+    return with(LocalDensity.current) {
+      return@with remember(key1 = this, key2 = isTablet) {
+        val maxHeight = if (isTablet) {
+          uiInfoManager.maxParentHeight - (uiInfoManager.maxParentHeight / 4)
+        } else {
+          uiInfoManager.maxParentHeight
+        }
+
+        return@remember maxHeight.toDp()
+      }
+    }
+  }
+
+  @Composable
+  fun maxAvailableHeightPx(): Float {
+    return with(LocalDensity.current) { maxAvailableHeight().toPx() }
+  }
+
+  @Composable
+  open fun maxAvailableWidth(): Dp {
+    val isTablet = uiInfoManager.isTablet
+
+    return with(LocalDensity.current) {
+      return@with remember(key1 = this, key2 = isTablet) {
+        val maxWidth = if (isTablet) {
+          uiInfoManager.maxParentWidth - (uiInfoManager.maxParentWidth / 4)
+        } else {
+          uiInfoManager.maxParentWidth
+        }
+
+        return@remember maxWidth.toDp()
+      }
+    }
+  }
+
+  @Composable
+  fun maxAvailableWidthPx(): Float {
+    return with(LocalDensity.current) { maxAvailableWidth().toPx() }
   }
 
   @Composable
@@ -102,15 +160,15 @@ abstract class FloatingComposeScreen(
   }
 
   @Composable
-  abstract fun BoxScope.FloatingContent()
+  abstract fun FloatingContent()
 
   @CallSuper
   open fun onBackPressed(): Boolean {
-    return pop()
+    return stopPresenting()
   }
 
-  protected fun pop(): Boolean {
-    return navigationRouter.stopPresenting()
+  protected fun stopPresenting(): Boolean {
+    return navigationRouter.stopPresentingScreen(screenKey = screenKey)
   }
 
   companion object {

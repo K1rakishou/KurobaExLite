@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
 import android.content.Intent
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.FloatingComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 
@@ -79,13 +79,17 @@ class NavigationRouter(
     )
   }
 
-  fun stopPresenting(): Boolean {
+  fun stopPresentingScreen(screenKey: ScreenKey): Boolean {
     if (parentRouter != null) {
-      return parentRouter.stopPresenting()
+      return parentRouter.stopPresentingScreen(screenKey)
     }
 
-    val floatingComposeScreen = floatingScreensStack.removeLastOrNull()
-      ?: return false
+    val index = floatingScreensStack.indexOfLast { screen -> screen.screenKey == screenKey }
+    if (index < 0) {
+      return false
+    }
+
+    val floatingComposeScreen = floatingScreensStack.removeAt(index)
 
     val navigationScreenUpdates = navigationScreensStack
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
@@ -189,13 +193,7 @@ class NavigationRouter(
   )
 
   sealed class ScreenUpdate(val screen: ComposeScreen) {
-    fun isPop(): Boolean {
-      return when (this) {
-        is Pop -> true
-        else -> false
-      }
-    }
-
+    
     data class Set(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
       override fun toString(): String = "Set(key=${composeScreen.screenKey.key})"
     }

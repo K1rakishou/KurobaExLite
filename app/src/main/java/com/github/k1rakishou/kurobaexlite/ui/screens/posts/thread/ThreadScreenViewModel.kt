@@ -2,50 +2,64 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 
 import android.os.SystemClock
 import androidx.compose.runtime.*
+import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.*
-import com.github.k1rakishou.kurobaexlite.model.ChanDataSource
+import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import logcat.asLog
 import logcat.logcat
 
 class ThreadScreenViewModel(
-  private val chanDataSource: ChanDataSource,
+  private val chanThreadManager: ChanThreadManager,
   globalConstants: GlobalConstants,
   postCommentParser: PostCommentParser,
   postCommentApplier: PostCommentApplier,
   themeEngine: ThemeEngine
 ) : PostScreenViewModel(globalConstants, postCommentParser, postCommentApplier, themeEngine) {
-  val threadScreenState = ThreadScreenState()
+  private val threadScreenState = ThreadScreenState()
+  private var loadThreadJob: Job? = null
 
   override val postScreenState: PostScreenState = threadScreenState
 
-  fun loadThreadFromCatalog(threadDescriptor: ThreadDescriptor, forced: Boolean = false) {
-    mainScope.launch { loadThread(threadDescriptor = threadDescriptor, forced = forced) }
-  }
-
   override fun reload() {
+    val currentlyOpenedThread = chanThreadManager.currentlyOpenedThread
 
+    loadThread(
+      threadDescriptor = currentlyOpenedThread,
+      forced = true
+    )
   }
 
-  suspend fun loadThread(
-    threadDescriptor: ThreadDescriptor,
+  fun loadThread(
+    threadDescriptor: ThreadDescriptor?,
     forced: Boolean = false
   ) {
-    if (!forced && threadScreenState.currentThreadDescriptorOrNull == threadDescriptor) {
+    loadThreadJob?.cancel()
+    loadThreadJob = null
+
+    loadThreadJob = viewModelScope.launch { loadThreadInternal(threadDescriptor, forced) }
+  }
+
+  private suspend fun loadThreadInternal(
+    threadDescriptor: ThreadDescriptor?,
+    forced: Boolean
+  ) {
+    if (!forced && chanThreadManager.currentlyOpenedThread == threadDescriptor) {
       return
     }
 
     val startTime = SystemClock.elapsedRealtime()
     threadScreenState.threadPostsAsync = AsyncData.Loading
 
-    val threadDataResult = chanDataSource.loadThread(threadDescriptor)
+    val threadDataResult = chanThreadManager.loadThread(threadDescriptor)
     if (threadDataResult.isFailure) {
       val error = threadDataResult.exceptionOrThrow()
       logcatError { "loadCatalog() error=${error.asLog()}" }
@@ -55,6 +69,11 @@ class ThreadScreenViewModel(
     }
 
     val threadData = threadDataResult.unwrap()
+    if (threadData == null || threadDescriptor == null) {
+      threadScreenState.threadPostsAsync = AsyncData.Empty
+      return
+    }
+
     if (threadData.threadPosts.isEmpty()) {
       val error = ThreadDisplayException("Thread /${threadDescriptor}/ has no posts")
       threadScreenState.threadPostsAsync = AsyncData.Error(error)
@@ -88,9 +107,6 @@ class ThreadScreenViewModel(
     private val threadPostsAsyncState: MutableState<AsyncData<ThreadPostsState>> = mutableStateOf(AsyncData.Empty)
   ) : PostScreenState {
     internal var threadPostsAsync by threadPostsAsyncState
-
-    val currentThreadDescriptorOrNull: ThreadDescriptor?
-      get() = (threadPostsAsync as? AsyncData.Data)?.data?.threadDescriptor
 
     override fun postDataAsync(): AsyncData<List<PostData>> {
       return when (val asyncDataStateValue = threadPostsAsyncState.value) {

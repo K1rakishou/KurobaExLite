@@ -7,8 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 class AlbumScreen(
   componentActivity: ComponentActivity,

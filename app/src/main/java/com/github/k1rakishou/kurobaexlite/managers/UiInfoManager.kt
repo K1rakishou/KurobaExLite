@@ -29,6 +29,9 @@ class UiInfoManager(
   val floatingMenuItemTitleSize = mutableStateOf(14.sp)
   val floatingMenuItemSubTitleSize = mutableStateOf(12.sp)
 
+  val isPortraitOrientation: Boolean
+    get() = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+
   val composeDensity by lazy {
     Density(
       appContext.resources.displayMetrics.density,

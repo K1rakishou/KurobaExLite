@@ -2,7 +2,9 @@ package com.github.k1rakishou.kurobaexlite.managers
 
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
+import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Site
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.util.concurrent.ConcurrentHashMap
 
 class SiteManager {
@@ -14,6 +16,23 @@ class SiteManager {
 
   fun bySiteKey(siteKey: SiteKey): Site? {
     return sites[siteKey]
+  }
+
+  fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor? {
+    val httpUrl = rawIdentifier.toHttpUrlOrNull()
+
+    for ((_, site) in sites) {
+      if (httpUrl != null) {
+        val resolvedDescriptor = site.resolveDescriptorFromUrl(httpUrl)
+        if (resolvedDescriptor != null) {
+          return resolvedDescriptor
+        }
+      }
+
+      // TODO(KurobaEx): add more stuff
+    }
+
+    return null
   }
 
 }
