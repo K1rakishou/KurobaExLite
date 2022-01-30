@@ -56,6 +56,7 @@ class PostCommentParserTest : TestCase() {
   private fun createPostDataWithComment(comment: String): PostData {
     return PostData(
       postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 1122, 1123, null),
+      postSubjectUnparsed = "",
       postCommentUnparsed = comment,
       images = null
     )

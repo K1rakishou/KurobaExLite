@@ -53,53 +53,75 @@ class PostCommentApplier {
         parsedPostDataContext = parsedPostDataContext
       )
 
+      val textPartBuilder = StringBuilder(textPartText)
       overflowHappened = overflow
 
-      val textPartTextLength = textPartText.length
-      val startPosition = textPartTextLength
-      val endPosition = startPosition + textPartTextLength
+      if (textPart.spans.isEmpty()) {
+        append(textPartBuilder.toString())
+      } else {
+        for (span in textPart.spans) {
+          var bgColor: Color = Color.Unspecified
+          var fgColor: Color = Color.Unspecified
+          var underline = false
+          var linethrough = false
 
-      append(textPartText)
+          when (span) {
+            is PostCommentParser.TextPartSpan.BgColor -> {
+              bgColor = Color(span.color)
+            }
+            is PostCommentParser.TextPartSpan.FgColor -> {
+              fgColor = Color(span.color)
+            }
+            is PostCommentParser.TextPartSpan.BgColorId -> {
+              bgColor = Color(chanTheme.getColorByColorId(span.colorId))
+            }
+            is PostCommentParser.TextPartSpan.FgColorId -> {
+              fgColor = Color(chanTheme.getColorByColorId(span.colorId))
+            }
+            is PostCommentParser.TextPartSpan.Spoiler -> {
+              bgColor = chanTheme.postSpoilerColorCompose
 
-      for (span in textPart.spans) {
-        var bgColor: Color = Color.Unspecified
-        var fgColor: Color = Color.Unspecified
+              val shouldRevealSpoiler = matchesOpenedSpoilerPosition(
+                startPos = 0,
+                endPos = textPartBuilder.length,
+                textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet
+              )
 
-        when (span) {
-          is PostCommentParser.TextPartSpan.BgColor -> {
-            bgColor = Color(span.color)
-          }
-          is PostCommentParser.TextPartSpan.FgColor -> {
-            fgColor = Color(span.color)
-          }
-          is PostCommentParser.TextPartSpan.BgColorId -> {
-            bgColor = Color(chanTheme.getColorByColorId(span.colorId))
-          }
-          is PostCommentParser.TextPartSpan.FgColorId -> {
-            fgColor = Color(chanTheme.getColorByColorId(span.colorId))
-          }
-          is PostCommentParser.TextPartSpan.Spoiler -> {
-            bgColor = chanTheme.postSpoilerColorCompose
+              fgColor = if (shouldRevealSpoiler) {
+                chanTheme.postSpoilerRevealTextColorCompose
+              } else {
+                chanTheme.postSpoilerColorCompose
+              }
+            }
+            is PostCommentParser.TextPartSpan.Linkable -> {
+              when (span) {
+                is PostCommentParser.TextPartSpan.Linkable.Quote,
+                is PostCommentParser.TextPartSpan.Linkable.Board,
+                is PostCommentParser.TextPartSpan.Linkable.Search -> {
+                  underline = true
 
-            val shouldRevealSpoiler = matchesOpenedSpoilerPosition(
-              startPos = startPosition,
-              endPos = endPosition,
-              textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet
-            )
+                  if (span is PostCommentParser.TextPartSpan.Linkable.Quote) {
+                    linethrough = span.dead
+                  }
 
-            fgColor = if (shouldRevealSpoiler) {
-              chanTheme.postSpoilerRevealTextColorCompose
-            } else {
-              chanTheme.postSpoilerColorCompose
+                  fgColor = chanTheme.postQuoteColorCompose
+                }
+              }
             }
           }
-        }
 
-        if (bgColor.isUnspecified && fgColor.isUnspecified) {
-          continue
-        }
+          append(textPartBuilder.toString())
 
-        addStyle(SpanStyle(color = fgColor, background = bgColor), 0, textPartTextLength)
+          val spanStyle = SpanStyle(
+            color = fgColor,
+            background = bgColor,
+            textDecoration = buildTextDecoration(underline, linethrough)
+          )
+
+          if (!spanStyle.isEmpty()) {
+            addStyle(spanStyle, 0, textPartBuilder.length)
+          }
+        }
       }
 
       if (overflow) {
@@ -111,13 +133,40 @@ class PostCommentApplier {
     return resultString to overflowHappened
   }
 
+  private fun SpanStyle.isEmpty(): Boolean {
+    return color.isUnspecified
+      && background.isUnspecified
+      && (textDecoration == null || textDecoration == TextDecoration.None)
+  }
+
+  private fun buildTextDecoration(
+    underline: Boolean,
+    linethrough: Boolean
+  ): TextDecoration? {
+    if (!underline && !linethrough) {
+      return null
+    }
+
+    var textDecoration = TextDecoration.None
+
+    if (underline) {
+      textDecoration += TextDecoration.Underline
+    }
+
+    if (linethrough) {
+      textDecoration += TextDecoration.LineThrough
+    }
+
+    return textDecoration
+  }
+
   private fun trimTextPartIfNeeded(
     totalLength: Int,
     textPart: PostCommentParser.TextPart,
     parsedPostDataContext: ParsedPostDataContext
   ): Pair<String, Boolean> {
     val maxLength = parsedPostDataContext.maxPostCommentLength()
-    if (maxLength == Int.MAX_VALUE) {
+    if (maxLength == Int.MAX_VALUE || parsedPostDataContext.isParsingThread) {
       return textPart.text to false
     }
 

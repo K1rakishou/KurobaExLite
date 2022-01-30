@@ -44,7 +44,7 @@ data class PostData(
 
   fun formatToolbarTitle(catalogMode: Boolean): String? {
     if (catalogMode) {
-      return "${postDescriptor.siteKey}/${postDescriptor.boardCode}/"
+      return "${postDescriptor.siteKeyActual}/${postDescriptor.boardCode}/"
     }
 
     val parsedPostData = _parsedPostData

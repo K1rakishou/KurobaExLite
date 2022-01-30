@@ -80,8 +80,10 @@ data class PostDescriptor(
   val postNo: Long,
   val postSubNo: Long? = null
 ) : Parcelable {
-  val siteKey: String
+  val siteKeyActual: String
     get() = threadDescriptor.catalogDescriptor.siteKey.key
+  val siteKey: SiteKey
+    get() = threadDescriptor.catalogDescriptor.siteKey
   val boardCode: String
     get() = threadDescriptor.catalogDescriptor.boardCode
   val threadNo: Long
@@ -92,7 +94,7 @@ data class PostDescriptor(
   override fun toString(): String {
     return buildString(capacity = 32) {
       append("PostDescriptor(")
-      append(siteKey)
+      append(siteKeyActual)
       append("/")
       append(boardCode)
       append("/")

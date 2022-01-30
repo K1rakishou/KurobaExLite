@@ -5,11 +5,9 @@ import kotlinx.coroutines.CancellationException
 import logcat.LogPriority
 import logcat.logcat
 import java.io.InterruptedIOException
-import java.util.*
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import javax.net.ssl.SSLException
-import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.LinkedHashMap
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.coroutines.resume
@@ -285,5 +283,16 @@ fun <T> List<T>.bidirectionalSequence(startPosition: Int = size / 2): Sequence<T
 
       increment = increment.not()
     }
+  }
+}
+
+fun decodeUrlOrNull(
+  input: String,
+  encoding: String = StandardCharsets.UTF_8.name()
+): String? {
+  try {
+    return  URLDecoder.decode(input, encoding)
+  } catch (error: Throwable) {
+    return null
   }
 }

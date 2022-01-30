@@ -71,6 +71,7 @@ abstract class ChanTheme {
   val postLinkColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postLinkColor) }
   val postSpoilerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerColor) }
   val postSpoilerRevealTextColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerRevealTextColor) }
+  val postQuoteColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postQuoteColor) }
 
   open val mainFont: Typeface = ROBOTO_MEDIUM
 

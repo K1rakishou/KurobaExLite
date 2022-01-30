@@ -27,7 +27,6 @@ suspend fun PointerInputScope.detectTapGesturesWithFilter(
       val down = awaitFirstDown()
 
       if (!filter(down.position)) {
-        pressScope.release()
         return@awaitPointerEventScope
       }
 

@@ -17,6 +17,7 @@ data class ParsedPostDataContext(
   val revealFullPostComment: Boolean = false,
   val textSpoilerOpenedPositionSet: Set<Int> = emptySet()
 ) {
+  val isParsingThread: Boolean = !isParsingCatalog
 
   fun maxPostCommentLength(): Int {
     if (revealFullPostComment) {

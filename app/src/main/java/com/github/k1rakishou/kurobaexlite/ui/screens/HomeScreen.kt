@@ -28,7 +28,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
-import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HomeScreen(
@@ -157,8 +156,6 @@ class HomeScreen(
             currentChildScreen.Toolbar(this)
           }
         }
-
-        logcat { "currentPage=$currentPage, targetPage=$targetPage, animationProgress=$animationProgress" }
 
         if (currentPage != targetPage) {
           val targetChildScreen = childScreens[targetPage]
