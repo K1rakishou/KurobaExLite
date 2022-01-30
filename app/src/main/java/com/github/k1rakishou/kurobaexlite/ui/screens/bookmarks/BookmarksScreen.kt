@@ -32,9 +32,6 @@ class BookmarksScreen(
       val chanTheme = LocalChanTheme.current
 
       KurobaToolbarLayout(
-        leftIcon = {
-
-        },
         middlePart = {
           KurobaComposeText(
             modifier = Modifier

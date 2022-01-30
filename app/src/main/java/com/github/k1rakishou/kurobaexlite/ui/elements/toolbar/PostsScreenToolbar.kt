@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
@@ -27,9 +28,6 @@ fun BoxScope.PostsScreenToolbar(
   val chanTheme = LocalChanTheme.current
 
   KurobaToolbarLayout(
-    leftIcon = {
-
-    },
     middlePart = {
       val toolbarTitle = when (postListAsync) {
         AsyncData.Empty -> null
@@ -47,6 +45,8 @@ fun BoxScope.PostsScreenToolbar(
         Text(
           text = toolbarTitle,
           color = Color.White,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
           fontSize = 16.sp
         )
       }

@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun BoxScope.KurobaToolbarLayout(
-  leftIcon: @Composable BoxScope.() -> Unit,
+  leftIcon: (@Composable BoxScope.() -> Unit)? = null,
   middlePart: @Composable BoxScope.() -> Unit,
   rightIcons: @Composable BoxScope.() -> Unit
 ) {
@@ -19,8 +19,10 @@ fun BoxScope.KurobaToolbarLayout(
   ) {
     Spacer(modifier = Modifier.width(8.dp))
 
-    Box(modifier = Modifier.size(24.dp)) {
-      leftIcon()
+    if (leftIcon != null) {
+      Box(modifier = Modifier.size(24.dp)) {
+        leftIcon()
+      }
     }
 
     Spacer(modifier = Modifier.width(4.dp))
