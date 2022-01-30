@@ -4,15 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,15 +26,14 @@ import coil.compose.AsyncImageScope
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import logcat.logcat
 
 @Composable
 internal fun PostListContent(
@@ -50,6 +53,38 @@ internal fun PostListContent(
   val lazyListState = rememberLazyListState()
   val postListAsync = postsScreenViewModel.postScreenState.postDataAsync()
 
+  PostListInternal(
+    lazyListState = lazyListState,
+    chanTheme = chanTheme,
+    contentPadding = contentPadding,
+    postListAsync = postListAsync,
+    isCatalogMode = isCatalogMode,
+    postsScreenViewModel = postsScreenViewModel,
+    mainUiLayoutMode = mainUiLayoutMode,
+    onPostCellClicked = onPostCellClicked,
+    onPostCellCommentClicked = { postComment, offset ->
+      val clickedAnnotations = postComment.getStringAnnotations(offset, offset)
+
+      logcat(tag = "onPostCellCommentClicked") {
+        "Clicked text at offset: ${offset}, character: ${postComment.getOrNull(offset)}, " +
+          "clickedAnnotations=$clickedAnnotations"
+      }
+    }
+  )
+}
+
+@Composable
+private fun PostListInternal(
+  lazyListState: LazyListState,
+  chanTheme: ChanTheme,
+  contentPadding: PaddingValues,
+  postListAsync: AsyncData<List<PostData>>,
+  isCatalogMode: Boolean,
+  postsScreenViewModel: PostScreenViewModel,
+  mainUiLayoutMode: MainUiLayoutMode,
+  onPostCellClicked: (PostData) -> Unit,
+  onPostCellCommentClicked: (AnnotatedString, Int) -> Unit
+) {
   LazyColumn(
     modifier = Modifier
       .fillMaxSize()
@@ -108,7 +143,8 @@ internal fun PostListContent(
             mainUiLayoutMode = mainUiLayoutMode,
             postsScreenViewModel = postsScreenViewModel,
             postListAsync = postListAsync,
-            onPostCellClicked = onPostCellClicked
+            onPostCellClicked = onPostCellClicked,
+            onPostCellCommentClicked = onPostCellCommentClicked
           )
         }
       }
@@ -121,7 +157,8 @@ private fun LazyListScope.postList(
   mainUiLayoutMode: MainUiLayoutMode,
   postsScreenViewModel: PostScreenViewModel,
   postListAsync: AsyncData.Data<List<PostData>>,
-  onPostCellClicked: (PostData) -> Unit
+  onPostCellClicked: (PostData) -> Unit,
+  onPostCellCommentClicked: (AnnotatedString, Int) -> Unit
 ) {
   val postDataList = postListAsync.data
   val totalCount = postDataList.size
@@ -154,7 +191,9 @@ private fun LazyListScope.postList(
       ) {
         PostCell(
           postsScreenViewModel = postsScreenViewModel,
-          postData = postData
+          postData = postData,
+          isCatalogMode = isCatalogMode,
+          onPostCellCommentClicked = onPostCellCommentClicked
         )
 
         if (index < (totalCount - 1)) {
@@ -171,7 +210,9 @@ private fun LazyListScope.postList(
 @Composable
 private fun PostCell(
   postsScreenViewModel: PostScreenViewModel,
-  postData: PostData
+  postData: PostData,
+  isCatalogMode: Boolean,
+  onPostCellCommentClicked: (AnnotatedString, Int) -> Unit
 ) {
   var postComment by postComment(postData)
   var postSubject by postSubject(postData)
@@ -180,7 +221,7 @@ private fun PostCell(
     LaunchedEffect(
       key1 = postData.postCommentUnparsed,
       block = {
-        val parsedPostData = postsScreenViewModel.parseComment(postData)
+        val parsedPostData = postsScreenViewModel.parseComment(isCatalogMode, postData)
         postComment = parsedPostData.processedPostComment
         postSubject = parsedPostData.processedPostSubject
       }
@@ -193,9 +234,15 @@ private fun PostCell(
       .wrapContentHeight()
       .padding(vertical = 8.dp)
   ) {
-    PostCellTitle(postData = postData, postSubject = postSubject)
+    PostCellTitle(
+      postData = postData,
+      postSubject = postSubject
+    )
 
-    PostCellComment(postComment = postComment)
+    PostCellComment(
+      postComment = postComment,
+      onPostCellCommentClicked = onPostCellCommentClicked
+    )
 
     PostCellFooter()
   }
@@ -256,18 +303,56 @@ private fun PostCellTitle(
 
 @Composable
 private fun PostCellComment(
-  postComment: AnnotatedString
+  postComment: AnnotatedString,
+  onPostCellCommentClicked: (AnnotatedString, Int) -> Unit
 ) {
   if (postComment.isNotNullNorBlank()) {
+    val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+    val pressIndicator = Modifier.pointerInput(key1 = onPostCellCommentClicked) {
+      detectTapGesturesWithFilter(
+        filter = { pos -> detectClickedAnnotations(pos, layoutResult, postComment) },
+        onTap = { pos ->
+          layoutResult.value?.let { result ->
+            val offset = result.getOffsetForPosition(pos)
+            onPostCellCommentClicked(postComment, offset)
+          }
+        }
+      )
+    }
+
     KurobaComposeText(
       modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()
-        .padding(top = 4.dp),
+        .padding(top = 4.dp)
+        .then(pressIndicator),
       fontSize = 14.sp,
       text = postComment,
+      onTextLayout = {
+        layoutResult.value = it
+      }
     )
   }
+}
+
+private fun detectClickedAnnotations(
+  pos: Offset,
+  layoutResult: MutableState<TextLayoutResult?>,
+  postComment: AnnotatedString
+): Boolean {
+  val result = layoutResult.value
+    ?: return false
+
+  val offset = result.getOffsetForPosition(pos)
+  val clickedAnnotations = postComment.getStringAnnotations(offset, offset)
+
+  for (clickedAnnotation in clickedAnnotations) {
+    if (clickedAnnotation.tag == PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG) {
+      return true
+    }
+  }
+
+  return false
 }
 
 @Composable

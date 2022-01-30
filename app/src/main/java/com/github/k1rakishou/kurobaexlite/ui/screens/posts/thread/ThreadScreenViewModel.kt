@@ -83,10 +83,15 @@ class ThreadScreenViewModel(
     parsePostsAround(
       startIndex = 0,
       postDataList = threadData.threadPosts,
-      count = 16
+      count = 16,
+      isCatalogMode = false
     )
 
-    parseRemainingPostsAsync(threadData.threadPosts)
+    parseRemainingPostsAsync(
+      isCatalogMode = false,
+      postDataList = threadData.threadPosts,
+      onPostsParsed = { postDataList -> postProcessPostDataAfterParsing(postDataList) }
+    )
 
     val threadPostsState = ThreadPostsState(
       threadDescriptor = threadDescriptor,
@@ -99,6 +104,12 @@ class ThreadScreenViewModel(
       "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
         "threadPosts=${threadData.threadPosts.size}"
     }
+  }
+
+  override suspend fun postProcessPostDataAfterParsing(postDataList: List<PostData>) {
+    super.postProcessPostDataAfterParsing(postDataList)
+
+    // TODO(KurobaEx): restore scroll position/etc
   }
 
   class ThreadDisplayException(message: String) : ClientException(message)

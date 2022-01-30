@@ -83,10 +83,15 @@ class CatalogScreenViewModel(
     parsePostsAround(
       startIndex = 0,
       postDataList = catalogData.catalogThreads,
-      count = 16
+      count = 16,
+      isCatalogMode = true
     )
 
-    parseRemainingPostsAsync(catalogData.catalogThreads)
+    parseRemainingPostsAsync(
+      isCatalogMode = true,
+      postDataList = catalogData.catalogThreads,
+      onPostsParsed = { postDataList -> postProcessPostDataAfterParsing(postDataList) }
+    )
 
     val catalogThreadsState = CatalogThreadsState(
       catalogDescriptor = catalogDescriptor,
@@ -99,6 +104,12 @@ class CatalogScreenViewModel(
       "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
         "catalogThreads=${catalogData.catalogThreads.size}"
     }
+  }
+
+  override suspend fun postProcessPostDataAfterParsing(postDataList: List<PostData>) {
+    super.postProcessPostDataAfterParsing(postDataList)
+
+
   }
 
   class CatalogDisplayException(message: String) : ClientException(message)

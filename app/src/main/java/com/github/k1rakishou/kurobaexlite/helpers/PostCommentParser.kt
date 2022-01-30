@@ -95,8 +95,11 @@ class PostCommentParser {
 
   data class TextPart(
     val text: String,
+    val textPartMeta: TypePartMeta? = null,
     val spans: MutableList<TextPartSpan> = mutableListOf()
   )
+
+  sealed class TypePartMeta
 
   sealed class TextPartSpan {
     class BgColor(val color: Int) : TextPartSpan()

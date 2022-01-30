@@ -4,10 +4,12 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -81,11 +83,20 @@ class DialogScreen(
       if (params.input != null && inputValueState != null) {
         val input = params.input
         var value by inputValueState
+
+        val keyboardOptions = KeyboardOptions(
+          keyboardType = when (input) {
+            is Input.Number -> KeyboardType.Number
+            is Input.String -> KeyboardType.Text
+          }
+        )
+
         Spacer(modifier = Modifier.height(4.dp))
 
         KurobaComposeTextField(
           modifier = Modifier.fillMaxWidth(),
           value = value,
+          keyboardOptions = keyboardOptions,
           onValueChange = { newValue ->
             if (input is Input.Number && newValue.toIntOrNull() == null) {
               return@KurobaComposeTextField

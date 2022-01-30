@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -135,7 +136,8 @@ fun KurobaComposeText(
   softWrap: Boolean = true,
   enabled: Boolean = true,
   textAlign: TextAlign? = null,
-  inlineContent: Map<String, InlineTextContent> = mapOf()
+  inlineContent: Map<String, InlineTextContent> = mapOf(),
+  onTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
   val textColorPrimary = if (color == null) {
     val chanTheme = LocalChanTheme.current
@@ -154,6 +156,7 @@ fun KurobaComposeText(
   }
 
   Text(
+    modifier = modifier,
     color = actualTextColorPrimary,
     text = text,
     fontSize = fontSize,
@@ -163,7 +166,7 @@ fun KurobaComposeText(
     textAlign = textAlign,
     fontWeight = fontWeight,
     inlineContent = inlineContent,
-    modifier = modifier,
+    onTextLayout = onTextLayout
   )
 }
 
