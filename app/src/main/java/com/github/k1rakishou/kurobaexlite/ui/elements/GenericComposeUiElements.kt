@@ -12,16 +12,14 @@ import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.*
 import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -34,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.helpers.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import java.util.*
@@ -168,6 +167,95 @@ fun KurobaComposeText(
     inlineContent = inlineContent,
     onTextLayout = onTextLayout
   )
+}
+
+@Composable
+fun KurobaComposeClickableText(
+  text: AnnotatedString,
+  modifier: Modifier = Modifier,
+  color: Color? = null,
+  fontSize: TextUnit = TextUnit.Unspecified,
+  fontWeight: FontWeight? = null,
+  maxLines: Int = Int.MAX_VALUE,
+  overflow: TextOverflow = TextOverflow.Clip,
+  softWrap: Boolean = true,
+  enabled: Boolean = true,
+  textAlign: TextAlign? = null,
+  inlineContent: Map<String, InlineTextContent> = mapOf(),
+  annotationBgColors: Map<String, Color> = mapOf(),
+  detectClickedAnnotations: (Offset, TextLayoutResult?, AnnotatedString) -> AnnotatedString.Range<String>?,
+  onTextAnnotationClicked: (AnnotatedString, Int) -> Unit
+) {
+  var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+  var currentlyPressedAnnotationPath by remember { mutableStateOf<Path?>(null) }
+  var currentPressedAnnotationBgColor by remember { mutableStateOf<Color>(Color.Magenta) }
+
+  val pressIndicator = Modifier.pointerInput(key1 = onTextAnnotationClicked) {
+    detectTapGesturesWithFilter(
+      processDownEvent = { pos ->
+        val layoutRes = layoutResult
+          ?: return@detectTapGesturesWithFilter false
+        val clickedAnnotation = detectClickedAnnotations(pos, layoutRes, text)
+          ?: return@detectTapGesturesWithFilter false
+
+        val path = layoutRes.getPathForRange(clickedAnnotation.start, clickedAnnotation.end)
+        if (path.isEmpty) {
+          return@detectTapGesturesWithFilter false
+        }
+
+        currentPressedAnnotationBgColor = annotationBgColors[clickedAnnotation.tag] ?: Color.Magenta
+        currentlyPressedAnnotationPath = path
+        return@detectTapGesturesWithFilter true
+      },
+      onTap = { pos ->
+        currentlyPressedAnnotationPath = null
+
+        layoutResult?.let { result ->
+          val offset = result.getOffsetForPosition(pos)
+          onTextAnnotationClicked(text, offset)
+        }
+      },
+      onUpOrCancel = { currentlyPressedAnnotationPath = null }
+    )
+  }
+
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .padding(top = 4.dp)
+  ) {
+    Canvas(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight(),
+      onDraw = {
+        val path = currentlyPressedAnnotationPath
+          ?: return@Canvas
+
+        drawPath(
+          path = path,
+          style = Fill,
+          brush = SolidColor(value = currentPressedAnnotationBgColor)
+        )
+      }
+    )
+
+    KurobaComposeText(
+      modifier = modifier.then(pressIndicator),
+      color = color,
+      fontSize = fontSize,
+      text = text,
+      fontWeight = fontWeight,
+      maxLines = maxLines,
+      overflow = overflow,
+      softWrap = softWrap,
+      enabled = enabled,
+      textAlign = textAlign,
+      inlineContent = inlineContent,
+      onTextLayout = { result -> layoutResult = result }
+    )
+  }
 }
 
 @Composable

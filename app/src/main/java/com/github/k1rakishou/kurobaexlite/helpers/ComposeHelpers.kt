@@ -12,7 +12,8 @@ private val NoPressGesture: suspend PressGestureScope.(Offset) -> Unit = { }
 
 
 suspend fun PointerInputScope.detectTapGesturesWithFilter(
-  filter: (Offset) -> Boolean,
+  processDownEvent: (Offset) -> Boolean,
+  onUpOrCancel: (() -> Unit)? = null,
   onDoubleTap: ((Offset) -> Unit)? = null,
   onLongPress: ((Offset) -> Unit)? = null,
   onPress: suspend PressGestureScope.(Offset) -> Unit = NoPressGesture,
@@ -26,7 +27,7 @@ suspend fun PointerInputScope.detectTapGesturesWithFilter(
     awaitPointerEventScope {
       val down = awaitFirstDown()
 
-      if (!filter(down.position)) {
+      if (!processDownEvent(down.position)) {
         return@awaitPointerEventScope
       }
 
@@ -57,47 +58,51 @@ suspend fun PointerInputScope.detectTapGesturesWithFilter(
         pressScope.release()
       }
 
-      if (upOrCancel != null) {
-        // tap was successful.
-        if (onDoubleTap == null) {
-          onTap?.invoke(upOrCancel.position) // no need to check for double-tap.
-        } else {
-          // check for second tap
-          val secondDown = awaitSecondDown(upOrCancel)
+      if (upOrCancel == null) {
+        onUpOrCancel?.invoke()
+        return@awaitPointerEventScope
+      }
 
-          if (secondDown == null) {
-            onTap?.invoke(upOrCancel.position) // no valid second tap started
-          } else {
-            // Second tap down detected
-            pressScope.reset()
-            if (onPress !== NoPressGesture) {
-              launch { pressScope.onPress(secondDown.position) }
-            }
+      // tap was successful.
+      if (onDoubleTap == null) {
+        onTap?.invoke(upOrCancel.position) // no need to check for double-tap.
+        return@awaitPointerEventScope
+      }
 
-            try {
-              // Might have a long second press as the second tap
-              withTimeout(longPressTimeout) {
-                val secondUp = waitForUpOrCancellation()
-                if (secondUp != null) {
-                  secondUp.consumeDownChange()
-                  pressScope.release()
-                  onDoubleTap(secondUp.position)
-                } else {
-                  pressScope.cancel()
-                  onTap?.invoke(upOrCancel.position)
-                }
-              }
-            } catch (e: PointerEventTimeoutCancellationException) {
-              // The first tap was valid, but the second tap is a long press.
-              // notify for the first tap
-              onTap?.invoke(upOrCancel.position)
+      // check for second tap
+      val secondDown = awaitSecondDown(upOrCancel)
 
-              // notify for the long press
-              onLongPress?.invoke(secondDown.position)
-              consumeUntilUp()
+      if (secondDown == null) {
+        onTap?.invoke(upOrCancel.position) // no valid second tap started
+      } else {
+        // Second tap down detected
+        pressScope.reset()
+        if (onPress !== NoPressGesture) {
+          launch { pressScope.onPress(secondDown.position) }
+        }
+
+        try {
+          // Might have a long second press as the second tap
+          withTimeout(longPressTimeout) {
+            val secondUp = waitForUpOrCancellation()
+            if (secondUp != null) {
+              secondUp.consumeDownChange()
               pressScope.release()
+              onDoubleTap(secondUp.position)
+            } else {
+              pressScope.cancel()
+              onTap?.invoke(upOrCancel.position)
             }
           }
+        } catch (e: PointerEventTimeoutCancellationException) {
+          // The first tap was valid, but the second tap is a long press.
+          // notify for the first tap
+          onTap?.invoke(upOrCancel.position)
+
+          // notify for the long press
+          onLongPress?.invoke(secondDown.position)
+          consumeUntilUp()
+          pressScope.release()
         }
       }
     }

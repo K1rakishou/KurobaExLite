@@ -10,7 +10,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -30,10 +30,12 @@ import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import logcat.logcat
+
 
 @Composable
 internal fun PostListContent(
@@ -69,6 +71,8 @@ internal fun PostListContent(
         "Clicked text at offset: ${offset}, character: ${postComment.getOrNull(offset)}, " +
           "clickedAnnotations=$clickedAnnotations"
       }
+
+      return@PostListInternal clickedAnnotations.firstOrNull()
     }
   )
 }
@@ -83,7 +87,7 @@ private fun PostListInternal(
   postsScreenViewModel: PostScreenViewModel,
   mainUiLayoutMode: MainUiLayoutMode,
   onPostCellClicked: (PostData) -> Unit,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> Unit
+  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
 ) {
   LazyColumn(
     modifier = Modifier
@@ -158,7 +162,7 @@ private fun LazyListScope.postList(
   postsScreenViewModel: PostScreenViewModel,
   postListAsync: AsyncData.Data<List<PostData>>,
   onPostCellClicked: (PostData) -> Unit,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> Unit
+  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
 ) {
   val postDataList = postListAsync.data
   val totalCount = postDataList.size
@@ -212,7 +216,7 @@ private fun PostCell(
   postsScreenViewModel: PostScreenViewModel,
   postData: PostData,
   isCatalogMode: Boolean,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> Unit
+  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
 ) {
   var postComment by postComment(postData)
   var postSubject by postSubject(postData)
@@ -304,55 +308,22 @@ private fun PostCellTitle(
 @Composable
 private fun PostCellComment(
   postComment: AnnotatedString,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> Unit
+  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
 ) {
-  if (postComment.isNotNullNorBlank()) {
-    val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
-    val pressIndicator = Modifier.pointerInput(key1 = onPostCellCommentClicked) {
-      detectTapGesturesWithFilter(
-        filter = { pos -> detectClickedAnnotations(pos, layoutResult, postComment) },
-        onTap = { pos ->
-          layoutResult.value?.let { result ->
-            val offset = result.getOffsetForPosition(pos)
-            onPostCellCommentClicked(postComment, offset)
-          }
-        }
-      )
-    }
+  val chanTheme = LocalChanTheme.current
+  val clickedTextBackgroundColorMap = remember(key1 = chanTheme) {
+    return@remember createClickableTextColorMap(chanTheme)
+  }
 
-    KurobaComposeText(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-        .padding(top = 4.dp)
-        .then(pressIndicator),
+  if (postComment.isNotNullNorBlank()) {
+    KurobaComposeClickableText(
       fontSize = 14.sp,
       text = postComment,
-      onTextLayout = {
-        layoutResult.value = it
-      }
+      annotationBgColors = clickedTextBackgroundColorMap,
+      detectClickedAnnotations = { offset, textLayoutResult, text -> detectClickedAnnotations(offset, textLayoutResult, text) },
+      onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(text, offset) }
     )
   }
-}
-
-private fun detectClickedAnnotations(
-  pos: Offset,
-  layoutResult: MutableState<TextLayoutResult?>,
-  postComment: AnnotatedString
-): Boolean {
-  val result = layoutResult.value
-    ?: return false
-
-  val offset = result.getOffsetForPosition(pos)
-  val clickedAnnotations = postComment.getStringAnnotations(offset, offset)
-
-  for (clickedAnnotation in clickedAnnotations) {
-    if (clickedAnnotation.tag == PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG) {
-      return true
-    }
-  }
-
-  return false
 }
 
 @Composable
@@ -394,4 +365,40 @@ private fun postComment(postData: PostData): MutableState<AnnotatedString> {
   }
 
   return postComment
+}
+
+private fun createClickableTextColorMap(chanTheme: ChanTheme): Map<String, Color> {
+  val postLinkColor = run {
+    val resultColor = if (ThemeEngine.isDarkColor(chanTheme.postLinkColorCompose)) {
+      ThemeEngine.manipulateColor(chanTheme.postLinkColorCompose, 1.2f)
+    } else {
+      ThemeEngine.manipulateColor(chanTheme.postLinkColorCompose, 0.8f)
+    }
+
+    return@run resultColor.copy(alpha = .5f)
+  }
+
+  return mapOf(
+    PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG to postLinkColor
+  )
+}
+
+private fun detectClickedAnnotations(
+  pos: Offset,
+  layoutResult: TextLayoutResult?,
+  text: AnnotatedString
+): AnnotatedString.Range<String>? {
+  val result = layoutResult
+    ?: return null
+
+  val offset = result.getOffsetForPosition(pos)
+  val clickedAnnotations = text.getStringAnnotations(offset, offset)
+
+  for (clickedAnnotation in clickedAnnotations) {
+    if (clickedAnnotation.tag == PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG) {
+      return clickedAnnotation
+    }
+  }
+
+  return null
 }
