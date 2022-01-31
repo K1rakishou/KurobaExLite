@@ -54,6 +54,8 @@ class PostCommentApplier {
       )
 
       val textPartBuilder = StringBuilder(textPartText)
+      processBannedWords(textPartBuilder)
+
       overflowHappened = overflow
 
       if (textPart.spans.isEmpty()) {
@@ -145,6 +147,18 @@ class PostCommentApplier {
     }
 
     return resultString to overflowHappened
+  }
+
+  private fun processBannedWords(textPartBuilder: StringBuilder) {
+    val matcher = BannedWordsHelper.BANNED_WORDS_PATTERN.matcher(textPartBuilder)
+
+    while (matcher.find()) {
+      val start = matcher.start(1)
+      val end = matcher.end(1)
+      val replacement = (start until end).joinToString(separator = "", transform = { "*" })
+
+      textPartBuilder.replace(start, end, replacement)
+    }
   }
 
   private fun SpanStyle.isEmpty(): Boolean {

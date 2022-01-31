@@ -54,7 +54,6 @@ class PostCommentParser {
         is HtmlNode.Tag -> {
           val htmlTag = htmlNode.htmlTag
           val childTextParts = processNodes(postDescriptor, htmlTag.children)
-
           parseHtmlNode(htmlTag, childTextParts, postDescriptor)
 
           currentTextParts.addAll(childTextParts)
@@ -86,29 +85,41 @@ class PostCommentParser {
           childTextPart.spans.add(TextPartSpan.Spoiler)
         }
       }
-      "span" -> {
-        for (childTextPart in childTextParts) {
-          if (htmlTag.hasClass("quote")) {
-            childTextPart.spans.add(TextPartSpan.FgColorId(ChanThemeColorId.PostInlineQuote))
-          }
-        }
-      }
+      "span",
       "a" -> {
-        val className = htmlTag.classAttrOrNull() ?: return
-        val href = htmlTag.attrUnescapedOrNull("href") ?: return
-
-        if (childTextParts.size != 1) {
-          logcatError {
-            "Weird <a> tag with multiple children detected! Not sure how to parse it. " +
-              "postDescriptor=$postDescriptor, " +
-              "htmlTag='${htmlTag}'," +
-              "children=${htmlTag.children.joinToString()}"
+        if (htmlTag.hasClass("quote")) {
+          for (childTextPart in childTextParts) {
+            childTextPart.spans.add(TextPartSpan.FgColorId(ChanThemeColorId.PostInlineQuote))
           }
 
           return
         }
 
-        val childTextPart = childTextParts.first()
+        val className = htmlTag.classAttrOrNull()
+          ?: return
+
+        val childTextPart = if (childTextParts.size == 1) {
+          childTextParts.first()
+        } else {
+          val mergedTextPart = mergeChildTextPartsIntoOne(childTextParts)
+
+          childTextParts.clear()
+          childTextParts.add(mergedTextPart)
+
+          mergedTextPart
+        }
+
+        val isDeadLink = htmlTag.tagName == "span" && htmlTag.hasClass("deadlink")
+
+        val href = if (isDeadLink) {
+          childTextPart.text
+        } else {
+          htmlTag.attrUnescapedOrNull("href")
+        }
+
+        if (href.isNullOrEmpty()) {
+          return
+        }
 
         val linkable = parseLinkable(className, href, postDescriptor)
         if (linkable == null) {
@@ -130,6 +141,23 @@ class PostCommentParser {
     }
   }
 
+  private fun mergeChildTextPartsIntoOne(
+    childTextParts: List<TextPart>
+  ): TextPart {
+    val totalText = StringBuilder(childTextParts.sumOf { it.text.length })
+    val totalSpans = mutableListWithCap<TextPartSpan>(childTextParts.sumOf { it.spans.size })
+
+    for (inputChildTextPart in childTextParts) {
+      totalText.append(inputChildTextPart.text)
+      totalSpans.addAll(inputChildTextPart.spans)
+    }
+
+    return TextPart(
+      text = totalText.toString(),
+      spans = totalSpans
+    )
+  }
+
   @VisibleForTesting
   fun parseLinkable(
     className: String,
@@ -143,8 +171,10 @@ class PostCommentParser {
       return null
     }
 
-    if (href.startsWith("#")) {
+    if (href.startsWith("#") || href.startsWith(">>")) {
       // Internal quote, e.g. '#p370525473'
+      // or
+      // Internal dead quote, e.g. '>>370525473'
       val postNo = href.drop(2).toLongOrNull()
         ?: return null
 
