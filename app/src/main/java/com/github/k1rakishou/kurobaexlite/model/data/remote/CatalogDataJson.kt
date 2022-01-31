@@ -15,5 +15,7 @@ data class CatalogThreadDataJson(
   val sub: String?,
   val com: String?,
   val ext: String?,
-  val tim: Long?
+  val tim: Long?,
+  val replies: Int?,
+  val images: Int?
 )

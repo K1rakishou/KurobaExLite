@@ -7,7 +7,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-data class PostData(
+open class PostData(
   val postDescriptor: PostDescriptor,
   val postSubjectUnparsed: String,
   val postCommentUnparsed: String,
@@ -23,6 +23,8 @@ data class PostData(
     get() = postDescriptor.postNo
   val postSubNo: Long?
     get() = postDescriptor.postSubNo
+  val isOP: Boolean
+    get() = postNo == postDescriptor.threadNo
 
   val postCommentParsedAndProcessed: AnnotatedString?
     get() = _parsedPostData?.processedPostComment

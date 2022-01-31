@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -348,25 +350,16 @@ private fun PostCellFooter(
 ) {
   val chanTheme = LocalChanTheme.current
   val context = LocalContext.current
-  var postRepliesText by remember { mutableStateOf<String?>(null) }
+  var postFooterText by remember { mutableStateOf<String?>(null) }
 
   LaunchedEffect(
     key1 = postData,
     block = {
-      val repliesFrom = postsScreenViewModel.getRepliesFrom(postData.postDescriptor)
-      if (repliesFrom.isNotEmpty()) {
-        val repliesFromCount = repliesFrom.size
-
-        postRepliesText = context.resources.getQuantityString(
-          R.plurals.reply_with_number,
-          repliesFromCount,
-          repliesFromCount
-        )
-      }
+      postFooterText = formatFooterText(postData, context, postsScreenViewModel)
     }
   )
 
-  val repliesText = postRepliesText
+  val repliesText = postFooterText
 
   if (repliesText.isNotNullNorEmpty()) {
     Text(
@@ -379,6 +372,57 @@ private fun PostCellFooter(
       text = repliesText
     )
   }
+}
+
+private suspend fun formatFooterText(
+  postData: PostData,
+  context: Context,
+  postsScreenViewModel: PostScreenViewModel
+): String? {
+  if (postData is OriginalPostData) {
+    return buildString {
+      postData.threadRepliesTotal
+        ?.takeIf { repliesCount -> repliesCount > 0 }
+        ?.let { repliesCount ->
+          val repliesText = context.resources.getQuantityString(
+            R.plurals.reply_with_number,
+            repliesCount,
+            repliesCount
+          )
+
+          append(repliesText)
+        }
+
+      postData.threadImagesTotal
+        ?.takeIf { imagesCount -> imagesCount > 0 }
+        ?.let { imagesCount ->
+          if (isNotEmpty()) {
+            append(", ")
+          }
+
+          val imagesText = context.resources.getQuantityString(
+            R.plurals.image_with_number,
+            imagesCount,
+            imagesCount
+          )
+
+          append(imagesText)
+        }
+    }
+  }
+
+  val repliesFrom = postsScreenViewModel.getRepliesFrom(postData.postDescriptor)
+  if (repliesFrom.isNotEmpty()) {
+    val repliesFromCount = repliesFrom.size
+
+    return context.resources.getQuantityString(
+      R.plurals.reply_with_number,
+      repliesFromCount,
+      repliesFromCount
+    )
+  }
+
+  return null
 }
 
 @Composable

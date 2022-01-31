@@ -3,10 +3,7 @@ package com.github.k1rakishou.kurobaexlite.model
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
-import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
+import com.github.k1rakishou.kurobaexlite.model.data.local.*
 import com.github.k1rakishou.kurobaexlite.model.data.remote.CatalogPageDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.ThreadDataJson
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -70,17 +67,33 @@ class ChanDataSource(
             postSubNo = null
           )
 
-          return@map PostData(
-            postDescriptor = postDescriptor,
-            postSubjectUnparsed = threadPost.sub ?: "",
-            postCommentUnparsed = threadPost.com ?: "",
-            images = parsePostImages(
-              postImageInfo = postImageInfo,
-              ext = threadPost.ext,
-              tim = threadPost.tim,
-              boardCode = boardCode
+          if (postDescriptor.isOP) {
+            return@map OriginalPostData(
+              postDescriptor = postDescriptor,
+              postSubjectUnparsed = threadPost.sub ?: "",
+              postCommentUnparsed = threadPost.com ?: "",
+              images = parsePostImages(
+                postImageInfo = postImageInfo,
+                ext = threadPost.ext,
+                tim = threadPost.tim,
+                boardCode = boardCode
+              ),
+              threadRepliesTotal = threadPost.replies,
+              threadImagesTotal = threadPost.images
             )
-          )
+          } else {
+            return@map PostData(
+              postDescriptor = postDescriptor,
+              postSubjectUnparsed = threadPost.sub ?: "",
+              postCommentUnparsed = threadPost.com ?: "",
+              images = parsePostImages(
+                postImageInfo = postImageInfo,
+                ext = threadPost.ext,
+                tim = threadPost.tim,
+                boardCode = boardCode
+              )
+            )
+          }
         }
 
         return@Try ThreadData(
@@ -138,7 +151,7 @@ class ChanDataSource(
               postSubNo = null
             )
 
-            return@map PostData(
+            return@map OriginalPostData(
               postDescriptor = postDescriptor,
               postSubjectUnparsed = catalogThread.sub ?: "",
               postCommentUnparsed = catalogThread.com ?: "",
@@ -147,7 +160,9 @@ class ChanDataSource(
                 ext = catalogThread.ext,
                 tim = catalogThread.tim,
                 boardCode = boardCode
-              )
+              ),
+              threadRepliesTotal = catalogThread.replies,
+              threadImagesTotal = catalogThread.images
             )
           }
         }

@@ -90,6 +90,8 @@ data class PostDescriptor(
     get() = threadDescriptor.threadNo
   val catalogDescriptor: CatalogDescriptor
     get() = threadDescriptor.catalogDescriptor
+  val isOP: Boolean
+    get() = postNo == threadDescriptor.threadNo
 
   override fun toString(): String {
     return buildString(capacity = 32) {

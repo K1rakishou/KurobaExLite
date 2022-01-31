@@ -13,5 +13,7 @@ data class ThreadPostDataJson(
   val com: String?,
   val sub: String?,
   val ext: String?,
-  val tim: Long?
+  val tim: Long?,
+  val replies: Int?,
+  val images: Int?,
 )
