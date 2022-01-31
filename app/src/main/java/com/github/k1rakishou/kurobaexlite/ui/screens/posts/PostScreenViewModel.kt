@@ -14,14 +14,17 @@ import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
+import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import kotlinx.coroutines.*
 import logcat.asLog
 import logcat.logcat
+import org.koin.java.KoinJavaComponent.inject
 import java.util.*
 
 abstract class PostScreenViewModel(
@@ -30,6 +33,8 @@ abstract class PostScreenViewModel(
   protected val postCommentApplier: PostCommentApplier,
   protected val themeEngine: ThemeEngine
 ) : BaseViewModel() {
+  private val postReplyChainManager by inject<PostReplyChainManager>(PostReplyChainManager::class.java)
+
   private val scope = CoroutineScope(Dispatchers.Default)
   private var currentParseJob: Job? = null
 
@@ -39,6 +44,10 @@ abstract class PostScreenViewModel(
   private var _parsingPostsAsync = mutableStateOf(false)
   val parsingPostsAsync: State<Boolean>
     get() = _parsingPostsAsync
+
+  suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor> {
+    return postReplyChainManager.getRepliesFrom(postDescriptor)
+  }
 
   suspend fun parseComment(
     isCatalogMode: Boolean,
@@ -50,7 +59,6 @@ abstract class PostScreenViewModel(
       return@withContext calculatePostData(
         postData = postData,
         chanTheme = chanTheme,
-        isParsingOnBind = true,
         parsedPostDataContext = ParsedPostDataContext(
           isParsingCatalog = isCatalogMode
         )
@@ -74,7 +82,6 @@ abstract class PostScreenViewModel(
           calculatePostData(
             postData = postData,
             chanTheme = chanTheme,
-            isParsingOnBind = false,
             parsedPostDataContext = ParsedPostDataContext(
               isParsingCatalog = isCatalogMode
             )
@@ -130,7 +137,6 @@ abstract class PostScreenViewModel(
                   calculatePostData(
                     postData = postData,
                     chanTheme = chanTheme,
-                    isParsingOnBind = false,
                     parsedPostDataContext = ParsedPostDataContext(
                       isParsingCatalog = isCatalogMode
                     )
@@ -187,16 +193,16 @@ abstract class PostScreenViewModel(
   private suspend fun calculatePostData(
     postData: PostData,
     chanTheme: ChanTheme,
-    isParsingOnBind: Boolean,
     parsedPostDataContext: ParsedPostDataContext
   ): ParsedPostData {
     return postData.getOrCalculateParsedPostParts {
-      if (isParsingOnBind) {
-        logcat { "calculatePostData() parsing ${postData.postNo}" }
-      }
-
       try {
         val textParts = postCommentParser.parsePostComment(postData)
+
+        if (parsedPostDataContext.isParsingThread) {
+          processReplyChains(postData.postDescriptor, textParts)
+        }
+
         val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
           chanTheme = chanTheme,
           textParts = textParts,
@@ -210,7 +216,7 @@ abstract class PostScreenViewModel(
           processedPostComment = processedPostComment,
           parsedPostSubject = postSubjectParsed,
           processedPostSubject = parseAndProcessPostSubject(chanTheme, postData, postSubjectParsed),
-          parsedPostDataContext = parsedPostDataContext
+          parsedPostDataContext = parsedPostDataContext,
         )
       } catch (error: Throwable) {
         val postComment = "Error parsing ${postData.postNo}!\n\nError: ${error.asLog()}"
@@ -225,6 +231,37 @@ abstract class PostScreenViewModel(
           parsedPostDataContext = parsedPostDataContext
         )
       }
+    }
+  }
+
+  private suspend fun processReplyChains(
+    postDescriptor: PostDescriptor,
+    textParts: List<PostCommentParser.TextPart>
+  ) {
+    val repliesTo = mutableSetOf<PostDescriptor>()
+
+    for (textPart in textParts) {
+      for (textPartSpan in textPart.spans) {
+        if (textPartSpan !is PostCommentParser.TextPartSpan.Linkable) {
+          continue
+        }
+
+        when (textPartSpan) {
+          is PostCommentParser.TextPartSpan.Linkable.Board,
+          is PostCommentParser.TextPartSpan.Linkable.Search -> continue
+          is PostCommentParser.TextPartSpan.Linkable.Quote -> {
+            if (textPartSpan.crossThread) {
+              continue
+            }
+
+            repliesTo += textPartSpan.postDescriptor
+          }
+        }
+      }
+    }
+
+    if (repliesTo.isNotEmpty()) {
+      postReplyChainManager.insert(postDescriptor, repliesTo)
     }
   }
 

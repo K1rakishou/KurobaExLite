@@ -28,6 +28,8 @@ data class PostData(
     get() = _parsedPostData?.processedPostComment
   val postSubjectParsedAndProcessed: AnnotatedString?
     get() = _parsedPostData?.processedPostSubject
+  val parsedPostDataContext: ParsedPostDataContext?
+    get() = _parsedPostData?.parsedPostDataContext
 
   suspend fun getOrCalculateParsedPostParts(
     calcFunc: suspend () -> ParsedPostData

@@ -64,6 +64,7 @@ class PostCommentApplier {
           var fgColor: Color = Color.Unspecified
           var underline = false
           var linethrough = false
+          var annotationTag: String? = null
 
           when (span) {
             is PostCommentParser.TextPartSpan.BgColor -> {
@@ -107,6 +108,10 @@ class PostCommentApplier {
                   fgColor = chanTheme.postQuoteColorCompose
                 }
               }
+
+              if (parsedPostDataContext.isParsingThread) {
+                annotationTag = ANNOTATION_POST_LINKABLE
+              }
             }
           }
 
@@ -120,6 +125,15 @@ class PostCommentApplier {
 
           if (!spanStyle.isEmpty()) {
             addStyle(spanStyle, 0, textPartBuilder.length)
+          }
+
+          if (annotationTag != null) {
+            addStringAnnotation(
+              tag = ANNOTATION_POST_LINKABLE,
+              annotation = "",
+              start = 0,
+              end = textPartBuilder.length
+            )
           }
         }
       }
@@ -228,6 +242,12 @@ class PostCommentApplier {
     private const val CLICK_TO_EXPAND = "[Click to expand]"
 
     const val ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG = "[click_to_view_full_comment]"
+    const val ANNOTATION_POST_LINKABLE = "[post_linkable]"
+
+    val ALL_TAGS = mutableSetOf(
+      ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG,
+      ANNOTATION_POST_LINKABLE
+    )
   }
 
 }

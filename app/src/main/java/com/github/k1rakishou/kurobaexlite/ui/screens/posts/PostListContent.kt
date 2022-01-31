@@ -73,6 +73,9 @@ internal fun PostListContent(
       }
 
       return@PostListInternal clickedAnnotations.firstOrNull()
+    },
+    onPostRepliesClicked = { postData ->
+      logcat(tag = "onPostRepliesClicked") { "Clicked replies of post ${postData.postDescriptor}" }
     }
   )
 }
@@ -87,7 +90,8 @@ private fun PostListInternal(
   postsScreenViewModel: PostScreenViewModel,
   mainUiLayoutMode: MainUiLayoutMode,
   onPostCellClicked: (PostData) -> Unit,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
+  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?,
+  onPostRepliesClicked: (PostData) -> Unit
 ) {
   LazyColumn(
     modifier = Modifier
@@ -148,7 +152,8 @@ private fun PostListInternal(
             postsScreenViewModel = postsScreenViewModel,
             postListAsync = postListAsync,
             onPostCellClicked = onPostCellClicked,
-            onPostCellCommentClicked = onPostCellCommentClicked
+            onPostCellCommentClicked = onPostCellCommentClicked,
+            onPostRepliesClicked = onPostRepliesClicked
           )
         }
       }
@@ -162,7 +167,8 @@ private fun LazyListScope.postList(
   postsScreenViewModel: PostScreenViewModel,
   postListAsync: AsyncData.Data<List<PostData>>,
   onPostCellClicked: (PostData) -> Unit,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
+  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?,
+  onPostRepliesClicked: (PostData) -> Unit
 ) {
   val postDataList = postListAsync.data
   val totalCount = postDataList.size
@@ -197,7 +203,8 @@ private fun LazyListScope.postList(
           postsScreenViewModel = postsScreenViewModel,
           postData = postData,
           isCatalogMode = isCatalogMode,
-          onPostCellCommentClicked = onPostCellCommentClicked
+          onPostCellCommentClicked = onPostCellCommentClicked,
+          onPostRepliesClicked = onPostRepliesClicked
         )
 
         if (index < (totalCount - 1)) {
@@ -216,7 +223,8 @@ private fun PostCell(
   postsScreenViewModel: PostScreenViewModel,
   postData: PostData,
   isCatalogMode: Boolean,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
+  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?,
+  onPostRepliesClicked: (PostData) -> Unit
 ) {
   var postComment by postComment(postData)
   var postSubject by postSubject(postData)
@@ -248,7 +256,11 @@ private fun PostCell(
       onPostCellCommentClicked = onPostCellCommentClicked
     )
 
-    PostCellFooter()
+    PostCellFooter(
+      postData = postData,
+      postsScreenViewModel = postsScreenViewModel,
+      onPostRepliesClicked = onPostRepliesClicked
+    )
   }
 
 }
@@ -320,15 +332,53 @@ private fun PostCellComment(
       fontSize = 14.sp,
       text = postComment,
       annotationBgColors = clickedTextBackgroundColorMap,
-      detectClickedAnnotations = { offset, textLayoutResult, text -> detectClickedAnnotations(offset, textLayoutResult, text) },
+      detectClickedAnnotations = { offset, textLayoutResult, text ->
+        return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)
+      },
       onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(text, offset) }
     )
   }
 }
 
 @Composable
-private fun PostCellFooter() {
+private fun PostCellFooter(
+  postData: PostData,
+  postsScreenViewModel: PostScreenViewModel,
+  onPostRepliesClicked: (PostData) -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  val context = LocalContext.current
+  var postRepliesText by remember { mutableStateOf<String?>(null) }
 
+  LaunchedEffect(
+    key1 = postData,
+    block = {
+      val repliesFrom = postsScreenViewModel.getRepliesFrom(postData.postDescriptor)
+      if (repliesFrom.isNotEmpty()) {
+        val repliesFromCount = repliesFrom.size
+
+        postRepliesText = context.resources.getQuantityString(
+          R.plurals.reply_with_number,
+          repliesFromCount,
+          repliesFromCount
+        )
+      }
+    }
+  )
+
+  val repliesText = postRepliesText
+
+  if (repliesText.isNotNullNorEmpty()) {
+    Text(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .kurobaClickable(onClick = { onPostRepliesClicked(postData) })
+        .padding(vertical = 4.dp),
+      color = chanTheme.textColorSecondaryCompose,
+      text = repliesText
+    )
+  }
 }
 
 @Composable
@@ -375,11 +425,12 @@ private fun createClickableTextColorMap(chanTheme: ChanTheme): Map<String, Color
       ThemeEngine.manipulateColor(chanTheme.postLinkColorCompose, 0.8f)
     }
 
-    return@run resultColor.copy(alpha = .5f)
+    return@run resultColor.copy(alpha = .4f)
   }
 
   return mapOf(
-    PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG to postLinkColor
+    PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG to postLinkColor,
+    PostCommentApplier.ANNOTATION_POST_LINKABLE to postLinkColor,
   )
 }
 
@@ -395,7 +446,7 @@ private fun detectClickedAnnotations(
   val clickedAnnotations = text.getStringAnnotations(offset, offset)
 
   for (clickedAnnotation in clickedAnnotations) {
-    if (clickedAnnotation.tag == PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG) {
+    if (clickedAnnotation.tag in PostCommentApplier.ALL_TAGS) {
       return clickedAnnotation
     }
   }

@@ -7,6 +7,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
+import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.ChanDataSource
@@ -52,6 +53,7 @@ class KurobaExLiteApplication : Application() {
       single { PostCommentApplier() }
       single { SiteManager() }
       single { ChanThreadManager(get()) }
+      single { PostReplyChainManager() }
       single { UiInfoManager(this@KurobaExLiteApplication) }
       single { ChanDataSource(get(), get(), get()) }
       single { ThemeEngine() }
