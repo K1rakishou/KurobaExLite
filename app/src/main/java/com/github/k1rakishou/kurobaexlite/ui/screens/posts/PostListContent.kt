@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -255,6 +256,7 @@ private fun PostCell(
 
     PostCellComment(
       postComment = postComment,
+      isCatalogMode = isCatalogMode,
       onPostCellCommentClicked = onPostCellCommentClicked
     )
 
@@ -322,6 +324,7 @@ private fun PostCellTitle(
 @Composable
 private fun PostCellComment(
   postComment: AnnotatedString,
+  isCatalogMode: Boolean,
   onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
 ) {
   val chanTheme = LocalChanTheme.current
@@ -330,15 +333,29 @@ private fun PostCellComment(
   }
 
   if (postComment.isNotNullNorBlank()) {
-    KurobaComposeClickableText(
-      fontSize = 14.sp,
-      text = postComment,
-      annotationBgColors = clickedTextBackgroundColorMap,
-      detectClickedAnnotations = { offset, textLayoutResult, text ->
-        return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)
-      },
-      onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(text, offset) }
-    )
+    PostCellCommentSelectionWrapper(isCatalogMode = isCatalogMode) {
+      KurobaComposeClickableText(
+        fontSize = 14.sp,
+        text = postComment,
+        annotationBgColors = clickedTextBackgroundColorMap,
+        detectClickedAnnotations = { offset, textLayoutResult, text ->
+          return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)
+        },
+        onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(text, offset) }
+      )
+    }
+  }
+}
+
+@Composable
+private fun PostCellCommentSelectionWrapper(isCatalogMode: Boolean, content: @Composable () -> Unit) {
+  if (isCatalogMode) {
+    content()
+    return
+  }
+
+  SelectionContainer {
+    content()
   }
 }
 
