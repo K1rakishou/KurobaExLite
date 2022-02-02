@@ -3,29 +3,44 @@ package com.github.k1rakishou.kurobaexlite.ui.elements
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 
 private val DefaultPaddingValues = PaddingValues(0.dp)
-private val SCROLLBAR_WIDTH = 8.dp
 
 fun Modifier.simpleVerticalScrollbar(
   state: LazyListState,
   chanTheme: ChanTheme,
   contentPadding: PaddingValues = DefaultPaddingValues,
-  width: Dp = SCROLLBAR_WIDTH
+  scrollbarWidth: Float,
+  scrollbarMinHeight: Float,
+  draggingScrollbar: Boolean
 ): Modifier {
   return composed {
-    val targetAlpha = if (state.isScrollInProgress) 0.8f else 0f
-    val duration = if (state.isScrollInProgress) 10 else 1500
+    val topPaddingPx = with(LocalDensity.current) {
+      remember(key1 = contentPadding) {
+        contentPadding.calculateTopPadding().toPx()
+      }
+    }
+    val bottomPaddingPx = with(LocalDensity.current) {
+      remember(key1 = contentPadding) {
+        contentPadding.calculateBottomPadding().toPx()
+      }
+    }
+
+    val targetAlpha = if (state.isScrollInProgress || draggingScrollbar) 0.8f else 0f
+    val duration = if (state.isScrollInProgress || draggingScrollbar) 10 else 1500
 
     val alpha by animateFloatAsState(
       targetValue = targetAlpha,
@@ -47,21 +62,53 @@ fun Modifier.simpleVerticalScrollbar(
           return@drawWithContent
         }
 
-        val topPaddingPx = contentPadding.calculateTopPadding().toPx()
-        val bottomPaddingPx = contentPadding.calculateBottomPadding().toPx()
-        val totalHeightWithoutPaddings = this.size.height - topPaddingPx - bottomPaddingPx
+        val (scrollbarOffsetY, scrollbarHeightAdjusted) = calculateScrollbarHeight(
+          topPaddingPx = topPaddingPx,
+          bottomPaddingPx = bottomPaddingPx,
+          layoutInfo = layoutInfo,
+          firstVisibleElementIndex = firstVisibleElementIndex,
+          scrollbarMinHeight = scrollbarMinHeight,
+          realScrollbarHeightDiff = null
+        )
 
-        val elementHeight = totalHeightWithoutPaddings / layoutInfo.totalItemsCount
-        val scrollbarOffsetY = firstVisibleElementIndex * elementHeight
-        val scrollbarHeight = layoutInfo.visibleItemsInfo.size * elementHeight
+        val offsetY = topPaddingPx + scrollbarOffsetY
+        val offsetX = this.size.width - scrollbarWidth
 
         drawRect(
           color = chanTheme.textColorHintCompose,
-          topLeft = Offset(this.size.width - width.toPx(), topPaddingPx + scrollbarOffsetY),
-          size = Size(width.toPx(), scrollbarHeight),
+          topLeft = Offset(offsetX, offsetY),
+          size = Size(scrollbarWidth, scrollbarHeightAdjusted),
           alpha = alpha
         )
       }
     )
   }
+}
+
+private fun ContentDrawScope.calculateScrollbarHeight(
+  topPaddingPx: Float,
+  bottomPaddingPx: Float,
+  layoutInfo: LazyListLayoutInfo,
+  firstVisibleElementIndex: Int,
+  scrollbarMinHeight: Float,
+  realScrollbarHeightDiff: Float?
+): Pair<Float, Float> {
+  val totalHeightWithoutPaddings = this.size.height - (realScrollbarHeightDiff ?: 0f) - topPaddingPx - bottomPaddingPx
+  val elementHeight = totalHeightWithoutPaddings / layoutInfo.totalItemsCount
+  val scrollbarOffsetY = firstVisibleElementIndex * elementHeight
+  val scrollbarHeightReal = (layoutInfo.visibleItemsInfo.size * elementHeight)
+  val scrollbarHeightAdjusted = scrollbarHeightReal.coerceAtLeast(scrollbarMinHeight)
+
+  if (scrollbarHeightAdjusted > scrollbarHeightReal && realScrollbarHeightDiff == null) {
+    return calculateScrollbarHeight(
+      topPaddingPx = topPaddingPx,
+      bottomPaddingPx = bottomPaddingPx,
+      layoutInfo = layoutInfo,
+      firstVisibleElementIndex = firstVisibleElementIndex,
+      scrollbarMinHeight = scrollbarMinHeight,
+      realScrollbarHeightDiff = (scrollbarHeightAdjusted - scrollbarHeightReal)
+    )
+  }
+
+  return Pair(scrollbarOffsetY, scrollbarHeightAdjusted)
 }

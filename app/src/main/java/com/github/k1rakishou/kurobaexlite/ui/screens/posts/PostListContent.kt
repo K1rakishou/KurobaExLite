@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -35,6 +34,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.*
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import logcat.logcat
@@ -48,7 +48,6 @@ internal fun PostListContent(
   onPostCellClicked: (PostData) -> Unit
 ) {
   val windowInsets = LocalWindowInsets.current
-  val chanTheme = LocalChanTheme.current
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
   val contentPadding = remember(key1 = windowInsets) {
@@ -60,7 +59,6 @@ internal fun PostListContent(
 
   PostListInternal(
     lazyListState = lazyListState,
-    chanTheme = chanTheme,
     contentPadding = contentPadding,
     postListAsync = postListAsync,
     isCatalogMode = isCatalogMode,
@@ -86,7 +84,6 @@ internal fun PostListContent(
 @Composable
 private fun PostListInternal(
   lazyListState: LazyListState,
-  chanTheme: ChanTheme,
   contentPadding: PaddingValues,
   postListAsync: AsyncData<List<PostData>>,
   isCatalogMode: Boolean,
@@ -96,15 +93,9 @@ private fun PostListInternal(
   onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
-  LazyColumn(
-    modifier = Modifier
-      .fillMaxSize()
-      .simpleVerticalScrollbar(
-        state = lazyListState,
-        chanTheme = chanTheme,
-        contentPadding = contentPadding
-      ),
-    state = lazyListState,
+  LazyColumnWithFastScroller(
+    modifier = Modifier.fillMaxSize(),
+    lazyListState = lazyListState,
     contentPadding = contentPadding,
     content = {
       when (postListAsync) {
