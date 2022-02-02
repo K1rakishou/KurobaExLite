@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.elements
+package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.*
@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.helpers.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import java.util.*
 
 private val DefaultFillMaxSizeModifier: Modifier = Modifier.fillMaxSize()

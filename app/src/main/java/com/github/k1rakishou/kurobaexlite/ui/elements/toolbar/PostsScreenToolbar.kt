@@ -15,9 +15,9 @@ import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
-import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.elements.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
 @Composable
 fun BoxScope.PostsScreenToolbar(

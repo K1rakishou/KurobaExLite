@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.elements
+package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -25,7 +25,7 @@ fun Modifier.simpleVerticalScrollbar(
   contentPadding: PaddingValues = DefaultPaddingValues,
   scrollbarWidth: Float,
   scrollbarMinHeight: Float,
-  draggingScrollbar: Boolean
+  scrollbarDragged: Boolean
 ): Modifier {
   return composed {
     val topPaddingPx = with(LocalDensity.current) {
@@ -39,8 +39,8 @@ fun Modifier.simpleVerticalScrollbar(
       }
     }
 
-    val targetAlpha = if (state.isScrollInProgress || draggingScrollbar) 0.8f else 0f
-    val duration = if (state.isScrollInProgress || draggingScrollbar) 10 else 1500
+    val targetAlpha = if (state.isScrollInProgress || scrollbarDragged) 0.8f else 0f
+    val duration = if (state.isScrollInProgress || scrollbarDragged) 10 else 1500
 
     val alpha by animateFloatAsState(
       targetValue = targetAlpha,

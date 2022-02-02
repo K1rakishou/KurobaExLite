@@ -11,11 +11,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeCardView
-import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeLoadingIndicator
-import com.github.k1rakishou.kurobaexlite.ui.elements.KurobaComposeText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.*
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeNavigationScreen
 
 abstract class PostsScreen(

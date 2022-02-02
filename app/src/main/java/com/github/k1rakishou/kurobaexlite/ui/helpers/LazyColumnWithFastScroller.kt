@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.ui.elements.simpleVerticalScrollbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -33,7 +32,7 @@ fun LazyColumnWithFastScroller(
   val paddingTopPx = with(LocalDensity.current) { contentPadding.calculateTopPadding().toPx() }
   val paddingBottomPx = with(LocalDensity.current) { contentPadding.calculateBottomPadding().toPx() }
   val coroutineScope = rememberCoroutineScope()
-  var draggingScrollbar by remember { mutableStateOf(false) }
+  var scrollbarDragged by remember { mutableStateOf(false) }
 
   BoxWithConstraints {
     val maxWidthPx = with(LocalDensity.current) { remember(key1 = maxWidth) { maxWidth.toPx() } }
@@ -52,7 +51,7 @@ fun LazyColumnWithFastScroller(
               paddingTop = paddingTopPx,
               paddingBottom = paddingBottomPx,
               scrollbarWidth = scrollbarWidth,
-              onDraggingScrollbar = { dragging -> draggingScrollbar = dragging }
+              onScrollbarDragStateUpdated = { dragging -> scrollbarDragged = dragging }
             )
           }
         )
@@ -65,7 +64,7 @@ fun LazyColumnWithFastScroller(
             contentPadding = contentPadding,
             scrollbarWidth = scrollbarWidth,
             scrollbarMinHeight = scrollbarMinHeightPx,
-            draggingScrollbar = draggingScrollbar
+            scrollbarDragged = scrollbarDragged
           )
           .then(modifier),
         state = lazyListState,
@@ -85,7 +84,7 @@ suspend fun PointerInputScope.processFastScrollerInputs(
   paddingTop: Float,
   paddingBottom: Float,
   scrollbarWidth: Float,
-  onDraggingScrollbar: (Boolean) -> Unit
+  onScrollbarDragStateUpdated: (Boolean) -> Unit
 ) {
   forEachGesture {
     awaitPointerEventScope {
@@ -104,7 +103,7 @@ suspend fun PointerInputScope.processFastScrollerInputs(
       down.consumeAllChanges()
 
       try {
-        onDraggingScrollbar(true)
+        onScrollbarDragStateUpdated(true)
 
         while (true) {
           val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
@@ -127,7 +126,7 @@ suspend fun PointerInputScope.processFastScrollerInputs(
           }
         }
       } finally {
-        onDraggingScrollbar(false)
+        onScrollbarDragStateUpdated(false)
       }
     }
   }
