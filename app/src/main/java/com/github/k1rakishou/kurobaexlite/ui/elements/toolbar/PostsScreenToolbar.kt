@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,7 +24,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 @Composable
 fun BoxScope.PostsScreenToolbar(
   isCatalogScreen: Boolean,
-  postListAsync: AsyncData<List<PostData>>,
+  postListAsync: AsyncData<List<State<PostData>>>,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
   val chanTheme = LocalChanTheme.current
@@ -34,9 +36,16 @@ fun BoxScope.PostsScreenToolbar(
         AsyncData.Loading -> stringResource(R.string.toolbar_loading_title)
         is AsyncData.Error -> stringResource(R.string.toolbar_loading_subtitle)
         is AsyncData.Data -> {
-          val originalPost = postListAsync.data.firstOrNull()
-          remember(key1 = originalPost) {
-            originalPost?.formatToolbarTitle(catalogMode = isCatalogScreen)
+          val postListState = postListAsync.data.firstOrNull()
+
+          if (postListState != null) {
+            val originalPost by postListState
+
+            remember(key1 = originalPost) {
+              originalPost.formatToolbarTitle(catalogMode = isCatalogScreen)
+            }
+          } else {
+            null
           }
         }
       }

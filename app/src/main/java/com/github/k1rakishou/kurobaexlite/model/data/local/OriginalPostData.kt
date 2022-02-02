@@ -8,10 +8,12 @@ class OriginalPostData(
   postCommentUnparsed: String,
   images: List<PostImageData>?,
   val threadRepliesTotal: Int?,
-  val threadImagesTotal: Int?
+  val threadImagesTotal: Int?,
+  _parsedPostData: ParsedPostData?
 ) : PostData(
-  postDescriptor,
-  postSubjectUnparsed,
-  postCommentUnparsed,
-  images
+  postDescriptor = postDescriptor,
+  postSubjectUnparsed = postSubjectUnparsed,
+  postCommentUnparsed = postCommentUnparsed,
+  images = images,
+  _parsedPostData = _parsedPostData
 )

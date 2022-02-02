@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.github.k1rakishou.kurobaexlite.R
@@ -41,8 +42,8 @@ class ThreadScreen(
   }
 
   @Composable
-  override fun postDataAsync(): AsyncData<List<PostData>> {
-    return threadScreenViewModel.postScreenState.postDataAsync()
+  override fun postDataAsync(): AsyncData<List<State<PostData>>> {
+    return threadScreenViewModel.postScreenState.postDataAsyncState()
   }
 
   @Composable

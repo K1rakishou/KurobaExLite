@@ -119,7 +119,7 @@ class ThreadScreenViewModel(
   ) : PostScreenState {
     internal var threadPostsAsync by threadPostsAsyncState
 
-    override fun postDataAsync(): AsyncData<List<PostData>> {
+    override fun postDataAsyncState(): AsyncData<List<State<PostData>>> {
       return when (val asyncDataStateValue = threadPostsAsyncState.value) {
         is AsyncData.Data -> AsyncData.Data(asyncDataStateValue.data.threadPosts)
         is AsyncData.Error -> AsyncData.Error(asyncDataStateValue.error)
@@ -127,19 +127,38 @@ class ThreadScreenViewModel(
         AsyncData.Loading -> AsyncData.Loading
       }
     }
+
+    override fun updatePost(postData: PostData) {
+      val asyncData = threadPostsAsyncState.value
+      if (asyncData is AsyncData.Data) {
+        asyncData.data.update(postData)
+      }
+    }
+
   }
 
   class ThreadPostsState(
     val threadDescriptor: ThreadDescriptor,
     threadPosts: List<PostData>
   ) {
-    private val _threadPosts = mutableStateListOf<PostData>()
-    val threadPosts: List<PostData>
+    private val _threadPosts = mutableStateListOf<MutableState<PostData>>()
+    val threadPosts: List<State<PostData>>
       get() = _threadPosts
 
     init {
-      _threadPosts.addAll(threadPosts)
+      _threadPosts.addAll(threadPosts.map { mutableStateOf(it) })
     }
+
+
+    fun update(postData: PostData) {
+      val index = _threadPosts.indexOfFirst { it.value.postDescriptor == postData.postDescriptor }
+      if (index < 0) {
+        return
+      }
+
+      _threadPosts[index].value = postData
+    }
+
   }
 
 

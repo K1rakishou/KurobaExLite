@@ -6,13 +6,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
-import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
-import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
+import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
@@ -47,6 +45,20 @@ abstract class PostScreenViewModel(
 
   suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor> {
     return postReplyChainManager.getRepliesFrom(postDescriptor)
+  }
+
+  fun reparsePost(postData: PostData, parsedPostDataContext: ParsedPostDataContext) {
+    viewModelScope.launch(Dispatchers.Default) {
+      val chanTheme = themeEngine.chanTheme
+
+      val parsedPostData = calculateParsedPostData(
+        postData = postData,
+        chanTheme = chanTheme,
+        parsedPostDataContext = parsedPostDataContext
+      )
+
+      postScreenState.updatePost(postData.copy(parsedPostData = parsedPostData))
+    }
   }
 
   suspend fun parseComment(
@@ -193,44 +205,59 @@ abstract class PostScreenViewModel(
   private suspend fun calculatePostData(
     postData: PostData,
     chanTheme: ChanTheme,
-    parsedPostDataContext: ParsedPostDataContext
+    parsedPostDataContext: ParsedPostDataContext,
+    force: Boolean = false
   ): ParsedPostData {
-    return postData.getOrCalculateParsedPostParts {
-      try {
-        val textParts = postCommentParser.parsePostComment(postData)
+    return postData.getOrCalculateParsedPostParts(force = force) {
+      return@getOrCalculateParsedPostParts calculateParsedPostData(
+        postData,
+        parsedPostDataContext,
+        chanTheme
+      )
+    }
+  }
 
-        if (parsedPostDataContext.isParsingThread) {
-          processReplyChains(postData.postDescriptor, textParts)
-        }
+  private suspend fun calculateParsedPostData(
+    postData: PostData,
+    parsedPostDataContext: ParsedPostDataContext,
+    chanTheme: ChanTheme
+  ): ParsedPostData {
+    BackgroundUtils.ensureBackgroundThread()
 
-        val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
-          chanTheme = chanTheme,
-          textParts = textParts,
-          parsedPostDataContext = parsedPostDataContext
-        )
-        val postSubjectParsed = HtmlUnescape.unescape(postData.postSubjectUnparsed)
+    try {
+      val textParts = postCommentParser.parsePostComment(postData)
 
-        return@getOrCalculateParsedPostParts ParsedPostData(
-          parsedPostParts = textParts,
-          parsedPostComment = processedPostComment.text,
-          processedPostComment = processedPostComment,
-          parsedPostSubject = postSubjectParsed,
-          processedPostSubject = parseAndProcessPostSubject(chanTheme, postData, postSubjectParsed),
-          parsedPostDataContext = parsedPostDataContext,
-        )
-      } catch (error: Throwable) {
-        val postComment = "Error parsing ${postData.postNo}!\n\nError: ${error.asLog()}"
-        val postCommentAnnotated = AnnotatedString(postComment)
-
-        return@getOrCalculateParsedPostParts ParsedPostData(
-          parsedPostParts = emptyList(),
-          parsedPostComment = postComment,
-          processedPostComment = postCommentAnnotated,
-          parsedPostSubject = "",
-          processedPostSubject = AnnotatedString(""),
-          parsedPostDataContext = parsedPostDataContext
-        )
+      if (parsedPostDataContext.isParsingThread) {
+        processReplyChains(postData.postDescriptor, textParts)
       }
+
+      val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
+        chanTheme = chanTheme,
+        textParts = textParts,
+        parsedPostDataContext = parsedPostDataContext
+      )
+      val postSubjectParsed = HtmlUnescape.unescape(postData.postSubjectUnparsed)
+
+      return ParsedPostData(
+        parsedPostParts = textParts,
+        parsedPostComment = processedPostComment.text,
+        processedPostComment = processedPostComment,
+        parsedPostSubject = postSubjectParsed,
+        processedPostSubject = parseAndProcessPostSubject(chanTheme, postData, postSubjectParsed),
+        parsedPostDataContext = parsedPostDataContext,
+      )
+    } catch (error: Throwable) {
+      val postComment = "Error parsing ${postData.postNo}!\n\nError: ${error.asLog()}"
+      val postCommentAnnotated = AnnotatedString(postComment)
+
+      return ParsedPostData(
+        parsedPostParts = emptyList(),
+        parsedPostComment = postComment,
+        processedPostComment = postCommentAnnotated,
+        parsedPostSubject = "",
+        processedPostSubject = AnnotatedString(""),
+        parsedPostDataContext = parsedPostDataContext
+      )
     }
   }
 
@@ -270,6 +297,7 @@ abstract class PostScreenViewModel(
   }
 
   interface PostScreenState {
-    fun postDataAsync(): AsyncData<List<PostData>>
+    fun postDataAsyncState(): AsyncData<List<State<PostData>>>
+    fun updatePost(postData: PostData)
   }
 }

@@ -119,7 +119,7 @@ class CatalogScreenViewModel(
   ) : PostScreenState {
     internal var catalogThreadsAsync by catalogThreadsAsyncState
 
-    override fun postDataAsync(): AsyncData<List<PostData>> {
+    override fun postDataAsyncState(): AsyncData<List<State<PostData>>> {
       return when (val asyncDataStateValue = catalogThreadsAsyncState.value) {
         is AsyncData.Data -> AsyncData.Data(asyncDataStateValue.data.catalogThreads)
         is AsyncData.Error -> AsyncData.Error(asyncDataStateValue.error)
@@ -127,19 +127,37 @@ class CatalogScreenViewModel(
         AsyncData.Loading -> AsyncData.Loading
       }
     }
+
+    override fun updatePost(postData: PostData) {
+      val asyncData = catalogThreadsAsyncState.value
+      if (asyncData is AsyncData.Data) {
+        asyncData.data.update(postData)
+      }
+    }
+
   }
 
   class CatalogThreadsState(
     val catalogDescriptor: CatalogDescriptor,
     catalogThreads: List<PostData>
   ) {
-    private val _catalogThreads = mutableStateListOf<PostData>()
-    val catalogThreads: List<PostData>
+    private val _catalogThreads = mutableStateListOf<MutableState<PostData>>()
+    val catalogThreads: List<State<PostData>>
       get() = _catalogThreads
 
     init {
-      _catalogThreads.addAll(catalogThreads)
+      _catalogThreads.addAll(catalogThreads.map { mutableStateOf(it) })
     }
+
+    fun update(postData: PostData) {
+      val index = _catalogThreads.indexOfFirst { it.value.postDescriptor == postData.postDescriptor }
+      if (index < 0) {
+        return
+      }
+
+      _catalogThreads[index].value = postData
+    }
+
   }
 
 }

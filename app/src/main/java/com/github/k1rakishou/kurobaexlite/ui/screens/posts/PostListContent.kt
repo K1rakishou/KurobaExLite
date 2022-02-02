@@ -52,7 +52,7 @@ internal fun PostListContent(
   }
 
   val lazyListState = rememberLazyListState()
-  val postListAsync = postsScreenViewModel.postScreenState.postDataAsync()
+  val postListAsync = postsScreenViewModel.postScreenState.postDataAsyncState()
 
   PostListInternal(
     lazyListState = lazyListState,
@@ -62,15 +62,8 @@ internal fun PostListContent(
     postsScreenViewModel = postsScreenViewModel,
     mainUiLayoutMode = mainUiLayoutMode,
     onPostCellClicked = onPostCellClicked,
-    onPostCellCommentClicked = { postComment, offset ->
-      val clickedAnnotations = postComment.getStringAnnotations(offset, offset)
-
-      logcat(tag = "onPostCellCommentClicked") {
-        "Clicked text at offset: ${offset}, character: ${postComment.getOrNull(offset)}, " +
-          "clickedAnnotations=$clickedAnnotations"
-      }
-
-      return@PostListInternal clickedAnnotations.firstOrNull()
+    onPostCellCommentClicked = { postData, postComment, offset ->
+      processClickedAnnotation(postsScreenViewModel, postData, postComment, offset)
     },
     onPostRepliesClicked = { postData ->
       logcat(tag = "onPostRepliesClicked") { "Clicked replies of post ${postData.postDescriptor}" }
@@ -78,16 +71,42 @@ internal fun PostListContent(
   )
 }
 
+private fun processClickedAnnotation(
+  postsScreenViewModel: PostScreenViewModel,
+  postData: PostData,
+  postComment: AnnotatedString,
+  offset: Int
+) {
+  val clickedAnnotation = postComment.getStringAnnotations(offset, offset).firstOrNull()
+    ?: return
+  val parsedPostDataContext = postData.parsedPostDataContext
+    ?: return
+
+  when (clickedAnnotation.tag) {
+    PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG -> {
+      if (!parsedPostDataContext.revealFullPostComment) {
+        postsScreenViewModel.reparsePost(
+          postData = postData,
+          parsedPostDataContext = parsedPostDataContext.copy(revealFullPostComment = true)
+        )
+      }
+    }
+    PostCommentApplier.ANNOTATION_POST_LINKABLE -> {
+      // TODO(KurobaEx):
+    }
+  }
+}
+
 @Composable
 private fun PostListInternal(
   lazyListState: LazyListState,
   contentPadding: PaddingValues,
-  postListAsync: AsyncData<List<PostData>>,
+  postListAsync: AsyncData<List<State<PostData>>>,
   isCatalogMode: Boolean,
   postsScreenViewModel: PostScreenViewModel,
   mainUiLayoutMode: MainUiLayoutMode,
   onPostCellClicked: (PostData) -> Unit,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?,
+  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
   LazyColumnWithFastScroller(
@@ -156,9 +175,9 @@ private fun LazyListScope.postList(
   isCatalogMode: Boolean,
   mainUiLayoutMode: MainUiLayoutMode,
   postsScreenViewModel: PostScreenViewModel,
-  postListAsync: AsyncData.Data<List<PostData>>,
+  postListAsync: AsyncData.Data<List<State<PostData>>>,
   onPostCellClicked: (PostData) -> Unit,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?,
+  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
   val postDataList = postListAsync.data
@@ -166,9 +185,9 @@ private fun LazyListScope.postList(
 
   items(
     count = totalCount,
-    key = { index -> postDataList[index].postDescriptor },
+    key = { index -> postDataList[index].value.postDescriptor },
     itemContent = { index ->
-      val postData = postDataList[index]
+      val postData by postDataList[index]
 
       val padding = remember(key1 = mainUiLayoutMode) {
         when (mainUiLayoutMode) {
@@ -214,7 +233,7 @@ private fun PostCell(
   postsScreenViewModel: PostScreenViewModel,
   postData: PostData,
   isCatalogMode: Boolean,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?,
+  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
   var postComment by postComment(postData)
@@ -243,6 +262,7 @@ private fun PostCell(
     )
 
     PostCellComment(
+      postData = postData,
       postComment = postComment,
       isCatalogMode = isCatalogMode,
       onPostCellCommentClicked = onPostCellCommentClicked
@@ -311,9 +331,10 @@ private fun PostCellTitle(
 
 @Composable
 private fun PostCellComment(
+  postData: PostData,
   postComment: AnnotatedString,
   isCatalogMode: Boolean,
-  onPostCellCommentClicked: (AnnotatedString, Int) -> AnnotatedString.Range<String>?
+  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val clickedTextBackgroundColorMap = remember(key1 = chanTheme) {
@@ -329,7 +350,7 @@ private fun PostCellComment(
         detectClickedAnnotations = { offset, textLayoutResult, text ->
           return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)
         },
-        onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(text, offset) }
+        onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(postData, text, offset) }
       )
     }
   }

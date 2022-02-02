@@ -79,7 +79,8 @@ class ChanDataSource(
                 boardCode = boardCode
               ),
               threadRepliesTotal = threadPost.replies,
-              threadImagesTotal = threadPost.images
+              threadImagesTotal = threadPost.images,
+              _parsedPostData = null
             )
           } else {
             return@map PostData(
@@ -91,7 +92,8 @@ class ChanDataSource(
                 ext = threadPost.ext,
                 tim = threadPost.tim,
                 boardCode = boardCode
-              )
+              ),
+              _parsedPostData = null
             )
           }
         }
@@ -162,7 +164,8 @@ class ChanDataSource(
                 boardCode = boardCode
               ),
               threadRepliesTotal = catalogThread.replies,
-              threadImagesTotal = catalogThread.images
+              threadImagesTotal = catalogThread.images,
+              _parsedPostData = null
             )
           }
         }
