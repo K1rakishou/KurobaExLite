@@ -15,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -38,9 +39,17 @@ abstract class PostScreenViewModel(
   abstract val postScreenState: PostScreenState
   abstract fun reload()
 
-  private var _parsingPostsAsync = mutableStateOf(false)
+  private var _parsingPostsAsyncState = mutableStateOf(false)
   val parsingPostsAsync: State<Boolean>
-    get() = _parsingPostsAsync
+    get() = _parsingPostsAsyncState
+
+  protected var _chanDescriptorState = mutableStateOf<ChanDescriptor?>(null)
+  val chanDescriptorState: State<ChanDescriptor?>
+    get() = _chanDescriptorState
+
+  protected var _threadCellDataState = mutableStateOf<ThreadCellData?>(null)
+  val threadCellDataState: State<ThreadCellData?>
+    get() = _threadCellDataState
 
   suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor> {
     return postReplyChainManager.getRepliesFrom(postDescriptor)
@@ -121,7 +130,7 @@ abstract class PostScreenViewModel(
 
       val showPostsLoadingSnackbarJob = launch {
         delay(125L)
-        _parsingPostsAsync.value = true
+        _parsingPostsAsyncState.value = true
       }
 
       try {
@@ -166,7 +175,7 @@ abstract class PostScreenViewModel(
       } finally {
         onPostsParsed(postDataList)
         showPostsLoadingSnackbarJob.cancel()
-        _parsingPostsAsync.value = false
+        _parsingPostsAsyncState.value = false
       }
     }
   }
@@ -299,4 +308,11 @@ abstract class PostScreenViewModel(
     fun postDataAsyncState(): AsyncData<List<State<PostData>>>
     fun updatePost(postData: PostData)
   }
+
+  data class ThreadCellData(
+    val totalReplies: Int = 0,
+    val totalImages: Int = 0,
+    val totalPosters: Int = 0
+  )
+
 }

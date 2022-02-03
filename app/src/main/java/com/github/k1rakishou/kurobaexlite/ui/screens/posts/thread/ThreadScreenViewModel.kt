@@ -8,7 +8,9 @@ import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
+import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
@@ -98,7 +100,10 @@ class ThreadScreenViewModel(
       threadPosts = threadData.threadPosts
     )
 
+
     threadScreenState.threadPostsAsync = AsyncData.Data(threadPostsState)
+    _threadCellDataState.value = formatThreadCellData(threadData)
+    _chanDescriptorState.value = threadDescriptor
 
     logcat {
       "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
@@ -110,6 +115,18 @@ class ThreadScreenViewModel(
     super.postProcessPostDataAfterParsing(postDataList)
 
     // TODO(KurobaEx): restore scroll position/etc
+  }
+
+  private fun formatThreadCellData(threadData: ThreadData): ThreadCellData? {
+    val originalPostData = threadData.threadPosts
+      .firstOrNull { postData -> postData is OriginalPostData } as? OriginalPostData
+      ?: return null
+
+    return ThreadCellData(
+      totalReplies = originalPostData.threadRepliesTotal ?: 0,
+      totalImages = originalPostData.threadImagesTotal ?: 0,
+      totalPosters = originalPostData.threadPostersTotal ?: 0
+    )
   }
 
   class ThreadDisplayException(message: String) : ClientException(message)

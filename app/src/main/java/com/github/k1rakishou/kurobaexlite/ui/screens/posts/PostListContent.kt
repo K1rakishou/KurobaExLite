@@ -3,12 +3,14 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -18,7 +20,10 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -31,6 +36,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
@@ -67,6 +73,9 @@ internal fun PostListContent(
     },
     onPostRepliesClicked = { postData ->
       logcat(tag = "onPostRepliesClicked") { "Clicked replies of post ${postData.postDescriptor}" }
+    },
+    onThreadStatusCellClicked = { threadDescriptor ->
+      logcat(tag = "onThreadStatusCellClicked") { "Clicked status cell ${threadDescriptor}" }
     }
   )
 }
@@ -107,8 +116,24 @@ private fun PostListInternal(
   mainUiLayoutMode: MainUiLayoutMode,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit
+  onPostRepliesClicked: (PostData) -> Unit,
+  onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
+  val padding = remember(key1 = mainUiLayoutMode) {
+    when (mainUiLayoutMode) {
+      MainUiLayoutMode.Portrait -> {
+        PaddingValues(horizontal = 8.dp)
+      }
+      MainUiLayoutMode.TwoWaySplit -> {
+        if (isCatalogMode) {
+          PaddingValues(start = 8.dp, end = 4.dp)
+        } else {
+          PaddingValues(start = 4.dp, end = 8.dp)
+        }
+      }
+    }
+  }
+
   LazyColumnWithFastScroller(
     modifier = Modifier.fillMaxSize(),
     lazyListState = lazyListState,
@@ -158,12 +183,13 @@ private fun PostListInternal(
         is AsyncData.Data -> {
           postList(
             isCatalogMode = isCatalogMode,
-            mainUiLayoutMode = mainUiLayoutMode,
+            padding = padding,
             postsScreenViewModel = postsScreenViewModel,
-            postListAsync = postListAsync,
+            postDataList = postListAsync.data,
             onPostCellClicked = onPostCellClicked,
             onPostCellCommentClicked = onPostCellCommentClicked,
-            onPostRepliesClicked = onPostRepliesClicked
+            onPostRepliesClicked = onPostRepliesClicked,
+            onThreadStatusCellClicked = onThreadStatusCellClicked
           )
         }
       }
@@ -173,14 +199,14 @@ private fun PostListInternal(
 
 private fun LazyListScope.postList(
   isCatalogMode: Boolean,
-  mainUiLayoutMode: MainUiLayoutMode,
+  padding: PaddingValues,
   postsScreenViewModel: PostScreenViewModel,
-  postListAsync: AsyncData.Data<List<State<PostData>>>,
+  postDataList: List<State<PostData>>,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit
+  onPostRepliesClicked: (PostData) -> Unit,
+  onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
-  val postDataList = postListAsync.data
   val totalCount = postDataList.size
 
   items(
@@ -189,43 +215,134 @@ private fun LazyListScope.postList(
     itemContent = { index ->
       val postData by postDataList[index]
 
-      val padding = remember(key1 = mainUiLayoutMode) {
-        when (mainUiLayoutMode) {
-          MainUiLayoutMode.Portrait -> {
-            PaddingValues(horizontal = 8.dp)
-          }
-          MainUiLayoutMode.TwoWaySplit -> {
-            if (isCatalogMode) {
-              PaddingValues(start = 8.dp, end = 4.dp)
-            } else {
-              PaddingValues(start = 4.dp, end = 8.dp)
-            }
-          }
+      PostCellContainer(
+        padding = padding,
+        isCatalogMode = isCatalogMode,
+        onPostCellClicked = onPostCellClicked,
+        postData = postData,
+        postsScreenViewModel = postsScreenViewModel,
+        onPostCellCommentClicked = onPostCellCommentClicked,
+        onPostRepliesClicked = onPostRepliesClicked,
+        index = index,
+        totalCount = totalCount
+      )
+    }
+  )
+
+  if (!isCatalogMode) {
+    item(key = "thread_status_cell") {
+      ThreadStatusCell(
+        padding = padding,
+        postsScreenViewModel = postsScreenViewModel,
+        onThreadStatusCellClicked = onThreadStatusCellClicked
+      )
+    }
+  }
+}
+
+@Composable
+private fun LazyItemScope.ThreadStatusCell(
+  padding: PaddingValues,
+  postsScreenViewModel: PostScreenViewModel,
+  onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  val threadStatusCellDataFromState by postsScreenViewModel.threadCellDataState
+  val chanDescriptorState by postsScreenViewModel.chanDescriptorState
+
+  val threadStatusCellData = threadStatusCellDataFromState
+  val chanDescriptor = chanDescriptorState
+
+  if (threadStatusCellData == null || (chanDescriptor == null || chanDescriptor !is ThreadDescriptor)) {
+    Spacer(modifier = Modifier.height(Dp.Hairline))
+    return
+  }
+
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .kurobaClickable(onClick = { onThreadStatusCellClicked(chanDescriptor) })
+  ) {
+    val threadStatusCellText = remember(key1 = threadStatusCellData) {
+      buildAnnotatedString {
+        if (threadStatusCellData.totalReplies > 0) {
+          append(threadStatusCellData.totalReplies.toString())
+          append("R")
         }
-      }
 
-      Column(
-        modifier = Modifier
-          .kurobaClickable(onClick = { onPostCellClicked(postData) })
-          .padding(padding)
-      ) {
-        PostCell(
-          postsScreenViewModel = postsScreenViewModel,
-          postData = postData,
-          isCatalogMode = isCatalogMode,
-          onPostCellCommentClicked = onPostCellCommentClicked,
-          onPostRepliesClicked = onPostRepliesClicked
-        )
+        if (threadStatusCellData.totalImages > 0) {
+          if (length > 0) {
+            append(", ")
+          }
 
-        if (index < (totalCount - 1)) {
-          KurobaComposeDivider(
-            modifier = Modifier
-              .fillMaxWidth()
-          )
+          append(threadStatusCellData.totalImages.toString())
+          append("I")
+        }
+
+        if (threadStatusCellData.totalPosters > 0) {
+          if (length > 0) {
+            append(", ")
+          }
+
+          append(threadStatusCellData.totalPosters.toString())
+          append("P")
         }
       }
     }
-  )
+
+    val combinedPaddings = remember {
+      PaddingValues(
+        start = padding.calculateStartPadding(LayoutDirection.Ltr),
+        end = padding.calculateEndPadding(LayoutDirection.Ltr),
+        top = 24.dp,
+        bottom = 24.dp
+      )
+    }
+
+    Text(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(combinedPaddings)
+        .align(Alignment.Center),
+      text = threadStatusCellText,
+      color = chanTheme.textColorSecondaryCompose,
+      textAlign = TextAlign.Center
+    )
+  }
+}
+
+@Composable
+private fun LazyItemScope.PostCellContainer(
+  padding: PaddingValues,
+  isCatalogMode: Boolean,
+  onPostCellClicked: (PostData) -> Unit,
+  postData: PostData,
+  postsScreenViewModel: PostScreenViewModel,
+  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
+  onPostRepliesClicked: (PostData) -> Unit,
+  index: Int,
+  totalCount: Int
+) {
+  Column(
+    modifier = Modifier
+      .kurobaClickable(onClick = { onPostCellClicked(postData) })
+      .padding(padding)
+  ) {
+    PostCell(
+      postsScreenViewModel = postsScreenViewModel,
+      postData = postData,
+      isCatalogMode = isCatalogMode,
+      onPostCellCommentClicked = onPostCellCommentClicked,
+      onPostRepliesClicked = onPostRepliesClicked
+    )
+
+    if (index < (totalCount - 1)) {
+      KurobaComposeDivider(
+        modifier = Modifier.fillMaxWidth()
+      )
+    }
+  }
 }
 
 @Composable

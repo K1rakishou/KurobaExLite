@@ -99,6 +99,7 @@ class CatalogScreenViewModel(
     )
 
     catalogScreenState.catalogThreadsAsync = AsyncData.Data(catalogThreadsState)
+    _chanDescriptorState.value = catalogDescriptor
 
     logcat {
       "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +

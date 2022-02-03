@@ -9,6 +9,7 @@ class OriginalPostData(
   images: List<PostImageData>?,
   val threadRepliesTotal: Int?,
   val threadImagesTotal: Int?,
+  val threadPostersTotal: Int?,
   _parsedPostData: ParsedPostData?
 ) : PostData(
   postDescriptor = postDescriptor,

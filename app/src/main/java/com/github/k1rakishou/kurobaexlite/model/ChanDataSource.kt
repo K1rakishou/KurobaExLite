@@ -80,6 +80,7 @@ class ChanDataSource(
               ),
               threadRepliesTotal = threadPost.replies,
               threadImagesTotal = threadPost.images,
+              threadPostersTotal = null,
               _parsedPostData = null
             )
           } else {
@@ -165,6 +166,7 @@ class ChanDataSource(
               ),
               threadRepliesTotal = catalogThread.replies,
               threadImagesTotal = catalogThread.images,
+              threadPostersTotal = catalogThread.posters,
               _parsedPostData = null
             )
           }

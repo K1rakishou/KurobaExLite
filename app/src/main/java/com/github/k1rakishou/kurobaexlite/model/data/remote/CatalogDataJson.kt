@@ -17,5 +17,6 @@ data class CatalogThreadDataJson(
   val ext: String?,
   val tim: Long?,
   val replies: Int?,
-  val images: Int?
+  val images: Int?,
+  @Json(name = "unique_ips") val posters: Int?,
 )
