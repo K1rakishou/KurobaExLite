@@ -5,7 +5,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -177,7 +176,7 @@ abstract class PostScreenViewModel(
     postData: PostData,
     postSubjectParsed: String
   ): AnnotatedString {
-    return buildAnnotatedString {
+    return buildAnnotatedString(capacity = postSubjectParsed.length) {
       if (postSubjectParsed.isNotEmpty()) {
         val subjectAnnotatedString = AnnotatedString(
           text = postSubjectParsed,

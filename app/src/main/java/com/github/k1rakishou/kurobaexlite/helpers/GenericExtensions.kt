@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
+import androidx.compose.ui.text.AnnotatedString
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import logcat.LogPriority
@@ -290,9 +291,18 @@ fun decodeUrlOrNull(
   input: String,
   encoding: String = StandardCharsets.UTF_8.name()
 ): String? {
-  try {
-    return  URLDecoder.decode(input, encoding)
+  return try {
+    URLDecoder.decode(input, encoding)
   } catch (error: Throwable) {
-    return null
+    null
   }
+}
+
+inline fun buildAnnotatedString(
+  capacity: Int,
+  builder: (AnnotatedString.Builder).() -> Unit
+): AnnotatedString {
+  return AnnotatedString.Builder(capacity = capacity.coerceAtLeast(16))
+    .apply(builder)
+    .toAnnotatedString()
 }

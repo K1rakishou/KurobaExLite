@@ -4,7 +4,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -16,7 +15,9 @@ class PostCommentApplier {
     textParts: List<PostCommentParser.TextPart>,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
-    return buildAnnotatedString {
+    val capacity = textParts.sumOf { it.text.length }
+
+    return buildAnnotatedString(capacity = capacity) {
       var totalLength = 0
 
       for (textPart in textParts) {
@@ -46,7 +47,7 @@ class PostCommentApplier {
   ): Pair<AnnotatedString, Boolean> {
     var overflowHappened = false
 
-    val resultString = buildAnnotatedString {
+    val resultString = buildAnnotatedString(capacity = textPart.text.length) {
       val (textPartText, overflow) = trimTextPartIfNeeded(
         totalLength = totalLength,
         textPart = textPart,
@@ -54,90 +55,19 @@ class PostCommentApplier {
       )
 
       val textPartBuilder = StringBuilder(textPartText)
-      processBannedWords(textPartBuilder)
+        .apply { processBannedWords(this) }
 
       overflowHappened = overflow
 
       if (textPart.spans.isEmpty()) {
         append(textPartBuilder.toString())
       } else {
-        for (span in textPart.spans) {
-          var bgColor: Color = Color.Unspecified
-          var fgColor: Color = Color.Unspecified
-          var underline = false
-          var linethrough = false
-          var annotationTag: String? = null
-
-          when (span) {
-            is PostCommentParser.TextPartSpan.BgColor -> {
-              bgColor = Color(span.color)
-            }
-            is PostCommentParser.TextPartSpan.FgColor -> {
-              fgColor = Color(span.color)
-            }
-            is PostCommentParser.TextPartSpan.BgColorId -> {
-              bgColor = Color(chanTheme.getColorByColorId(span.colorId))
-            }
-            is PostCommentParser.TextPartSpan.FgColorId -> {
-              fgColor = Color(chanTheme.getColorByColorId(span.colorId))
-            }
-            is PostCommentParser.TextPartSpan.Spoiler -> {
-              bgColor = chanTheme.postSpoilerColorCompose
-
-              val shouldRevealSpoiler = matchesOpenedSpoilerPosition(
-                startPos = 0,
-                endPos = textPartBuilder.length,
-                textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet
-              )
-
-              fgColor = if (shouldRevealSpoiler) {
-                chanTheme.postSpoilerRevealTextColorCompose
-              } else {
-                chanTheme.postSpoilerColorCompose
-              }
-            }
-            is PostCommentParser.TextPartSpan.Linkable -> {
-              when (span) {
-                is PostCommentParser.TextPartSpan.Linkable.Quote,
-                is PostCommentParser.TextPartSpan.Linkable.Board,
-                is PostCommentParser.TextPartSpan.Linkable.Search -> {
-                  underline = true
-
-                  if (span is PostCommentParser.TextPartSpan.Linkable.Quote) {
-                    linethrough = span.dead
-                  }
-
-                  fgColor = chanTheme.postQuoteColorCompose
-                }
-              }
-
-              if (parsedPostDataContext.isParsingThread) {
-                annotationTag = ANNOTATION_POST_LINKABLE
-              }
-            }
-          }
-
-          append(textPartBuilder.toString())
-
-          val spanStyle = SpanStyle(
-            color = fgColor,
-            background = bgColor,
-            textDecoration = buildTextDecoration(underline, linethrough)
-          )
-
-          if (!spanStyle.isEmpty()) {
-            addStyle(spanStyle, 0, textPartBuilder.length)
-          }
-
-          if (annotationTag != null) {
-            addStringAnnotation(
-              tag = ANNOTATION_POST_LINKABLE,
-              annotation = "",
-              start = 0,
-              end = textPartBuilder.length
-            )
-          }
-        }
+        processTextPartSpans(
+          textPart = textPart,
+          chanTheme = chanTheme,
+          textPartBuilder = textPartBuilder,
+          parsedPostDataContext = parsedPostDataContext
+        )
       }
 
       if (overflow) {
@@ -147,6 +77,91 @@ class PostCommentApplier {
     }
 
     return resultString to overflowHappened
+  }
+
+  private fun AnnotatedString.Builder.processTextPartSpans(
+    textPart: PostCommentParser.TextPart,
+    chanTheme: ChanTheme,
+    textPartBuilder: StringBuilder,
+    parsedPostDataContext: ParsedPostDataContext
+  ) {
+    for (span in textPart.spans) {
+      var bgColor: Color = Color.Unspecified
+      var fgColor: Color = Color.Unspecified
+      var underline = false
+      var linethrough = false
+      var annotationTag: String? = null
+
+      when (span) {
+        is PostCommentParser.TextPartSpan.BgColor -> {
+          bgColor = Color(span.color)
+        }
+        is PostCommentParser.TextPartSpan.FgColor -> {
+          fgColor = Color(span.color)
+        }
+        is PostCommentParser.TextPartSpan.BgColorId -> {
+          bgColor = Color(chanTheme.getColorByColorId(span.colorId))
+        }
+        is PostCommentParser.TextPartSpan.FgColorId -> {
+          fgColor = Color(chanTheme.getColorByColorId(span.colorId))
+        }
+        is PostCommentParser.TextPartSpan.Spoiler -> {
+          bgColor = chanTheme.postSpoilerColorCompose
+
+          val shouldRevealSpoiler = matchesOpenedSpoilerPosition(
+            startPos = 0,
+            endPos = textPartBuilder.length,
+            textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet
+          )
+
+          fgColor = if (shouldRevealSpoiler) {
+            chanTheme.postSpoilerRevealTextColorCompose
+          } else {
+            chanTheme.postSpoilerColorCompose
+          }
+        }
+        is PostCommentParser.TextPartSpan.Linkable -> {
+          when (span) {
+            is PostCommentParser.TextPartSpan.Linkable.Quote,
+            is PostCommentParser.TextPartSpan.Linkable.Board,
+            is PostCommentParser.TextPartSpan.Linkable.Search -> {
+              underline = true
+
+              if (span is PostCommentParser.TextPartSpan.Linkable.Quote) {
+                linethrough = span.dead
+              }
+
+              fgColor = chanTheme.postQuoteColorCompose
+            }
+          }
+
+          if (parsedPostDataContext.isParsingThread) {
+            annotationTag = ANNOTATION_POST_LINKABLE
+          }
+        }
+      }
+
+      append(textPartBuilder.toString())
+
+      val spanStyle = SpanStyle(
+        color = fgColor,
+        background = bgColor,
+        textDecoration = buildTextDecoration(underline, linethrough)
+      )
+
+      if (!spanStyle.isEmpty()) {
+        addStyle(spanStyle, 0, textPartBuilder.length)
+      }
+
+      if (annotationTag != null) {
+        addStringAnnotation(
+          tag = ANNOTATION_POST_LINKABLE,
+          annotation = "",
+          start = 0,
+          end = textPartBuilder.length
+        )
+      }
+    }
   }
 
   private fun processBannedWords(textPartBuilder: StringBuilder) {
@@ -216,7 +231,7 @@ class PostCommentApplier {
   private fun buildClickToViewFullSpan(
     chanTheme: ChanTheme
   ) : AnnotatedString {
-    return buildAnnotatedString {
+    return buildAnnotatedString(capacity = CLICK_TO_EXPAND.length) {
       append(CLICK_TO_EXPAND)
 
       addStyle(

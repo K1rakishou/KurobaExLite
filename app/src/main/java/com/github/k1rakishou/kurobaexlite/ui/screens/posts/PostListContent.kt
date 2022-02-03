@@ -337,9 +337,7 @@ private fun PostCellComment(
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val clickedTextBackgroundColorMap = remember(key1 = chanTheme) {
-    return@remember createClickableTextColorMap(chanTheme)
-  }
+  val clickedTextBackgroundColorMap = remember(key1 = chanTheme) { createClickableTextColorMap(chanTheme) }
 
   if (postComment.isNotNullNorBlank()) {
     PostCellCommentSelectionWrapper(isCatalogMode = isCatalogMode) {
@@ -360,11 +358,10 @@ private fun PostCellComment(
 private fun PostCellCommentSelectionWrapper(isCatalogMode: Boolean, content: @Composable () -> Unit) {
   if (isCatalogMode) {
     content()
-    return
-  }
-
-  SelectionContainer {
-    content()
+  } else {
+    SelectionContainer {
+      content()
+    }
   }
 }
 
