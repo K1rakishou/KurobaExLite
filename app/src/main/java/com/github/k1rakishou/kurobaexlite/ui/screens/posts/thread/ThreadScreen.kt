@@ -19,7 +19,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
-import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ThreadScreen(
@@ -29,13 +28,17 @@ class ThreadScreen(
 ) : PostsScreen(componentActivity, navigationRouter, isStartScreen) {
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
 
+  private val threadScreenToolbarActionHandler by lazy {
+    ThreadScreenToolbarActionHandler(threadScreenViewModel)
+  }
+
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
 
   private val toolbarMenuItems: List<ToolbarMenuItem> by lazy {
     listOf(
       ToolbarMenuItem.TextMenu(
-        menuItemId = ACTION_RELOAD,
+        menuItemId = ThreadScreenToolbarActionHandler.ACTION_RELOAD,
         textId = R.string.reload
       )
     )
@@ -58,7 +61,7 @@ class ThreadScreen(
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
               menuItems = toolbarMenuItems,
-              onMenuItemClicked = { menuItem -> processClickedToolbarMenuItem(menuItem) }
+              onMenuItemClicked = { menuItem -> threadScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem) }
             )
           )
         })
@@ -97,17 +100,7 @@ class ThreadScreen(
     )
   }
 
-  private fun processClickedToolbarMenuItem(menuItem: ToolbarMenuItem) {
-    logcat { "thread processClickedToolbarMenuItem id=${menuItem.menuItemId}" }
-
-    when (menuItem.menuItemId) {
-      ACTION_RELOAD -> threadScreenViewModel.reload()
-    }
-  }
-
   companion object {
     val SCREEN_KEY = ScreenKey("ThreadScreen")
-
-    private const val ACTION_RELOAD = 0
   }
 }
