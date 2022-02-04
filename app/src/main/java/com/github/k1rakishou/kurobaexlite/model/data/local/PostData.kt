@@ -11,6 +11,9 @@ open class PostData(
   val postSubjectUnparsed: String,
   val postCommentUnparsed: String,
   val images: List<PostImageData>?,
+  val threadRepliesTotal: Int? = null,
+  val threadImagesTotal: Int? = null,
+  val threadPostersTotal: Int? = null,
   @Volatile private var _parsedPostData: ParsedPostData?
 ) {
   private val mutex = Mutex()

@@ -34,8 +34,8 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
-import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -295,8 +295,8 @@ private fun LazyItemScope.ThreadStatusCell(
       PaddingValues(
         start = padding.calculateStartPadding(LayoutDirection.Ltr),
         end = padding.calculateEndPadding(LayoutDirection.Ltr),
-        top = 24.dp,
-        bottom = 24.dp
+        top = 16.dp,
+        bottom = 16.dp
       )
     }
 
@@ -387,6 +387,7 @@ private fun PostCell(
 
     PostCellFooter(
       postData = postData,
+      isCatalogMode = isCatalogMode,
       postsScreenViewModel = postsScreenViewModel,
       onPostRepliesClicked = onPostRepliesClicked
     )
@@ -485,17 +486,33 @@ private fun PostCellCommentSelectionWrapper(isCatalogMode: Boolean, content: @Co
 @Composable
 private fun PostCellFooter(
   postData: PostData,
+  isCatalogMode: Boolean,
   postsScreenViewModel: PostScreenViewModel,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val context = LocalContext.current
-  var postFooterText by remember { mutableStateOf<String?>(null) }
+
+  var postFooterText by remember(
+    key1 = postData.threadImagesTotal,
+    key2 = postData.threadRepliesTotal,
+    key3 = postData.threadPostersTotal
+  ) { mutableStateOf<String?>(null) }
 
   LaunchedEffect(
-    key1 = postData,
+    key1 = postData.threadImagesTotal,
+    key2 = postData.threadRepliesTotal,
+    key3 = postData.threadPostersTotal,
     block = {
-      postFooterText = formatFooterText(postData, context, postsScreenViewModel)
+      postFooterText = formatFooterText(
+        context = context,
+        postsScreenViewModel = postsScreenViewModel,
+        postDescriptor = postData.postDescriptor,
+        isCatalogMode = isCatalogMode,
+        threadImagesTotal = postData.threadImagesTotal,
+        threadRepliesTotal = postData.threadRepliesTotal,
+        threadPostersTotal = postData.threadPostersTotal
+      )
     }
   )
 
@@ -515,13 +532,17 @@ private fun PostCellFooter(
 }
 
 private suspend fun formatFooterText(
-  postData: PostData,
   context: Context,
-  postsScreenViewModel: PostScreenViewModel
+  postsScreenViewModel: PostScreenViewModel,
+  postDescriptor: PostDescriptor,
+  isCatalogMode: Boolean,
+  threadImagesTotal: Int?,
+  threadRepliesTotal: Int?,
+  threadPostersTotal: Int?
 ): String? {
-  if (postData is OriginalPostData) {
+  if (isCatalogMode && (threadImagesTotal != null || threadRepliesTotal != null || threadPostersTotal != null)) {
     return buildString {
-      postData.threadRepliesTotal
+      threadRepliesTotal
         ?.takeIf { repliesCount -> repliesCount > 0 }
         ?.let { repliesCount ->
           val repliesText = context.resources.getQuantityString(
@@ -533,7 +554,7 @@ private suspend fun formatFooterText(
           append(repliesText)
         }
 
-      postData.threadImagesTotal
+      threadImagesTotal
         ?.takeIf { imagesCount -> imagesCount > 0 }
         ?.let { imagesCount ->
           if (isNotEmpty()) {
@@ -548,10 +569,26 @@ private suspend fun formatFooterText(
 
           append(imagesText)
         }
+
+      threadPostersTotal
+        ?.takeIf { postersCount -> postersCount > 0 }
+        ?.let { postersCount ->
+          if (isNotEmpty()) {
+            append(", ")
+          }
+
+          val imagesText = context.resources.getQuantityString(
+            R.plurals.poster_with_number,
+            postersCount,
+            postersCount
+          )
+
+          append(imagesText)
+        }
     }
   }
 
-  val repliesFrom = postsScreenViewModel.getRepliesFrom(postData.postDescriptor)
+  val repliesFrom = postsScreenViewModel.getRepliesFrom(postDescriptor)
   if (repliesFrom.isNotEmpty()) {
     val repliesFromCount = repliesFrom.size
 

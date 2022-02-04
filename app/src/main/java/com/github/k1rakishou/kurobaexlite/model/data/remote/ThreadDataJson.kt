@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.model.data.remote
 
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
@@ -16,4 +17,5 @@ data class ThreadPostDataJson(
   val tim: Long?,
   val replies: Int?,
   val images: Int?,
+  @Json(name = "unique_ips") val posters: Int?,
 )

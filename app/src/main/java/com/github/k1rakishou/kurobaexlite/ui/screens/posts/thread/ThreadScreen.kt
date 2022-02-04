@@ -61,7 +61,9 @@ class ThreadScreen(
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
               menuItems = toolbarMenuItems,
-              onMenuItemClicked = { menuItem -> threadScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem) }
+              onMenuItemClicked = { menuItem ->
+                threadScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
+              }
             )
           )
         })

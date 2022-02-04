@@ -9,6 +9,10 @@
         <item quantity="one">%d image</item>
         <item quantity="other">%d images</item>
     </plurals>
+    <plurals name="poster_with_number">
+        <item quantity="one">%d poster</item>
+        <item quantity="other">%d posters</item>
+    </plurals>
     <plurals name="reply">
         <item quantity="one">reply</item>
         <item quantity="other">replies</item>
