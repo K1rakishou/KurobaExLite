@@ -6,17 +6,18 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
@@ -65,16 +66,13 @@ class CatalogScreen(
   override val isCatalogScreen: Boolean = true
 
   @Composable
-  override fun postDataAsync(): AsyncData<List<State<PostData>>> {
-    return catalogScreenViewModel.postScreenState.postDataAsyncState()
-  }
-
-  @Composable
   override fun Toolbar(boxScope: BoxScope) {
+    val postListAsync by catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+
     with(boxScope) {
       PostsScreenToolbar(
         isCatalogScreen = isCatalogScreen,
-        postListAsync = postDataAsync(),
+        postListAsync = postListAsync,
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(
@@ -108,21 +106,26 @@ class CatalogScreen(
 
   @Composable
   private fun CatalogPostListScreenContent() {
+    val kurobaSnackbarState = rememberKurobaSnackbarState()
+
     Box(modifier = Modifier.fillMaxSize()) {
       CatalogPostListScreen()
 
-      val parsingPosts by catalogScreenViewModel.parsingPostsAsync
-      if (parsingPosts) {
-        CatalogOrThreadLoadingIndicator()
-      }
+      KurobaSnackbar(
+        modifier = Modifier.fillMaxSize(),
+        kurobaSnackbarState = kurobaSnackbarState,
+        snackbarEventFlow = catalogScreenViewModel.snackbarEventFlow
+      )
     }
   }
 
   @Composable
   private fun CatalogPostListScreen() {
+    val configuration = LocalConfiguration.current
+
     PostListContent(
       isCatalogMode = isCatalogScreen,
-      mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(),
+      mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
       postsScreenViewModel = catalogScreenViewModel,
       onPostCellClicked = { postData ->
         // TODO(KurobaEx): come up with a better solution than doing it manually

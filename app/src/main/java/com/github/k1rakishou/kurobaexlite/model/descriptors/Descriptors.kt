@@ -41,15 +41,17 @@ data class ThreadDescriptor(
   val catalogDescriptor: CatalogDescriptor,
   val threadNo: Long
 ) : Parcelable, ChanDescriptor() {
-  val siteKey: String
-    get() = catalogDescriptor.siteKey.key
+  val siteKey: SiteKey
+    get() = catalogDescriptor.siteKey
+  val siteKeyActual: String
+    get() = siteKey.key
   val boardCode: String
     get() = catalogDescriptor.boardCode
 
   override fun toString(): String {
     return buildString(capacity = 32) {
       append("ThreadDescriptor(")
-      append(siteKey)
+      append(siteKeyActual)
       append("/")
       append(boardCode)
       append("/")

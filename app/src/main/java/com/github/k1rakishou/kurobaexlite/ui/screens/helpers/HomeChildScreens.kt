@@ -1,8 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
 
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
@@ -81,15 +83,15 @@ class HomeChildScreens(
     )
   }
 
-  fun getChildScreens(): List<ComposeScreenWithToolbar> {
-    return when (uiInfoManager.mainUiLayoutMode()) {
+  fun getChildScreens(configuration: Configuration): List<ComposeScreenWithToolbar> {
+    return when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
       MainUiLayoutMode.Portrait -> portraitScreens
       MainUiLayoutMode.TwoWaySplit -> twoWaySplitScreens
     }
   }
 
-  fun getInitialScreenIndex(childScreens: List<ComposeScreen>): Int {
-    return when (uiInfoManager.mainUiLayoutMode()) {
+  fun getInitialScreenIndex(configuration: Configuration, childScreens: List<ComposeScreen>): Int {
+    return when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
       MainUiLayoutMode.Portrait -> {
         childScreens
           .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
@@ -103,13 +105,15 @@ class HomeChildScreens(
 
   @Composable
   fun HandleBackPresses() {
+    val configuration = LocalConfiguration.current
+
     DisposableEffect(key1 = Unit, effect = {
       val handler = object : NavigationRouter.OnBackPressHandler {
         override fun onBackPressed(): Boolean {
           val currentPage = homeScreenViewModel.currentPage
 
-          if (currentPage != null && !isMainScreen(currentPage)) {
-            homeScreenViewModel.updateCurrentPage(screenKey = mainScreenKey())
+          if (currentPage != null && !isMainScreen(configuration, currentPage)) {
+            homeScreenViewModel.updateCurrentPage(screenKey = mainScreenKey(configuration))
             return true
           }
 
@@ -123,12 +127,12 @@ class HomeChildScreens(
     })
   }
 
-  fun isMainScreen(currentPage: HomeScreenViewModel.CurrentPage): Boolean {
-    return mainScreenKey() == currentPage.screenKey
+  fun isMainScreen(configuration: Configuration, currentPage: HomeScreenViewModel.CurrentPage): Boolean {
+    return mainScreenKey(configuration) == currentPage.screenKey
   }
 
-  fun mainScreenKey(): ScreenKey {
-    if (uiInfoManager.mainUiLayoutMode().isSplit) {
+  fun mainScreenKey(configuration: Configuration): ScreenKey {
+    if (uiInfoManager.mainUiLayoutMode(configuration).isSplit) {
       return SplitScreenLayout.SCREEN_KEY
     }
 

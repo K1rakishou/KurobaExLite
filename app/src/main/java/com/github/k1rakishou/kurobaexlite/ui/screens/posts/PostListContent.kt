@@ -58,7 +58,7 @@ internal fun PostListContent(
   }
 
   val lazyListState = rememberLazyListState()
-  val postListAsync = postsScreenViewModel.postScreenState.postDataAsyncState()
+  val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
   PostListInternal(
     lazyListState = lazyListState,
@@ -74,9 +74,7 @@ internal fun PostListContent(
     onPostRepliesClicked = { postData ->
       logcat(tag = "onPostRepliesClicked") { "Clicked replies of post ${postData.postDescriptor}" }
     },
-    onThreadStatusCellClicked = { threadDescriptor ->
-      logcat(tag = "onThreadStatusCellClicked") { "Clicked status cell ${threadDescriptor}" }
-    }
+    onThreadStatusCellClicked = { postsScreenViewModel.refresh() }
   )
 }
 
@@ -110,7 +108,7 @@ private fun processClickedAnnotation(
 private fun PostListInternal(
   lazyListState: LazyListState,
   contentPadding: PaddingValues,
-  postListAsync: AsyncData<List<State<PostData>>>,
+  postListAsync: AsyncData<IPostsState>,
   isCatalogMode: Boolean,
   postsScreenViewModel: PostScreenViewModel,
   mainUiLayoutMode: MainUiLayoutMode,
@@ -185,7 +183,7 @@ private fun PostListInternal(
             isCatalogMode = isCatalogMode,
             padding = padding,
             postsScreenViewModel = postsScreenViewModel,
-            postDataList = postListAsync.data,
+            postDataList = postListAsync.data.posts,
             onPostCellClicked = onPostCellClicked,
             onPostCellCommentClicked = onPostCellCommentClicked,
             onPostRepliesClicked = onPostRepliesClicked,
@@ -247,8 +245,8 @@ private fun LazyItemScope.ThreadStatusCell(
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val threadStatusCellDataFromState by postsScreenViewModel.threadCellDataState
-  val chanDescriptorState by postsScreenViewModel.chanDescriptorState
+  val threadStatusCellDataFromState by postsScreenViewModel.postScreenState.threadCellDataState.collectAsState()
+  val chanDescriptorState by postsScreenViewModel.postScreenState.chanDescriptorState.collectAsState()
 
   val threadStatusCellData = threadStatusCellDataFromState
   val chanDescriptor = chanDescriptorState

@@ -36,7 +36,6 @@
     <string name="cancel">Cancel</string>
     <string name="reload">Reload</string>
 
-    <string name="posts_screen_processing_posts">Processing %1$s posts…</string>
     <string name="toolbar_loading_title">Loading…</string>
     <string name="toolbar_loading_subtitle">Error</string>
     <string name="post_list_no_catalog_selected">No catalog selected</string>

@@ -34,6 +34,55 @@ open class PostData(
   val parsedPostDataContext: ParsedPostDataContext?
     get() = _parsedPostData?.parsedPostDataContext
 
+  fun differsWith(other: PostData): Boolean {
+    check(postDescriptor == other.postDescriptor) {
+      "PostDescriptors differ: " +
+        "this.postDescriptor=${postDescriptor}, " +
+        "other.postDescriptor=${other.postDescriptor}"
+    }
+
+    if (threadRepliesTotal != other.threadRepliesTotal) {
+      return true
+    }
+    if (threadImagesTotal != other.threadImagesTotal) {
+      return true
+    }
+    if (threadPostersTotal != other.threadPostersTotal) {
+      return true
+    }
+    if (imagesDiffer(other)) {
+      return true
+    }
+    if (postCommentUnparsed != other.postCommentUnparsed) {
+      return true
+    }
+    if (postSubjectUnparsed != other.postSubjectUnparsed) {
+      return true
+    }
+
+    return false
+  }
+
+  private fun imagesDiffer(other: PostData): Boolean {
+    val thisImagesCount = images?.size ?: 0
+    val otherImagesCount = other.images?.size ?: 0
+
+    if (thisImagesCount != otherImagesCount) {
+      return true
+    }
+
+    for (index in 0 until thisImagesCount) {
+      val thisImage = images?.getOrNull(index)
+      val otherImage = other.images?.getOrNull(index)
+
+      if (thisImage != otherImage) {
+        return true
+      }
+    }
+
+    return false
+  }
+
   fun copy(
     postDescriptor: PostDescriptor = this.postDescriptor,
     postSubjectUnparsed: String = this.postSubjectUnparsed,

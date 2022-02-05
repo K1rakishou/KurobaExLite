@@ -5,14 +5,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
@@ -45,16 +46,13 @@ class ThreadScreen(
   }
 
   @Composable
-  override fun postDataAsync(): AsyncData<List<State<PostData>>> {
-    return threadScreenViewModel.postScreenState.postDataAsyncState()
-  }
-
-  @Composable
   override fun Toolbar(boxScope: BoxScope) {
+    val postListAsync by threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+
     with(boxScope) {
       PostsScreenToolbar(
         isCatalogScreen = isCatalogScreen,
-        postListAsync = postDataAsync(),
+        postListAsync = postListAsync,
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(
@@ -80,21 +78,26 @@ class ThreadScreen(
 
   @Composable
   private fun ThreadPostListScreenContent() {
+    val kurobaSnackbarState = rememberKurobaSnackbarState()
+
     Box(modifier = Modifier.fillMaxSize()) {
       ThreadPostListScreen()
 
-      val parsingPosts by threadScreenViewModel.parsingPostsAsync
-      if (parsingPosts) {
-        CatalogOrThreadLoadingIndicator()
-      }
+      KurobaSnackbar(
+        modifier = Modifier.fillMaxSize(),
+        kurobaSnackbarState = kurobaSnackbarState,
+        snackbarEventFlow = threadScreenViewModel.snackbarEventFlow
+      )
     }
   }
 
   @Composable
   private fun ThreadPostListScreen() {
+    val configuration = LocalConfiguration.current
+
     PostListContent(
       isCatalogMode = isCatalogScreen,
-      mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(),
+      mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
       postsScreenViewModel = threadScreenViewModel,
       onPostCellClicked = { postData ->
         // TODO(KurobaEx):

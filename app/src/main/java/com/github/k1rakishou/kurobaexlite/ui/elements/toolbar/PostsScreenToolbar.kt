@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -16,15 +15,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.IPostsState
 
 @Composable
 fun BoxScope.PostsScreenToolbar(
   isCatalogScreen: Boolean,
-  postListAsync: AsyncData<List<State<PostData>>>,
+  postListAsync: AsyncData<IPostsState>,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
   val chanTheme = LocalChanTheme.current
@@ -36,8 +35,7 @@ fun BoxScope.PostsScreenToolbar(
         AsyncData.Loading -> stringResource(R.string.toolbar_loading_title)
         is AsyncData.Error -> stringResource(R.string.toolbar_loading_subtitle)
         is AsyncData.Data -> {
-          val postListState = postListAsync.data.firstOrNull()
-
+          val postListState = postListAsync.data.posts.firstOrNull()
           if (postListState != null) {
             val originalPost by postListState
 

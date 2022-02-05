@@ -44,9 +44,8 @@ class UiInfoManager(
     _maxParentHeight = availableHeight
   }
 
-  fun mainUiLayoutMode(): MainUiLayoutMode {
-    val orientation = appContext.resources.configuration.orientation
-
+  fun mainUiLayoutMode(configuration: Configuration): MainUiLayoutMode {
+    val orientation = configuration.orientation
     if (isTablet) {
       return MainUiLayoutMode.TwoWaySplit
     }

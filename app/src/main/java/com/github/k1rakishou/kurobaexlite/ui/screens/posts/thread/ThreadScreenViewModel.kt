@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 
 import android.os.SystemClock
-import androidx.compose.runtime.*
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
@@ -9,8 +8,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
@@ -40,6 +39,66 @@ class ThreadScreenViewModel(
     )
   }
 
+  override fun refresh() {
+    loadThreadJob?.cancel()
+    loadThreadJob = null
+
+    loadThreadJob = viewModelScope.launch {
+      val threadPostsAsync = threadScreenState.postsAsyncDataState.value
+      val threadDescriptor = chanThreadManager.currentlyOpenedThread
+
+      if (threadPostsAsync !is AsyncData.Data) {
+        if (threadDescriptor == null) {
+          return@launch
+        }
+
+        loadThreadInternal(threadDescriptor = threadDescriptor, forced = true)
+        return@launch
+      }
+
+      val startTime = SystemClock.elapsedRealtime()
+      logcat { "refresh($threadDescriptor)" }
+
+      val threadDataResult = chanThreadManager.loadThread(threadDescriptor)
+      if (threadDataResult.isFailure) {
+        val error = threadDataResult.exceptionOrThrow()
+        logcatError { "refresh($threadDescriptor) error=${error.asLog()}" }
+
+        threadScreenState.threadCellDataState.value = formatThreadCellData(null, error)
+        return@launch
+      }
+
+      val threadData = threadDataResult.unwrap()
+      if (threadData == null || threadDescriptor == null) {
+        return@launch
+      }
+
+      val mergeResult = threadPostsAsync.data.mergePostsWith(threadData.threadPosts)
+
+      parseRemainingPostsAsync(
+        isCatalogMode = false,
+        postDataList = mergeResult.newOrUpdatedPostsToReparse,
+        onStartParsingPosts = {
+          pushCatalogOrThreadPostsLoadingSnackbar(
+            postsCount = mergeResult.newOrUpdatedPostsToReparse.size
+          )
+        },
+        onPostsParsed = { postDataList ->
+          popCatalogOrThreadPostsLoadingSnackbar()
+        }
+      )
+
+      threadScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
+      threadScreenState.chanDescriptorState.value = threadDescriptor
+
+      logcat {
+        "refresh($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+          "threadPosts=${threadData.threadPosts.size}, " +
+          "newPostsCount=${mergeResult.newPostsCount}"
+      }
+    }
+  }
+
   fun loadThread(
     threadDescriptor: ThreadDescriptor?,
     forced: Boolean = false
@@ -59,26 +118,26 @@ class ThreadScreenViewModel(
     }
 
     val startTime = SystemClock.elapsedRealtime()
-    threadScreenState.threadPostsAsync = AsyncData.Loading
+    threadScreenState.postsAsyncDataState.value = AsyncData.Loading
 
     val threadDataResult = chanThreadManager.loadThread(threadDescriptor)
     if (threadDataResult.isFailure) {
       val error = threadDataResult.exceptionOrThrow()
       logcatError { "loadCatalog() error=${error.asLog()}" }
 
-      threadScreenState.threadPostsAsync = AsyncData.Error(error)
+      threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
       return
     }
 
     val threadData = threadDataResult.unwrap()
     if (threadData == null || threadDescriptor == null) {
-      threadScreenState.threadPostsAsync = AsyncData.Empty
+      threadScreenState.postsAsyncDataState.value = AsyncData.Empty
       return
     }
 
     if (threadData.threadPosts.isEmpty()) {
       val error = ThreadDisplayException("Thread /${threadDescriptor}/ has no posts")
-      threadScreenState.threadPostsAsync = AsyncData.Error(error)
+      threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
       return
     }
 
@@ -92,7 +151,14 @@ class ThreadScreenViewModel(
     parseRemainingPostsAsync(
       isCatalogMode = false,
       postDataList = threadData.threadPosts,
-      onPostsParsed = { postDataList -> postProcessPostDataAfterParsing(postDataList) }
+      onStartParsingPosts = {
+        pushCatalogOrThreadPostsLoadingSnackbar(
+          postsCount = threadData.threadPosts.size
+        )
+      },
+      onPostsParsed = { postDataList ->
+        popCatalogOrThreadPostsLoadingSnackbar()
+      }
     )
 
     val threadPostsState = ThreadPostsState(
@@ -100,10 +166,9 @@ class ThreadScreenViewModel(
       threadPosts = threadData.threadPosts
     )
 
-
-    threadScreenState.threadPostsAsync = AsyncData.Data(threadPostsState)
-    _threadCellDataState.value = formatThreadCellData(threadData)
-    _chanDescriptorState.value = threadDescriptor
+    threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
+    postScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
+    postScreenState.chanDescriptorState.value = threadDescriptor
 
     logcat {
       "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
@@ -111,72 +176,21 @@ class ThreadScreenViewModel(
     }
   }
 
-  override suspend fun postProcessPostDataAfterParsing(postDataList: List<PostData>) {
-    super.postProcessPostDataAfterParsing(postDataList)
-
-    // TODO(KurobaEx): restore scroll position/etc
-  }
-
-  private fun formatThreadCellData(threadData: ThreadData): ThreadCellData? {
-    val originalPostData = threadData.threadPosts
-      .firstOrNull { postData -> postData is OriginalPostData } as? OriginalPostData
+  private fun formatThreadCellData(threadData: ThreadData?, lastLoadError: Throwable?): ThreadCellData? {
+    val originalPostData = threadData
+      ?.threadPosts
+      ?.firstOrNull { postData -> postData is OriginalPostData } as? OriginalPostData
       ?: return null
 
     return ThreadCellData(
       totalReplies = originalPostData.threadRepliesTotal ?: 0,
       totalImages = originalPostData.threadImagesTotal ?: 0,
-      totalPosters = originalPostData.threadPostersTotal ?: 0
+      totalPosters = originalPostData.threadPostersTotal ?: 0,
+      lastLoadError = lastLoadError
     )
   }
 
   class ThreadDisplayException(message: String) : ClientException(message)
-
-  class ThreadScreenState(
-    private val threadPostsAsyncState: MutableState<AsyncData<ThreadPostsState>> = mutableStateOf(AsyncData.Empty)
-  ) : PostScreenState {
-    internal var threadPostsAsync by threadPostsAsyncState
-
-    override fun postDataAsyncState(): AsyncData<List<State<PostData>>> {
-      return when (val asyncDataStateValue = threadPostsAsyncState.value) {
-        is AsyncData.Data -> AsyncData.Data(asyncDataStateValue.data.threadPosts)
-        is AsyncData.Error -> AsyncData.Error(asyncDataStateValue.error)
-        AsyncData.Empty -> AsyncData.Empty
-        AsyncData.Loading -> AsyncData.Loading
-      }
-    }
-
-    override fun updatePost(postData: PostData) {
-      val asyncData = threadPostsAsyncState.value
-      if (asyncData is AsyncData.Data) {
-        asyncData.data.update(postData)
-      }
-    }
-
-  }
-
-  class ThreadPostsState(
-    val threadDescriptor: ThreadDescriptor,
-    threadPosts: List<PostData>
-  ) {
-    private val _threadPosts = mutableStateListOf<MutableState<PostData>>()
-    val threadPosts: List<State<PostData>>
-      get() = _threadPosts
-
-    init {
-      _threadPosts.addAll(threadPosts.map { mutableStateOf(it) })
-    }
-
-
-    fun update(postData: PostData) {
-      val index = _threadPosts.indexOfFirst { it.value.postDescriptor == postData.postDescriptor }
-      if (index < 0) {
-        return
-      }
-
-      _threadPosts[index].value = postData
-    }
-
-  }
 
 
 }

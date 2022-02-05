@@ -1,10 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import android.os.SystemClock
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -15,11 +14,21 @@ import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfoEvent
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
@@ -32,24 +41,16 @@ abstract class PostScreenViewModel(
   protected val themeEngine: ThemeEngine
 ) : BaseViewModel() {
   private val postReplyChainManager by inject<PostReplyChainManager>(PostReplyChainManager::class.java)
-
   private val scope = CoroutineScope(Dispatchers.Default)
   private var currentParseJob: Job? = null
 
+  private val _snackbarEventFlow = MutableSharedFlow<SnackbarInfoEvent>(extraBufferCapacity = Channel.UNLIMITED)
+  val snackbarEventFlow: SharedFlow<SnackbarInfoEvent>
+    get() = _snackbarEventFlow.asSharedFlow()
+
   abstract val postScreenState: PostScreenState
   abstract fun reload()
-
-  private var _parsingPostsAsyncState = mutableStateOf(false)
-  val parsingPostsAsync: State<Boolean>
-    get() = _parsingPostsAsyncState
-
-  protected var _chanDescriptorState = mutableStateOf<ChanDescriptor?>(null)
-  val chanDescriptorState: State<ChanDescriptor?>
-    get() = _chanDescriptorState
-
-  protected var _threadCellDataState = mutableStateOf<ThreadCellData?>(null)
-  val threadCellDataState: State<ThreadCellData?>
-    get() = _threadCellDataState
+  abstract fun refresh()
 
   suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor> {
     return postReplyChainManager.getRepliesFrom(postDescriptor)
@@ -113,6 +114,7 @@ abstract class PostScreenViewModel(
   fun parseRemainingPostsAsync(
     isCatalogMode: Boolean,
     postDataList: List<PostData>,
+    onStartParsingPosts: suspend () -> Unit,
     onPostsParsed: suspend (List<PostData>) -> Unit
   ) {
     currentParseJob?.cancel()
@@ -130,7 +132,7 @@ abstract class PostScreenViewModel(
 
       val showPostsLoadingSnackbarJob = launch {
         delay(125L)
-        _parsingPostsAsyncState.value = true
+        onStartParsingPosts()
       }
 
       try {
@@ -175,7 +177,6 @@ abstract class PostScreenViewModel(
       } finally {
         onPostsParsed(postDataList)
         showPostsLoadingSnackbarJob.cancel()
-        _parsingPostsAsyncState.value = false
       }
     }
   }
@@ -300,19 +301,38 @@ abstract class PostScreenViewModel(
     }
   }
 
-  protected open suspend fun postProcessPostDataAfterParsing(postDataList: List<PostData>) {
+  protected suspend fun pushCatalogOrThreadPostsLoadingSnackbar(postsCount: Int) {
+    pushSnackbar(
+      SnackbarInfo(
+        id = SnackbarId.CatalogOrThreadPostsLoading,
+        aliveUntil = null,
+        content = listOf(
+          SnackbarContentItem.LoadingIndicator,
+          SnackbarContentItem.Spacer(8.dp),
+          SnackbarContentItem.Text("Processing ${postsCount} posts…")
+        )
+      )
+    )
+  }
 
+  protected suspend fun popCatalogOrThreadPostsLoadingSnackbar() {
+    popSnackbar(SnackbarId.CatalogOrThreadPostsLoading)
+  }
+
+  protected suspend fun pushSnackbar(snackbarInfo: SnackbarInfo) {
+    _snackbarEventFlow.emit(SnackbarInfoEvent.Push(snackbarInfo))
+  }
+
+  protected suspend fun popSnackbar(id: SnackbarId) {
+    _snackbarEventFlow.emit(SnackbarInfoEvent.Pop(id))
   }
 
   interface PostScreenState {
-    fun postDataAsyncState(): AsyncData<List<State<PostData>>>
+    val postsAsyncDataState: MutableStateFlow<AsyncData<IPostsState>>
+    val chanDescriptorState: MutableStateFlow<ChanDescriptor?>
+    val threadCellDataState: MutableStateFlow<ThreadCellData?>
+
     fun updatePost(postData: PostData)
   }
-
-  data class ThreadCellData(
-    val totalReplies: Int = 0,
-    val totalImages: Int = 0,
-    val totalPosters: Int = 0
-  )
 
 }

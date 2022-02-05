@@ -1,21 +1,29 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
+import com.github.k1rakishou.kurobaexlite.model.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.model.ICatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.IThreadDataSource
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import okhttp3.HttpUrl
+import org.koin.java.KoinJavaComponent.inject
 
 class Chan4 : Site {
-  private val chan4CatalogInfo by lazy { CatalogInfo() }
-  private val chan4ThreadInfo by lazy { ThreadInfo() }
+  private val chan4DataSource by inject<Chan4DataSource>(Chan4DataSource::class.java)
+
+  private val chan4CatalogInfo by lazy { CatalogInfo(chan4DataSource) }
+  private val chan4ThreadInfo by lazy { ThreadInfo(chan4DataSource) }
   private val chan4PostImageInfo by lazy { PostImageInfo() }
 
   override val siteKey: SiteKey = SITE_KEY
   override val readableName: String = "4chan"
 
   override fun catalogInfo(): Site.CatalogInfo = chan4CatalogInfo
-  override fun threadInfo(): Site.ThreadInfo? = chan4ThreadInfo
+  override fun threadInfo(): Site.ThreadInfo = chan4ThreadInfo
   override fun postImageInfo(): Site.PostImageInfo = chan4PostImageInfo
 
   override fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor? {
@@ -61,16 +69,28 @@ class Chan4 : Site {
     return ResolvedDescriptor.Post(postDescriptor)
   }
 
-  class CatalogInfo : Site.CatalogInfo {
+  class CatalogInfo(private val chan4DataSource: Chan4DataSource) : Site.CatalogInfo {
+
     override fun catalogUrl(boardCode: String): String {
       return "https://a.4cdn.org/${boardCode}/catalog.json"
     }
+
+    override fun catalogDataSource(): ICatalogDataSource<CatalogDescriptor, CatalogData> {
+      return chan4DataSource
+    }
+
   }
 
-  class ThreadInfo : Site.ThreadInfo {
+  class ThreadInfo(private val chan4DataSource: Chan4DataSource) : Site.ThreadInfo {
+
     override fun threadUrl(boardCode: String, threadNo: Long): String {
       return "https://a.4cdn.org/${boardCode}/thread/${threadNo}.json"
     }
+
+    override fun threadDataSource(): IThreadDataSource<ThreadDescriptor, ThreadData> {
+      return chan4DataSource
+    }
+
   }
 
   class PostImageInfo : Site.PostImageInfo {

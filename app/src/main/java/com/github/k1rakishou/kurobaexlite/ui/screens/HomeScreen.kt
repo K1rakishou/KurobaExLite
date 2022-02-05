@@ -9,6 +9,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
@@ -44,8 +45,9 @@ class HomeScreen(
   override fun Content() {
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
-    val childScreens = homeChildScreens.getChildScreens()
-    val initialScreenIndex = homeChildScreens.getInitialScreenIndex(childScreens = childScreens)
+    val configuration = LocalConfiguration.current
+    val childScreens = homeChildScreens.getChildScreens(configuration)
+    val initialScreenIndex = homeChildScreens.getInitialScreenIndex(configuration, childScreens)
     val pagerState = rememberPagerState(initialPage = initialScreenIndex)
     val currentPage = pagerState.currentPage
     val targetPage = pagerState.targetPage

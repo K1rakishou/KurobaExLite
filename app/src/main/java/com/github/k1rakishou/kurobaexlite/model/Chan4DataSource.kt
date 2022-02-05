@@ -17,13 +17,14 @@ import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 
-class ChanDataSource(
+@Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
+class Chan4DataSource(
   private val siteManager: SiteManager,
   private val kurobaOkHttpClient: ProxiedOkHttpClient,
   private val moshi: Moshi
-) {
+) : ICatalogDataSource<CatalogDescriptor, CatalogData>, IThreadDataSource<ThreadDescriptor, ThreadData> {
 
-  suspend fun loadThread(
+  override suspend fun loadThread(
     threadDescriptor: ThreadDescriptor,
   ): Result<ThreadData> {
     return withContext(Dispatchers.IO) {
@@ -107,10 +108,7 @@ class ChanDataSource(
     }
   }
 
-  suspend fun loadCatalog(
-    catalogDescriptor: CatalogDescriptor,
-    page: Int? = null
-  ): Result<CatalogData> {
+  override suspend fun loadCatalog(catalogDescriptor: CatalogDescriptor): Result<CatalogData> {
     return withContext(Dispatchers.IO) {
       return@withContext Result.Try {
         val siteKey = catalogDescriptor.siteKey
