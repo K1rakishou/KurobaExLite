@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
 import android.os.SystemClock
 import androidx.lifecycle.viewModelScope
+import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.*
@@ -17,11 +18,12 @@ import logcat.logcat
 
 class CatalogScreenViewModel(
   private val chanThreadManager: ChanThreadManager,
+  application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
   postCommentParser: PostCommentParser,
   postCommentApplier: PostCommentApplier,
   themeEngine: ThemeEngine
-) : PostScreenViewModel(globalConstants, postCommentParser, postCommentApplier, themeEngine) {
+) : PostScreenViewModel(application, globalConstants, postCommentParser, postCommentApplier, themeEngine) {
   private val catalogScreenState = CatalogScreenState()
   private var loadCatalogJob: Job? = null
 
@@ -58,6 +60,7 @@ class CatalogScreenViewModel(
       return
     }
 
+    _postsFullyParsedOnceFlow.emit(false)
     val startTime = SystemClock.elapsedRealtime()
     catalogScreenState.postsAsyncDataState.value = AsyncData.Loading
 
@@ -67,18 +70,22 @@ class CatalogScreenViewModel(
       logcatError { "loadCatalog() error=${error.asLog()}" }
 
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      _postsFullyParsedOnceFlow.emit(true)
       return
     }
 
     val catalogData = catalogDataResult.unwrap()
     if (catalogData == null || catalogDescriptor == null) {
       catalogScreenState.postsAsyncDataState.value = AsyncData.Empty
+      _postsFullyParsedOnceFlow.emit(true)
       return
     }
 
     if (catalogData.catalogThreads.isEmpty()) {
       val error = CatalogDisplayException("Catalog /${catalogDescriptor}/ has no posts")
+
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      _postsFullyParsedOnceFlow.emit(true)
       return
     }
 
@@ -99,6 +106,9 @@ class CatalogScreenViewModel(
       },
       onPostsParsed = { postDataList ->
         popCatalogOrThreadPostsLoadingSnackbar()
+
+        restoreScrollPosition(catalogDescriptor)
+        _postsFullyParsedOnceFlow.emit(true)
       }
     )
 

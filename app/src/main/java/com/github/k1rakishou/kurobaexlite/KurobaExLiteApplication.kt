@@ -52,15 +52,34 @@ class KurobaExLiteApplication : Application() {
       single { PostCommentParser() }
       single { PostCommentApplier() }
       single { SiteManager() }
-      single { ChanThreadManager(get()) }
+      single { ChanThreadManager(siteManager = get()) }
       single { PostReplyChainManager() }
       single { UiInfoManager(this@KurobaExLiteApplication) }
-      single { Chan4DataSource(get(), get(), get()) }
+      single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
       single { ThemeEngine() }
 
-      viewModel { HomeScreenViewModel(get()) }
-      viewModel { CatalogScreenViewModel(get(), get(), get(), get(), get()) }
-      viewModel { ThreadScreenViewModel(get(), get(), get(), get(), get()) }
+      viewModel { HomeScreenViewModel(siteManager = get()) }
+
+      viewModel {
+        CatalogScreenViewModel(
+          chanThreadManager = get(),
+          application = this@KurobaExLiteApplication,
+          globalConstants = get(),
+          postCommentParser = get(),
+          postCommentApplier = get(),
+          themeEngine = get()
+        )
+      }
+      viewModel {
+        ThreadScreenViewModel(
+          chanThreadManager = get(),
+          application = this@KurobaExLiteApplication,
+          globalConstants = get(),
+          postCommentParser = get(),
+          postCommentApplier = get(),
+          themeEngine = get()
+        )
+      }
     }
 
     return modules

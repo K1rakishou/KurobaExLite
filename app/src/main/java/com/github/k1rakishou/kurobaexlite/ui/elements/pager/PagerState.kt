@@ -31,11 +31,12 @@ import kotlin.math.roundToInt
 @ExperimentalPagerApi
 @Composable
 fun rememberPagerState(
+  key1: Any,
   @IntRange(from = 0) initialPage: Int = 0,
-): PagerState = rememberSaveable(saver = PagerState.Saver) {
-  PagerState(
-    currentPage = initialPage,
-  )
+): PagerState {
+  return rememberSaveable(key1, saver = PagerState.Saver) {
+    PagerState(currentPage = initialPage)
+  }
 }
 
 /**

@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import dev.chrisbanes.snapper.*
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -106,8 +105,8 @@ object PagerDefaults {
 @Composable
 fun HorizontalPager(
   count: Int,
+  state: PagerState,
   modifier: Modifier = Modifier,
-  state: PagerState = rememberPagerState(),
   reverseLayout: Boolean = false,
   itemSpacing: Dp = 0.dp,
   contentPadding: PaddingValues = PaddingValues(0.dp),
@@ -158,8 +157,8 @@ fun HorizontalPager(
 @Composable
 fun VerticalPager(
   count: Int,
+  state: PagerState,
   modifier: Modifier = Modifier,
-  state: PagerState = rememberPagerState(),
   reverseLayout: Boolean = false,
   itemSpacing: Dp = 0.dp,
   contentPadding: PaddingValues = PaddingValues(0.dp),

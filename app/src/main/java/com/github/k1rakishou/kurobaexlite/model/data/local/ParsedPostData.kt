@@ -9,6 +9,7 @@ data class ParsedPostData(
   val processedPostComment: AnnotatedString,
   val parsedPostSubject: String,
   val processedPostSubject: AnnotatedString,
+  val postFooterText: AnnotatedString?,
   val parsedPostDataContext: ParsedPostDataContext
 )
 

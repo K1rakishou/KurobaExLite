@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import logcat.logcat
 
 val LocalWindowInsets = compositionLocalOf<Insets> { error("Not initialized") }
 
@@ -51,9 +50,7 @@ fun ProvideWindowInsets(
         val right = Math.max(imeInsets.right, insets.systemWindowInsetRight).toFloat()
         val bottom = Math.max(imeInsets.bottom, insets.systemWindowInsetBottom).toFloat()
         val newInsetsRect = Rect(left, top, right, bottom)
-
         insetsRect = Insets(density, newInsetsRect)
-        logcat { "onApplyWindowInsets() called, newInsets=${insetsRect}" }
 
         return@OnApplyWindowInsetsListener ViewCompat.onApplyWindowInsets(
           view,

@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -35,11 +34,11 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
-import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
+import kotlinx.coroutines.delay
 import logcat.logcat
 
 
@@ -59,6 +58,34 @@ internal fun PostListContent(
 
   val lazyListState = rememberLazyListState()
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+  val chanDescriptor = postsScreenViewModel.chanDescriptor
+
+  LaunchedEffect(
+    key1 = lazyListState.firstVisibleItemIndex,
+    key2 = chanDescriptor,
+    block = {
+      if (chanDescriptor == null || lazyListState.firstVisibleItemIndex <= 0) {
+        return@LaunchedEffect
+      }
+
+      delay(50L)
+
+      postsScreenViewModel.rememberPosition(
+        firstVisibleItemIndex = lazyListState.firstVisibleItemIndex,
+        firstVisibleItemScrollOffset = lazyListState.firstVisibleItemScrollOffset
+      )
+    })
+
+  LaunchedEffect(
+    key1 = chanDescriptor,
+    block = {
+      postsScreenViewModel.scrollRestorationEventFlow.collect { lastRememberedPosition ->
+        lazyListState.scrollToItem(
+          index = lastRememberedPosition.firstVisibleItemIndex,
+          scrollOffset = lastRememberedPosition.firstVisibleItemScrollOffset
+        )
+      }
+    })
 
   PostListInternal(
     lazyListState = lazyListState,
@@ -353,6 +380,7 @@ private fun PostCell(
 ) {
   var postComment by postComment(postData)
   var postSubject by postSubject(postData)
+  var postFooterText by postFooterText(postData)
 
   if (postData.postCommentParsedAndProcessed == null) {
     LaunchedEffect(
@@ -361,6 +389,7 @@ private fun PostCell(
         val parsedPostData = postsScreenViewModel.parseComment(isCatalogMode, postData)
         postComment = parsedPostData.processedPostComment
         postSubject = parsedPostData.processedPostSubject
+        postFooterText = parsedPostData.postFooterText
       }
     )
   }
@@ -385,8 +414,7 @@ private fun PostCell(
 
     PostCellFooter(
       postData = postData,
-      isCatalogMode = isCatalogMode,
-      postsScreenViewModel = postsScreenViewModel,
+      postFooterText = postFooterText,
       onPostRepliesClicked = onPostRepliesClicked
     )
   }
@@ -484,39 +512,12 @@ private fun PostCellCommentSelectionWrapper(isCatalogMode: Boolean, content: @Co
 @Composable
 private fun PostCellFooter(
   postData: PostData,
-  isCatalogMode: Boolean,
-  postsScreenViewModel: PostScreenViewModel,
+  postFooterText: AnnotatedString?,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val context = LocalContext.current
 
-  var postFooterText by remember(
-    key1 = postData.threadImagesTotal,
-    key2 = postData.threadRepliesTotal,
-    key3 = postData.threadPostersTotal
-  ) { mutableStateOf<String?>(null) }
-
-  LaunchedEffect(
-    key1 = postData.threadImagesTotal,
-    key2 = postData.threadRepliesTotal,
-    key3 = postData.threadPostersTotal,
-    block = {
-      postFooterText = formatFooterText(
-        context = context,
-        postsScreenViewModel = postsScreenViewModel,
-        postDescriptor = postData.postDescriptor,
-        isCatalogMode = isCatalogMode,
-        threadImagesTotal = postData.threadImagesTotal,
-        threadRepliesTotal = postData.threadRepliesTotal,
-        threadPostersTotal = postData.threadPostersTotal
-      )
-    }
-  )
-
-  val repliesText = postFooterText
-
-  if (repliesText.isNotNullNorEmpty()) {
+  if (postFooterText.isNotNullNorEmpty()) {
     Text(
       modifier = Modifier
         .fillMaxWidth()
@@ -524,80 +525,9 @@ private fun PostCellFooter(
         .kurobaClickable(onClick = { onPostRepliesClicked(postData) })
         .padding(vertical = 4.dp),
       color = chanTheme.textColorSecondaryCompose,
-      text = repliesText
+      text = postFooterText
     )
   }
-}
-
-private suspend fun formatFooterText(
-  context: Context,
-  postsScreenViewModel: PostScreenViewModel,
-  postDescriptor: PostDescriptor,
-  isCatalogMode: Boolean,
-  threadImagesTotal: Int?,
-  threadRepliesTotal: Int?,
-  threadPostersTotal: Int?
-): String? {
-  if (isCatalogMode && (threadImagesTotal != null || threadRepliesTotal != null || threadPostersTotal != null)) {
-    return buildString {
-      threadRepliesTotal
-        ?.takeIf { repliesCount -> repliesCount > 0 }
-        ?.let { repliesCount ->
-          val repliesText = context.resources.getQuantityString(
-            R.plurals.reply_with_number,
-            repliesCount,
-            repliesCount
-          )
-
-          append(repliesText)
-        }
-
-      threadImagesTotal
-        ?.takeIf { imagesCount -> imagesCount > 0 }
-        ?.let { imagesCount ->
-          if (isNotEmpty()) {
-            append(", ")
-          }
-
-          val imagesText = context.resources.getQuantityString(
-            R.plurals.image_with_number,
-            imagesCount,
-            imagesCount
-          )
-
-          append(imagesText)
-        }
-
-      threadPostersTotal
-        ?.takeIf { postersCount -> postersCount > 0 }
-        ?.let { postersCount ->
-          if (isNotEmpty()) {
-            append(", ")
-          }
-
-          val imagesText = context.resources.getQuantityString(
-            R.plurals.poster_with_number,
-            postersCount,
-            postersCount
-          )
-
-          append(imagesText)
-        }
-    }
-  }
-
-  val repliesFrom = postsScreenViewModel.getRepliesFrom(postDescriptor)
-  if (repliesFrom.isNotEmpty()) {
-    val repliesFromCount = repliesFrom.size
-
-    return context.resources.getQuantityString(
-      R.plurals.reply_with_number,
-      repliesFromCount,
-      repliesFromCount
-    )
-  }
-
-  return null
 }
 
 @Composable
@@ -613,6 +543,15 @@ private fun postSubject(postData: PostData): MutableState<AnnotatedString> {
     }
 
     mutableStateOf<AnnotatedString>(initial)
+  }
+
+  return postSubject
+}
+
+@Composable
+private fun postFooterText(postData: PostData): MutableState<AnnotatedString?> {
+  val postSubject = remember(key1 = postData.postFooterText) {
+    mutableStateOf<AnnotatedString?>(postData.postFooterText)
   }
 
   return postSubject

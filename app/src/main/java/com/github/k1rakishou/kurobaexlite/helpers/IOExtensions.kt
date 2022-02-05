@@ -43,9 +43,10 @@ suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertIntoJsonObjectW
 ): Result<out T?> {
   return withContext(Dispatchers.IO) {
     return@withContext Result.Try {
-      logcat { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}'" }
-
+      logcat { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}' start" }
       val response = suspendCall(request)
+      logcat { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}' end" }
+
       if (!response.isSuccessful) {
         throw BadStatusResponseException(response.code)
       }

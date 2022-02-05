@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 
 import android.os.SystemClock
 import androidx.lifecycle.viewModelScope
+import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.*
@@ -20,11 +21,12 @@ import logcat.logcat
 
 class ThreadScreenViewModel(
   private val chanThreadManager: ChanThreadManager,
+  application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
   postCommentParser: PostCommentParser,
   postCommentApplier: PostCommentApplier,
   themeEngine: ThemeEngine
-) : PostScreenViewModel(globalConstants, postCommentParser, postCommentApplier, themeEngine) {
+) : PostScreenViewModel(application, globalConstants, postCommentParser, postCommentApplier, themeEngine) {
   private val threadScreenState = ThreadScreenState()
   private var loadThreadJob: Job? = null
 
@@ -73,6 +75,20 @@ class ThreadScreenViewModel(
         return@launch
       }
 
+      val originalPostIndex = threadData.threadPosts
+        .indexOfFirst { postData -> postData is OriginalPostData }
+      if (originalPostIndex >= 0) {
+        // We need to always reparse the OP eagerly whenever it changes otherwise stuff depending on
+        // it's ParsedPostData will become incorrect (since we reset it to null every time we detect
+        // a post received from the server differs from ours.
+        parsePosts(
+          startIndex = originalPostIndex,
+          postDataList = threadData.threadPosts,
+          count = 1,
+          isCatalogMode = false
+        )
+      }
+
       val mergeResult = threadPostsAsync.data.mergePostsWith(threadData.threadPosts)
 
       parseRemainingPostsAsync(
@@ -117,6 +133,7 @@ class ThreadScreenViewModel(
       return
     }
 
+    _postsFullyParsedOnceFlow.emit(false)
     val startTime = SystemClock.elapsedRealtime()
     threadScreenState.postsAsyncDataState.value = AsyncData.Loading
 
@@ -126,18 +143,22 @@ class ThreadScreenViewModel(
       logcatError { "loadCatalog() error=${error.asLog()}" }
 
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      _postsFullyParsedOnceFlow.emit(true)
       return
     }
 
     val threadData = threadDataResult.unwrap()
     if (threadData == null || threadDescriptor == null) {
       threadScreenState.postsAsyncDataState.value = AsyncData.Empty
+      _postsFullyParsedOnceFlow.emit(true)
       return
     }
 
     if (threadData.threadPosts.isEmpty()) {
       val error = ThreadDisplayException("Thread /${threadDescriptor}/ has no posts")
+
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      _postsFullyParsedOnceFlow.emit(true)
       return
     }
 
@@ -158,6 +179,9 @@ class ThreadScreenViewModel(
       },
       onPostsParsed = { postDataList ->
         popCatalogOrThreadPostsLoadingSnackbar()
+
+        restoreScrollPosition(threadDescriptor)
+        _postsFullyParsedOnceFlow.emit(true)
       }
     )
 
@@ -191,6 +215,5 @@ class ThreadScreenViewModel(
   }
 
   class ThreadDisplayException(message: String) : ClientException(message)
-
 
 }

@@ -30,24 +30,7 @@ fun BoxScope.PostsScreenToolbar(
 
   KurobaToolbarLayout(
     middlePart = {
-      val toolbarTitle = when (postListAsync) {
-        AsyncData.Empty -> null
-        AsyncData.Loading -> stringResource(R.string.toolbar_loading_title)
-        is AsyncData.Error -> stringResource(R.string.toolbar_loading_subtitle)
-        is AsyncData.Data -> {
-          val postListState = postListAsync.data.posts.firstOrNull()
-          if (postListState != null) {
-            val originalPost by postListState
-
-            remember(key1 = originalPost) {
-              originalPost.formatToolbarTitle(catalogMode = isCatalogScreen)
-            }
-          } else {
-            null
-          }
-        }
-      }
-
+      val toolbarTitle = toolbarTitle(postListAsync, isCatalogScreen)
       if (toolbarTitle != null) {
         Text(
           text = toolbarTitle,
@@ -71,6 +54,33 @@ fun BoxScope.PostsScreenToolbar(
       )
     }
   )
+}
+
+@Composable
+private fun toolbarTitle(
+  postListAsync: AsyncData<IPostsState>,
+  isCatalogScreen: Boolean
+): String? {
+  when (postListAsync) {
+    AsyncData.Empty -> {
+      return null
+    }
+    AsyncData.Loading -> {
+      return stringResource(R.string.toolbar_loading_title)
+    }
+    is AsyncData.Error -> {
+      return stringResource(R.string.toolbar_loading_subtitle)
+    }
+    is AsyncData.Data -> {
+      val postListState = postListAsync.data.posts.firstOrNull()
+        ?: return null
+      val originalPost by postListState
+
+      return remember(key1 = originalPost) {
+        originalPost.formatToolbarTitle(catalogMode = isCatalogScreen)
+      }
+    }
+  }
 }
 
 sealed class ToolbarMenuItem {

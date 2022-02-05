@@ -33,6 +33,8 @@ open class PostData(
     get() = _parsedPostData?.processedPostSubject
   val parsedPostDataContext: ParsedPostDataContext?
     get() = _parsedPostData?.parsedPostDataContext
+  val postFooterText: AnnotatedString?
+    get() = _parsedPostData?.postFooterText
 
   fun differsWith(other: PostData): Boolean {
     check(postDescriptor == other.postDescriptor) {

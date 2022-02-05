@@ -48,7 +48,14 @@ class HomeScreen(
     val configuration = LocalConfiguration.current
     val childScreens = homeChildScreens.getChildScreens(configuration)
     val initialScreenIndex = homeChildScreens.getInitialScreenIndex(configuration, childScreens)
-    val pagerState = rememberPagerState(initialPage = initialScreenIndex)
+
+    // rememberSaveable currently does not recreate objects when it's keys change, instead it uses
+    // the restored object from the saver. This causes crashes when going from portrait to landscape
+    // when we are currently on a thread viewpager page since the pagerState.currentPage ends up
+    // being 2 while there are only 2 screens in landscape mode.
+    // There is an issue to add support for that on the google's issues tracker but it's almost
+    // 2 years old. So for the time being we have to hack around the issue.
+    val pagerState = rememberPagerState(key1 = configuration.orientation, initialPage = initialScreenIndex)
     val currentPage = pagerState.currentPage
     val targetPage = pagerState.targetPage
 
@@ -75,7 +82,8 @@ class HomeScreen(
       LaunchedEffect(
         key1 = currentPage,
         block = {
-          val screenKey = childScreens[currentPage].screenKey
+          val screenKey = childScreens.getOrNull(currentPage)?.screenKey
+            ?: return@LaunchedEffect
 
           // When we manually scroll the pager we need to keep track of the current page,
           // however we don't want to notify the listeners in this case.
@@ -119,6 +127,13 @@ class HomeScreen(
     targetPage: Int,
     childScreens: List<ComposeScreenWithToolbar>
   ) {
+    if (currentPage < 0 || currentPage >= childScreens.size) {
+      return
+    }
+    if (targetPage < 0 || targetPage >= childScreens.size) {
+      return
+    }
+
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
     val toolbarTotalHeight = remember(key1 = insets.topDp) { insets.topDp + toolbarHeight }

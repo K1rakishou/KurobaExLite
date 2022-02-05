@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.IPostsState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsMergeResult
 
@@ -17,6 +18,8 @@ class CatalogThreadsState(
 
   override val posts: List<State<PostData>>
     get() = _catalogThreads
+  override val chanDescriptor: ChanDescriptor
+    get() = catalogDescriptor
 
   init {
     _catalogThreads.addAll(catalogThreads.map { mutableStateOf(it) })

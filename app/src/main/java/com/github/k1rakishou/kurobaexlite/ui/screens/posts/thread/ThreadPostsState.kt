@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.IPostsState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsMergeResult
@@ -19,6 +20,8 @@ class ThreadPostsState(
 
   override val posts: List<State<PostData>>
     get() = _threadPosts
+  override val chanDescriptor: ChanDescriptor
+    get() = threadDescriptor
 
   init {
     _threadPosts.addAll(threadPosts.map { mutableStateOf(it) })
