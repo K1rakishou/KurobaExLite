@@ -74,6 +74,15 @@ abstract class PostScreenViewModel(
     return postReplyChainManager.getRepliesFrom(postDescriptor)
   }
 
+  fun rememberedPosition(chanDescriptor: ChanDescriptor?): LazyColumnRememberedPosition {
+    if (chanDescriptor == null) {
+      return DEFAULT_REMEMBERED_POSITION
+    }
+
+    return lazyColumnRememberedPositionCache[chanDescriptor]
+      ?: DEFAULT_REMEMBERED_POSITION
+  }
+
   fun rememberPosition(
     firstVisibleItemIndex: Int,
     firstVisibleItemScrollOffset: Int
@@ -92,6 +101,10 @@ abstract class PostScreenViewModel(
     )
 
     lazyColumnRememberedPositionCache[chanDescriptor] = lazyColumnRememberedPosition
+  }
+
+  fun resetPosition(chanDescriptor: ChanDescriptor) {
+    lazyColumnRememberedPositionCache.remove(chanDescriptor)
   }
 
   fun reparsePost(postData: PostData, parsedPostDataContext: ParsedPostDataContext) {
@@ -492,6 +505,10 @@ abstract class PostScreenViewModel(
       }
 
     fun updatePost(postData: PostData)
+  }
+
+  companion object {
+    private val DEFAULT_REMEMBERED_POSITION = LazyColumnRememberedPosition(0, 0)
   }
 
 }

@@ -31,6 +31,9 @@ class CatalogScreenViewModel(
 
   override fun reload() {
     val currentlyOpenedCatalog = chanThreadManager.currentlyOpenedCatalog
+    if (currentlyOpenedCatalog != null) {
+      resetPosition(currentlyOpenedCatalog)
+    }
 
     loadCatalog(
       catalogDescriptor = currentlyOpenedCatalog,

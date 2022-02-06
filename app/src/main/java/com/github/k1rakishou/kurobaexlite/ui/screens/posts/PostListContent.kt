@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -50,15 +51,22 @@ internal fun PostListContent(
   onPostCellClicked: (PostData) -> Unit
 ) {
   val windowInsets = LocalWindowInsets.current
+  val orientation = LocalConfiguration.current.orientation
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
   val contentPadding = remember(key1 = windowInsets) {
     PaddingValues(top = toolbarHeight + windowInsets.topDp, bottom = windowInsets.bottomDp)
   }
 
-  val lazyListState = rememberLazyListState()
-  val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
   val chanDescriptor = postsScreenViewModel.chanDescriptor
+  val rememberedPosition = remember(key1 = chanDescriptor, key2 = orientation) {
+    postsScreenViewModel.rememberedPosition(postsScreenViewModel.chanDescriptor)
+  }
+  val lazyListState = rememberLazyListState(
+    initialFirstVisibleItemIndex = rememberedPosition.firstVisibleItemIndex,
+    initialFirstVisibleItemScrollOffset = rememberedPosition.firstVisibleItemScrollOffset
+  )
+  val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
   LaunchedEffect(
     key1 = lazyListState.firstVisibleItemIndex,
@@ -68,6 +76,7 @@ internal fun PostListContent(
         return@LaunchedEffect
       }
 
+      // For debouncing purposes
       delay(50L)
 
       postsScreenViewModel.rememberPosition(
