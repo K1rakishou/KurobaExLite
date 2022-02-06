@@ -138,12 +138,18 @@ class CatalogScreen(
 
         threadScreenViewModel.loadThread(threadDescriptor)
       },
-      onPostListScrolled = { delta -> homeScreenViewModel.onChildContentScrolling(delta) },
-      onPostListTouchingBottomStateChanged = { touchingBottom ->
-        homeScreenViewModel.onPostListTouchingBottomStateChanged(touchingBottom)
+      onPostListScrolled = { delta ->
+        homeScreenViewModel.onChildContentScrolling(delta)
       },
-      onPostListDragStateChanged = { dragging -> homeScreenViewModel.onPostListDragStateChanged(dragging) },
-      onFastScrollerDragStateChanged = { dragging -> homeScreenViewModel.onFastScrollerDragStateChanged(dragging) },
+      onPostListTouchingTopOrBottomStateChanged = { touching ->
+        homeScreenViewModel.onPostListTouchingTopOrBottomStateChanged(touching)
+      },
+      onPostListDragStateChanged = { dragging ->
+        homeScreenViewModel.onPostListDragStateChanged(dragging)
+      },
+      onFastScrollerDragStateChanged = { dragging ->
+        homeScreenViewModel.onFastScrollerDragStateChanged(dragging)
+      },
     )
   }
 

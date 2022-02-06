@@ -140,12 +140,12 @@ class HomeScreen(
     val transitionIsProgress = currentPage != targetPage
 
     val toolbarTransparency = homeScreenViewModel.toolbarVisibilityInfo.postListScrollState.collectAsState()
-    val postListTouchingBottomState by homeScreenViewModel.toolbarVisibilityInfo.postListTouchingBottomState.collectAsState()
+    val touching by homeScreenViewModel.toolbarVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
     val isDraggingPostList by homeScreenViewModel.toolbarVisibilityInfo.postListDragState.collectAsState()
     val isDraggingFastScroller by homeScreenViewModel.toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
 
     val toolbarAlpha by when {
-      postListTouchingBottomState -> animateFloatAsState(targetValue = 1f)
+      touching -> animateFloatAsState(targetValue = 1f)
       isDraggingFastScroller -> animateFloatAsState(targetValue = 0f)
       isDraggingPostList -> toolbarTransparency
       else -> {

@@ -55,7 +55,7 @@ internal fun PostListContent(
   postsScreenViewModel: PostScreenViewModel,
   onPostCellClicked: (PostData) -> Unit,
   onPostListScrolled: (Float) -> Unit,
-  onPostListTouchingBottomStateChanged: (Boolean) -> Unit,
+  onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
@@ -84,12 +84,16 @@ internal fun PostListContent(
       // For debouncing purposes
       delay(50L)
 
+      val firstVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
+        ?: return@LaunchedEffect
       val lastVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
         ?: return@LaunchedEffect
       val totalCount = lazyListState.layoutInfo.totalItemsCount
 
       val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
-      onPostListTouchingBottomStateChanged(touchingBottom)
+      val touchingTop = firstVisibleItemIndex <= 0
+
+      onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
     })
 
   LaunchedEffect(

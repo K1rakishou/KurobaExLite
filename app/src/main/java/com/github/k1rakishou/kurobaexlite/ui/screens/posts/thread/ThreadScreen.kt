@@ -104,12 +104,18 @@ class ThreadScreen(
       onPostCellClicked = { postData ->
         // TODO(KurobaEx):
       },
-      onPostListScrolled = { delta -> homeScreenViewModel.onChildContentScrolling(delta) },
-      onPostListTouchingBottomStateChanged = { touchingBottom ->
-        homeScreenViewModel.onPostListTouchingBottomStateChanged(touchingBottom)
+      onPostListScrolled = { delta ->
+        homeScreenViewModel.onChildContentScrolling(delta)
       },
-      onPostListDragStateChanged = { dragging -> homeScreenViewModel.onPostListDragStateChanged(dragging) },
-      onFastScrollerDragStateChanged = { dragging -> homeScreenViewModel.onFastScrollerDragStateChanged(dragging) }
+      onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
+        homeScreenViewModel.onPostListTouchingTopOrBottomStateChanged(touchingBottom)
+      },
+      onPostListDragStateChanged = { dragging ->
+        homeScreenViewModel.onPostListDragStateChanged(dragging)
+      },
+      onFastScrollerDragStateChanged = { dragging ->
+        homeScreenViewModel.onFastScrollerDragStateChanged(dragging)
+      }
     )
   }
 

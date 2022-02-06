@@ -76,8 +76,8 @@ class HomeScreenViewModel(
     toolbarVisibilityInfo.update(fastScrollerDragState = dragging)
   }
 
-  fun onPostListTouchingBottomStateChanged(touchingBottom: Boolean) {
-    toolbarVisibilityInfo.update(postListTouchingBottomState = touchingBottom)
+  fun onPostListTouchingTopOrBottomStateChanged(touching: Boolean) {
+    toolbarVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
   }
 
   data class CurrentPage(
@@ -90,9 +90,9 @@ class HomeScreenViewModel(
     val postListScrollState: StateFlow<Float>
       get() = _postListScrollState.asStateFlow()
 
-    private var _postListTouchingBottomState = MutableStateFlow<Boolean>(false)
-    val postListTouchingBottomState: StateFlow<Boolean>
-      get() = _postListTouchingBottomState.asStateFlow()
+    private var _postListTouchingTopOrBottomState = MutableStateFlow<Boolean>(false)
+    val postListTouchingTopOrBottomState: StateFlow<Boolean>
+      get() = _postListTouchingTopOrBottomState.asStateFlow()
 
     private var _postListDragState = MutableStateFlow(false)
     val postListDragState: StateFlow<Boolean>
@@ -104,12 +104,12 @@ class HomeScreenViewModel(
 
     fun update(
       postListScrollState: Float? = null,
-      postListTouchingBottomState: Boolean? = null,
+      postListTouchingTopOrBottomState: Boolean? = null,
       postListDragState: Boolean? = null,
       fastScrollerDragState: Boolean? = null
     ) {
       postListScrollState?.let { _postListScrollState.value = it }
-      postListTouchingBottomState?.let { _postListTouchingBottomState.value = it }
+      postListTouchingTopOrBottomState?.let { _postListTouchingTopOrBottomState.value = it }
       postListDragState?.let { _postListDragState.value = it }
       fastScrollerDragState?.let { _fastScrollerDragState.value = it }
     }
