@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
@@ -13,6 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -48,7 +53,11 @@ internal fun PostListContent(
   isCatalogMode: Boolean,
   mainUiLayoutMode: MainUiLayoutMode,
   postsScreenViewModel: PostScreenViewModel,
-  onPostCellClicked: (PostData) -> Unit
+  onPostCellClicked: (PostData) -> Unit,
+  onPostListScrolled: (Float) -> Unit,
+  onPostListTouchingBottomStateChanged: (Boolean) -> Unit,
+  onPostListDragStateChanged: (Boolean) -> Unit,
+  onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
   val windowInsets = LocalWindowInsets.current
   val orientation = LocalConfiguration.current.orientation
@@ -67,6 +76,21 @@ internal fun PostListContent(
     initialFirstVisibleItemScrollOffset = rememberedPosition.firstVisibleItemScrollOffset
   )
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+
+  LaunchedEffect(
+    key1 = lazyListState.firstVisibleItemIndex,
+    key2 = chanDescriptor,
+    block = {
+      // For debouncing purposes
+      delay(50L)
+
+      val lastVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        ?: return@LaunchedEffect
+      val totalCount = lazyListState.layoutInfo.totalItemsCount
+
+      val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
+      onPostListTouchingBottomStateChanged(touchingBottom)
+    })
 
   LaunchedEffect(
     key1 = lazyListState.firstVisibleItemIndex,
@@ -110,7 +134,10 @@ internal fun PostListContent(
     onPostRepliesClicked = { postData ->
       logcat(tag = "onPostRepliesClicked") { "Clicked replies of post ${postData.postDescriptor}" }
     },
-    onThreadStatusCellClicked = { postsScreenViewModel.refresh() }
+    onThreadStatusCellClicked = { postsScreenViewModel.refresh() },
+    onPostListScrolled = onPostListScrolled,
+    onPostListDragStateChanged = onPostListDragStateChanged,
+    onFastScrollerDragStateChanged = onFastScrollerDragStateChanged
   )
 }
 
@@ -151,7 +178,10 @@ private fun PostListInternal(
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
-  onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
+  onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
+  onPostListScrolled: (Float) -> Unit,
+  onPostListDragStateChanged: (Boolean) -> Unit,
+  onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
   val padding = remember(key1 = mainUiLayoutMode) {
     when (mainUiLayoutMode) {
@@ -168,10 +198,28 @@ private fun PostListInternal(
     }
   }
 
+  val nestedScrollConnection = remember {
+    object : NestedScrollConnection {
+      override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+        onPostListScrolled(available.y)
+        return Offset.Zero
+      }
+    }
+  }
+
   LazyColumnWithFastScroller(
-    modifier = Modifier.fillMaxSize(),
+    modifier = Modifier
+      .fillMaxSize()
+      .nestedScroll(nestedScrollConnection)
+      .pointerInput(
+        key1 = Unit,
+        block = {
+          processDragEvents { dragging -> onPostListDragStateChanged(dragging) }
+        }
+      ),
     lazyListState = lazyListState,
     contentPadding = contentPadding,
+    onFastScrollerDragStateChanged = { dragging -> onFastScrollerDragStateChanged(dragging) },
     content = {
       when (postListAsync) {
         AsyncData.Empty -> {
@@ -229,6 +277,34 @@ private fun PostListInternal(
       }
     }
   )
+}
+
+private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChanged: (Boolean) -> Unit) {
+  forEachGesture {
+    awaitPointerEventScope {
+      val down = awaitPointerEvent(pass = PointerEventPass.Initial)
+      if (down.type != PointerEventType.Press) {
+        return@awaitPointerEventScope
+      }
+
+      onPostListDragStateChanged(true)
+
+      try {
+        while (true) {
+          val up = awaitPointerEvent(pass = PointerEventPass.Initial)
+          if (up.changes.all { it.changedToUp() }) {
+            break
+          }
+
+          if (up.type == PointerEventType.Release || up.type == PointerEventType.Exit) {
+            break
+          }
+        }
+      } finally {
+        onPostListDragStateChanged(false)
+      }
+    }
+  }
 }
 
 private fun LazyListScope.postList(

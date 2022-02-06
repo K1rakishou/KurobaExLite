@@ -1,13 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens
 
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -137,14 +136,29 @@ class HomeScreen(
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
     val toolbarTotalHeight = remember(key1 = insets.topDp) { insets.topDp + toolbarHeight }
-
     val animationProgress = pagerState.currentPageOffset
     val transitionIsProgress = currentPage != targetPage
+
+    val toolbarTransparency = homeScreenViewModel.toolbarVisibilityInfo.postListScrollState.collectAsState()
+    val postListTouchingBottomState by homeScreenViewModel.toolbarVisibilityInfo.postListTouchingBottomState.collectAsState()
+    val isDraggingPostList by homeScreenViewModel.toolbarVisibilityInfo.postListDragState.collectAsState()
+    val isDraggingFastScroller by homeScreenViewModel.toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
+
+    val toolbarAlpha by when {
+      postListTouchingBottomState -> animateFloatAsState(targetValue = 1f)
+      isDraggingFastScroller -> animateFloatAsState(targetValue = 0f)
+      isDraggingPostList -> toolbarTransparency
+      else -> {
+        val targetValue = if (toolbarTransparency.value > 0.5f) 1f else 0f
+        animateFloatAsState(targetValue = targetValue)
+      }
+    }
 
     Column(
       modifier = Modifier
         .fillMaxWidth()
         .height(toolbarTotalHeight)
+        .alpha(toolbarAlpha)
         .background(chanTheme.primaryColorCompose)
         .consumeClicks()
     ) {

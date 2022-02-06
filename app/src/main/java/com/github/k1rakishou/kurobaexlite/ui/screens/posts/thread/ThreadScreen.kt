@@ -18,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -27,6 +28,7 @@ class ThreadScreen(
   navigationRouter: NavigationRouter,
   isStartScreen: Boolean
 ) : PostsScreen(componentActivity, navigationRouter, isStartScreen) {
+  private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
 
   private val threadScreenToolbarActionHandler by lazy {
@@ -101,7 +103,13 @@ class ThreadScreen(
       postsScreenViewModel = threadScreenViewModel,
       onPostCellClicked = { postData ->
         // TODO(KurobaEx):
-      }
+      },
+      onPostListScrolled = { delta -> homeScreenViewModel.onChildContentScrolling(delta) },
+      onPostListTouchingBottomStateChanged = { touchingBottom ->
+        homeScreenViewModel.onPostListTouchingBottomStateChanged(touchingBottom)
+      },
+      onPostListDragStateChanged = { dragging -> homeScreenViewModel.onPostListDragStateChanged(dragging) },
+      onFastScrollerDragStateChanged = { dragging -> homeScreenViewModel.onFastScrollerDragStateChanged(dragging) }
     )
   }
 

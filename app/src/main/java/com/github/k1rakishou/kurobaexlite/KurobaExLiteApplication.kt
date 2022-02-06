@@ -58,7 +58,12 @@ class KurobaExLiteApplication : Application() {
       single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
       single { ThemeEngine() }
 
-      viewModel { HomeScreenViewModel(siteManager = get()) }
+      viewModel {
+        HomeScreenViewModel(
+          application = this@KurobaExLiteApplication,
+          siteManager = get()
+        )
+      }
 
       viewModel {
         CatalogScreenViewModel(

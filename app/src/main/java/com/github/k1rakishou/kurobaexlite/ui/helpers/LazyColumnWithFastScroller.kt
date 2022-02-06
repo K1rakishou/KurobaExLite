@@ -24,6 +24,7 @@ fun LazyColumnWithFastScroller(
   modifier: Modifier = Modifier,
   lazyListState: LazyListState = rememberLazyListState(),
   contentPadding: PaddingValues = PaddingValues(),
+  onFastScrollerDragStateChanged: ((Boolean) -> Unit)? = null,
   content: LazyListScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -51,7 +52,10 @@ fun LazyColumnWithFastScroller(
               paddingTop = paddingTopPx,
               paddingBottom = paddingBottomPx,
               scrollbarWidth = scrollbarWidth,
-              onScrollbarDragStateUpdated = { dragging -> scrollbarDragged = dragging }
+              onScrollbarDragStateUpdated = { dragging ->
+                scrollbarDragged = dragging
+                onFastScrollerDragStateChanged?.invoke(dragging)
+              }
             )
           }
         )

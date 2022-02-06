@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
-import android.content.Context
 import android.os.SystemClock
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -44,8 +43,6 @@ abstract class PostScreenViewModel(
 ) : BaseAndroidViewModel(application) {
   private val postReplyChainManager by inject<PostReplyChainManager>(PostReplyChainManager::class.java)
   private val scope = CoroutineScope(Dispatchers.Default)
-  protected val appContext: Context
-    get() = application.applicationContext
 
   private var currentParseJob: Job? = null
 
