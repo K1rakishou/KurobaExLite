@@ -1,5 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.*
@@ -14,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -21,6 +24,7 @@ import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -40,6 +44,7 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -47,6 +52,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.*
 import kotlinx.coroutines.delay
 import logcat.logcat
 
+private val animationTranslationDelta = 100.dp
+private val animationDurationMs = 200
 
 @Composable
 internal fun PostListContent(
@@ -187,6 +194,10 @@ private fun PostListInternal(
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
+  val previouslyVisiblePosts = remember(key1 = postsScreenViewModel.chanDescriptor) {
+    mutableStateMapOf<PostDescriptor, Unit>()
+  }
+
   val padding = remember(key1 = mainUiLayoutMode) {
     when (mainUiLayoutMode) {
       MainUiLayoutMode.Portrait -> {
@@ -267,11 +278,14 @@ private fun PostListInternal(
           }
         }
         is AsyncData.Data -> {
+          val postDataList = postListAsync.data.posts
+
           postList(
             isCatalogMode = isCatalogMode,
             padding = padding,
             postsScreenViewModel = postsScreenViewModel,
-            postDataList = postListAsync.data.posts,
+            postDataList = postDataList,
+            previouslyVisiblePosts = previouslyVisiblePosts,
             onPostCellClicked = onPostCellClicked,
             onPostCellCommentClicked = onPostCellCommentClicked,
             onPostRepliesClicked = onPostRepliesClicked,
@@ -283,39 +297,12 @@ private fun PostListInternal(
   )
 }
 
-private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChanged: (Boolean) -> Unit) {
-  forEachGesture {
-    awaitPointerEventScope {
-      val down = awaitPointerEvent(pass = PointerEventPass.Initial)
-      if (down.type != PointerEventType.Press) {
-        return@awaitPointerEventScope
-      }
-
-      onPostListDragStateChanged(true)
-
-      try {
-        while (true) {
-          val up = awaitPointerEvent(pass = PointerEventPass.Initial)
-          if (up.changes.all { it.changedToUp() }) {
-            break
-          }
-
-          if (up.type == PointerEventType.Release || up.type == PointerEventType.Exit) {
-            break
-          }
-        }
-      } finally {
-        onPostListDragStateChanged(false)
-      }
-    }
-  }
-}
-
 private fun LazyListScope.postList(
   isCatalogMode: Boolean,
   padding: PaddingValues,
   postsScreenViewModel: PostScreenViewModel,
   postDataList: List<State<PostData>>,
+  previouslyVisiblePosts: MutableMap<PostDescriptor, Unit>,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
@@ -329,6 +316,20 @@ private fun LazyListScope.postList(
     itemContent = { index ->
       val postData by postDataList[index]
 
+      // Pre-insert first batch of posts into the previouslyVisiblePosts so that we don't play
+      // animations for recently opened catalogs/threads. We are doing this right inside of the
+      // composition because otherwise there is some kind of a delay before LaunchedEffect is executed
+      // so the first posts are always animated.
+      if (previouslyVisiblePosts.isEmpty() && postDataList.isNotEmpty()) {
+        val resultMap = mutableMapOf<PostDescriptor, Unit>()
+
+        postDataList.forEach { postDataState ->
+          resultMap[postDataState.value.postDescriptor] = Unit
+        }
+
+        previouslyVisiblePosts.putAll(resultMap)
+      }
+
       PostCellContainer(
         padding = padding,
         isCatalogMode = isCatalogMode,
@@ -338,8 +339,15 @@ private fun LazyListScope.postList(
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked,
         index = index,
-        totalCount = totalCount
+        totalCount = totalCount,
+        animateInsertion = !previouslyVisiblePosts.containsKey(postData.postDescriptor)
       )
+
+      // Add each post into the previouslyVisiblePosts so that we don't run animations more than
+      // once for each post.
+      SideEffect {
+        previouslyVisiblePosts[postData.postDescriptor] = Unit
+      }
     }
   )
 
@@ -436,26 +444,79 @@ private fun LazyItemScope.PostCellContainer(
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
   index: Int,
-  totalCount: Int
+  totalCount: Int,
+  animateInsertion: Boolean
 ) {
-  Column(
-    modifier = Modifier
-      .kurobaClickable(onClick = { onPostCellClicked(postData) })
-      .padding(padding)
-  ) {
-    PostCell(
-      postsScreenViewModel = postsScreenViewModel,
-      postData = postData,
-      isCatalogMode = isCatalogMode,
-      onPostCellCommentClicked = onPostCellCommentClicked,
-      onPostRepliesClicked = onPostRepliesClicked
-    )
-
-    if (index < (totalCount - 1)) {
-      KurobaComposeDivider(
-        modifier = Modifier.fillMaxWidth()
+  PostCellContainerAnimated(animateInsertion) {
+    Column(
+      modifier = Modifier
+        .kurobaClickable(onClick = { onPostCellClicked(postData) })
+        .padding(padding)
+    ) {
+      PostCell(
+        postsScreenViewModel = postsScreenViewModel,
+        postData = postData,
+        isCatalogMode = isCatalogMode,
+        onPostCellCommentClicked = onPostCellCommentClicked,
+        onPostRepliesClicked = onPostRepliesClicked
       )
+
+      if (index < (totalCount - 1)) {
+        KurobaComposeDivider(
+          modifier = Modifier.fillMaxWidth()
+        )
+      }
     }
+  }
+}
+
+@Composable
+private fun PostCellContainerAnimated(animateInsertion: Boolean, content: @Composable () -> Unit) {
+  var animationInProgress by remember { mutableStateOf(false) }
+
+  if (animateInsertion || animationInProgress) {
+    animationInProgress = true
+
+    val animationTranslationDeltaPx = with(LocalDensity.current) {
+      remember(key1 = animationTranslationDelta) {
+        animationTranslationDelta.toPx()
+      }
+    }
+
+    var translationAnimated by remember { mutableStateOf(0f) }
+    var alphaAnimated by remember { mutableStateOf(0f) }
+    var scaleAnimated by remember { mutableStateOf(0f) }
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        animate(
+          initialValue = 0f,
+          targetValue = 1f,
+          animationSpec = tween(durationMillis = animationDurationMs),
+          block = { progress, _ ->
+            translationAnimated = lerpFloat(animationTranslationDeltaPx, 0f, progress)
+            alphaAnimated = lerpFloat(.5f, 1f, progress)
+            scaleAnimated = lerpFloat(1.1f, 1f, progress)
+
+            if (progress >= 1f) {
+              animationInProgress = false
+            }
+          })
+      })
+
+      Box(
+        modifier = Modifier.graphicsLayer {
+          translationY = translationAnimated
+          alpha = alphaAnimated
+          scaleX = scaleAnimated
+          scaleY = scaleAnimated
+        }
+      ) {
+        content()
+      }
+  } else {
+    Box { content() }
   }
 }
 
@@ -699,4 +760,32 @@ private fun detectClickedAnnotations(
   }
 
   return null
+}
+
+private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChanged: (Boolean) -> Unit) {
+  forEachGesture {
+    awaitPointerEventScope {
+      val down = awaitPointerEvent(pass = PointerEventPass.Initial)
+      if (down.type != PointerEventType.Press) {
+        return@awaitPointerEventScope
+      }
+
+      onPostListDragStateChanged(true)
+
+      try {
+        while (true) {
+          val up = awaitPointerEvent(pass = PointerEventPass.Initial)
+          if (up.changes.all { it.changedToUp() }) {
+            break
+          }
+
+          if (up.type == PointerEventType.Release || up.type == PointerEventType.Exit) {
+            break
+          }
+        }
+      } finally {
+        onPostListDragStateChanged(false)
+      }
+    }
+  }
 }
