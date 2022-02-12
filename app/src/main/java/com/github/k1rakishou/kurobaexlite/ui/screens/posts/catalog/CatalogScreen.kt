@@ -19,8 +19,8 @@ import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
@@ -48,16 +48,28 @@ class CatalogScreen(
     )
   }
 
-  private val toolbarMenuItems: List<ToolbarMenuItem> by lazy {
+  private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
-      ToolbarMenuItem.TextMenu(
+      FloatingMenuItem.Text(
         menuItemId = CatalogScreenToolbarActionHandler.ACTION_RELOAD,
         textId = R.string.reload
       ),
-      ToolbarMenuItem.TextMenu(
+      FloatingMenuItem.Text(
         menuItemId = CatalogScreenToolbarActionHandler.ACTION_OPEN_THREAD_BY_IDENTIFIER,
         textId = R.string.catalog_toolbar_open_thread_by_identifier,
         subTextId = R.string.catalog_toolbar_open_thread_by_identifier_subtitle
+      ),
+      FloatingMenuItem.Footer(
+        items = listOf(
+          FloatingMenuItem.Icon(
+            menuItemId = CatalogScreenToolbarActionHandler.ACTION_SCROLL_TOP,
+            iconId = R.drawable.ic_baseline_arrow_upward_24
+          ),
+          FloatingMenuItem.Icon(
+            menuItemId = CatalogScreenToolbarActionHandler.ACTION_SCROLL_BOTTOM,
+            iconId = R.drawable.ic_baseline_arrow_downward_24
+          )
+        )
       )
     )
   }
@@ -78,7 +90,7 @@ class CatalogScreen(
             FloatingMenuScreen(
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
-              menuItems = toolbarMenuItems,
+              menuItems = floatingMenuItems,
               onMenuItemClicked = { menuItem ->
                 catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
               }

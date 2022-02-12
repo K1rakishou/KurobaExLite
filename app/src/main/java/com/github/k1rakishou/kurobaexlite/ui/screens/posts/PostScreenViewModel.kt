@@ -58,6 +58,10 @@ abstract class PostScreenViewModel(
   val scrollRestorationEventFlow: SharedFlow<LazyColumnRememberedPosition>
     get() = _scrollRestorationEventFlow.asSharedFlow()
 
+  private val _toolbarScrollEventFlow = MutableSharedFlow<Boolean>(extraBufferCapacity = Channel.UNLIMITED)
+  val toolbarScrollEventFlow: SharedFlow<Boolean>
+    get() = _toolbarScrollEventFlow.asSharedFlow()
+
   private val lazyColumnRememberedPositionCache = mutableMapOf<ChanDescriptor, LazyColumnRememberedPosition>()
 
   abstract val postScreenState: PostScreenState
@@ -483,6 +487,18 @@ abstract class PostScreenViewModel(
 
   protected suspend fun popSnackbar(id: SnackbarId) {
     _snackbarEventFlow.emit(SnackbarInfoEvent.Pop(id))
+  }
+
+  fun scrollTop() {
+    scope.launch {
+      _toolbarScrollEventFlow.emit(false)
+    }
+  }
+
+  fun scrollBottom() {
+    scope.launch {
+      _toolbarScrollEventFlow.emit(true)
+    }
   }
 
   interface PostScreenState {

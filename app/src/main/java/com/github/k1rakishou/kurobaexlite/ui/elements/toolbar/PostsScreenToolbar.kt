@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
@@ -81,15 +80,4 @@ private fun toolbarTitle(
       }
     }
   }
-}
-
-sealed class ToolbarMenuItem {
-  abstract val menuItemId: Int
-
-  data class TextMenu(
-    override val menuItemId: Int,
-    @StringRes val textId: Int,
-    @StringRes val subTextId: Int? = null
-  ) : ToolbarMenuItem()
-
 }

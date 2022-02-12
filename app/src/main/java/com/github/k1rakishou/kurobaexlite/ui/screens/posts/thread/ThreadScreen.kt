@@ -15,8 +15,8 @@ import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
@@ -38,11 +38,23 @@ class ThreadScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
 
-  private val toolbarMenuItems: List<ToolbarMenuItem> by lazy {
+  private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
-      ToolbarMenuItem.TextMenu(
+      FloatingMenuItem.Text(
         menuItemId = ThreadScreenToolbarActionHandler.ACTION_RELOAD,
         textId = R.string.reload
+      ),
+      FloatingMenuItem.Footer(
+        items = listOf(
+          FloatingMenuItem.Icon(
+            menuItemId = ThreadScreenToolbarActionHandler.ACTION_SCROLL_TOP,
+            iconId = R.drawable.ic_baseline_arrow_upward_24
+          ),
+          FloatingMenuItem.Icon(
+            menuItemId = ThreadScreenToolbarActionHandler.ACTION_SCROLL_BOTTOM,
+            iconId = R.drawable.ic_baseline_arrow_downward_24
+          )
+        )
       )
     )
   }
@@ -60,7 +72,7 @@ class ThreadScreen(
             FloatingMenuScreen(
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
-              menuItems = toolbarMenuItems,
+              menuItems = floatingMenuItems,
               onMenuItemClicked = { menuItem ->
                 threadScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
               }

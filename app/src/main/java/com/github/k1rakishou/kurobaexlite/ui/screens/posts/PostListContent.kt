@@ -131,6 +131,20 @@ internal fun PostListContent(
       }
     })
 
+  LaunchedEffect(
+    key1 = chanDescriptor,
+    block = {
+      postsScreenViewModel.toolbarScrollEventFlow.collect { scrollDown ->
+        val positionToScroll = if (scrollDown) {
+          lazyListState.layoutInfo.totalItemsCount
+        } else {
+          0
+        }
+
+        lazyListState.scrollToItem(index = positionToScroll, scrollOffset = 0)
+      }
+    })
+
   PostListInternal(
     lazyListState = lazyListState,
     contentPadding = contentPadding,
@@ -485,7 +499,6 @@ private fun PostCellContainerAnimated(animateInsertion: Boolean, content: @Compo
 
     var translationAnimated by remember { mutableStateOf(0f) }
     var alphaAnimated by remember { mutableStateOf(0f) }
-    var scaleAnimated by remember { mutableStateOf(0f) }
 
     LaunchedEffect(
       key1 = Unit,
@@ -497,7 +510,6 @@ private fun PostCellContainerAnimated(animateInsertion: Boolean, content: @Compo
           block = { progress, _ ->
             translationAnimated = lerpFloat(animationTranslationDeltaPx, 0f, progress)
             alphaAnimated = lerpFloat(.5f, 1f, progress)
-            scaleAnimated = lerpFloat(1.1f, 1f, progress)
 
             if (progress >= 1f) {
               animationInProgress = false
@@ -509,8 +521,6 @@ private fun PostCellContainerAnimated(animateInsertion: Boolean, content: @Compo
         modifier = Modifier.graphicsLayer {
           translationY = translationAnimated
           alpha = alphaAnimated
-          scaleX = scaleAnimated
-          scaleY = scaleAnimated
         }
       ) {
         content()
