@@ -39,8 +39,8 @@ android {
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion compose_compiler_version
-        kotlinCompilerVersion compose_compiler_version
+        kotlinCompilerExtensionVersion compose_version
+        kotlinCompilerVersion compose_version
     }
     packagingOptions {
         resources {
@@ -54,13 +54,15 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.google.android.material:material:1.5.0'
     implementation "androidx.compose.ui:ui:$compose_version"
+    implementation "androidx.compose.animation:animation:$compose_version"
+    implementation "androidx.compose.foundation:foundation:$compose_version"
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.1'
     implementation 'androidx.activity:activity-compose:1.4.0'
     implementation "io.insert-koin:koin-core:$koin_version"
     implementation "io.insert-koin:koin-android:$koin_version"
-    implementation "dev.chrisbanes.snapper:snapper:0.1.0"
+    implementation 'dev.chrisbanes.snapper:snapper:0.1.2'
     implementation 'com.squareup.logcat:logcat:0.1'
     implementation "com.squareup.okhttp3:okhttp:${okhttp}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlin_coroutines_version}"
