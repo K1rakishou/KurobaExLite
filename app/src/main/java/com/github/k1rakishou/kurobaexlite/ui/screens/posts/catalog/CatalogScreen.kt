@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
@@ -28,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreen(
   componentActivity: ComponentActivity,
@@ -37,6 +39,7 @@ class CatalogScreen(
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+  private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
 
   private val catalogScreenToolbarActionHandler by lazy {
     CatalogScreenToolbarActionHandler(
@@ -85,6 +88,7 @@ class CatalogScreen(
       PostsScreenToolbar(
         isCatalogScreen = isCatalogScreen,
         postListAsync = postListAsync,
+        parsedPostDataCache = parsedPostDataCache,
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(

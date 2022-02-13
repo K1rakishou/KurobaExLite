@@ -1,25 +1,26 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import android.os.SystemClock
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
-import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.helpers.*
-import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
+import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
+import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosition
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
+import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
@@ -29,10 +30,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfoEvent
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
-import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
-import java.util.*
 
 abstract class PostScreenViewModel(
   private val application: KurobaExLiteApplication,
@@ -42,6 +41,8 @@ abstract class PostScreenViewModel(
   protected val themeEngine: ThemeEngine
 ) : BaseAndroidViewModel(application) {
   private val postReplyChainManager by inject<PostReplyChainManager>(PostReplyChainManager::class.java)
+  private val chanThreadCache by inject<ChanThreadCache>(ChanThreadCache::class.java)
+  private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
   private val scope = CoroutineScope(Dispatchers.Default)
 
   private var currentParseJob: Job? = null
@@ -70,10 +71,6 @@ abstract class PostScreenViewModel(
 
   abstract fun reload()
   abstract fun refresh()
-
-  suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor> {
-    return postReplyChainManager.getRepliesFrom(postDescriptor)
-  }
 
   fun rememberedPosition(chanDescriptor: ChanDescriptor?): LazyColumnRememberedPosition {
     if (chanDescriptor == null) {
@@ -112,7 +109,7 @@ abstract class PostScreenViewModel(
     viewModelScope.launch(Dispatchers.Default) {
       val chanTheme = themeEngine.chanTheme
 
-      val parsedPostData = calculateParsedPostData(
+      val parsedPostData = parsedPostDataCache.calculateParsedPostData(
         postData = postData,
         chanTheme = chanTheme,
         parsedPostDataContext = parsedPostDataContext
@@ -123,17 +120,18 @@ abstract class PostScreenViewModel(
   }
 
   suspend fun parseComment(
-    isCatalogMode: Boolean,
+    chanDescriptor: ChanDescriptor,
     postData: PostData
   ): ParsedPostData {
     val chanTheme = themeEngine.chanTheme
 
     return withContext(Dispatchers.Default) {
       return@withContext calculatePostData(
+        chanDescriptor = chanDescriptor,
         postData = postData,
         chanTheme = chanTheme,
         parsedPostDataContext = ParsedPostDataContext(
-          isParsingCatalog = isCatalogMode
+          isParsingCatalog = chanDescriptor is CatalogDescriptor
         )
       )
     }
@@ -141,6 +139,7 @@ abstract class PostScreenViewModel(
 
   suspend fun parsePostsAround(
     startIndex: Int = 0,
+    chanDescriptor: ChanDescriptor,
     postDataList: List<PostData>,
     count: Int,
     isCatalogMode: Boolean,
@@ -153,6 +152,7 @@ abstract class PostScreenViewModel(
         .take(count)
         .forEach { postData ->
           calculatePostData(
+            chanDescriptor = chanDescriptor,
             postData = postData,
             chanTheme = chanTheme,
             parsedPostDataContext = ParsedPostDataContext(
@@ -165,6 +165,7 @@ abstract class PostScreenViewModel(
 
   suspend fun parsePosts(
     startIndex: Int = 0,
+    chanDescriptor: ChanDescriptor,
     postDataList: List<PostData>,
     count: Int,
     isCatalogMode: Boolean,
@@ -176,6 +177,7 @@ abstract class PostScreenViewModel(
         val postData = postDataList.getOrNull(index) ?: break
 
         calculatePostData(
+          chanDescriptor = chanDescriptor,
           postData = postData,
           chanTheme = chanTheme,
           parsedPostDataContext = ParsedPostDataContext(
@@ -187,8 +189,9 @@ abstract class PostScreenViewModel(
   }
 
   fun parseRemainingPostsAsync(
-    isCatalogMode: Boolean,
+    chanDescriptor: ChanDescriptor,
     postDataList: List<PostData>,
+    parsePostsOptions: ParsePostsOptions = ParsePostsOptions(),
     onStartParsingPosts: suspend () -> Unit,
     onPostsParsed: suspend (List<PostData>) -> Unit
   ) {
@@ -204,6 +207,7 @@ abstract class PostScreenViewModel(
       val chunksCount = globalConstants.coresCount.coerceAtLeast(2)
       val chunkSize = (postDataList.size / chunksCount).coerceAtLeast(chunksCount)
       val chanTheme = themeEngine.chanTheme
+      val isParsingCatalog = chanDescriptor is CatalogDescriptor
 
       val showPostsLoadingSnackbarJob = launch {
         delay(125L)
@@ -224,7 +228,7 @@ abstract class PostScreenViewModel(
             .mapIndexed { chunkIndex, postDataListChunk ->
               return@mapIndexed async(Dispatchers.IO) {
                 logcat {
-                  "parseRemainingPostsAsync() running chunk ${chunkIndex} with " +
+                  "parseRemainingPostsAsyncRegular() running chunk ${chunkIndex} with " +
                     "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
                 }
 
@@ -232,23 +236,72 @@ abstract class PostScreenViewModel(
                   val postData = postDataIndexed.value
 
                   calculatePostData(
+                    chanDescriptor = chanDescriptor,
                     postData = postData,
                     chanTheme = chanTheme,
                     parsedPostDataContext = ParsedPostDataContext(
-                      isParsingCatalog = isCatalogMode
-                    )
+                      isParsingCatalog = isParsingCatalog
+                    ),
+                    force = parsePostsOptions.forced
                   )
                 }
 
-                logcat { "parseRemainingPostsAsync() chunk ${chunkIndex} processing finished" }
+                logcat { "parseRemainingPostsAsyncRegular() chunk ${chunkIndex} processing finished" }
               }
             }
             .toList()
             .awaitAll()
         }
 
+        if (parsePostsOptions.parseRepliesTo) {
+          val postDescriptors = postDataList.map { postData -> postData.postDescriptor }
+          val postDataMap = postDataList.associateBy { postData -> postData.postDescriptor }
+          val repliesToPostDescriptorSet = postReplyChainManager.getManyRepliesTo(postDescriptors)
+
+          val repliesToPostDataSet = hashSetOf<PostData>()
+          repliesToPostDataSet += chanThreadCache.getManyForDescriptor(chanDescriptor, repliesToPostDescriptorSet)
+          repliesToPostDataSet += postReplyChainManager.getManyRepliesTo(postDescriptors)
+            .mapNotNull { postDescriptor -> postDataMap[postDescriptor] }
+
+          val repliesToChunkSize = (repliesToPostDataSet.size / chunksCount).coerceAtLeast(chunksCount)
+
+          if (repliesToPostDataSet.isNotEmpty()) {
+            logcat {
+              "parseRemainingPostsAsyncReplies() starting parsing ${repliesToPostDataSet.size} posts... " +
+                "(chunksCount=$chunksCount, chunkSize=$repliesToChunkSize)"
+            }
+
+            repliesToPostDataSet
+              .chunked(repliesToChunkSize)
+              .mapIndexed { chunkIndex, postDataListChunk ->
+                return@mapIndexed async(Dispatchers.IO) {
+                  logcat {
+                    "parseRemainingPostsAsyncReplies() running chunk ${chunkIndex} with " +
+                      "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
+                  }
+
+                  postDataListChunk.forEach { postData ->
+                    calculatePostData(
+                      chanDescriptor = chanDescriptor,
+                      postData = postData,
+                      chanTheme = chanTheme,
+                      parsedPostDataContext = ParsedPostDataContext(
+                        isParsingCatalog = isParsingCatalog
+                      ),
+                      force = true
+                    )
+                  }
+
+                  logcat { "parseRemainingPostsAsyncReplies() chunk ${chunkIndex} processing finished" }
+                }
+              }
+              .toList()
+              .awaitAll()
+          }
+        }
+
         val deltaTime = SystemClock.elapsedRealtime() - startTime
-        logcat { "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
+        logcat { "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
       } finally {
         showPostsLoadingSnackbarJob.cancel()
         onPostsParsed(postDataList)
@@ -265,202 +318,20 @@ abstract class PostScreenViewModel(
     }
   }
 
-  private fun parseAndProcessPostSubject(
-    chanTheme: ChanTheme,
-    postData: PostData,
-    postSubjectParsed: String
-  ): AnnotatedString {
-    return buildAnnotatedString(capacity = postSubjectParsed.length) {
-      if (postSubjectParsed.isNotEmpty()) {
-        val subjectAnnotatedString = AnnotatedString(
-          text = postSubjectParsed,
-          spanStyle = SpanStyle(
-            color = chanTheme.postSubjectColorCompose,
-          )
-        )
-
-        append(subjectAnnotatedString)
-        append("\n")
-      }
-
-      val postInfoPart = String.format(Locale.ENGLISH, "No. ${postData.postNo}")
-      val postInfoPartAnnotatedString = AnnotatedString(
-        text = postInfoPart,
-        spanStyle = SpanStyle(
-          color = chanTheme.textColorHintCompose,
-        )
-      )
-
-      append(postInfoPartAnnotatedString)
-    }
-  }
-
   private suspend fun calculatePostData(
+    chanDescriptor: ChanDescriptor,
     postData: PostData,
     chanTheme: ChanTheme,
     parsedPostDataContext: ParsedPostDataContext,
     force: Boolean = false
   ): ParsedPostData {
-    return postData.getOrCalculateParsedPostParts(force = force) {
-      return@getOrCalculateParsedPostParts calculateParsedPostData(
-        postData = postData,
-        parsedPostDataContext = parsedPostDataContext,
-        chanTheme = chanTheme
-      )
-    }
-  }
-
-  private suspend fun calculateParsedPostData(
-    postData: PostData,
-    parsedPostDataContext: ParsedPostDataContext,
-    chanTheme: ChanTheme
-  ): ParsedPostData {
-    BackgroundUtils.ensureBackgroundThread()
-
-    try {
-      val textParts = postCommentParser.parsePostComment(postData)
-
-      if (parsedPostDataContext.isParsingThread) {
-        processReplyChains(postData.postDescriptor, textParts)
-      }
-
-      val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
-        chanTheme = chanTheme,
-        textParts = textParts,
-        parsedPostDataContext = parsedPostDataContext
-      )
-      val postSubjectParsed = HtmlUnescape.unescape(postData.postSubjectUnparsed)
-
-      return ParsedPostData(
-        parsedPostParts = textParts,
-        parsedPostComment = processedPostComment.text,
-        processedPostComment = processedPostComment,
-        parsedPostSubject = postSubjectParsed,
-        processedPostSubject = parseAndProcessPostSubject(chanTheme, postData, postSubjectParsed),
-        postFooterText = formatFooterText(postData, parsedPostDataContext),
-        parsedPostDataContext = parsedPostDataContext,
-      )
-    } catch (error: Throwable) {
-      val postComment = "Error parsing ${postData.postNo}!\n\nError: ${error.asLog()}"
-      val postCommentAnnotated = AnnotatedString(postComment)
-
-      return ParsedPostData(
-        parsedPostParts = emptyList(),
-        parsedPostComment = postComment,
-        processedPostComment = postCommentAnnotated,
-        parsedPostSubject = "",
-        processedPostSubject = AnnotatedString(""),
-        postFooterText = AnnotatedString(""),
-        parsedPostDataContext = parsedPostDataContext,
-      )
-    }
-  }
-
-  private suspend fun processReplyChains(
-    postDescriptor: PostDescriptor,
-    textParts: List<PostCommentParser.TextPart>
-  ) {
-    val repliesTo = mutableSetOf<PostDescriptor>()
-
-    for (textPart in textParts) {
-      for (textPartSpan in textPart.spans) {
-        if (textPartSpan !is PostCommentParser.TextPartSpan.Linkable) {
-          continue
-        }
-
-        when (textPartSpan) {
-          is PostCommentParser.TextPartSpan.Linkable.Board,
-          is PostCommentParser.TextPartSpan.Linkable.Search -> continue
-          is PostCommentParser.TextPartSpan.Linkable.Quote -> {
-            if (textPartSpan.crossThread) {
-              continue
-            }
-
-            repliesTo += textPartSpan.postDescriptor
-          }
-        }
-      }
-    }
-
-    if (repliesTo.isNotEmpty()) {
-      postReplyChainManager.insert(postDescriptor, repliesTo)
-    }
-  }
-
-  private suspend fun formatFooterText(
-    postData: PostData,
-    parsedPostDataContext: ParsedPostDataContext
-  ): AnnotatedString? {
-    val postDescriptor = postData.postDescriptor
-    val threadImagesTotal = postData.threadImagesTotal
-    val threadRepliesTotal = postData.threadRepliesTotal
-    val threadPostersTotal = postData.threadPostersTotal
-    val isCatalogMode = parsedPostDataContext.isParsingCatalog
-
-    if (isCatalogMode && (threadImagesTotal != null || threadRepliesTotal != null || threadPostersTotal != null)) {
-      val text = buildString(capacity = 32) {
-        threadRepliesTotal
-          ?.takeIf { repliesCount -> repliesCount > 0 }
-          ?.let { repliesCount ->
-            val repliesText = appContext.resources.getQuantityString(
-              R.plurals.reply_with_number,
-              repliesCount,
-              repliesCount
-            )
-
-            append(repliesText)
-          }
-
-        threadImagesTotal
-          ?.takeIf { imagesCount -> imagesCount > 0 }
-          ?.let { imagesCount ->
-            if (isNotEmpty()) {
-              append(", ")
-            }
-
-            val imagesText = appContext.resources.getQuantityString(
-              R.plurals.image_with_number,
-              imagesCount,
-              imagesCount
-            )
-
-            append(imagesText)
-          }
-
-        threadPostersTotal
-          ?.takeIf { postersCount -> postersCount > 0 }
-          ?.let { postersCount ->
-            if (isNotEmpty()) {
-              append(", ")
-            }
-
-            val imagesText = appContext.resources.getQuantityString(
-              R.plurals.poster_with_number,
-              postersCount,
-              postersCount
-            )
-
-            append(imagesText)
-          }
-      }
-
-      return AnnotatedString(text)
-    }
-
-    val repliesFrom = getRepliesFrom(postDescriptor)
-    if (repliesFrom.isNotEmpty()) {
-      val repliesFromCount = repliesFrom.size
-
-      val text = appContext.resources.getQuantityString(
-        R.plurals.reply_with_number,
-        repliesFromCount,
-        repliesFromCount
-      )
-
-      return AnnotatedString(text)
-    }
-
-    return null
+    return parsedPostDataCache.getOrCalculateParsedPostData(
+      chanDescriptor = chanDescriptor,
+      postData = postData,
+      parsedPostDataContext = parsedPostDataContext,
+      chanTheme = chanTheme,
+      force = force
+    )
   }
 
   protected suspend fun pushCatalogOrThreadPostsLoadingSnackbar(postsCount: Int) {
@@ -500,6 +371,13 @@ abstract class PostScreenViewModel(
       _toolbarScrollEventFlow.emit(true)
     }
   }
+
+  data class ParsePostsOptions(
+    val forced: Boolean = false,
+    // If set to true then along with new posts the posts these new posts reply to will be re-parsed
+    // as well. This is needed to update the "X replies" PostCell text.
+    val parseRepliesTo: Boolean = false
+  )
 
   interface PostScreenState {
     val postsAsyncDataState: MutableStateFlow<AsyncData<IPostsState>>

@@ -3,9 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -14,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -23,16 +22,46 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.IPostsState
 fun BoxScope.PostsScreenToolbar(
   isCatalogScreen: Boolean,
   postListAsync: AsyncData<IPostsState>,
+  parsedPostDataCache: ParsedPostDataCache,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
   val chanTheme = LocalChanTheme.current
 
   KurobaToolbarLayout(
     middlePart = {
-      val toolbarTitle = toolbarTitle(postListAsync, isCatalogScreen)
+      var toolbarTitle by remember { mutableStateOf<String?>(null) }
+
+      when (postListAsync) {
+        AsyncData.Empty -> {
+          // no-op
+        }
+        AsyncData.Loading -> toolbarTitle = stringResource(R.string.toolbar_loading_title)
+        is AsyncData.Error -> toolbarTitle = stringResource(R.string.toolbar_loading_subtitle)
+        is AsyncData.Data -> {
+          // TODO(KurobaEx): This makes toolbar title flicker when we swipe the pager from
+          //  catalog to thread. Needs caching.
+          LaunchedEffect(
+            key1 = isCatalogScreen,
+            key2 = postListAsync,
+            block = {
+              val postListState = postListAsync.data.posts.firstOrNull()
+                ?: return@LaunchedEffect
+
+              val originalPost by postListState
+              val chanDescriptor = postListAsync.data.chanDescriptor
+
+              toolbarTitle = parsedPostDataCache.formatToolbarTitle(
+                chanDescriptor = chanDescriptor,
+                postDescriptor = originalPost.postDescriptor,
+                catalogMode = isCatalogScreen
+              )
+            })
+        }
+      }
+
       if (toolbarTitle != null) {
         Text(
-          text = toolbarTitle,
+          text = toolbarTitle!!,
           color = Color.White,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
@@ -53,31 +82,4 @@ fun BoxScope.PostsScreenToolbar(
       )
     }
   )
-}
-
-@Composable
-private fun toolbarTitle(
-  postListAsync: AsyncData<IPostsState>,
-  isCatalogScreen: Boolean
-): String? {
-  when (postListAsync) {
-    AsyncData.Empty -> {
-      return null
-    }
-    AsyncData.Loading -> {
-      return stringResource(R.string.toolbar_loading_title)
-    }
-    is AsyncData.Error -> {
-      return stringResource(R.string.toolbar_loading_subtitle)
-    }
-    is AsyncData.Data -> {
-      val postListState = postListAsync.data.posts.firstOrNull()
-        ?: return null
-      val originalPost by postListState
-
-      return remember(key1 = originalPost) {
-        originalPost.formatToolbarTitle(catalogMode = isCatalogScreen)
-      }
-    }
-  }
 }

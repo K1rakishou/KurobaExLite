@@ -8,7 +8,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.isActive
 
 @Composable
 fun KurobaSnackbar(
@@ -32,8 +34,17 @@ fun KurobaSnackbar(
           }
         }
       }
-    }
-  )
+    })
+
+  LaunchedEffect(
+    key1 = kurobaSnackbarState,
+    block = {
+      while (isActive) {
+        delay(250L)
+
+        kurobaSnackbarState.removeOldSnackbars()
+      }
+    })
 
   Box(
     modifier = modifier
@@ -51,14 +62,15 @@ fun KurobaSnackbar(
 
         KurobaComposeCardView(
           modifier = Modifier
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .offset(y = offsetDp),
+            .offset(y = offsetDp)
+            .padding(horizontal = 8.dp, vertical = 4.dp),
           backgroundColor = chanTheme.backColorSecondaryCompose
         ) {
           Row(
             modifier = Modifier
               .fillMaxWidth()
-              .height(36.dp),
+              .height(36.dp)
+              .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
             KurobaSnackbarContent(snackbarInfo.content)
@@ -137,6 +149,16 @@ class KurobaSnackbarState(
     return tag?.hashCode() ?: 0
   }
 
+  fun removeOldSnackbars() {
+    val currentTime = System.currentTimeMillis()
+
+    for (activeSnackbar in _activeSnackbars) {
+      if (activeSnackbar.aliveUntil != null && currentTime >= activeSnackbar.aliveUntil) {
+        popSnackbar(activeSnackbar.id)
+      }
+    }
+  }
+
 }
 
 sealed class SnackbarInfoEvent {
@@ -173,5 +195,6 @@ sealed class SnackbarContentItem {
 }
 
 enum class SnackbarId(val id: String) {
-  CatalogOrThreadPostsLoading("catalog_or_thread_posts_loading")
+  CatalogOrThreadPostsLoading("catalog_or_thread_posts_loading"),
+  NewPosts("new_posts")
 }

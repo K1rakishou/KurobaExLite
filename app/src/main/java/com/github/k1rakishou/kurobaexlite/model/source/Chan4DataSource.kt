@@ -1,8 +1,9 @@
-package com.github.k1rakishou.kurobaexlite.model
+package com.github.k1rakishou.kurobaexlite.model.source
 
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.*
 import com.github.k1rakishou.kurobaexlite.model.data.remote.CatalogPageDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.ThreadDataJson
@@ -22,7 +23,8 @@ class Chan4DataSource(
   private val siteManager: SiteManager,
   private val kurobaOkHttpClient: ProxiedOkHttpClient,
   private val moshi: Moshi
-) : ICatalogDataSource<CatalogDescriptor, CatalogData>, IThreadDataSource<ThreadDescriptor, ThreadData> {
+) : ICatalogDataSource<CatalogDescriptor, CatalogData>,
+  IThreadDataSource<ThreadDescriptor, ThreadData> {
 
   override suspend fun loadThread(
     threadDescriptor: ThreadDescriptor,
@@ -82,7 +84,7 @@ class Chan4DataSource(
               threadRepliesTotal = threadPost.replies,
               threadImagesTotal = threadPost.images,
               threadPostersTotal = threadPost.posters,
-              _parsedPostData = null
+              parsedPostData = null
             )
           } else {
             return@map PostData(
@@ -95,7 +97,7 @@ class Chan4DataSource(
                 tim = threadPost.tim,
                 boardCode = boardCode
               ),
-              _parsedPostData = null
+              parsedPostData = null
             )
           }
         }
@@ -165,7 +167,7 @@ class Chan4DataSource(
               threadRepliesTotal = catalogThread.replies,
               threadImagesTotal = catalogThread.images,
               threadPostersTotal = null,
-              _parsedPostData = null
+              parsedPostData = null
             )
           }
         }

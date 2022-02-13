@@ -15,4 +15,10 @@ interface IPostsState {
 data class PostsMergeResult(
   val newPostsCount: Int,
   val newOrUpdatedPostsToReparse: List<PostData>
-)
+) {
+
+  fun isNotEmpty(): Boolean {
+    return newPostsCount > 0
+  }
+
+}

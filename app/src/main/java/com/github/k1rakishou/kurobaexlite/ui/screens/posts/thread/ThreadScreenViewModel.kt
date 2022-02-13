@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 import android.os.SystemClock
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.*
@@ -12,7 +13,11 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -21,6 +26,7 @@ import logcat.logcat
 
 class ThreadScreenViewModel(
   private val chanThreadManager: ChanThreadManager,
+  private val chanThreadCache: ChanThreadCache,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
   postCommentParser: PostCommentParser,
@@ -83,6 +89,7 @@ class ThreadScreenViewModel(
         // a post received from the server differs from ours.
         parsePosts(
           startIndex = originalPostIndex,
+          chanDescriptor = threadDescriptor,
           postDataList = threadData.threadPosts,
           count = 1,
           isCatalogMode = false
@@ -92,20 +99,44 @@ class ThreadScreenViewModel(
       val mergeResult = threadPostsAsync.data.mergePostsWith(threadData.threadPosts)
 
       parseRemainingPostsAsync(
-        isCatalogMode = false,
+        chanDescriptor = threadDescriptor,
         postDataList = mergeResult.newOrUpdatedPostsToReparse,
+        parsePostsOptions = ParsePostsOptions(
+          forced = true,
+          parseRepliesTo = true
+        ),
         onStartParsingPosts = {
           pushCatalogOrThreadPostsLoadingSnackbar(
             postsCount = mergeResult.newOrUpdatedPostsToReparse.size
           )
         },
         onPostsParsed = { postDataList ->
+          chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
           popCatalogOrThreadPostsLoadingSnackbar()
         }
       )
 
       threadScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
       threadScreenState.chanDescriptorState.value = threadDescriptor
+
+      if (mergeResult.isNotEmpty()) {
+        val newPostsCount = mergeResult.newPostsCount
+        val newPostsMessage = appContext.resources.getQuantityString(
+          R.plurals.new_posts_with_number,
+          newPostsCount,
+          newPostsCount
+        )
+
+        pushSnackbar(
+          SnackbarInfo(
+            id = SnackbarId.NewPosts,
+            aliveUntil = System.currentTimeMillis() + 2000L,
+            content = listOf(
+              SnackbarContentItem.Text(newPostsMessage)
+            )
+          )
+        )
+      }
 
       logcat {
         "refresh($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
@@ -164,20 +195,23 @@ class ThreadScreenViewModel(
 
     parsePostsAround(
       startIndex = 0,
+      chanDescriptor = threadDescriptor,
       postDataList = threadData.threadPosts,
       count = 16,
       isCatalogMode = false
     )
 
     parseRemainingPostsAsync(
-      isCatalogMode = false,
+      chanDescriptor = threadDescriptor,
       postDataList = threadData.threadPosts,
+      parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
       onStartParsingPosts = {
         pushCatalogOrThreadPostsLoadingSnackbar(
           postsCount = threadData.threadPosts.size
         )
       },
       onPostsParsed = { postDataList ->
+        chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
         popCatalogOrThreadPostsLoadingSnackbar()
 
         restoreScrollPosition(threadDescriptor)

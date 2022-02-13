@@ -10,7 +10,7 @@ class OriginalPostData(
   threadRepliesTotal: Int?,
   threadImagesTotal: Int?,
   threadPostersTotal: Int?,
-  _parsedPostData: ParsedPostData?
+  parsedPostData: ParsedPostData?
 ) : PostData(
   postDescriptor = postDescriptor,
   postSubjectUnparsed = postSubjectUnparsed,
@@ -19,5 +19,29 @@ class OriginalPostData(
   threadRepliesTotal = threadRepliesTotal,
   threadImagesTotal = threadImagesTotal,
   threadPostersTotal = threadPostersTotal,
-  _parsedPostData = _parsedPostData
-)
+  parsedPostData = parsedPostData
+) {
+
+  override fun copy(
+    postDescriptor: PostDescriptor,
+    postSubjectUnparsed: String,
+    postCommentUnparsed: String,
+    images: List<PostImageData>?,
+    threadRepliesTotal: Int?,
+    threadImagesTotal: Int?,
+    threadPostersTotal: Int?,
+    parsedPostData: ParsedPostData?
+  ): PostData {
+    return OriginalPostData(
+      postDescriptor = postDescriptor,
+      postSubjectUnparsed = postSubjectUnparsed,
+      postCommentUnparsed = postCommentUnparsed,
+      images = images,
+      threadRepliesTotal = threadRepliesTotal,
+      threadImagesTotal = threadImagesTotal,
+      threadPostersTotal = threadPostersTotal,
+      parsedPostData = parsedPostData
+    )
+  }
+
+}

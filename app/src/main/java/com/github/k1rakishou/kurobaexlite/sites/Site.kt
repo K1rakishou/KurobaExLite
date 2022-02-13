@@ -1,12 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
-import com.github.k1rakishou.kurobaexlite.model.ICatalogDataSource
-import com.github.k1rakishou.kurobaexlite.model.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import okhttp3.HttpUrl
 
 interface Site {

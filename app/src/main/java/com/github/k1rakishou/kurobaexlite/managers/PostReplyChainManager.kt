@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.managers
 
 import androidx.annotation.GuardedBy
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.sync.Mutex
@@ -36,6 +37,43 @@ class PostReplyChainManager {
       ?: return emptySet()
 
     return threadReplyChain.getRepliesFrom(postDescriptor)
+  }
+
+  suspend fun getManyRepliesTo(postDescriptors: List<PostDescriptor>): Set<PostDescriptor> {
+    val threadReplyChainMap = mutex.withLock {
+      val mapped = postDescriptors
+        .mapNotNull { postDescriptor ->
+          val threadReplyChain = replyChains[postDescriptor.threadDescriptor]
+            ?: return@mapNotNull null
+
+          return@mapNotNull postDescriptor to threadReplyChain
+        }
+
+      if (mapped.isEmpty()) {
+        return@withLock emptyMap()
+      }
+
+      val resultMap = mutableMapWithCap<PostDescriptor, ThreadReplyChain>(mapped.size)
+
+      for ((postDescriptor, threadReplyChain) in mapped) {
+        resultMap[postDescriptor] = threadReplyChain
+      }
+
+      return@withLock resultMap
+    }
+
+    if (threadReplyChainMap.isEmpty()) {
+      return emptySet()
+    }
+
+    val resultSet = mutableSetWithCap<PostDescriptor>(threadReplyChainMap.size * 2)
+
+    for ((postDescriptor, threadReplyChain) in threadReplyChainMap) {
+      val repliesTo = threadReplyChain.getRepliesTo(postDescriptor)
+      resultSet.addAll(repliesTo)
+    }
+
+    return resultSet
   }
 
 }

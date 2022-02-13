@@ -9,6 +9,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import kotlinx.coroutines.Job
@@ -18,6 +19,7 @@ import logcat.logcat
 
 class CatalogScreenViewModel(
   private val chanThreadManager: ChanThreadManager,
+  private val chanThreadCache: ChanThreadCache,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
   postCommentParser: PostCommentParser,
@@ -94,13 +96,14 @@ class CatalogScreenViewModel(
 
     parsePostsAround(
       startIndex = 0,
+      chanDescriptor = catalogDescriptor,
       postDataList = catalogData.catalogThreads,
       count = 16,
       isCatalogMode = true
     )
 
     parseRemainingPostsAsync(
-      isCatalogMode = true,
+      chanDescriptor = catalogDescriptor,
       postDataList = catalogData.catalogThreads,
       onStartParsingPosts = {
         pushCatalogOrThreadPostsLoadingSnackbar(
@@ -108,6 +111,7 @@ class CatalogScreenViewModel(
         )
       },
       onPostsParsed = { postDataList ->
+        chanThreadCache.insertCatalogThreads(catalogDescriptor, postDataList)
         popCatalogOrThreadPostsLoadingSnackbar()
 
         restoreScrollPosition(catalogDescriptor)

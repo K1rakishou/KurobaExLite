@@ -526,7 +526,7 @@ private fun PostCellContainerAnimated(animateInsertion: Boolean, content: @Compo
         content()
       }
   } else {
-    Box { content() }
+    content()
   }
 }
 
@@ -545,8 +545,12 @@ private fun PostCell(
   if (postData.postCommentParsedAndProcessed == null) {
     LaunchedEffect(
       key1 = postData.postCommentUnparsed,
+      key2 = postsScreenViewModel.chanDescriptor,
       block = {
-        val parsedPostData = postsScreenViewModel.parseComment(isCatalogMode, postData)
+        val chanDescriptor = postsScreenViewModel.chanDescriptor
+          ?: return@LaunchedEffect
+
+        val parsedPostData = postsScreenViewModel.parseComment(chanDescriptor, postData)
         postComment = parsedPostData.processedPostComment
         postSubject = parsedPostData.processedPostSubject
         postFooterText = parsedPostData.postFooterText

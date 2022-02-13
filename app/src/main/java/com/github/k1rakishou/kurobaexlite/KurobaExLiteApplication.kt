@@ -10,7 +10,9 @@ import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
-import com.github.k1rakishou.kurobaexlite.model.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.model.source.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
+import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
@@ -46,15 +48,26 @@ class KurobaExLiteApplication : Application() {
     val modules = mutableListOf<Module>()
 
     modules += module {
+      single { this@KurobaExLiteApplication.applicationContext }
       single { ProxiedOkHttpClient() }
-      single { GlobalConstants(this@KurobaExLiteApplication) }
+      single { GlobalConstants(get()) }
       single { Moshi.Builder().build() }
       single { PostCommentParser() }
       single { PostCommentApplier() }
       single { SiteManager() }
+      single {
+        ParsedPostDataCache(
+          appContext = get(),
+          globalConstants = get(),
+          postCommentParser = get(),
+          postCommentApplier = get(),
+          postReplyChainManager = get()
+        )
+      }
+      single { ChanThreadCache() }
       single { ChanThreadManager(siteManager = get()) }
       single { PostReplyChainManager() }
-      single { UiInfoManager(this@KurobaExLiteApplication) }
+      single { UiInfoManager(get()) }
       single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
       single { ThemeEngine() }
 
@@ -64,10 +77,10 @@ class KurobaExLiteApplication : Application() {
           siteManager = get()
         )
       }
-
       viewModel {
         CatalogScreenViewModel(
           chanThreadManager = get(),
+          chanThreadCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
           postCommentParser = get(),
@@ -78,6 +91,7 @@ class KurobaExLiteApplication : Application() {
       viewModel {
         ThreadScreenViewModel(
           chanThreadManager = get(),
+          chanThreadCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
           postCommentParser = get(),

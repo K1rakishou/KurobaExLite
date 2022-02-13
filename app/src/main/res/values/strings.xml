@@ -17,6 +17,10 @@
         <item quantity="one">reply</item>
         <item quantity="other">replies</item>
     </plurals>
+    <plurals name="new_posts_with_number">
+        <item quantity="one">%d new post</item>
+        <item quantity="other">%d new posts</item>
+    </plurals>
 
     <string name="lorem_ipsum">
         The standard Lorem Ipsum passage, used since the 1500s

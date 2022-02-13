@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
@@ -22,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreen(
   componentActivity: ComponentActivity,
@@ -30,6 +32,7 @@ class ThreadScreen(
 ) : PostsScreen(componentActivity, navigationRouter, isStartScreen) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+  private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
 
   private val threadScreenToolbarActionHandler by lazy {
     ThreadScreenToolbarActionHandler(threadScreenViewModel)
@@ -67,6 +70,7 @@ class ThreadScreen(
       PostsScreenToolbar(
         isCatalogScreen = isCatalogScreen,
         postListAsync = postListAsync,
+        parsedPostDataCache = parsedPostDataCache,
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(
