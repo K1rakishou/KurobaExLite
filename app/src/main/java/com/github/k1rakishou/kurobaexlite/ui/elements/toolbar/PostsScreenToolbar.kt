@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,8 @@ fun BoxScope.PostsScreenToolbar(
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
   val chanTheme = LocalChanTheme.current
+  val parentBgColor = chanTheme.primaryColorCompose
+
   val stackContainerState = rememberAnimateableStackContainerState<PostsScreenToolbarType>(
     initialValues = listOf(
       SimpleStackContainerElement(
@@ -72,6 +76,7 @@ fun BoxScope.PostsScreenToolbar(
         PostsScreenToolbarType.Normal -> {
           PostsScreenNormalToolbar(
             isCatalogScreen = isCatalogScreen,
+            parentBgColor = parentBgColor,
             postListAsync = postListAsync,
             parsedPostDataCache = parsedPostDataCache,
             onToolbarSearchClicked = {
@@ -87,6 +92,7 @@ fun BoxScope.PostsScreenToolbar(
         }
         PostsScreenToolbarType.Search -> {
           PostsScreenSearchToolbar(
+            parentBgColor = parentBgColor,
             onCloseSearchClicked = { stackContainerState.removeTop(withAnimation = true) }
           )
         }
@@ -98,13 +104,12 @@ fun BoxScope.PostsScreenToolbar(
 @Composable
 private fun BoxScope.PostsScreenNormalToolbar(
   isCatalogScreen: Boolean,
+  parentBgColor: Color,
   postListAsync: AsyncData<IPostsState>,
   parsedPostDataCache: ParsedPostDataCache,
   onToolbarSearchClicked: (() -> Unit)? = null,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
-  val chanTheme = LocalChanTheme.current
-
   KurobaToolbarLayout(
     middlePart = {
       var toolbarTitle by remember {
@@ -167,7 +172,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
               onClick = onToolbarSearchClicked
             ),
           drawableId = R.drawable.ic_baseline_search_24,
-          colorBehindIcon = chanTheme.primaryColorCompose
+          colorBehindIcon = parentBgColor
         )
 
         KurobaComposeIcon(
@@ -178,17 +183,29 @@ private fun BoxScope.PostsScreenNormalToolbar(
               onClick = onToolbarOverflowMenuClicked
             ),
           drawableId = R.drawable.ic_baseline_more_vert_24,
-          colorBehindIcon = chanTheme.primaryColorCompose
+          colorBehindIcon = parentBgColor
         )
       }
     }
   )
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun BoxScope.PostsScreenSearchToolbar(
+  parentBgColor: Color,
   onCloseSearchClicked: () -> Unit
 ) {
+  val keyboardController = LocalSoftwareKeyboardController.current
+
+  DisposableEffect(
+    key1 = Unit,
+    effect = {
+      onDispose {
+        keyboardController?.hide()
+      }
+    })
+
   KurobaToolbarLayout(
     leftPart = {
       KurobaComposeIcon(
@@ -204,8 +221,13 @@ private fun BoxScope.PostsScreenSearchToolbar(
     middlePart = {
       var searchQuery by remember { mutableStateOf<String>("") }
 
-      KurobaComposeTextField(
+      KurobaComposeCustomTextField(
+        modifier = Modifier
+          .wrapContentHeight()
+          .fillMaxWidth(),
         value = searchQuery,
+        labelText = stringResource(R.string.toolbar_type_to_search_hint),
+        parentBackgroundColor = parentBgColor,
         onValueChange = { updatedQuery -> searchQuery = updatedQuery }
       )
     },

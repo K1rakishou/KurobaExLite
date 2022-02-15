@@ -50,5 +50,6 @@
 
     <string name="catalog_screen_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_screen_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
+    <string name="toolbar_type_to_search_hint">Type to search</string>
 
 </resources>
