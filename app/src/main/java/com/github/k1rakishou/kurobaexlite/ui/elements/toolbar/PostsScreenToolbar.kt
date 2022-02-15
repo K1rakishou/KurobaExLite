@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
+import android.util.LruCache
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.Text
@@ -12,11 +13,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.IPostsState
+
+private val toolbarTitleCache = LruCache<ChanDescriptor, String>(16)
 
 @Composable
 fun BoxScope.PostsScreenToolbar(
@@ -29,7 +33,17 @@ fun BoxScope.PostsScreenToolbar(
 
   KurobaToolbarLayout(
     middlePart = {
-      var toolbarTitle by remember { mutableStateOf<String?>(null) }
+      var toolbarTitle by remember {
+        val chanDescriptor = (postListAsync as? AsyncData.Data)?.data?.chanDescriptor
+
+        val initialValue = if (chanDescriptor != null) {
+          toolbarTitleCache[chanDescriptor]
+        } else {
+          null
+        }
+
+        return@remember mutableStateOf<String?>(initialValue)
+      }
 
       when (postListAsync) {
         AsyncData.Empty -> {
@@ -38,8 +52,6 @@ fun BoxScope.PostsScreenToolbar(
         AsyncData.Loading -> toolbarTitle = stringResource(R.string.toolbar_loading_title)
         is AsyncData.Error -> toolbarTitle = stringResource(R.string.toolbar_loading_subtitle)
         is AsyncData.Data -> {
-          // TODO(KurobaEx): This makes toolbar title flicker when we swipe the pager from
-          //  catalog to thread. Needs caching.
           LaunchedEffect(
             key1 = isCatalogScreen,
             key2 = postListAsync,
@@ -55,6 +67,8 @@ fun BoxScope.PostsScreenToolbar(
                 postDescriptor = originalPost.postDescriptor,
                 catalogMode = isCatalogScreen
               )
+
+              toolbarTitleCache.put(chanDescriptor, toolbarTitle)
             })
         }
       }

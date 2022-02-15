@@ -613,6 +613,7 @@ private fun PostCellTitle(
             .build(),
           contentDescription = null,
           contentScale = ContentScale.Fit,
+          alpha = 0.15f,
           content = { state ->
             if (state is AsyncImagePainter.State.Error) {
               logcatError {
