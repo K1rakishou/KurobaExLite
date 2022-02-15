@@ -306,3 +306,30 @@ inline fun buildAnnotatedString(
     .apply(builder)
     .toAnnotatedString()
 }
+
+inline fun <T, K> Iterable<T>.toHashSetByKey(capacity: Int = 16, keySelector: (T) -> K): java.util.HashSet<T> {
+  val keyDuplicateSet = mutableSetWithCap<K>(capacity)
+  val resultHashSet = mutableSetWithCap<T>(capacity)
+
+  for (element in this) {
+    if (keyDuplicateSet.add(keySelector(element))) {
+      resultHashSet.add(element)
+    }
+  }
+
+  return resultHashSet
+}
+
+inline fun <T> MutableCollection<T>.removeIfKt(filter: (T) -> Boolean): Boolean {
+  var removed = false
+  val mutableIterator = iterator()
+
+  while (mutableIterator.hasNext()) {
+    if (filter.invoke(mutableIterator.next())) {
+      mutableIterator.remove()
+      removed = true
+    }
+  }
+
+  return removed
+}

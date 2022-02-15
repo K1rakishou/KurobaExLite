@@ -71,6 +71,7 @@ class ThreadScreen(
         isCatalogScreen = isCatalogScreen,
         postListAsync = postListAsync,
         parsedPostDataCache = parsedPostDataCache,
+        navigationRouter = navigationRouter,
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(

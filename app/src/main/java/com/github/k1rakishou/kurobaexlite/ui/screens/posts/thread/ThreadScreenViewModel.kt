@@ -168,6 +168,9 @@ class ThreadScreenViewModel(
     val startTime = SystemClock.elapsedRealtime()
     threadScreenState.postsAsyncDataState.value = AsyncData.Loading
 
+    // TODO(KurobaEx): preload cached PostData into the threadScreenState.postsAsyncDataState
+    //  and then do the diff to avoid reparsing all the posts from the server
+
     val threadDataResult = chanThreadManager.loadThread(threadDescriptor)
     if (threadDataResult.isFailure) {
       val error = threadDataResult.exceptionOrThrow()

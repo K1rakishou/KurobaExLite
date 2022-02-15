@@ -89,6 +89,7 @@ class CatalogScreen(
         isCatalogScreen = isCatalogScreen,
         postListAsync = postListAsync,
         parsedPostDataCache = parsedPostDataCache,
+        navigationRouter = navigationRouter,
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(
@@ -111,7 +112,7 @@ class CatalogScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { catalogScreenViewModel.loadCatalog(CatalogDescriptor(Chan4.SITE_KEY, "vg")) }
+      block = { catalogScreenViewModel.loadCatalog(CatalogDescriptor(Chan4.SITE_KEY, "g")) }
     )
 
     RouterHost(

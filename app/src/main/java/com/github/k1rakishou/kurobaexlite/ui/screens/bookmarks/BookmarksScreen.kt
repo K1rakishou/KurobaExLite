@@ -36,7 +36,7 @@ class BookmarksScreen(
             color = Color.White
           )
         },
-        rightIcons = {
+        rightPart = {
           KurobaComposeIcon(
             modifier = Modifier
               .size(24.dp)

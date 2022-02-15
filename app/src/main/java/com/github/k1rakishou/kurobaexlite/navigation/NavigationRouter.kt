@@ -1,6 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
 import android.content.Intent
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
@@ -23,6 +25,26 @@ class NavigationRouter(
   private val _intentsFlow = MutableSharedFlow<Intent>(extraBufferCapacity = Channel.UNLIMITED)
   val intentsFlow: SharedFlow<Intent>
     get() = _intentsFlow.asSharedFlow()
+
+  @Composable
+  fun HandleBackPresses(onBackPressed: () -> Boolean) {
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        val handler = object : OnBackPressHandler {
+          override fun onBackPressed(): Boolean {
+            return onBackPressed()
+          }
+        }
+
+        addOnBackPressedHandler(handler)
+
+        onDispose {
+          removeOnBackPressedHandler(handler)
+        }
+      }
+    )
+  }
 
   fun pushScreen(newComposeScreen: ComposeScreen) {
     val indexOfPrev = navigationScreensStack
