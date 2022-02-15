@@ -8,4 +8,4 @@
 .externalNativeBuild
 .cxx
 local.properties
-/app/src/main/java/com/github/k1rakishou/kurobaexlite/helpers/BannedWordsHelper.kt
+/app/src/main/java/com/github/k1rakishou/kurobaexlite/helpers/filter/BannedWordsHelper.kt
