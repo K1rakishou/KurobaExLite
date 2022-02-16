@@ -1,14 +1,13 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import android.os.SystemClock
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -36,14 +35,11 @@ import org.koin.java.KoinJavaComponent.inject
 abstract class PostScreenViewModel(
   private val application: KurobaExLiteApplication,
   protected val globalConstants: GlobalConstants,
-  protected val postCommentParser: PostCommentParser,
-  protected val postCommentApplier: PostCommentApplier,
   protected val themeEngine: ThemeEngine
 ) : BaseAndroidViewModel(application) {
   private val postReplyChainManager by inject<PostReplyChainManager>(PostReplyChainManager::class.java)
   private val chanThreadCache by inject<ChanThreadCache>(ChanThreadCache::class.java)
   private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
-  private val scope = CoroutineScope(Dispatchers.Default)
 
   private var currentParseJob: Job? = null
 
@@ -198,7 +194,7 @@ abstract class PostScreenViewModel(
     currentParseJob?.cancel()
     currentParseJob = null
 
-    currentParseJob = scope.launch(Dispatchers.Default) {
+    currentParseJob = mainScope.launch(Dispatchers.Default) {
       if (postDataList.isEmpty()) {
         onPostsParsed(postDataList)
         return@launch
@@ -361,14 +357,21 @@ abstract class PostScreenViewModel(
   }
 
   fun scrollTop() {
-    scope.launch {
+    mainScope.launch {
       _toolbarScrollEventFlow.emit(false)
     }
   }
 
   fun scrollBottom() {
-    scope.launch {
+    mainScope.launch {
       _toolbarScrollEventFlow.emit(true)
+    }
+  }
+
+  fun updateSearchQuery(searchQuery: String?, shownPostsCountState: MutableState<Int?>) {
+    mainScope.launch {
+      postScreenState.updateSearchQuery(searchQuery)
+      shownPostsCountState.value = postScreenState.displayingPostsCount
     }
   }
 
@@ -380,9 +383,19 @@ abstract class PostScreenViewModel(
   )
 
   interface PostScreenState {
-    val postsAsyncDataState: MutableStateFlow<AsyncData<IPostsState>>
+    val postsAsyncDataState: MutableStateFlow<AsyncData<AbstractPostsState>>
     val chanDescriptorState: MutableStateFlow<ChanDescriptor?>
     val threadCellDataState: MutableStateFlow<ThreadCellData?>
+
+    val displayingPostsCount: Int?
+      get() {
+        val asyncData = postsAsyncDataState.value
+        if (asyncData is AsyncData.Data) {
+          return asyncData.data.posts.size
+        }
+
+        return null
+      }
 
     val chanDescriptor: ChanDescriptor?
       get() {
@@ -395,7 +408,8 @@ abstract class PostScreenViewModel(
         return null
       }
 
-    fun updatePost(postData: PostData)
+    suspend fun updatePost(postData: PostData)
+    suspend fun updateSearchQuery(searchQuery: String?)
   }
 
   companion object {

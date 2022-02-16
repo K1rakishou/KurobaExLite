@@ -360,7 +360,8 @@ class AnimateableStackContainerState<T>(
         return false
       }
       is StackContainerAnimation.Set -> {
-        _addedElementWrappers.remove(topElement)
+        _addedElementWrappers
+          .removeIfKt { it.elementWrapper.key == topElement.elementWrapper.key }
         return true
       }
     }
@@ -381,17 +382,28 @@ class AnimateableStackContainerState<T>(
               }
               is StackContainerAnimation.FadeType.Out -> {
                 if (animatingElement.fadeType.isRemoving) {
-                  _addedElementWrappers.removeIfKt { it.elementWrapper.key == animatingElement.elementWrapper.key }
+                  _addedElementWrappers
+                    .removeIfKt { it.elementWrapper.key == animatingElement.elementWrapper.key }
                 } else {
                   _addedElementWrappers.add(animatingElement)
                 }
               }
             }
           }
-          is StackContainerAnimation.Pop -> _addedElementWrappers.remove(animatingElement)
-          is StackContainerAnimation.Push -> _addedElementWrappers.add(animatingElement)
-          is StackContainerAnimation.Remove -> _addedElementWrappers.remove(animatingElement)
-          is StackContainerAnimation.Set -> _addedElementWrappers.add(animatingElement)
+          is StackContainerAnimation.Pop -> {
+            _addedElementWrappers
+              .removeIfKt { it.elementWrapper.key == animatingElement.elementWrapper.key }
+          }
+          is StackContainerAnimation.Push -> {
+            _addedElementWrappers.add(animatingElement)
+          }
+          is StackContainerAnimation.Remove -> {
+            _addedElementWrappers
+              .removeIfKt { it.elementWrapper.key == animatingElement.elementWrapper.key }
+          }
+          is StackContainerAnimation.Set -> {
+            _addedElementWrappers.add(animatingElement)
+          }
         }
       }
 

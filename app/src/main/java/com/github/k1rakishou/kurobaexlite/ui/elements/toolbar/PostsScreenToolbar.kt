@@ -20,7 +20,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.IPostsState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.AbstractPostsState
 
 private val toolbarTitleCache = LruCache<ChanDescriptor, String>(16)
 
@@ -32,9 +32,10 @@ enum class PostsScreenToolbarType(val id: Int) {
 @Composable
 fun BoxScope.PostsScreenToolbar(
   isCatalogScreen: Boolean,
-  postListAsync: AsyncData<IPostsState>,
+  postListAsync: AsyncData<AbstractPostsState>,
   parsedPostDataCache: ParsedPostDataCache,
   navigationRouter: NavigationRouter,
+  onSearchQueryUpdated: (String?, MutableState<Int?>) -> Unit,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
   val chanTheme = LocalChanTheme.current
@@ -93,6 +94,7 @@ fun BoxScope.PostsScreenToolbar(
         PostsScreenToolbarType.Search -> {
           PostsScreenSearchToolbar(
             parentBgColor = parentBgColor,
+            onSearchQueryUpdated = onSearchQueryUpdated,
             onCloseSearchClicked = { stackContainerState.removeTop(withAnimation = true) }
           )
         }
@@ -105,7 +107,7 @@ fun BoxScope.PostsScreenToolbar(
 private fun BoxScope.PostsScreenNormalToolbar(
   isCatalogScreen: Boolean,
   parentBgColor: Color,
-  postListAsync: AsyncData<IPostsState>,
+  postListAsync: AsyncData<AbstractPostsState>,
   parsedPostDataCache: ParsedPostDataCache,
   onToolbarSearchClicked: (() -> Unit)? = null,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
@@ -175,6 +177,8 @@ private fun BoxScope.PostsScreenNormalToolbar(
           colorBehindIcon = parentBgColor
         )
 
+        Spacer(modifier = Modifier.width(4.dp))
+
         KurobaComposeIcon(
           modifier = Modifier
             .size(24.dp)
@@ -194,9 +198,13 @@ private fun BoxScope.PostsScreenNormalToolbar(
 @Composable
 private fun BoxScope.PostsScreenSearchToolbar(
   parentBgColor: Color,
+  onSearchQueryUpdated: (String?, MutableState<Int?>) -> Unit,
   onCloseSearchClicked: () -> Unit
 ) {
   val keyboardController = LocalSoftwareKeyboardController.current
+
+  val displayingPostsCountState = remember { mutableStateOf<Int?>(null) }
+  var displayingPostsCount by displayingPostsCountState
 
   DisposableEffect(
     key1 = Unit,
@@ -213,7 +221,10 @@ private fun BoxScope.PostsScreenSearchToolbar(
           .size(24.dp)
           .kurobaClickable(
             bounded = false,
-            onClick = onCloseSearchClicked
+            onClick = {
+              onSearchQueryUpdated(null, displayingPostsCountState)
+              onCloseSearchClicked()
+            }
           ),
         drawableId = R.drawable.ic_baseline_clear_24
       )
@@ -228,10 +239,29 @@ private fun BoxScope.PostsScreenSearchToolbar(
         value = searchQuery,
         labelText = stringResource(R.string.toolbar_type_to_search_hint),
         parentBackgroundColor = parentBgColor,
-        onValueChange = { updatedQuery -> searchQuery = updatedQuery }
+        onValueChange = { updatedQuery ->
+          if (searchQuery != updatedQuery) {
+            searchQuery = updatedQuery
+            onSearchQueryUpdated(updatedQuery, displayingPostsCountState)
+          }
+        }
       )
     },
     rightPart = {
+      val displayingPostsCountText = remember(key1 = displayingPostsCount) {
+        if (displayingPostsCount == null) {
+          return@remember "???"
+        } else {
+          return@remember displayingPostsCount.toString()
+        }
+      }
+
+      KurobaComposeText(
+        modifier = Modifier
+          .align(Alignment.Center)
+          .padding(horizontal = 4.dp),
+        text = displayingPostsCountText
+      )
     }
   )
 }

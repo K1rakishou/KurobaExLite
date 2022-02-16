@@ -72,6 +72,9 @@ class ThreadScreen(
         postListAsync = postListAsync,
         parsedPostDataCache = parsedPostDataCache,
         navigationRouter = navigationRouter,
+        onSearchQueryUpdated = { searchQuery, displayingPostsCount ->
+          threadScreenViewModel.updateSearchQuery(searchQuery, displayingPostsCount)
+        },
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(

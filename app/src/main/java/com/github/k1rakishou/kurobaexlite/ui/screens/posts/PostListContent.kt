@@ -196,7 +196,7 @@ private fun processClickedAnnotation(
 private fun PostListInternal(
   lazyListState: LazyListState,
   contentPadding: PaddingValues,
-  postListAsync: AsyncData<IPostsState>,
+  postListAsync: AsyncData<AbstractPostsState>,
   isCatalogMode: Boolean,
   postsScreenViewModel: PostScreenViewModel,
   mainUiLayoutMode: MainUiLayoutMode,

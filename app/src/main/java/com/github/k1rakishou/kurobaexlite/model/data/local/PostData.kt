@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.model.data.local
 
 import androidx.compose.ui.text.AnnotatedString
+import com.github.k1rakishou.kurobaexlite.helpers.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 open class PostData(
@@ -13,6 +14,10 @@ open class PostData(
   val threadPostersTotal: Int? = null,
   @Volatile private var parsedPostData: ParsedPostData?
 ) {
+  @Volatile private var _murmur3HashMut = MurmurHashUtils.Murmur3Hash.EMPTY
+  val murmur3Hash: MurmurHashUtils.Murmur3Hash
+    get() = _murmur3HashMut
+
   val postNo: Long
     get() = postDescriptor.postNo
   val postSubNo: Long?
@@ -29,8 +34,24 @@ open class PostData(
   val postFooterText: AnnotatedString?
     get() = parsedPostData?.postFooterText
 
+  init {
+    recalculateHash()
+  }
+
+  private fun recalculateHash() {
+    _murmur3HashMut = MurmurHashUtils.murmurhash3_x64_128(postDescriptor)
+      .combine(MurmurHashUtils.murmurhash3_x64_128(postSubjectUnparsed))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(postCommentUnparsed))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(images))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(threadRepliesTotal))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(threadImagesTotal))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(threadPostersTotal))
+      .combine((parsedPostData?.murmurhash()) ?: MurmurHashUtils.Murmur3Hash.EMPTY)
+  }
+
   fun updateParsedPostData(newParsedPostData: ParsedPostData) {
     this.parsedPostData = newParsedPostData
+    recalculateHash()
   }
 
   fun differsWith(other: PostData): Boolean {

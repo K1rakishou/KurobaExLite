@@ -4,18 +4,22 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.IPostsState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.AbstractPostsState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsMergeResult
+import kotlinx.coroutines.sync.withLock
 
 class CatalogThreadsState(
   val catalogDescriptor: CatalogDescriptor,
   catalogThreads: List<PostData>
-) : IPostsState {
+) : AbstractPostsState() {
   private val _catalogThreads = mutableStateListOf<MutableState<PostData>>()
 
+  override val postsMutable: SnapshotStateList<MutableState<PostData>>
+    get() = _catalogThreads
   override val posts: List<State<PostData>>
     get() = _catalogThreads
   override val chanDescriptor: ChanDescriptor
@@ -25,16 +29,18 @@ class CatalogThreadsState(
     _catalogThreads.addAll(catalogThreads.map { mutableStateOf(it) })
   }
 
-  override fun update(postData: PostData) {
-    val index = _catalogThreads.indexOfFirst { it.value.postDescriptor == postData.postDescriptor }
-    if (index < 0) {
-      return
-    }
+  override suspend fun update(postData: PostData) {
+    mutex.withLock {
+      val index = _catalogThreads.indexOfFirst { it.value.postDescriptor == postData.postDescriptor }
+      if (index < 0) {
+        return@withLock
+      }
 
-    _catalogThreads[index].value = postData
+      _catalogThreads[index].value = postData
+    }
   }
 
-  override fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult {
+  override suspend fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult {
     return NO_OP_MERGE_RESULT
   }
 

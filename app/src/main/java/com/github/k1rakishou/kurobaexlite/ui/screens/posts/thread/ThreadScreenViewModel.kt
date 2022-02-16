@@ -6,7 +6,9 @@ import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.helpers.*
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
@@ -29,10 +31,8 @@ class ThreadScreenViewModel(
   private val chanThreadCache: ChanThreadCache,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
-  postCommentParser: PostCommentParser,
-  postCommentApplier: PostCommentApplier,
   themeEngine: ThemeEngine
-) : PostScreenViewModel(application, globalConstants, postCommentParser, postCommentApplier, themeEngine) {
+) : PostScreenViewModel(application, globalConstants, themeEngine) {
   private val threadScreenState = ThreadScreenState()
   private var loadThreadJob: Job? = null
 

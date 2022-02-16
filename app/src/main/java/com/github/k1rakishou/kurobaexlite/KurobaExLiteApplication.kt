@@ -83,8 +83,6 @@ class KurobaExLiteApplication : Application() {
           chanThreadCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
-          postCommentParser = get(),
-          postCommentApplier = get(),
           themeEngine = get()
         )
       }
@@ -94,8 +92,6 @@ class KurobaExLiteApplication : Application() {
           chanThreadCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
-          postCommentParser = get(),
-          postCommentApplier = get(),
           themeEngine = get()
         )
       }
