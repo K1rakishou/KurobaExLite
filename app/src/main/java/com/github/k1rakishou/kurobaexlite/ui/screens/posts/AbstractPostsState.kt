@@ -44,7 +44,8 @@ abstract class AbstractPostsState {
         if (searchQuery.isNotEmpty()) {
           val filteredThreads = postsCopy!!.filter { postData ->
             val commentMatchesQuery = postData.postCommentParsedAndProcessed
-              ?.let { comment -> comment.text.contains(searchQuery) }
+              ?.text
+              ?.contains(other = searchQuery, ignoreCase = true)
               ?: false
 
             if (commentMatchesQuery) {
@@ -52,7 +53,8 @@ abstract class AbstractPostsState {
             }
 
             val subjectMatchesQuery = postData.postSubjectParsedAndProcessed
-              ?.let { subject -> subject.text.contains(searchQuery) }
+              ?.text
+              ?.contains(other = searchQuery, ignoreCase = true)
               ?: false
 
             if (subjectMatchesQuery) {

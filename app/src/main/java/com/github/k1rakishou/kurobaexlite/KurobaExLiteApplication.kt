@@ -34,7 +34,7 @@ class KurobaExLiteApplication : Application() {
     Thread.setDefaultUncaughtExceptionHandler { thread, e ->
       // if there's any uncaught crash stuff, just dump them to the log and exit immediately
       Log.e("KurobaExLiteApplication", "Unhandled exception in thread: ${thread.name}", e)
-      exitProcess(999)
+      exitProcess(-1)
     }
 
     startKoin {

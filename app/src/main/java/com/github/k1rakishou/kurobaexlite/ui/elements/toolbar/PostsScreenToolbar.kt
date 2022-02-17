@@ -204,7 +204,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
   val keyboardController = LocalSoftwareKeyboardController.current
 
   val displayingPostsCountState = remember { mutableStateOf<Int?>(null) }
-  var displayingPostsCount by displayingPostsCountState
+  val displayingPostsCount by displayingPostsCountState
 
   DisposableEffect(
     key1 = Unit,
