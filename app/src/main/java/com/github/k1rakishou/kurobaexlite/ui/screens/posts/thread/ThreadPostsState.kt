@@ -40,8 +40,11 @@ class ThreadPostsState(
   }
 
   override fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult {
-    val prevThreadPostMap = _threadPosts.associateBy { it.value.postDescriptor }
+    if (postsCopy != null) {
+      return PostsMergeResult.EMPTY
+    }
 
+    val prevThreadPostMap = _threadPosts.associateBy { it.value.postDescriptor }
     val postsToUpdate = mutableListOf<Pair<Int, PostData>>()
     val postsToInsert = mutableListOf<PostData>()
 

@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.*
@@ -9,6 +10,8 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -295,6 +298,7 @@ private fun PostListInternal(
           postList(
             isCatalogMode = isCatalogMode,
             padding = padding,
+            lazyListState = lazyListState,
             postsScreenViewModel = postsScreenViewModel,
             postDataList = postListAsync.data.posts,
             previouslyVisiblePosts = previouslyVisiblePosts,
@@ -312,6 +316,7 @@ private fun PostListInternal(
 private fun LazyListScope.postList(
   isCatalogMode: Boolean,
   padding: PaddingValues,
+  lazyListState: LazyListState,
   postsScreenViewModel: PostScreenViewModel,
   postDataList: List<State<PostData>>,
   previouslyVisiblePosts: MutableMap<PostDescriptor, Unit>,
@@ -321,6 +326,18 @@ private fun LazyListScope.postList(
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
   val totalCount = postDataList.size
+  val searchQuery = postsScreenViewModel.postScreenState.searchQuery
+
+  if (searchQuery != null) {
+    item(key = "search_info") {
+      SearchInfoCell(
+        padding = padding,
+        postsScreenViewModel = postsScreenViewModel,
+        searchQuery = searchQuery,
+        lazyListState = lazyListState
+      )
+    }
+  }
 
   items(
     count = totalCount,
@@ -363,7 +380,7 @@ private fun LazyListScope.postList(
     }
   )
 
-  if (!isCatalogMode) {
+  if (!isCatalogMode && searchQuery != null) {
     item(key = "thread_status_cell") {
       ThreadStatusCell(
         padding = padding,
@@ -372,6 +389,80 @@ private fun LazyListScope.postList(
       )
     }
   }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LazyItemScope.SearchInfoCell(
+  padding: PaddingValues,
+  postsScreenViewModel: PostScreenViewModel,
+  searchQuery: String,
+  lazyListState: LazyListState
+) {
+  val chanTheme = LocalChanTheme.current
+  val foundPostsCount = postsScreenViewModel.postScreenState.displayingPostsCount ?: 0
+  val bringIntoViewRequester = remember { BringIntoViewRequester() }
+  val minAllowedScrollOffset = with(LocalDensity.current) { remember { 32.dp.toPx() } }
+
+  val combinedPaddings = remember {
+    PaddingValues(
+      start = padding.calculateStartPadding(LayoutDirection.Ltr),
+      end = padding.calculateEndPadding(LayoutDirection.Ltr),
+      top = 4.dp,
+      bottom = 4.dp
+    )
+  }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      delay(100)
+
+      // At this point SearchInfoCell will already be added into the LazyList so we need to account
+      // it's index into the calculations
+      val isAlmostAtTheTopOfList = lazyListState.firstVisibleItemIndex <= 1
+        && lazyListState.firstVisibleItemScrollOffset <= minAllowedScrollOffset
+
+      if (isAlmostAtTheTopOfList) {
+        // TODO(KurobaEx): doesn't work sometimes for some reason (requestRectangleOnScreen returns false).
+        //  Can't check right now wtf is going on there because need API 31 emulator.
+        bringIntoViewRequester.bringIntoView(null)
+      }
+    }
+  )
+
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .padding(combinedPaddings)
+      .bringIntoViewRequester(bringIntoViewRequester)
+  ) {
+    val context = LocalContext.current
+
+    KurobaComposeCardView(
+      backgroundColor = chanTheme.backColorSecondaryCompose
+    ) {
+      val text = remember(key1 = foundPostsCount, key2 = searchQuery) {
+        context.resources.getString(
+          R.string.search_hint,
+          foundPostsCount,
+          context.resources.getQuantityString(R.plurals.posts, foundPostsCount),
+          searchQuery
+        )
+      }
+
+      Text(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 4.dp, vertical = 4.dp),
+        text = text,
+        color = chanTheme.textColorSecondaryCompose
+      )
+    }
+
+  }
+
 }
 
 @Composable

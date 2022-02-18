@@ -35,7 +35,7 @@ fun BoxScope.PostsScreenToolbar(
   postListAsync: AsyncData<AbstractPostsState>,
   parsedPostDataCache: ParsedPostDataCache,
   navigationRouter: NavigationRouter,
-  onSearchQueryUpdated: (String?, MutableState<Int?>) -> Unit,
+  onSearchQueryUpdated: (String?) -> Unit,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
   val chanTheme = LocalChanTheme.current
@@ -198,19 +198,16 @@ private fun BoxScope.PostsScreenNormalToolbar(
 @Composable
 private fun BoxScope.PostsScreenSearchToolbar(
   parentBgColor: Color,
-  onSearchQueryUpdated: (String?, MutableState<Int?>) -> Unit,
+  onSearchQueryUpdated: (String?) -> Unit,
   onCloseSearchClicked: () -> Unit
 ) {
   val keyboardController = LocalSoftwareKeyboardController.current
-
-  val displayingPostsCountState = remember { mutableStateOf<Int?>(null) }
-  val displayingPostsCount by displayingPostsCountState
 
   DisposableEffect(
     key1 = Unit,
     effect = {
       onDispose {
-        onSearchQueryUpdated(null, displayingPostsCountState)
+        onSearchQueryUpdated(null)
         keyboardController?.hide()
       }
     })
@@ -223,7 +220,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
           .kurobaClickable(
             bounded = false,
             onClick = {
-              onSearchQueryUpdated(null, displayingPostsCountState)
+              onSearchQueryUpdated(null)
               onCloseSearchClicked()
             }
           ),
@@ -243,26 +240,12 @@ private fun BoxScope.PostsScreenSearchToolbar(
         onValueChange = { updatedQuery ->
           if (searchQuery != updatedQuery) {
             searchQuery = updatedQuery
-            onSearchQueryUpdated(updatedQuery, displayingPostsCountState)
+            onSearchQueryUpdated(updatedQuery)
           }
         }
       )
     },
     rightPart = {
-      val displayingPostsCountText = remember(key1 = displayingPostsCount) {
-        if (displayingPostsCount == null) {
-          return@remember "???"
-        } else {
-          return@remember displayingPostsCount.toString()
-        }
-      }
-
-      KurobaComposeText(
-        modifier = Modifier
-          .align(Alignment.Center)
-          .padding(horizontal = 4.dp),
-        text = displayingPostsCountText
-      )
     }
   )
 }

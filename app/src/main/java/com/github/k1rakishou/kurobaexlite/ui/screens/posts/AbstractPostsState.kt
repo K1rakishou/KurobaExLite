@@ -8,7 +8,11 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 
 abstract class AbstractPostsState {
-  private var postsCopy: List<PostData>? = null
+  protected var postsCopy: List<PostData>? = null
+
+  private var _searchQuery: String? = null
+  val searchQuery: String?
+    get() = _searchQuery
 
   abstract val chanDescriptor: ChanDescriptor
   abstract val posts: List<State<PostData>>
@@ -18,6 +22,8 @@ abstract class AbstractPostsState {
   abstract fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult
 
   fun updateSearchQuery(searchQuery: String?) {
+    _searchQuery = searchQuery
+
     if (searchQuery == null) {
       if (postsCopy != null) {
         val oldThreads = postsCopy!!.map { mutableStateOf(it) }
@@ -34,32 +40,34 @@ abstract class AbstractPostsState {
       postsCopy = postsMutable.map { it.value.copy() }
     }
 
-    if (searchQuery.isNotEmpty()) {
-      val filteredThreads = postsCopy!!.filter { postData ->
-        val commentMatchesQuery = postData.postCommentParsedAndProcessed
-          ?.text
-          ?.contains(other = searchQuery, ignoreCase = true)
-          ?: false
-
-        if (commentMatchesQuery) {
-          return@filter true
-        }
-
-        val subjectMatchesQuery = postData.postSubjectParsedAndProcessed
-          ?.text
-          ?.contains(other = searchQuery, ignoreCase = true)
-          ?: false
-
-        if (subjectMatchesQuery) {
-          return@filter true
-        }
-
-        return@filter false
+    val filteredThreads = postsCopy!!.filter { postData ->
+      if (searchQuery.isEmpty()) {
+        return@filter true
       }
 
-      postsMutable.clear()
-      postsMutable.addAll(filteredThreads.map { mutableStateOf(it) })
+      val commentMatchesQuery = postData.postCommentParsedAndProcessed
+        ?.text
+        ?.contains(other = searchQuery, ignoreCase = true)
+        ?: false
+
+      if (commentMatchesQuery) {
+        return@filter true
+      }
+
+      val subjectMatchesQuery = postData.postSubjectParsedAndProcessed
+        ?.text
+        ?.contains(other = searchQuery, ignoreCase = true)
+        ?: false
+
+      if (subjectMatchesQuery) {
+        return@filter true
+      }
+
+      return@filter false
     }
+
+    postsMutable.clear()
+    postsMutable.addAll(filteredThreads.map { mutableStateOf(it) })
   }
 }
 
@@ -70,6 +78,10 @@ data class PostsMergeResult(
 
   fun isNotEmpty(): Boolean {
     return newPostsCount > 0
+  }
+
+  companion object {
+    val EMPTY = PostsMergeResult(0, emptyList())
   }
 
 }

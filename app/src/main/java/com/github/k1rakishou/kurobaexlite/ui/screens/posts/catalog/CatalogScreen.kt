@@ -90,9 +90,7 @@ class CatalogScreen(
         postListAsync = postListAsync,
         parsedPostDataCache = parsedPostDataCache,
         navigationRouter = navigationRouter,
-        onSearchQueryUpdated = { searchQuery, displayingPostsCount ->
-          catalogScreenViewModel.updateSearchQuery(searchQuery, displayingPostsCount)
-        },
+        onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(

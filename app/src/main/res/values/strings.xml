@@ -17,6 +17,10 @@
         <item quantity="one">reply</item>
         <item quantity="other">replies</item>
     </plurals>
+    <plurals name="posts">
+        <item quantity="one">post</item>
+        <item quantity="other">posts</item>
+    </plurals>
     <plurals name="new_posts_with_number">
         <item quantity="one">%d new post</item>
         <item quantity="other">%d new posts</item>
@@ -50,6 +54,9 @@
 
     <string name="catalog_screen_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_screen_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
+
     <string name="toolbar_type_to_search_hint">Type to search</string>
+
+    <string name="search_hint">Displaying %1$d %2$s with query \'%3$s\'</string>
 
 </resources>

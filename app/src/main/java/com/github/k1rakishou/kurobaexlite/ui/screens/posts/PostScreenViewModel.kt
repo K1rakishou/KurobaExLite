@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import android.os.SystemClock
-import androidx.compose.runtime.MutableState
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
@@ -62,6 +61,7 @@ abstract class PostScreenViewModel(
   private val lazyColumnRememberedPositionCache = mutableMapOf<ChanDescriptor, LazyColumnRememberedPosition>()
 
   abstract val postScreenState: PostScreenState
+
   val chanDescriptor: ChanDescriptor?
     get() = postScreenState.chanDescriptor
 
@@ -368,10 +368,9 @@ abstract class PostScreenViewModel(
     }
   }
 
-  fun updateSearchQuery(searchQuery: String?, shownPostsCountState: MutableState<Int?>) {
+  fun updateSearchQuery(searchQuery: String?) {
     mainScope.launch {
       postScreenState.updateSearchQuery(searchQuery)
-      shownPostsCountState.value = postScreenState.displayingPostsCount
     }
   }
 
@@ -388,28 +387,23 @@ abstract class PostScreenViewModel(
     val threadCellDataState: MutableStateFlow<ThreadCellData?>
 
     val displayingPostsCount: Int?
-      get() {
-        val asyncData = postsAsyncDataState.value
-        if (asyncData is AsyncData.Data) {
-          return asyncData.data.posts.size
-        }
-
-        return null
-      }
-
+      get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
     val chanDescriptor: ChanDescriptor?
-      get() {
-        val postAsyncData = postsAsyncDataState.value
-
-        if (postAsyncData is AsyncData.Data) {
-          return postAsyncData.data.chanDescriptor
-        }
-
-        return null
-      }
+      get() = doWithDataState { abstractPostsState -> abstractPostsState.chanDescriptor }
+    val searchQuery: String?
+      get() = doWithDataState { abstractPostsState -> abstractPostsState.searchQuery }
 
     fun updatePost(postData: PostData)
     fun updateSearchQuery(searchQuery: String?)
+
+    private fun <T> doWithDataState(func: (AbstractPostsState) -> T): T? {
+      val postAsyncData = postsAsyncDataState.value
+      if (postAsyncData is AsyncData.Data) {
+        return func(postAsyncData.data)
+      }
+
+      return null
+    }
   }
 
   companion object {
