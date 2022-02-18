@@ -13,14 +13,14 @@ class CatalogScreenState : PostScreenViewModel.PostScreenState {
   override val chanDescriptorState = MutableStateFlow<ChanDescriptor?>(null)
   override val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
 
-  override suspend fun updatePost(postData: PostData) {
+  override fun updatePost(postData: PostData) {
     val asyncData = postsAsyncDataState.value
     if (asyncData is AsyncData.Data) {
       asyncData.data.update(postData)
     }
   }
 
-  override suspend fun updateSearchQuery(searchQuery: String?) {
+  override fun updateSearchQuery(searchQuery: String?) {
     val asyncData = postsAsyncDataState.value
     if (asyncData is AsyncData.Data) {
       asyncData.data.updateSearchQuery(searchQuery)

@@ -10,7 +10,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.AbstractPostsState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsMergeResult
-import kotlinx.coroutines.sync.withLock
 
 class CatalogThreadsState(
   val catalogDescriptor: CatalogDescriptor,
@@ -29,18 +28,16 @@ class CatalogThreadsState(
     _catalogThreads.addAll(catalogThreads.map { mutableStateOf(it) })
   }
 
-  override suspend fun update(postData: PostData) {
-    mutex.withLock {
-      val index = _catalogThreads.indexOfFirst { it.value.postDescriptor == postData.postDescriptor }
-      if (index < 0) {
-        return@withLock
-      }
-
-      _catalogThreads[index].value = postData
+  override fun update(postData: PostData) {
+    val index = _catalogThreads.indexOfFirst { it.value.postDescriptor == postData.postDescriptor }
+    if (index < 0) {
+      return
     }
+
+    _catalogThreads[index].value = postData
   }
 
-  override suspend fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult {
+  override fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult {
     return NO_OP_MERGE_RESULT
   }
 

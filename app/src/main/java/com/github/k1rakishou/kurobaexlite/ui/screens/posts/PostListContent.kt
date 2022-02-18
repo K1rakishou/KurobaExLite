@@ -292,13 +292,11 @@ private fun PostListInternal(
           }
         }
         is AsyncData.Data -> {
-          val postDataList = postListAsync.data.posts
-
           postList(
             isCatalogMode = isCatalogMode,
             padding = padding,
             postsScreenViewModel = postsScreenViewModel,
-            postDataList = postDataList,
+            postDataList = postListAsync.data.posts,
             previouslyVisiblePosts = previouslyVisiblePosts,
             onPostCellClicked = onPostCellClicked,
             onPostCellCommentClicked = onPostCellCommentClicked,

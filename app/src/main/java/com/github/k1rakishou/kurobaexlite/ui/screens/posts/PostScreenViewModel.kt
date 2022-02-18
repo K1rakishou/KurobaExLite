@@ -408,8 +408,8 @@ abstract class PostScreenViewModel(
         return null
       }
 
-    suspend fun updatePost(postData: PostData)
-    suspend fun updateSearchQuery(searchQuery: String?)
+    fun updatePost(postData: PostData)
+    fun updateSearchQuery(searchQuery: String?)
   }
 
   companion object {
