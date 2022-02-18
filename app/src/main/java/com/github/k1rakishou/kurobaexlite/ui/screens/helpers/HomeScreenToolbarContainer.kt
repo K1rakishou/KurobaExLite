@@ -82,13 +82,11 @@ fun HomeScreenToolbarContainer(
         }
       }
 
-      // TODO(KurobaEx): Bug! The state of child toolbar is reset every time the Pager is scrolled.
-      //  Most likely, this is caused by BuildChildToolbar() being called from different place
-      //  even though it uses key() compose helper function inside which "should", in theory, prevent that from
-      //  happening but doesn't. Maybe some different helper function should be used in this case
-      //  or maybe the whole approach is incorrect.
       for ((pageIndex, currentScreen) in childScreens.withIndex()) {
         val zOrder = zOrders[pageIndex]
+        val screenToolbarMovable = remember(currentScreen.screenKey) {
+          movableContentOf { currentScreen.Toolbar(this) }
+        }
 
         when (pageIndex) {
           currentPage -> {
@@ -104,7 +102,8 @@ fun HomeScreenToolbarContainer(
               zOrder = zOrder,
               targetToolbarAlpha = currentToolbarAlpha,
               targetToolbarTranslation = currentToolbarTranslation,
-              transitionIsProgress = transitionIsProgress
+              transitionIsProgress = transitionIsProgress,
+              toolbarContent = { screenToolbarMovable() }
             )
           }
           targetPage -> {
@@ -120,7 +119,8 @@ fun HomeScreenToolbarContainer(
               zOrder = zOrder,
               targetToolbarAlpha = targetToolbarAlpha,
               targetToolbarTranslation = targetToolbarTranslation,
-              transitionIsProgress = transitionIsProgress
+              transitionIsProgress = transitionIsProgress,
+              toolbarContent = { screenToolbarMovable() }
             )
           }
           else -> {
@@ -129,7 +129,8 @@ fun HomeScreenToolbarContainer(
               zOrder = zOrder,
               targetToolbarAlpha = 0f,
               targetToolbarTranslation = 0f,
-              transitionIsProgress = transitionIsProgress
+              transitionIsProgress = transitionIsProgress,
+              toolbarContent = { screenToolbarMovable() }
             )
           }
         }
@@ -144,7 +145,8 @@ private fun BuildChildToolbar(
   zOrder: Int,
   targetToolbarAlpha: Float,
   targetToolbarTranslation: Float,
-  transitionIsProgress: Boolean
+  transitionIsProgress: Boolean,
+  toolbarContent: @Composable () -> Unit
 ) {
   key(composeScreenWithToolbar.screenKey) {
     Box(
@@ -156,7 +158,7 @@ private fun BuildChildToolbar(
         }
         .consumeClicks(consume = transitionIsProgress)
     ) {
-      composeScreenWithToolbar.Toolbar(this)
+      toolbarContent()
     }
   }
 }
