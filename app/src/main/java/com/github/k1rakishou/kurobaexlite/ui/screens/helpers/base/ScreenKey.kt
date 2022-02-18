@@ -1,3 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base
 
-inline class ScreenKey(val key: String)
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+inline class ScreenKey(val key: String) : Parcelable

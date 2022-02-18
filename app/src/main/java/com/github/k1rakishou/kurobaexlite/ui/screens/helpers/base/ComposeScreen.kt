@@ -21,7 +21,7 @@ abstract class ComposeScreen(
   abstract fun Content()
 
   @Composable
-  protected fun PushScreenOnce(
+  protected fun PushScreen(
     navigationRouter: NavigationRouter,
     composeScreenBuilder: () -> ComposeScreen
   ) {

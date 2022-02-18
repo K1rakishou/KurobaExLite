@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -50,7 +51,7 @@ fun BoxScope.PostsScreenToolbar(
     )
   )
 
-  navigationRouter.HandleBackPresses{
+  navigationRouter.HandleBackPresses {
     if (stackContainerState.addedElementsCount > 1) {
       stackContainerState.removeTop(withAnimation = true)
       return@HandleBackPresses true
@@ -114,7 +115,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
 ) {
   KurobaToolbarLayout(
     middlePart = {
-      var toolbarTitle by remember {
+      var toolbarTitle by rememberSaveable {
         val chanDescriptor = (postListAsync as? AsyncData.Data)?.data?.chanDescriptor
 
         val initialValue = if (chanDescriptor != null) {
@@ -123,7 +124,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
           null
         }
 
-        return@remember mutableStateOf<String?>(initialValue)
+        return@rememberSaveable mutableStateOf<String?>(initialValue)
       }
 
       when (postListAsync) {
@@ -203,13 +204,14 @@ private fun BoxScope.PostsScreenSearchToolbar(
 ) {
   val keyboardController = LocalSoftwareKeyboardController.current
 
-  val displayingPostsCountState = remember { mutableStateOf<Int?>(null) }
+  val displayingPostsCountState = rememberSaveable { mutableStateOf<Int?>(null) }
   val displayingPostsCount by displayingPostsCountState
 
   DisposableEffect(
     key1 = Unit,
     effect = {
       onDispose {
+        onSearchQueryUpdated(null, displayingPostsCountState)
         keyboardController?.hide()
       }
     })
@@ -230,7 +232,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
       )
     },
     middlePart = {
-      var searchQuery by remember { mutableStateOf<String>("") }
+      var searchQuery by rememberSaveable(key = "searchQuery") { mutableStateOf<String>("") }
 
       KurobaComposeCustomTextField(
         modifier = Modifier

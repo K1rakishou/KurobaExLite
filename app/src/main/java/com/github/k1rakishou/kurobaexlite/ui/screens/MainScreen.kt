@@ -48,7 +48,7 @@ class MainScreen(
         if (availableWidth > 0 && availableHeight > 0) {
           uiInfoManager.updateMaxParentSize(availableWidth, availableHeight)
 
-          PushScreenOnce(
+          PushScreen(
             navigationRouter = navigationRouter,
             composeScreenBuilder = { HomeScreen(componentActivity, navigationRouter) }
           )

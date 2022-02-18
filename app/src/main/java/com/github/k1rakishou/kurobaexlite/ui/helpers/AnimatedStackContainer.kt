@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
@@ -237,17 +238,18 @@ class SimpleStackContainerElement<T>(
 }
 
 class AnimateableStackContainerState<T>(
-  initialValues: List<StackContainerElementWrapper<T>>
+  initialValues: List<StackContainerElementWrapper<T>>,
+  private val duplicateChecker: MutableSet<Any> = mutableSetOf(),
+  private val _addedElementWrappers: SnapshotStateList<StackContainerAnimation<T>> = mutableStateListOf(),
+  private val _animatingElements: SnapshotStateList<StackContainerAnimation<T>> = mutableStateListOf()
 ) {
-  private val duplicateChecker = mutableSetOf<Any>()
 
-  private val _addedElementWrappers = mutableStateListOf<StackContainerAnimation<T>>()
   val addedElementWrappers: List<StackContainerElementWrapper<T>>
     get() = _addedElementWrappers.map { it.elementWrapper }
-
-  private val _animatingElements = mutableStateListOf<StackContainerAnimation<T>>()
   val animatingElements: List<StackContainerAnimation<T>>
     get() = _animatingElements
+  val addedElementsCount: Int
+    get() = _addedElementWrappers.size
 
   init {
     initialValues.forEach { initialValue ->
@@ -255,9 +257,6 @@ class AnimateableStackContainerState<T>(
       duplicateChecker.add(initialValue.key)
     }
   }
-
-  val addedElementsCount: Int
-    get() = _addedElementWrappers.size
 
   fun set(elementWrapper: StackContainerElementWrapper<T>) {
     if (!duplicateChecker.add(elementWrapper.key)) {
