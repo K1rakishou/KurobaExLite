@@ -353,3 +353,42 @@ inline fun <K, V> MutableMap<K, V>.mutableIteration(func: (MutableIterator<Map.E
     }
   }
 }
+
+@JvmOverloads
+fun Thread.callStack(tag: String = ""): String {
+  val resultString = java.lang.StringBuilder(256)
+  var index = 0
+
+  for (ste in Thread.currentThread().stackTrace) {
+    val className = ste?.className ?: continue
+    val fileName = ste.fileName ?: continue
+    val methodName = ste.methodName ?: continue
+    val lineNumber = ste.lineNumber
+
+    if (!className.startsWith("com.github.k1rakishou")) {
+      continue
+    }
+
+    if (fileName.contains("GenericExtensions.kt") && methodName.contains("callStack")) {
+      continue
+    }
+
+    if (index > 0) {
+      resultString.appendLine()
+    }
+
+    if (tag.isNotEmpty()) {
+      resultString.append(tag)
+    }
+
+    resultString.append("${index}-[${fileName}:${lineNumber}]")
+    resultString.append(" ")
+    resultString.append(className)
+    resultString.append("#")
+    resultString.append(methodName)
+
+    ++index
+  }
+
+  return resultString.toString()
+}

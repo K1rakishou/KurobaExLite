@@ -59,4 +59,8 @@ class ChanThreadCache {
     return resultList
   }
 
+  suspend fun getThreadPosts(threadDescriptor: ThreadDescriptor): List<PostData> {
+    return threads[threadDescriptor]?.getAll() ?: emptyList()
+  }
+
 }

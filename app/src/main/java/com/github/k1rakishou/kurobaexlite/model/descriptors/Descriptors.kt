@@ -23,11 +23,13 @@ data class CatalogDescriptor(
   val siteKey: SiteKey,
   val boardCode: String
 ) : Parcelable, ChanDescriptor() {
+  val siteKeyActual: String
+    get() = siteKey.key
 
   override fun toString(): String {
     return buildString(capacity = 32) {
       append("CatalogDescriptor(")
-      append(siteKey)
+      append(siteKeyActual)
       append("/")
       append(boardCode)
       append(")")

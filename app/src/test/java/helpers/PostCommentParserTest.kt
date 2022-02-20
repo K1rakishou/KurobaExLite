@@ -14,8 +14,10 @@ class PostCommentParserTest : TestCase() {
     val postCommentParser = PostCommentParser()
     val commentRaw = "Test <br> 123"
 
+    val postData = createPostDataWithComment(commentRaw)
     val textParts = postCommentParser.parsePostCommentInternal(
-      createPostDataWithComment(commentRaw)
+      postData.postCommentUnparsed,
+      postData.postDescriptor
     )
 
     assertEquals(3, textParts.size)
@@ -29,8 +31,10 @@ class PostCommentParserTest : TestCase() {
     val postCommentParser = PostCommentParser()
     val commentRaw = "Test <wbr> 123"
 
+    val postData = createPostDataWithComment(commentRaw)
     val textParts = postCommentParser.parsePostCommentInternal(
-      createPostDataWithComment(commentRaw)
+      postData.postCommentUnparsed,
+      postData.postDescriptor
     )
 
     assertEquals(2, textParts.size)
@@ -43,8 +47,10 @@ class PostCommentParserTest : TestCase() {
     val postCommentParser = PostCommentParser()
     val commentRaw = "<span class=\\\"quote\\\">&gt;Tomo it&#039;s you! YOU&#039;RE the Azumanga Daioh!</span>"
 
+    val postData = createPostDataWithComment(commentRaw)
     val textParts = postCommentParser.parsePostCommentInternal(
-      createPostDataWithComment(commentRaw)
+      postData.postCommentUnparsed,
+      postData.postDescriptor
     )
 
     assertEquals(1, textParts.size)
@@ -58,7 +64,11 @@ class PostCommentParserTest : TestCase() {
       postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 1122, 1123, null),
       postSubjectUnparsed = "",
       postCommentUnparsed = comment,
-      images = null
+      images = null,
+      threadRepliesTotal = 0,
+      threadImagesTotal = 0,
+      threadPostersTotal = 0,
+      parsedPostData = null
     )
   }
 

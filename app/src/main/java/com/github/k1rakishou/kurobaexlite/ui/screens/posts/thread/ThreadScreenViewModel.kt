@@ -21,6 +21,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentIt
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import logcat.asLog
@@ -117,7 +118,6 @@ class ThreadScreenViewModel(
       )
 
       threadScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
-      threadScreenState.chanDescriptorState.value = threadDescriptor
 
       if (mergeResult.isNotEmpty()) {
         val newPostsCount = mergeResult.newPostsCount
@@ -164,12 +164,17 @@ class ThreadScreenViewModel(
       return
     }
 
+    postListBuilt = CompletableDeferred()
     _postsFullyParsedOnceFlow.emit(false)
     val startTime = SystemClock.elapsedRealtime()
     threadScreenState.postsAsyncDataState.value = AsyncData.Loading
 
-    // TODO(KurobaEx): preload cached PostData into the threadScreenState.postsAsyncDataState
-    //  and then do the diff to avoid reparsing all the posts from the server
+    val cachedThreadPostsState = if (threadDescriptor != null) {
+      val postsFromCache = chanThreadCache.getThreadPosts(threadDescriptor)
+      ThreadPostsState(threadDescriptor, postsFromCache)
+    } else {
+      null
+    }
 
     val threadDataResult = chanThreadManager.loadThread(threadDescriptor)
     if (threadDataResult.isFailure) {
@@ -196,40 +201,75 @@ class ThreadScreenViewModel(
       return
     }
 
-    parsePostsAround(
-      startIndex = 0,
-      chanDescriptor = threadDescriptor,
-      postDataList = threadData.threadPosts,
-      count = 16,
-      isCatalogMode = false
-    )
+    if (cachedThreadPostsState != null) {
+      val mergeResult = cachedThreadPostsState.mergePostsWith(threadData.threadPosts)
+      logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${mergeResult.info()}" }
 
-    parseRemainingPostsAsync(
-      chanDescriptor = threadDescriptor,
-      postDataList = threadData.threadPosts,
-      parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
-      onStartParsingPosts = {
-        pushCatalogOrThreadPostsLoadingSnackbar(
-          postsCount = threadData.threadPosts.size
-        )
-      },
-      onPostsParsed = { postDataList ->
-        chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
-        popCatalogOrThreadPostsLoadingSnackbar()
+      parsePostsAround(
+        startIndex = 0,
+        chanDescriptor = threadDescriptor,
+        postDataList = mergeResult.newOrUpdatedPostsToReparse,
+        isCatalogMode = false
+      )
 
-        restoreScrollPosition(threadDescriptor)
-        _postsFullyParsedOnceFlow.emit(true)
-      }
-    )
+      threadScreenState.postsAsyncDataState.value = AsyncData.Data(cachedThreadPostsState)
+      postScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
 
-    val threadPostsState = ThreadPostsState(
-      threadDescriptor = threadDescriptor,
-      threadPosts = threadData.threadPosts
-    )
+      parseRemainingPostsAsync(
+        chanDescriptor = threadDescriptor,
+        postDataList = mergeResult.newOrUpdatedPostsToReparse,
+        parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
+        onStartParsingPosts = {
+          pushCatalogOrThreadPostsLoadingSnackbar(
+            postsCount = mergeResult.newPostsCount
+          )
+        },
+        onPostsParsed = { postDataList ->
+          chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
+          popCatalogOrThreadPostsLoadingSnackbar()
 
-    threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
-    postScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
-    postScreenState.chanDescriptorState.value = threadDescriptor
+          requireNotNull(postListBuilt).await()
+          restoreScrollPosition(threadDescriptor)
+          _postsFullyParsedOnceFlow.emit(true)
+        }
+      )
+    } else {
+      logcat(tag = "loadThreadInternal") { "No cached posts, using posts from the server." }
+
+      parsePostsAround(
+        startIndex = 0,
+        chanDescriptor = threadDescriptor,
+        postDataList = threadData.threadPosts,
+        isCatalogMode = false
+      )
+
+      val threadPostsState = ThreadPostsState(
+        threadDescriptor = threadDescriptor,
+        threadPosts = threadData.threadPosts
+      )
+
+      threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
+      postScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
+
+      parseRemainingPostsAsync(
+        chanDescriptor = threadDescriptor,
+        postDataList = threadData.threadPosts,
+        parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
+        onStartParsingPosts = {
+          pushCatalogOrThreadPostsLoadingSnackbar(
+            postsCount = threadData.threadPosts.size
+          )
+        },
+        onPostsParsed = { postDataList ->
+          chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
+          popCatalogOrThreadPostsLoadingSnackbar()
+
+          requireNotNull(postListBuilt).await()
+          restoreScrollPosition(threadDescriptor)
+          _postsFullyParsedOnceFlow.emit(true)
+        }
+      )
+    }
 
     logcat {
       "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +

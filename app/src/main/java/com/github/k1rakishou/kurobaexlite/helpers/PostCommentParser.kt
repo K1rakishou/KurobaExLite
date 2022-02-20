@@ -4,7 +4,6 @@ import androidx.annotation.VisibleForTesting
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlNode
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlParser
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -22,12 +21,15 @@ class PostCommentParser {
       .coerceAtLeast(4)
   ).asCoroutineDispatcher()
 
-  suspend fun parsePostComment(postData: PostData): List<TextPart> {
+  suspend fun parsePostComment(
+    postCommentUnparsed: String,
+    postDescriptor: PostDescriptor
+  ): List<TextPart> {
     return withContext(dispatcher) {
       return@withContext Result
-        .Try { parsePostCommentInternal(postData) }
+        .Try { parsePostCommentInternal(postCommentUnparsed, postDescriptor) }
         .getOrElse { error ->
-          val errorMessage = "Failed to parse post '${postData.postDescriptor}', " +
+          val errorMessage = "Failed to parse post '${postDescriptor}', " +
             "error: ${error.errorMessageOrClassName()}"
 
           return@getOrElse listOf(TextPart(text = errorMessage))
@@ -36,12 +38,18 @@ class PostCommentParser {
   }
 
   @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-  fun parsePostCommentInternal(postData: PostData): List<TextPart> {
-    val htmlNodes = htmlParser.parse(postData.postCommentUnparsed).nodes
-    return processNodes(postData.postDescriptor, htmlNodes)
+  fun parsePostCommentInternal(
+    postCommentUnparsed: String,
+    postDescriptor: PostDescriptor
+  ): List<TextPart> {
+    val htmlNodes = htmlParser.parse(postCommentUnparsed).nodes
+    return processNodes(postDescriptor, htmlNodes)
   }
 
-  private fun processNodes(postDescriptor: PostDescriptor, htmlNodes: List<HtmlNode>): MutableList<TextPart> {
+  private fun processNodes(
+    postDescriptor: PostDescriptor,
+    htmlNodes: List<HtmlNode>
+  ): MutableList<TextPart> {
     if (htmlNodes.isEmpty()) {
       return mutableListOf()
     }

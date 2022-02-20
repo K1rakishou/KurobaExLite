@@ -57,6 +57,7 @@ import logcat.logcat
 
 private val animationTranslationDelta = 100.dp
 private val animationDurationMs = 200
+private val postCellKeyPrefix = "post_cell"
 
 @Composable
 internal fun PostListContent(
@@ -87,66 +88,69 @@ internal fun PostListContent(
   )
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
-  LaunchedEffect(
-    key1 = lazyListState.firstVisibleItemIndex,
-    key2 = chanDescriptor,
-    block = {
-      // For debouncing purposes
-      delay(50L)
+  if (chanDescriptor != null && postListAsync is AsyncData.Data) {
+    LaunchedEffect(
+      key1 = lazyListState.firstVisibleItemIndex,
+      key2 = chanDescriptor,
+      block = {
+        // For debouncing purposes
+        delay(50L)
 
-      val firstVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
-        ?: return@LaunchedEffect
-      val lastVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-        ?: return@LaunchedEffect
-      val totalCount = lazyListState.layoutInfo.totalItemsCount
+        val firstVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
+          ?: return@LaunchedEffect
+        val lastVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+          ?: return@LaunchedEffect
+        val totalCount = lazyListState.layoutInfo.totalItemsCount
 
-      val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
-      val touchingTop = firstVisibleItemIndex <= 0
+        val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
+        val touchingTop = firstVisibleItemIndex <= 0
 
-      onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
-    })
+        onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
+      })
 
-  LaunchedEffect(
-    key1 = lazyListState.firstVisibleItemIndex,
-    key2 = chanDescriptor,
-    block = {
-      if (chanDescriptor == null || lazyListState.firstVisibleItemIndex <= 0) {
-        return@LaunchedEffect
-      }
-
-      // For debouncing purposes
-      delay(50L)
-
-      postsScreenViewModel.rememberPosition(
-        firstVisibleItemIndex = lazyListState.firstVisibleItemIndex,
-        firstVisibleItemScrollOffset = lazyListState.firstVisibleItemScrollOffset
-      )
-    })
-
-  LaunchedEffect(
-    key1 = chanDescriptor,
-    block = {
-      postsScreenViewModel.scrollRestorationEventFlow.collect { lastRememberedPosition ->
-        lazyListState.scrollToItem(
-          index = lastRememberedPosition.firstVisibleItemIndex,
-          scrollOffset = lastRememberedPosition.firstVisibleItemScrollOffset
-        )
-      }
-    })
-
-  LaunchedEffect(
-    key1 = chanDescriptor,
-    block = {
-      postsScreenViewModel.toolbarScrollEventFlow.collect { scrollDown ->
-        val positionToScroll = if (scrollDown) {
-          lazyListState.layoutInfo.totalItemsCount
-        } else {
-          0
+    LaunchedEffect(
+      key1 = lazyListState.firstVisibleItemIndex,
+      key2 = chanDescriptor,
+      block = {
+        if (lazyListState.firstVisibleItemIndex <= 0) {
+          return@LaunchedEffect
         }
 
-        lazyListState.scrollToItem(index = positionToScroll, scrollOffset = 0)
-      }
-    })
+        // For debouncing purposes
+        delay(50L)
+
+        postsScreenViewModel.rememberPosition(
+          chanDescriptor = chanDescriptor,
+          firstVisibleItemIndex = lazyListState.firstVisibleItemIndex,
+          firstVisibleItemScrollOffset = lazyListState.firstVisibleItemScrollOffset
+        )
+      })
+
+    LaunchedEffect(
+      key1 = chanDescriptor,
+      block = {
+        postsScreenViewModel.scrollRestorationEventFlow.collect { lastRememberedPosition ->
+          lazyListState.scrollToItem(
+            index = lastRememberedPosition.firstVisibleItemIndex,
+            scrollOffset = lastRememberedPosition.firstVisibleItemScrollOffset
+          )
+        }
+      })
+
+    LaunchedEffect(
+      key1 = chanDescriptor,
+      block = {
+        postsScreenViewModel.toolbarScrollEventFlow.collect { scrollDown ->
+          val positionToScroll = if (scrollDown) {
+            lazyListState.layoutInfo.totalItemsCount
+          } else {
+            0
+          }
+
+          lazyListState.scrollToItem(index = positionToScroll, scrollOffset = 0)
+        }
+      })
+  }
 
   PostListInternal(
     lazyListState = lazyListState,
@@ -167,6 +171,35 @@ internal fun PostListContent(
     onPostListDragStateChanged = onPostListDragStateChanged,
     onFastScrollerDragStateChanged = onFastScrollerDragStateChanged
   )
+
+  if (
+    postListAsync is AsyncData.Data
+    && (postListAsync as? AsyncData.Data)?.data?.chanDescriptor != null
+  ) {
+    var postBuiltNotified by remember { mutableStateOf(false) }
+    if (postBuiltNotified) {
+      return
+    }
+
+    val firstPostDrawn = remember(key1 = lazyListState.layoutInfo) {
+      val firstVisibleElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+        ?: return@remember false
+
+      return@remember (firstVisibleElement.key as? String)
+        ?.startsWith(postCellKeyPrefix)
+        ?: false
+    }
+
+    if (firstPostDrawn) {
+      LaunchedEffect(
+        key1 = chanDescriptor,
+        block = {
+          postBuiltNotified = true
+          postsScreenViewModel.onPostListBuilt()
+        }
+      )
+    }
+  }
 }
 
 private fun processClickedAnnotation(
@@ -341,7 +374,7 @@ private fun LazyListScope.postList(
 
   items(
     count = totalCount,
-    key = { index -> postDataList[index].value.postDescriptor },
+    key = { index -> "${postCellKeyPrefix}_${postDataList[index].value.postDescriptor}" },
     itemContent = { index ->
       val postData by postDataList[index]
 
@@ -380,7 +413,7 @@ private fun LazyListScope.postList(
     }
   )
 
-  if (!isCatalogMode && searchQuery != null) {
+  if (!isCatalogMode && searchQuery == null) {
     item(key = "thread_status_cell") {
       ThreadStatusCell(
         padding = padding,
@@ -473,10 +506,8 @@ private fun LazyItemScope.ThreadStatusCell(
 ) {
   val chanTheme = LocalChanTheme.current
   val threadStatusCellDataFromState by postsScreenViewModel.postScreenState.threadCellDataState.collectAsState()
-  val chanDescriptorState by postsScreenViewModel.postScreenState.chanDescriptorState.collectAsState()
-
+  val chanDescriptor = postsScreenViewModel.postScreenState.chanDescriptor
   val threadStatusCellData = threadStatusCellDataFromState
-  val chanDescriptor = chanDescriptorState
 
   if (threadStatusCellData == null || (chanDescriptor == null || chanDescriptor !is ThreadDescriptor)) {
     Spacer(modifier = Modifier.height(Dp.Hairline))

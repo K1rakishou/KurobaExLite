@@ -80,6 +80,10 @@ data class PostsMergeResult(
     return newPostsCount > 0
   }
 
+  fun info(): String {
+    return "newPostsCount=${newPostsCount}, newOrUpdatedPostsToReparseCount=${newOrUpdatedPostsToReparse.size}"
+  }
+
   companion object {
     val EMPTY = PostsMergeResult(0, emptyList())
   }

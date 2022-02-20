@@ -50,6 +50,10 @@ class ChanThread {
     return mutex.withLock { postDescriptors.mapNotNull { postDescriptor -> postsMap[postDescriptor] } }
   }
 
+  suspend fun getAll(): List<PostData> {
+    return mutex.withLock { posts.toList() }
+  }
+
   suspend fun getOriginalPost(): OriginalPostData? {
     return mutex.withLock {
       val originalPostMaybe = posts.firstOrNull()

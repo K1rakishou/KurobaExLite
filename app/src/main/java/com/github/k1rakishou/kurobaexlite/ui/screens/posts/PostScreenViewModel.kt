@@ -41,6 +41,7 @@ abstract class PostScreenViewModel(
   private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
 
   private var currentParseJob: Job? = null
+  protected var postListBuilt: CompletableDeferred<Boolean>? = null
 
   private val _snackbarEventFlow = MutableSharedFlow<SnackbarInfoEvent>(extraBufferCapacity = Channel.UNLIMITED)
   val snackbarEventFlow: SharedFlow<SnackbarInfoEvent>
@@ -78,6 +79,7 @@ abstract class PostScreenViewModel(
   }
 
   fun rememberPosition(
+    chanDescriptor: ChanDescriptor,
     firstVisibleItemIndex: Int,
     firstVisibleItemScrollOffset: Int
   ) {
@@ -85,9 +87,6 @@ abstract class PostScreenViewModel(
     if (!postsFullyParsedOnce) {
       return
     }
-
-    val chanDescriptor = postScreenState.chanDescriptor
-      ?: return
 
     val lazyColumnRememberedPosition = LazyColumnRememberedPosition(
       firstVisibleItemIndex = firstVisibleItemIndex,
@@ -135,9 +134,9 @@ abstract class PostScreenViewModel(
 
   suspend fun parsePostsAround(
     startIndex: Int = 0,
+    count: Int = 32,
     chanDescriptor: ChanDescriptor,
     postDataList: List<PostData>,
-    count: Int,
     isCatalogMode: Boolean,
   ) {
     val chanTheme = themeEngine.chanTheme
@@ -200,7 +199,7 @@ abstract class PostScreenViewModel(
         return@launch
       }
 
-      val chunksCount = globalConstants.coresCount.coerceAtLeast(2)
+      val chunksCount = 1 //globalConstants.coresCount.coerceAtLeast(2)
       val chunkSize = (postDataList.size / chunksCount).coerceAtLeast(chunksCount)
       val chanTheme = themeEngine.chanTheme
       val isParsingCatalog = chanDescriptor is CatalogDescriptor
@@ -308,9 +307,9 @@ abstract class PostScreenViewModel(
   suspend fun restoreScrollPosition(chanDescriptor: ChanDescriptor) {
     withContext(Dispatchers.Main) {
       val lastRememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
-        ?: return@withContext
-
-      _scrollRestorationEventFlow.emit(lastRememberedPosition)
+      if (lastRememberedPosition != null) {
+        _scrollRestorationEventFlow.emit(lastRememberedPosition)
+      }
     }
   }
 
@@ -374,6 +373,10 @@ abstract class PostScreenViewModel(
     }
   }
 
+  fun onPostListBuilt() {
+    requireNotNull(postListBuilt).complete(true)
+  }
+
   data class ParsePostsOptions(
     val forced: Boolean = false,
     // If set to true then along with new posts the posts these new posts reply to will be re-parsed
@@ -383,13 +386,12 @@ abstract class PostScreenViewModel(
 
   interface PostScreenState {
     val postsAsyncDataState: MutableStateFlow<AsyncData<AbstractPostsState>>
-    val chanDescriptorState: MutableStateFlow<ChanDescriptor?>
     val threadCellDataState: MutableStateFlow<ThreadCellData?>
 
-    val displayingPostsCount: Int?
-      get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
     val chanDescriptor: ChanDescriptor?
       get() = doWithDataState { abstractPostsState -> abstractPostsState.chanDescriptor }
+    val displayingPostsCount: Int?
+      get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
     val searchQuery: String?
       get() = doWithDataState { abstractPostsState -> abstractPostsState.searchQuery }
 

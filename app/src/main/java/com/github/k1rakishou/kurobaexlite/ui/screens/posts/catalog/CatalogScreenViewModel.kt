@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import logcat.asLog
@@ -65,6 +66,7 @@ class CatalogScreenViewModel(
       return
     }
 
+    postListBuilt = CompletableDeferred()
     _postsFullyParsedOnceFlow.emit(false)
     val startTime = SystemClock.elapsedRealtime()
     catalogScreenState.postsAsyncDataState.value = AsyncData.Loading
@@ -98,9 +100,15 @@ class CatalogScreenViewModel(
       startIndex = 0,
       chanDescriptor = catalogDescriptor,
       postDataList = catalogData.catalogThreads,
-      count = 16,
       isCatalogMode = true
     )
+
+    val catalogThreadsState = CatalogThreadsState(
+      catalogDescriptor = catalogDescriptor,
+      catalogThreads = catalogData.catalogThreads
+    )
+
+    catalogScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
 
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,
@@ -114,18 +122,11 @@ class CatalogScreenViewModel(
         chanThreadCache.insertCatalogThreads(catalogDescriptor, postDataList)
         popCatalogOrThreadPostsLoadingSnackbar()
 
+        requireNotNull(postListBuilt).await()
         restoreScrollPosition(catalogDescriptor)
         _postsFullyParsedOnceFlow.emit(true)
       }
     )
-
-    val catalogThreadsState = CatalogThreadsState(
-      catalogDescriptor = catalogDescriptor,
-      catalogThreads = catalogData.catalogThreads
-    )
-
-    catalogScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
-    catalogScreenState.chanDescriptorState.value = catalogDescriptor
 
     logcat {
       "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +

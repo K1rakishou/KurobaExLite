@@ -45,25 +45,30 @@ class ParsedPostDataCache(
   ): ParsedPostData {
     return mutex.withLock {
       val postDescriptor = postData.postDescriptor
-      var parsedPostData = when (chanDescriptor) {
+
+      val oldParsedPostData = when (chanDescriptor) {
         is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor]
         is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor]
       }
 
-      if (!force && parsedPostData != null) {
-        return@withLock parsedPostData
+      if (!force && oldParsedPostData != null) {
+        return@withLock oldParsedPostData
       }
 
-      parsedPostData = calculateParsedPostData(postData, parsedPostDataContext, chanTheme)
+      val newParsedPostData = calculateParsedPostData(
+        postData = postData,
+        parsedPostDataContext = parsedPostDataContext,
+        chanTheme = chanTheme
+      )
 
       when (chanDescriptor) {
-        is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor] = parsedPostData
-        is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor] = parsedPostData
+        is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor] = newParsedPostData
+        is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor] = newParsedPostData
       }
 
-      postData.updateParsedPostData(parsedPostData)
+      postData.updateParsedPostData(newParsedPostData)
 
-      return@withLock parsedPostData
+      return@withLock newParsedPostData
     }
   }
 
@@ -98,7 +103,10 @@ class ParsedPostDataCache(
     BackgroundUtils.ensureBackgroundThread()
 
     try {
-      val textParts = postCommentParser.parsePostComment(postData)
+      val textParts = postCommentParser.parsePostComment(
+        postData.postCommentUnparsed,
+        postData.postDescriptor
+      )
 
       if (parsedPostDataContext.isParsingThread) {
         processReplyChains(postData.postDescriptor, textParts)

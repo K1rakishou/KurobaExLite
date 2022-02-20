@@ -1,6 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -40,20 +43,57 @@ fun HomeScreenToolbarContainer(
   val toolbarTotalHeight = remember(key1 = insets.topDp) { insets.topDp + toolbarHeight }
   val transitionIsProgress = currentPage != targetPage
 
-  val postListScrollState = homeScreenViewModel.toolbarVisibilityInfo.postListScrollState.collectAsState()
+  val postListScrollPosition by homeScreenViewModel.toolbarVisibilityInfo.postListScrollState.collectAsState()
   val touchingTopOrBottomOfList by homeScreenViewModel.toolbarVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
   val isDraggingPostList by homeScreenViewModel.toolbarVisibilityInfo.postListDragState.collectAsState()
   val isDraggingFastScroller by homeScreenViewModel.toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
 
-  val toolbarAlpha by when {
-    isDraggingFastScroller -> animateFloatAsState(targetValue = 0f)
-    touchingTopOrBottomOfList -> animateFloatAsState(targetValue = 1f)
-    isDraggingPostList -> postListScrollState
-    else -> {
-      val targetValue = if (postListScrollState.value > 0.5f) 1f else 0f
-      animateFloatAsState(targetValue = targetValue)
+  val combinedToolbarState by remember {
+    derivedStateOf {
+      CombinedToolbarState(
+        postListScrollPosition = postListScrollPosition,
+        touchingTopOrBottomOfList = touchingTopOrBottomOfList,
+        isDraggingPostList = isDraggingPostList,
+        isDraggingFastScroller = isDraggingFastScroller,
+      )
     }
   }
+
+  val transition = updateTransition(
+    targetState = combinedToolbarState,
+    label = "toolbar transition"
+  )
+
+  val toolbarAlpha by transition.animateFloat(
+    label = "toolbar alpha animation",
+    transitionSpec = {
+      if (targetState.isDraggingFastScroller || targetState.touchingTopOrBottomOfList) {
+        snap()
+      } else {
+        tween(durationMillis = 200)
+      }
+    },
+    targetValueByState = { targetCombinedToolbarState ->
+      when {
+        targetCombinedToolbarState.isDraggingFastScroller -> {
+          0f
+        }
+        targetCombinedToolbarState.touchingTopOrBottomOfList -> {
+          1f
+        }
+        targetCombinedToolbarState.isDraggingPostList -> {
+          targetCombinedToolbarState.postListScrollPosition
+        }
+        else -> {
+          if (targetCombinedToolbarState.postListScrollPosition > 0.5f) {
+            1f
+          } else {
+            0f
+          }
+        }
+      }
+    }
+  )
 
   Column(
     modifier = Modifier
@@ -162,3 +202,10 @@ private fun BuildChildToolbar(
     }
   }
 }
+
+private data class CombinedToolbarState(
+  val postListScrollPosition: Float,
+  val touchingTopOrBottomOfList: Boolean,
+  val isDraggingPostList: Boolean,
+  val isDraggingFastScroller: Boolean,
+)
