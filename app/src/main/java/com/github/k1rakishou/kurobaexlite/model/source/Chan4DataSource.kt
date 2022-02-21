@@ -66,8 +66,7 @@ class Chan4DataSource(
             siteKey = site.siteKey,
             boardCode = boardCode,
             threadNo = threadNo,
-            postNo = threadPost.no,
-            postSubNo = null
+            postNo = threadPost.no
           )
 
           if (postDescriptor.isOP) {
@@ -150,8 +149,7 @@ class Chan4DataSource(
               siteKey = site.siteKey,
               boardCode = boardCode,
               threadNo = catalogThread.no,
-              postNo = catalogThread.no,
-              postSubNo = null
+              postNo = catalogThread.no
             )
 
             return@map OriginalPostData(

@@ -92,6 +92,7 @@ class PostCommentApplier {
       var underline = false
       var linethrough = false
       var annotationTag: String? = null
+      var annotationValue: String? = null
 
       when (span) {
         is PostCommentParser.TextPartSpan.BgColor -> {
@@ -125,20 +126,39 @@ class PostCommentApplier {
           when (span) {
             is PostCommentParser.TextPartSpan.Linkable.Quote,
             is PostCommentParser.TextPartSpan.Linkable.Board,
-            is PostCommentParser.TextPartSpan.Linkable.Search -> {
+            is PostCommentParser.TextPartSpan.Linkable.Search,
+            is PostCommentParser.TextPartSpan.Linkable.Url -> {
               underline = true
 
               if (span is PostCommentParser.TextPartSpan.Linkable.Quote) {
                 linethrough = span.dead
+
+                if (span.postDescriptor.isOP && !span.crossThread) {
+                  textPartBuilder
+                    .append(" ")
+                    .append(OP_POSTFIX)
+                }
+
+                if (span.crossThread) {
+                  textPartBuilder
+                    .append(" ")
+                    .append(CROSS_THREAD_POSTFIX)
+                }
               }
 
-              fgColor = chanTheme.postQuoteColorCompose
+              fgColor = if (span is PostCommentParser.TextPartSpan.Linkable.Url) {
+                chanTheme.postLinkColorCompose
+              } else {
+                chanTheme.postQuoteColorCompose
+              }
             }
           }
 
           if (parsedPostDataContext.isParsingThread) {
             annotationTag = ANNOTATION_POST_LINKABLE
           }
+
+          annotationValue = span.createAnnotationItem()
         }
       }
 
@@ -157,7 +177,7 @@ class PostCommentApplier {
       if (annotationTag != null) {
         addStringAnnotation(
           tag = ANNOTATION_POST_LINKABLE,
-          annotation = "",
+          annotation = annotationValue ?: "",
           start = 0,
           end = textPartBuilder.length
         )
@@ -273,6 +293,9 @@ class PostCommentApplier {
 
     const val ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG = "[click_to_view_full_comment]"
     const val ANNOTATION_POST_LINKABLE = "[post_linkable]"
+
+    private const val CROSS_THREAD_POSTFIX = "->"
+    private const val OP_POSTFIX = "(OP)"
 
     val ALL_TAGS = mutableSetOf(
       ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG,

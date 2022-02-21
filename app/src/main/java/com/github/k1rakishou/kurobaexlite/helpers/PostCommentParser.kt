@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
+import okio.Buffer
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.Executors
 
@@ -254,8 +255,7 @@ class PostCommentParser {
             siteKey = postDescriptor.siteKey,
             boardCode = boardCode,
             threadNo = threadNo,
-            postNo = postNo,
-            postSubNo = null
+            postNo = postNo
           )
 
           return TextPartSpan.Linkable.Quote(
@@ -341,6 +341,7 @@ class PostCommentParser {
   }
 
   sealed class TextPartSpan {
+
     class BgColor(val color: Int) : TextPartSpan()
     class FgColor(val color: Int) : TextPartSpan()
     class BgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
@@ -348,19 +349,137 @@ class PostCommentParser {
     object Spoiler : TextPartSpan()
 
     sealed class Linkable : TextPartSpan() {
+
+      fun serialize(): Buffer {
+        val buffer = Buffer()
+
+        buffer.writeInt(id().value)
+        serializeLinkable(buffer)
+
+        return buffer
+      }
+
+      private fun id(): Id {
+        return when (this) {
+          is Board -> Id.Board
+          is Quote -> Id.Quote
+          is Search -> Id.Search
+          is Url -> Id.Url
+        }
+      }
+
+      protected abstract fun serializeLinkable(buffer: Buffer)
+
       data class Quote(
         val crossThread: Boolean,
         val dead: Boolean,
         val postDescriptor: PostDescriptor
-      ) : Linkable()
+      ) : Linkable() {
+        override fun serializeLinkable(buffer: Buffer) {
+          buffer.writeByte(if (crossThread) 1 else 0)
+          buffer.writeByte(if (dead) 1 else 0)
+          postDescriptor.serialize(buffer)
+        }
+
+        companion object {
+          fun deserializeLinkable(buffer: Buffer): Quote {
+            val crossThread = buffer.readByte() == 1.toByte()
+            val dead = buffer.readByte() == 1.toByte()
+            val postDescriptor = PostDescriptor.deserialize(buffer)
+
+            return Quote(crossThread, dead, postDescriptor)
+          }
+        }
+      }
 
       data class Search(
         val boardCode: String,
         val searchQuery: String
-      ) : Linkable()
+      ) : Linkable() {
+        override fun serializeLinkable(buffer: Buffer) {
+          buffer.writeUtfString(boardCode)
+          buffer.writeUtfString(searchQuery)
+        }
 
-      data class Board(val boardCode: String) : Linkable()
+        companion object {
+          fun deserializeLinkable(buffer: Buffer): Search {
+            val boardCode = buffer.readUtfString()
+            val searchQuery = buffer.readUtfString()
+
+            return Search(boardCode, searchQuery)
+          }
+        }
+      }
+
+      data class Board(
+        val boardCode: String
+      ) : Linkable() {
+        override fun serializeLinkable(buffer: Buffer) {
+          buffer.writeUtfString(boardCode)
+        }
+
+        companion object {
+          fun deserializeLinkable(buffer: Buffer): Board {
+            val boardCode = buffer.readUtfString()
+            return Board(boardCode)
+          }
+        }
+      }
+
+      data class Url(
+        val url: String
+      ) : Linkable() {
+        override fun serializeLinkable(buffer: Buffer) {
+          buffer.writeUtfString(url)
+        }
+
+        companion object {
+          fun deserializeLinkable(buffer: Buffer): Url {
+            val url = buffer.readUtfString()
+            return Url(url)
+          }
+        }
+      }
+
+      enum class Id(val value: Int) {
+        Quote(0),
+        Search(1),
+        Board(2),
+        Url(3);
+
+        companion object {
+          fun fromValue(value: Int): Id? {
+            return when (value) {
+              0 -> Quote
+              1 -> Search
+              2 -> Board
+              3 -> Url
+              else -> null
+            }
+          }
+        }
+      }
+
+      companion object {
+        fun deserialize(buffer: Buffer): Linkable? {
+          val idValue = buffer.readInt()
+          val id = Id.fromValue(idValue)
+          if (id == null) {
+            logcatError(tag = "Linkable.deserialize()") { "Unknown id: ${idValue}" }
+            return null
+          }
+
+          return when (id) {
+            Id.Quote -> Quote.deserializeLinkable(buffer)
+            Id.Search -> Search.deserializeLinkable(buffer)
+            Id.Board -> Board.deserializeLinkable(buffer)
+            Id.Url -> Url.deserializeLinkable(buffer)
+          }
+        }
+      }
+
     }
+
   }
 
 }

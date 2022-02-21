@@ -65,6 +65,10 @@ class ChanThread {
     }
   }
 
+  suspend fun getPost(postDescriptor: PostDescriptor): PostData? {
+    return mutex.withLock { postsMap[postDescriptor] }
+  }
+
   companion object {
     private const val TAG = "ChanThread"
 

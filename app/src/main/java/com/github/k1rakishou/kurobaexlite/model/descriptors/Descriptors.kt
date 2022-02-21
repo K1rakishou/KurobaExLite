@@ -1,7 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.model.descriptors
 
 import android.os.Parcelable
+import com.github.k1rakishou.kurobaexlite.helpers.readUtfString
+import com.github.k1rakishou.kurobaexlite.helpers.writeUtfString
 import kotlinx.parcelize.Parcelize
+import okio.Buffer
 
 @Parcelize
 inline class SiteKey(val key: String) : Parcelable {
@@ -26,6 +29,15 @@ data class CatalogDescriptor(
   val siteKeyActual: String
     get() = siteKey.key
 
+  fun serialize(buff: Buffer?): Buffer {
+    val buffer = buff ?: Buffer()
+
+    buffer.writeUtfString(siteKeyActual)
+    buffer.writeUtfString(boardCode)
+
+    return buffer
+  }
+
   override fun toString(): String {
     return buildString(capacity = 32) {
       append("CatalogDescriptor(")
@@ -33,6 +45,15 @@ data class CatalogDescriptor(
       append("/")
       append(boardCode)
       append(")")
+    }
+  }
+
+  companion object {
+    fun deserialize(buffer: Buffer): CatalogDescriptor {
+      val siteKey = SiteKey(buffer.readUtfString())
+      val boardCode = buffer.readUtfString()
+
+      return CatalogDescriptor(siteKey, boardCode)
     }
   }
 
@@ -49,6 +70,15 @@ data class ThreadDescriptor(
     get() = siteKey.key
   val boardCode: String
     get() = catalogDescriptor.boardCode
+
+  fun serialize(buff: Buffer?): Buffer {
+    val buffer = buff ?: Buffer()
+
+    catalogDescriptor.serialize(buffer)
+    buffer.writeLong(threadNo)
+
+    return buffer
+  }
 
   override fun toString(): String {
     return buildString(capacity = 32) {
@@ -74,6 +104,14 @@ data class ThreadDescriptor(
         threadNo = threadNo
       )
     }
+
+    fun deserialize(buffer: Buffer): ThreadDescriptor {
+      val catalogDescriptor = CatalogDescriptor.deserialize(buffer)
+      val threadNo = buffer.readLong()
+
+      return ThreadDescriptor(catalogDescriptor, threadNo)
+    }
+
   }
 
 }
@@ -82,7 +120,7 @@ data class ThreadDescriptor(
 data class PostDescriptor(
   val threadDescriptor: ThreadDescriptor,
   val postNo: Long,
-  val postSubNo: Long? = null
+  val postSubNo: Long = 0L
 ) : Parcelable {
   val siteKeyActual: String
     get() = threadDescriptor.catalogDescriptor.siteKey.key
@@ -97,6 +135,16 @@ data class PostDescriptor(
   val isOP: Boolean
     get() = postNo == threadDescriptor.threadNo
 
+  fun serialize(buff: Buffer?): Buffer {
+    val buffer = buff ?: Buffer()
+
+    threadDescriptor.serialize(buffer)
+    buffer.writeLong(postNo)
+    buffer.writeLong(postSubNo)
+
+    return buffer
+  }
+
   override fun toString(): String {
     return buildString(capacity = 32) {
       append("PostDescriptor(")
@@ -107,12 +155,8 @@ data class PostDescriptor(
       append(threadNo)
       append("/")
       append(postNo)
-
-      if (postSubNo != null && postSubNo > 0) {
-        append("/")
-        append(postSubNo)
-      }
-
+      append(",")
+      append(postSubNo)
       append(")")
     }
   }
@@ -124,7 +168,7 @@ data class PostDescriptor(
       boardCode: String,
       threadNo: Long,
       postNo: Long,
-      postSubNo: Long?
+      postSubNo: Long = 0L
     ): PostDescriptor {
       return PostDescriptor(
         threadDescriptor = ThreadDescriptor(
@@ -137,6 +181,14 @@ data class PostDescriptor(
         postNo = postNo,
         postSubNo = postSubNo
       )
+    }
+
+    fun deserialize(buffer: Buffer): PostDescriptor {
+      val threadDescriptor = ThreadDescriptor.deserialize(buffer)
+      val postNo = buffer.readLong()
+      val postSubNo = buffer.readLong()
+
+      return PostDescriptor(threadDescriptor, postNo, postSubNo)
     }
 
   }

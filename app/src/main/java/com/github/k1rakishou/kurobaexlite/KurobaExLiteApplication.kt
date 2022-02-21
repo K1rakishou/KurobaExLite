@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.model.source.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply.PopupRepliesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
@@ -89,6 +90,14 @@ class KurobaExLiteApplication : Application() {
       viewModel {
         ThreadScreenViewModel(
           chanThreadManager = get(),
+          chanThreadCache = get(),
+          application = this@KurobaExLiteApplication,
+          globalConstants = get(),
+          themeEngine = get()
+        )
+      }
+      viewModel {
+        PopupRepliesScreenViewModel(
           chanThreadCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),

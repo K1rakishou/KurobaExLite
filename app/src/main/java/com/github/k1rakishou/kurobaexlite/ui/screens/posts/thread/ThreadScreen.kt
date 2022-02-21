@@ -3,19 +3,24 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
@@ -114,13 +119,26 @@ class ThreadScreen(
   @Composable
   private fun ThreadPostListScreen() {
     val configuration = LocalConfiguration.current
+    val windowInsets = LocalWindowInsets.current
+    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+    val contentPadding = remember(key1 = windowInsets) {
+      PaddingValues(top = toolbarHeight + windowInsets.topDp, bottom = windowInsets.bottomDp)
+    }
 
     PostListContent(
+      modifier = Modifier.fillMaxSize(),
+      contentPadding = contentPadding,
       isCatalogMode = isCatalogScreen,
       mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
       postsScreenViewModel = threadScreenViewModel,
       onPostCellClicked = { postData ->
         // TODO(KurobaEx):
+      },
+      onLinkableClicked = { linkable ->
+        processClickedLinkable(linkable)
+      },
+      onPostRepliesClicked = { postDescriptor ->
+        showRepliesForPost(postDescriptor)
       },
       onPostListScrolled = { delta ->
         homeScreenViewModel.onChildContentScrolling(delta)
@@ -135,6 +153,23 @@ class ThreadScreen(
         homeScreenViewModel.onFastScrollerDragStateChanged(dragging)
       }
     )
+  }
+
+  private fun processClickedLinkable(linkable: PostCommentParser.TextPartSpan.Linkable) {
+    when (linkable) {
+      is PostCommentParser.TextPartSpan.Linkable.Quote -> {
+        showRepliesForPost(linkable.postDescriptor)
+      }
+      is PostCommentParser.TextPartSpan.Linkable.Board -> {
+        // TODO()
+      }
+      is PostCommentParser.TextPartSpan.Linkable.Search -> {
+        // TODO()
+      }
+      is PostCommentParser.TextPartSpan.Linkable.Url -> {
+        // TODO()
+      }
+    }
   }
 
   companion object {

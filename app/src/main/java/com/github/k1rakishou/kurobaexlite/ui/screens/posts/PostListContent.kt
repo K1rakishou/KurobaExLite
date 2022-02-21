@@ -28,7 +28,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -61,23 +60,20 @@ private val postCellKeyPrefix = "post_cell"
 
 @Composable
 internal fun PostListContent(
+  modifier: Modifier = Modifier,
+  contentPadding: PaddingValues,
   isCatalogMode: Boolean,
   mainUiLayoutMode: MainUiLayoutMode,
   postsScreenViewModel: PostScreenViewModel,
   onPostCellClicked: (PostData) -> Unit,
+  onLinkableClicked: (PostCommentParser.TextPartSpan.Linkable) -> Unit,
+  onPostRepliesClicked: (PostDescriptor) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
-  val windowInsets = LocalWindowInsets.current
   val orientation = LocalConfiguration.current.orientation
-  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-
-  val contentPadding = remember(key1 = windowInsets) {
-    PaddingValues(top = toolbarHeight + windowInsets.topDp, bottom = windowInsets.bottomDp)
-  }
-
   val chanDescriptor = postsScreenViewModel.chanDescriptor
   val rememberedPosition = remember(key1 = chanDescriptor, key2 = orientation) {
     postsScreenViewModel.rememberedPosition(postsScreenViewModel.chanDescriptor)
@@ -153,6 +149,7 @@ internal fun PostListContent(
   }
 
   PostListInternal(
+    modifier = modifier,
     lazyListState = lazyListState,
     contentPadding = contentPadding,
     postListAsync = postListAsync,
@@ -161,10 +158,16 @@ internal fun PostListContent(
     mainUiLayoutMode = mainUiLayoutMode,
     onPostCellClicked = onPostCellClicked,
     onPostCellCommentClicked = { postData, postComment, offset ->
-      processClickedAnnotation(postsScreenViewModel, postData, postComment, offset)
+      processClickedAnnotation(
+        postsScreenViewModel = postsScreenViewModel,
+        postData = postData,
+        postComment = postComment,
+        offset = offset,
+        onLinkableClicked = onLinkableClicked
+      )
     },
     onPostRepliesClicked = { postData ->
-      logcat(tag = "onPostRepliesClicked") { "Clicked replies of post ${postData.postDescriptor}" }
+      onPostRepliesClicked(postData.postDescriptor)
     },
     onThreadStatusCellClicked = { postsScreenViewModel.refresh() },
     onPostListScrolled = onPostListScrolled,
@@ -211,7 +214,8 @@ private fun processClickedAnnotation(
   postsScreenViewModel: PostScreenViewModel,
   postData: PostData,
   postComment: AnnotatedString,
-  offset: Int
+  offset: Int,
+  onLinkableClicked: (PostCommentParser.TextPartSpan.Linkable) -> Unit
 ) {
   val clickedAnnotation = postComment.getStringAnnotations(offset, offset).firstOrNull()
     ?: return
@@ -228,13 +232,20 @@ private fun processClickedAnnotation(
       }
     }
     PostCommentApplier.ANNOTATION_POST_LINKABLE -> {
-      // TODO(KurobaEx):
+      val text = postComment.text.substring(clickedAnnotation.start, clickedAnnotation.end)
+      val linkable = clickedAnnotation.extractLinkableAnnotationItem()
+      logcat(tag = "processClickedAnnotation") { "Clicked '${text}' with linkable: ${linkable}" }
+
+      if (linkable != null) {
+        onLinkableClicked(linkable)
+      }
     }
   }
 }
 
 @Composable
 private fun PostListInternal(
+  modifier: Modifier,
   lazyListState: LazyListState,
   contentPadding: PaddingValues,
   postListAsync: AsyncData<AbstractPostsState>,
@@ -278,15 +289,16 @@ private fun PostListInternal(
   }
 
   LazyColumnWithFastScroller(
-    modifier = Modifier
-      .fillMaxSize()
-      .nestedScroll(nestedScrollConnection)
-      .pointerInput(
-        key1 = Unit,
-        block = {
-          processDragEvents { dragging -> onPostListDragStateChanged(dragging) }
-        }
-      ),
+    modifier = modifier.then(
+      Modifier
+        .nestedScroll(nestedScrollConnection)
+        .pointerInput(
+          key1 = Unit,
+          block = {
+            processDragEvents { dragging -> onPostListDragStateChanged(dragging) }
+          }
+        )
+    ),
     lazyListState = lazyListState,
     contentPadding = contentPadding,
     onFastScrollerDragStateChanged = { dragging -> onFastScrollerDragStateChanged(dragging) },

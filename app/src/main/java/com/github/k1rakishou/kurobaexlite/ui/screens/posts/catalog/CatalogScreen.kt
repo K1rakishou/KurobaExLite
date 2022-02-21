@@ -3,13 +3,12 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -20,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
@@ -140,8 +140,15 @@ class CatalogScreen(
   @Composable
   private fun CatalogPostListScreen() {
     val configuration = LocalConfiguration.current
+    val windowInsets = LocalWindowInsets.current
+    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+    val contentPadding = remember(key1 = windowInsets) {
+      PaddingValues(top = toolbarHeight + windowInsets.topDp, bottom = windowInsets.bottomDp)
+    }
 
     PostListContent(
+      modifier = Modifier.fillMaxSize(),
+      contentPadding = contentPadding,
       isCatalogMode = isCatalogScreen,
       mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
       postsScreenViewModel = catalogScreenViewModel,
@@ -155,6 +162,12 @@ class CatalogScreen(
         )
 
         threadScreenViewModel.loadThread(threadDescriptor)
+      },
+      onLinkableClicked = { linkable ->
+        // no-op (for now?)
+      },
+      onPostRepliesClicked = { postDescriptor ->
+        showRepliesForPost(postDescriptor)
       },
       onPostListScrolled = { delta ->
         homeScreenViewModel.onChildContentScrolling(delta)

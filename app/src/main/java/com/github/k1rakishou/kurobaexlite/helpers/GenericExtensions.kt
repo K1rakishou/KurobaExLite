@@ -5,6 +5,8 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import logcat.LogPriority
 import logcat.logcat
+import okio.Buffer
+import okio.ByteString.Companion.decodeBase64
 import java.io.InterruptedIOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -13,6 +15,7 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+
 
 fun <T> CancellableContinuation<T>.resumeValueSafe(value: T) {
   if (isActive) {
@@ -391,4 +394,28 @@ fun Thread.callStack(tag: String = ""): String {
   }
 
   return resultString.toString()
+}
+
+fun Buffer.writeUtfString(string: String) {
+  writeLong(string.length.toLong())
+  writeString(string, StandardCharsets.UTF_8)
+}
+
+fun Buffer.readUtfString(): String {
+  val length = readLong()
+  return readString(length, StandardCharsets.UTF_8)
+}
+
+fun AnnotatedString.Range<String>.extractLinkableAnnotationItem(): PostCommentParser.TextPartSpan.Linkable? {
+  val base64Decoded = item.decodeBase64()
+    ?: return null
+
+  val buffer = Buffer()
+  buffer.write(base64Decoded)
+
+  return PostCommentParser.TextPartSpan.Linkable.deserialize(buffer)
+}
+
+fun PostCommentParser.TextPartSpan.Linkable.createAnnotationItem(): String {
+  return serialize().readByteString().base64()
 }
