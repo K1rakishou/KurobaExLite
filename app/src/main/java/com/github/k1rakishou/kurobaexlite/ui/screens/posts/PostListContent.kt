@@ -172,6 +172,11 @@ internal fun PostListContent(
     onFastScrollerDragStateChanged = onFastScrollerDragStateChanged
   )
 
+  // This piece of code waits until postListAsync is loaded (basically when it becomes AsyncData.Data)
+  // and then also wait until at least PostCell is built and drawn in the LazyColumn then sets a
+  // special flag in PostScreenViewModel which then triggers previous scroll position restoration.
+  // We need to do all that because otherwise we won't scroll to the last position since the list
+  // state might not have the necessary info for that.
   if (
     postListAsync is AsyncData.Data
     && (postListAsync as? AsyncData.Data)?.data?.chanDescriptor != null

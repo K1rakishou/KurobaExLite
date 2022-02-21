@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalConfiguration
+import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
@@ -86,10 +88,22 @@ class HomeScreen(
 
       val childScreen = childScreens[page]
       val transitionIsProgress = pagerState.currentPage != pagerState.targetPage
+      val currentPageOffset = Math.abs(pagerState.currentPageOffset)
+
+      val scale = if (transitionIsProgress) {
+        if (currentPageOffset <= 0.5f) {
+          lerpFloat(transitionScaleMax, transitionScaleMin, currentPageOffset)
+        } else {
+          lerpFloat(transitionScaleMin, transitionScaleMax, currentPageOffset)
+        }
+      } else {
+        transitionScaleMax
+      }
 
       Box(
         modifier = Modifier
           .fillMaxSize()
+          .scale(scale)
           .consumeClicks(consume = transitionIsProgress)
       ) {
         childScreen.Content()
@@ -126,5 +140,8 @@ class HomeScreen(
 
   companion object {
     val SCREEN_KEY = ScreenKey("HomeScreen")
+
+    private const val transitionScaleMax = 1f
+    private const val transitionScaleMin = 0.95f
   }
 }
