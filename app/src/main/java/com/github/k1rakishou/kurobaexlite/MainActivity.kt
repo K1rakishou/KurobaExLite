@@ -9,6 +9,8 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.remember
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers.setupEdgeToEdge
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers.setupStatusAndNavBarColors
+import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
+import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideChanTheme
@@ -21,6 +23,9 @@ class MainActivity : ComponentActivity() {
   private val viewModel by viewModels<MainActivityViewModel>()
   private val themeEngine by inject<ThemeEngine>(ThemeEngine::class.java)
   private val uiInfoManager by inject<UiInfoManager>(UiInfoManager::class.java)
+
+  private val coroutineScope = KurobaCoroutineScope()
+  private val backPressExecutor = RendezvousCoroutineExecutor(coroutineScope)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -44,6 +49,12 @@ class MainActivity : ComponentActivity() {
     }
   }
 
+  override fun onDestroy() {
+    super.onDestroy()
+
+    coroutineScope.cancelChildren()
+  }
+
   override fun onNewIntent(intent: Intent?) {
     if (intent != null) {
       viewModel.rootNavigationRouter.onNewIntent(intent)
@@ -51,11 +62,13 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onBackPressed() {
-    if (viewModel.rootNavigationRouter.onBackPressed()) {
-      return
-    }
+    backPressExecutor.post {
+      if (viewModel.rootNavigationRouter.onBackPressed()) {
+        return@post
+      }
 
-    finish()
+      finish()
+    }
   }
 
   override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {

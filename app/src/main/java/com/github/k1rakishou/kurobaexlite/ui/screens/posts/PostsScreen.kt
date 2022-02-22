@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import androidx.activity.ComponentActivity
-import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply.PopupRepliesScreen
@@ -14,10 +13,10 @@ abstract class PostsScreen(
 
   abstract val isCatalogScreen: Boolean
 
-  protected fun showRepliesForPost(postDescriptor: PostDescriptor) {
+  protected fun showRepliesForPost(replyViewMode: PopupRepliesScreen.ReplyViewMode) {
     navigationRouter.presentScreen(
       PopupRepliesScreen(
-        postDescriptor = postDescriptor,
+        replyViewMode = replyViewMode,
         componentActivity = componentActivity,
         navigationRouter = navigationRouter
       )

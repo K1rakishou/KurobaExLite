@@ -99,6 +99,7 @@ class KurobaExLiteApplication : Application() {
       viewModel {
         PopupRepliesScreenViewModel(
           chanThreadCache = get(),
+          postReplyChainManager = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
           themeEngine = get()

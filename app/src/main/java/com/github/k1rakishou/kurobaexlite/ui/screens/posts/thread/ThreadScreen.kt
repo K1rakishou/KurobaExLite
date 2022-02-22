@@ -24,8 +24,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -121,15 +123,22 @@ class ThreadScreen(
     val configuration = LocalConfiguration.current
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-    val contentPadding = remember(key1 = windowInsets) {
-      PaddingValues(top = toolbarHeight + windowInsets.topDp, bottom = windowInsets.bottomDp)
+
+    val postListOptions = remember {
+      PostListOptions(
+        isCatalogMode = isCatalogScreen,
+        isInPopup = false,
+        contentPadding = PaddingValues(
+          top = toolbarHeight + windowInsets.topDp,
+          bottom = windowInsets.bottomDp
+        ),
+        mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration)
+      )
     }
 
     PostListContent(
       modifier = Modifier.fillMaxSize(),
-      contentPadding = contentPadding,
-      isCatalogMode = isCatalogScreen,
-      mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
+      postListOptions = postListOptions,
       postsScreenViewModel = threadScreenViewModel,
       onPostCellClicked = { postData ->
         // TODO(KurobaEx):
@@ -138,7 +147,7 @@ class ThreadScreen(
         processClickedLinkable(linkable)
       },
       onPostRepliesClicked = { postDescriptor ->
-        showRepliesForPost(postDescriptor)
+        showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
       },
       onPostListScrolled = { delta ->
         homeScreenViewModel.onChildContentScrolling(delta)
@@ -158,7 +167,7 @@ class ThreadScreen(
   private fun processClickedLinkable(linkable: PostCommentParser.TextPartSpan.Linkable) {
     when (linkable) {
       is PostCommentParser.TextPartSpan.Linkable.Quote -> {
-        showRepliesForPost(linkable.postDescriptor)
+        showRepliesForPost(PopupRepliesScreen.ReplyViewMode.ReplyTo(linkable.postDescriptor))
       }
       is PostCommentParser.TextPartSpan.Linkable.Board -> {
         // TODO()

@@ -47,14 +47,14 @@ class UiInfoManager(
   fun mainUiLayoutMode(configuration: Configuration): MainUiLayoutMode {
     val orientation = configuration.orientation
     if (isTablet) {
-      return MainUiLayoutMode.TwoWaySplit
+      return MainUiLayoutMode.Split
     }
 
     if (orientation == Configuration.ORIENTATION_PORTRAIT) {
       return MainUiLayoutMode.Portrait
     }
 
-    return MainUiLayoutMode.TwoWaySplit
+    return MainUiLayoutMode.Split
   }
 
   fun setLastTouchPosition(x: Float, y: Float) {
@@ -63,7 +63,7 @@ class UiInfoManager(
 
 }
 
-enum class MainUiLayoutMode(val isSplit: Boolean) {
-  Portrait(false),
-  TwoWaySplit(true)
+enum class MainUiLayoutMode {
+  Portrait,
+  Split
 }

@@ -86,7 +86,7 @@ class HomeChildScreens(
   fun getChildScreens(configuration: Configuration): List<ComposeScreenWithToolbar> {
     return when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
       MainUiLayoutMode.Portrait -> portraitScreens
-      MainUiLayoutMode.TwoWaySplit -> twoWaySplitScreens
+      MainUiLayoutMode.Split -> twoWaySplitScreens
     }
   }
 
@@ -96,7 +96,7 @@ class HomeChildScreens(
         childScreens
           .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
       }
-      MainUiLayoutMode.TwoWaySplit -> {
+      MainUiLayoutMode.Split -> {
         childScreens
           .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
       }
@@ -109,7 +109,7 @@ class HomeChildScreens(
 
     DisposableEffect(key1 = Unit, effect = {
       val handler = object : NavigationRouter.OnBackPressHandler {
-        override fun onBackPressed(): Boolean {
+        override suspend fun onBackPressed(): Boolean {
           val currentPage = homeScreenViewModel.currentPage
 
           if (currentPage != null && !isMainScreen(configuration, currentPage)) {
@@ -132,7 +132,7 @@ class HomeChildScreens(
   }
 
   fun mainScreenKey(configuration: Configuration): ScreenKey {
-    if (uiInfoManager.mainUiLayoutMode(configuration).isSplit) {
+    if (uiInfoManager.mainUiLayoutMode(configuration) == MainUiLayoutMode.Split) {
       return SplitScreenLayout.SCREEN_KEY
     }
 

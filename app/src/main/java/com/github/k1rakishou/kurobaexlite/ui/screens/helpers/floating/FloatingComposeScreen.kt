@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
+import kotlinx.coroutines.launch
 
 abstract class FloatingComposeScreen(
   componentActivity: ComponentActivity,
@@ -56,6 +58,7 @@ abstract class FloatingComposeScreen(
   @Composable
   final override fun Content() {
     val insets = LocalWindowInsets.current
+    val coroutineScope = rememberCoroutineScope()
 
     HandleBackPresses()
 
@@ -65,7 +68,7 @@ abstract class FloatingComposeScreen(
         .background(backgroundColor)
         .kurobaClickable(
           hasClickIndication = false,
-          onClick = { stopPresenting() }
+          onClick = { coroutineScope.launch { onBackPressed() } }
         )
     ) {
       Box(
@@ -145,7 +148,7 @@ abstract class FloatingComposeScreen(
       key1 = Unit,
       effect = {
         val handler = object : NavigationRouter.OnBackPressHandler {
-          override fun onBackPressed(): Boolean {
+          override suspend fun onBackPressed(): Boolean {
             return this@FloatingComposeScreen.onBackPressed()
           }
         }
@@ -163,7 +166,7 @@ abstract class FloatingComposeScreen(
   abstract fun FloatingContent()
 
   @CallSuper
-  open fun onBackPressed(): Boolean {
+  open suspend fun onBackPressed(): Boolean {
     return stopPresenting()
   }
 

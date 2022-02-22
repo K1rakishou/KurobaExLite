@@ -228,7 +228,7 @@ class ThreadScreenViewModel(
           chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
           popCatalogOrThreadPostsLoadingSnackbar()
 
-          requireNotNull(postListBuilt).await()
+          postListBuilt?.await()
           restoreScrollPosition(threadDescriptor)
           _postsFullyParsedOnceFlow.emit(true)
         }
@@ -264,7 +264,7 @@ class ThreadScreenViewModel(
           chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
           popCatalogOrThreadPostsLoadingSnackbar()
 
-          requireNotNull(postListBuilt).await()
+          postListBuilt?.await()
           restoreScrollPosition(threadDescriptor)
           _postsFullyParsedOnceFlow.emit(true)
         }

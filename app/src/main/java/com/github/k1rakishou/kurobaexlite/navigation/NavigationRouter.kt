@@ -27,12 +27,12 @@ class NavigationRouter(
     get() = _intentsFlow.asSharedFlow()
 
   @Composable
-  fun HandleBackPresses(onBackPressed: () -> Boolean) {
+  fun HandleBackPresses(onBackPressed: suspend () -> Boolean) {
     DisposableEffect(
       key1 = Unit,
       effect = {
         val handler = object : OnBackPressHandler {
-          override fun onBackPressed(): Boolean {
+          override suspend fun onBackPressed(): Boolean {
             return onBackPressed()
           }
         }
@@ -184,7 +184,7 @@ class NavigationRouter(
     backPressHandlers -= handler
   }
 
-  fun onBackPressed(): Boolean {
+  suspend fun onBackPressed(): Boolean {
     if (backPressHandlers.isEmpty()) {
       return false
     }
@@ -252,7 +252,7 @@ class NavigationRouter(
   }
 
   interface OnBackPressHandler {
-    fun onBackPressed(): Boolean
+    suspend fun onBackPressed(): Boolean
   }
 
 }

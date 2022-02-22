@@ -10,7 +10,7 @@ fun RootRouterHost(
 ) {
   DisposableEffect(key1 = Unit) {
     val handler = object : NavigationRouter.OnBackPressHandler {
-      override fun onBackPressed(): Boolean {
+      override suspend fun onBackPressed(): Boolean {
         return onBackPressed()
       }
     }
@@ -56,7 +56,7 @@ fun RouterHost(
 ) {
   DisposableEffect(key1 = Unit) {
     val handler = object : NavigationRouter.OnBackPressHandler {
-      override fun onBackPressed(): Boolean {
+      override suspend fun onBackPressed(): Boolean {
         return onBackPressed()
       }
     }

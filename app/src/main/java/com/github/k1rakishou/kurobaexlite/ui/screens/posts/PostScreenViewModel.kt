@@ -374,7 +374,7 @@ abstract class PostScreenViewModel(
   }
 
   fun onPostListBuilt() {
-    requireNotNull(postListBuilt).complete(true)
+    postListBuilt?.complete(true)
   }
 
   data class ParsePostsOptions(

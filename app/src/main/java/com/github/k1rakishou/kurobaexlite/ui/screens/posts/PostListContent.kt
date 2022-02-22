@@ -61,9 +61,7 @@ private val postCellKeyPrefix = "post_cell"
 @Composable
 internal fun PostListContent(
   modifier: Modifier = Modifier,
-  contentPadding: PaddingValues,
-  isCatalogMode: Boolean,
-  mainUiLayoutMode: MainUiLayoutMode,
+  postListOptions: PostListOptions,
   postsScreenViewModel: PostScreenViewModel,
   onPostCellClicked: (PostData) -> Unit,
   onLinkableClicked: (PostCommentParser.TextPartSpan.Linkable) -> Unit,
@@ -151,11 +149,9 @@ internal fun PostListContent(
   PostListInternal(
     modifier = modifier,
     lazyListState = lazyListState,
-    contentPadding = contentPadding,
+    postListOptions = postListOptions,
     postListAsync = postListAsync,
-    isCatalogMode = isCatalogMode,
     postsScreenViewModel = postsScreenViewModel,
-    mainUiLayoutMode = mainUiLayoutMode,
     onPostCellClicked = onPostCellClicked,
     onPostCellCommentClicked = { postData, postComment, offset ->
       processClickedAnnotation(
@@ -247,11 +243,9 @@ private fun processClickedAnnotation(
 private fun PostListInternal(
   modifier: Modifier,
   lazyListState: LazyListState,
-  contentPadding: PaddingValues,
+  postListOptions: PostListOptions,
   postListAsync: AsyncData<AbstractPostsState>,
-  isCatalogMode: Boolean,
   postsScreenViewModel: PostScreenViewModel,
-  mainUiLayoutMode: MainUiLayoutMode,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
@@ -260,8 +254,17 @@ private fun PostListInternal(
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
-  val previouslyVisiblePosts = remember(key1 = postsScreenViewModel.chanDescriptor) {
-    mutableStateMapOf<PostDescriptor, Unit>()
+  val mainUiLayoutMode = postListOptions.mainUiLayoutMode
+  val isInPopup = postListOptions.isInPopup
+  val isCatalogMode = postListOptions.isCatalogMode
+  val contentPadding = postListOptions.contentPadding
+
+  val previouslyVisiblePosts = remember(key1 = postsScreenViewModel.chanDescriptor, key2 = isInPopup) {
+    if (isInPopup) {
+      null
+    } else {
+      mutableStateMapOf<PostDescriptor, Unit>()
+    }
   }
 
   val padding = remember(key1 = mainUiLayoutMode) {
@@ -269,7 +272,7 @@ private fun PostListInternal(
       MainUiLayoutMode.Portrait -> {
         PaddingValues(horizontal = 8.dp)
       }
-      MainUiLayoutMode.TwoWaySplit -> {
+      MainUiLayoutMode.Split -> {
         if (isCatalogMode) {
           PaddingValues(start = 8.dp, end = 4.dp)
         } else {
@@ -369,7 +372,7 @@ private fun LazyListScope.postList(
   lazyListState: LazyListState,
   postsScreenViewModel: PostScreenViewModel,
   postDataList: List<State<PostData>>,
-  previouslyVisiblePosts: MutableMap<PostDescriptor, Unit>,
+  previouslyVisiblePosts: MutableMap<PostDescriptor, Unit>?,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
@@ -395,19 +398,24 @@ private fun LazyListScope.postList(
     itemContent = { index ->
       val postData by postDataList[index]
 
-      // Pre-insert first batch of posts into the previouslyVisiblePosts so that we don't play
-      // animations for recently opened catalogs/threads. We are doing this right inside of the
-      // composition because otherwise there is some kind of a delay before LaunchedEffect is executed
-      // so the first posts are always animated.
-      if (previouslyVisiblePosts.isEmpty() && postDataList.isNotEmpty()) {
-        val resultMap = mutableMapOf<PostDescriptor, Unit>()
+      if (previouslyVisiblePosts != null) {
+        // Pre-insert first batch of posts into the previouslyVisiblePosts so that we don't play
+        // animations for recently opened catalogs/threads. We are doing this right inside of the
+        // composition because otherwise there is some kind of a delay before LaunchedEffect is executed
+        // so the first posts are always animated.
+        if (previouslyVisiblePosts.isEmpty() && postDataList.isNotEmpty()) {
+          val resultMap = mutableMapOf<PostDescriptor, Unit>()
 
-        postDataList.forEach { postDataState ->
-          resultMap[postDataState.value.postDescriptor] = Unit
+          postDataList.forEach { postDataState ->
+            resultMap[postDataState.value.postDescriptor] = Unit
+          }
+
+          previouslyVisiblePosts.putAll(resultMap)
         }
-
-        previouslyVisiblePosts.putAll(resultMap)
       }
+
+      val animateInsertion = previouslyVisiblePosts != null
+        && !previouslyVisiblePosts.containsKey(postData.postDescriptor)
 
       PostCellContainer(
         padding = padding,
@@ -419,13 +427,15 @@ private fun LazyListScope.postList(
         onPostRepliesClicked = onPostRepliesClicked,
         index = index,
         totalCount = totalCount,
-        animateInsertion = !previouslyVisiblePosts.containsKey(postData.postDescriptor)
+        animateInsertion = animateInsertion
       )
 
-      // Add each post into the previouslyVisiblePosts so that we don't run animations more than
-      // once for each post.
-      SideEffect {
-        previouslyVisiblePosts[postData.postDescriptor] = Unit
+      if (previouslyVisiblePosts != null) {
+        // Add each post into the previouslyVisiblePosts so that we don't run animations more than
+        // once for each post.
+        SideEffect {
+          previouslyVisiblePosts[postData.postDescriptor] = Unit
+        }
       }
     }
   )
@@ -941,3 +951,10 @@ private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChang
     }
   }
 }
+
+data class PostListOptions(
+  val isCatalogMode: Boolean,
+  val isInPopup: Boolean,
+  val mainUiLayoutMode: MainUiLayoutMode,
+  val contentPadding: PaddingValues,
+)

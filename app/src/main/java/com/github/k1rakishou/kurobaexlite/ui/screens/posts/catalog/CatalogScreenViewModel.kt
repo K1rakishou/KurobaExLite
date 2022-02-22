@@ -122,7 +122,7 @@ class CatalogScreenViewModel(
         chanThreadCache.insertCatalogThreads(catalogDescriptor, postDataList)
         popCatalogOrThreadPostsLoadingSnackbar()
 
-        requireNotNull(postListBuilt).await()
+        postListBuilt?.await()
         restoreScrollPosition(catalogDescriptor)
         _postsFullyParsedOnceFlow.emit(true)
       }
