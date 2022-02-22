@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -16,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -34,7 +37,9 @@ fun BoxScope.PostsScreenToolbar(
   isCatalogScreen: Boolean,
   postListAsync: AsyncData<AbstractPostsState>,
   parsedPostDataCache: ParsedPostDataCache,
+  uiInfoManager: UiInfoManager,
   navigationRouter: NavigationRouter,
+  onHamburgIconClicked: () -> Unit,
   onSearchQueryUpdated: (String?) -> Unit,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
@@ -80,6 +85,8 @@ fun BoxScope.PostsScreenToolbar(
             parentBgColor = parentBgColor,
             postListAsync = postListAsync,
             parsedPostDataCache = parsedPostDataCache,
+            uiInfoManager = uiInfoManager,
+            onHamburgIconClicked = onHamburgIconClicked,
             onToolbarSearchClicked = {
               stackContainerState.fadeIn(
                 SimpleStackContainerElement(
@@ -109,10 +116,21 @@ private fun BoxScope.PostsScreenNormalToolbar(
   parentBgColor: Color,
   postListAsync: AsyncData<AbstractPostsState>,
   parsedPostDataCache: ParsedPostDataCache,
+  uiInfoManager: UiInfoManager,
+  onHamburgIconClicked: () -> Unit,
   onToolbarSearchClicked: (() -> Unit)? = null,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
+  val configuration = LocalConfiguration.current
+  val mainUiLayoutMode = remember(key1 = configuration) { uiInfoManager.mainUiLayoutMode(configuration) }
+  val leftToolbarPart = leftToolbarPartBuilder(
+    mainUiLayoutMode = mainUiLayoutMode,
+    isCatalogScreen = isCatalogScreen,
+    onHamburgIconClicked = onHamburgIconClicked
+  )
+
   KurobaToolbarLayout(
+    leftPart = leftToolbarPart,
     middlePart = {
       var toolbarTitle by remember {
         val chanDescriptor = (postListAsync as? AsyncData.Data)?.data?.chanDescriptor
@@ -192,6 +210,32 @@ private fun BoxScope.PostsScreenNormalToolbar(
       }
     }
   )
+}
+
+private fun leftToolbarPartBuilder(
+  mainUiLayoutMode: MainUiLayoutMode,
+  isCatalogScreen: Boolean,
+  onHamburgIconClicked: () -> Unit
+): @Composable (BoxScope.() -> Unit)? {
+  if (mainUiLayoutMode != MainUiLayoutMode.Split && !isCatalogScreen) {
+    return null
+  }
+
+  val func: @Composable (BoxScope.() -> Unit) = {
+    Box {
+      KurobaComposeIcon(
+        modifier = Modifier
+          .size(24.dp)
+          .kurobaClickable(
+            bounded = false,
+            onClick = { onHamburgIconClicked() }
+          ),
+        drawableId = R.drawable.ic_baseline_dehaze_24
+      )
+    }
+  }
+
+  return func
 }
 
 @OptIn(ExperimentalComposeUiApi::class)

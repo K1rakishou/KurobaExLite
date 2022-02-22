@@ -36,7 +36,7 @@ fun RootRouterHost(
     }
   }
 
-  if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
+  if (screenUpdateTransaction.floatingScreenUpdates.isNotEmpty()) {
     for (secondaryScreenUpdate in screenUpdateTransaction.floatingScreenUpdates) {
       key(secondaryScreenUpdate.screen.screenKey) {
         ScreenTransition(
@@ -87,7 +87,7 @@ fun RouterHost(
     }
   }
 
-  if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
+  if (screenUpdateTransaction.floatingScreenUpdates.isNotEmpty()) {
     for (secondaryScreenUpdate in screenUpdateTransaction.floatingScreenUpdates) {
       key(secondaryScreenUpdate.screen.screenKey) {
         ScreenTransition(

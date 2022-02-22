@@ -91,7 +91,9 @@ class CatalogScreen(
         isCatalogScreen = isCatalogScreen,
         postListAsync = postListAsync,
         parsedPostDataCache = parsedPostDataCache,
+        uiInfoManager = uiInfoManager,
         navigationRouter = navigationRouter,
+        onHamburgIconClicked = { homeScreenViewModel.openDrawer() },
         onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(

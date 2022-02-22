@@ -78,7 +78,9 @@ class ThreadScreen(
         isCatalogScreen = isCatalogScreen,
         postListAsync = postListAsync,
         parsedPostDataCache = parsedPostDataCache,
+        uiInfoManager = uiInfoManager,
         navigationRouter = navigationRouter,
+        onHamburgIconClicked = { homeScreenViewModel.openDrawer() },
         onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(

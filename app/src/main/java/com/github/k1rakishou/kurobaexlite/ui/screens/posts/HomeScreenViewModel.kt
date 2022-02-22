@@ -17,6 +17,10 @@ class HomeScreenViewModel(
   private val toolbarHeight by lazy { resources.getDimension(R.dimen.toolbar_height) }
   private val currentPageValue = AtomicReference<CurrentPage?>()
 
+  private val _drawerVisibilityFlow = MutableStateFlow<DrawerVisibility>(DrawerVisibility.Closed)
+  val drawerVisibilityFlow: StateFlow<DrawerVisibility>
+    get() = _drawerVisibilityFlow.asStateFlow()
+
   private val _currentPageFlow = MutableSharedFlow<CurrentPage>(extraBufferCapacity = Channel.UNLIMITED)
 
   val currentPageFlow: SharedFlow<CurrentPage>
@@ -78,6 +82,52 @@ class HomeScreenViewModel(
 
   fun onPostListTouchingTopOrBottomStateChanged(touching: Boolean) {
     toolbarVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
+  }
+
+  fun isDrawerOpened(): Boolean {
+    return when (_drawerVisibilityFlow.value) {
+      is DrawerVisibility.Drag -> true
+      DrawerVisibility.Closed,
+      DrawerVisibility.Closing -> false
+      DrawerVisibility.Opened,
+      DrawerVisibility.Opening -> true
+    }
+  }
+
+  fun openDrawer(withAnimation: Boolean = true) {
+    if (withAnimation) {
+      _drawerVisibilityFlow.value = DrawerVisibility.Opening
+    } else {
+      _drawerVisibilityFlow.value = DrawerVisibility.Opened
+    }
+  }
+
+  fun closeDrawer(withAnimation: Boolean = true) {
+    if (withAnimation) {
+      _drawerVisibilityFlow.value = DrawerVisibility.Closing
+    } else {
+      _drawerVisibilityFlow.value = DrawerVisibility.Closed
+    }
+  }
+
+  fun dragDrawer(isDragging: Boolean, progress: Float, velocity: Float) {
+    _drawerVisibilityFlow.value = DrawerVisibility.Drag(isDragging, progress, velocity)
+  }
+
+  sealed class DrawerVisibility {
+    data class Drag(
+      val isDragging: Boolean,
+      val progress: Float,
+      val velocity: Float
+    ) : DrawerVisibility() {
+      val progressInverted: Float
+        get() = 1f - progress
+    }
+
+    object Opening : DrawerVisibility()
+    object Opened : DrawerVisibility()
+    object Closing : DrawerVisibility()
+    object Closed : DrawerVisibility()
   }
 
   data class CurrentPage(
