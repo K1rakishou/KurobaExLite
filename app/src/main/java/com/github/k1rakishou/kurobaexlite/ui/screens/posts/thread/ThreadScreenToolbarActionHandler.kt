@@ -8,9 +8,9 @@ class ThreadScreenToolbarActionHandler(
 ) {
 
   fun processClickedToolbarMenuItem(menuItem: FloatingMenuItem) {
-    logcat { "thread processClickedToolbarMenuItem id=${menuItem.menuItemId}" }
+    logcat { "thread processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
-    when (menuItem.menuItemId) {
+    when (menuItem.menuItemKey) {
       ACTION_RELOAD -> threadScreenViewModel.reload()
       ACTION_SCROLL_TOP -> threadScreenViewModel.scrollTop()
       ACTION_SCROLL_BOTTOM -> threadScreenViewModel.scrollBottom()

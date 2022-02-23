@@ -170,8 +170,17 @@ abstract class FloatingComposeScreen(
     return stopPresenting()
   }
 
+  open fun onDestroy() {
+
+  }
+
   protected fun stopPresenting(): Boolean {
-    return navigationRouter.stopPresentingScreen(screenKey = screenKey)
+    val success = navigationRouter.stopPresentingScreen(screenKey = screenKey)
+    if (success) {
+      onDestroy()
+    }
+
+    return success
   }
 
   companion object {

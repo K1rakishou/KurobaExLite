@@ -6,10 +6,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -17,11 +14,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.*
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import logcat.logcat
+import java.util.concurrent.atomic.AtomicLong
 
 class FloatingMenuScreen(
   componentActivity: ComponentActivity,
@@ -31,6 +27,8 @@ class FloatingMenuScreen(
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
 
   private val lastTouchPosition = uiInfoManager.lastTouchPosition
+  private val callbacksToInvokeMap = mutableMapOf<Any, FloatingMenuItem>()
+
   private val customAlignment by lazy {
     return@lazy Alignment { size, space, _ ->
       val availableWidth = uiInfoManager.maxParentWidth
@@ -54,6 +52,15 @@ class FloatingMenuScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val contentAlignment: Alignment = customAlignment
 
+  override fun onDestroy() {
+    callbacksToInvokeMap.values.forEach { menuItem ->
+      logcat(tag = "FloatingMenuScreen") { "calling onMenuItemClicked(${menuItem.menuItemKey})" }
+      onMenuItemClicked(menuItem)
+    }
+
+    callbacksToInvokeMap.clear()
+  }
+
   @Composable
   override fun FloatingContent() {
     val availableWidth = with(LocalDensity.current) {
@@ -69,7 +76,7 @@ class FloatingMenuScreen(
       content = {
         items(
           count = menuItems.size,
-          key = { index -> menuItems.get(index).menuItemId }
+          key = { index -> menuItems.get(index).menuItemKey }
         ) { index ->
           val menuItem = menuItems.get(index)
 
@@ -103,6 +110,17 @@ class FloatingMenuScreen(
           }
           is FloatingMenuItem.Icon -> {
             BuildIconMenuItem(item = menuItem, onMenuItemClicked = onMenuItemClicked)
+          }
+          is FloatingMenuItem.Group -> {
+            BuildCheckboxGroup(
+              itemGroup = menuItem,
+              onMenuItemClicked = { checked, clickedItem ->
+                if (checked) {
+                  callbacksToInvokeMap.put(clickedItem.menuItemKey, clickedItem)
+                } else {
+                  callbacksToInvokeMap.remove(clickedItem.menuItemKey)
+                }
+              })
           }
           is FloatingMenuItem.Footer -> {
             Row(
@@ -150,6 +168,57 @@ class FloatingMenuScreen(
   }
 
   @Composable
+  private fun BuildCheckboxGroup(
+    itemGroup: FloatingMenuItem.Group,
+    onMenuItemClicked: (Boolean, FloatingMenuItem) -> Unit
+  ) {
+    var currentlyCheckedItemKey by remember {
+      mutableStateOf(itemGroup.checkedMenuItemKey)
+    }
+
+    Column {
+      for ((index, groupItem) in itemGroup.groupItems.withIndex()) {
+        key(groupItem.menuItemKey) {
+          Row(
+            modifier = Modifier
+              .kurobaClickable {
+                currentlyCheckedItemKey = groupItem.menuItemKey
+                val checked = currentlyCheckedItemKey == groupItem.menuItemKey
+
+                onMenuItemClicked(checked, groupItem)
+              }
+              .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            BuildTextMenuItem(
+              modifier = Modifier.weight(1f).padding(0.dp),
+              item = groupItem,
+              onMenuItemClicked = null
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // TODO(KurobaEx): change to GroupBoxItem or whatever once it's implemented
+            KurobaComposeCheckbox(
+              modifier = Modifier.wrapContentSize(),
+              currentlyChecked = currentlyCheckedItemKey == groupItem.menuItemKey,
+              onCheckChanged = { currentlyCheckedItemKey = groupItem.menuItemKey }
+            )
+          }
+
+          if (index < itemGroup.groupItems.lastIndex) {
+            KurobaComposeDivider(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp)
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Composable
   private fun BuildIconMenuItem(
     item: FloatingMenuItem.Icon,
     onMenuItemClicked: (item: FloatingMenuItem) -> Unit
@@ -164,14 +233,23 @@ class FloatingMenuScreen(
   }
 
   @Composable
-  private fun BoxScope.BuildTextMenuItem(
+  private fun BuildTextMenuItem(
+    modifier: Modifier = Modifier,
     item: FloatingMenuItem.Text,
-    onMenuItemClicked: (item: FloatingMenuItem) -> Unit
+    onMenuItemClicked: ((item: FloatingMenuItem) -> Unit)?
   ) {
     val chanTheme = LocalChanTheme.current
-    val title = stringResource(id = item.textId)
-    val subtitle = if (item.subTextId != null) {
-      stringResource(id = item.subTextId)
+
+    val title = when (item.text) {
+      is FloatingMenuItem.MenuItemText.Id -> stringResource(id = item.text.id)
+      is FloatingMenuItem.MenuItemText.String -> item.text.text
+    }
+
+    val subtitle = if (item.subText != null) {
+      when (item.subText) {
+        is FloatingMenuItem.MenuItemText.Id -> stringResource(id = item.subText.id)
+        is FloatingMenuItem.MenuItemText.String -> item.subText.text
+      }
     } else {
       null
     }
@@ -179,12 +257,19 @@ class FloatingMenuScreen(
     val floatingMenuItemTitleSize by remember { uiInfoManager.floatingMenuItemTitleSize }
     val floatingMenuItemSubTitleSize by remember { uiInfoManager.floatingMenuItemSubTitleSize }
 
+    val clickModifier = if (onMenuItemClicked == null) {
+      Modifier
+    } else {
+      Modifier.kurobaClickable(onClick = { onMenuItemClicked(item) })
+    }
+
     Box(
       modifier = Modifier
-        .heightIn(min = 32.dp)
+        .heightIn(min = 40.dp)
         .fillMaxWidth()
-        .kurobaClickable(onClick = { onMenuItemClicked(item) })
+        .then(clickModifier)
         .padding(horizontal = 8.dp, vertical = 4.dp)
+        .then(modifier)
     ) {
       if (subtitle.isNullOrBlank()) {
         Text(
@@ -225,32 +310,45 @@ class FloatingMenuScreen(
 }
 
 sealed class FloatingMenuItem {
-  abstract val menuItemId: Int
+  abstract val menuItemKey: Any
 
   data class Text(
-    override val menuItemId: Int,
-    @StringRes val textId: Int,
-    @StringRes val subTextId: Int? = null
+    override val menuItemKey: Any,
+    val text: MenuItemText,
+    val subText: MenuItemText? = null
   ) : FloatingMenuItem()
 
   data class Icon(
-    override val menuItemId: Int,
+    override val menuItemKey: Any,
     @DrawableRes val iconId: Int
   ) : FloatingMenuItem()
 
+  data class Group(
+    override val menuItemKey: Long = keyCounter.getAndDecrement(),
+    val checkedMenuItemKey: Any,
+    val groupItems: List<Text>
+  ) : FloatingMenuItem()
+
   data class Header(
-    override val menuItemId: Int = HEADER,
+    override val menuItemKey: Long = HEADER,
     val items: List<Icon>
   ) : FloatingMenuItem()
 
   data class Footer(
-    override val menuItemId: Int = FOOTER,
+    override val menuItemKey: Long = FOOTER,
     val items: List<Icon>
   ) : FloatingMenuItem()
 
+  sealed class MenuItemText {
+    data class Id(@StringRes val id: Int) : MenuItemText()
+    data class String(val text: kotlin.String) : MenuItemText()
+  }
+
   companion object {
-    const val HEADER = -1
-    const val FOOTER = -2
+    const val HEADER = -1L
+    const val FOOTER = -2L
+
+    private val keyCounter = AtomicLong(-100)
   }
 
 }

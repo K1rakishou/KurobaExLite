@@ -26,9 +26,8 @@ class ChanThreadManager(
     get() = _currentlyOpenedThreadFlow.value
 
   suspend fun loadCatalog(catalogDescriptor: CatalogDescriptor?): Result<CatalogData?> {
-    _currentlyOpenedCatalogFlow.value = catalogDescriptor
-
     if (catalogDescriptor == null) {
+      _currentlyOpenedCatalogFlow.value = null
       return Result.success(null)
     }
 
@@ -37,13 +36,17 @@ class ChanThreadManager(
       ?.catalogDataSource()
       ?: return Result.failure(CatalogNotSupported(catalogDescriptor.siteKey))
 
-    return catalogDataSource.loadCatalog(catalogDescriptor)
+    val result = catalogDataSource.loadCatalog(catalogDescriptor)
+    if (result.isSuccess) {
+      _currentlyOpenedCatalogFlow.value = catalogDescriptor
+    }
+
+    return result
   }
 
   suspend fun loadThread(threadDescriptor: ThreadDescriptor?): Result<ThreadData?> {
-    _currentlyOpenedThreadFlow.value = threadDescriptor
-
     if (threadDescriptor == null) {
+      _currentlyOpenedThreadFlow.value = null
       return Result.success(null)
     }
 
@@ -52,7 +55,12 @@ class ChanThreadManager(
       ?.threadDataSource()
       ?: return Result.failure(ThreadNotSupported(threadDescriptor.siteKey))
 
-    return threadDataSource.loadThread(threadDescriptor)
+    val result = threadDataSource.loadThread(threadDescriptor)
+    if (result.isSuccess) {
+      _currentlyOpenedThreadFlow.value = threadDescriptor
+    }
+
+    return result
   }
 
   class CatalogNotSupported(siteKey: SiteKey) : ClientException("Site \'${siteKey.key}\' does not support catalogs")

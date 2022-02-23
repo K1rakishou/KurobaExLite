@@ -51,6 +51,7 @@
 
     <string name="catalog_toolbar_open_thread_by_identifier">Open thread by any identifier</string>
     <string name="catalog_toolbar_open_thread_by_identifier_subtitle">Allows opening threads by url/threadId/etc.</string>
+    <string name="catalog_toolbar_layout_mode">Layout mode</string>
 
     <string name="catalog_screen_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_screen_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>

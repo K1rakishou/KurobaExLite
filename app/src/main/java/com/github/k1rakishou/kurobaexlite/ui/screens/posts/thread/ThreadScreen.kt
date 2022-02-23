@@ -51,17 +51,17 @@ class ThreadScreen(
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
       FloatingMenuItem.Text(
-        menuItemId = ThreadScreenToolbarActionHandler.ACTION_RELOAD,
-        textId = R.string.reload
+        menuItemKey = ThreadScreenToolbarActionHandler.ACTION_RELOAD,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.reload)
       ),
       FloatingMenuItem.Footer(
         items = listOf(
           FloatingMenuItem.Icon(
-            menuItemId = ThreadScreenToolbarActionHandler.ACTION_SCROLL_TOP,
+            menuItemKey = ThreadScreenToolbarActionHandler.ACTION_SCROLL_TOP,
             iconId = R.drawable.ic_baseline_arrow_upward_24
           ),
           FloatingMenuItem.Icon(
-            menuItemId = ThreadScreenToolbarActionHandler.ACTION_SCROLL_BOTTOM,
+            menuItemKey = ThreadScreenToolbarActionHandler.ACTION_SCROLL_BOTTOM,
             iconId = R.drawable.ic_baseline_arrow_downward_24
           )
         )

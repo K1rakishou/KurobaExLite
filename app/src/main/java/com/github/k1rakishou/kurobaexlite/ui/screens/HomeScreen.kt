@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
@@ -29,12 +30,14 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.java.KoinJavaComponent.inject
 
 class HomeScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
+  private val appSettings by inject<AppSettings>(AppSettings::class.java)
   private val homeChildScreens by lazy { HomeChildScreens(componentActivity, navigationRouter) }
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -45,8 +48,15 @@ class HomeScreen(
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
     val configuration = LocalConfiguration.current
-    val childScreens = homeChildScreens.getChildScreens(configuration)
-    val initialScreenIndex = homeChildScreens.getInitialScreenIndex(configuration, childScreens)
+    val coroutineScope = rememberCoroutineScope()
+    val layoutType by appSettings.layoutType.listenAsStateFlow(coroutineScope).collectAsState()
+
+    val childScreens = remember(layoutType, configuration) {
+      homeChildScreens.getChildScreens(layoutType, configuration)
+    }
+    val initialScreenIndex = remember(layoutType, configuration) {
+      homeChildScreens.getInitialScreenIndex(layoutType, configuration, childScreens)
+    }
 
     val drawerLongtapGestureZonePx = with(LocalDensity.current) { remember { 24.dp.toPx() } }
     val maxDrawerWidth = with(LocalDensity.current) { remember { 600.dp.toPx().toInt() } }
@@ -62,7 +72,7 @@ class HomeScreen(
     val pagerState = rememberPagerState(key1 = configuration.orientation, initialPage = initialScreenIndex)
 
     LaunchedEffect(
-      key1 = Unit,
+      key1 = layoutType,
       block = {
         homeScreenViewModel.currentPageFlow.collect { currentPage ->
           scrollToPageByScreenKey(
@@ -148,12 +158,14 @@ class HomeScreen(
         homeScreenViewModel = homeScreenViewModel
       )
 
-      HomeScreenDrawerLayout(
-        drawerWidth = drawerWidth,
-        componentActivity = componentActivity,
-        navigationRouter = navigationRouter,
-        homeScreenViewModel = homeScreenViewModel
-      )
+      if (drawerWidth > 0) {
+        HomeScreenDrawerLayout(
+          drawerWidth = drawerWidth,
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          homeScreenViewModel = homeScreenViewModel
+        )
+      }
     }
   }
 

@@ -2,33 +2,72 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import logcat.logcat
 
 class CatalogScreenToolbarActionHandler(
   private val componentActivity: ComponentActivity,
   private val navigationRouter: NavigationRouter,
+  private val appSettings: AppSettings,
   private val catalogScreenViewModel: CatalogScreenViewModel,
   private val threadScreenViewModel: ThreadScreenViewModel,
   private val homeScreenViewModel: HomeScreenViewModel,
 ) {
 
-  fun processClickedToolbarMenuItem(menuItem: FloatingMenuItem) {
-    logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemId}" }
+  fun processClickedToolbarMenuItem(coroutineScope: CoroutineScope, menuItem: FloatingMenuItem) {
+    logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
-    when (menuItem.menuItemId) {
+    when (menuItem.menuItemKey) {
       ACTION_RELOAD -> catalogScreenViewModel.reload()
+      ACTION_LAYOUT_MODE -> handleLayoutMode(coroutineScope)
       ACTION_OPEN_THREAD_BY_IDENTIFIER -> handleOpenThreadByIdentifier()
       ACTION_SCROLL_TOP -> catalogScreenViewModel.scrollTop()
       ACTION_SCROLL_BOTTOM -> catalogScreenViewModel.scrollBottom()
+    }
+  }
+
+  private fun handleLayoutMode(coroutineScope: CoroutineScope) {
+    coroutineScope.launch {
+      val floatingMenuItems = mutableListOf<FloatingMenuItem>()
+
+      floatingMenuItems += FloatingMenuItem.Group(
+        checkedMenuItemKey = appSettings.layoutType.read(),
+        groupItems = LayoutType.values().map { layoutType ->
+          FloatingMenuItem.Text(
+            menuItemKey = layoutType,
+            text = FloatingMenuItem.MenuItemText.String(layoutType.name)
+          )
+        }
+      )
+
+      navigationRouter.presentScreen(
+        FloatingMenuScreen(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          menuItems = floatingMenuItems,
+          onMenuItemClicked = { menuItem ->
+            coroutineScope.launch {
+              if (menuItem.menuItemKey is LayoutType) {
+                val layoutType = (menuItem.menuItemKey as LayoutType)
+                appSettings.layoutType.write(layoutType)
+              }
+            }
+          }
+        )
+      )
     }
   }
 
@@ -86,6 +125,7 @@ class CatalogScreenToolbarActionHandler(
     const val ACTION_RELOAD = 1
     const val ACTION_SCROLL_TOP = 2
     const val ACTION_SCROLL_BOTTOM = 3
+    const val ACTION_LAYOUT_MODE = 4
   }
 
 }

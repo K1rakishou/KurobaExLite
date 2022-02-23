@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
+import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -83,20 +84,45 @@ class HomeChildScreens(
     )
   }
 
-  fun getChildScreens(configuration: Configuration): List<ComposeScreenWithToolbar> {
-    return when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
-      MainUiLayoutMode.Portrait -> portraitScreens
-      MainUiLayoutMode.Split -> twoWaySplitScreens
+  fun getChildScreens(
+    layoutType: LayoutType,
+    configuration: Configuration
+  ): List<ComposeScreenWithToolbar> {
+    return when (layoutType) {
+      LayoutType.Auto -> {
+        when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
+          MainUiLayoutMode.Portrait -> portraitScreens
+          MainUiLayoutMode.Split -> twoWaySplitScreens
+        }
+      }
+      LayoutType.Phone -> portraitScreens
+      LayoutType.Split -> twoWaySplitScreens
     }
   }
 
-  fun getInitialScreenIndex(configuration: Configuration, childScreens: List<ComposeScreen>): Int {
-    return when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
-      MainUiLayoutMode.Portrait -> {
+  fun getInitialScreenIndex(
+    layoutType: LayoutType,
+    configuration: Configuration,
+    childScreens: List<ComposeScreen>
+  ): Int {
+    return when (layoutType) {
+      LayoutType.Auto -> {
+        when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
+          MainUiLayoutMode.Portrait -> {
+            childScreens
+              .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
+          }
+          MainUiLayoutMode.Split -> {
+            childScreens
+              .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
+          }
+        }
+      }
+      LayoutType.Phone -> {
         childScreens
           .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
       }
-      MainUiLayoutMode.Split -> {
+      LayoutType.Split -> {
         childScreens
           .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
       }

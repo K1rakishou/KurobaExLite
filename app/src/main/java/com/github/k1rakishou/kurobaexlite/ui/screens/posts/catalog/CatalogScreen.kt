@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
@@ -42,11 +43,13 @@ class CatalogScreen(
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
+  private val appSettings: AppSettings by inject(AppSettings::class.java)
 
   private val catalogScreenToolbarActionHandler by lazy {
     CatalogScreenToolbarActionHandler(
       componentActivity = componentActivity,
       navigationRouter = navigationRouter,
+      appSettings = appSettings,
       catalogScreenViewModel = catalogScreenViewModel,
       threadScreenViewModel = threadScreenViewModel,
       homeScreenViewModel = homeScreenViewModel
@@ -56,22 +59,26 @@ class CatalogScreen(
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
       FloatingMenuItem.Text(
-        menuItemId = CatalogScreenToolbarActionHandler.ACTION_RELOAD,
-        textId = R.string.reload
+        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_RELOAD,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.reload)
       ),
       FloatingMenuItem.Text(
-        menuItemId = CatalogScreenToolbarActionHandler.ACTION_OPEN_THREAD_BY_IDENTIFIER,
-        textId = R.string.catalog_toolbar_open_thread_by_identifier,
-        subTextId = R.string.catalog_toolbar_open_thread_by_identifier_subtitle
+        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_LAYOUT_MODE,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_layout_mode)
+      ),
+      FloatingMenuItem.Text(
+        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_OPEN_THREAD_BY_IDENTIFIER,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier),
+        subText = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier_subtitle)
       ),
       FloatingMenuItem.Footer(
         items = listOf(
           FloatingMenuItem.Icon(
-            menuItemId = CatalogScreenToolbarActionHandler.ACTION_SCROLL_TOP,
+            menuItemKey = CatalogScreenToolbarActionHandler.ACTION_SCROLL_TOP,
             iconId = R.drawable.ic_baseline_arrow_upward_24
           ),
           FloatingMenuItem.Icon(
-            menuItemId = CatalogScreenToolbarActionHandler.ACTION_SCROLL_BOTTOM,
+            menuItemKey = CatalogScreenToolbarActionHandler.ACTION_SCROLL_BOTTOM,
             iconId = R.drawable.ic_baseline_arrow_downward_24
           )
         )
@@ -85,6 +92,7 @@ class CatalogScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val postListAsync by catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
     with(boxScope) {
       PostsScreenToolbar(
@@ -102,7 +110,7 @@ class CatalogScreen(
               navigationRouter = navigationRouter,
               menuItems = floatingMenuItems,
               onMenuItemClicked = { menuItem ->
-                catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
+                catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(coroutineScope, menuItem)
               }
             )
           )

@@ -514,3 +514,59 @@ fun KurobaComposeTextField(
     )
   }
 }
+
+@Composable
+fun KurobaComposeCheckbox(
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  text: String? = null,
+  currentlyChecked: Boolean,
+  onCheckChanged: (Boolean) -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  var isChecked by remember(key1 = currentlyChecked) { mutableStateOf(currentlyChecked) }
+
+  val color = remember(key1 = chanTheme) {
+    if (chanTheme.isLightTheme) {
+      Color(0x40000000)
+    } else {
+      Color(0x40ffffff)
+    }
+  }
+
+  Row(
+    modifier = Modifier
+      .clickable(
+        enabled = enabled,
+        interactionSource = remember { MutableInteractionSource() },
+        indication = rememberRipple(bounded = true, color = color),
+        onClick = {
+          isChecked = isChecked.not()
+          onCheckChanged(isChecked)
+        }
+      )
+      .padding(vertical = 4.dp)
+      .then(modifier)
+  ) {
+    Checkbox(
+      modifier = Modifier.align(Alignment.CenterVertically),
+      checked = isChecked,
+      enabled = enabled,
+      onCheckedChange = { checked ->
+        isChecked = checked
+        onCheckChanged(isChecked)
+      },
+      colors = chanTheme.checkBoxColors()
+    )
+
+    if (text != null) {
+      Spacer(modifier = Modifier.width(8.dp))
+
+      KurobaComposeText(
+        modifier = Modifier.align(Alignment.CenterVertically),
+        text = text,
+        enabled = enabled
+      )
+    }
+  }
+}
