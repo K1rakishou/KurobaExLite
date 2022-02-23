@@ -189,7 +189,7 @@ fun KurobaComposeClickableText(
   var currentlyPressedAnnotationPath by remember { mutableStateOf<Path?>(null) }
   var currentPressedAnnotationBgColor by remember { mutableStateOf<Color>(Color.Magenta) }
 
-  val pressIndicator = Modifier.pointerInput(key1 = onTextAnnotationClicked) {
+  val pressIndicator = Modifier.pointerInput(key1 = Unit) {
     detectTapGesturesWithFilter(
       processDownEvent = { pos ->
         val layoutRes = layoutResult

@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastAll
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.AsyncImageScope
@@ -937,7 +938,7 @@ private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChang
       try {
         while (true) {
           val up = awaitPointerEvent(pass = PointerEventPass.Initial)
-          if (up.changes.all { it.changedToUp() }) {
+          if (up.changes.fastAll { it.changedToUp() }) {
             break
           }
 
