@@ -47,9 +47,9 @@ fun ScreenTransition(
     is NavigationRouter.ScreenUpdate.Set -> true
   }
 
-  var scaleAnimated by remember { mutableStateOf(scaleInitial) }
-  var alphaAnimated by remember { mutableStateOf(alphaInitial) }
-  var canRender by remember { mutableStateOf(canRenderInitial) }
+  var scaleAnimated by remember(key1 = screenUpdate) { mutableStateOf(scaleInitial) }
+  var alphaAnimated by remember(key1 = screenUpdate) { mutableStateOf(alphaInitial) }
+  var canRender by remember(key1 = screenUpdate) { mutableStateOf(canRenderInitial) }
 
   val animationDuration = 250
 

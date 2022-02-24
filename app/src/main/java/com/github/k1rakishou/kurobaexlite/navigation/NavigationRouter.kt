@@ -63,7 +63,7 @@ class NavigationRouter(
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
 
     navigationScreensStack.add(newComposeScreen)
-    logcat.logcat(tag = "ScreenTransition") { "pushScreen(${newComposeScreen.screenKey.key})" }
+    logcat.logcat(tag = TAG) { "pushScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -93,7 +93,7 @@ class NavigationRouter(
     )
 
     floatingScreensStack.add(floatingComposeScreen)
-    logcat.logcat(tag = "ScreenTransition") { "presentScreen(${floatingComposeScreen.screenKey.key})" }
+    logcat.logcat(tag = TAG) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -120,7 +120,7 @@ class NavigationRouter(
       newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.Out)
     )
 
-    logcat.logcat(tag = "ScreenTransition") { "stopPresenting(${floatingComposeScreen.screenKey.key})" }
+    logcat.logcat(tag = TAG) { "stopPresenting(${floatingComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -253,6 +253,10 @@ class NavigationRouter(
 
   interface OnBackPressHandler {
     suspend fun onBackPressed(): Boolean
+  }
+
+  companion object {
+    private const val TAG = "NavigationRouter"
   }
 
 }
