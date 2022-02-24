@@ -22,12 +22,14 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingCo
 
 
 class DialogScreen(
+  dialogKey: String,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val params: Params
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
+  private val dialogScreeKey = ScreenKey("DialogScreen_${dialogKey}")
 
-  override val screenKey: ScreenKey = SCREEN_KEY
+  override val screenKey: ScreenKey = dialogScreeKey
 
   @Composable
   override fun FloatingContent() {
@@ -174,7 +176,7 @@ class DialogScreen(
   )
 
   companion object {
-    private val SCREEN_KEY = ScreenKey("DialogScreen")
+    const val CATALOG_OVERFLOW_OPEN_THREAD_BY_IDENTIFIER = "catalog_overflow_open_thread_by_identifier_dialog"
   }
 
 }

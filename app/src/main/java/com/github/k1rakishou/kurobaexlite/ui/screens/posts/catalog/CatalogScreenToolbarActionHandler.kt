@@ -14,8 +14,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMe
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import logcat.logcat
 
 class CatalogScreenToolbarActionHandler(
@@ -27,53 +25,51 @@ class CatalogScreenToolbarActionHandler(
   private val homeScreenViewModel: HomeScreenViewModel,
 ) {
 
-  fun processClickedToolbarMenuItem(coroutineScope: CoroutineScope, menuItem: FloatingMenuItem) {
+  suspend fun processClickedToolbarMenuItem(menuItem: FloatingMenuItem) {
     logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
     when (menuItem.menuItemKey) {
       ACTION_RELOAD -> catalogScreenViewModel.reload()
-      ACTION_LAYOUT_MODE -> handleLayoutMode(coroutineScope)
+      ACTION_LAYOUT_MODE -> handleLayoutMode()
       ACTION_OPEN_THREAD_BY_IDENTIFIER -> handleOpenThreadByIdentifier()
       ACTION_SCROLL_TOP -> catalogScreenViewModel.scrollTop()
       ACTION_SCROLL_BOTTOM -> catalogScreenViewModel.scrollBottom()
     }
   }
 
-  private fun handleLayoutMode(coroutineScope: CoroutineScope) {
-    coroutineScope.launch {
-      val floatingMenuItems = mutableListOf<FloatingMenuItem>()
+  private suspend fun handleLayoutMode() {
+    val floatingMenuItems = mutableListOf<FloatingMenuItem>()
 
-      floatingMenuItems += FloatingMenuItem.Group(
-        checkedMenuItemKey = appSettings.layoutType.read(),
-        groupItems = LayoutType.values().map { layoutType ->
-          FloatingMenuItem.Text(
-            menuItemKey = layoutType,
-            text = FloatingMenuItem.MenuItemText.String(layoutType.name)
-          )
+    floatingMenuItems += FloatingMenuItem.Group(
+      checkedMenuItemKey = appSettings.layoutType.read(),
+      groupItems = LayoutType.values().map { layoutType ->
+        FloatingMenuItem.Text(
+          menuItemKey = layoutType,
+          text = FloatingMenuItem.MenuItemText.String(layoutType.name)
+        )
+      }
+    )
+
+    navigationRouter.presentScreen(
+      FloatingMenuScreen(
+        floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW_LAYOUT_TYPE,
+        componentActivity = componentActivity,
+        navigationRouter = navigationRouter,
+        menuItems = floatingMenuItems,
+        onMenuItemClicked = { clickedMenuItem ->
+          if (clickedMenuItem.menuItemKey is LayoutType) {
+            val layoutType = (clickedMenuItem.menuItemKey as LayoutType)
+            appSettings.layoutType.write(layoutType)
+          }
         }
       )
-
-      navigationRouter.presentScreen(
-        FloatingMenuScreen(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          menuItems = floatingMenuItems,
-          onMenuItemClicked = { menuItem ->
-            coroutineScope.launch {
-              if (menuItem.menuItemKey is LayoutType) {
-                val layoutType = (menuItem.menuItemKey as LayoutType)
-                appSettings.layoutType.write(layoutType)
-              }
-            }
-          }
-        )
-      )
-    }
+    )
   }
 
   private fun handleOpenThreadByIdentifier() {
     navigationRouter.presentScreen(
       DialogScreen(
+        dialogKey = DialogScreen.CATALOG_OVERFLOW_OPEN_THREAD_BY_IDENTIFIER,
         componentActivity = componentActivity,
         navigationRouter = navigationRouter,
         params = DialogScreen.Params(

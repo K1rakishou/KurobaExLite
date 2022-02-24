@@ -9,8 +9,8 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import org.koin.java.KoinJavaComponent.inject
 
 abstract class ComposeScreen(
-  protected val componentActivity: ComponentActivity,
-  protected val navigationRouter: NavigationRouter
+  val componentActivity: ComponentActivity,
+  val navigationRouter: NavigationRouter
 ) {
   protected val globalConstants by inject<GlobalConstants>(GlobalConstants::class.java)
   protected val uiInfoManager by inject<UiInfoManager>(UiInfoManager::class.java)

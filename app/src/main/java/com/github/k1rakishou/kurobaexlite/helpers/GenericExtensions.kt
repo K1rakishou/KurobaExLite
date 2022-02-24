@@ -419,3 +419,15 @@ fun AnnotatedString.Range<String>.extractLinkableAnnotationItem(): PostCommentPa
 fun PostCommentParser.TextPartSpan.Linkable.createAnnotationItem(): String {
   return serialize().readByteString().base64()
 }
+
+fun <T> CancellableContinuation<T>.resumeSafe(value: T) {
+  if (isActive) {
+    resume(value)
+  }
+}
+
+fun CancellableContinuation<*>.resumeSafe(error: Throwable) {
+  if (isActive) {
+    resumeWithException(error)
+  }
+}

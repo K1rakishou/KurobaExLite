@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeBackgroundScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
@@ -90,7 +91,19 @@ class NavigationRouter(
     val floatingScreenUpdates = combineScreenUpdates(
       oldScreens = floatingScreensStack,
       newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.In)
-    )
+    ).toMutableList()
+
+    if (floatingScreensStack.none { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
+      logcat.logcat(tag = TAG) { "presentScreen(${floatingComposeScreen.screenKey.key}) adding bgScreen" }
+
+      val bgScreen = FloatingComposeBackgroundScreen(
+        componentActivity = floatingComposeScreen.componentActivity,
+        navigationRouter = floatingComposeScreen.navigationRouter
+      )
+
+      floatingScreenUpdates.add(0, ScreenUpdate.Fade(bgScreen, ScreenUpdate.FadeType.In))
+      floatingScreensStack.add(0, bgScreen)
+    }
 
     floatingScreensStack.add(floatingComposeScreen)
     logcat.logcat(tag = TAG) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
@@ -118,7 +131,30 @@ class NavigationRouter(
     val floatingScreenUpdates = combineScreenUpdates(
       oldScreens = floatingScreensStack,
       newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.Out)
-    )
+    ).toMutableList()
+
+    if (floatingScreensStack.size <= 1 && floatingScreensStack.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
+      logcat.logcat(tag = TAG) { "unpresentScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
+
+      val indexOfPrevBg = floatingScreenUpdates
+        .indexOfFirst { screenUpdate -> screenUpdate.screen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
+      if (indexOfPrevBg >= 0) {
+        floatingScreenUpdates.removeAt(indexOfPrevBg)
+      }
+
+      val bgScreen = FloatingComposeBackgroundScreen(
+        componentActivity = floatingComposeScreen.componentActivity,
+        navigationRouter = floatingComposeScreen.navigationRouter
+      )
+
+      floatingScreenUpdates.add(0, ScreenUpdate.Fade(bgScreen, ScreenUpdate.FadeType.Out))
+
+      val indexOfBgScreen = floatingScreensStack
+        .indexOfLast { screen -> screen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
+      if (indexOfBgScreen >= 0) {
+        floatingScreensStack.removeAt(indexOfBgScreen)
+      }
+    }
 
     logcat.logcat(tag = TAG) { "stopPresenting(${floatingComposeScreen.screenKey.key})" }
 
@@ -135,30 +171,6 @@ class NavigationRouter(
     newScreenUpdate: ScreenUpdate
   ): List<ScreenUpdate> {
     return oldScreens.map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) } + newScreenUpdate
-  }
-
-  fun topNavigationScreen(): ComposeScreen? {
-    return navigationScreensStack.lastOrNull()
-  }
-
-  fun topFloatingScreen(): ComposeScreen? {
-    return floatingScreensStack.lastOrNull()
-  }
-
-  fun screenByKey(screenKey: ScreenKey): ComposeScreen? {
-    val screen = navigationScreensStack
-      .lastOrNull { navigationScreen -> navigationScreen.screenKey == screenKey }
-
-    if (screen != null) {
-      return screen
-    }
-
-    return floatingScreensStack
-      .lastOrNull { navigationScreen -> navigationScreen.screenKey == screenKey }
-  }
-
-  fun hasScreens(): Boolean {
-    return navigationScreensStack.isNotEmpty() || floatingScreensStack.isNotEmpty()
   }
 
   fun childRouter(key: String, routerIndex: Int? = null): NavigationRouter {
@@ -207,6 +219,11 @@ class NavigationRouter(
     }
 
     return false
+  }
+
+  fun onDestroy() {
+    childRouters.values.forEach { childRouter -> childRouter.onDestroy() }
+    // TODO(KurobaEx):
   }
 
   data class ScreenUpdateTransaction(

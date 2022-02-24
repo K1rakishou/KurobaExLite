@@ -85,6 +85,7 @@ class ThreadScreen(
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(
+              floatingMenuKey = FloatingMenuScreen.THREAD_OVERFLOW,
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
               menuItems = floatingMenuItems,

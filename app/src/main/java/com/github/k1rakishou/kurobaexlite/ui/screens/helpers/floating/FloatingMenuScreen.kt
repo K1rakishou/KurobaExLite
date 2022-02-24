@@ -13,21 +13,28 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import kotlinx.coroutines.launch
 import logcat.logcat
 import java.util.concurrent.atomic.AtomicLong
 
 class FloatingMenuScreen(
+  floatingMenuKey: String,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val menuItems: List<FloatingMenuItem>,
-  private val onMenuItemClicked: (FloatingMenuItem) -> Unit
+  private val onMenuItemClicked: suspend (FloatingMenuItem) -> Unit,
+  private val onDismiss: () -> Unit = {}
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
+  private val floatingMenuScreenKey = ScreenKey("FloatingMenuScreen_${floatingMenuKey}")
 
   private val lastTouchPosition = uiInfoManager.lastTouchPosition
   private val callbacksToInvokeMap = mutableMapOf<Any, FloatingMenuItem>()
+  private val coroutineScope = KurobaCoroutineScope()
+  private var shouldCallOnDismiss = true
 
   private val customAlignment by lazy {
     return@lazy Alignment { size, space, _ ->
@@ -49,16 +56,25 @@ class FloatingMenuScreen(
     }
   }
 
-  override val screenKey: ScreenKey = SCREEN_KEY
+  override val screenKey: ScreenKey = floatingMenuScreenKey
   override val contentAlignment: Alignment = customAlignment
 
   override fun onDestroy() {
-    callbacksToInvokeMap.values.forEach { menuItem ->
-      logcat(tag = "FloatingMenuScreen") { "calling onMenuItemClicked(${menuItem.menuItemKey})" }
-      onMenuItemClicked(menuItem)
-    }
+    coroutineScope.launch {
+      val callbacksWereEmpty = callbacksToInvokeMap.isEmpty()
 
-    callbacksToInvokeMap.clear()
+      callbacksToInvokeMap.values.forEach { menuItem ->
+        logcat(tag = "FloatingMenuScreen") { "calling onMenuItemClicked(${menuItem.menuItemKey})" }
+        onMenuItemClicked(menuItem)
+      }
+
+      callbacksToInvokeMap.clear()
+      coroutineScope.cancel()
+
+      if (shouldCallOnDismiss && callbacksWereEmpty) {
+        onDismiss()
+      }
+    }
   }
 
   @Composable
@@ -84,8 +100,12 @@ class FloatingMenuScreen(
             menuItem = menuItem,
             index = index,
             onMenuItemClicked = { clickedMenuItem ->
-              onMenuItemClicked(clickedMenuItem)
-              stopPresenting()
+              coroutineScope.launch {
+                shouldCallOnDismiss = false
+
+                onMenuItemClicked(clickedMenuItem)
+                stopPresenting()
+              }
             })
         }
       }
@@ -305,7 +325,10 @@ class FloatingMenuScreen(
   }
 
   companion object {
-    private val SCREEN_KEY = ScreenKey("FloatingMenuScreen")
+    const val CATALOG_OVERFLOW = "catalog_overflow_menu"
+    const val CATALOG_OVERFLOW_LAYOUT_TYPE = "catalog_overflow_layout_type_menu"
+
+    const val THREAD_OVERFLOW = "thread_overflow_menu"
   }
 }
 

@@ -106,11 +106,12 @@ class CatalogScreen(
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(
             FloatingMenuScreen(
+              floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
               menuItems = floatingMenuItems,
               onMenuItemClicked = { menuItem ->
-                catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(coroutineScope, menuItem)
+                catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
               }
             )
           )

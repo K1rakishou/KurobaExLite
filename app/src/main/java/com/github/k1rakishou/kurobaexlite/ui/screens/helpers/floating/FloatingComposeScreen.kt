@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.CallSuper
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -10,7 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -26,13 +24,6 @@ abstract class FloatingComposeScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
-  private val backgroundColor = Color(
-    red = 0f,
-    green = 0f,
-    blue = 0f,
-    alpha = 0.6f
-  )
-
   val horizPaddingDp by lazy {
     if (uiInfoManager.isTablet) {
       HPADDING_TABLET_COMPOSE
@@ -54,9 +45,8 @@ abstract class FloatingComposeScreen(
 
   open val contentAlignment: Alignment = Alignment.Center
 
-  @CallSuper
   @Composable
-  final override fun Content() {
+  override fun Content() {
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -65,7 +55,6 @@ abstract class FloatingComposeScreen(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(backgroundColor)
         .kurobaClickable(
           hasClickIndication = false,
           onClick = { coroutineScope.launch { onBackPressed() } }
@@ -163,7 +152,9 @@ abstract class FloatingComposeScreen(
   }
 
   @Composable
-  abstract fun FloatingContent()
+  open fun FloatingContent() {
+
+  }
 
   @CallSuper
   open suspend fun onBackPressed(): Boolean {
