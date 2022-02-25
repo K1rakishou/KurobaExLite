@@ -31,6 +31,7 @@ class CatalogScreenToolbarActionHandler(
     when (menuItem.menuItemKey) {
       ACTION_RELOAD -> catalogScreenViewModel.reload()
       ACTION_LAYOUT_MODE -> handleLayoutMode()
+      ACTION_BOOKMARKS_SCREEN_POSITION -> appSettings.bookmarksScreenOnLeftSide.toggle()
       ACTION_OPEN_THREAD_BY_IDENTIFIER -> handleOpenThreadByIdentifier()
       ACTION_SCROLL_TOP -> catalogScreenViewModel.scrollTop()
       ACTION_SCROLL_BOTTOM -> catalogScreenViewModel.scrollBottom()
@@ -122,6 +123,7 @@ class CatalogScreenToolbarActionHandler(
     const val ACTION_SCROLL_TOP = 2
     const val ACTION_SCROLL_BOTTOM = 3
     const val ACTION_LAYOUT_MODE = 4
+    const val ACTION_BOOKMARKS_SCREEN_POSITION = 5
   }
 
 }

@@ -39,6 +39,17 @@ fun rememberPagerState(
   }
 }
 
+@ExperimentalPagerApi
+@Composable
+fun rememberPagerState(
+  vararg keys: Any,
+  @IntRange(from = 0) initialPage: Int = 0,
+): PagerState {
+  return rememberSaveable(keys, saver = PagerState.Saver) {
+    PagerState(currentPage = initialPage)
+  }
+}
+
 /**
  * A state object that can be hoisted to control and observe scrolling for [HorizontalPager].
  *

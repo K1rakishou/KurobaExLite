@@ -53,6 +53,14 @@ class BooleanSetting(
     }
   }
 
+  suspend fun toggle(): Boolean {
+    val oldValue = read()
+    val newValue = !oldValue
+
+    write(newValue)
+    return newValue
+  }
+
   override fun listen(): Flow<Boolean> {
     return dataStore.data
       .map { prefs -> prefs.get(prefsKey) ?: read() }

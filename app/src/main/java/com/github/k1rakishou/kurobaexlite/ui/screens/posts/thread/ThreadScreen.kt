@@ -34,9 +34,8 @@ import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreen(
   componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  isStartScreen: Boolean
-) : PostsScreen(componentActivity, navigationRouter, isStartScreen) {
+  navigationRouter: NavigationRouter
+) : PostsScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)

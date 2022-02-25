@@ -42,6 +42,7 @@ class HomeScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
+  @Suppress("UnnecessaryVariable")
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   override fun Content() {
@@ -49,12 +50,23 @@ class HomeScreen(
     val insets = LocalWindowInsets.current
     val configuration = LocalConfiguration.current
     val coroutineScope = rememberCoroutineScope()
-    val layoutType by appSettings.layoutType.listenAsStateFlow(coroutineScope).collectAsState()
 
-    val childScreens = remember(layoutType, configuration) {
-      homeChildScreens.getChildScreens(layoutType, configuration)
+    val layoutTypeState by appSettings.layoutType
+      .listenAsStateFlow(coroutineScope).collectAsState()
+    val bookmarksScreenOnLeftSideState by appSettings.bookmarksScreenOnLeftSide
+      .listenAsStateFlow(coroutineScope).collectAsState()
+
+    val layoutType = layoutTypeState
+    val bookmarksScreenOnLeftSide = bookmarksScreenOnLeftSideState
+
+    if (layoutType == null || bookmarksScreenOnLeftSide == null) {
+      return
     }
-    val initialScreenIndex = remember(layoutType, configuration) {
+
+    val childScreens = remember(layoutType, configuration.orientation, bookmarksScreenOnLeftSide) {
+      homeChildScreens.getChildScreens(layoutType, configuration, bookmarksScreenOnLeftSide)
+    }
+    val initialScreenIndex = remember(layoutType, configuration.orientation, bookmarksScreenOnLeftSide) {
       homeChildScreens.getInitialScreenIndex(layoutType, configuration, childScreens)
     }
 

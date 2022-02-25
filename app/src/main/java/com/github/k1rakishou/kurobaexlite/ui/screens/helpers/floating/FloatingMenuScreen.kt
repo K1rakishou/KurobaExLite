@@ -99,7 +99,7 @@ class FloatingMenuScreen(
           BuildMenuItemContainer(
             menuItem = menuItem,
             index = index,
-            onMenuItemClicked = { clickedMenuItem ->
+            onItemClicked = { clickedMenuItem ->
               coroutineScope.launch {
                 shouldCallOnDismiss = false
 
@@ -116,7 +116,7 @@ class FloatingMenuScreen(
   private fun BuildMenuItemContainer(
     menuItem: FloatingMenuItem,
     index: Int,
-    onMenuItemClicked: (FloatingMenuItem) -> Unit
+    onItemClicked: (FloatingMenuItem) -> Unit
   ) {
     Column(
       modifier = Modifier
@@ -126,15 +126,22 @@ class FloatingMenuScreen(
       Box {
         when (menuItem) {
           is FloatingMenuItem.Text -> {
-            BuildTextMenuItem(item = menuItem, onMenuItemClicked = onMenuItemClicked)
+            BuildTextMenuItem(item = menuItem, onItemClicked = onItemClicked)
+          }
+          is FloatingMenuItem.Check -> {
+            BuildCheckMenuItem(
+              item = menuItem,
+              onItemClicked = { clickedItem ->
+                callbacksToInvokeMap.put(clickedItem.menuItemKey, clickedItem)
+              })
           }
           is FloatingMenuItem.Icon -> {
-            BuildIconMenuItem(item = menuItem, onMenuItemClicked = onMenuItemClicked)
+            BuildIconMenuItem(item = menuItem, onItemClicked = onItemClicked)
           }
           is FloatingMenuItem.Group -> {
             BuildCheckboxGroup(
               itemGroup = menuItem,
-              onMenuItemClicked = { checked, clickedItem ->
+              onItemClicked = { checked, clickedItem ->
                 if (checked) {
                   callbacksToInvokeMap.put(clickedItem.menuItemKey, clickedItem)
                 } else {
@@ -149,7 +156,7 @@ class FloatingMenuScreen(
             ) {
               menuItem.items.forEachIndexed { index, innerItem ->
                 key(innerItem.iconId) {
-                  BuildIconMenuItem(item = innerItem, onMenuItemClicked = onMenuItemClicked)
+                  BuildIconMenuItem(item = innerItem, onItemClicked = onItemClicked)
 
                   if (index != menuItem.items.size) {
                     Spacer(modifier = Modifier.width(4.dp))
@@ -165,7 +172,7 @@ class FloatingMenuScreen(
             ) {
               menuItem.items.forEachIndexed { index, innerItem ->
                 key(innerItem.iconId) {
-                  BuildIconMenuItem(item = innerItem, onMenuItemClicked = onMenuItemClicked)
+                  BuildIconMenuItem(item = innerItem, onItemClicked = onItemClicked)
 
                   if (index != menuItem.items.size) {
                     Spacer(modifier = Modifier.width(4.dp))
@@ -188,9 +195,50 @@ class FloatingMenuScreen(
   }
 
   @Composable
+  private fun BuildCheckMenuItem(
+    item: FloatingMenuItem.Check,
+    onItemClicked: (FloatingMenuItem) -> Unit
+  ) {
+    var isCurrentlyChecked by remember { mutableStateOf(false) }
+    LaunchedEffect(key1 = Unit, block = { isCurrentlyChecked = item.isChecked() })
+
+    Row(
+      modifier = Modifier
+        .kurobaClickable {
+          isCurrentlyChecked = !isCurrentlyChecked
+          onItemClicked(item)
+        }
+        .padding(horizontal = 0.dp, vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      BuildTitleAndSubtitleItems(
+        modifier = Modifier
+          .weight(1f)
+          .padding(0.dp),
+        text = item.text,
+        subText = item.subText,
+        onItemClicked = null
+      )
+
+      Spacer(modifier = Modifier.width(8.dp))
+
+      KurobaComposeCheckbox(
+        modifier = Modifier.wrapContentSize(),
+        currentlyChecked = isCurrentlyChecked,
+        onCheckChanged = { nowChecked ->
+          isCurrentlyChecked = nowChecked
+          onItemClicked(item)
+        }
+      )
+
+      Spacer(modifier = Modifier.width(8.dp))
+    }
+  }
+
+  @Composable
   private fun BuildCheckboxGroup(
     itemGroup: FloatingMenuItem.Group,
-    onMenuItemClicked: (Boolean, FloatingMenuItem) -> Unit
+    onItemClicked: (Boolean, FloatingMenuItem) -> Unit
   ) {
     var currentlyCheckedItemKey by remember {
       mutableStateOf(itemGroup.checkedMenuItemKey)
@@ -205,15 +253,17 @@ class FloatingMenuScreen(
                 currentlyCheckedItemKey = groupItem.menuItemKey
                 val checked = currentlyCheckedItemKey == groupItem.menuItemKey
 
-                onMenuItemClicked(checked, groupItem)
+                onItemClicked(checked, groupItem)
               }
-              .padding(horizontal = 8.dp, vertical = 4.dp),
+              .padding(horizontal = 0.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
             BuildTextMenuItem(
-              modifier = Modifier.weight(1f).padding(0.dp),
+              modifier = Modifier
+                .weight(1f)
+                .padding(0.dp),
               item = groupItem,
-              onMenuItemClicked = null
+              onItemClicked = null
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -224,6 +274,8 @@ class FloatingMenuScreen(
               currentlyChecked = currentlyCheckedItemKey == groupItem.menuItemKey,
               onCheckChanged = { currentlyCheckedItemKey = groupItem.menuItemKey }
             )
+
+            Spacer(modifier = Modifier.width(8.dp))
           }
 
           if (index < itemGroup.groupItems.lastIndex) {
@@ -241,12 +293,12 @@ class FloatingMenuScreen(
   @Composable
   private fun BuildIconMenuItem(
     item: FloatingMenuItem.Icon,
-    onMenuItemClicked: (item: FloatingMenuItem) -> Unit
+    onItemClicked: (item: FloatingMenuItem) -> Unit
   ) {
     KurobaComposeIcon(
       modifier = Modifier
         .size(40.dp)
-        .kurobaClickable(onClick = { onMenuItemClicked(item) })
+        .kurobaClickable(onClick = { onItemClicked(item) })
         .padding(8.dp),
       drawableId = item.iconId
     )
@@ -256,31 +308,45 @@ class FloatingMenuScreen(
   private fun BuildTextMenuItem(
     modifier: Modifier = Modifier,
     item: FloatingMenuItem.Text,
-    onMenuItemClicked: ((item: FloatingMenuItem) -> Unit)?
+    onItemClicked: ((item: FloatingMenuItem) -> Unit)?
+  ) {
+    BuildTitleAndSubtitleItems(
+      modifier = modifier,
+      text = item.text,
+      subText = item.subText,
+      onItemClicked = { onItemClicked?.invoke(item) },
+    )
+  }
+
+  @Composable
+  private fun BuildTitleAndSubtitleItems(
+    modifier: Modifier,
+    text: FloatingMenuItem.MenuItemText,
+    subText: FloatingMenuItem.MenuItemText?,
+    onItemClicked: (() -> Unit)?
   ) {
     val chanTheme = LocalChanTheme.current
+    val floatingMenuItemTitleSize by remember { uiInfoManager.floatingMenuItemTitleSize }
+    val floatingMenuItemSubTitleSize by remember { uiInfoManager.floatingMenuItemSubTitleSize }
 
-    val title = when (item.text) {
-      is FloatingMenuItem.MenuItemText.Id -> stringResource(id = item.text.id)
-      is FloatingMenuItem.MenuItemText.String -> item.text.text
+    val title = when (text) {
+      is FloatingMenuItem.MenuItemText.Id -> stringResource(id = text.id)
+      is FloatingMenuItem.MenuItemText.String -> text.text
     }
 
-    val subtitle = if (item.subText != null) {
-      when (item.subText) {
-        is FloatingMenuItem.MenuItemText.Id -> stringResource(id = item.subText.id)
-        is FloatingMenuItem.MenuItemText.String -> item.subText.text
+    val subtitle = if (subText != null) {
+      when (subText) {
+        is FloatingMenuItem.MenuItemText.Id -> stringResource(id = subText.id)
+        is FloatingMenuItem.MenuItemText.String -> subText.text
       }
     } else {
       null
     }
 
-    val floatingMenuItemTitleSize by remember { uiInfoManager.floatingMenuItemTitleSize }
-    val floatingMenuItemSubTitleSize by remember { uiInfoManager.floatingMenuItemSubTitleSize }
-
-    val clickModifier = if (onMenuItemClicked == null) {
+    val clickModifier = if (onItemClicked == null) {
       Modifier
     } else {
-      Modifier.kurobaClickable(onClick = { onMenuItemClicked(item) })
+      Modifier.kurobaClickable(onClick = { onItemClicked() })
     }
 
     Box(
@@ -337,6 +403,13 @@ sealed class FloatingMenuItem {
 
   data class Text(
     override val menuItemKey: Any,
+    val text: MenuItemText,
+    val subText: MenuItemText? = null
+  ) : FloatingMenuItem()
+
+  data class Check(
+    override val menuItemKey: Any,
+    val isChecked: suspend () -> Boolean,
     val text: MenuItemText,
     val subText: MenuItemText? = null
   ) : FloatingMenuItem()

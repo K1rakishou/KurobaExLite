@@ -7,9 +7,8 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply.PopupRepliesS
 
 abstract class PostsScreen(
   componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  isStartScreen: Boolean,
-) : HomeNavigationScreen(componentActivity, navigationRouter, isStartScreen) {
+  navigationRouter: NavigationRouter
+) : HomeNavigationScreen(componentActivity, navigationRouter) {
 
   abstract val isCatalogScreen: Boolean
 

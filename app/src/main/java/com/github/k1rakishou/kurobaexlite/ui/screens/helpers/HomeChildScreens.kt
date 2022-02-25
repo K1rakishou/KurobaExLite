@@ -5,19 +5,16 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalConfiguration
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -25,79 +22,20 @@ class HomeChildScreens(
   private val componentActivity: ComponentActivity,
   private val navigationRouter: NavigationRouter
 ) {
-  private val globalConstants by inject<GlobalConstants>(GlobalConstants::class.java)
   private val uiInfoManager by inject<UiInfoManager>(UiInfoManager::class.java)
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
-
-  private val portraitScreens by lazy {
-    return@lazy listOf<ComposeScreenWithToolbar>(
-      BookmarksScreen(
-        componentActivity = componentActivity,
-        navigationRouter = navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY.key),
-        isStartScreen = false
-      ),
-      CatalogScreen(
-        componentActivity = componentActivity,
-        navigationRouter = navigationRouter.childRouter(CatalogScreen.SCREEN_KEY.key),
-        isStartScreen = true
-      ),
-      ThreadScreen(
-        componentActivity = componentActivity,
-        navigationRouter = navigationRouter.childRouter(ThreadScreen.SCREEN_KEY.key),
-        isStartScreen = false
-      )
-    )
-  }
-
-  private val twoWaySplitScreens by lazy {
-    return@lazy listOf<ComposeScreenWithToolbar>(
-      BookmarksScreen(
-        componentActivity = componentActivity,
-        navigationRouter = navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY.key),
-        isStartScreen = false
-      ),
-      SplitScreenLayout(
-        componentActivity = componentActivity,
-        navigationRouter= navigationRouter.childRouter(SplitScreenLayout.SCREEN_KEY.key),
-        isStartScreen = true,
-        childScreensBuilder = { router ->
-          return@SplitScreenLayout listOf(
-            SplitScreenLayout.ChildScreen(
-              composeScreen = CatalogScreen(
-                componentActivity = componentActivity,
-                navigationRouter = router.childRouter(CatalogScreen.SCREEN_KEY.key),
-                isStartScreen = false
-              ),
-              weight = 0.4f
-            ),
-            SplitScreenLayout.ChildScreen(
-              composeScreen = ThreadScreen(
-                componentActivity = componentActivity,
-                navigationRouter = router.childRouter(ThreadScreen.SCREEN_KEY.key),
-                isStartScreen = false
-              ),
-              weight = 0.6f
-            )
-          )
-        }
-      )
-    )
-  }
+  private val homeScreenLayouter by lazy { HomeScreenLayouter(componentActivity, navigationRouter, uiInfoManager) }
 
   fun getChildScreens(
     layoutType: LayoutType,
-    configuration: Configuration
+    configuration: Configuration,
+    bookmarksScreenOnLeftSide: Boolean
   ): List<ComposeScreenWithToolbar> {
-    return when (layoutType) {
-      LayoutType.Auto -> {
-        when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
-          MainUiLayoutMode.Portrait -> portraitScreens
-          MainUiLayoutMode.Split -> twoWaySplitScreens
-        }
-      }
-      LayoutType.Phone -> portraitScreens
-      LayoutType.Split -> twoWaySplitScreens
-    }
+    return homeScreenLayouter.layoutScreens(
+      layoutType = layoutType,
+      configuration = configuration,
+      bookmarksScreenOnLeftSide = bookmarksScreenOnLeftSide
+    )
   }
 
   fun getInitialScreenIndex(
@@ -105,24 +43,18 @@ class HomeChildScreens(
     configuration: Configuration,
     childScreens: List<ComposeScreen>
   ): Int {
-    return when (layoutType) {
-      LayoutType.Auto -> {
-        when (uiInfoManager.mainUiLayoutMode(configuration = configuration)) {
-          MainUiLayoutMode.Portrait -> {
-            childScreens
-              .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
-          }
-          MainUiLayoutMode.Split -> {
-            childScreens
-              .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
-          }
-        }
-      }
-      LayoutType.Phone -> {
+    val mainUiLayoutMode = when (layoutType) {
+      LayoutType.Auto -> uiInfoManager.mainUiLayoutMode(configuration = configuration)
+      LayoutType.Phone -> MainUiLayoutMode.Portrait
+      LayoutType.Split -> MainUiLayoutMode.Split
+    }
+
+    return when (mainUiLayoutMode) {
+      MainUiLayoutMode.Portrait -> {
         childScreens
           .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
       }
-      LayoutType.Split -> {
+      MainUiLayoutMode.Split -> {
         childScreens
           .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
       }

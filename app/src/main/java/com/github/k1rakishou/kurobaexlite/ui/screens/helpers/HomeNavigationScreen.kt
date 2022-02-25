@@ -6,6 +6,5 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenW
 
 abstract class HomeNavigationScreen(
   componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  val isStartScreen: Boolean
+  navigationRouter: NavigationRouter
 ) : ComposeScreenWithToolbar(componentActivity, navigationRouter)

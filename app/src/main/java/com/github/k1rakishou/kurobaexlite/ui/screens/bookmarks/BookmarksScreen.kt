@@ -16,9 +16,8 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 class BookmarksScreen(
   componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  isStartScreen: Boolean
-) : HomeNavigationScreen(componentActivity, navigationRouter, isStartScreen) {
+  navigationRouter: NavigationRouter
+) : HomeNavigationScreen(componentActivity, navigationRouter) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
 

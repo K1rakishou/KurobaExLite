@@ -36,9 +36,8 @@ import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreen(
   componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  isStartScreen: Boolean
-) : PostsScreen(componentActivity, navigationRouter, isStartScreen) {
+  navigationRouter: NavigationRouter
+) : PostsScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
@@ -66,6 +65,11 @@ class CatalogScreen(
         menuItemKey = CatalogScreenToolbarActionHandler.ACTION_LAYOUT_MODE,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_layout_mode)
       ),
+      FloatingMenuItem.Check(
+        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_BOOKMARKS_SCREEN_POSITION,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_bookmarks_on_left_side),
+        isChecked = { appSettings.bookmarksScreenOnLeftSide.read() }
+      ),
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ACTION_OPEN_THREAD_BY_IDENTIFIER,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier),
@@ -92,7 +96,6 @@ class CatalogScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val postListAsync by catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
 
     with(boxScope) {
       PostsScreenToolbar(

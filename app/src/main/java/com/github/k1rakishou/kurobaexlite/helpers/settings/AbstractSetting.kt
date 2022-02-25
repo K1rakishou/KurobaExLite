@@ -17,14 +17,14 @@ abstract class AbstractSetting<T>(
   abstract suspend fun write(value: T)
   abstract fun listen(): Flow<T>
 
-  fun listenAsStateFlow(scope: CoroutineScope): StateFlow<T> {
+  fun listenAsStateFlow(scope: CoroutineScope): StateFlow<T?> {
     return currentlyCached.map {
       if (it == null) {
         return@map read()
       }
 
       return@map it
-    }.stateIn(scope, SharingStarted.Lazily, defaultValue)
+    }.stateIn(scope, SharingStarted.Eagerly, null)
   }
 
 }

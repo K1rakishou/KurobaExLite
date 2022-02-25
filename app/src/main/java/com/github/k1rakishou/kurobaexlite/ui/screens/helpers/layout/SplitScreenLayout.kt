@@ -17,9 +17,8 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 class SplitScreenLayout(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  isStartScreen: Boolean,
   private val childScreensBuilder: (NavigationRouter) -> List<ChildScreen>
-) : HomeNavigationScreen(componentActivity, navigationRouter, isStartScreen) {
+) : HomeNavigationScreen(componentActivity, navigationRouter) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
