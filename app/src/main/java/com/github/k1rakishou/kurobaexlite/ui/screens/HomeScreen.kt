@@ -5,7 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
@@ -73,7 +78,9 @@ class HomeScreen(
     val drawerLongtapGestureZonePx = with(LocalDensity.current) { remember { 24.dp.toPx() } }
     val maxDrawerWidth = with(LocalDensity.current) { remember { 600.dp.toPx().toInt() } }
     val drawerPhoneVisibleWindowWidth = with(LocalDensity.current) { remember { 40.dp.toPx().toInt() } }
+
     var drawerWidth by remember { mutableStateOf(0) }
+    var homeScreenSize by remember { mutableStateOf(IntSize.Zero) }
 
     // rememberSaveable currently does not recreate objects when it's keys change, instead it uses
     // the restored object from the saver. This causes crashes when going from portrait to landscape
@@ -98,24 +105,40 @@ class HomeScreen(
 
     homeChildScreens.HandleBackPresses()
 
+    // TODO(KurobaEx): right now this is hardcoded and I need to implement an interface that will
+    //  allow the users building zones like this one.
+    val pagerSwipeExclusionZone = remember(key1 = homeScreenSize) {
+      if (homeScreenSize.width > 0 && homeScreenSize.height > 0) {
+        Rect(Offset(0f, homeScreenSize.height - 600f), Size(350f, 600f))
+      } else {
+        Rect.Zero
+      }
+    }
+
     Box(
       modifier = Modifier
         .onSizeChanged { size ->
+          homeScreenSize = size
           drawerWidth = calculateDrawerWidth(size, maxDrawerWidth, drawerPhoneVisibleWindowWidth)
         }
         .pointerInput(
-          key1 = Unit,
+          drawerLongtapGestureZonePx,
+          drawerPhoneVisibleWindowWidth,
+          drawerWidth,
+          pagerSwipeExclusionZone,
           block = {
             detectDrawerDragGestures(
               drawerLongtapGestureZonePx = drawerLongtapGestureZonePx,
               drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
+              pagerSwipeExclusionZone = pagerSwipeExclusionZone,
               isDrawerOpened = { homeScreenViewModel.isDrawerOpened() },
               onDraggingDrawer = { dragging, progress, velocity ->
                 homeScreenViewModel.dragDrawer(dragging, progress, velocity)
               })
           }
         )
+        .drawDebugPagerSwipeExclusionZone(pagerSwipeExclusionZone)
     ) {
       HorizontalPager(
         modifier = Modifier.fillMaxSize(),
@@ -181,6 +204,25 @@ class HomeScreen(
     }
   }
 
+  private fun Modifier.drawDebugPagerSwipeExclusionZone(pagerSwipeExclusionZone: Rect): Modifier {
+    if (!DRAW_PAGER_SWIPE_EXCLUSION_ZONE) {
+      return this
+    }
+
+    return drawWithContent {
+      drawContent()
+
+      if (!pagerSwipeExclusionZone.size.isEmpty()) {
+        drawRect(
+          color = Color.Green,
+          topLeft = pagerSwipeExclusionZone.topLeft,
+          size = pagerSwipeExclusionZone.size,
+          alpha = 0.5f
+        )
+      }
+    }
+  }
+
   private fun calculateDrawerWidth(
     size: IntSize,
     maxDrawerWidth: Int,
@@ -217,5 +259,7 @@ class HomeScreen(
 
     private const val transitionScaleMax = 1f
     private const val transitionScaleMin = 0.95f
+
+    private const val DRAW_PAGER_SWIPE_EXCLUSION_ZONE = false
   }
 }
