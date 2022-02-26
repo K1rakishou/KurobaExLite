@@ -268,7 +268,7 @@ private fun PostListInternal(
     }
   }
 
-  val padding = remember(key1 = mainUiLayoutMode) {
+  val cellsPadding = remember(key1 = mainUiLayoutMode) {
     when (mainUiLayoutMode) {
       MainUiLayoutMode.Portrait -> {
         PaddingValues(horizontal = 8.dp)
@@ -351,7 +351,7 @@ private fun PostListInternal(
         is AsyncData.Data -> {
           postList(
             isCatalogMode = isCatalogMode,
-            padding = padding,
+            cellsPadding = cellsPadding,
             lazyListState = lazyListState,
             postsScreenViewModel = postsScreenViewModel,
             postDataList = postListAsync.data.posts,
@@ -369,7 +369,7 @@ private fun PostListInternal(
 
 private fun LazyListScope.postList(
   isCatalogMode: Boolean,
-  padding: PaddingValues,
+  cellsPadding: PaddingValues,
   lazyListState: LazyListState,
   postsScreenViewModel: PostScreenViewModel,
   postDataList: List<State<PostData>>,
@@ -385,7 +385,7 @@ private fun LazyListScope.postList(
   if (searchQuery != null) {
     item(key = "search_info") {
       SearchInfoCell(
-        padding = padding,
+        padding = cellsPadding,
         postsScreenViewModel = postsScreenViewModel,
         searchQuery = searchQuery,
         lazyListState = lazyListState
@@ -419,7 +419,7 @@ private fun LazyListScope.postList(
         && !previouslyVisiblePosts.containsKey(postData.postDescriptor)
 
       PostCellContainer(
-        padding = padding,
+        padding = cellsPadding,
         isCatalogMode = isCatalogMode,
         onPostCellClicked = onPostCellClicked,
         postData = postData,
@@ -444,7 +444,7 @@ private fun LazyListScope.postList(
   if (!isCatalogMode && searchQuery == null) {
     item(key = "thread_status_cell") {
       ThreadStatusCell(
-        padding = padding,
+        padding = cellsPadding,
         postsScreenViewModel = postsScreenViewModel,
         onThreadStatusCellClicked = onThreadStatusCellClicked
       )
@@ -609,10 +609,23 @@ private fun LazyItemScope.PostCellContainer(
   totalCount: Int,
   animateInsertion: Boolean
 ) {
+  val chanTheme = LocalChanTheme.current
+  val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
+
+  val backgroundModifier = if (
+    isCatalogMode
+    && currentlyOpenedThread == postData.postDescriptor.threadDescriptor
+  ) {
+    Modifier.background(chanTheme.postHighlightedColorCompose)
+  } else {
+    Modifier
+  }
+
   PostCellContainerAnimated(animateInsertion) {
     Column(
       modifier = Modifier
         .kurobaClickable(onClick = { onPostCellClicked(postData) })
+        .then(backgroundModifier)
         .padding(padding)
     ) {
       PostCell(

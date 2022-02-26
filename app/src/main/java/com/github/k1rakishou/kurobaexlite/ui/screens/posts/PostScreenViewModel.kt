@@ -9,6 +9,7 @@ import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
+import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
@@ -17,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosi
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -38,6 +40,7 @@ abstract class PostScreenViewModel(
 ) : BaseAndroidViewModel(application) {
   private val postReplyChainManager by inject<PostReplyChainManager>(PostReplyChainManager::class.java)
   private val chanThreadCache by inject<ChanThreadCache>(ChanThreadCache::class.java)
+  private val chanThreadManager by inject<ChanThreadManager>(ChanThreadManager::class.java)
   private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
 
   private var currentParseJob: Job? = null
@@ -58,6 +61,11 @@ abstract class PostScreenViewModel(
   private val _toolbarScrollEventFlow = MutableSharedFlow<Boolean>(extraBufferCapacity = Channel.UNLIMITED)
   val toolbarScrollEventFlow: SharedFlow<Boolean>
     get() = _toolbarScrollEventFlow.asSharedFlow()
+
+  val currentlyOpenedCatalogFlow: StateFlow<CatalogDescriptor?>
+    get() = chanThreadManager.currentlyOpenedCatalogFlow
+  val currentlyOpenedThreadFlow: StateFlow<ThreadDescriptor?>
+    get() = chanThreadManager.currentlyOpenedThreadFlow
 
   private val lazyColumnRememberedPositionCache = mutableMapOf<ChanDescriptor, LazyColumnRememberedPosition>()
 
