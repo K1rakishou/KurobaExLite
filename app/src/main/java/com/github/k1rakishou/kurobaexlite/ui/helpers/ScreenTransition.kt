@@ -51,7 +51,7 @@ fun ScreenTransition(
   var alphaAnimated by remember(key1 = screenUpdate) { mutableStateOf(alphaInitial) }
   var canRender by remember(key1 = screenUpdate) { mutableStateOf(canRenderInitial) }
 
-  val animationDuration = 250
+  val animationDuration = 200
 
   LaunchedEffect(
     key1 = screenUpdate,
@@ -81,8 +81,8 @@ fun ScreenTransition(
           val scaleEnd = .85f
 
           animate(
-            initialValue = 1f,
-            targetValue = 0f,
+            initialValue = 0f,
+            targetValue = 1f,
             initialVelocity = 0f,
             animationSpec = FloatTweenSpec(
               duration = animationDuration,
@@ -91,7 +91,7 @@ fun ScreenTransition(
             )
           ) { animationProgress, _ ->
             scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
-            alphaAnimated = animationProgress
+            alphaAnimated = 1f - animationProgress
           }
 
           canRender = false

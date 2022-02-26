@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.navigation
 import androidx.compose.runtime.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenTransition
 
+@Suppress("UnnecessaryVariable", "FoldInitializerAndIfToElvis")
 @Composable
 fun RootRouterHost(
   rootNavigationRouter: NavigationRouter,
@@ -23,7 +24,11 @@ fun RootRouterHost(
   }
 
   val screenUpdateTransactionState by rootNavigationRouter.screenUpdatesFlow.collectAsState()
-  val screenUpdateTransaction = screenUpdateTransactionState ?: return
+  val screenUpdateTransaction = screenUpdateTransactionState
+
+  if (screenUpdateTransaction == null) {
+    return
+  }
 
   if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
     for (secondaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {

@@ -11,6 +11,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 
 class NavigationRouter(
+  val routerKey: String,
   private val routerIndex: Int? = null,
   private val parentRouter: NavigationRouter?
 ) {
@@ -47,13 +48,13 @@ class NavigationRouter(
     )
   }
 
-  fun pushScreen(newComposeScreen: ComposeScreen) {
+  fun pushScreen(newComposeScreen: ComposeScreen): Boolean {
     val indexOfPrev = navigationScreensStack
       .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
       // Already added
-      return
+      return false
     }
 
     val navigationScreenUpdates = combineScreenUpdates(
@@ -70,6 +71,36 @@ class NavigationRouter(
       navigationScreenUpdates = navigationScreenUpdates,
       floatingScreenUpdates = floatingScreenUpdates
     )
+
+    return true
+  }
+
+  fun popScreen(newComposeScreen: ComposeScreen): Boolean {
+    val indexOfPrev = navigationScreensStack
+      .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
+
+    if (indexOfPrev < 0) {
+      // Already removed
+      return false
+    }
+
+    navigationScreensStack.removeAt(indexOfPrev)
+
+    val navigationScreenUpdates = combineScreenUpdates(
+      oldScreens = navigationScreensStack,
+      newScreenUpdate = ScreenUpdate.Pop(newComposeScreen)
+    )
+    val floatingScreenUpdates = floatingScreensStack
+      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
+
+    logcat.logcat(tag = TAG) { "popScreen(${newComposeScreen.screenKey.key})" }
+
+    _screenUpdatesFlow.value = ScreenUpdateTransaction(
+      navigationScreenUpdates = navigationScreenUpdates,
+      floatingScreenUpdates = floatingScreenUpdates
+    )
+
+    return true
   }
 
   fun presentScreen(floatingComposeScreen: FloatingComposeScreen) {
@@ -176,8 +207,29 @@ class NavigationRouter(
   fun childRouter(key: String, routerIndex: Int? = null): NavigationRouter {
     return childRouters.getOrPut(
       key = key,
-      defaultValue = { NavigationRouter(routerIndex = routerIndex, parentRouter = this) }
+      defaultValue = {
+        NavigationRouter(
+          routerKey = key,
+          routerIndex = routerIndex,
+          parentRouter = this
+        )
+      }
     )
+  }
+
+  fun getRouterByKey(key: String): NavigationRouter? {
+    if (routerKey == key) {
+      return this
+    }
+
+    if (parentRouter != null) {
+      val router = parentRouter.getRouterByKey(key)
+      if (router != null) {
+        return router
+      }
+    }
+
+    return null
   }
 
   fun onNewIntent(intent: Intent) {

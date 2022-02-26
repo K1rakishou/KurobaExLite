@@ -40,6 +40,7 @@ fun BoxScope.PostsScreenToolbar(
   uiInfoManager: UiInfoManager,
   navigationRouter: NavigationRouter,
   onHamburgIconClicked: () -> Unit,
+  onMiddleMenuClicked: () -> Unit,
   onSearchQueryUpdated: (String?) -> Unit,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
@@ -87,6 +88,7 @@ fun BoxScope.PostsScreenToolbar(
             parsedPostDataCache = parsedPostDataCache,
             uiInfoManager = uiInfoManager,
             onHamburgIconClicked = onHamburgIconClicked,
+            onMiddleMenuClicked = onMiddleMenuClicked,
             onToolbarSearchClicked = {
               stackContainerState.fadeIn(
                 SimpleStackContainerElement(
@@ -118,6 +120,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
   parsedPostDataCache: ParsedPostDataCache,
   uiInfoManager: UiInfoManager,
   onHamburgIconClicked: () -> Unit,
+  onMiddleMenuClicked: () -> Unit,
   onToolbarSearchClicked: (() -> Unit)? = null,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
@@ -173,13 +176,36 @@ private fun BoxScope.PostsScreenNormalToolbar(
       }
 
       if (toolbarTitle != null) {
-        Text(
-          text = toolbarTitle!!,
-          color = Color.White,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis,
-          fontSize = 16.sp
-        )
+        val isDataLoaded = postListAsync is AsyncData.Data
+
+        val clickModifier = if (isDataLoaded && isCatalogScreen) {
+          Modifier.kurobaClickable(onClick = onMiddleMenuClicked)
+        } else {
+          Modifier
+        }
+
+        Row(
+          modifier = Modifier
+            .fillMaxHeight()
+            .then(clickModifier),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(
+            text = toolbarTitle!!,
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            fontSize = 16.sp
+          )
+
+          if (isDataLoaded && isCatalogScreen) {
+            Spacer(modifier = Modifier.width(8.dp))
+
+            KurobaComposeIcon(drawableId = R.drawable.ic_baseline_keyboard_arrow_down_24)
+
+            Spacer(modifier = Modifier.weight(1f))
+          }
+        }
       }
     },
     rightPart = {

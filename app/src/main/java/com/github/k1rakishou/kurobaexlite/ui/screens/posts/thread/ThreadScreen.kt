@@ -80,6 +80,9 @@ class ThreadScreen(
         uiInfoManager = uiInfoManager,
         navigationRouter = navigationRouter,
         onHamburgIconClicked = { homeScreenViewModel.openDrawer() },
+        onMiddleMenuClicked = {
+          // no-op
+        },
         onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(

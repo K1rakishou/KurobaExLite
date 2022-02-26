@@ -31,4 +31,8 @@ abstract class ComposeScreen(
     )
   }
 
+  protected fun popScreen(): Boolean {
+    return navigationRouter.popScreen(this)
+  }
+
 }

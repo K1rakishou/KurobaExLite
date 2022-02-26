@@ -50,7 +50,12 @@ class MainScreen(
 
           PushScreen(
             navigationRouter = navigationRouter,
-            composeScreenBuilder = { HomeScreen(componentActivity, navigationRouter) }
+            composeScreenBuilder = {
+              HomeScreen(
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY.key)
+              )
+            }
           )
 
           RootRouterHost(navigationRouter)

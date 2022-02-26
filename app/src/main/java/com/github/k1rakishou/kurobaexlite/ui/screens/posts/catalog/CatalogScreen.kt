@@ -21,6 +21,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.screens.MainScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.boards.BoardSelectionScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
@@ -105,6 +107,11 @@ class CatalogScreen(
         uiInfoManager = uiInfoManager,
         navigationRouter = navigationRouter,
         onHamburgIconClicked = { homeScreenViewModel.openDrawer() },
+        onMiddleMenuClicked = {
+          navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)?.let { mainScreenRouter ->
+            mainScreenRouter.pushScreen(BoardSelectionScreen(componentActivity, mainScreenRouter))
+          }
+        },
         onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
         onToolbarOverflowMenuClicked = {
           navigationRouter.presentScreen(

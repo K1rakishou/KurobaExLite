@@ -15,25 +15,33 @@ fun BoxScope.KurobaToolbarLayout(
   Row(
     modifier = Modifier
       .wrapContentSize()
-      .align(Alignment.CenterStart)
   ) {
     Spacer(modifier = Modifier.width(8.dp))
 
     if (leftPart != null) {
-      Box(modifier = Modifier.size(24.dp)) {
+      Box(
+        modifier = Modifier.fillMaxHeight().width(24.dp),
+        contentAlignment = Alignment.CenterStart
+      ) {
         leftPart()
       }
     }
 
-    Spacer(modifier = Modifier.width(4.dp))
+    Spacer(modifier = Modifier.width(8.dp))
 
-    Box(modifier = Modifier.weight(1f)) {
+    Box(
+      modifier = Modifier.fillMaxHeight().weight(1f),
+      contentAlignment = Alignment.CenterStart
+    ) {
       middlePart()
     }
 
-    Spacer(modifier = Modifier.width(4.dp))
+    Spacer(modifier = Modifier.width(8.dp))
 
-    Box(modifier = Modifier.wrapContentWidth()) {
+    Box(
+      modifier = Modifier.fillMaxHeight().wrapContentWidth(),
+      contentAlignment = Alignment.CenterStart
+    ) {
       rightPart()
     }
 
