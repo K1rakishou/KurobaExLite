@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
@@ -145,8 +146,8 @@ class FloatingMenuScreen(
           is FloatingMenuItem.Group -> {
             BuildCheckboxGroup(
               itemGroup = menuItem,
-              onItemClicked = { checked, clickedItem ->
-                if (checked) {
+              onItemClicked = { invokeCallback, clickedItem ->
+                if (invokeCallback) {
                   callbacksToInvokeMap.put(clickedItem.menuItemKey, clickedItem)
                 } else {
                   callbacksToInvokeMap.remove(clickedItem.menuItemKey)
@@ -264,17 +265,24 @@ class FloatingMenuScreen(
       mutableStateOf(itemGroup.checkedMenuItemKey)
     }
 
+    fun applyChecks(clickedItem: FloatingMenuItem.Text) {
+      currentlyCheckedItemKey = clickedItem.menuItemKey
+
+      itemGroup.groupItems.fastForEach { item ->
+        val checked = currentlyCheckedItemKey == item.menuItemKey
+        val isInitiallyChecked = currentlyCheckedItemKey == itemGroup.checkedMenuItemKey
+        val invokeCallback = checked && !isInitiallyChecked
+
+        onItemClicked(invokeCallback, item)
+      }
+    }
+
     Column {
       for ((index, groupItem) in itemGroup.groupItems.withIndex()) {
         key(groupItem.menuItemKey) {
           Row(
             modifier = Modifier
-              .kurobaClickable {
-                currentlyCheckedItemKey = groupItem.menuItemKey
-                val checked = currentlyCheckedItemKey == groupItem.menuItemKey
-
-                onItemClicked(checked, groupItem)
-              }
+              .kurobaClickable { applyChecks(groupItem) }
               .padding(horizontal = 0.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
@@ -292,7 +300,7 @@ class FloatingMenuScreen(
             KurobaComposeCheckbox(
               modifier = Modifier.wrapContentSize(),
               currentlyChecked = currentlyCheckedItemKey == groupItem.menuItemKey,
-              onCheckChanged = { currentlyCheckedItemKey = groupItem.menuItemKey }
+              onCheckChanged = { applyChecks(groupItem) }
             )
 
             Spacer(modifier = Modifier.width(8.dp))
