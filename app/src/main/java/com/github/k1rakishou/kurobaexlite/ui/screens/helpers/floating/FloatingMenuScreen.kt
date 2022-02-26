@@ -131,8 +131,12 @@ class FloatingMenuScreen(
           is FloatingMenuItem.Check -> {
             BuildCheckMenuItem(
               item = menuItem,
-              onItemClicked = { clickedItem ->
-                callbacksToInvokeMap.put(clickedItem.menuItemKey, clickedItem)
+              onItemClicked = { isDefaultState, clickedItem ->
+                if (isDefaultState) {
+                  callbacksToInvokeMap.remove(clickedItem.menuItemKey)
+                } else {
+                  callbacksToInvokeMap.put(clickedItem.menuItemKey, clickedItem)
+                }
               })
           }
           is FloatingMenuItem.Icon -> {
@@ -197,16 +201,28 @@ class FloatingMenuScreen(
   @Composable
   private fun BuildCheckMenuItem(
     item: FloatingMenuItem.Check,
-    onItemClicked: (FloatingMenuItem) -> Unit
+    onItemClicked: (Boolean, FloatingMenuItem) -> Unit
   ) {
     var isCurrentlyChecked by remember { mutableStateOf(false) }
-    LaunchedEffect(key1 = Unit, block = { isCurrentlyChecked = item.isChecked() })
+    var defaultChecked by remember { mutableStateOf<Boolean?>(null) }
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        val isChecked = item.isChecked()
+        isCurrentlyChecked = isChecked
+        defaultChecked = isChecked
+      })
 
     Row(
       modifier = Modifier
         .kurobaClickable {
+          if (defaultChecked == null) {
+            return@kurobaClickable
+          }
+
           isCurrentlyChecked = !isCurrentlyChecked
-          onItemClicked(item)
+          onItemClicked(isCurrentlyChecked == defaultChecked, item)
         }
         .padding(horizontal = 0.dp, vertical = 4.dp),
       verticalAlignment = Alignment.CenterVertically
@@ -226,8 +242,12 @@ class FloatingMenuScreen(
         modifier = Modifier.wrapContentSize(),
         currentlyChecked = isCurrentlyChecked,
         onCheckChanged = { nowChecked ->
+          if (defaultChecked == null) {
+            return@KurobaComposeCheckbox
+          }
+
           isCurrentlyChecked = nowChecked
-          onItemClicked(item)
+          onItemClicked(isCurrentlyChecked == defaultChecked, item)
         }
       )
 
@@ -310,11 +330,19 @@ class FloatingMenuScreen(
     item: FloatingMenuItem.Text,
     onItemClicked: ((item: FloatingMenuItem) -> Unit)?
   ) {
+    val childOnItemClicked = remember(key1 = item) {
+      if (onItemClicked != null) {
+        return@remember { onItemClicked(item) }
+      } else {
+        return@remember null
+      }
+    }
+
     BuildTitleAndSubtitleItems(
       modifier = modifier,
       text = item.text,
       subText = item.subText,
-      onItemClicked = { onItemClicked?.invoke(item) },
+      onItemClicked = childOnItemClicked,
     )
   }
 
