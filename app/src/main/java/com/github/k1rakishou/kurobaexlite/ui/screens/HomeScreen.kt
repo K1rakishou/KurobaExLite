@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
@@ -30,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.HomeScreenDrawerLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.detectDrawerDragGestures
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeChildScreens
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomePagerNestedScrollConnection
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeScreenToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
@@ -115,6 +117,15 @@ class HomeScreen(
       }
     }
 
+    val nestedScrollConnection = remember(key1 = drawerWidth) {
+      HomePagerNestedScrollConnection(
+        drawerWidth = drawerWidth.toFloat(),
+        currentPagerPage = { pagerState.currentPage },
+        onDragging = { dragging, progress, velocity ->
+          homeScreenViewModel.dragDrawer(dragging, progress, velocity)
+        })
+    }
+
     Box(
       modifier = Modifier
         .onSizeChanged { size ->
@@ -132,12 +143,14 @@ class HomeScreen(
               drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
-              isDrawerOpened = { homeScreenViewModel.isDrawerOpened() },
+              isDrawerOpened = { homeScreenViewModel.isDrawerFullyOpened() },
               onDraggingDrawer = { dragging, progress, velocity ->
                 homeScreenViewModel.dragDrawer(dragging, progress, velocity)
-              })
+              }
+            )
           }
         )
+        .nestedScroll(nestedScrollConnection)
         .drawDebugPagerSwipeExclusionZone(pagerSwipeExclusionZone)
     ) {
       HorizontalPager(

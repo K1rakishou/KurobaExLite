@@ -84,7 +84,7 @@ class HomeScreenViewModel(
     toolbarVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
   }
 
-  fun isDrawerOpened(): Boolean {
+  fun isDrawerOpenedOrOpening(): Boolean {
     return when (_drawerVisibilityFlow.value) {
       is DrawerVisibility.Drag -> true
       DrawerVisibility.Closed,
@@ -92,6 +92,10 @@ class HomeScreenViewModel(
       DrawerVisibility.Opened,
       DrawerVisibility.Opening -> true
     }
+  }
+
+  fun isDrawerFullyOpened(): Boolean {
+    return _drawerVisibilityFlow.value is DrawerVisibility.Opened
   }
 
   fun openDrawer(withAnimation: Boolean = true) {
@@ -122,12 +126,22 @@ class HomeScreenViewModel(
     ) : DrawerVisibility() {
       val progressInverted: Float
         get() = 1f - progress
+
+      override fun toString(): String = "DrawerVisibility.Drag($isDragging, $progress, $velocity)"
     }
 
-    object Opening : DrawerVisibility()
-    object Opened : DrawerVisibility()
-    object Closing : DrawerVisibility()
-    object Closed : DrawerVisibility()
+    object Opening : DrawerVisibility() {
+      override fun toString(): String = "DrawerVisibility.Opening()"
+    }
+    object Opened : DrawerVisibility() {
+      override fun toString(): String = "DrawerVisibility.Opened()"
+    }
+    object Closing : DrawerVisibility() {
+      override fun toString(): String = "DrawerVisibility.Closing()"
+    }
+    object Closed : DrawerVisibility() {
+      override fun toString(): String = "DrawerVisibility.Closed()"
+    }
   }
 
   data class CurrentPage(

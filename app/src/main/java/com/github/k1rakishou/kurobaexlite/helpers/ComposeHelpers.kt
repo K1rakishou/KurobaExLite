@@ -11,11 +11,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.withTimeout
 import logcat.logcat
 
 private val NoPressGesture: suspend PressGestureScope.(Offset) -> Unit = { }
@@ -195,7 +192,7 @@ suspend fun PointerInputScope.kurobaAwaitLongPressOrCancellation(
     withTimeout(longPressTimeout) {
       awaitPointerEventScope {
         var finished = false
-        while (!finished) {
+        while (!finished && isActive) {
           val event = awaitPointerEvent(PointerEventPass.Main)
           if (event.changes.fastAll { it.changedToUpIgnoreConsumed() }) {
             // All pointers are up

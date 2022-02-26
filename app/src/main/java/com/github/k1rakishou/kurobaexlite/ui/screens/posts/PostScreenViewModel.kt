@@ -199,7 +199,7 @@ abstract class PostScreenViewModel(
         return@launch
       }
 
-      val chunksCount = 1 //globalConstants.coresCount.coerceAtLeast(2)
+      val chunksCount = globalConstants.coresCount.coerceAtLeast(2)
       val chunkSize = (postDataList.size / chunksCount).coerceAtLeast(chunksCount)
       val chanTheme = themeEngine.chanTheme
       val isParsingCatalog = chanDescriptor is CatalogDescriptor

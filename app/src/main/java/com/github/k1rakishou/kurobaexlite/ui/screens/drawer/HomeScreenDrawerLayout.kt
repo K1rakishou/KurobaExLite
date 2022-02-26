@@ -122,8 +122,7 @@ fun HomeScreenDrawerLayout(
         // debouncing
         delay(50)
 
-        val dv = drawerVisibility
-        when (dv) {
+        when (val dv = drawerVisibility) {
           HomeScreenViewModel.DrawerVisibility.Closing -> {
             homeScreenViewModel.closeDrawer(withAnimation = false)
           }

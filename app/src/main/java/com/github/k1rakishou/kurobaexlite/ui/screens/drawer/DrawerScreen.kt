@@ -37,7 +37,7 @@ class DrawerScreen(
     }
 
     navigationRouter.HandleBackPresses {
-      if (homeScreenViewModel.isDrawerOpened()) {
+      if (homeScreenViewModel.isDrawerOpenedOrOpening()) {
         homeScreenViewModel.closeDrawer()
         return@HandleBackPresses true
       }
