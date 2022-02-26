@@ -93,7 +93,9 @@ class HomeScreen(
     val pagerState = rememberPagerState(key1 = configuration.orientation, initialPage = initialScreenIndex)
 
     LaunchedEffect(
-      key1 = layoutType,
+      layoutType,
+      configuration.orientation,
+      bookmarksScreenOnLeftSide,
       block = {
         homeScreenViewModel.currentPageFlow.collect { currentPage ->
           scrollToPageByScreenKey(
