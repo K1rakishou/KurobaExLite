@@ -61,7 +61,7 @@ class BookmarksScreen(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .padding(top = toolbarHeight + windowInsets.topDp, bottom = windowInsets.bottomDp)
+        .padding(top = toolbarHeight + windowInsets.top, bottom = windowInsets.bottom)
     ) {
       KurobaComposeText(
         modifier = Modifier

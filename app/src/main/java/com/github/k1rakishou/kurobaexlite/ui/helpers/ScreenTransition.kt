@@ -17,7 +17,7 @@ fun ScreenTransition(
   content: @Composable () -> Unit
 ) {
   val scaleInitial = when (screenUpdate) {
-    is NavigationRouter.ScreenUpdate.Push -> .85f
+    is NavigationRouter.ScreenUpdate.Push -> .9f
     is NavigationRouter.ScreenUpdate.Pop -> 1f
     is NavigationRouter.ScreenUpdate.Fade -> 1f
     is NavigationRouter.ScreenUpdate.Set -> 1f
@@ -58,7 +58,7 @@ fun ScreenTransition(
     block = {
       when (screenUpdate) {
         is NavigationRouter.ScreenUpdate.Push -> {
-          val scaleStart = .85f
+          val scaleStart = .9f
           val scaleEnd = 1f
           canRender = true
 
@@ -78,7 +78,7 @@ fun ScreenTransition(
         }
         is NavigationRouter.ScreenUpdate.Pop -> {
           val scaleStart = 1f
-          val scaleEnd = .85f
+          val scaleEnd = .9f
 
           animate(
             initialValue = 0f,

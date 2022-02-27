@@ -1,6 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.model
 
-abstract class ClientException(message: String) : Exception(message)
+abstract class ClientException : Exception {
+  constructor(message: String) : super(message)
+  constructor(message: String, cause: Throwable) : super(message, cause)
+}
 
 class BadStatusResponseException(status: Int) : ClientException("Bad response status: ${status}")
 

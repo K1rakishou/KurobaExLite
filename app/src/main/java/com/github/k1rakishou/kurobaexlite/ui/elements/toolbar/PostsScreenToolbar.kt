@@ -33,13 +33,13 @@ enum class PostsScreenToolbarType(val id: Int) {
 }
 
 @Composable
-fun BoxScope.PostsScreenToolbar(
+fun PostsScreenToolbar(
   isCatalogScreen: Boolean,
   postListAsync: AsyncData<AbstractPostsState>,
   parsedPostDataCache: ParsedPostDataCache,
   uiInfoManager: UiInfoManager,
   navigationRouter: NavigationRouter,
-  onHamburgIconClicked: () -> Unit,
+  onLeftIconClicked: () -> Unit,
   onMiddleMenuClicked: () -> Unit,
   onSearchQueryUpdated: (String?) -> Unit,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
@@ -87,7 +87,7 @@ fun BoxScope.PostsScreenToolbar(
             postListAsync = postListAsync,
             parsedPostDataCache = parsedPostDataCache,
             uiInfoManager = uiInfoManager,
-            onHamburgIconClicked = onHamburgIconClicked,
+            onLeftIconClicked = onLeftIconClicked,
             onMiddleMenuClicked = onMiddleMenuClicked,
             onToolbarSearchClicked = {
               stackContainerState.fadeIn(
@@ -119,7 +119,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
   postListAsync: AsyncData<AbstractPostsState>,
   parsedPostDataCache: ParsedPostDataCache,
   uiInfoManager: UiInfoManager,
-  onHamburgIconClicked: () -> Unit,
+  onLeftIconClicked: () -> Unit,
   onMiddleMenuClicked: () -> Unit,
   onToolbarSearchClicked: (() -> Unit)? = null,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
@@ -129,7 +129,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
   val leftToolbarPart = leftToolbarPartBuilder(
     mainUiLayoutMode = mainUiLayoutMode,
     isCatalogScreen = isCatalogScreen,
-    onHamburgIconClicked = onHamburgIconClicked
+    onLeftIconClicked = onLeftIconClicked
   )
 
   KurobaToolbarLayout(
@@ -184,11 +184,19 @@ private fun BoxScope.PostsScreenNormalToolbar(
           Modifier
         }
 
+        val horizontalAlignment = if (isCatalogScreen) {
+          Arrangement.Center
+        } else {
+          Arrangement.Start
+        }
+
         Row(
           modifier = Modifier
             .fillMaxHeight()
+            .fillMaxWidth()
             .then(clickModifier),
-          verticalAlignment = Alignment.CenterVertically
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = horizontalAlignment
         ) {
           Text(
             text = toolbarTitle!!,
@@ -203,7 +211,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
 
             KurobaComposeIcon(drawableId = R.drawable.ic_baseline_keyboard_arrow_down_24)
 
-            Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.width(8.dp))
           }
         }
       }
@@ -241,22 +249,28 @@ private fun BoxScope.PostsScreenNormalToolbar(
 private fun leftToolbarPartBuilder(
   mainUiLayoutMode: MainUiLayoutMode,
   isCatalogScreen: Boolean,
-  onHamburgIconClicked: () -> Unit
+  onLeftIconClicked: () -> Unit
 ): @Composable (BoxScope.() -> Unit)? {
-  if (mainUiLayoutMode != MainUiLayoutMode.Split && !isCatalogScreen) {
+  if (mainUiLayoutMode == MainUiLayoutMode.Split && !isCatalogScreen) {
     return null
   }
 
   val func: @Composable (BoxScope.() -> Unit) = {
     Box {
+      val iconDrawableId = if (isCatalogScreen) {
+        R.drawable.ic_baseline_dehaze_24
+      } else {
+        R.drawable.ic_baseline_arrow_back_24
+      }
+
       KurobaComposeIcon(
         modifier = Modifier
           .size(24.dp)
           .kurobaClickable(
             bounded = false,
-            onClick = { onHamburgIconClicked() }
+            onClick = { onLeftIconClicked() }
           ),
-        drawableId = R.drawable.ic_baseline_dehaze_24
+        drawableId = iconDrawableId
       )
     }
   }

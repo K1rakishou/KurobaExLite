@@ -64,10 +64,10 @@ abstract class FloatingComposeScreen(
         modifier = Modifier
           .fillMaxSize()
           .padding(
-            start = insets.leftDp + horizPaddingDp,
-            end = insets.rightDp + horizPaddingDp,
-            top = insets.topDp + vertPaddingDp,
-            bottom = insets.bottomDp + vertPaddingDp,
+            start = insets.left + horizPaddingDp,
+            end = insets.right + horizPaddingDp,
+            top = insets.top + vertPaddingDp,
+            bottom = insets.bottom + vertPaddingDp,
           ),
         contentAlignment = contentAlignment,
       ) {

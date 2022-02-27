@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -7,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import okhttp3.HttpUrl
@@ -17,6 +19,7 @@ class Chan4 : Site {
 
   private val chan4CatalogInfo by lazy { CatalogInfo(chan4DataSource) }
   private val chan4ThreadInfo by lazy { ThreadInfo(chan4DataSource) }
+  private val chan4BoardsInfo by lazy { BoardsInfo(chan4DataSource) }
   private val chan4PostImageInfo by lazy { PostImageInfo() }
 
   override val siteKey: SiteKey = SITE_KEY
@@ -24,6 +27,7 @@ class Chan4 : Site {
 
   override fun catalogInfo(): Site.CatalogInfo = chan4CatalogInfo
   override fun threadInfo(): Site.ThreadInfo = chan4ThreadInfo
+  override fun boardsInfo(): Site.BoardsInfo = chan4BoardsInfo
   override fun postImageInfo(): Site.PostImageInfo = chan4PostImageInfo
 
   override fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor? {
@@ -91,6 +95,17 @@ class Chan4 : Site {
       return chan4DataSource
     }
 
+  }
+
+  class BoardsInfo(private val chan4DataSource: Chan4DataSource) : Site.BoardsInfo {
+
+    override fun boardsUrl(): String {
+      return "https://a.4cdn.org/boards.json"
+    }
+
+    override fun siteBoardsDataSource(): IBoardDataSource<SiteKey, BoardsData> {
+      return chan4DataSource
+    }
   }
 
   class PostImageInfo : Site.PostImageInfo {

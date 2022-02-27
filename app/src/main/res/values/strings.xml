@@ -57,6 +57,9 @@
     <string name="catalog_screen_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_screen_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
 
+    <string name="board_selection_screen_toolbar_title">Boards list</string>
+    <string name="board_selection_screen_no_boards_loaded">No boards loaded</string>
+
     <string name="toolbar_type_to_search_hint">Type to search</string>
 
     <string name="search_hint">Displaying %1$d %2$s with query \'%3$s\'</string>

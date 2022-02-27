@@ -217,16 +217,28 @@ class NavigationRouter(
     )
   }
 
-  fun getRouterByKey(key: String): NavigationRouter? {
+  fun getRouterByKey(key: String): NavigationRouter {
     if (routerKey == key) {
       return this
     }
 
     if (parentRouter != null) {
-      val router = parentRouter.getRouterByKey(key)
+      val router = parentRouter.getRouterByKeyOrNull(key)
       if (router != null) {
         return router
       }
+    }
+
+    error("NavigationRouter with key \'$key\' not found")
+  }
+
+  private fun getRouterByKeyOrNull(key: String): NavigationRouter? {
+    if (routerKey == key) {
+      return this
+    }
+
+    if (parentRouter != null) {
+      return parentRouter.getRouterByKeyOrNull(key)
     }
 
     return null

@@ -8,22 +8,18 @@ import okio.Buffer
 
 @Parcelize
 inline class SiteKey(val key: String) : Parcelable {
-
   override fun toString(): String {
-    return buildString(capacity = 32) {
-      append("SiteKey(")
-      append(key)
-      append(")")
-    }
+    return key
   }
-
 }
 
-sealed class ChanDescriptor
+sealed class ChanDescriptor {
+  abstract val siteKey: SiteKey
+}
 
 @Parcelize
 data class CatalogDescriptor(
-  val siteKey: SiteKey,
+  override val siteKey: SiteKey,
   val boardCode: String
 ) : Parcelable, ChanDescriptor() {
   val siteKeyActual: String
@@ -56,7 +52,6 @@ data class CatalogDescriptor(
       return CatalogDescriptor(siteKey, boardCode)
     }
   }
-
 }
 
 @Parcelize
@@ -64,7 +59,7 @@ data class ThreadDescriptor(
   val catalogDescriptor: CatalogDescriptor,
   val threadNo: Long
 ) : Parcelable, ChanDescriptor() {
-  val siteKey: SiteKey
+  override val siteKey: SiteKey
     get() = catalogDescriptor.siteKey
   val siteKeyActual: String
     get() = siteKey.key
@@ -111,9 +106,7 @@ data class ThreadDescriptor(
 
       return ThreadDescriptor(catalogDescriptor, threadNo)
     }
-
   }
-
 }
 
 @Parcelize
@@ -162,7 +155,6 @@ data class PostDescriptor(
   }
 
   companion object {
-
     fun create(
       siteKey: SiteKey,
       boardCode: String,
@@ -190,7 +182,5 @@ data class PostDescriptor(
 
       return PostDescriptor(threadDescriptor, postNo, postSubNo)
     }
-
   }
-
 }

@@ -1,14 +1,17 @@
 package com.github.k1rakishou.kurobaexlite.model.source
 
 import com.github.k1rakishou.kurobaexlite.helpers.*
+import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.*
+import com.github.k1rakishou.kurobaexlite.model.data.remote.BoardsDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.CatalogPageDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.ThreadDataJson
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.squareup.moshi.Moshi
@@ -24,7 +27,8 @@ class Chan4DataSource(
   private val kurobaOkHttpClient: ProxiedOkHttpClient,
   private val moshi: Moshi
 ) : ICatalogDataSource<CatalogDescriptor, CatalogData>,
-  IThreadDataSource<ThreadDescriptor, ThreadData> {
+  IThreadDataSource<ThreadDescriptor, ThreadData>,
+  IBoardDataSource<SiteKey, BoardsData> {
 
   override suspend fun loadThread(
     threadDescriptor: ThreadDescriptor,
@@ -174,6 +178,48 @@ class Chan4DataSource(
           catalogDescriptor = catalogDescriptor,
           catalogThreads = postDataList
         )
+      }
+    }
+  }
+
+  override suspend fun loadBoards(input: SiteKey): Result<BoardsData> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(input)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val boardsInfo = site.boardsInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support boards list")
+
+        val boardsUrl = boardsInfo.boardsUrl()
+
+        val request = Request.Builder()
+          .url(boardsUrl)
+          .get()
+          .build()
+
+        val boardsDataJsonAdapter = moshi.adapter<BoardsDataJson>(BoardsDataJson::class.java)
+        val boardsDataJsonAdapterResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+          request,
+          boardsDataJsonAdapter
+        )
+
+        val boardsDataJson = boardsDataJsonAdapterResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert boards json into BoardDataJson object")
+
+        val chanBoards = boardsDataJson.boards.mapNotNull { boardDataJson ->
+          val boardCode = boardDataJson.boardCode ?: return@mapNotNull null
+          val boardTitle = boardDataJson.boardTitle
+          val boardDescription = boardDataJson.boardDescription?.let { HtmlUnescape.unescape(it) }
+
+          return@mapNotNull ChanBoard(
+            catalogDescriptor = CatalogDescriptor(input, boardCode),
+            boardTitle = boardTitle,
+            boardDescription = boardDescription
+          )
+        }
+
+        return@Try BoardsData(chanBoards)
       }
     }
   }

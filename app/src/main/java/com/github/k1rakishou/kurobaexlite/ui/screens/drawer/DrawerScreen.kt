@@ -32,8 +32,8 @@ class DrawerScreen(
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
 
-    val paddings = remember(key1 = insets.topDp, key2 = insets.bottomDp) {
-      PaddingValues(top = insets.topDp, bottom = insets.bottomDp)
+    val paddings = remember(key1 = insets.top, key2 = insets.bottom) {
+      PaddingValues(top = insets.top, bottom = insets.bottom)
     }
 
     navigationRouter.HandleBackPresses {

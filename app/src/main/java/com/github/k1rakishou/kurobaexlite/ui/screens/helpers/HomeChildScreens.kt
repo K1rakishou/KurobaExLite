@@ -9,7 +9,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
@@ -30,18 +29,20 @@ class HomeChildScreens(
     layoutType: LayoutType,
     configuration: Configuration,
     bookmarksScreenOnLeftSide: Boolean
-  ): List<ComposeScreenWithToolbar> {
-    return homeScreenLayouter.layoutScreens(
+  ): ChildScreens {
+    val screens = homeScreenLayouter.layoutScreens(
       layoutType = layoutType,
       configuration = configuration,
       bookmarksScreenOnLeftSide = bookmarksScreenOnLeftSide
     )
+
+    return ChildScreens(screens)
   }
 
   fun getInitialScreenIndex(
     layoutType: LayoutType,
     configuration: Configuration,
-    childScreens: List<ComposeScreen>
+    childScreens: ChildScreens
   ): Int {
     val mainUiLayoutMode = when (layoutType) {
       LayoutType.Auto -> uiInfoManager.mainUiLayoutMode(configuration = configuration)
@@ -51,11 +52,11 @@ class HomeChildScreens(
 
     return when (mainUiLayoutMode) {
       MainUiLayoutMode.Portrait -> {
-        childScreens
+        childScreens.screens
           .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
       }
       MainUiLayoutMode.Split -> {
-        childScreens
+        childScreens.screens
           .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
       }
     }
@@ -96,5 +97,7 @@ class HomeChildScreens(
 
     return CatalogScreen.SCREEN_KEY
   }
+
+  data class ChildScreens(val screens: List<ComposeScreenWithToolbar>)
 
 }

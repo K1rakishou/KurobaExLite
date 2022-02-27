@@ -73,7 +73,7 @@ class HomeScreen(
     val childScreens = remember(layoutType, configuration.orientation, bookmarksScreenOnLeftSide) {
       homeChildScreens.getChildScreens(layoutType, configuration, bookmarksScreenOnLeftSide)
     }
-    val initialScreenIndex = remember(layoutType, configuration.orientation, bookmarksScreenOnLeftSide) {
+    val initialScreenIndex = remember(layoutType, configuration.orientation, childScreens) {
       homeChildScreens.getInitialScreenIndex(layoutType, configuration, childScreens)
     }
 
@@ -132,7 +132,7 @@ class HomeScreen(
       modifier = Modifier
         .onSizeChanged { size ->
           homeScreenSize = size
-          drawerWidth = calculateDrawerWidth(size, maxDrawerWidth, drawerPhoneVisibleWindowWidth)
+          drawerWidth = size.width.coerceAtMost(maxDrawerWidth) - drawerPhoneVisibleWindowWidth
         }
         .pointerInput(
           drawerLongtapGestureZonePx,
@@ -158,12 +158,12 @@ class HomeScreen(
       HorizontalPager(
         modifier = Modifier.fillMaxSize(),
         state = pagerState,
-        count = childScreens.size
+        count = childScreens.screens.size
       ) { page ->
         LaunchedEffect(
           key1 = pagerState.currentPage,
           block = {
-            val screenKey = childScreens.getOrNull(pagerState.currentPage)?.screenKey
+            val screenKey = childScreens.screens.getOrNull(pagerState.currentPage)?.screenKey
               ?: return@LaunchedEffect
 
             // When we manually scroll the pager we need to keep track of the current page,
@@ -176,7 +176,7 @@ class HomeScreen(
           }
         )
 
-        val childScreen = childScreens[page]
+        val childScreen = childScreens.screens[page]
         val transitionIsProgress = pagerState.currentPage != pagerState.targetPage
         val currentPageOffset = Math.abs(pagerState.currentPageOffset)
 
@@ -204,7 +204,7 @@ class HomeScreen(
         insets = insets,
         chanTheme = chanTheme,
         pagerState = pagerState,
-        childScreens = childScreens,
+        childScreens = childScreens.screens,
         homeScreenViewModel = homeScreenViewModel
       )
 
@@ -238,26 +238,14 @@ class HomeScreen(
     }
   }
 
-  private fun calculateDrawerWidth(
-    size: IntSize,
-    maxDrawerWidth: Int,
-    drawerPhoneVisibleWindowWidth: Int
-  ): Int {
-    if (uiInfoManager.isTablet) {
-      return size.width.coerceAtMost(maxDrawerWidth)
-    }
-
-    return size.width - drawerPhoneVisibleWindowWidth
-  }
-
   @OptIn(ExperimentalPagerApi::class)
   private suspend fun scrollToPageByScreenKey(
     screenKey: ScreenKey,
-    childScreens: List<ComposeScreen>,
+    childScreens: HomeChildScreens.ChildScreens,
     pagerState: PagerState,
     animate: Boolean
   ) {
-    val indexOfPage = childScreens
+    val indexOfPage = childScreens.screens
       .indexOfFirst { it.screenKey == screenKey }
 
     if (indexOfPage >= 0) {

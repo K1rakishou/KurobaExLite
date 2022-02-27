@@ -70,7 +70,7 @@ class DialogScreen(
 
       if (params.description != null) {
         Spacer(modifier = Modifier.height(4.dp))
-        val maxHeight = (maxAvailableHeight() - insets.bottomDp - insets.topDp) / 2
+        val maxHeight = (maxAvailableHeight() - insets.bottom - insets.top) / 2
 
         KurobaComposeText(
           modifier = Modifier

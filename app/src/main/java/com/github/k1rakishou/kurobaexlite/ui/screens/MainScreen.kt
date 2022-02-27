@@ -33,8 +33,8 @@ class MainScreen(
       modifier = Modifier.fillMaxSize(),
       color = chanTheme.backColorCompose
     ) {
-      val contentPadding = remember(key1 = insets.leftDp, key2 = insets.rightDp) {
-        PaddingValues(start = insets.leftDp, end = insets.rightDp)
+      val contentPadding = remember(key1 = insets.left, key2 = insets.right) {
+        PaddingValues(start = insets.left, end = insets.right)
       }
 
       BoxWithConstraints(

@@ -29,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -79,7 +80,7 @@ class ThreadScreen(
         parsedPostDataCache = parsedPostDataCache,
         uiInfoManager = uiInfoManager,
         navigationRouter = navigationRouter,
-        onHamburgIconClicked = { homeScreenViewModel.openDrawer() },
+        onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
         onMiddleMenuClicked = {
           // no-op
         },
@@ -134,8 +135,8 @@ class ThreadScreen(
         isCatalogMode = isCatalogScreen,
         isInPopup = false,
         contentPadding = PaddingValues(
-          top = toolbarHeight + windowInsets.topDp,
-          bottom = windowInsets.bottomDp
+          top = toolbarHeight + windowInsets.top,
+          bottom = windowInsets.bottom
         ),
         mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration)
       )

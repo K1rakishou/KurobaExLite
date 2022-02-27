@@ -1,10 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import okhttp3.HttpUrl
@@ -16,6 +18,8 @@ interface Site {
   fun catalogInfo(): CatalogInfo?
   fun threadInfo(): ThreadInfo?
   fun postImageInfo(): PostImageInfo?
+  fun boardsInfo(): BoardsInfo?
+
   fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor?
 
   interface CatalogInfo  {
@@ -30,5 +34,10 @@ interface Site {
 
   interface PostImageInfo {
     fun thumbnailUrl(boardCode: String, tim: Long, extension: String): String
+  }
+
+  interface BoardsInfo {
+    fun boardsUrl(): String
+    fun siteBoardsDataSource(): IBoardDataSource<SiteKey, BoardsData>
   }
 }

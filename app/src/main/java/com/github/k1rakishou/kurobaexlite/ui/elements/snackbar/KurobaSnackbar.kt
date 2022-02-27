@@ -49,10 +49,10 @@ fun KurobaSnackbar(
   Box(
     modifier = modifier
       .padding(
-        start = insets.leftDp,
-        end = insets.rightDp,
-        top = insets.topDp,
-        bottom = insets.bottomDp
+        start = insets.left,
+        end = insets.right,
+        top = insets.top,
+        bottom = insets.bottom
       ),
     contentAlignment = Alignment.BottomCenter
   ) {

@@ -22,10 +22,10 @@ fun InsetsAwareBox(
     modifier = modifier.then(
       Modifier
         .padding(
-          start = insets.leftDp.takeIf { applyLeft } ?: 0.dp,
-          end = insets.rightDp.takeIf { applyRight } ?: 0.dp,
-          top = insets.topDp.takeIf { applyTop } ?: 0.dp,
-          bottom = insets.bottomDp.takeIf { applyBottom } ?: 0.dp
+          start = insets.left.takeIf { applyLeft } ?: 0.dp,
+          end = insets.right.takeIf { applyRight } ?: 0.dp,
+          top = insets.top.takeIf { applyTop } ?: 0.dp,
+          bottom = insets.bottom.takeIf { applyBottom } ?: 0.dp
         )
     )
   ) {

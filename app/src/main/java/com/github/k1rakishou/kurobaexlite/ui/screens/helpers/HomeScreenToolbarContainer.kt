@@ -40,7 +40,7 @@ fun HomeScreenToolbarContainer(
 
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
-  val toolbarTotalHeight = remember(key1 = insets.topDp) { insets.topDp + toolbarHeight }
+  val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
   val transitionIsProgress = currentPage != targetPage
 
   val postListScrollPosition by homeScreenViewModel.toolbarVisibilityInfo.postListScrollState.collectAsState()
@@ -103,7 +103,7 @@ fun HomeScreenToolbarContainer(
       .background(chanTheme.primaryColorCompose)
       .consumeClicks()
   ) {
-    Spacer(modifier = Modifier.height(insets.topDp))
+    Spacer(modifier = Modifier.height(insets.top))
 
     Box(
       modifier = Modifier

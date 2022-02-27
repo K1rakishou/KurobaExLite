@@ -106,11 +106,19 @@ class CatalogScreen(
         parsedPostDataCache = parsedPostDataCache,
         uiInfoManager = uiInfoManager,
         navigationRouter = navigationRouter,
-        onHamburgIconClicked = { homeScreenViewModel.openDrawer() },
+        onLeftIconClicked = { homeScreenViewModel.openDrawer() },
         onMiddleMenuClicked = {
-          navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)?.let { mainScreenRouter ->
-            mainScreenRouter.pushScreen(BoardSelectionScreen(componentActivity, mainScreenRouter))
-          }
+          val catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
+            ?: return@PostsScreenToolbar
+
+          val mainScreenRouter = navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)
+          val boardSelectionScreen = BoardSelectionScreen(
+            componentActivity = componentActivity,
+            navigationRouter = mainScreenRouter,
+            catalogDescriptor = catalogDescriptor
+          )
+
+          mainScreenRouter.pushScreen(boardSelectionScreen)
         },
         onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
         onToolbarOverflowMenuClicked = {
@@ -171,8 +179,8 @@ class CatalogScreen(
         isCatalogMode = isCatalogScreen,
         isInPopup = false,
         contentPadding = PaddingValues(
-          top = toolbarHeight + windowInsets.topDp,
-          bottom = windowInsets.bottomDp
+          top = toolbarHeight + windowInsets.top,
+          bottom = windowInsets.bottom
         ),
         mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration)
       )
