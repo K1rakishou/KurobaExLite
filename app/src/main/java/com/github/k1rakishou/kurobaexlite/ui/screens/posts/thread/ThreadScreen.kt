@@ -101,9 +101,7 @@ class ThreadScreen(
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
       onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
-      onMiddleMenuClicked = {
-        // no-op
-      },
+      onMiddleMenuClicked = null,
       onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
       onToolbarOverflowMenuClicked = {
         navigationRouter.presentScreen(

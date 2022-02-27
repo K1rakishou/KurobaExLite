@@ -29,7 +29,7 @@ class PostScreenToolbarInfo(val isCatalogScreen: Boolean)
 class KurobaToolbarState(
   val leftIconInfo: LeftIconInfo?,
   val middlePartInfo: MiddlePartInfo,
-  val postScreenToolbarInfo: PostScreenToolbarInfo?
+  val postScreenToolbarInfo: PostScreenToolbarInfo? = null
 ) {
   val toolbarTitleState = mutableStateOf<String?>(null)
 }
@@ -39,9 +39,9 @@ fun KurobaToolbar(
   kurobaToolbarState: KurobaToolbarState,
   navigationRouter: NavigationRouter,
   onLeftIconClicked: () -> Unit,
-  onMiddleMenuClicked: () -> Unit,
-  onSearchQueryUpdated: (String?) -> Unit,
-  onToolbarOverflowMenuClicked: (() -> Unit)? = null
+  onMiddleMenuClicked: (() -> Unit)?,
+  onSearchQueryUpdated: ((String?) -> Unit)?,
+  onToolbarOverflowMenuClicked: (() -> Unit)?
 ) {
   val chanTheme = LocalChanTheme.current
   val parentBgColor = chanTheme.primaryColorCompose
@@ -83,6 +83,7 @@ fun KurobaToolbar(
           PostsScreenNormalToolbar(
             kurobaToolbarState = kurobaToolbarState,
             parentBgColor = parentBgColor,
+            hasSearchIcon = onSearchQueryUpdated != null,
             onLeftIconClicked = onLeftIconClicked,
             onMiddleMenuClicked = onMiddleMenuClicked,
             onToolbarSearchClicked = {
@@ -112,8 +113,9 @@ fun KurobaToolbar(
 private fun BoxScope.PostsScreenNormalToolbar(
   kurobaToolbarState: KurobaToolbarState,
   parentBgColor: Color,
+  hasSearchIcon: Boolean,
   onLeftIconClicked: () -> Unit,
-  onMiddleMenuClicked: () -> Unit,
+  onMiddleMenuClicked: (() -> Unit)? = null,
   onToolbarSearchClicked: (() -> Unit)? = null,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
@@ -133,11 +135,17 @@ private fun BoxScope.PostsScreenNormalToolbar(
           Arrangement.Start
         }
 
+        val clickableModifier = if (onMiddleMenuClicked != null) {
+          Modifier.kurobaClickable(onClick = onMiddleMenuClicked)
+        } else {
+          Modifier
+        }
+
         Row(
           modifier = Modifier
             .fillMaxHeight()
             .fillMaxWidth()
-            .kurobaClickable(onClick = onMiddleMenuClicked),
+            .then(clickableModifier),
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = horizontalAlignment
         ) {
@@ -161,29 +169,33 @@ private fun BoxScope.PostsScreenNormalToolbar(
     },
     rightPart = {
       Row {
-        KurobaComposeIcon(
-          modifier = Modifier
-            .size(24.dp)
-            .kurobaClickable(
-              bounded = false,
-              onClick = onToolbarSearchClicked
-            ),
-          drawableId = R.drawable.ic_baseline_search_24,
-          colorBehindIcon = parentBgColor
-        )
+        if (hasSearchIcon) {
+          KurobaComposeIcon(
+            modifier = Modifier
+              .size(24.dp)
+              .kurobaClickable(
+                bounded = false,
+                onClick = onToolbarSearchClicked
+              ),
+            drawableId = R.drawable.ic_baseline_search_24,
+            colorBehindIcon = parentBgColor
+          )
 
-        Spacer(modifier = Modifier.width(4.dp))
+          Spacer(modifier = Modifier.width(4.dp))
+        }
 
-        KurobaComposeIcon(
-          modifier = Modifier
-            .size(24.dp)
-            .kurobaClickable(
-              bounded = false,
-              onClick = onToolbarOverflowMenuClicked
-            ),
-          drawableId = R.drawable.ic_baseline_more_vert_24,
-          colorBehindIcon = parentBgColor
-        )
+        if (onToolbarOverflowMenuClicked != null) {
+          KurobaComposeIcon(
+            modifier = Modifier
+              .size(24.dp)
+              .kurobaClickable(
+                bounded = false,
+                onClick = onToolbarOverflowMenuClicked
+              ),
+            drawableId = R.drawable.ic_baseline_more_vert_24,
+            colorBehindIcon = parentBgColor
+          )
+        }
       }
     }
   )
@@ -218,7 +230,7 @@ private fun leftToolbarPartBuilder(
 @Composable
 private fun BoxScope.PostsScreenSearchToolbar(
   parentBgColor: Color,
-  onSearchQueryUpdated: (String?) -> Unit,
+  onSearchQueryUpdated: ((String?) -> Unit)?,
   onCloseSearchClicked: () -> Unit
 ) {
   val keyboardController = LocalSoftwareKeyboardController.current
@@ -227,7 +239,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
     key1 = Unit,
     effect = {
       onDispose {
-        onSearchQueryUpdated(null)
+        onSearchQueryUpdated?.invoke(null)
         keyboardController?.hide()
       }
     })
@@ -240,7 +252,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
           .kurobaClickable(
             bounded = false,
             onClick = {
-              onSearchQueryUpdated(null)
+              onSearchQueryUpdated?.invoke(null)
               onCloseSearchClicked()
             }
           ),
@@ -260,7 +272,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
         onValueChange = { updatedQuery ->
           if (searchQuery != updatedQuery) {
             searchQuery = updatedQuery
-            onSearchQueryUpdated(updatedQuery)
+            onSearchQueryUpdated?.invoke(updatedQuery)
           }
         }
       )
