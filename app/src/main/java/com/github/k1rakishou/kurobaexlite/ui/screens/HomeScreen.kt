@@ -20,11 +20,14 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
@@ -38,6 +41,8 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
+
+val LocalMainUiLayoutMode = staticCompositionLocalOf<MainUiLayoutMode> { error("MainUiLayoutMode not provided") }
 
 class HomeScreen(
   componentActivity: ComponentActivity,
@@ -70,6 +75,10 @@ class HomeScreen(
       return
     }
 
+    val mainUiLayoutMode = remember(key1 = layoutType, key2 = configuration) {
+      homeChildScreens.layoutTypeToMainUiLayoutMode(layoutType, configuration)
+    }
+
     val childScreens = remember(layoutType, configuration.orientation, bookmarksScreenOnLeftSide) {
       homeChildScreens.getChildScreens(layoutType, configuration, bookmarksScreenOnLeftSide)
     }
@@ -80,9 +89,6 @@ class HomeScreen(
     val drawerLongtapGestureZonePx = with(LocalDensity.current) { remember { 24.dp.toPx() } }
     val maxDrawerWidth = with(LocalDensity.current) { remember { 600.dp.toPx().toInt() } }
     val drawerPhoneVisibleWindowWidth = with(LocalDensity.current) { remember { 40.dp.toPx().toInt() } }
-
-    var drawerWidth by remember { mutableStateOf(0) }
-    var homeScreenSize by remember { mutableStateOf(IntSize.Zero) }
 
     // rememberSaveable currently does not recreate objects when it's keys change, instead it uses
     // the restored object from the saver. This causes crashes when going from portrait to landscape
@@ -108,6 +114,33 @@ class HomeScreen(
       })
 
     homeChildScreens.HandleBackPresses()
+
+    CompositionLocalProvider(LocalMainUiLayoutMode provides mainUiLayoutMode) {
+      ActualContent(
+        maxDrawerWidth = maxDrawerWidth,
+        drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
+        drawerLongtapGestureZonePx = drawerLongtapGestureZonePx,
+        pagerState = pagerState,
+        childScreens = childScreens,
+        insets = insets,
+        chanTheme = chanTheme
+      )
+    }
+  }
+
+  @OptIn(ExperimentalPagerApi::class)
+  @Composable
+  private fun ActualContent(
+    maxDrawerWidth: Int,
+    drawerPhoneVisibleWindowWidth: Int,
+    drawerLongtapGestureZonePx: Float,
+    pagerState: PagerState,
+    childScreens: HomeChildScreens.ChildScreens,
+    insets: Insets,
+    chanTheme: ChanTheme
+  ) {
+    var drawerWidth by remember { mutableStateOf(0) }
+    var homeScreenSize by remember { mutableStateOf(IntSize.Zero) }
 
     // TODO(KurobaEx): right now this is hardcoded and I need to implement an interface that will
     //  allow the users building zones like this one.

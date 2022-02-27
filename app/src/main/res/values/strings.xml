@@ -45,7 +45,7 @@
     <string name="reload">Reload</string>
 
     <string name="toolbar_loading_title">Loading…</string>
-    <string name="toolbar_loading_subtitle">Error</string>
+    <string name="toolbar_loading_error">Error loading</string>
     <string name="post_list_no_catalog_selected">No catalog selected</string>
     <string name="post_list_no_thread_selected">No thread selected</string>
 

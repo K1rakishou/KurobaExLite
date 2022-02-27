@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
@@ -19,8 +20,9 @@ import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.screens.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.boards.BoardSelectionScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
@@ -98,44 +100,61 @@ class CatalogScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val postListAsync by catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+    val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
-    with(boxScope) {
-      PostsScreenToolbar(
-        isCatalogScreen = isCatalogScreen,
-        postListAsync = postListAsync,
-        parsedPostDataCache = parsedPostDataCache,
-        uiInfoManager = uiInfoManager,
-        navigationRouter = navigationRouter,
-        onLeftIconClicked = { homeScreenViewModel.openDrawer() },
-        onMiddleMenuClicked = {
-          val catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
-            ?: return@PostsScreenToolbar
+    val kurobaToolbarState = remember {
+      val leftIconInfo = when (mainUiLayoutMode) {
+        MainUiLayoutMode.Portrait -> LeftIconInfo(R.drawable.ic_baseline_dehaze_24)
+        MainUiLayoutMode.Split -> null
+      }
 
-          val mainScreenRouter = navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)
-          val boardSelectionScreen = BoardSelectionScreen(
-            componentActivity = componentActivity,
-            navigationRouter = mainScreenRouter,
-            catalogDescriptor = catalogDescriptor
-          )
+      val middlePartInfo = MiddlePartInfo(centerContent = true)
 
-          mainScreenRouter.pushScreen(boardSelectionScreen)
-        },
-        onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
-        onToolbarOverflowMenuClicked = {
-          navigationRouter.presentScreen(
-            FloatingMenuScreen(
-              floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
-              componentActivity = componentActivity,
-              navigationRouter = navigationRouter,
-              menuItems = floatingMenuItems,
-              onMenuItemClicked = { menuItem ->
-                catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
-              }
-            )
-          )
-        }
+      return@remember KurobaToolbarState(
+        leftIconInfo = leftIconInfo,
+        middlePartInfo = middlePartInfo,
+        postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
       )
     }
+
+    UpdateCatalogToolbarTitle(
+      parsedPostDataCache = parsedPostDataCache,
+      postListAsync = postListAsync,
+      kurobaToolbarState = kurobaToolbarState
+    )
+
+    KurobaToolbar(
+      kurobaToolbarState = kurobaToolbarState,
+      navigationRouter = navigationRouter,
+      onLeftIconClicked = { homeScreenViewModel.openDrawer() },
+      onMiddleMenuClicked = {
+        val catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
+          ?: return@KurobaToolbar
+
+        val mainScreenRouter = navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)
+        val boardSelectionScreen = BoardSelectionScreen(
+          componentActivity = componentActivity,
+          navigationRouter = mainScreenRouter,
+          catalogDescriptor = catalogDescriptor
+        )
+
+        mainScreenRouter.pushScreen(boardSelectionScreen)
+      },
+      onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
+      onToolbarOverflowMenuClicked = {
+        navigationRouter.presentScreen(
+          FloatingMenuScreen(
+            floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            menuItems = floatingMenuItems,
+            onMenuItemClicked = { menuItem ->
+              catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
+            }
+          )
+        )
+      }
+    )
   }
 
   @Composable

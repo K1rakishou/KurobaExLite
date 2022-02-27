@@ -44,13 +44,8 @@ class HomeChildScreens(
     configuration: Configuration,
     childScreens: ChildScreens
   ): Int {
-    val mainUiLayoutMode = when (layoutType) {
-      LayoutType.Auto -> uiInfoManager.mainUiLayoutMode(configuration = configuration)
-      LayoutType.Phone -> MainUiLayoutMode.Portrait
-      LayoutType.Split -> MainUiLayoutMode.Split
-    }
 
-    return when (mainUiLayoutMode) {
+    return when (layoutTypeToMainUiLayoutMode(layoutType, configuration)) {
       MainUiLayoutMode.Portrait -> {
         childScreens.screens
           .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
@@ -59,6 +54,17 @@ class HomeChildScreens(
         childScreens.screens
           .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
       }
+    }
+  }
+
+  fun layoutTypeToMainUiLayoutMode(
+    layoutType: LayoutType,
+    configuration: Configuration
+  ): MainUiLayoutMode {
+    return when (layoutType) {
+      LayoutType.Auto -> uiInfoManager.mainUiLayoutMode(configuration = configuration)
+      LayoutType.Phone -> MainUiLayoutMode.Portrait
+      LayoutType.Split -> MainUiLayoutMode.Split
     }
   }
 

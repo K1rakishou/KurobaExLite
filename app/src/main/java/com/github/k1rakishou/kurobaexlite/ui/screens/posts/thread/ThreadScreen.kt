@@ -14,13 +14,15 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostsScreenToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.screens.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
@@ -72,33 +74,50 @@ class ThreadScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val postListAsync by threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+    val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
-    with(boxScope) {
-      PostsScreenToolbar(
-        isCatalogScreen = isCatalogScreen,
-        postListAsync = postListAsync,
-        parsedPostDataCache = parsedPostDataCache,
-        uiInfoManager = uiInfoManager,
-        navigationRouter = navigationRouter,
-        onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
-        onMiddleMenuClicked = {
-          // no-op
-        },
-        onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
-        onToolbarOverflowMenuClicked = {
-          navigationRouter.presentScreen(
-            FloatingMenuScreen(
-              floatingMenuKey = FloatingMenuScreen.THREAD_OVERFLOW,
-              componentActivity = componentActivity,
-              navigationRouter = navigationRouter,
-              menuItems = floatingMenuItems,
-              onMenuItemClicked = { menuItem ->
-                threadScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
-              }
-            )
-          )
-        })
+    val kurobaToolbarState = remember {
+      val leftIconInfo = when (mainUiLayoutMode) {
+        MainUiLayoutMode.Portrait -> LeftIconInfo(R.drawable.ic_baseline_arrow_back_24)
+        MainUiLayoutMode.Split -> null
+      }
+
+      val middlePartInfo = MiddlePartInfo(centerContent = false)
+
+      return@remember KurobaToolbarState(
+        leftIconInfo = leftIconInfo,
+        middlePartInfo = middlePartInfo,
+        postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
+      )
     }
+
+    UpdateCatalogToolbarTitle(
+      parsedPostDataCache = parsedPostDataCache,
+      postListAsync = postListAsync,
+      kurobaToolbarState = kurobaToolbarState
+    )
+
+    KurobaToolbar(
+      kurobaToolbarState = kurobaToolbarState,
+      navigationRouter = navigationRouter,
+      onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
+      onMiddleMenuClicked = {
+        // no-op
+      },
+      onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
+      onToolbarOverflowMenuClicked = {
+        navigationRouter.presentScreen(
+          FloatingMenuScreen(
+            floatingMenuKey = FloatingMenuScreen.THREAD_OVERFLOW,
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            menuItems = floatingMenuItems,
+            onMenuItemClicked = { menuItem ->
+              threadScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
+            }
+          )
+        )
+      })
   }
 
   @Composable
