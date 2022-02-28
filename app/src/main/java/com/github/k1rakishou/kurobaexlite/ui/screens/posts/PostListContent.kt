@@ -66,7 +66,7 @@ internal fun PostListContent(
   postListOptions: PostListOptions,
   postsScreenViewModel: PostScreenViewModel,
   onPostCellClicked: (PostData) -> Unit,
-  onLinkableClicked: (PostCommentParser.TextPartSpan.Linkable) -> Unit,
+  onLinkableClicked: (PostData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
   onPostRepliesClicked: (PostDescriptor) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
@@ -213,7 +213,7 @@ private fun processClickedAnnotation(
   postData: PostData,
   postComment: AnnotatedString,
   offset: Int,
-  onLinkableClicked: (PostCommentParser.TextPartSpan.Linkable) -> Unit
+  onLinkableClicked: (PostData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
 ) {
   val parsedPostDataContext = postData.parsedPostDataContext
     ?: return
@@ -238,7 +238,7 @@ private fun processClickedAnnotation(
         logcat(tag = "processClickedAnnotation") { "Clicked '${text}' with linkable: ${linkable}" }
 
         if (linkable != null) {
-          onLinkableClicked(linkable)
+          onLinkableClicked(postData, linkable)
         }
 
         break

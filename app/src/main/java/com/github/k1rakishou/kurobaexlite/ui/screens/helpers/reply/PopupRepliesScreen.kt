@@ -49,7 +49,7 @@ class PopupRepliesScreen(
       postsScreenViewModel = popupRepliesScreenViewModel,
       onPostCellClicked = { postData ->
       },
-      onLinkableClicked = { linkable ->
+      onLinkableClicked = { postData, linkable ->
         coroutineScope.launch { processClickedLinkable(linkable) }
       },
       onPostRepliesClicked = { postDescriptor ->
@@ -73,10 +73,13 @@ class PopupRepliesScreen(
     )
   }
 
-  private suspend fun processClickedLinkable(linkable: PostCommentParser.TextPartSpan.Linkable) {
+  private suspend fun processClickedLinkable(
+    linkable: PostCommentParser.TextPartSpan.Linkable
+  ) {
     when (linkable) {
       is PostCommentParser.TextPartSpan.Linkable.Quote -> {
-        popupRepliesScreenViewModel.loadRepliesForMode(ReplyViewMode.ReplyTo(linkable.postDescriptor))
+        val replyTo = ReplyViewMode.ReplyTo(linkable.postDescriptor)
+        popupRepliesScreenViewModel.loadRepliesForMode(replyTo)
       }
       is PostCommentParser.TextPartSpan.Linkable.Board -> {
         // TODO()

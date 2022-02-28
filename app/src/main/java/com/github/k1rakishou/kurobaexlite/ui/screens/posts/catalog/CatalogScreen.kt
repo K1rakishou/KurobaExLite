@@ -220,7 +220,7 @@ class CatalogScreen(
 
         threadScreenViewModel.loadThread(threadDescriptor)
       },
-      onLinkableClicked = { linkable ->
+      onLinkableClicked = { postData, linkable ->
         // no-op (for now?)
       },
       onPostRepliesClicked = { postDescriptor ->

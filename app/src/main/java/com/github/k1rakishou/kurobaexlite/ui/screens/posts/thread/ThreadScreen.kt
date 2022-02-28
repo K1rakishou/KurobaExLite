@@ -166,7 +166,7 @@ class ThreadScreen(
       onPostCellClicked = { postData ->
         // TODO(KurobaEx):
       },
-      onLinkableClicked = { linkable ->
+      onLinkableClicked = { postData, linkable ->
         processClickedLinkable(linkable)
       },
       onPostRepliesClicked = { postDescriptor ->
@@ -187,10 +187,13 @@ class ThreadScreen(
     )
   }
 
-  private fun processClickedLinkable(linkable: PostCommentParser.TextPartSpan.Linkable) {
+  private fun processClickedLinkable(
+    linkable: PostCommentParser.TextPartSpan.Linkable
+  ) {
     when (linkable) {
       is PostCommentParser.TextPartSpan.Linkable.Quote -> {
-        showRepliesForPost(PopupRepliesScreen.ReplyViewMode.ReplyTo(linkable.postDescriptor))
+        val replyTo = PopupRepliesScreen.ReplyViewMode.ReplyTo(linkable.postDescriptor)
+        showRepliesForPost(replyTo)
       }
       is PostCommentParser.TextPartSpan.Linkable.Board -> {
         // TODO()

@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.filter.BannedWordsHelper
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 
 class PostCommentApplier {
 
@@ -163,6 +164,11 @@ class PostCommentApplier {
 
               fgColor = if (span is PostCommentParser.TextPartSpan.Linkable.Url) {
                 chanTheme.postLinkColorCompose
+              } else if (
+                span is PostCommentParser.TextPartSpan.Linkable.Quote
+                && parsedPostDataContext.markedPostDescriptor == span.postDescriptor
+              ) {
+                ThemeEngine.manipulateColor(chanTheme.postQuoteColorCompose, 0.7f)
               } else {
                 chanTheme.postQuoteColorCompose
               }
