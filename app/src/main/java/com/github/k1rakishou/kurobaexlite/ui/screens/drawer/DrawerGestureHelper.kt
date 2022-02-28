@@ -41,6 +41,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
 
       if (isDrawerOpened()) {
         var overSlop = Offset.Zero
+        onStopConsumingScrollEvents()
 
         val touchSlopChange = awaitPointerEventScope {
           awaitTouchSlopOrCancellation(downEvent.id) { change, slop ->
@@ -49,7 +50,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           }
         }
 
-        if (touchSlopChange == null || Math.abs(overSlop.y) > Math.abs(overSlop.x)) {
+        if (touchSlopChange == null || overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
           return@forEachGesture
         }
 
@@ -104,6 +105,8 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
 
           onDraggingDrawer(true, dragProgress, 0f)
         } else {
+          onStopConsumingScrollEvents()
+
           val longPress = kurobaAwaitLongPressOrCancellation(downEvent)
           if (longPress == null || longPress.position.x > (drawerLongtapGestureZonePx)) {
             return@forEachGesture
