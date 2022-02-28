@@ -141,6 +141,7 @@ class HomeScreen(
   ) {
     var drawerWidth by remember { mutableStateOf(0) }
     var homeScreenSize by remember { mutableStateOf(IntSize.Zero) }
+    var consumeAllScrollEvents by remember { mutableStateOf(false) }
 
     // TODO(KurobaEx): right now this is hardcoded and I need to implement an interface that will
     //  allow the users building zones like this one.
@@ -156,6 +157,7 @@ class HomeScreen(
       HomePagerNestedScrollConnection(
         drawerWidth = drawerWidth.toFloat(),
         currentPagerPage = { pagerState.currentPage },
+        shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
         onDragging = { dragging, progress, velocity ->
           homeScreenViewModel.dragDrawer(dragging, progress, velocity)
         })
@@ -179,6 +181,7 @@ class HomeScreen(
               drawerWidth = drawerWidth.toFloat(),
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
               isDrawerOpened = { homeScreenViewModel.isDrawerFullyOpened() },
+              onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               onDraggingDrawer = { dragging, progress, velocity ->
                 homeScreenViewModel.dragDrawer(dragging, progress, velocity)
               }

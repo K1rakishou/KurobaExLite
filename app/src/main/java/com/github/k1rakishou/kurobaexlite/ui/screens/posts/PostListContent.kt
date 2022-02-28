@@ -235,7 +235,9 @@ private fun processClickedAnnotation(
       PostCommentApplier.ANNOTATION_POST_LINKABLE -> {
         val text = postComment.text.substring(clickedAnnotation.start, clickedAnnotation.end)
         val linkable = clickedAnnotation.extractLinkableAnnotationItem()
-        logcat(tag = "processClickedAnnotation") { "Clicked '${text}' with linkable: ${linkable}" }
+        logcat(tag = "processClickedAnnotation") {
+          "Clicked '${text}' with linkable: ${linkable}"
+        }
 
         if (linkable != null) {
           onLinkableClicked(postData, linkable)
@@ -244,7 +246,9 @@ private fun processClickedAnnotation(
         break
       }
       PostCommentApplier.ANNOTATION_POST_SPOILER_TEXT -> {
-        logcat(tag = "processClickedAnnotation") { "Clicked spoiler text, start=${clickedAnnotation.start}, end=${clickedAnnotation.end}" }
+        logcat(tag = "processClickedAnnotation") {
+          "Clicked spoiler text, start=${clickedAnnotation.start}, end=${clickedAnnotation.end}"
+        }
 
         val textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet.toMutableSet()
         val spoilerPosition = SpoilerPosition(clickedAnnotation.start, clickedAnnotation.end)

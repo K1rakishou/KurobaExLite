@@ -10,6 +10,7 @@ import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import com.github.k1rakishou.kurobaexlite.helpers.kurobaAwaitLongPressOrCancellation
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
+import kotlin.math.absoluteValue
 
 suspend fun PointerInputScope.detectDrawerDragGestures(
   drawerLongtapGestureZonePx: Float,
@@ -17,6 +18,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   drawerWidth: Float,
   pagerSwipeExclusionZone: Rect,
   isDrawerOpened: () -> Boolean,
+  onStopConsumingScrollEvents: () -> Unit,
   onDraggingDrawer: (Boolean, Float, Float) -> Unit
 ) {
   val velocityTracker = VelocityTracker()
@@ -55,15 +57,46 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           return@forEachGesture
         }
       } else {
-        // TODO(KurobaEx): this starts the Drawer drag as soon as the user clicks inside of the
-        //  drawerSpecialGestureZone which makes it impossible to scroll the LazyColumn which is inside
-        //  of the Pager. I have no idea how to intercept touch events first then wait for touch slop
-        //  and then if the user moved the pointer vertically more than horizontally pass all the
-        //  consumed events into the LazyColumn right now. Maybe I should use InteractionSource or maybe there
-        //  is something else for that?
         if (pagerSwipeExclusionZone.contains(downEvent.position)) {
           for (change in firstEvent.changes) {
             change.consumeAllChanges()
+          }
+
+          var isDrawerDragEvent = false
+
+          val firstEventTotalTravelDistance = firstEvent.changes
+            .fold(Offset.Zero) { acc, change -> acc + change.position }
+
+          awaitPointerEventScope {
+            while (isActive) {
+              val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+              if (nextEvent.type != PointerEventType.Move) {
+                break
+              }
+
+              val nextEventTotalTravelDistance = nextEvent.changes
+                .fold(Offset.Zero) { acc, change -> acc + change.position }
+
+              val distanceDelta = nextEventTotalTravelDistance - firstEventTotalTravelDistance
+
+              if (distanceDelta.y.absoluteValue > distanceDelta.x.absoluteValue || distanceDelta.x < 0) {
+                break
+              }
+
+              if (distanceDelta.x > viewConfiguration.touchSlop) {
+                isDrawerDragEvent = true
+                break
+              }
+
+              for (change in nextEvent.changes) {
+                change.consumeAllChanges()
+              }
+            }
+          }
+
+          if (!isDrawerDragEvent) {
+            onStopConsumingScrollEvents()
+            return@forEachGesture
           }
 
           val dragProgress = (downEvent.position.x / drawerWidth).coerceIn(0f, 1f)

@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.Velocity
 class HomePagerNestedScrollConnection(
   private val drawerWidth: Float,
   private val currentPagerPage: () -> Int,
+  private val shouldConsumeAllScrollEvents: () -> Boolean,
   private val onDragging: (Boolean, Float, Float) -> Unit
 ) : NestedScrollConnection {
   private var scrolled = 0f
@@ -15,6 +16,10 @@ class HomePagerNestedScrollConnection(
 
   override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
     pointerDown = true
+
+    if (shouldConsumeAllScrollEvents()) {
+      return available
+    }
 
     if (available.x < 0f && scrolled > 0f && currentPagerPage() == 0) {
       dragDrawerLayout(available)
