@@ -4,9 +4,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.helpers.filter.BannedWordsHelper
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
+import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 
 class PostCommentApplier {
@@ -67,7 +69,8 @@ class PostCommentApplier {
           textPart = textPart,
           chanTheme = chanTheme,
           textPartBuilder = textPartBuilder,
-          parsedPostDataContext = parsedPostDataContext
+          parsedPostDataContext = parsedPostDataContext,
+          totalLength = totalLength
         )
       }
 
@@ -84,7 +87,8 @@ class PostCommentApplier {
     textPart: PostCommentParser.TextPart,
     chanTheme: ChanTheme,
     textPartBuilder: StringBuilder,
-    parsedPostDataContext: ParsedPostDataContext
+    parsedPostDataContext: ParsedPostDataContext,
+    totalLength: Int
   ) {
     for (span in textPart.spans) {
       var bgColor: Color = Color.Unspecified
@@ -93,6 +97,7 @@ class PostCommentApplier {
       var linethrough = false
       var annotationTag: String? = null
       var annotationValue: String? = null
+      var bold = false
 
       when (span) {
         is PostCommentParser.TextPartSpan.BgColor -> {
@@ -111,8 +116,8 @@ class PostCommentApplier {
           bgColor = chanTheme.postSpoilerColorCompose
 
           val shouldRevealSpoiler = matchesOpenedSpoilerPosition(
-            startPos = 0,
-            endPos = textPartBuilder.length,
+            startPos = totalLength,
+            endPos = totalLength + textPartBuilder.length,
             textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet
           )
 
@@ -121,6 +126,8 @@ class PostCommentApplier {
           } else {
             chanTheme.postSpoilerColorCompose
           }
+
+          annotationTag = ANNOTATION_POST_SPOILER_TEXT
         }
         is PostCommentParser.TextPartSpan.Linkable -> {
           when (span) {
@@ -131,8 +138,6 @@ class PostCommentApplier {
               underline = true
 
               if (span is PostCommentParser.TextPartSpan.Linkable.Quote) {
-                linethrough = span.dead
-
                 if (span.postDescriptor.isOP && !span.crossThread) {
                   textPartBuilder
                     .append(" ")
@@ -144,6 +149,16 @@ class PostCommentApplier {
                     .append(" ")
                     .append(CROSS_THREAD_POSTFIX)
                 }
+
+                if (span.dead) {
+                  textPartBuilder
+                    .append(" ")
+                    .append(DEAD_POSTFIX)
+
+                  linethrough = true
+                }
+
+                bold = parsedPostDataContext.markedPostDescriptor == span.postDescriptor
               }
 
               fgColor = if (span is PostCommentParser.TextPartSpan.Linkable.Url) {
@@ -164,9 +179,16 @@ class PostCommentApplier {
 
       append(textPartBuilder.toString())
 
+      val fontWeight = if (bold) {
+        FontWeight.Bold
+      } else {
+        null
+      }
+
       val spanStyle = SpanStyle(
         color = fgColor,
         background = bgColor,
+        fontWeight = fontWeight,
         textDecoration = buildTextDecoration(underline, linethrough)
       )
 
@@ -176,7 +198,7 @@ class PostCommentApplier {
 
       if (annotationTag != null) {
         addStringAnnotation(
-          tag = ANNOTATION_POST_LINKABLE,
+          tag = annotationTag,
           annotation = annotationValue ?: "",
           start = 0,
           end = textPartBuilder.length
@@ -276,10 +298,10 @@ class PostCommentApplier {
   private fun matchesOpenedSpoilerPosition(
     startPos: Int,
     endPos: Int,
-    textSpoilerOpenedPositionSet: Set<Int>
+    textSpoilerOpenedPositionSet: Set<SpoilerPosition>
   ): Boolean {
     for (position in textSpoilerOpenedPositionSet) {
-      if (position in startPos..endPos) {
+      if (position.start == startPos && position.end == endPos) {
         return true
       }
     }
@@ -293,13 +315,16 @@ class PostCommentApplier {
 
     const val ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG = "[click_to_view_full_comment]"
     const val ANNOTATION_POST_LINKABLE = "[post_linkable]"
+    const val ANNOTATION_POST_SPOILER_TEXT = "[spoiler_text]"
 
     private const val CROSS_THREAD_POSTFIX = "->"
     private const val OP_POSTFIX = "(OP)"
+    private const val DEAD_POSTFIX = "(DEAD)"
 
     val ALL_TAGS = mutableSetOf(
       ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG,
-      ANNOTATION_POST_LINKABLE
+      ANNOTATION_POST_LINKABLE,
+      ANNOTATION_POST_SPOILER_TEXT
     )
   }
 

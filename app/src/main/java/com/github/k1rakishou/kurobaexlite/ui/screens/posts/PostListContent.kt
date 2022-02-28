@@ -47,6 +47,7 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.*
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -214,27 +215,51 @@ private fun processClickedAnnotation(
   offset: Int,
   onLinkableClicked: (PostCommentParser.TextPartSpan.Linkable) -> Unit
 ) {
-  val clickedAnnotation = postComment.getStringAnnotations(offset, offset).firstOrNull()
-    ?: return
   val parsedPostDataContext = postData.parsedPostDataContext
     ?: return
 
-  when (clickedAnnotation.tag) {
-    PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG -> {
-      if (!parsedPostDataContext.revealFullPostComment) {
+  val clickedAnnotations = postComment.getStringAnnotations(offset, offset)
+
+  for (clickedAnnotation in clickedAnnotations) {
+    when (clickedAnnotation.tag) {
+      PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG -> {
+        if (!parsedPostDataContext.revealFullPostComment) {
+          postsScreenViewModel.reparsePost(
+            postData = postData,
+            parsedPostDataContext = parsedPostDataContext.copy(revealFullPostComment = true)
+          )
+        }
+
+        break
+      }
+      PostCommentApplier.ANNOTATION_POST_LINKABLE -> {
+        val text = postComment.text.substring(clickedAnnotation.start, clickedAnnotation.end)
+        val linkable = clickedAnnotation.extractLinkableAnnotationItem()
+        logcat(tag = "processClickedAnnotation") { "Clicked '${text}' with linkable: ${linkable}" }
+
+        if (linkable != null) {
+          onLinkableClicked(linkable)
+        }
+
+        break
+      }
+      PostCommentApplier.ANNOTATION_POST_SPOILER_TEXT -> {
+        logcat(tag = "processClickedAnnotation") { "Clicked spoiler text, start=${clickedAnnotation.start}, end=${clickedAnnotation.end}" }
+
+        val textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet.toMutableSet()
+        val spoilerPosition = SpoilerPosition(clickedAnnotation.start, clickedAnnotation.end)
+
+        if (textSpoilerOpenedPositionSet.contains(spoilerPosition)) {
+          textSpoilerOpenedPositionSet.remove(spoilerPosition)
+        } else {
+          textSpoilerOpenedPositionSet.add(spoilerPosition)
+        }
+
         postsScreenViewModel.reparsePost(
           postData = postData,
-          parsedPostDataContext = parsedPostDataContext.copy(revealFullPostComment = true)
+          parsedPostDataContext = parsedPostDataContext
+            .copy(textSpoilerOpenedPositionSet = textSpoilerOpenedPositionSet)
         )
-      }
-    }
-    PostCommentApplier.ANNOTATION_POST_LINKABLE -> {
-      val text = postComment.text.substring(clickedAnnotation.start, clickedAnnotation.end)
-      val linkable = clickedAnnotation.extractLinkableAnnotationItem()
-      logcat(tag = "processClickedAnnotation") { "Clicked '${text}' with linkable: ${linkable}" }
-
-      if (linkable != null) {
-        onLinkableClicked(linkable)
       }
     }
   }

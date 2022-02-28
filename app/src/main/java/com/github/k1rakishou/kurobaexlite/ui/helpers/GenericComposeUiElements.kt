@@ -187,9 +187,9 @@ fun KurobaComposeClickableText(
 ) {
   var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
   var currentlyPressedAnnotationPath by remember { mutableStateOf<Path?>(null) }
-  var currentPressedAnnotationBgColor by remember { mutableStateOf<Color>(Color.Magenta) }
+  var currentPressedAnnotationBgColor by remember { mutableStateOf<Color?>(null) }
 
-  val pressIndicator = Modifier.pointerInput(key1 = Unit) {
+  val pressIndicator = Modifier.pointerInput(key1 = text) {
     detectTapGesturesWithFilter(
       processDownEvent = { pos ->
         val layoutRes = layoutResult
@@ -202,7 +202,7 @@ fun KurobaComposeClickableText(
           return@detectTapGesturesWithFilter false
         }
 
-        currentPressedAnnotationBgColor = annotationBgColors[clickedAnnotation.tag] ?: Color.Magenta
+        currentPressedAnnotationBgColor = annotationBgColors[clickedAnnotation.tag]
         currentlyPressedAnnotationPath = path
         return@detectTapGesturesWithFilter true
       },
@@ -224,21 +224,23 @@ fun KurobaComposeClickableText(
       .wrapContentHeight()
       .padding(top = 4.dp)
   ) {
-    Canvas(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight(),
-      onDraw = {
-        val path = currentlyPressedAnnotationPath
-          ?: return@Canvas
+    val annotationPath = currentlyPressedAnnotationPath
+    val annotationColor = currentPressedAnnotationBgColor
 
-        drawPath(
-          path = path,
-          style = Fill,
-          brush = SolidColor(value = currentPressedAnnotationBgColor)
-        )
-      }
-    )
+    if (annotationPath != null && annotationColor != null) {
+      Canvas(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight(),
+        onDraw = {
+          drawPath(
+            path = annotationPath,
+            style = Fill,
+            brush = SolidColor(value = annotationColor)
+          )
+        }
+      )
+    }
 
     KurobaComposeText(
       modifier = modifier.then(pressIndicator),

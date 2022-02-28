@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 data class ParsedPostData(
   val parsedPostParts: List<PostCommentParser.TextPart>,
@@ -29,7 +30,8 @@ data class ParsedPostData(
 data class ParsedPostDataContext(
   val isParsingCatalog: Boolean,
   val revealFullPostComment: Boolean = false,
-  val textSpoilerOpenedPositionSet: Set<Int> = emptySet()
+  val textSpoilerOpenedPositionSet: Set<SpoilerPosition> = emptySet(),
+  val markedPostDescriptor: PostDescriptor? = null
 ) {
   val isParsingThread: Boolean = !isParsingCatalog
 
@@ -52,3 +54,5 @@ data class ParsedPostDataContext(
   }
 
 }
+
+data class SpoilerPosition(val start: Int, val end: Int)

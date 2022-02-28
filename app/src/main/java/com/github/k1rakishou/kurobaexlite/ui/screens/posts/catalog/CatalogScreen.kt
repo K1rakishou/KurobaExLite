@@ -117,7 +117,7 @@ class CatalogScreen(
       )
     }
 
-    UpdateCatalogToolbarTitle(
+    UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
       postListAsync = postListAsync,
       kurobaToolbarState = kurobaToolbarState

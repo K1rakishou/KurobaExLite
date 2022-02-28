@@ -31,7 +31,7 @@ abstract class PostsScreen(
   }
 
   @Composable
-  protected fun UpdateCatalogToolbarTitle(
+  protected fun UpdateToolbarTitle(
     parsedPostDataCache: ParsedPostDataCache,
     postListAsync: AsyncData<AbstractPostsState>,
     kurobaToolbarState: KurobaToolbarState

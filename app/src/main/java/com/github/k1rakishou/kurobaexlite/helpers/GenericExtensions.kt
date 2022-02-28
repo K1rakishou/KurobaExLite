@@ -407,6 +407,10 @@ fun Buffer.readUtfString(): String {
 }
 
 fun AnnotatedString.Range<String>.extractLinkableAnnotationItem(): PostCommentParser.TextPartSpan.Linkable? {
+  if (item.isEmpty()) {
+    return null
+  }
+
   val base64Decoded = item.decodeBase64()
     ?: return null
 
