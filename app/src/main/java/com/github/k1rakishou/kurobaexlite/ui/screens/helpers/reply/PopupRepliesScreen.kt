@@ -103,29 +103,30 @@ class PopupRepliesScreen(
   ) {
     val chanTheme = LocalChanTheme.current
 
-    PostListContent(
-      modifier = Modifier.layoutId(postListLayoutId),
-      postListOptions = postListOptions,
-      postsScreenViewModel = popupRepliesScreenViewModel,
-      onPostCellClicked = { postData ->
-      },
-      onLinkableClicked = { postData, linkable ->
-        coroutineScope.launch { processClickedLinkable(linkable) }
-      },
-      onPostRepliesClicked = { postDescriptor ->
-        coroutineScope.launch {
-          popupRepliesScreenViewModel.loadRepliesForMode(ReplyViewMode.RepliesFrom(postDescriptor))
-        }
-      },
-      onPostListScrolled = { delta ->
-      },
-      onPostListTouchingTopOrBottomStateChanged = { touching ->
-      },
-      onPostListDragStateChanged = { dragging ->
-      },
-      onFastScrollerDragStateChanged = { dragging ->
-      },
-    )
+    Box(modifier = Modifier.layoutId(postListLayoutId)) {
+      PostListContent(
+        postListOptions = postListOptions,
+        postsScreenViewModel = popupRepliesScreenViewModel,
+        onPostCellClicked = { postData ->
+        },
+        onLinkableClicked = { postData, linkable ->
+          coroutineScope.launch { processClickedLinkable(linkable) }
+        },
+        onPostRepliesClicked = { postDescriptor ->
+          coroutineScope.launch {
+            popupRepliesScreenViewModel.loadRepliesForMode(ReplyViewMode.RepliesFrom(postDescriptor))
+          }
+        },
+        onPostListScrolled = { delta ->
+        },
+        onPostListTouchingTopOrBottomStateChanged = { touching ->
+        },
+        onPostListDragStateChanged = { dragging ->
+        },
+        onFastScrollerDragStateChanged = { dragging ->
+        },
+      )
+    }
 
     Row(
       modifier = Modifier

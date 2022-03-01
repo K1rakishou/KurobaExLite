@@ -12,6 +12,7 @@ class CatalogScreenState : PostScreenViewModel.PostScreenState {
   override val postsAsyncDataState = MutableStateFlow<AsyncData<AbstractPostsState>>(AsyncData.Empty)
   override val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
   override val lastViewedPostDescriptor = MutableStateFlow<PostDescriptor?>(null)
+  override val searchQueryFlow = MutableStateFlow<String?>(null)
 
   override fun updatePost(postData: PostData) {
     val asyncData = postsAsyncDataState.value
@@ -23,7 +24,10 @@ class CatalogScreenState : PostScreenViewModel.PostScreenState {
   override fun updateSearchQuery(searchQuery: String?) {
     val asyncData = postsAsyncDataState.value
     if (asyncData is AsyncData.Data) {
+      searchQueryFlow.value = searchQuery
       asyncData.data.updateSearchQuery(searchQuery)
+    } else {
+      searchQueryFlow.value = null
     }
   }
 }

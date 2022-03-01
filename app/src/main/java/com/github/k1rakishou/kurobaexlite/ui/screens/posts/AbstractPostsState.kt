@@ -10,10 +10,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 abstract class AbstractPostsState {
   protected var postsCopy: List<PostData>? = null
 
-  private var _searchQuery: String? = null
-  val searchQuery: String?
-    get() = _searchQuery
-
   abstract val chanDescriptor: ChanDescriptor
   abstract val posts: List<State<PostData>>
   protected abstract val postsMutable: SnapshotStateList<MutableState<PostData>>
@@ -22,8 +18,6 @@ abstract class AbstractPostsState {
   abstract fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult
 
   fun updateSearchQuery(searchQuery: String?) {
-    _searchQuery = searchQuery
-
     if (searchQuery == null) {
       if (postsCopy != null) {
         val oldThreads = postsCopy!!.map { mutableStateOf(it) }

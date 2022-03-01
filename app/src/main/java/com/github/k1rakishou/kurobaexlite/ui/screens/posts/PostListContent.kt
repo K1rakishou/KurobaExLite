@@ -10,8 +10,6 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -33,6 +31,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -61,6 +60,7 @@ import logcat.logcat
 
 private val animationTranslationDelta = 100.dp
 private val animationDurationMs = 200
+private val searchInfoCellHeight = 32.dp
 private val postCellKeyPrefix = "post_cell"
 private val threadStatusCellKey = "thread_status_cell"
 
@@ -294,8 +294,22 @@ private fun PostListInternal(
   val mainUiLayoutMode = postListOptions.mainUiLayoutMode
   val isInPopup = postListOptions.isInPopup
   val isCatalogMode = postListOptions.isCatalogMode
-  val contentPadding = postListOptions.contentPadding
+
   val lastViewedPostDescriptor by postsScreenViewModel.postScreenState.lastViewedPostDescriptor.collectAsState()
+  val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
+
+  val contentPadding = remember(key1 = searchQuery, key2 = postListOptions.contentPadding) {
+    if (searchQuery.isNullOrEmpty()) {
+      postListOptions.contentPadding
+    } else {
+      PaddingValues(
+        start = postListOptions.contentPadding.calculateStartPadding(LayoutDirection.Ltr),
+        end = postListOptions.contentPadding.calculateEndPadding(LayoutDirection.Ltr),
+        top = postListOptions.contentPadding.calculateTopPadding() + searchInfoCellHeight,
+        bottom = postListOptions.contentPadding.calculateBottomPadding(),
+      )
+    }
+  }
 
   val previouslyVisiblePosts = remember(key1 = postsScreenViewModel.chanDescriptor, key2 = isInPopup) {
     if (isInPopup) {
@@ -329,84 +343,95 @@ private fun PostListInternal(
     }
   }
 
-  LazyColumnWithFastScroller(
-    modifier = modifier.then(
-      Modifier
-        .nestedScroll(nestedScrollConnection)
-        .pointerInput(
-          key1 = Unit,
-          block = {
-            processDragEvents { dragging -> onPostListDragStateChanged(dragging) }
-          }
-        )
-    ),
-    lazyListState = lazyListState,
-    contentPadding = contentPadding,
-    onFastScrollerDragStateChanged = { dragging -> onFastScrollerDragStateChanged(dragging) },
-    content = {
-      when (postListAsync) {
-        AsyncData.Empty -> {
-          item(key = "empty_indicator") {
-            val text = if (isCatalogMode) {
-              stringResource(R.string.post_list_no_catalog_selected)
-            } else {
-              stringResource(R.string.post_list_no_thread_selected)
+  Box {
+    LazyColumnWithFastScroller(
+      modifier = modifier.then(
+        Modifier
+          .nestedScroll(nestedScrollConnection)
+          .pointerInput(
+            key1 = Unit,
+            block = {
+              processDragEvents { dragging -> onPostListDragStateChanged(dragging) }
             }
+          )
+      ),
+      lazyListState = lazyListState,
+      contentPadding = contentPadding,
+      onFastScrollerDragStateChanged = { dragging -> onFastScrollerDragStateChanged(dragging) },
+      content = {
+        when (postListAsync) {
+          AsyncData.Empty -> {
+            item(key = "empty_indicator") {
+              val text = if (isCatalogMode) {
+                stringResource(R.string.post_list_no_catalog_selected)
+              } else {
+                stringResource(R.string.post_list_no_thread_selected)
+              }
 
-            Box(
-              modifier = Modifier.fillParentMaxSize(),
-              contentAlignment = Alignment.Center
-            ) {
-              KurobaComposeText(
-                text = text
+              Box(
+                modifier = Modifier.fillParentMaxSize(),
+                contentAlignment = Alignment.Center
+              ) {
+                KurobaComposeText(
+                  text = text
+                )
+              }
+            }
+          }
+          AsyncData.Loading -> {
+            item(key = "loading_indicator") {
+              KurobaComposeLoadingIndicator(
+                modifier = Modifier
+                  .fillParentMaxSize()
+                  .padding(8.dp)
               )
             }
           }
-        }
-        AsyncData.Loading -> {
-          item(key = "loading_indicator") {
-            KurobaComposeLoadingIndicator(
-              modifier = Modifier
-                .fillParentMaxSize()
-                .padding(8.dp)
-            )
-          }
-        }
-        is AsyncData.Error -> {
-          item(key = "error_indicator") {
-            val errorMessage = remember(key1 = postListAsync) {
-              postListAsync.error.errorMessageOrClassName()
-            }
+          is AsyncData.Error -> {
+            item(key = "error_indicator") {
+              val errorMessage = remember(key1 = postListAsync) {
+                postListAsync.error.errorMessageOrClassName()
+              }
 
-            KurobaComposeErrorWithButton(
-              modifier = Modifier
-                .fillParentMaxSize()
-                .padding(8.dp),
-              errorMessage = errorMessage,
-              buttonText = stringResource(R.string.reload),
-              onButtonClicked = { postsScreenViewModel.reload() }
+              KurobaComposeErrorWithButton(
+                modifier = Modifier
+                  .fillParentMaxSize()
+                  .padding(8.dp),
+                errorMessage = errorMessage,
+                buttonText = stringResource(R.string.reload),
+                onButtonClicked = { postsScreenViewModel.reload() }
+              )
+            }
+          }
+          is AsyncData.Data -> {
+            postList(
+              isCatalogMode = isCatalogMode,
+              isInPopup = isInPopup,
+              cellsPadding = cellsPadding,
+              lazyListState = lazyListState,
+              postsScreenViewModel = postsScreenViewModel,
+              postDataList = postListAsync.data.posts,
+              lastViewedPostDescriptor = lastViewedPostDescriptor,
+              previouslyVisiblePosts = previouslyVisiblePosts,
+              onPostCellClicked = onPostCellClicked,
+              onPostCellCommentClicked = onPostCellCommentClicked,
+              onPostRepliesClicked = onPostRepliesClicked,
+              onThreadStatusCellClicked = onThreadStatusCellClicked
             )
           }
-        }
-        is AsyncData.Data -> {
-          postList(
-            isCatalogMode = isCatalogMode,
-            isInPopup = isInPopup,
-            cellsPadding = cellsPadding,
-            lazyListState = lazyListState,
-            postsScreenViewModel = postsScreenViewModel,
-            postDataList = postListAsync.data.posts,
-            lastViewedPostDescriptor = lastViewedPostDescriptor,
-            previouslyVisiblePosts = previouslyVisiblePosts,
-            onPostCellClicked = onPostCellClicked,
-            onPostCellCommentClicked = onPostCellCommentClicked,
-            onPostRepliesClicked = onPostRepliesClicked,
-            onThreadStatusCellClicked = onThreadStatusCellClicked
-          )
         }
       }
+    )
+
+    if (searchQuery != null) {
+      SearchInfoCell(
+        cellsPadding = cellsPadding,
+        contentPadding = postListOptions.contentPadding,
+        postsScreenViewModel = postsScreenViewModel,
+        searchQuery = searchQuery
+      )
     }
-  )
+  }
 }
 
 private fun LazyListScope.postList(
@@ -424,18 +449,7 @@ private fun LazyListScope.postList(
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
   val totalCount = postDataList.size
-  val searchQuery = postsScreenViewModel.postScreenState.searchQuery
-
-  if (searchQuery != null) {
-    item(key = "search_info") {
-      SearchInfoCell(
-        padding = cellsPadding,
-        postsScreenViewModel = postsScreenViewModel,
-        searchQuery = searchQuery,
-        lazyListState = lazyListState
-      )
-    }
-  }
+  val searchQuery = postsScreenViewModel.postScreenState.searchQueryFlow.value
 
   items(
     count = totalCount,
@@ -501,50 +515,38 @@ private fun LazyListScope.postList(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun LazyItemScope.SearchInfoCell(
-  padding: PaddingValues,
+private fun BoxScope.SearchInfoCell(
+  cellsPadding: PaddingValues,
+  contentPadding: PaddingValues,
   postsScreenViewModel: PostScreenViewModel,
-  searchQuery: String,
-  lazyListState: LazyListState
+  searchQuery: String?
 ) {
+  if (searchQuery == null) {
+    return
+  }
+
   val chanTheme = LocalChanTheme.current
   val foundPostsCount = postsScreenViewModel.postScreenState.displayingPostsCount ?: 0
-  val bringIntoViewRequester = remember { BringIntoViewRequester() }
-  val minAllowedScrollOffset = with(LocalDensity.current) { remember { 32.dp.toPx() } }
 
-  val combinedPaddings = remember {
+  val combinedPaddings = remember(key1 = cellsPadding) {
     PaddingValues(
-      start = padding.calculateStartPadding(LayoutDirection.Ltr),
-      end = padding.calculateEndPadding(LayoutDirection.Ltr),
-      top = 4.dp,
-      bottom = 4.dp
+      start = cellsPadding.calculateStartPadding(LayoutDirection.Ltr),
+      end = cellsPadding.calculateEndPadding(LayoutDirection.Ltr),
+      top = 4.dp
     )
   }
 
-  LaunchedEffect(
-    key1 = Unit,
-    block = {
-      delay(100)
-
-      // At this point SearchInfoCell will already be added into the LazyList so we need to account
-      // it's index into the calculations
-      val isAlmostAtTheTopOfList = lazyListState.firstVisibleItemIndex <= 1
-        && lazyListState.firstVisibleItemScrollOffset <= minAllowedScrollOffset
-
-      if (isAlmostAtTheTopOfList) {
-        // TODO(KurobaEx): doesn't work sometimes for some reason (requestRectangleOnScreen returns false).
-        //  Can't check right now wtf is going on there because need API 31 emulator.
-        bringIntoViewRequester.bringIntoView(null)
-      }
-    }
-  )
+  val topOffset = remember(key1 = contentPadding) {
+    contentPadding.calculateTopPadding()
+  }
 
   Box(
     modifier = Modifier
       .fillMaxWidth()
-      .wrapContentHeight()
+      .height(searchInfoCellHeight)
       .padding(combinedPaddings)
-      .bringIntoViewRequester(bringIntoViewRequester)
+      .align(Alignment.TopCenter)
+      .offset(y = topOffset)
   ) {
     val context = LocalContext.current
 
@@ -565,7 +567,9 @@ private fun LazyItemScope.SearchInfoCell(
           .fillMaxWidth()
           .padding(horizontal = 4.dp, vertical = 4.dp),
         text = text,
-        color = chanTheme.textColorSecondaryCompose
+        color = chanTheme.textColorSecondaryCompose,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
       )
     }
 

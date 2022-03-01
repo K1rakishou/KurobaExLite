@@ -437,13 +437,12 @@ abstract class PostScreenViewModel(
     val postsAsyncDataState: MutableStateFlow<AsyncData<AbstractPostsState>>
     val threadCellDataState: MutableStateFlow<ThreadCellData?>
     val lastViewedPostDescriptor: MutableStateFlow<PostDescriptor?>
+    val searchQueryFlow: MutableStateFlow<String?>
 
     val chanDescriptor: ChanDescriptor?
       get() = doWithDataState { abstractPostsState -> abstractPostsState.chanDescriptor }
     val displayingPostsCount: Int?
       get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
-    val searchQuery: String?
-      get() = doWithDataState { abstractPostsState -> abstractPostsState.searchQuery }
 
     fun updatePost(postData: PostData)
     fun updateSearchQuery(searchQuery: String?)
