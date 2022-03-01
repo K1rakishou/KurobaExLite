@@ -20,7 +20,6 @@ import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.asLog
-import java.util.*
 
 class ParsedPostDataCache(
   private val appContext: Context,
@@ -124,7 +123,12 @@ class ParsedPostDataCache(
         parsedPostComment = processedPostComment.text,
         processedPostComment = processedPostComment,
         parsedPostSubject = postSubjectParsed,
-        processedPostSubject = parseAndProcessPostSubject(chanTheme, postData, postSubjectParsed),
+        processedPostSubject = parseAndProcessPostSubject(
+          chanTheme = chanTheme,
+          postData = postData,
+          postSubjectParsed = postSubjectParsed,
+          parsedPostDataContext = parsedPostDataContext
+        ),
         postFooterText = formatFooterText(postData, parsedPostDataContext),
         parsedPostDataContext = parsedPostDataContext,
       )
@@ -178,7 +182,8 @@ class ParsedPostDataCache(
   private fun parseAndProcessPostSubject(
     chanTheme: ChanTheme,
     postData: PostData,
-    postSubjectParsed: String
+    postSubjectParsed: String,
+    parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
     return buildAnnotatedString(capacity = postSubjectParsed.length) {
       if (postSubjectParsed.isNotEmpty()) {
@@ -193,7 +198,17 @@ class ParsedPostDataCache(
         append("\n")
       }
 
-      val postInfoPart = String.format(Locale.ENGLISH, "No. ${postData.postNo}")
+      val postInfoPart = buildString(capacity = 32) {
+        if (parsedPostDataContext.isParsingThread) {
+          append("#")
+          append(postData.postIndex + 1)
+          append(", ")
+        }
+
+        append("No. ")
+        append(postData.postNo)
+      }
+
       val postInfoPartAnnotatedString = AnnotatedString(
         text = postInfoPart,
         spanStyle = SpanStyle(
@@ -214,8 +229,9 @@ class ParsedPostDataCache(
     val threadRepliesTotal = postData.threadRepliesTotal
     val threadPostersTotal = postData.threadPostersTotal
     val isCatalogMode = parsedPostDataContext.isParsingCatalog
+    val hasThreadInfo = threadImagesTotal != null || threadRepliesTotal != null || threadPostersTotal != null
 
-    if (isCatalogMode && (threadImagesTotal != null || threadRepliesTotal != null || threadPostersTotal != null)) {
+    if (isCatalogMode && hasThreadInfo) {
       val text = buildString(capacity = 32) {
         threadRepliesTotal
           ?.takeIf { repliesCount -> repliesCount > 0 }

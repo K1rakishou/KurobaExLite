@@ -65,7 +65,7 @@ class Chan4DataSource(
 
         val postDataList = mutableListWithCap<PostData>(initialCapacity = 16)
 
-        postDataList += threadDataJson.posts.map { threadPost ->
+        postDataList += threadDataJson.posts.mapIndexed { index, threadPost ->
           val postDescriptor = PostDescriptor.create(
             siteKey = site.siteKey,
             boardCode = boardCode,
@@ -74,7 +74,8 @@ class Chan4DataSource(
           )
 
           if (postDescriptor.isOP) {
-            return@map OriginalPostData(
+            return@mapIndexed OriginalPostData(
+              postIndex = index,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.sub ?: "",
               postCommentUnparsed = threadPost.com ?: "",
@@ -90,7 +91,8 @@ class Chan4DataSource(
               parsedPostData = null
             )
           } else {
-            return@map PostData(
+            return@mapIndexed PostData(
+              postIndex = index,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.sub ?: "",
               postCommentUnparsed = threadPost.com ?: "",
@@ -147,7 +149,7 @@ class Chan4DataSource(
 
         val postDataList = mutableListWithCap<PostData>(initialCapacity = 150)
 
-        catalogPagesDataJson.forEach { catalogPage ->
+        catalogPagesDataJson.forEachIndexed { index, catalogPage ->
           postDataList += catalogPage.threads.map { catalogThread ->
             val postDescriptor = PostDescriptor.create(
               siteKey = site.siteKey,
@@ -157,6 +159,7 @@ class Chan4DataSource(
             )
 
             return@map OriginalPostData(
+              postIndex = index,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = catalogThread.sub ?: "",
               postCommentUnparsed = catalogThread.com ?: "",

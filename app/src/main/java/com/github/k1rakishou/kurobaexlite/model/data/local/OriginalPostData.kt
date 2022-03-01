@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 class OriginalPostData(
+  postIndex: Int,
   postDescriptor: PostDescriptor,
   postSubjectUnparsed: String,
   postCommentUnparsed: String,
@@ -12,6 +13,7 @@ class OriginalPostData(
   threadPostersTotal: Int?,
   parsedPostData: ParsedPostData?
 ) : PostData(
+  postIndex = postIndex,
   postDescriptor = postDescriptor,
   postSubjectUnparsed = postSubjectUnparsed,
   postCommentUnparsed = postCommentUnparsed,
@@ -23,6 +25,7 @@ class OriginalPostData(
 ) {
 
   override fun copy(
+    postIndex: Int,
     postDescriptor: PostDescriptor,
     postSubjectUnparsed: String,
     postCommentUnparsed: String,
@@ -33,6 +36,7 @@ class OriginalPostData(
     parsedPostData: ParsedPostData?
   ): PostData {
     return OriginalPostData(
+      postIndex = postIndex,
       postDescriptor = postDescriptor,
       postSubjectUnparsed = postSubjectUnparsed,
       postCommentUnparsed = postCommentUnparsed,

@@ -38,7 +38,12 @@ abstract class PostsScreen(
   ) {
     when (postListAsync) {
       AsyncData.Empty -> {
-        kurobaToolbarState.toolbarTitleState.value = null
+        if (isCatalogScreen) {
+          val defaultToolbarTitle = stringResource(id = R.string.toolbar_loading_empty)
+          kurobaToolbarState.toolbarTitleState.value = defaultToolbarTitle
+        } else {
+          kurobaToolbarState.toolbarTitleState.value = null
+        }
       }
       AsyncData.Loading -> {
         kurobaToolbarState.toolbarTitleState.value = stringResource(R.string.toolbar_loading_title)
@@ -57,11 +62,17 @@ abstract class PostsScreen(
             val originalPost by postListState
             val chanDescriptor = postListAsync.data.chanDescriptor
 
-            kurobaToolbarState.toolbarTitleState.value = parsedPostDataCache.formatToolbarTitle(
+            val title = parsedPostDataCache.formatToolbarTitle(
               chanDescriptor = chanDescriptor,
               postDescriptor = originalPost.postDescriptor,
               catalogMode = isCatalogScreen
             )
+
+            if (title == null) {
+              return@LaunchedEffect
+            }
+
+            kurobaToolbarState.toolbarTitleState.value = title
           })
       }
     }

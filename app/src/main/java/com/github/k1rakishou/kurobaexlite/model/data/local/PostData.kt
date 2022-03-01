@@ -5,6 +5,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 open class PostData(
+  val postIndex: Int,
   val postDescriptor: PostDescriptor,
   val postSubjectUnparsed: String,
   val postCommentUnparsed: String,
@@ -104,6 +105,7 @@ open class PostData(
   }
 
   open fun copy(
+    postIndex: Int = this.postIndex,
     postDescriptor: PostDescriptor = this.postDescriptor,
     postSubjectUnparsed: String = this.postSubjectUnparsed,
     postCommentUnparsed: String = this.postCommentUnparsed,
@@ -114,6 +116,7 @@ open class PostData(
     parsedPostData: ParsedPostData? = this.parsedPostData
   ): PostData {
     return PostData(
+      postIndex = postIndex,
       postDescriptor = postDescriptor,
       postSubjectUnparsed = postSubjectUnparsed,
       postCommentUnparsed = postCommentUnparsed,

@@ -345,11 +345,14 @@ private fun PostListInternal(
               stringResource(R.string.post_list_no_thread_selected)
             }
 
-            KurobaComposeText(
+            Box(
               modifier = Modifier.fillParentMaxSize(),
-              text = text,
-              textAlign = TextAlign.Center
-            )
+              contentAlignment = Alignment.Center
+            ) {
+              KurobaComposeText(
+                text = text
+              )
+            }
           }
         }
         AsyncData.Loading -> {

@@ -16,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
@@ -29,7 +30,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 class BoardSelectionScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  private val catalogDescriptor: CatalogDescriptor
+  private val catalogDescriptor: CatalogDescriptor?
 ) : ComposeScreen(componentActivity, navigationRouter) {
   private val boardSelectionScreenViewModel: BoardSelectionScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
@@ -84,8 +85,11 @@ class BoardSelectionScreen(
       windowInsets.copy(newTop = windowInsets.top + toolbarHeight).asPaddingValues()
     }
 
+    val siteKey = catalogDescriptor?.siteKey
+      ?: Chan4.SITE_KEY
+
     val loadBoardsForSiteEvent by boardSelectionScreenViewModel
-      .getOrLoadBoardsForSite(catalogDescriptor.siteKey)
+      .getOrLoadBoardsForSite(siteKey)
       .collectAsState(initial = AsyncData.Empty)
 
     val filteredBoardsAsyncData by produceState(
