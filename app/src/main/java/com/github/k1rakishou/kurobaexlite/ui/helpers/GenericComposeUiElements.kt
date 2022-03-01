@@ -303,29 +303,31 @@ fun KurobaComposeButton(
 
 @Composable
 fun KurobaComposeTextBarButton(
-  modifier: Modifier = Modifier,
-  enabled: Boolean = true,
-  onClick: () -> Unit,
+  modifier: Modifier,
   text: String,
+  enabled: Boolean = true,
+  customTextColor: Color? = null,
+  onClick: () -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
 
   Button(
     onClick = onClick,
     enabled = enabled,
-    modifier = Modifier
-      .wrapContentSize()
-      .then(modifier),
+    modifier = modifier,
     content = {
-      val textColor = if (enabled) {
-        chanTheme.textColorPrimaryCompose
+      val textColor = customTextColor
+        ?: chanTheme.textColorPrimaryCompose
+
+      val modifiedTextColor = if (enabled) {
+        textColor
       } else {
-        chanTheme.textColorPrimaryCompose.copy(alpha = ContentAlpha.disabled)
+        textColor.copy(alpha = ContentAlpha.disabled)
       }
 
       Text(
         text = text.uppercase(Locale.ENGLISH),
-        color = textColor,
+        color = modifiedTextColor,
         modifier = Modifier
           .wrapContentSize()
           .align(Alignment.CenterVertically),

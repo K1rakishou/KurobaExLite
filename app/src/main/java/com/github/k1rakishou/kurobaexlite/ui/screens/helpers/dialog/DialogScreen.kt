@@ -117,6 +117,7 @@ class DialogScreen(
       ) {
         if (params.negativeButton != null) {
           KurobaComposeTextBarButton(
+            modifier = Modifier.wrapContentSize(),
             onClick = {
               params.negativeButton.onClick?.invoke()
               stopPresenting()
@@ -129,6 +130,7 @@ class DialogScreen(
 
         if (params.neutralButton != null) {
           KurobaComposeTextBarButton(
+            modifier = Modifier.wrapContentSize(),
             onClick = {
               params.neutralButton.onClick?.invoke()
               stopPresenting()
@@ -140,6 +142,7 @@ class DialogScreen(
         }
 
         KurobaComposeTextBarButton(
+          modifier = Modifier.wrapContentSize(),
           onClick = {
             params.positiveButton.onClick?.invoke(inputValueState?.value)
             stopPresenting()

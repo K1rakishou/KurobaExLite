@@ -43,6 +43,8 @@
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="reload">Reload</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
 
     <string name="toolbar_loading_title">Loading…</string>
     <string name="toolbar_loading_error">Error loading</string>

@@ -5,10 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
@@ -20,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
+import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.*
@@ -158,6 +156,14 @@ class CatalogScreen(
 
   @Composable
   override fun Content() {
+    // TODO(KurobaEx): remove this LaunchedEffect at some point (once we start remembering the
+    //  last visited catalog)
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = { catalogScreenViewModel.loadCatalog(CatalogDescriptor(Chan4.SITE_KEY, "g")) }
+    )
+
     RouterHost(
       navigationRouter = navigationRouter,
       defaultScreen = { CatalogPostListScreenContent() }

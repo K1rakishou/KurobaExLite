@@ -35,7 +35,7 @@ fun LazyColumnWithFastScroller(
   val coroutineScope = rememberCoroutineScope()
   var scrollbarDragged by remember { mutableStateOf(false) }
 
-  BoxWithConstraints {
+  BoxWithConstraints(modifier = modifier) {
     val maxWidthPx = with(LocalDensity.current) { remember(key1 = maxWidth) { maxWidth.toPx() } }
     val maxHeightPx = with(LocalDensity.current) { remember(key1 = maxHeight) { maxHeight.toPx() } }
 
@@ -69,8 +69,7 @@ fun LazyColumnWithFastScroller(
             scrollbarWidth = scrollbarWidth,
             scrollbarMinHeight = scrollbarMinHeightPx,
             scrollbarDragged = scrollbarDragged
-          )
-          .then(modifier),
+          ),
         state = lazyListState,
         contentPadding = contentPadding,
         content = content
