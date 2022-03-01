@@ -53,12 +53,16 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import logcat.logcat
 
 private val animationTranslationDelta = 100.dp
 private val animationDurationMs = 200
 private val postCellKeyPrefix = "post_cell"
+private val threadStatusCellKey = "thread_status_cell"
 
 @Composable
 internal fun PostListContent(
@@ -167,7 +171,10 @@ internal fun PostListContent(
     onPostRepliesClicked = { postData ->
       onPostRepliesClicked(postData.postDescriptor)
     },
-    onThreadStatusCellClicked = { postsScreenViewModel.refresh() },
+    onThreadStatusCellClicked = {
+      postsScreenViewModel.resetTimer()
+      postsScreenViewModel.refresh()
+    },
     onPostListScrolled = onPostListScrolled,
     onPostListDragStateChanged = onPostListDragStateChanged,
     onFastScrollerDragStateChanged = onFastScrollerDragStateChanged
@@ -288,6 +295,7 @@ private fun PostListInternal(
   val isInPopup = postListOptions.isInPopup
   val isCatalogMode = postListOptions.isCatalogMode
   val contentPadding = postListOptions.contentPadding
+  val lastViewedPostDescriptor by postsScreenViewModel.postScreenState.lastViewedPostDescriptor.collectAsState()
 
   val previouslyVisiblePosts = remember(key1 = postsScreenViewModel.chanDescriptor, key2 = isInPopup) {
     if (isInPopup) {
@@ -383,10 +391,12 @@ private fun PostListInternal(
         is AsyncData.Data -> {
           postList(
             isCatalogMode = isCatalogMode,
+            isInPopup = isInPopup,
             cellsPadding = cellsPadding,
             lazyListState = lazyListState,
             postsScreenViewModel = postsScreenViewModel,
             postDataList = postListAsync.data.posts,
+            lastViewedPostDescriptor = lastViewedPostDescriptor,
             previouslyVisiblePosts = previouslyVisiblePosts,
             onPostCellClicked = onPostCellClicked,
             onPostCellCommentClicked = onPostCellCommentClicked,
@@ -401,10 +411,12 @@ private fun PostListInternal(
 
 private fun LazyListScope.postList(
   isCatalogMode: Boolean,
+  isInPopup: Boolean,
   cellsPadding: PaddingValues,
   lazyListState: LazyListState,
   postsScreenViewModel: PostScreenViewModel,
   postDataList: List<State<PostData>>,
+  lastViewedPostDescriptor: PostDescriptor?,
   previouslyVisiblePosts: MutableMap<PostDescriptor, Unit>?,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
@@ -453,14 +465,16 @@ private fun LazyListScope.postList(
       PostCellContainer(
         padding = cellsPadding,
         isCatalogMode = isCatalogMode,
+        isInPopup = isInPopup,
         onPostCellClicked = onPostCellClicked,
         postData = postData,
         postsScreenViewModel = postsScreenViewModel,
-        onPostCellCommentClicked = onPostCellCommentClicked,
-        onPostRepliesClicked = onPostRepliesClicked,
         index = index,
         totalCount = totalCount,
-        animateInsertion = animateInsertion
+        animateInsertion = animateInsertion,
+        lastViewedPostDescriptor = lastViewedPostDescriptor,
+        onPostCellCommentClicked = onPostCellCommentClicked,
+        onPostRepliesClicked = onPostRepliesClicked
       )
 
       if (previouslyVisiblePosts != null) {
@@ -473,11 +487,12 @@ private fun LazyListScope.postList(
     }
   )
 
-  if (!isCatalogMode && searchQuery == null) {
-    item(key = "thread_status_cell") {
+  if (!isCatalogMode && searchQuery == null && postsScreenViewModel is ThreadScreenViewModel) {
+    item(key = threadStatusCellKey) {
       ThreadStatusCell(
         padding = cellsPadding,
-        postsScreenViewModel = postsScreenViewModel,
+        lazyListState = lazyListState,
+        threadScreenViewModel = postsScreenViewModel,
         onThreadStatusCellClicked = onThreadStatusCellClicked
       )
     }
@@ -561,12 +576,13 @@ private fun LazyItemScope.SearchInfoCell(
 @Composable
 private fun LazyItemScope.ThreadStatusCell(
   padding: PaddingValues,
-  postsScreenViewModel: PostScreenViewModel,
+  lazyListState: LazyListState,
+  threadScreenViewModel: ThreadScreenViewModel,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val threadStatusCellDataFromState by postsScreenViewModel.postScreenState.threadCellDataState.collectAsState()
-  val chanDescriptor = postsScreenViewModel.postScreenState.chanDescriptor
+  val threadStatusCellDataFromState by threadScreenViewModel.postScreenState.threadCellDataState.collectAsState()
+  val chanDescriptor = threadScreenViewModel.postScreenState.chanDescriptor
   val threadStatusCellData = threadStatusCellDataFromState
 
   if (threadStatusCellData == null || (chanDescriptor == null || chanDescriptor !is ThreadDescriptor)) {
@@ -574,13 +590,49 @@ private fun LazyItemScope.ThreadStatusCell(
     return
   }
 
+  val coroutineScope = rememberCoroutineScope()
+  val lastItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+
+  DisposableEffect(
+    key1 = lastItemIndex,
+    effect = {
+      val job = coroutineScope.launch {
+        delay(125L)
+
+        val threadStatusCellItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
+        if (threadStatusCellItem) {
+          threadScreenViewModel.onPostListTouchingBottom()
+        }
+      }
+
+      onDispose {
+        job.cancel()
+
+        val threadStatusCellItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
+        if (!threadStatusCellItem) {
+          threadScreenViewModel.onPostListNotTouchingBottom()
+        }
+      }
+    })
+
+  var timeUntilNextUpdateSeconds by remember { mutableStateOf(0L) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      while (isActive) {
+        delay(1000L)
+        timeUntilNextUpdateSeconds = threadScreenViewModel.timeUntilNextUpdateMs / 1000L
+      }
+    })
+
   Box(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
       .kurobaClickable(onClick = { onThreadStatusCellClicked(chanDescriptor) })
   ) {
-    val threadStatusCellText = remember(key1 = threadStatusCellData) {
+    val threadStatusCellText = remember(key1 = threadStatusCellData, key2 = timeUntilNextUpdateSeconds) {
       buildAnnotatedString {
         if (threadStatusCellData.totalReplies > 0) {
           append(threadStatusCellData.totalReplies.toString())
@@ -603,6 +655,14 @@ private fun LazyItemScope.ThreadStatusCell(
 
           append(threadStatusCellData.totalPosters.toString())
           append("P")
+        }
+
+        append("\n")
+
+        if (timeUntilNextUpdateSeconds > 0L) {
+          append("Loading in ${timeUntilNextUpdateSeconds}")
+        } else {
+          append("Loading...")
         }
       }
     }
@@ -632,14 +692,16 @@ private fun LazyItemScope.ThreadStatusCell(
 private fun LazyItemScope.PostCellContainer(
   padding: PaddingValues,
   isCatalogMode: Boolean,
+  isInPopup: Boolean,
   onPostCellClicked: (PostData) -> Unit,
   postData: PostData,
   postsScreenViewModel: PostScreenViewModel,
-  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit,
   index: Int,
   totalCount: Int,
-  animateInsertion: Boolean
+  animateInsertion: Boolean,
+  lastViewedPostDescriptor: PostDescriptor?,
+  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
+  onPostRepliesClicked: (PostData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
@@ -668,7 +730,19 @@ private fun LazyItemScope.PostCellContainer(
         onPostRepliesClicked = onPostRepliesClicked
       )
 
-      if (index < (totalCount - 1)) {
+      val canDisplayLastViewedPostMarker = !isInPopup
+        && !isCatalogMode
+        && lastViewedPostDescriptor == postData.postDescriptor
+        && index < (totalCount - 1)
+
+      if (canDisplayLastViewedPostMarker) {
+        Box(
+          modifier = Modifier
+            .height(4.dp)
+            .fillMaxWidth()
+            .background(color = chanTheme.accentColorCompose)
+        )
+      } else if (index < (totalCount - 1)) {
         KurobaComposeDivider(
           modifier = Modifier.fillMaxWidth()
         )
@@ -734,6 +808,14 @@ private fun PostCell(
   var postComment by postComment(postData)
   var postSubject by postSubject(postData)
   var postFooterText by postFooterText(postData)
+
+  DisposableEffect(
+    key1 = postData,
+    effect = {
+      postsScreenViewModel.onPostBind(postData)
+
+      onDispose { postsScreenViewModel.onPostUnbind(postData) }
+    })
 
   if (postData.postCommentParsedAndProcessed == null) {
     LaunchedEffect(

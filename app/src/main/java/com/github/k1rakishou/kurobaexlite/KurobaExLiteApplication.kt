@@ -7,10 +7,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
-import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
-import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.*
 import com.github.k1rakishou.kurobaexlite.model.source.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
@@ -18,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.boards.BoardSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply.PopupRepliesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import com.squareup.moshi.Moshi
@@ -57,7 +55,7 @@ class KurobaExLiteApplication : Application() {
       single { Moshi.Builder().build() }
       single { PostCommentParser() }
       single { PostCommentApplier() }
-      single { SiteManager() }
+
       single {
         ParsedPostDataCache(
           appContext = get(),
@@ -68,12 +66,17 @@ class KurobaExLiteApplication : Application() {
         )
       }
       single { ChanThreadCache() }
+
+      single { SiteManager() }
       single { ChanThreadManager(siteManager = get()) }
       single { PostReplyChainManager() }
+      single { ChanThreadViewManager() }
       single { UiInfoManager(get()) }
+
       single { AppSettings(get()) }
       single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
       single { ThemeEngine() }
+      single { PostBindProcessor(get()) }
 
       viewModel {
         HomeScreenViewModel(

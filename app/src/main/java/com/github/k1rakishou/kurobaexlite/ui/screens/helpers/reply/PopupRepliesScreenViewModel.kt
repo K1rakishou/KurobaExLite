@@ -73,6 +73,10 @@ class PopupRepliesScreenViewModel(
     return loadRepliesForMode(replyViewMode = prevMode, isPushing = false)
   }
 
+  fun clearPostReplyChainStack() {
+    postReplyChainStack.clear()
+  }
+
   private suspend fun loadRepliesFrom(replyViewMode: PopupRepliesScreen.ReplyViewMode.RepliesFrom): Boolean {
     val postDescriptor = replyViewMode.postDescriptor
     val repliesFrom = postReplyChainManager.getRepliesFrom(postDescriptor)

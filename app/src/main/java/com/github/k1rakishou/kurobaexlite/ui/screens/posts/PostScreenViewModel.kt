@@ -18,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosi
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
@@ -42,6 +43,7 @@ abstract class PostScreenViewModel(
   private val chanThreadCache by inject<ChanThreadCache>(ChanThreadCache::class.java)
   private val chanThreadManager by inject<ChanThreadManager>(ChanThreadManager::class.java)
   private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
+  private val postBindProcessor by inject<PostBindProcessor>(PostBindProcessor::class.java)
 
   private var currentParseJob: Job? = null
   protected var postListBuilt: CompletableDeferred<Boolean>? = null
@@ -62,6 +64,8 @@ abstract class PostScreenViewModel(
   val toolbarScrollEventFlow: SharedFlow<Boolean>
     get() = _toolbarScrollEventFlow.asSharedFlow()
 
+  val postListTouchingBottom = MutableStateFlow(false)
+
   val currentlyOpenedCatalogFlow: StateFlow<CatalogDescriptor?>
     get() = chanThreadManager.currentlyOpenedCatalogFlow
   val currentlyOpenedThreadFlow: StateFlow<ThreadDescriptor?>
@@ -76,6 +80,14 @@ abstract class PostScreenViewModel(
 
   abstract fun reload()
   abstract fun refresh()
+
+  fun onLoadingThread() {
+    postListTouchingBottom.value = false
+  }
+
+  fun onLoadingCatalog() {
+    postListTouchingBottom.value = false
+  }
 
   fun rememberedPosition(chanDescriptor: ChanDescriptor?): LazyColumnRememberedPosition {
     if (chanDescriptor == null) {
@@ -385,6 +397,35 @@ abstract class PostScreenViewModel(
     postListBuilt?.complete(true)
   }
 
+  fun onPostBind(postData: PostData) {
+    val descriptor = chanDescriptor
+      ?: return
+
+    val catalogMode = descriptor is CatalogDescriptor
+
+    postBindProcessor.onPostBind(
+      isCatalogMode = catalogMode,
+      postsParsedOnce = postsFullyParsedOnceFlow.value,
+      postDescriptor = postData.postDescriptor
+    )
+  }
+
+  fun onPostUnbind(postData: PostData) {
+    val descriptor = chanDescriptor
+      ?: return
+
+    val catalogMode = descriptor is CatalogDescriptor
+
+    postBindProcessor.onPostUnbind(
+      isCatalogMode = catalogMode,
+      postDescriptor = postData.postDescriptor
+    )
+  }
+
+  open fun resetTimer() {
+
+  }
+
   data class ParsePostsOptions(
     val forced: Boolean = false,
     // If set to true then along with new posts the posts these new posts reply to will be re-parsed
@@ -395,6 +436,7 @@ abstract class PostScreenViewModel(
   interface PostScreenState {
     val postsAsyncDataState: MutableStateFlow<AsyncData<AbstractPostsState>>
     val threadCellDataState: MutableStateFlow<ThreadCellData?>
+    val lastViewedPostDescriptor: MutableStateFlow<PostDescriptor?>
 
     val chanDescriptor: ChanDescriptor?
       get() = doWithDataState { abstractPostsState -> abstractPostsState.chanDescriptor }

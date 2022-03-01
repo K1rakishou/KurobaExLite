@@ -194,6 +194,10 @@ class PopupRepliesScreen(
     return super.onBackPressed()
   }
 
+  override fun onDestroy() {
+    popupRepliesScreenViewModel.clearPostReplyChainStack()
+  }
+
   sealed class ReplyViewMode {
     data class ReplyTo(
       val postDescriptor: PostDescriptor

@@ -31,6 +31,10 @@ class ChanThreadCache {
     threadDescriptor: ThreadDescriptor,
     threadPosts: Collection<PostData>
   ) {
+    if (threadPosts.isEmpty()) {
+      return
+    }
+
     val chanThread = threads.getOrPut(key = threadDescriptor, defaultValue = { ChanThread() })
     chanThread.insert(threadPosts)
   }
@@ -65,6 +69,10 @@ class ChanThreadCache {
 
   suspend fun getPost(postDescriptor: PostDescriptor): PostData? {
     return threads[postDescriptor.threadDescriptor]?.getPost(postDescriptor)
+  }
+
+  suspend fun getLastPost(threadDescriptor: ThreadDescriptor): PostData? {
+    return threads[threadDescriptor]?.getLastPost()
   }
 
 }

@@ -435,3 +435,24 @@ fun CancellableContinuation<*>.resumeSafe(error: Throwable) {
     resumeWithException(error)
   }
 }
+
+fun <T> maxOfByOrNull(vararg elements: T, selector: (T) -> Number): T? {
+  if (elements.isEmpty()) {
+    return null
+  }
+
+  var maxElem = elements.first()
+  var maxValue = selector(maxElem).toLong()
+
+  for (index in 1 until elements.size) {
+    val element = elements[index]
+    val elementValue = selector(element).toLong()
+
+    if (elementValue > maxValue) {
+      maxValue = elementValue
+      maxElem = element
+    }
+  }
+
+  return maxElem
+}

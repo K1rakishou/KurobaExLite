@@ -66,6 +66,8 @@ class CatalogScreenViewModel(
       return
     }
 
+    onLoadingCatalog()
+
     postListBuilt = CompletableDeferred()
     _postsFullyParsedOnceFlow.emit(false)
     val startTime = SystemClock.elapsedRealtime()

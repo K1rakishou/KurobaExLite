@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
+import com.github.k1rakishou.kurobaexlite.managers.ChanThreadViewManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
@@ -21,11 +22,13 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentIt
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsMergeResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import logcat.asLog
 import logcat.logcat
+import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreenViewModel(
   private val chanThreadManager: ChanThreadManager,
@@ -34,10 +37,22 @@ class ThreadScreenViewModel(
   globalConstants: GlobalConstants,
   themeEngine: ThemeEngine
 ) : PostScreenViewModel(application, globalConstants, themeEngine) {
+  private val chanThreadViewManager by inject<ChanThreadViewManager>(ChanThreadViewManager::class.java)
+
+  private val threadAutoUpdater = ThreadAutoUpdater(executeUpdate = { refresh() })
   private val threadScreenState = ThreadScreenState()
   private var loadThreadJob: Job? = null
 
   override val postScreenState: PostScreenState = threadScreenState
+
+  val timeUntilNextUpdateMs: Long
+    get() = threadAutoUpdater.timeUntilNextUpdateMs
+
+  override fun onCleared() {
+    super.onCleared()
+
+    threadAutoUpdater.stopAutoUpdaterLoop()
+  }
 
   override fun reload() {
     val currentlyOpenedThread = chanThreadManager.currentlyOpenedThread
@@ -114,6 +129,12 @@ class ThreadScreenViewModel(
         onPostsParsed = { postDataList ->
           chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
           popCatalogOrThreadPostsLoadingSnackbar()
+
+          onPostsParsed(
+            threadDescriptor = threadDescriptor,
+            mergeResult = mergeResult,
+            isInitialThreadLoad = false
+          )
         }
       )
 
@@ -146,6 +167,10 @@ class ThreadScreenViewModel(
     }
   }
 
+  override fun resetTimer() {
+    threadAutoUpdater.resetTimer()
+  }
+
   fun loadThread(
     threadDescriptor: ThreadDescriptor?,
     forced: Boolean = false
@@ -164,10 +189,17 @@ class ThreadScreenViewModel(
       return
     }
 
+    onLoadingThread()
+
     postListBuilt = CompletableDeferred()
     _postsFullyParsedOnceFlow.emit(false)
     val startTime = SystemClock.elapsedRealtime()
     threadScreenState.postsAsyncDataState.value = AsyncData.Loading
+
+    if (threadDescriptor != null) {
+      threadScreenState.lastViewedPostDescriptor.value = chanThreadViewManager.read(threadDescriptor)
+        ?.let { chanThreadView -> chanThreadView.lastViewedPostDescriptor ?: chanThreadView.lastLoadedPostDescriptor  }
+    }
 
     val cachedThreadPostsState = if (threadDescriptor != null) {
       val postsFromCache = chanThreadCache.getThreadPosts(threadDescriptor)
@@ -228,6 +260,12 @@ class ThreadScreenViewModel(
           chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
           popCatalogOrThreadPostsLoadingSnackbar()
 
+          onPostsParsed(
+            threadDescriptor = threadDescriptor,
+            mergeResult = mergeResult,
+            isInitialThreadLoad = true
+          )
+
           postListBuilt?.await()
           restoreScrollPosition(threadDescriptor)
           _postsFullyParsedOnceFlow.emit(true)
@@ -248,6 +286,11 @@ class ThreadScreenViewModel(
         threadPosts = threadData.threadPosts
       )
 
+      val mergeResult = PostsMergeResult(
+        newPostsCount = threadData.threadPosts.size,
+        newOrUpdatedPostsToReparse = emptyList()
+      )
+
       threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
       postScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
 
@@ -264,6 +307,12 @@ class ThreadScreenViewModel(
           chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
           popCatalogOrThreadPostsLoadingSnackbar()
 
+          onPostsParsed(
+            threadDescriptor = threadDescriptor,
+            mergeResult = mergeResult,
+            isInitialThreadLoad = true
+          )
+
           postListBuilt?.await()
           restoreScrollPosition(threadDescriptor)
           _postsFullyParsedOnceFlow.emit(true)
@@ -274,6 +323,53 @@ class ThreadScreenViewModel(
     logcat {
       "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
         "threadPosts=${threadData.threadPosts.size}"
+    }
+  }
+
+  private suspend fun onPostsParsed(
+    threadDescriptor: ThreadDescriptor,
+    mergeResult: PostsMergeResult,
+    isInitialThreadLoad: Boolean
+  ) {
+    if (isInitialThreadLoad) {
+      updateLastLoadedAndViewedPosts(threadDescriptor)
+    }
+
+    if (mergeResult.newPostsCount > 0) {
+      threadAutoUpdater.resetTimer()
+    }
+
+    threadAutoUpdater.runAutoUpdaterLoop(threadDescriptor)
+  }
+
+  fun onPostListTouchingBottom() {
+    val threadDescriptor = (chanDescriptor as? ThreadDescriptor)
+      ?: return
+
+    postListTouchingBottom.value = true
+    viewModelScope.launch { updateLastLoadedAndViewedPosts(threadDescriptor) }
+  }
+
+  fun onPostListNotTouchingBottom() {
+    postListTouchingBottom.value = true
+  }
+
+  private suspend fun updateLastLoadedAndViewedPosts(
+    threadDescriptor: ThreadDescriptor
+  ) {
+    val lastPostDescriptor = chanThreadCache.getLastPost(threadDescriptor)?.postDescriptor
+      ?: return
+    val isBottomOnThreadReached = postListTouchingBottom.value
+
+    chanThreadViewManager.insertOrUpdate(threadDescriptor) {
+      lastLoadedPostDescriptor = lastPostDescriptor
+
+      if (lastViewedPostDescriptor == null || isBottomOnThreadReached) {
+        lastViewedPostDescriptor = lastPostDescriptor
+        threadScreenState.lastViewedPostDescriptor.value = lastPostDescriptor
+      } else {
+        threadScreenState.lastViewedPostDescriptor.value = lastViewedPostDescriptor
+      }
     }
   }
 

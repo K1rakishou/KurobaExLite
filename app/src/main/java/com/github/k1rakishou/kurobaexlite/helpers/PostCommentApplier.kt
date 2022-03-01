@@ -323,7 +323,7 @@ class PostCommentApplier {
     const val ANNOTATION_POST_LINKABLE = "[post_linkable]"
     const val ANNOTATION_POST_SPOILER_TEXT = "[spoiler_text]"
 
-    private const val CROSS_THREAD_POSTFIX = "->"
+    private const val CROSS_THREAD_POSTFIX = '\u2192'
     private const val OP_POSTFIX = "(OP)"
     private const val DEAD_POSTFIX = "(DEAD)"
 

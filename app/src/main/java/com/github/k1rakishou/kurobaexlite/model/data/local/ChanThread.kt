@@ -69,6 +69,10 @@ class ChanThread {
     return mutex.withLock { postsMap[postDescriptor] }
   }
 
+  suspend fun getLastPost(): PostData? {
+    return mutex.withLock { posts.lastOrNull() }
+  }
+
   companion object {
     private const val TAG = "ChanThread"
 
