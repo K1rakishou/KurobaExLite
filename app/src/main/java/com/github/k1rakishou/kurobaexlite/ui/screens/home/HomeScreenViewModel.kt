@@ -16,6 +16,7 @@ class HomeScreenViewModel(
 ) : BaseAndroidViewModel(application) {
   private val toolbarHeight by lazy { resources.getDimension(R.dimen.toolbar_height) }
   private val currentPageValue = AtomicReference<CurrentPage?>()
+  val toolbarVisibilityInfo = ToolbarVisibilityInfo()
 
   private val _drawerVisibilityFlow = MutableStateFlow<DrawerVisibility>(DrawerVisibility.Closed)
   val drawerVisibilityFlow: StateFlow<DrawerVisibility>
@@ -27,8 +28,6 @@ class HomeScreenViewModel(
     get() = _currentPageFlow.asSharedFlow()
   val currentPage: CurrentPage?
     get() = currentPageValue.get()
-
-  val toolbarVisibilityInfo = ToolbarVisibilityInfo()
 
   fun updateCurrentPage(
     screenKey: ScreenKey,
@@ -82,6 +81,15 @@ class HomeScreenViewModel(
 
   fun onPostListTouchingTopOrBottomStateChanged(touching: Boolean) {
     toolbarVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
+  }
+
+  fun onChildScreenSearchStateChanged(screenKey: ScreenKey, searchQuery: String?) {
+    val childScreenSearchInfo = ChildScreenSearchInfo(
+      screenKey = screenKey,
+      usingSearch = searchQuery != null
+    )
+
+    toolbarVisibilityInfo.update(childScreenSearchInfo = childScreenSearchInfo)
   }
 
   fun isDrawerOpenedOrOpening(): Boolean {
@@ -144,38 +152,60 @@ class HomeScreenViewModel(
     }
   }
 
+  data class ChildScreenSearchInfo(
+    val screenKey: ScreenKey,
+    val usingSearch: Boolean
+  )
+
   data class CurrentPage(
     val screenKey: ScreenKey,
     val animate: Boolean = false
   )
 
   class ToolbarVisibilityInfo {
-    private var _postListScrollState = MutableStateFlow<Float>(1f)
+    private val _postListScrollState = MutableStateFlow<Float>(1f)
     val postListScrollState: StateFlow<Float>
       get() = _postListScrollState.asStateFlow()
 
-    private var _postListTouchingTopOrBottomState = MutableStateFlow<Boolean>(false)
+    private val _postListTouchingTopOrBottomState = MutableStateFlow<Boolean>(false)
     val postListTouchingTopOrBottomState: StateFlow<Boolean>
       get() = _postListTouchingTopOrBottomState.asStateFlow()
 
-    private var _postListDragState = MutableStateFlow(false)
+    private val _postListDragState = MutableStateFlow(false)
     val postListDragState: StateFlow<Boolean>
       get() = _postListDragState.asStateFlow()
 
-    private var _fastScrollerDragState = MutableStateFlow(false)
+    private val _fastScrollerDragState = MutableStateFlow(false)
     val fastScrollerDragState: StateFlow<Boolean>
       get() = _fastScrollerDragState.asStateFlow()
+
+    private val _childScreensUsingSearch = MutableStateFlow(mutableSetOf<ScreenKey>())
+    val childScreensUsingSearch: StateFlow<Set<ScreenKey>>
+      get() = _childScreensUsingSearch.asStateFlow()
 
     fun update(
       postListScrollState: Float? = null,
       postListTouchingTopOrBottomState: Boolean? = null,
       postListDragState: Boolean? = null,
-      fastScrollerDragState: Boolean? = null
+      fastScrollerDragState: Boolean? = null,
+      childScreenSearchInfo: ChildScreenSearchInfo? = null
     ) {
       postListScrollState?.let { _postListScrollState.value = it }
       postListTouchingTopOrBottomState?.let { _postListTouchingTopOrBottomState.value = it }
       postListDragState?.let { _postListDragState.value = it }
       fastScrollerDragState?.let { _fastScrollerDragState.value = it }
+
+      childScreenSearchInfo?.let { screenSearchInfo ->
+        val prevValue = _childScreensUsingSearch.value
+
+        if (screenSearchInfo.usingSearch) {
+          prevValue += screenSearchInfo.screenKey
+        } else {
+          prevValue -= screenSearchInfo.screenKey
+        }
+
+        _childScreensUsingSearch.value = prevValue
+      }
     }
 
   }

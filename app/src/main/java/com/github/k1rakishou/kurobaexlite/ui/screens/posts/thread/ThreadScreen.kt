@@ -102,7 +102,10 @@ class ThreadScreen(
       navigationRouter = navigationRouter,
       onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
-      onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
+      onSearchQueryUpdated = { searchQuery ->
+        homeScreenViewModel.onChildScreenSearchStateChanged(SCREEN_KEY, searchQuery)
+        threadScreenViewModel.updateSearchQuery(searchQuery)
+      },
       onToolbarOverflowMenuClicked = {
         navigationRouter.presentScreen(
           FloatingMenuScreen(

@@ -1,12 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -16,6 +19,8 @@ import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
+import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.launch
 
 enum class PostsScreenToolbarType(val id: Int) {
   Normal(0),
@@ -235,15 +240,6 @@ private fun BoxScope.PostsScreenSearchToolbar(
 ) {
   val keyboardController = LocalSoftwareKeyboardController.current
 
-  DisposableEffect(
-    key1 = Unit,
-    effect = {
-      onDispose {
-        onSearchQueryUpdated?.invoke(null)
-        keyboardController?.hide()
-      }
-    })
-
   KurobaToolbarLayout(
     leftPart = {
       KurobaComposeIcon(
@@ -261,11 +257,14 @@ private fun BoxScope.PostsScreenSearchToolbar(
     },
     middlePart = {
       var searchQuery by remember { mutableStateOf<String>("") }
+      val focusRequester = remember { FocusRequester() }
 
       KurobaComposeCustomTextField(
         modifier = Modifier
           .wrapContentHeight()
-          .fillMaxWidth(),
+          .fillMaxWidth()
+          .focusable()
+          .focusRequester(focusRequester),
         value = searchQuery,
         labelText = stringResource(R.string.toolbar_type_to_search_hint),
         parentBackgroundColor = parentBgColor,
@@ -276,6 +275,26 @@ private fun BoxScope.PostsScreenSearchToolbar(
           }
         }
       )
+
+      val coroutineScope = rememberCoroutineScope()
+
+      DisposableEffect(
+        key1 = Unit,
+        effect = {
+          onSearchQueryUpdated?.invoke("")
+
+          val focusRequestJob = coroutineScope.launch {
+            // For some reason without the delay focusRequester doesn't do anything
+            awaitFrame()
+            focusRequester.requestFocus()
+          }
+
+          onDispose {
+            onSearchQueryUpdated?.invoke(null)
+            keyboardController?.hide()
+            focusRequestJob.cancel()
+          }
+        })
     },
     rightPart = {
     }

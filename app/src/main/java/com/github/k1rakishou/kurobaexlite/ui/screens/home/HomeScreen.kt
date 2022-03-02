@@ -114,6 +114,7 @@ class HomeScreen(
     CompositionLocalProvider(LocalMainUiLayoutMode provides mainUiLayoutMode) {
       ActualContent(
         maxDrawerWidth = maxDrawerWidth,
+        mainUiLayoutMode = mainUiLayoutMode,
         drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
         drawerLongtapGestureZonePx = drawerLongtapGestureZonePx,
         pagerState = pagerState,
@@ -128,6 +129,7 @@ class HomeScreen(
   @Composable
   private fun ActualContent(
     maxDrawerWidth: Int,
+    mainUiLayoutMode: MainUiLayoutMode,
     drawerPhoneVisibleWindowWidth: Int,
     drawerLongtapGestureZonePx: Float,
     pagerState: PagerState,
@@ -237,6 +239,7 @@ class HomeScreen(
         chanTheme = chanTheme,
         pagerState = pagerState,
         childScreens = childScreens.screens,
+        mainUiLayoutMode = mainUiLayoutMode,
         homeScreenViewModel = homeScreenViewModel
       )
 

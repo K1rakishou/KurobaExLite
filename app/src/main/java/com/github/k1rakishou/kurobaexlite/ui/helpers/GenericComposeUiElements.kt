@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import java.util.*
@@ -74,18 +75,19 @@ fun KurobaComposeErrorWithButton(
     verticalArrangement = Arrangement.Center,
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    val chanTheme = LocalChanTheme.current
-
     KurobaComposeText(
       modifier = Modifier
         .wrapContentHeight()
         .fillMaxWidth(),
-      text = errorMessage
+      text = errorMessage,
+      fontSize = 16.sp,
+      textAlign = TextAlign.Center
     )
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(32.dp))
 
     KurobaComposeTextButton(
+      modifier = Modifier.padding(horizontal = 24.dp),
       text = buttonText,
       onClick = onButtonClicked
     )

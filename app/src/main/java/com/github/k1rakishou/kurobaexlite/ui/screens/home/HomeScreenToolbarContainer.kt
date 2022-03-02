@@ -15,12 +15,14 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.zIndex
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -29,6 +31,7 @@ fun HomeScreenToolbarContainer(
   chanTheme: ChanTheme,
   pagerState: PagerState,
   childScreens: List<ComposeScreenWithToolbar>,
+  mainUiLayoutMode: MainUiLayoutMode,
   homeScreenViewModel: HomeScreenViewModel
 ) {
   require(childScreens.isNotEmpty()) { "childScreens is empty!" }
@@ -46,6 +49,7 @@ fun HomeScreenToolbarContainer(
   val touchingTopOrBottomOfList by homeScreenViewModel.toolbarVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
   val isDraggingPostList by homeScreenViewModel.toolbarVisibilityInfo.postListDragState.collectAsState()
   val isDraggingFastScroller by homeScreenViewModel.toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
+  val screensUsingSearch by homeScreenViewModel.toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
 
   val combinedToolbarState by remember {
     derivedStateOf {
@@ -54,6 +58,8 @@ fun HomeScreenToolbarContainer(
         touchingTopOrBottomOfList = touchingTopOrBottomOfList,
         isDraggingPostList = isDraggingPostList,
         isDraggingFastScroller = isDraggingFastScroller,
+        mainUiLayoutMode = mainUiLayoutMode,
+        screensUsingSearch = screensUsingSearch
       )
     }
   }
@@ -74,22 +80,12 @@ fun HomeScreenToolbarContainer(
     },
     targetValueByState = { targetCombinedToolbarState ->
       when {
-        targetCombinedToolbarState.isDraggingFastScroller -> {
-          0f
-        }
-        targetCombinedToolbarState.touchingTopOrBottomOfList -> {
-          1f
-        }
-        targetCombinedToolbarState.isDraggingPostList -> {
-          targetCombinedToolbarState.postListScrollPosition
-        }
-        else -> {
-          if (targetCombinedToolbarState.postListScrollPosition > 0.5f) {
-            1f
-          } else {
-            0f
-          }
-        }
+        targetCombinedToolbarState.screensUsingSearch.isNotEmpty() -> 1f
+        targetCombinedToolbarState.mainUiLayoutMode == MainUiLayoutMode.Split -> 1f
+        targetCombinedToolbarState.isDraggingFastScroller -> 0f
+        targetCombinedToolbarState.touchingTopOrBottomOfList -> 1f
+        targetCombinedToolbarState.isDraggingPostList -> targetCombinedToolbarState.postListScrollPosition
+        else -> if (targetCombinedToolbarState.postListScrollPosition > 0.5f) 1f else 0f
       }
     }
   )
@@ -207,4 +203,6 @@ private data class CombinedToolbarState(
   val touchingTopOrBottomOfList: Boolean,
   val isDraggingPostList: Boolean,
   val isDraggingFastScroller: Boolean,
+  val mainUiLayoutMode: MainUiLayoutMode,
+  val screensUsingSearch: Set<ScreenKey>
 )

@@ -435,7 +435,7 @@ private fun PostListInternal(
       }
     )
 
-    if (searchQuery != null) {
+    if (searchQuery.isNotNullNorEmpty()) {
       SearchInfoCell(
         cellsPadding = cellsPadding,
         contentPadding = postListOptions.contentPadding,

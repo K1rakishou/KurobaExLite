@@ -139,7 +139,10 @@ class CatalogScreen(
 
         mainScreenRouter.pushScreen(boardSelectionScreen)
       },
-      onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
+      onSearchQueryUpdated = { searchQuery ->
+        homeScreenViewModel.onChildScreenSearchStateChanged(SCREEN_KEY, searchQuery)
+        catalogScreenViewModel.updateSearchQuery(searchQuery)
+      },
       onToolbarOverflowMenuClicked = {
         navigationRouter.presentScreen(
           FloatingMenuScreen(
