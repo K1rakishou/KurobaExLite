@@ -64,8 +64,9 @@ abstract class FloatingComposeScreen(
         modifier = Modifier
           .fillMaxSize()
           .padding(
-            start = insets.left + horizPaddingDp,
-            end = insets.right + horizPaddingDp,
+            // Left and right paddings are set globally in MainScreen
+            start = horizPaddingDp,
+            end = horizPaddingDp,
             top = insets.top + vertPaddingDp,
             bottom = insets.bottom + vertPaddingDp,
           ),

@@ -90,7 +90,8 @@ class KurobaExLiteApplication : Application() {
           chanThreadCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
-          themeEngine = get()
+          themeEngine = get(),
+          savedStateHandle = get()
         )
       }
       viewModel {
@@ -99,7 +100,8 @@ class KurobaExLiteApplication : Application() {
           chanThreadCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
-          themeEngine = get()
+          themeEngine = get(),
+          savedStateHandle = get()
         )
       }
       viewModel {
@@ -108,7 +110,8 @@ class KurobaExLiteApplication : Application() {
           postReplyChainManager = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
-          themeEngine = get()
+          themeEngine = get(),
+          savedStateHandle = get()
         )
       }
       viewModel {

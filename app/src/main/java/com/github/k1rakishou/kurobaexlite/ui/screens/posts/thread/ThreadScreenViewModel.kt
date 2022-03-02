@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 
 import android.os.SystemClock
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.R
@@ -35,8 +36,9 @@ class ThreadScreenViewModel(
   private val chanThreadCache: ChanThreadCache,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
-  themeEngine: ThemeEngine
-) : PostScreenViewModel(application, globalConstants, themeEngine) {
+  themeEngine: ThemeEngine,
+  savedStateHandle: SavedStateHandle
+) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
   private val chanThreadViewManager by inject<ChanThreadViewManager>(ChanThreadViewManager::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(executeUpdate = { refresh() })
@@ -47,6 +49,18 @@ class ThreadScreenViewModel(
 
   val timeUntilNextUpdateMs: Long
     get() = threadAutoUpdater.timeUntilNextUpdateMs
+
+  override suspend fun onViewModelReady() {
+    val prevThreadDescriptor = savedStateHandle.get<ThreadDescriptor>(PREV_THREAD_DESCRIPTOR)
+    logcat(tag = TAG) { "onViewModelReady() prevThreadDescriptor=${prevThreadDescriptor}" }
+
+    if (prevThreadDescriptor != null) {
+      loadThread(
+        threadDescriptor = prevThreadDescriptor,
+        forced = true
+      )
+    }
+  }
 
   override fun onCleared() {
     super.onCleared()
@@ -192,9 +206,11 @@ class ThreadScreenViewModel(
     onLoadingThread()
 
     postListBuilt = CompletableDeferred()
-    _postsFullyParsedOnceFlow.emit(false)
     val startTime = SystemClock.elapsedRealtime()
+
+    _postsFullyParsedOnceFlow.emit(false)
     threadScreenState.postsAsyncDataState.value = AsyncData.Loading
+    savedStateHandle.set(PREV_THREAD_DESCRIPTOR, threadDescriptor)
 
     if (threadDescriptor != null) {
       threadScreenState.lastViewedPostDescriptor.value = chanThreadViewManager.read(threadDescriptor)
@@ -388,5 +404,11 @@ class ThreadScreenViewModel(
   }
 
   class ThreadDisplayException(message: String) : ClientException(message)
+
+  companion object {
+    private const val TAG = "ThreadScreenViewModel"
+
+    private const val PREV_THREAD_DESCRIPTOR = "prev_thread_descriptor"
+  }
 
 }

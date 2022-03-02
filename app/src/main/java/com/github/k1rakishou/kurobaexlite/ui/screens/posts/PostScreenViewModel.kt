@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import android.os.SystemClock
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -37,7 +38,8 @@ import org.koin.java.KoinJavaComponent.inject
 abstract class PostScreenViewModel(
   private val application: KurobaExLiteApplication,
   protected val globalConstants: GlobalConstants,
-  protected val themeEngine: ThemeEngine
+  protected val themeEngine: ThemeEngine,
+  protected val savedStateHandle: SavedStateHandle
 ) : BaseAndroidViewModel(application) {
   private val postReplyChainManager by inject<PostReplyChainManager>(PostReplyChainManager::class.java)
   private val chanThreadCache by inject<ChanThreadCache>(ChanThreadCache::class.java)
@@ -213,7 +215,7 @@ abstract class PostScreenViewModel(
     currentParseJob?.cancel()
     currentParseJob = null
 
-    currentParseJob = mainScope.launch(Dispatchers.Default) {
+    currentParseJob = viewModelScope.launch(Dispatchers.Default) {
       if (postDataList.isEmpty()) {
         onPostsParsed(postDataList)
         return@launch
@@ -376,19 +378,19 @@ abstract class PostScreenViewModel(
   }
 
   fun scrollTop() {
-    mainScope.launch {
+    viewModelScope.launch {
       _toolbarScrollEventFlow.emit(false)
     }
   }
 
   fun scrollBottom() {
-    mainScope.launch {
+    viewModelScope.launch {
       _toolbarScrollEventFlow.emit(true)
     }
   }
 
   fun updateSearchQuery(searchQuery: String?) {
-    mainScope.launch {
+    viewModelScope.launch {
       postScreenState.updateSearchQuery(searchQuery)
     }
   }

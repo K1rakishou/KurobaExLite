@@ -92,7 +92,7 @@ class PopupRepliesScreen(
 
     LaunchedEffect(
       key1 = replyViewMode,
-      block = { popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode) }
+      block = { popupRepliesScreenViewModel.loadRepliesForModeInitial(replyViewMode) }
     )
   }
 

@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply
 
 import android.util.LruCache
+import androidx.lifecycle.SavedStateHandle
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
@@ -23,8 +24,9 @@ class PopupRepliesScreenViewModel(
   private val postReplyChainManager: PostReplyChainManager,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
-  themeEngine: ThemeEngine
-) : PostScreenViewModel(application, globalConstants, themeEngine) {
+  themeEngine: ThemeEngine,
+  savedStateHandle: SavedStateHandle
+) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
   private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
 
   private val threadScreenState = ThreadScreenState()
@@ -43,6 +45,17 @@ class PopupRepliesScreenViewModel(
     // no-op
   }
 
+  suspend fun loadRepliesForModeInitial(
+    replyViewMode: PopupRepliesScreen.ReplyViewMode,
+  ) {
+    if (postReplyChainStack.isEmpty()) {
+      loadRepliesForMode(replyViewMode = replyViewMode, isPushing = true)
+    } else {
+      val topReplyMode = postReplyChainStack.last()
+      loadRepliesForMode(replyViewMode = topReplyMode, isPushing = true)
+    }
+  }
+
   suspend fun loadRepliesForMode(
     replyViewMode: PopupRepliesScreen.ReplyViewMode,
     isPushing: Boolean = true
@@ -50,9 +63,10 @@ class PopupRepliesScreenViewModel(
     if (isPushing) {
       val indexOfExisting = postReplyChainStack.indexOfFirst { it == replyViewMode }
       if (indexOfExisting >= 0) {
-        // Move on top of the stack (or should we even do this?)
-        postReplyChainStack += postReplyChainStack.removeAt(indexOfExisting)
+        // Move old on top of the stack
+        postReplyChainStack.add(postReplyChainStack.removeAt(indexOfExisting))
       } else {
+        // Add new on top of the stack
         postReplyChainStack += replyViewMode
       }
     }

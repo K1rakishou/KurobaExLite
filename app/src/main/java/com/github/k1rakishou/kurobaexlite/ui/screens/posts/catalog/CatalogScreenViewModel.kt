@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
 import android.os.SystemClock
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -12,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
+import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import kotlinx.coroutines.CompletableDeferred
@@ -25,12 +27,31 @@ class CatalogScreenViewModel(
   private val chanThreadCache: ChanThreadCache,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
-  themeEngine: ThemeEngine
-) : PostScreenViewModel(application, globalConstants, themeEngine) {
+  themeEngine: ThemeEngine,
+  savedStateHandle: SavedStateHandle
+) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
   private val catalogScreenState = CatalogScreenState()
   private var loadCatalogJob: Job? = null
 
   override val postScreenState: PostScreenState = catalogScreenState
+
+  override suspend fun onViewModelReady() {
+    val prevCatalogDescriptor = savedStateHandle.get<CatalogDescriptor>(PREV_CATALOG_DESCRIPTOR)
+    logcat(tag = TAG) { "onViewModelReady() prevCatalogDescriptor=${prevCatalogDescriptor}" }
+
+    if (prevCatalogDescriptor != null) {
+      loadCatalog(
+        catalogDescriptor = prevCatalogDescriptor,
+        forced = true
+      )
+    } else {
+      // TODO(KurobaEx): remove me once last visited catalog is remembered
+      loadCatalog(
+        catalogDescriptor = CatalogDescriptor(Chan4.SITE_KEY, "g"),
+        forced = true
+      )
+    }
+  }
 
   override fun reload() {
     val currentlyOpenedCatalog = chanThreadManager.currentlyOpenedCatalog
@@ -69,9 +90,11 @@ class CatalogScreenViewModel(
     onLoadingCatalog()
 
     postListBuilt = CompletableDeferred()
-    _postsFullyParsedOnceFlow.emit(false)
     val startTime = SystemClock.elapsedRealtime()
+
+    _postsFullyParsedOnceFlow.emit(false)
     catalogScreenState.postsAsyncDataState.value = AsyncData.Loading
+    savedStateHandle.set(PREV_CATALOG_DESCRIPTOR, catalogDescriptor)
 
     val catalogDataResult = chanThreadManager.loadCatalog(catalogDescriptor)
     if (catalogDataResult.isFailure) {
@@ -137,5 +160,11 @@ class CatalogScreenViewModel(
   }
 
   class CatalogDisplayException(message: String) : ClientException(message)
+
+  companion object {
+    private const val TAG = "CatalogScreenViewModel"
+
+    private const val PREV_CATALOG_DESCRIPTOR = "prev_catalog_descriptor"
+  }
 
 }
