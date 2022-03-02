@@ -11,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
+import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext

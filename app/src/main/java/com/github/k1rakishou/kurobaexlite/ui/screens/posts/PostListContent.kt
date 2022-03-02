@@ -110,14 +110,15 @@ internal fun PostListContent(
 
     LaunchedEffect(
       key1 = lazyListState.firstVisibleItemIndex,
-      key2 = chanDescriptor,
+      key2 = lazyListState.firstVisibleItemScrollOffset,
+      key3 = chanDescriptor,
       block = {
         if (lazyListState.firstVisibleItemIndex <= 0) {
           return@LaunchedEffect
         }
 
         // For debouncing purposes
-        delay(50L)
+        delay(125L)
 
         postsScreenViewModel.rememberPosition(
           chanDescriptor = chanDescriptor,
@@ -359,58 +360,54 @@ private fun PostListInternal(
       contentPadding = contentPadding,
       onFastScrollerDragStateChanged = { dragging -> onFastScrollerDragStateChanged(dragging) },
       content = {
-        when (postListAsync) {
-          AsyncData.Empty -> {
-            item(key = "empty_indicator") {
-              val text = if (isCatalogMode) {
-                stringResource(R.string.post_list_no_catalog_selected)
-              } else {
-                stringResource(R.string.post_list_no_thread_selected)
-              }
-
-              Box(
-                modifier = Modifier.fillParentMaxSize(),
-                contentAlignment = Alignment.Center
-              ) {
-                KurobaComposeText(
-                  text = text
-                )
-              }
+        postListAsyncDataContent(
+          postListAsync = postListAsync,
+          postListOptions = postListOptions,
+          emptyContent = {
+            val text = if (isCatalogMode) {
+              stringResource(R.string.post_list_no_catalog_selected)
+            } else {
+              stringResource(R.string.post_list_no_thread_selected)
             }
-          }
-          AsyncData.Loading -> {
-            item(key = "loading_indicator") {
-              KurobaComposeLoadingIndicator(
-                modifier = Modifier
-                  .fillParentMaxSize()
-                  .padding(8.dp)
+
+            Box(
+              modifier = Modifier.fillParentMaxSize(),
+              contentAlignment = Alignment.Center
+            ) {
+              KurobaComposeText(
+                text = text
               )
             }
-          }
-          is AsyncData.Error -> {
-            item(key = "error_indicator") {
-              val errorMessage = remember(key1 = postListAsync) {
-                postListAsync.error.errorMessageOrClassName()
-              }
-
-              KurobaComposeErrorWithButton(
-                modifier = Modifier
-                  .fillParentMaxSize()
-                  .padding(8.dp),
-                errorMessage = errorMessage,
-                buttonText = stringResource(R.string.reload),
-                onButtonClicked = { postsScreenViewModel.reload() }
-              )
+          },
+          loadingContent = {
+            KurobaComposeLoadingIndicator(
+              modifier = Modifier
+                .fillParentMaxSize()
+                .padding(8.dp)
+            )
+          },
+          errorContent = { postListAsyncError ->
+            val errorMessage = remember(key1 = postListAsync) {
+              postListAsyncError.error.errorMessageOrClassName()
             }
-          }
-          is AsyncData.Data -> {
+
+            KurobaComposeErrorWithButton(
+              modifier = Modifier
+                .fillParentMaxSize()
+                .padding(8.dp),
+              errorMessage = errorMessage,
+              buttonText = stringResource(R.string.reload),
+              onButtonClicked = { postsScreenViewModel.reload() }
+            )
+          },
+          dataContent = { postListAsyncData ->
             postList(
               isCatalogMode = isCatalogMode,
               isInPopup = isInPopup,
               cellsPadding = cellsPadding,
               lazyListState = lazyListState,
               postsScreenViewModel = postsScreenViewModel,
-              postDataList = postListAsync.data.posts,
+              postDataList = postListAsyncData.data.posts,
               lastViewedPostDescriptor = lastViewedPostDescriptor,
               previouslyVisiblePosts = previouslyVisiblePosts,
               onPostCellClicked = onPostCellClicked,
@@ -418,8 +415,8 @@ private fun PostListInternal(
               onPostRepliesClicked = onPostRepliesClicked,
               onThreadStatusCellClicked = onThreadStatusCellClicked
             )
-          }
-        }
+          },
+        )
       }
     )
 
@@ -430,6 +427,42 @@ private fun PostListInternal(
         postsScreenViewModel = postsScreenViewModel,
         searchQuery = searchQuery
       )
+    }
+  }
+}
+
+private fun LazyListScope.postListAsyncDataContent(
+  postListAsync: AsyncData<AbstractPostsState>,
+  postListOptions: PostListOptions,
+  emptyContent: @Composable LazyItemScope.() -> Unit,
+  loadingContent: @Composable LazyItemScope.() -> Unit,
+  errorContent: @Composable LazyItemScope.(AsyncData.Error) -> Unit,
+  dataContent: (AsyncData.Data<AbstractPostsState>) -> Unit
+) {
+  when (postListAsync) {
+    AsyncData.Empty -> {
+      if (postListOptions.isInPopup) {
+        item(key = "popup_loading_indicator") {
+          loadingContent()
+        }
+      } else {
+        item(key = "empty_indicator") {
+          emptyContent()
+        }
+      }
+    }
+    AsyncData.Loading -> {
+      item(key = "loading_indicator") {
+        loadingContent()
+      }
+    }
+    is AsyncData.Error -> {
+      item(key = "error_indicator") {
+        errorContent(postListAsync)
+      }
+    }
+    is AsyncData.Data -> {
+      dataContent(postListAsync)
     }
   }
 }

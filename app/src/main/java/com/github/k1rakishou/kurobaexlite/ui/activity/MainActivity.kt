@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite
+package com.github.k1rakishou.kurobaexlite.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -16,7 +16,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideKurobaViewConfiguration
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.screens.MainScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity() {

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
+package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.snap
@@ -21,7 +21,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable

@@ -22,16 +22,16 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.*
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.screens.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply.PopupRepliesScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens
+package com.github.k1rakishou.kurobaexlite.ui.screens.main
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -16,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreen
 
 class MainScreen(
   componentActivity: ComponentActivity,

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
+package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
 import android.content.res.Configuration
 import androidx.activity.ComponentActivity
@@ -12,7 +12,6 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject

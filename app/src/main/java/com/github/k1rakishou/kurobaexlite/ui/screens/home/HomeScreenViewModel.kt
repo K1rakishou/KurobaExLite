@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts
+package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.R

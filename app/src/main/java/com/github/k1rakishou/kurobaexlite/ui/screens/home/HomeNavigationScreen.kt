@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
+package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter

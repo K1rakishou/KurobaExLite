@@ -1,8 +1,7 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts
+package com.github.k1rakishou.kurobaexlite.managers
 
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.maxOfByOrNull
-import com.github.k1rakishou.kurobaexlite.managers.ChanThreadViewManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch

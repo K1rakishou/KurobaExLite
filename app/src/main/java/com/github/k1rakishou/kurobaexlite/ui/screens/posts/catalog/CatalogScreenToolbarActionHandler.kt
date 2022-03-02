@@ -11,7 +11,7 @@ import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import logcat.logcat

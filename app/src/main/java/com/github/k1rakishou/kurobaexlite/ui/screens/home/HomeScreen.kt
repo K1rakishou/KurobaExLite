@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens
+package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
@@ -33,12 +33,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.HomeScreenDrawerLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.detectDrawerDragGestures
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeChildScreens
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomePagerNestedScrollConnection
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeScreenToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 

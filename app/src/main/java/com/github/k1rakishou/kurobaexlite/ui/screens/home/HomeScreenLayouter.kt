@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.helpers
+package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
 import android.content.res.Configuration
 import androidx.activity.ComponentActivity

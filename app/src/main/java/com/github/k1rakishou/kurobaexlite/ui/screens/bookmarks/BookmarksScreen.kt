@@ -11,8 +11,8 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.*
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
 
 class BookmarksScreen(
   componentActivity: ComponentActivity,

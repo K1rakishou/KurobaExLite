@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply
+package com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*

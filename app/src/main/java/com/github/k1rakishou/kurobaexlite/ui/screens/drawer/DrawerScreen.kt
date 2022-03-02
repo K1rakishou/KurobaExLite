@@ -16,7 +16,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class DrawerScreen(

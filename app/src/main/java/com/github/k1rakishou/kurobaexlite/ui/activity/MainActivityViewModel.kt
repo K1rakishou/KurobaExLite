@@ -1,8 +1,8 @@
-package com.github.k1rakishou.kurobaexlite
+package com.github.k1rakishou.kurobaexlite.ui.activity
 
 import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.screens.MainScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 
 class MainActivityViewModel : ViewModel() {
 

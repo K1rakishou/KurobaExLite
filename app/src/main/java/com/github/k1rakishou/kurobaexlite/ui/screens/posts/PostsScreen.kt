@@ -10,8 +10,8 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.HomeNavigationScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.reply.PopupRepliesScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
 
 abstract class PostsScreen(
   componentActivity: ComponentActivity,

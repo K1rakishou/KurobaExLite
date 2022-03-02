@@ -15,7 +15,7 @@
         android:theme="@style/DefaultTheme">
 
         <activity
-            android:name="com.github.k1rakishou.kurobaexlite.MainActivity"
+            android:name="com.github.k1rakishou.kurobaexlite.ui.activity.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/DefaultTheme"

@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import kotlinx.coroutines.delay
 
 
