@@ -41,7 +41,11 @@ class ThreadScreenViewModel(
 ) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
   private val chanThreadViewManager by inject<ChanThreadViewManager>(ChanThreadViewManager::class.java)
 
-  private val threadAutoUpdater = ThreadAutoUpdater(executeUpdate = { refresh() })
+  private val threadAutoUpdater = ThreadAutoUpdater(
+    executeUpdate = { refresh() },
+    canUpdate = { threadScreenState.searchQueryFlow.value == null }
+  )
+
   private val threadScreenState = ThreadScreenState()
   private var loadThreadJob: Job? = null
 

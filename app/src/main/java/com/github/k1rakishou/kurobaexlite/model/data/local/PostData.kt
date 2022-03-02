@@ -9,6 +9,7 @@ open class PostData(
   val postDescriptor: PostDescriptor,
   val postSubjectUnparsed: String,
   val postCommentUnparsed: String,
+  val timeMs: Long?,
   val images: List<PostImageData>?,
   val threadRepliesTotal: Int? = null,
   val threadImagesTotal: Int? = null,
@@ -43,6 +44,7 @@ open class PostData(
     _murmur3HashMut = MurmurHashUtils.murmurhash3_x64_128(postDescriptor)
       .combine(MurmurHashUtils.murmurhash3_x64_128(postSubjectUnparsed))
       .combine(MurmurHashUtils.murmurhash3_x64_128(postCommentUnparsed))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(timeMs))
       .combine(MurmurHashUtils.murmurhash3_x64_128(images))
       .combine(MurmurHashUtils.murmurhash3_x64_128(threadRepliesTotal))
       .combine(MurmurHashUtils.murmurhash3_x64_128(threadImagesTotal))
@@ -109,6 +111,7 @@ open class PostData(
     postDescriptor: PostDescriptor = this.postDescriptor,
     postSubjectUnparsed: String = this.postSubjectUnparsed,
     postCommentUnparsed: String = this.postCommentUnparsed,
+    timeMs: Long? = this.timeMs,
     images: List<PostImageData>? = this.images,
     threadRepliesTotal: Int? = this.threadRepliesTotal,
     threadImagesTotal: Int? = this.threadImagesTotal,
@@ -120,6 +123,7 @@ open class PostData(
       postDescriptor = postDescriptor,
       postSubjectUnparsed = postSubjectUnparsed,
       postCommentUnparsed = postCommentUnparsed,
+      timeMs = timeMs,
       images = images,
       threadRepliesTotal = threadRepliesTotal,
       threadImagesTotal = threadImagesTotal,
@@ -137,6 +141,7 @@ open class PostData(
     if (postDescriptor != other.postDescriptor) return false
     if (postSubjectUnparsed != other.postSubjectUnparsed) return false
     if (postCommentUnparsed != other.postCommentUnparsed) return false
+    if (timeMs != other.timeMs) return false
     if (images != other.images) return false
     if (parsedPostData != other.parsedPostData) return false
 
@@ -147,6 +152,7 @@ open class PostData(
     var result = postDescriptor.hashCode()
     result = 31 * result + postSubjectUnparsed.hashCode()
     result = 31 * result + postCommentUnparsed.hashCode()
+    result = 31 * result + timeMs.hashCode()
     result = 31 * result + (images?.hashCode() ?: 0)
     result = 31 * result + (parsedPostData?.hashCode() ?: 0)
     return result

@@ -50,6 +50,7 @@
     <string name="toolbar_loading_error">Error loading</string>
     <string name="toolbar_loading_empty">Select a catalog</string>
 
+    <string name="post_list_no_posts_popup">No posts found</string>
     <string name="post_list_no_catalog_selected">No catalog selected</string>
     <string name="post_list_no_thread_selected">No thread selected</string>
 

@@ -92,6 +92,8 @@ class PopupRepliesScreenViewModel(
   }
 
   private suspend fun loadRepliesFrom(replyViewMode: PopupRepliesScreen.ReplyViewMode.RepliesFrom): Boolean {
+    postScreenState.postsAsyncDataState.value = AsyncData.Loading
+
     val postDescriptor = replyViewMode.postDescriptor
     val repliesFrom = postReplyChainManager.getRepliesFrom(postDescriptor)
     if (repliesFrom.isEmpty()) {

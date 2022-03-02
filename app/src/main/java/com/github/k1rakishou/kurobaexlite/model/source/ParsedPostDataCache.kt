@@ -1,9 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.model.source
 
 import android.content.Context
+import android.text.format.DateUtils
 import androidx.annotation.GuardedBy
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.*
@@ -20,6 +22,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.asLog
+import java.util.*
 
 class ParsedPostDataCache(
   private val appContext: Context,
@@ -162,7 +165,8 @@ class ParsedPostDataCache(
 
         when (textPartSpan) {
           is PostCommentParser.TextPartSpan.Linkable.Board,
-          is PostCommentParser.TextPartSpan.Linkable.Search -> continue
+          is PostCommentParser.TextPartSpan.Linkable.Search,
+          is PostCommentParser.TextPartSpan.Linkable.Url -> continue
           is PostCommentParser.TextPartSpan.Linkable.Quote -> {
             if (textPartSpan.crossThread) {
               continue
@@ -185,8 +189,11 @@ class ParsedPostDataCache(
     postSubjectParsed: String,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
+    val hasImages = postData.images?.isNotNullNorEmpty() ?: false
+    val hasSubject = postSubjectParsed.isNotBlank()
+
     return buildAnnotatedString(capacity = postSubjectParsed.length) {
-      if (postSubjectParsed.isNotEmpty()) {
+      if (hasSubject) {
         val subjectAnnotatedString = AnnotatedString(
           text = postSubjectParsed,
           spanStyle = SpanStyle(
@@ -202,7 +209,7 @@ class ParsedPostDataCache(
         if (parsedPostDataContext.isParsingThread) {
           append("#")
           append(postData.postIndex + 1)
-          append(", ")
+          append(TEXT_SEPARATOR)
         }
 
         append("No. ")
@@ -217,6 +224,74 @@ class ParsedPostDataCache(
       )
 
       append(postInfoPartAnnotatedString)
+
+      if (postData.timeMs != null) {
+        val timeMs = postData.timeMs
+
+        val relativeTime = buildString {
+          val timeString = DateUtils.getRelativeTimeSpanString(
+            timeMs,
+            System.currentTimeMillis(),
+            DateUtils.SECOND_IN_MILLIS,
+            0
+          ).toString()
+
+          append(TEXT_SEPARATOR)
+          append(timeString)
+        }
+
+        val relativeTimeAnnotatedString = AnnotatedString(
+          text = relativeTime,
+          spanStyle = SpanStyle(
+            color = chanTheme.textColorHintCompose,
+          )
+        )
+
+        append(relativeTimeAnnotatedString)
+      }
+
+      if (hasImages) {
+        append("\n")
+
+        val imagesInfoAnnotatedString = buildAnnotatedString(capacity = 64) {
+          val postImages = postData.images!!
+          if (postImages.size > 1) {
+            val imagesCount = postImages.size
+            val totalFileSize = postImages.sumOf { it.fileSize }
+
+            append(imagesCount.toString())
+            append(" ")
+            append("files")
+            append(", ")
+            append(totalFileSize.asReadableFileSize())
+          } else {
+            val postImage = postImages.first()
+
+            append(
+              AnnotatedString(
+                text = postImage.originalFileName,
+                spanStyle = SpanStyle(textDecoration = TextDecoration.Underline)
+              )
+            )
+            append(" ")
+            append(postImage.ext.uppercase(Locale.ENGLISH))
+            append(" ")
+            append(postImage.width.toString())
+            append("x")
+            append(postImage.height.toString())
+            append(" ")
+            append(postImage.fileSize.asReadableFileSize())
+          }
+
+          addStyle(
+            style = SpanStyle(color = chanTheme.textColorHintCompose),
+            start = 0,
+            end = length
+          )
+        }
+
+        append(imagesInfoAnnotatedString)
+      }
     }
   }
 
@@ -295,6 +370,10 @@ class ParsedPostDataCache(
     }
 
     return null
+  }
+
+  companion object {
+    private const val TEXT_SEPARATOR = " • "
   }
 
 }

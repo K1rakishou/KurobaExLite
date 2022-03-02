@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.model.data.remote
+package com.github.k1rakishou.kurobaexlite.model.data.remote.chan4
 
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass

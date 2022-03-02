@@ -1,18 +1,25 @@
-package com.github.k1rakishou.kurobaexlite.model.source
+package com.github.k1rakishou.kurobaexlite.model.source.chan4
 
-import com.github.k1rakishou.kurobaexlite.helpers.*
+import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertIntoJsonObjectWithAdapter
+import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.*
-import com.github.k1rakishou.kurobaexlite.model.data.remote.BoardsDataJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.CatalogPageDataJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.ThreadDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardsDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.PostImageDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadDataJson
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -79,10 +86,10 @@ class Chan4DataSource(
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.sub ?: "",
               postCommentUnparsed = threadPost.com ?: "",
+              timeMs = threadPost.time?.times(1000L),
               images = parsePostImages(
                 postImageInfo = postImageInfo,
-                ext = threadPost.ext,
-                tim = threadPost.tim,
+                postImageDataJson = threadPost,
                 boardCode = boardCode
               ),
               threadRepliesTotal = threadPost.replies,
@@ -96,10 +103,10 @@ class Chan4DataSource(
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.sub ?: "",
               postCommentUnparsed = threadPost.com ?: "",
+              timeMs = threadPost.time?.times(1000L),
               images = parsePostImages(
                 postImageInfo = postImageInfo,
-                ext = threadPost.ext,
-                tim = threadPost.tim,
+                postImageDataJson = threadPost,
                 boardCode = boardCode
               ),
               parsedPostData = null
@@ -163,10 +170,10 @@ class Chan4DataSource(
               postDescriptor = postDescriptor,
               postSubjectUnparsed = catalogThread.sub ?: "",
               postCommentUnparsed = catalogThread.com ?: "",
+              timeMs = catalogThread.time?.times(1000L),
               images = parsePostImages(
                 postImageInfo = postImageInfo,
-                ext = catalogThread.ext,
-                tim = catalogThread.tim,
+                postImageDataJson = catalogThread,
                 boardCode = boardCode
               ),
               threadRepliesTotal = catalogThread.replies,
@@ -229,22 +236,37 @@ class Chan4DataSource(
 
   private fun parsePostImages(
     postImageInfo: Site.PostImageInfo?,
-    ext: String?,
-    tim: Long?,
+    postImageDataJson: PostImageDataJson,
     boardCode: String
   ): List<PostImageData> {
-    if (postImageInfo == null || !ext.isNotNullNorBlank() || tim == null) {
+    if (postImageInfo == null || !postImageDataJson.hasImage()) {
       return emptyList()
     }
 
+    val extension = postImageDataJson.ext!!.removePrefix(".")
+
     val thumbnailUrl = postImageInfo.thumbnailUrl(
       boardCode = boardCode,
-      tim = tim,
+      tim = postImageDataJson.tim!!,
       extension = "jpg"
     ).toHttpUrlOrNull()
       ?: return emptyList()
 
-    return listOf(PostImageData(thumbnailUrl))
+    val serverFileName = postImageDataJson.tim.toString()
+    val originalFileName = postImageDataJson.filename
+      ?: serverFileName
+
+    val postImageData = PostImageData(
+      thumbnailUrl = thumbnailUrl,
+      originalFileName = originalFileName,
+      serverFileName = serverFileName,
+      ext = extension,
+      width = postImageDataJson.w!!,
+      height = postImageDataJson.h!!,
+      fileSize = postImageDataJson.fsize!!
+    )
+
+    return listOf(postImageData)
   }
 
   class ChanDataSourceException(message: String) : ClientException(message)

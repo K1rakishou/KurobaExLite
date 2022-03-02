@@ -15,6 +15,7 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.math.abs
 
 
 fun <T> CancellableContinuation<T>.resumeValueSafe(value: T) {
@@ -455,4 +456,32 @@ fun <T> maxOfByOrNull(vararg elements: T, selector: (T) -> Number): T? {
   }
 
   return maxElem
+}
+
+fun Number.asReadableFileSize(): String {
+  val bytes = toLong()
+
+  // Nice stack overflow copy-paste, but it's been updated to be more correct
+  // https://programming.guide/java/formatting-byte-size-to-human-readable-format.html
+  val s = if (bytes < 0) {
+    "-"
+  } else {
+    ""
+  }
+
+  var b = if (bytes == Long.MIN_VALUE) {
+    Long.MAX_VALUE
+  } else {
+    abs(bytes)
+  }
+
+  return when {
+    b < 1000L -> "$bytes B"
+    b < 999950L -> String.format("%s%.1f kB", s, b / 1e3)
+    1000.let { b /= it; b } < 999950L -> String.format("%s%.1f MB", s, b / 1e3)
+    1000.let { b /= it; b } < 999950L -> String.format("%s%.1f GB", s, b / 1e3)
+    1000.let { b /= it; b } < 999950L -> String.format("%s%.1f TB", s, b / 1e3)
+    1000.let { b /= it; b } < 999950L -> String.format("%s%.1f PB", s, b / 1e3)
+    else -> String.format("%s%.1f EB", s, b / 1e6)
+  }
 }

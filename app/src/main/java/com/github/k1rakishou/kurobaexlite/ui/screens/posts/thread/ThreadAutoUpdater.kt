@@ -9,7 +9,8 @@ import kotlinx.coroutines.*
 import logcat.logcat
 
 class ThreadAutoUpdater(
-  private val executeUpdate: suspend () -> Unit
+  private val executeUpdate: suspend () -> Unit,
+  private val canUpdate: suspend () -> Boolean
 ) {
   private val coroutineScope = KurobaCoroutineScope()
   private var autoUpdaterJob: Job? = null
@@ -53,7 +54,7 @@ class ThreadAutoUpdater(
         val now = SystemClock.elapsedRealtime()
         val nextRun = (nextRunTime ?: 0L)
 
-        if (now >= nextRun) {
+        if (now >= nextRun && canUpdate()) {
           try {
             logcat(tag = TAG) { "executeUpdate($threadDescriptor)" }
             executeUpdate()
@@ -65,8 +66,8 @@ class ThreadAutoUpdater(
             }
           }
 
-          nextRunTime = now + ((DELAYS.getOrNull(updateIndex) ?: DELAYS.last()) * 1000L)
           ++updateIndex
+          nextRunTime = now + ((DELAYS.getOrNull(updateIndex) ?: DELAYS.last()) * 1000L)
         }
       }
 

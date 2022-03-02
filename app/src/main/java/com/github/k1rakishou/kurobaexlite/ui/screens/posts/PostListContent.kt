@@ -362,12 +362,11 @@ private fun PostListInternal(
       content = {
         postListAsyncDataContent(
           postListAsync = postListAsync,
-          postListOptions = postListOptions,
           emptyContent = {
-            val text = if (isCatalogMode) {
-              stringResource(R.string.post_list_no_catalog_selected)
-            } else {
-              stringResource(R.string.post_list_no_thread_selected)
+            val text = when {
+              isInPopup -> stringResource(R.string.post_list_no_posts_popup)
+              isCatalogMode -> stringResource(R.string.post_list_no_catalog_selected)
+              else -> stringResource(R.string.post_list_no_thread_selected)
             }
 
             Box(
@@ -380,9 +379,17 @@ private fun PostListInternal(
             }
           },
           loadingContent = {
+            val sizeModifier = if (isInPopup) {
+              Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+            } else {
+              Modifier.fillParentMaxSize()
+            }
+
             KurobaComposeLoadingIndicator(
               modifier = Modifier
-                .fillParentMaxSize()
+                .then(sizeModifier)
                 .padding(8.dp)
             )
           },
@@ -391,9 +398,17 @@ private fun PostListInternal(
               postListAsyncError.error.errorMessageOrClassName()
             }
 
+            val sizeModifier = if (isInPopup) {
+              Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+            } else {
+              Modifier.fillParentMaxSize()
+            }
+
             KurobaComposeErrorWithButton(
               modifier = Modifier
-                .fillParentMaxSize()
+                .then(sizeModifier)
                 .padding(8.dp),
               errorMessage = errorMessage,
               buttonText = stringResource(R.string.reload),
@@ -433,7 +448,6 @@ private fun PostListInternal(
 
 private fun LazyListScope.postListAsyncDataContent(
   postListAsync: AsyncData<AbstractPostsState>,
-  postListOptions: PostListOptions,
   emptyContent: @Composable LazyItemScope.() -> Unit,
   loadingContent: @Composable LazyItemScope.() -> Unit,
   errorContent: @Composable LazyItemScope.(AsyncData.Error) -> Unit,
@@ -441,14 +455,8 @@ private fun LazyListScope.postListAsyncDataContent(
 ) {
   when (postListAsync) {
     AsyncData.Empty -> {
-      if (postListOptions.isInPopup) {
-        item(key = "popup_loading_indicator") {
-          loadingContent()
-        }
-      } else {
-        item(key = "empty_indicator") {
-          emptyContent()
-        }
+      item(key = "empty_indicator") {
+        emptyContent()
       }
     }
     AsyncData.Loading -> {
@@ -907,7 +915,8 @@ private fun PostCellTitle(
   Row(
     modifier = Modifier
       .wrapContentHeight()
-      .fillMaxWidth()
+      .fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically
   ) {
     if (postData.images.isNotNullNorEmpty()) {
       val image = postData.images.first()
