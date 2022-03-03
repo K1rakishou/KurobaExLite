@@ -40,11 +40,11 @@ data class ParsedPostDataContext(
       return Int.MAX_VALUE
     }
 
-    return if (isParsingCatalog) {
-      200
-    } else {
-      400
+    if (isParsingCatalog) {
+      return 200
     }
+
+    return Int.MAX_VALUE
   }
 
   fun murmurhash(): MurmurHashUtils.Murmur3Hash {

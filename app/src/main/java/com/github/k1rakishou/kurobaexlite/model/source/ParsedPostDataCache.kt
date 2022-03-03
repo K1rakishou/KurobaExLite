@@ -8,8 +8,15 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.helpers.*
+import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
+import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
@@ -19,10 +26,10 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import java.util.Locale
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.asLog
-import java.util.*
 
 class ParsedPostDataCache(
   private val appContext: Context,
@@ -54,6 +61,7 @@ class ParsedPostDataCache(
       }
 
       if (!force && oldParsedPostData != null) {
+        postData.updateParsedPostData(oldParsedPostData)
         return@withLock oldParsedPostData
       }
 

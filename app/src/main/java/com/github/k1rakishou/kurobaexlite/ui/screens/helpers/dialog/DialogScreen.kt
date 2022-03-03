@@ -2,16 +2,31 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
@@ -64,7 +79,7 @@ class DialogScreen(
     ) {
       KurobaComposeText(
         modifier = Modifier.fillMaxWidth(),
-        text = stringResource(id = params.title),
+        text = params.title.actualText(),
         fontSize = 18.sp
       )
 
@@ -77,7 +92,7 @@ class DialogScreen(
             .fillMaxWidth()
             .heightIn(max = maxHeight)
             .verticalScroll(state = rememberScrollState()),
-          text = stringResource(id = params.description),
+          text = params.description.actualText(),
           fontSize = 14.sp
         )
       }
@@ -154,8 +169,8 @@ class DialogScreen(
   }
 
   class Params(
-    @StringRes val title: Int,
-    @StringRes val description: Int? = null,
+    val title: Text,
+    val description: Text? = null,
     val input: Input? = null,
     val negativeButton: DialogButton? = null,
     val neutralButton: DialogButton? = null,
@@ -172,6 +187,20 @@ class DialogScreen(
     val onClick: (() -> Unit)? = null
   )
 
+  sealed class Text {
+
+    @Composable
+    fun actualText(): kotlin.String {
+      return when (this) {
+        is Id -> stringResource(id = textId)
+        is String -> value
+      }
+    }
+
+    data class Id(@StringRes val textId: Int) : Text()
+    data class String(val value: kotlin.String) : Text()
+  }
+
   class PositiveDialogButton(
     @StringRes val buttonText: Int,
     val isActionDangerous: Boolean = false,
@@ -180,6 +209,15 @@ class DialogScreen(
 
   companion object {
     const val CATALOG_OVERFLOW_OPEN_THREAD_BY_IDENTIFIER = "catalog_overflow_open_thread_by_identifier_dialog"
+    const val OPEN_EXTERNAL_THREAD = "open_external_thread"
+
+    fun cancelButton(onClick: (() -> Unit)? = null): DialogButton {
+      return DialogButton(buttonText = R.string.cancel, onClick = onClick)
+    }
+
+    fun okButton(isActionDangerous: Boolean = false, onClick: ((result: String?) -> Unit)): PositiveDialogButton {
+      return PositiveDialogButton(buttonText = R.string.ok, isActionDangerous = isActionDangerous, onClick = onClick)
+    }
   }
 
 }

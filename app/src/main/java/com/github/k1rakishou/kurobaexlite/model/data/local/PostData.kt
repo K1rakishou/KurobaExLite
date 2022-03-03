@@ -20,6 +20,9 @@ open class PostData(
   val murmur3Hash: MurmurHashUtils.Murmur3Hash
     get() = _murmur3HashMut
 
+  val parsedPostDataRead: ParsedPostData?
+    get() = parsedPostData
+
   val postNo: Long
     get() = postDescriptor.postNo
   val postSubNo: Long?
@@ -53,6 +56,10 @@ open class PostData(
   }
 
   fun updateParsedPostData(newParsedPostData: ParsedPostData) {
+    if (this.parsedPostData == newParsedPostData) {
+      return
+    }
+
     this.parsedPostData = newParsedPostData
     recalculateHash()
   }

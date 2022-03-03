@@ -74,8 +74,8 @@ class CatalogScreenToolbarActionHandler(
         componentActivity = componentActivity,
         navigationRouter = navigationRouter,
         params = DialogScreen.Params(
-          title = R.string.catalog_screen_enter_identifier,
-          description = R.string.catalog_screen_enter_identifier_description,
+          title = DialogScreen.Text.Id(R.string.catalog_screen_enter_identifier),
+          description = DialogScreen.Text.Id(R.string.catalog_screen_enter_identifier_description),
           input = DialogScreen.Input.String(),
           negativeButton = DialogScreen.DialogButton(buttonText = R.string.cancel),
           positiveButton = DialogScreen.PositiveDialogButton(

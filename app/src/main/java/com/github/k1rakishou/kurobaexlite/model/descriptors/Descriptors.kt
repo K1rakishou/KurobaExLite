@@ -154,6 +154,23 @@ data class PostDescriptor(
     }
   }
 
+  fun asReadableString(): String {
+    return buildString(capacity = 32) {
+      append(siteKeyActual)
+      append("/")
+      append(boardCode)
+      append("/")
+      append(threadNo)
+      append("/")
+      append(postNo)
+
+      if (postSubNo > 0) {
+        append(",")
+        append(postSubNo)
+      }
+    }
+  }
+
   companion object {
     fun create(
       siteKey: SiteKey,

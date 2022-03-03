@@ -18,6 +18,10 @@ class ChanCatalog {
     mutex.withLock {
       for (postData in postDataCollection) {
         check(postData is OriginalPostData) { "postData is not OriginalPostData" }
+
+        if (postData.parsedPostDataRead == null) {
+          error("parsedPostDataRead is null")
+        }
       }
 
       threads.clear()

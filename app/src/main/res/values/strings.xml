@@ -58,9 +58,11 @@
     <string name="catalog_toolbar_open_thread_by_identifier_subtitle">Allows opening threads by url/threadId/etc.</string>
     <string name="catalog_toolbar_layout_mode">Layout mode</string>
     <string name="catalog_toolbar_bookmarks_on_left_side">Bookmarks screen on left side</string>
-
     <string name="catalog_screen_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_screen_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
+
+    <string name="thread_screen_open_external_thread_dialog_title">Open external thread?</string>
+    <string name="thread_screen_open_external_thread_dialog_description">Open \'%1$s\'?</string>
 
     <string name="board_selection_screen_toolbar_title">Boards list</string>
     <string name="board_selection_screen_no_boards_loaded">No boards loaded</string>
