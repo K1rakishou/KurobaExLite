@@ -131,6 +131,7 @@ class CatalogScreen(
 
     KurobaToolbar(
       screenKey = screenKey,
+      componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
       canProcessBackEvent = { homeScreenViewModel.currentPage?.screenKey == screenKey },

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
+import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FloatTweenSpec
 import androidx.compose.animation.core.animate
@@ -10,8 +11,11 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.removeIfKt
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 @Composable
 fun <T> AnimateableStackContainer(
@@ -40,9 +44,20 @@ fun <T> AnimateableStackContainer(
 
 @Composable
 fun <T> rememberAnimateableStackContainerState(
+  screenKey: ScreenKey,
+  componentActivity: ComponentActivity,
   initialValues: List<StackContainerElementWrapper<T>> = emptyList()
 ): AnimateableStackContainerState<T> {
-  return remember { AnimateableStackContainerState<T>(initialValues) }
+  val viewModel = remember { ViewModelProvider(componentActivity).get(AnimateableStackContainerViewModel::class.java) }
+
+  return viewModel.storage.getOrPut(
+    key = screenKey,
+    defaultValue = { AnimateableStackContainerState(initialValues) }
+  ) as AnimateableStackContainerState<T>
+}
+
+class AnimateableStackContainerViewModel : ViewModel() {
+  internal val storage = mutableMapOf<ScreenKey, AnimateableStackContainerState<*>>()
 }
 
 @Composable

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,10 +17,12 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -46,6 +49,8 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.launch
 
+private const val searchQuery = "search_query"
+
 enum class PostsScreenToolbarType(val id: Int) {
   Normal(0),
   Search(1)
@@ -66,6 +71,7 @@ class KurobaToolbarState(
 @Composable
 fun KurobaToolbar(
   screenKey: ScreenKey,
+  componentActivity: ComponentActivity,
   kurobaToolbarState: KurobaToolbarState,
   navigationRouter: NavigationRouter,
   canProcessBackEvent: () -> Boolean,
@@ -78,6 +84,8 @@ fun KurobaToolbar(
   val parentBgColor = chanTheme.primaryColorCompose
 
   val stackContainerState = rememberAnimateableStackContainerState<PostsScreenToolbarType>(
+    screenKey = screenKey,
+    componentActivity = componentActivity,
     initialValues = listOf(
       SimpleStackContainerElement(
         element = PostsScreenToolbarType.Normal,
@@ -286,8 +294,18 @@ private fun BoxScope.PostsScreenSearchToolbar(
       )
     },
     middlePart = {
-      var searchQuery by remember { mutableStateOf<String>("") }
+      var searchQuery by rememberSaveable(key = searchQuery) { mutableStateOf<String>("") }
       val focusRequester = remember { FocusRequester() }
+
+      LaunchedEffect(
+        key1 = Unit,
+        block = {
+          if (searchQuery.isEmpty()) {
+            return@LaunchedEffect
+          }
+
+          onSearchQueryUpdated?.invoke(searchQuery)
+        })
 
       KurobaComposeCustomTextField(
         modifier = Modifier
