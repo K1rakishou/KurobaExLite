@@ -5,14 +5,41 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.forEachGesture
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -21,7 +48,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.input.pointer.changedToUp
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -43,7 +74,14 @@ import coil.compose.AsyncImageScope
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.helpers.*
+import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.extractLinkableAnnotationItem
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
@@ -51,7 +89,15 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.helpers.*
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -89,21 +135,28 @@ internal fun PostListContent(
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
   if (chanDescriptor != null && postListAsync is AsyncData.Data) {
+    val delta = 32
+
     LaunchedEffect(
       key1 = lazyListState.firstVisibleItemIndex,
-      key2 = chanDescriptor,
+      key2 = lazyListState.firstVisibleItemScrollOffset / delta,
+      key3 = chanDescriptor,
       block = {
         // For debouncing purposes
-        delay(50L)
+        delay(16L)
 
-        val firstVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
+        val firstVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
           ?: return@LaunchedEffect
-        val lastVisibleItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+        val lastVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
           ?: return@LaunchedEffect
+
+        val firstVisibleItemIndex = firstVisibleItem.index
+        val firstVisibleItemOffset = firstVisibleItem.offset
+        val lastVisibleItemIndex = lastVisibleItem.index
+
         val totalCount = lazyListState.layoutInfo.totalItemsCount
-
+        val touchingTop = firstVisibleItemIndex <= 0 && firstVisibleItemOffset in 0..delta
         val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
-        val touchingTop = firstVisibleItemIndex <= 0
 
         onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
       })
