@@ -16,9 +16,17 @@ open class PostData(
   val threadPostersTotal: Int? = null,
   @Volatile private var parsedPostData: ParsedPostData?
 ) {
-  @Volatile private var _murmur3HashMut = MurmurHashUtils.Murmur3Hash.EMPTY
-  val murmur3Hash: MurmurHashUtils.Murmur3Hash
-    get() = _murmur3HashMut
+  // Full hash of PostData + ParsedPostData
+  @Volatile private var _postFullHashMut = MurmurHashUtils.Murmur3Hash.EMPTY
+  val postFullHash: MurmurHashUtils.Murmur3Hash
+    get() = _postFullHashMut
+
+  // Only full hash of PostData + postFooterText from ParsedPostData. This hash is used to display
+  // CellPost update animation which is supposed to run only when the actual post content has changed
+  // (comment updated, new reply to a post received, etc).
+  @Volatile private var _postServerDataHashMut = MurmurHashUtils.Murmur3Hash.EMPTY
+  val postOnlyDataHashMut: MurmurHashUtils.Murmur3Hash
+    get() = _postServerDataHashMut
 
   val parsedPostDataRead: ParsedPostData?
     get() = parsedPostData
@@ -40,11 +48,11 @@ open class PostData(
     get() = parsedPostData?.postFooterText
 
   init {
-    recalculateHash()
+    recalculateFullHashes()
   }
 
-  private fun recalculateHash() {
-    _murmur3HashMut = MurmurHashUtils.murmurhash3_x64_128(postDescriptor)
+  private fun recalculateFullHashes() {
+    val hash = MurmurHashUtils.murmurhash3_x64_128(postDescriptor)
       .combine(MurmurHashUtils.murmurhash3_x64_128(postSubjectUnparsed))
       .combine(MurmurHashUtils.murmurhash3_x64_128(postCommentUnparsed))
       .combine(MurmurHashUtils.murmurhash3_x64_128(timeMs))
@@ -52,7 +60,11 @@ open class PostData(
       .combine(MurmurHashUtils.murmurhash3_x64_128(threadRepliesTotal))
       .combine(MurmurHashUtils.murmurhash3_x64_128(threadImagesTotal))
       .combine(MurmurHashUtils.murmurhash3_x64_128(threadPostersTotal))
-      .combine((parsedPostData?.murmurhash()) ?: MurmurHashUtils.Murmur3Hash.EMPTY)
+
+    _postFullHashMut = hash.combine((parsedPostData?.murmurhash())
+      ?: MurmurHashUtils.Murmur3Hash.EMPTY)
+
+    _postServerDataHashMut = hash.combine(MurmurHashUtils.murmurhash3_x64_128(parsedPostData?.postFooterText))
   }
 
   fun updateParsedPostData(newParsedPostData: ParsedPostData) {
@@ -61,7 +73,7 @@ open class PostData(
     }
 
     this.parsedPostData = newParsedPostData
-    recalculateHash()
+    recalculateFullHashes()
   }
 
   fun differsWith(other: PostData): Boolean {

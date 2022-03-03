@@ -513,7 +513,7 @@ private fun PostListInternal(
       SideEffect {
         postDataList.posts.forEach { postDataState ->
           val postData = postDataState.value
-          previouslyVisiblePosts[postData.postDescriptor] = postData.murmur3Hash
+          previouslyVisiblePosts[postData.postDescriptor] = postData.postOnlyDataHashMut
         }
       }
     }
@@ -581,7 +581,7 @@ private fun LazyListScope.postList(
           val resultMap = mutableMapOf<PostDescriptor, MurmurHashUtils.Murmur3Hash>()
 
           postDataList.forEach { postDataState ->
-            resultMap[postDataState.value.postDescriptor] = postDataState.value.murmur3Hash
+            resultMap[postDataState.value.postDescriptor] = postDataState.value.postOnlyDataHashMut
           }
 
           previouslyVisiblePosts.putAll(resultMap)
@@ -593,7 +593,7 @@ private fun LazyListScope.postList(
       val animateUpdate = !animateInsertion
         && previouslyVisiblePosts != null
         && previouslyVisiblePosts.containsKey(postData.postDescriptor)
-        && previouslyVisiblePosts[postData.postDescriptor] != postData.murmur3Hash
+        && previouslyVisiblePosts[postData.postDescriptor] != postData.postOnlyDataHashMut
         && searchQuery == null
 
       PostCellContainer(
@@ -616,7 +616,7 @@ private fun LazyListScope.postList(
         // Add each post into the previouslyVisiblePosts so that we don't run animations more than
         // once for each post.
         SideEffect {
-          previouslyVisiblePosts[postData.postDescriptor] = postData.murmur3Hash
+          previouslyVisiblePosts[postData.postDescriptor] = postData.postOnlyDataHashMut
         }
       }
     }
@@ -949,8 +949,8 @@ private fun PostCellContainerUpdateAnimation(
     block = {
       try {
         bgColorAnimatable.snapTo(startColor)
-        bgColorAnimatable.animateTo(endColor, tween(250))
-        bgColorAnimatable.animateTo(startColor, tween(250))
+        bgColorAnimatable.animateTo(endColor, tween(400))
+        bgColorAnimatable.animateTo(startColor, tween(400))
       } finally {
         bgColorAnimatable.snapTo(Color.Unspecified)
         onAnimationFinished()

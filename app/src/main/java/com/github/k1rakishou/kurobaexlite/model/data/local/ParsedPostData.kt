@@ -27,6 +27,7 @@ data class ParsedPostData(
 
 }
 
+// Options used to parse this post
 data class ParsedPostDataContext(
   val isParsingCatalog: Boolean,
   val revealFullPostComment: Boolean = false,
