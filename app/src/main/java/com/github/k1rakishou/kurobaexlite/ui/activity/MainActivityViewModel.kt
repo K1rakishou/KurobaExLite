@@ -8,7 +8,6 @@ class MainActivityViewModel : ViewModel() {
 
   val rootNavigationRouter = NavigationRouter(
     routerKey = MainScreen.SCREEN_KEY.key,
-    routerIndex = null,
     parentRouter = null
   )
 

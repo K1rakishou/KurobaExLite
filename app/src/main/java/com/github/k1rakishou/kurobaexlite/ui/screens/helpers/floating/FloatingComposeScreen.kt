@@ -2,9 +2,13 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating
 
 import androidx.activity.ComponentActivity
 import androidx.annotation.CallSuper
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -50,7 +54,7 @@ abstract class FloatingComposeScreen(
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
 
-    HandleBackPresses()
+    navigationRouter.HandleBackPresses(onBackPressed = { onBackPressed() })
 
     Box(
       modifier = Modifier
@@ -130,26 +134,6 @@ abstract class FloatingComposeScreen(
   @Composable
   fun maxAvailableWidthPx(): Float {
     return with(LocalDensity.current) { maxAvailableWidth().toPx() }
-  }
-
-  @Composable
-  private fun HandleBackPresses() {
-    DisposableEffect(
-      key1 = Unit,
-      effect = {
-        val handler = object : NavigationRouter.OnBackPressHandler {
-          override suspend fun onBackPressed(): Boolean {
-            return this@FloatingComposeScreen.onBackPressed()
-          }
-        }
-
-        navigationRouter.addOnBackPressedHandler(handler)
-
-        onDispose {
-          navigationRouter.removeOnBackPressedHandler(handler)
-        }
-      }
-    )
   }
 
   @Composable

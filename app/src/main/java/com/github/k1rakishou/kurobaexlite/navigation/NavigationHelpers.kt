@@ -1,6 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenTransition
 
 @Suppress("UnnecessaryVariable", "FoldInitializerAndIfToElvis")
@@ -9,19 +12,7 @@ fun RootRouterHost(
   rootNavigationRouter: NavigationRouter,
   onBackPressed: () -> Boolean = { false }
 ) {
-  DisposableEffect(key1 = Unit) {
-    val handler = object : NavigationRouter.OnBackPressHandler {
-      override suspend fun onBackPressed(): Boolean {
-        return onBackPressed()
-      }
-    }
-
-    rootNavigationRouter.addOnBackPressedHandler(handler)
-
-    onDispose {
-      rootNavigationRouter.removeOnBackPressedHandler(handler)
-    }
-  }
+  rootNavigationRouter.HandleBackPresses(onBackPressed = onBackPressed)
 
   val screenUpdateTransactionState by rootNavigationRouter.screenUpdatesFlow.collectAsState()
   val screenUpdateTransaction = screenUpdateTransactionState
@@ -59,19 +50,7 @@ fun RouterHost(
   defaultScreen: @Composable () -> Unit,
   onBackPressed: () -> Boolean = { false }
 ) {
-  DisposableEffect(key1 = Unit) {
-    val handler = object : NavigationRouter.OnBackPressHandler {
-      override suspend fun onBackPressed(): Boolean {
-        return onBackPressed()
-      }
-    }
-
-    navigationRouter.addOnBackPressedHandler(handler)
-
-    onDispose {
-      navigationRouter.removeOnBackPressedHandler(handler)
-    }
-  }
+  navigationRouter.HandleBackPresses(onBackPressed = onBackPressed)
 
   val screenUpdateTransactionState by navigationRouter.screenUpdatesFlow.collectAsState()
   val screenUpdateTransaction = screenUpdateTransactionState

@@ -2,9 +2,6 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
 import android.content.res.Configuration
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalConfiguration
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
@@ -65,30 +62,6 @@ class HomeChildScreens(
       LayoutType.Phone -> MainUiLayoutMode.Portrait
       LayoutType.Split -> MainUiLayoutMode.Split
     }
-  }
-
-  @Composable
-  fun HandleBackPresses() {
-    val configuration = LocalConfiguration.current
-
-    DisposableEffect(key1 = Unit, effect = {
-      val handler = object : NavigationRouter.OnBackPressHandler {
-        override suspend fun onBackPressed(): Boolean {
-          val currentPage = homeScreenViewModel.currentPage
-
-          if (currentPage != null && !isMainScreen(configuration, currentPage)) {
-            homeScreenViewModel.updateCurrentPage(screenKey = mainScreenKey(configuration))
-            return true
-          }
-
-          return false
-        }
-      }
-
-      navigationRouter.addOnBackPressedHandler(handler)
-
-      onDispose { navigationRouter.removeOnBackPressedHandler(handler) }
-    })
   }
 
   fun isMainScreen(configuration: Configuration, currentPage: HomeScreenViewModel.CurrentPage): Boolean {

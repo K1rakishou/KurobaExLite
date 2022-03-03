@@ -3,7 +3,16 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.home
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
@@ -109,7 +118,21 @@ class HomeScreen(
         }
       })
 
-    homeChildScreens.HandleBackPresses()
+    navigationRouter.HandleBackPresses(
+      onBackPressed = {
+        val currentPage = homeScreenViewModel.currentPage
+
+        if (currentPage != null && !homeChildScreens.isMainScreen(configuration, currentPage)) {
+          homeScreenViewModel.updateCurrentPage(
+            screenKey = homeChildScreens.mainScreenKey(configuration)
+          )
+
+          return@HandleBackPresses true
+        }
+
+        return@HandleBackPresses false
+      }
+    )
 
     CompositionLocalProvider(LocalMainUiLayoutMode provides mainUiLayoutMode) {
       ActualContent(

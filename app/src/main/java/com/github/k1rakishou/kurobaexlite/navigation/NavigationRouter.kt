@@ -8,16 +8,20 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeBackgroundScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class NavigationRouter(
   val routerKey: String,
-  private val routerIndex: Int? = null,
   private val parentRouter: NavigationRouter?
 ) {
   private val navigationScreensStack = mutableListOf<ComposeScreen>()
   private val floatingScreensStack = mutableListOf<FloatingComposeScreen>()
-  private val childRouters = mutableMapOf<String, NavigationRouter>()
+  private val childRouters = linkedMapOf<String, NavigationRouter>()
   private val backPressHandlers = mutableListOf<OnBackPressHandler>()
 
   private val _screenUpdatesFlow = MutableStateFlow<ScreenUpdateTransaction?>(null)
@@ -39,11 +43,8 @@ class NavigationRouter(
           }
         }
 
-        addOnBackPressedHandler(handler)
-
-        onDispose {
-          removeOnBackPressedHandler(handler)
-        }
+        backPressHandlers += handler
+        onDispose { backPressHandlers -= handler }
       }
     )
   }
@@ -204,13 +205,12 @@ class NavigationRouter(
     return oldScreens.map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) } + newScreenUpdate
   }
 
-  fun childRouter(key: String, routerIndex: Int? = null): NavigationRouter {
+  fun childRouter(key: String): NavigationRouter {
     return childRouters.getOrPut(
       key = key,
       defaultValue = {
         NavigationRouter(
           routerKey = key,
-          routerIndex = routerIndex,
           parentRouter = this
         )
       }
@@ -252,24 +252,13 @@ class NavigationRouter(
     }
   }
 
-  fun addOnBackPressedHandler(handler: OnBackPressHandler) {
-    backPressHandlers += handler
-  }
-
-  fun removeOnBackPressedHandler(handler: OnBackPressHandler) {
-    backPressHandlers -= handler
-  }
-
   suspend fun onBackPressed(): Boolean {
     if (backPressHandlers.isEmpty()) {
       return false
     }
 
     if (childRouters.isNotEmpty()) {
-      val routersSorted = childRouters.entries
-        .sortedBy { (_, navigationRouter) -> navigationRouter.routerIndex ?: 0 }
-
-      for ((_, navigationRouter) in routersSorted) {
+      for ((_, navigationRouter) in childRouters.entries) {
         if (navigationRouter.onBackPressed()) {
           return true
         }
