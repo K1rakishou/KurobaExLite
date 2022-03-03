@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
+import androidx.compose.animation.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -35,6 +36,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,6 +76,7 @@ import coil.compose.AsyncImageScope
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.helpers.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
@@ -365,11 +368,15 @@ private fun PostListInternal(
     }
   }
 
-  val previouslyVisiblePosts = remember(key1 = postsScreenViewModel.chanDescriptor, key2 = isInPopup) {
-    if (isInPopup) {
+  val previouslyVisiblePosts = remember(
+    key1 = postsScreenViewModel.chanDescriptor,
+    key2 = isInPopup,
+    key3 = postListAsync
+  ) {
+    if (isInPopup || postListAsync !is AsyncData.Data) {
       null
     } else {
-      mutableStateMapOf<PostDescriptor, Unit>()
+      mutableStateMapOf<PostDescriptor, MurmurHashUtils.Murmur3Hash>()
     }
   }
 
@@ -469,13 +476,15 @@ private fun PostListInternal(
             )
           },
           dataContent = { postListAsyncData ->
+            val postDataList = postListAsyncData.data.posts
+
             postList(
               isCatalogMode = isCatalogMode,
               isInPopup = isInPopup,
               cellsPadding = cellsPadding,
               lazyListState = lazyListState,
               postsScreenViewModel = postsScreenViewModel,
-              postDataList = postListAsyncData.data.posts,
+              postDataList = postDataList,
               lastViewedPostDescriptor = lastViewedPostDescriptor,
               previouslyVisiblePosts = previouslyVisiblePosts,
               onPostCellClicked = onPostCellClicked,
@@ -483,7 +492,7 @@ private fun PostListInternal(
               onPostRepliesClicked = onPostRepliesClicked,
               onThreadStatusCellClicked = onThreadStatusCellClicked
             )
-          },
+          }
         )
       }
     )
@@ -495,6 +504,18 @@ private fun PostListInternal(
         postsScreenViewModel = postsScreenViewModel,
         searchQuery = searchQuery
       )
+    }
+
+    val postDataList = (postListAsync as? AsyncData.Data)?.data
+    if (previouslyVisiblePosts != null && postDataList != null) {
+      // Add all posts into previouslyVisiblePosts so that we don't show the insert/update animation
+      // for each scrolled item of the list
+      SideEffect {
+        postDataList.posts.forEach { postDataState ->
+          val postData = postDataState.value
+          previouslyVisiblePosts[postData.postDescriptor] = postData.murmur3Hash
+        }
+      }
     }
   }
 }
@@ -536,7 +557,7 @@ private fun LazyListScope.postList(
   postsScreenViewModel: PostScreenViewModel,
   postDataList: List<State<PostData>>,
   lastViewedPostDescriptor: PostDescriptor?,
-  previouslyVisiblePosts: MutableMap<PostDescriptor, Unit>?,
+  previouslyVisiblePosts: MutableMap<PostDescriptor, MurmurHashUtils.Murmur3Hash>?,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
@@ -557,10 +578,10 @@ private fun LazyListScope.postList(
         // composition because otherwise there is some kind of a delay before LaunchedEffect is executed
         // so the first posts are always animated.
         if (previouslyVisiblePosts.isEmpty() && postDataList.isNotEmpty()) {
-          val resultMap = mutableMapOf<PostDescriptor, Unit>()
+          val resultMap = mutableMapOf<PostDescriptor, MurmurHashUtils.Murmur3Hash>()
 
           postDataList.forEach { postDataState ->
-            resultMap[postDataState.value.postDescriptor] = Unit
+            resultMap[postDataState.value.postDescriptor] = postDataState.value.murmur3Hash
           }
 
           previouslyVisiblePosts.putAll(resultMap)
@@ -569,6 +590,11 @@ private fun LazyListScope.postList(
 
       val animateInsertion = previouslyVisiblePosts != null
         && !previouslyVisiblePosts.containsKey(postData.postDescriptor)
+      val animateUpdate = !animateInsertion
+        && previouslyVisiblePosts != null
+        && previouslyVisiblePosts.containsKey(postData.postDescriptor)
+        && previouslyVisiblePosts[postData.postDescriptor] != postData.murmur3Hash
+        && searchQuery == null
 
       PostCellContainer(
         padding = cellsPadding,
@@ -580,6 +606,7 @@ private fun LazyListScope.postList(
         index = index,
         totalCount = totalCount,
         animateInsertion = animateInsertion,
+        animateUpdate = animateUpdate,
         lastViewedPostDescriptor = lastViewedPostDescriptor,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked
@@ -589,7 +616,7 @@ private fun LazyListScope.postList(
         // Add each post into the previouslyVisiblePosts so that we don't run animations more than
         // once for each post.
         SideEffect {
-          previouslyVisiblePosts[postData.postDescriptor] = Unit
+          previouslyVisiblePosts[postData.postDescriptor] = postData.murmur3Hash
         }
       }
     }
@@ -797,27 +824,23 @@ private fun LazyItemScope.PostCellContainer(
   index: Int,
   totalCount: Int,
   animateInsertion: Boolean,
+  animateUpdate: Boolean,
   lastViewedPostDescriptor: PostDescriptor?,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
 
-  val backgroundModifier = if (
-    isCatalogMode
-    && currentlyOpenedThread == postData.postDescriptor.threadDescriptor
+  PostCellContainerAnimated(
+    animateInsertion = animateInsertion,
+    animateUpdate = animateUpdate,
+    isCatalogMode = isCatalogMode,
+    postData = postData,
+    postsScreenViewModel = postsScreenViewModel
   ) {
-    Modifier.background(chanTheme.postHighlightedColorCompose)
-  } else {
-    Modifier
-  }
-
-  PostCellContainerAnimated(animateInsertion) {
     Column(
       modifier = Modifier
         .kurobaClickable(onClick = { onPostCellClicked(postData) })
-        .then(backgroundModifier)
         .padding(padding)
     ) {
       PostCell(
@@ -850,24 +873,115 @@ private fun LazyItemScope.PostCellContainer(
 }
 
 @Composable
-private fun PostCellContainerAnimated(animateInsertion: Boolean, content: @Composable () -> Unit) {
-  var animationInProgress by remember { mutableStateOf(false) }
+private fun PostCellContainerAnimated(
+  animateInsertion: Boolean,
+  animateUpdate: Boolean,
+  isCatalogMode: Boolean,
+  postData: PostData,
+  postsScreenViewModel: PostScreenViewModel,
+  content: @Composable () -> Unit
+) {
+  var currentAnimation by remember { mutableStateOf<AnimationType?>(null) }
+  val chanTheme = LocalChanTheme.current
+  val contentMovable = remember { movableContentOf { content() } }
 
-  if (animateInsertion || animationInProgress) {
-    animationInProgress = true
+  if (animateInsertion || animateUpdate || currentAnimation != null) {
+    if (animateInsertion || currentAnimation == AnimationType.Insertion) {
+      currentAnimation = AnimationType.Insertion
 
-    val animationTranslationDeltaPx = with(LocalDensity.current) {
-      remember(key1 = animationTranslationDelta) {
-        animationTranslationDelta.toPx()
-      }
+      PostCellContainerInsertAnimation(
+        onAnimationFinished = { currentAnimation = null },
+        content = contentMovable
+      )
+
+      return
     }
 
-    var translationAnimated by remember { mutableStateOf(0f) }
-    var alphaAnimated by remember { mutableStateOf(0f) }
+    if (animateUpdate || currentAnimation == AnimationType.Update) {
+      currentAnimation = AnimationType.Update
 
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
+      PostCellContainerUpdateAnimation(
+        onAnimationFinished = { currentAnimation = null },
+        content = contentMovable
+      )
+
+      return
+    }
+  }
+
+  val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
+  val bgColor = remember(key1 = isCatalogMode, key2 = currentlyOpenedThread) {
+    if (isCatalogMode && currentlyOpenedThread == postData.postDescriptor.threadDescriptor) {
+      chanTheme.postHighlightedColorCompose
+    } else {
+      Color.Unspecified
+    }
+  }
+
+  Box(modifier = Modifier.background(bgColor)) {
+    contentMovable()
+  }
+}
+
+enum class AnimationType {
+  Insertion,
+  Update
+}
+
+@Composable
+private fun PostCellContainerUpdateAnimation(
+  onAnimationFinished: () -> Unit,
+  content: @Composable () -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  val bgColorAnimatable = remember { Animatable(Color.Unspecified) }
+  val startColor = chanTheme.backColorCompose
+  val endColor = remember(key1 = chanTheme.backColorCompose) {
+    if (ThemeEngine.isDarkColor(chanTheme.backColorCompose)) {
+      ThemeEngine.manipulateColor(chanTheme.backColorCompose, 1.4f)
+    } else {
+      ThemeEngine.manipulateColor(chanTheme.backColorCompose, 0.6f)
+    }
+  }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      try {
+        bgColorAnimatable.snapTo(startColor)
+        bgColorAnimatable.animateTo(endColor, tween(250))
+        bgColorAnimatable.animateTo(startColor, tween(250))
+      } finally {
+        bgColorAnimatable.snapTo(Color.Unspecified)
+        onAnimationFinished()
+      }
+    })
+
+  val bgColor by bgColorAnimatable.asState()
+
+  Box(modifier = Modifier.background(bgColor)) {
+    content()
+  }
+}
+
+@Composable
+private fun PostCellContainerInsertAnimation(
+  onAnimationFinished: () -> Unit,
+  content: @Composable () -> Unit
+) {
+  val animationTranslationDeltaPx = with(LocalDensity.current) {
+    remember(key1 = animationTranslationDelta) {
+      animationTranslationDelta.toPx()
+    }
+  }
+
+  var translationAnimated by remember { mutableStateOf(0f) }
+  var alphaAnimated by remember { mutableStateOf(0f) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      try {
         animate(
           initialValue = 0f,
           targetValue = 1f,
@@ -875,22 +989,18 @@ private fun PostCellContainerAnimated(animateInsertion: Boolean, content: @Compo
           block = { progress, _ ->
             translationAnimated = lerpFloat(animationTranslationDeltaPx, 0f, progress)
             alphaAnimated = lerpFloat(.5f, 1f, progress)
-
-            if (progress >= 1f) {
-              animationInProgress = false
-            }
           })
-      })
-
-      Box(
-        modifier = Modifier.graphicsLayer {
-          translationY = translationAnimated
-          alpha = alphaAnimated
-        }
-      ) {
-        content()
+      } finally {
+        onAnimationFinished()
       }
-  } else {
+    })
+
+  Box(
+    modifier = Modifier.graphicsLayer {
+      translationY = translationAnimated
+      alpha = alphaAnimated
+    }
+  ) {
     content()
   }
 }

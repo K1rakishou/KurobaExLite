@@ -51,6 +51,7 @@ data class ParsedPostDataContext(
     return MurmurHashUtils.murmurhash3_x64_128(isParsingCatalog)
       .combine(MurmurHashUtils.murmurhash3_x64_128(revealFullPostComment))
       .combine(MurmurHashUtils.murmurhash3_x64_128(textSpoilerOpenedPositionSet))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(markedPostDescriptor))
   }
 
 }

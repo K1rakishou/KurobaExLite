@@ -135,7 +135,7 @@ open class PostData(
       threadRepliesTotal = threadRepliesTotal,
       threadImagesTotal = threadImagesTotal,
       threadPostersTotal = threadPostersTotal,
-      parsedPostData = parsedPostData
+      parsedPostData = parsedPostData?.copy()
     )
   }
 

@@ -20,15 +20,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -46,8 +42,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberAnimateableStackContainerState
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import kotlinx.coroutines.android.awaitFrame
-import kotlinx.coroutines.launch
 
 private const val searchQuery = "search_query"
 
@@ -295,7 +289,6 @@ private fun BoxScope.PostsScreenSearchToolbar(
     },
     middlePart = {
       var searchQuery by rememberSaveable(key = searchQuery) { mutableStateOf<String>("") }
-      val focusRequester = remember { FocusRequester() }
 
       LaunchedEffect(
         key1 = Unit,
@@ -311,8 +304,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
         modifier = Modifier
           .wrapContentHeight()
           .fillMaxWidth()
-          .focusable()
-          .focusRequester(focusRequester),
+          .focusable(),
         value = searchQuery,
         labelText = stringResource(R.string.toolbar_type_to_search_hint),
         parentBackgroundColor = parentBgColor,
@@ -324,23 +316,14 @@ private fun BoxScope.PostsScreenSearchToolbar(
         }
       )
 
-      val coroutineScope = rememberCoroutineScope()
-
       DisposableEffect(
         key1 = Unit,
         effect = {
           onSearchQueryUpdated?.invoke("")
 
-          val focusRequestJob = coroutineScope.launch {
-            // For some reason without the delay focusRequester doesn't do anything
-            awaitFrame()
-            focusRequester.requestFocus()
-          }
-
           onDispose {
             onSearchQueryUpdated?.invoke(null)
             keyboardController?.hide()
-            focusRequestJob.cancel()
           }
         })
     },
