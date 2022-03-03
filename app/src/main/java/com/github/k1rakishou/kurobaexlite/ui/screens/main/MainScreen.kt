@@ -59,7 +59,7 @@ class MainScreen(
             }
           )
 
-          RootRouterHost(navigationRouter)
+          RootRouterHost(screenKey, navigationRouter)
         }
       }
     }

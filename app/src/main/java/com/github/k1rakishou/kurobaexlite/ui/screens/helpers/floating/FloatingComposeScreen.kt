@@ -54,7 +54,10 @@ abstract class FloatingComposeScreen(
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
 
-    navigationRouter.HandleBackPresses(onBackPressed = { onBackPressed() })
+    navigationRouter.HandleBackPresses(
+      screenKey = screenKey,
+      onBackPressed = { onBackPressed() }
+    )
 
     Box(
       modifier = Modifier

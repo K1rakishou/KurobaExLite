@@ -7,8 +7,16 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.absoluteOffset
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -16,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import kotlinx.coroutines.delay
 
@@ -25,6 +34,7 @@ private val COLOR_VISIBLE = Color(0x80000000)
 
 @Composable
 fun HomeScreenDrawerLayout(
+  screenKey: ScreenKey,
   drawerWidth: Int,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
@@ -162,6 +172,7 @@ fun HomeScreenDrawerLayout(
         .absoluteOffset(offsetAnimated)
     ) {
       RouterHost(
+        screenKey = screenKey,
         navigationRouter = childRouter,
         defaultScreen = { drawerScreen.Content() }
       )

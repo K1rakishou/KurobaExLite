@@ -105,8 +105,10 @@ class ThreadScreen(
     )
 
     KurobaToolbar(
+      screenKey = screenKey,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
+      canProcessBackEvent = { homeScreenViewModel.currentPage?.screenKey == screenKey },
       onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = { searchQuery ->
@@ -131,6 +133,7 @@ class ThreadScreen(
   @Composable
   override fun Content() {
     RouterHost(
+      screenKey = screenKey,
       navigationRouter = navigationRouter,
       defaultScreen = { ThreadPostListScreenContent() }
     )

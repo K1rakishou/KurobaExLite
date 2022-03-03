@@ -119,6 +119,7 @@ class HomeScreen(
       })
 
     navigationRouter.HandleBackPresses(
+      screenKey = screenKey,
       onBackPressed = {
         val currentPage = homeScreenViewModel.currentPage
 
@@ -268,6 +269,7 @@ class HomeScreen(
 
       if (drawerWidth > 0) {
         HomeScreenDrawerLayout(
+          screenKey = screenKey,
           drawerWidth = drawerWidth,
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,

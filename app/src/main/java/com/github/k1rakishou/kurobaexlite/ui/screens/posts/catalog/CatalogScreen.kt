@@ -22,7 +22,11 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.*
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostScreenToolbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.boards.BoardSelectionScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
@@ -126,8 +130,10 @@ class CatalogScreen(
     )
 
     KurobaToolbar(
+      screenKey = screenKey,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
+      canProcessBackEvent = { homeScreenViewModel.currentPage?.screenKey == screenKey },
       onLeftIconClicked = { homeScreenViewModel.openDrawer() },
       onMiddleMenuClicked = {
         val mainScreenRouter = navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)
@@ -162,6 +168,7 @@ class CatalogScreen(
   @Composable
   override fun Content() {
     RouterHost(
+      screenKey = screenKey,
       navigationRouter = navigationRouter,
       defaultScreen = { CatalogPostListScreenContent() }
     )
