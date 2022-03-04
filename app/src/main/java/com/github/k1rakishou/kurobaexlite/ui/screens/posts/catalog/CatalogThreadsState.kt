@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
+import android.os.SystemClock
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
@@ -34,6 +35,7 @@ class CatalogThreadsState(
       return
     }
 
+    _lastUpdatedOn = SystemClock.elapsedRealtime()
     _catalogThreads[index].value = postData
   }
 

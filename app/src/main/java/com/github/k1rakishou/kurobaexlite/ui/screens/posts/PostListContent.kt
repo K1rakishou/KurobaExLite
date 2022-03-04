@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
+import android.os.SystemClock
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
@@ -33,11 +34,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -108,7 +107,8 @@ import kotlinx.coroutines.launch
 import logcat.logcat
 
 private val animationTranslationDelta = 100.dp
-private val animationDurationMs = 200
+private val insertAnimationTotalDurationMs = 200
+private val updateAnimationTotalDurationMs = 800
 private val searchInfoCellHeight = 32.dp
 private val postCellKeyPrefix = "post_cell"
 private val threadStatusCellKey = "thread_status_cell"
@@ -368,16 +368,34 @@ private fun PostListInternal(
     }
   }
 
-  val previouslyVisiblePosts = remember(
+  val previousPostDataInfoMap = remember(
     key1 = postsScreenViewModel.chanDescriptor,
     key2 = isInPopup,
     key3 = postListAsync
   ) {
     if (isInPopup || postListAsync !is AsyncData.Data) {
-      null
-    } else {
-      mutableStateMapOf<PostDescriptor, MurmurHashUtils.Murmur3Hash>()
+      return@remember null
     }
+
+    val abstractPostsState = (postListAsync as? AsyncData.Data)?.data
+      ?: return@remember null
+
+    val postDataList = abstractPostsState.posts
+
+    // Pre-insert first batch of posts into the previousPostDataInfoMap so that we don't play
+    // animations for recently opened catalogs/threads. We are doing this right inside of the
+    // composition because otherwise there is some kind of a delay before LaunchedEffect is executed
+    // so the first posts are always animated.
+
+    val previousPosts = mutableMapOf<PostDescriptor, PreviousPostDataInfo>()
+
+    postDataList.forEach { postDataState ->
+      previousPosts[postDataState.value.postDescriptor] = PreviousPostDataInfo(
+        hash = postDataState.value.postOnlyDataHashMut
+      )
+    }
+
+    return@remember previousPosts
   }
 
   val cellsPadding = remember(key1 = mainUiLayoutMode) {
@@ -476,7 +494,7 @@ private fun PostListInternal(
             )
           },
           dataContent = { postListAsyncData ->
-            val postDataList = postListAsyncData.data.posts
+            val abstractPostsState = postListAsyncData.data
 
             postList(
               isCatalogMode = isCatalogMode,
@@ -484,9 +502,9 @@ private fun PostListInternal(
               cellsPadding = cellsPadding,
               lazyListState = lazyListState,
               postsScreenViewModel = postsScreenViewModel,
-              postDataList = postDataList,
+              abstractPostsState = abstractPostsState,
               lastViewedPostDescriptor = lastViewedPostDescriptor,
-              previouslyVisiblePosts = previouslyVisiblePosts,
+              previousPostDataInfoMap = previousPostDataInfoMap,
               onPostCellClicked = onPostCellClicked,
               onPostCellCommentClicked = onPostCellCommentClicked,
               onPostRepliesClicked = onPostRepliesClicked,
@@ -504,18 +522,6 @@ private fun PostListInternal(
         postsScreenViewModel = postsScreenViewModel,
         searchQuery = searchQuery
       )
-    }
-
-    val postDataList = (postListAsync as? AsyncData.Data)?.data
-    if (previouslyVisiblePosts != null && postDataList != null) {
-      // Add all posts into previouslyVisiblePosts so that we don't show the insert/update animation
-      // for each scrolled item of the list
-      SideEffect {
-        postDataList.posts.forEach { postDataState ->
-          val postData = postDataState.value
-          previouslyVisiblePosts[postData.postDescriptor] = postData.postOnlyDataHashMut
-        }
-      }
     }
   }
 }
@@ -555,46 +561,38 @@ private fun LazyListScope.postList(
   cellsPadding: PaddingValues,
   lazyListState: LazyListState,
   postsScreenViewModel: PostScreenViewModel,
-  postDataList: List<State<PostData>>,
+  abstractPostsState: AbstractPostsState,
   lastViewedPostDescriptor: PostDescriptor?,
-  previouslyVisiblePosts: MutableMap<PostDescriptor, MurmurHashUtils.Murmur3Hash>?,
+  previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
+  val postDataList = abstractPostsState.posts
   val totalCount = postDataList.size
   val searchQuery = postsScreenViewModel.postScreenState.searchQueryFlow.value
+  val lastUpdatedOn= abstractPostsState.lastUpdatedOn
 
   items(
     count = totalCount,
     key = { index -> "${postCellKeyPrefix}_${postDataList[index].value.postDescriptor}" },
     itemContent = { index ->
       val postData by postDataList[index]
+      val currentTime = SystemClock.elapsedRealtime()
 
-      if (previouslyVisiblePosts != null) {
-        // Pre-insert first batch of posts into the previouslyVisiblePosts so that we don't play
-        // animations for recently opened catalogs/threads. We are doing this right inside of the
-        // composition because otherwise there is some kind of a delay before LaunchedEffect is executed
-        // so the first posts are always animated.
-        if (previouslyVisiblePosts.isEmpty() && postDataList.isNotEmpty()) {
-          val resultMap = mutableMapOf<PostDescriptor, MurmurHashUtils.Murmur3Hash>()
-
-          postDataList.forEach { postDataState ->
-            resultMap[postDataState.value.postDescriptor] = postDataState.value.postOnlyDataHashMut
-          }
-
-          previouslyVisiblePosts.putAll(resultMap)
-        }
-      }
-
-      val animateInsertion = previouslyVisiblePosts != null
-        && !previouslyVisiblePosts.containsKey(postData.postDescriptor)
-      val animateUpdate = !animateInsertion
-        && previouslyVisiblePosts != null
-        && previouslyVisiblePosts.containsKey(postData.postDescriptor)
-        && previouslyVisiblePosts[postData.postDescriptor] != postData.postOnlyDataHashMut
-        && searchQuery == null
+      val animateInsertion = canAnimateInsertion(
+        previousPostDataInfoMap = previousPostDataInfoMap,
+        postData = postData,
+        searchQuery = searchQuery
+      )
+      val animateUpdate = canAnimateUpdate(
+        previousPostDataInfoMap = previousPostDataInfoMap,
+        postData = postData,
+        searchQuery = searchQuery,
+        currentTime = currentTime,
+        lastUpdatedOn = lastUpdatedOn
+      )
 
       PostCellContainer(
         padding = cellsPadding,
@@ -612,11 +610,18 @@ private fun LazyListScope.postList(
         onPostRepliesClicked = onPostRepliesClicked
       )
 
-      if (previouslyVisiblePosts != null) {
-        // Add each post into the previouslyVisiblePosts so that we don't run animations more than
+      if (previousPostDataInfoMap != null) {
+        // Add each post into the previousPostDataInfoMap so that we don't run animations more than
         // once for each post.
         SideEffect {
-          previouslyVisiblePosts[postData.postDescriptor] = postData.postOnlyDataHashMut
+          val previousPostDataInfo = previousPostDataInfoMap[postData.postDescriptor]
+          if (previousPostDataInfo == null) {
+            previousPostDataInfoMap[postData.postDescriptor] = PreviousPostDataInfo(
+              hash = postData.postOnlyDataHashMut
+            )
+          } else if (previousPostDataInfo.hash != postData.postOnlyDataHashMut) {
+            previousPostDataInfoMap[postData.postDescriptor]!!.hash = postData.postOnlyDataHashMut
+          }
         }
       }
     }
@@ -632,6 +637,46 @@ private fun LazyListScope.postList(
       )
     }
   }
+}
+
+private fun canAnimateUpdate(
+  previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
+  postData: PostData,
+  searchQuery: String?,
+  currentTime: Long,
+  lastUpdatedOn: Long
+): Boolean {
+  if (previousPostDataInfoMap == null || searchQuery != null) {
+    return false
+  }
+
+  val previousPostDataInfo = previousPostDataInfoMap[postData.postDescriptor]
+  if (previousPostDataInfo == null) {
+    return false
+  }
+
+  if (previousPostDataInfo.hash == postData.postOnlyDataHashMut) {
+    return false
+  }
+
+  return lastUpdatedOn + updateAnimationTotalDurationMs >= currentTime
+}
+
+private fun canAnimateInsertion(
+  previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
+  postData: PostData,
+  searchQuery: String?
+): Boolean {
+  if (previousPostDataInfoMap == null || searchQuery != null) {
+    return false
+  }
+
+  val previousPostDataInfo = previousPostDataInfoMap[postData.postDescriptor]
+  if (previousPostDataInfo == null) {
+    return true
+  }
+
+  return false
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -936,12 +981,8 @@ private fun PostCellContainerUpdateAnimation(
   val chanTheme = LocalChanTheme.current
   val bgColorAnimatable = remember { Animatable(Color.Unspecified) }
   val startColor = chanTheme.backColorCompose
-  val endColor = remember(key1 = chanTheme.backColorCompose) {
-    if (ThemeEngine.isDarkColor(chanTheme.backColorCompose)) {
-      ThemeEngine.manipulateColor(chanTheme.backColorCompose, 1.4f)
-    } else {
-      ThemeEngine.manipulateColor(chanTheme.backColorCompose, 0.6f)
-    }
+  val endColor = remember(key1 = chanTheme.postHighlightedColorCompose) {
+    chanTheme.postHighlightedColorCompose.copy(alpha = 0.25f)
   }
 
   LaunchedEffect(
@@ -985,7 +1026,7 @@ private fun PostCellContainerInsertAnimation(
         animate(
           initialValue = 0f,
           targetValue = 1f,
-          animationSpec = tween(durationMillis = animationDurationMs),
+          animationSpec = tween(durationMillis = insertAnimationTotalDurationMs),
           block = { progress, _ ->
             translationAnimated = lerpFloat(animationTranslationDeltaPx, 0f, progress)
             alphaAnimated = lerpFloat(.5f, 1f, progress)
@@ -1294,4 +1335,8 @@ data class PostListOptions(
   val isInPopup: Boolean,
   val mainUiLayoutMode: MainUiLayoutMode,
   val contentPadding: PaddingValues,
+)
+
+class PreviousPostDataInfo(
+  var hash: MurmurHashUtils.Murmur3Hash
 )

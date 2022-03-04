@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 
+import android.os.SystemClock
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
@@ -36,17 +37,19 @@ class ThreadPostsState(
       return
     }
 
+    _lastUpdatedOn = SystemClock.elapsedRealtime()
     _threadPosts[index].value = postData
   }
 
   override fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult {
-    if (postsCopy != null) {
+    if (_postsCopy != null) {
       return PostsMergeResult.EMPTY
     }
 
     val prevThreadPostMap = _threadPosts.associateBy { it.value.postDescriptor }
     val postsToUpdate = mutableListOf<Pair<Int, PostData>>()
     val postsToInsert = mutableListOf<PostData>()
+    val now = SystemClock.elapsedRealtime()
 
     for ((index, newThreadPost) in newThreadPosts.withIndex()) {
       val prevThreadPostState = prevThreadPostMap[newThreadPost.postDescriptor]
@@ -62,20 +65,23 @@ class ThreadPostsState(
     }
 
     if (postsToUpdate.isNotEmpty()) {
+      _lastUpdatedOn = now
+
       for ((index, postDataToUpdate) in postsToUpdate) {
         _threadPosts[index].value = postDataToUpdate
       }
     }
 
     if (postsToInsert.isNotEmpty()) {
+      _lastUpdatedOn = now
       _threadPosts.addAll(postsToInsert.map { mutableStateOf(it) })
     }
-
-    logcat { "postsToUpdateCount=${postsToUpdate.size}, postsToInsertCount=${postsToInsert.size}" }
 
     val newOrUpdatedPostsToReparse = mutableListWithCap<PostData>(postsToUpdate.size + postsToInsert.size)
     newOrUpdatedPostsToReparse.addAll(postsToUpdate.map { it.second })
     newOrUpdatedPostsToReparse.addAll(postsToInsert)
+
+    logcat { "postsToUpdateCount=${postsToUpdate.size}, postsToInsertCount=${postsToInsert.size}" }
 
     return PostsMergeResult(
       newPostsCount = postsToInsert.size,

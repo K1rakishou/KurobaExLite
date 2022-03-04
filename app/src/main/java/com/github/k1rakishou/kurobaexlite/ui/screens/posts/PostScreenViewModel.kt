@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -30,9 +31,23 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentIt
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfoEvent
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
@@ -218,7 +233,7 @@ abstract class PostScreenViewModel(
 
     currentParseJob = viewModelScope.launch(Dispatchers.Default) {
       if (postDataList.isEmpty()) {
-        onPostsParsed(postDataList)
+        withContext(NonCancellable) { onPostsParsed(postDataList) }
         return@launch
       }
 
@@ -234,7 +249,7 @@ abstract class PostScreenViewModel(
 
       try {
         val startTime = SystemClock.elapsedRealtime()
-        logcat {
+        logcat(tag = TAG) {
           "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts... " +
             "(chunksCount=$chunksCount, chunkSize=$chunkSize)"
         }
@@ -245,7 +260,7 @@ abstract class PostScreenViewModel(
             .chunked(chunkSize)
             .mapIndexed { chunkIndex, postDataListChunk ->
               return@mapIndexed async(Dispatchers.IO) {
-                logcat {
+                logcat(tag = TAG) {
                   "parseRemainingPostsAsyncRegular() running chunk ${chunkIndex} with " +
                     "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
                 }
@@ -264,7 +279,7 @@ abstract class PostScreenViewModel(
                   )
                 }
 
-                logcat { "parseRemainingPostsAsyncRegular() chunk ${chunkIndex} processing finished" }
+                logcat(tag = TAG) { "parseRemainingPostsAsyncRegular() chunk ${chunkIndex} processing finished" }
               }
             }
             .toList()
@@ -284,7 +299,7 @@ abstract class PostScreenViewModel(
           val repliesToChunkSize = (repliesToPostDataSet.size / chunksCount).coerceAtLeast(chunksCount)
 
           if (repliesToPostDataSet.isNotEmpty()) {
-            logcat {
+            logcat(tag = TAG) {
               "parseRemainingPostsAsyncReplies() starting parsing ${repliesToPostDataSet.size} posts... " +
                 "(chunksCount=$chunksCount, chunkSize=$repliesToChunkSize)"
             }
@@ -293,7 +308,7 @@ abstract class PostScreenViewModel(
               .chunked(repliesToChunkSize)
               .mapIndexed { chunkIndex, postDataListChunk ->
                 return@mapIndexed async(Dispatchers.IO) {
-                  logcat {
+                  logcat(tag = TAG) {
                     "parseRemainingPostsAsyncReplies() running chunk ${chunkIndex} with " +
                       "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
                   }
@@ -310,7 +325,7 @@ abstract class PostScreenViewModel(
                     )
                   }
 
-                  logcat { "parseRemainingPostsAsyncReplies() chunk ${chunkIndex} processing finished" }
+                  logcat(tag = TAG) { "parseRemainingPostsAsyncReplies() chunk ${chunkIndex} processing finished" }
                 }
               }
               .toList()
@@ -318,11 +333,15 @@ abstract class PostScreenViewModel(
           }
         }
 
+        showPostsLoadingSnackbarJob.cancel()
+        withContext(NonCancellable) { onPostsParsed(postDataList) }
+
         val deltaTime = SystemClock.elapsedRealtime() - startTime
-        logcat { "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
+        logcat(tag = TAG) { "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
+      } catch (error: Throwable) {
+        logcat(tag = TAG) { "parseRemainingPostsAsync() error: ${error.errorMessageOrClassName()}" }
       } finally {
         showPostsLoadingSnackbarJob.cancel()
-        onPostsParsed(postDataList)
       }
     }
   }
@@ -461,6 +480,7 @@ abstract class PostScreenViewModel(
   }
 
   companion object {
+    private const val TAG = "PostScreenViewModel"
     private val DEFAULT_REMEMBERED_POSITION = LazyColumnRememberedPosition(0, 0)
   }
 

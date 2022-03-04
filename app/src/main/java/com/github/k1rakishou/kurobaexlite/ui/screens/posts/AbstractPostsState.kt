@@ -8,7 +8,10 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 
 abstract class AbstractPostsState {
-  protected var postsCopy: List<PostData>? = null
+  protected var _postsCopy: List<PostData>? = null
+  protected var _lastUpdatedOn: Long = 0
+  val lastUpdatedOn: Long
+    get() = _lastUpdatedOn
 
   abstract val chanDescriptor: ChanDescriptor
   abstract val posts: List<State<PostData>>
@@ -19,22 +22,22 @@ abstract class AbstractPostsState {
 
   fun updateSearchQuery(searchQuery: String?) {
     if (searchQuery == null) {
-      if (postsCopy != null) {
-        val oldThreads = postsCopy!!.map { mutableStateOf(it) }
+      if (_postsCopy != null) {
+        val oldThreads = _postsCopy!!.map { mutableStateOf(it) }
 
         postsMutable.clear()
         postsMutable.addAll(oldThreads)
       }
 
-      postsCopy = null
+      _postsCopy = null
       return
     }
 
-    if (postsCopy == null) {
-      postsCopy = postsMutable.map { it.value.copy() }
+    if (_postsCopy == null) {
+      _postsCopy = postsMutable.map { it.value.copy() }
     }
 
-    val filteredThreads = postsCopy!!.filter { postData ->
+    val filteredThreads = _postsCopy!!.filter { postData ->
       if (searchQuery.isEmpty()) {
         return@filter true
       }
