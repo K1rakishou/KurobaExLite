@@ -83,17 +83,15 @@ class ThreadScreen(
     val postListAsync by threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
     val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
-    val kurobaToolbarState = remember {
+    val kurobaToolbarState = remember(key1 = mainUiLayoutMode) {
       val leftIconInfo = when (mainUiLayoutMode) {
         MainUiLayoutMode.Portrait -> LeftIconInfo(R.drawable.ic_baseline_arrow_back_24)
         MainUiLayoutMode.Split -> null
       }
 
-      val middlePartInfo = MiddlePartInfo(centerContent = false)
-
       return@remember KurobaToolbarState(
         leftIconInfo = leftIconInfo,
-        middlePartInfo = middlePartInfo,
+        middlePartInfo = MiddlePartInfo(centerContent = false),
         postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
       )
     }

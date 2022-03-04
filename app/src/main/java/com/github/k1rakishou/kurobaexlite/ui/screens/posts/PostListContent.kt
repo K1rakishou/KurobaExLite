@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import android.os.SystemClock
 import androidx.compose.animation.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -221,7 +222,7 @@ internal fun PostListContent(
         postsScreenViewModel = postsScreenViewModel,
         postData = postData,
         postComment = postComment,
-        offset = offset,
+        characterOffset = offset,
         onLinkableClicked = onLinkableClicked
       )
     },
@@ -276,10 +277,12 @@ private fun processClickedAnnotation(
   postsScreenViewModel: PostScreenViewModel,
   postData: PostData,
   postComment: AnnotatedString,
-  offset: Int,
+  characterOffset: Int,
   onLinkableClicked: (PostData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
 ) {
   val parsedPostDataContext = postData.parsedPostDataContext
+    ?: return
+  val offset = findFirstNonNewLineCharReversed(characterOffset, postComment)
     ?: return
 
   val clickedAnnotations = postComment.getStringAnnotations(offset, offset)
@@ -802,6 +805,8 @@ private fun LazyItemScope.ThreadStatusCell(
       .wrapContentHeight()
       .kurobaClickable(onClick = { onThreadStatusCellClicked(chanDescriptor) })
   ) {
+    val context = LocalContext.current
+
     val threadStatusCellText = remember(key1 = threadStatusCellData, key2 = timeUntilNextUpdateSeconds) {
       buildAnnotatedString {
         if (threadStatusCellData.totalReplies > 0) {
@@ -829,11 +834,13 @@ private fun LazyItemScope.ThreadStatusCell(
 
         append("\n")
 
-        if (timeUntilNextUpdateSeconds > 0L) {
-          append("Loading in ${timeUntilNextUpdateSeconds}")
+        val loadingText = if (timeUntilNextUpdateSeconds > 0L) {
+          context.resources.getString(R.string.thread_screen_status_cell_loading_in, timeUntilNextUpdateSeconds)
         } else {
-          append("Loading...")
+          context.resources.getString(R.string.thread_screen_status_cell_loading_right_now)
         }
+
+        append(loadingText)
       }
     }
 
@@ -990,8 +997,8 @@ private fun PostCellContainerUpdateAnimation(
     block = {
       try {
         bgColorAnimatable.snapTo(startColor)
-        bgColorAnimatable.animateTo(endColor, tween(400))
-        bgColorAnimatable.animateTo(startColor, tween(400))
+        bgColorAnimatable.animateTo(endColor, tween(durationMillis = 400, easing = LinearEasing))
+        bgColorAnimatable.animateTo(startColor, tween(durationMillis = 400, easing = LinearEasing))
       } finally {
         bgColorAnimatable.snapTo(Color.Unspecified)
         onAnimationFinished()
@@ -1176,6 +1183,9 @@ private fun PostCellComment(
   if (postComment.isNotNullNorBlank()) {
     PostCellCommentSelectionWrapper(isCatalogMode = isCatalogMode) {
       KurobaComposeClickableText(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight(),
         fontSize = 14.sp,
         text = postComment,
         annotationBgColors = clickedTextBackgroundColorMap,
@@ -1289,8 +1299,8 @@ private fun detectClickedAnnotations(
 ): AnnotatedString.Range<String>? {
   val result = layoutResult
     ?: return null
-
-  val offset = result.getOffsetForPosition(pos)
+  val offset = findFirstNonNewLineCharReversed(result.getOffsetForPosition(pos), text)
+    ?: return null
   val clickedAnnotations = text.getStringAnnotations(offset, offset)
 
   for (clickedAnnotation in clickedAnnotations) {
@@ -1300,6 +1310,29 @@ private fun detectClickedAnnotations(
   }
 
   return null
+}
+
+// AnnotatedString.getStringAnnotations() fails (returns no annotations) if the character
+// specified by offset is a new line symbol. So we need to find the first non-newline character
+// going backwards.
+private fun findFirstNonNewLineCharReversed(
+  inputOffset: Int,
+  text: AnnotatedString
+): Int? {
+  var offset = inputOffset
+
+  while (true) {
+    val ch = text.getOrNull(offset)
+      ?: return null
+
+    if (ch != '\n') {
+      break
+    }
+
+    --offset
+  }
+
+  return offset
 }
 
 private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChanged: (Boolean) -> Unit) {

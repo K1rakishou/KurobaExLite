@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
@@ -108,17 +107,10 @@ class CatalogScreen(
     val postListAsync by catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
     val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
-    val kurobaToolbarState = remember {
-      val leftIconInfo = when (mainUiLayoutMode) {
-        MainUiLayoutMode.Portrait -> LeftIconInfo(R.drawable.ic_baseline_dehaze_24)
-        MainUiLayoutMode.Split -> null
-      }
-
-      val middlePartInfo = MiddlePartInfo(centerContent = true)
-
+    val kurobaToolbarState = remember(key1 = mainUiLayoutMode) {
       return@remember KurobaToolbarState(
-        leftIconInfo = leftIconInfo,
-        middlePartInfo = middlePartInfo,
+        leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
+        middlePartInfo = MiddlePartInfo(centerContent = true),
         postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
       )
     }

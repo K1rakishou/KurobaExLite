@@ -63,6 +63,8 @@
 
     <string name="thread_screen_open_external_thread_dialog_title">Open external thread?</string>
     <string name="thread_screen_open_external_thread_dialog_description">Open \'%1$s\'?</string>
+    <string name="thread_screen_status_cell_loading_right_now">Loading…</string>
+    <string name="thread_screen_status_cell_loading_in">Loading in %1$d</string>
 
     <string name="board_selection_screen_toolbar_title">Boards list</string>
     <string name="board_selection_screen_no_boards_loaded">No boards loaded</string>
