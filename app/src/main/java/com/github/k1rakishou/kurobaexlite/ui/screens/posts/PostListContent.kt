@@ -67,8 +67,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastAll
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
@@ -354,7 +354,6 @@ private fun PostListInternal(
   val mainUiLayoutMode = postListOptions.mainUiLayoutMode
   val isInPopup = postListOptions.isInPopup
   val isCatalogMode = postListOptions.isCatalogMode
-
   val lastViewedPostDescriptor by postsScreenViewModel.postScreenState.lastViewedPostDescriptor.collectAsState()
   val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
 
@@ -503,6 +502,7 @@ private fun PostListInternal(
               isCatalogMode = isCatalogMode,
               isInPopup = isInPopup,
               cellsPadding = cellsPadding,
+              postListOptions = postListOptions,
               lazyListState = lazyListState,
               postsScreenViewModel = postsScreenViewModel,
               abstractPostsState = abstractPostsState,
@@ -562,6 +562,7 @@ private fun LazyListScope.postList(
   isCatalogMode: Boolean,
   isInPopup: Boolean,
   cellsPadding: PaddingValues,
+  postListOptions: PostListOptions,
   lazyListState: LazyListState,
   postsScreenViewModel: PostScreenViewModel,
   abstractPostsState: AbstractPostsState,
@@ -603,6 +604,7 @@ private fun LazyListScope.postList(
         isInPopup = isInPopup,
         onPostCellClicked = onPostCellClicked,
         postData = postData,
+        postListOptions = postListOptions,
         postsScreenViewModel = postsScreenViewModel,
         index = index,
         totalCount = totalCount,
@@ -872,6 +874,7 @@ private fun LazyItemScope.PostCellContainer(
   isInPopup: Boolean,
   onPostCellClicked: (PostData) -> Unit,
   postData: PostData,
+  postListOptions: PostListOptions,
   postsScreenViewModel: PostScreenViewModel,
   index: Int,
   totalCount: Int,
@@ -882,6 +885,10 @@ private fun LazyItemScope.PostCellContainer(
   onPostRepliesClicked: (PostData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+
+  val postCellCommentTextSizeSp = postListOptions.postCellCommentTextSizeSp
+  val postCellSubjectTextSizeSp = postListOptions.postCellSubjectTextSizeSp
+  val detectLinkableClicks = postListOptions.detectLinkableClicks
 
   PostCellContainerAnimated(
     animateInsertion = animateInsertion,
@@ -896,9 +903,12 @@ private fun LazyItemScope.PostCellContainer(
         .padding(padding)
     ) {
       PostCell(
-        postsScreenViewModel = postsScreenViewModel,
-        postData = postData,
         isCatalogMode = isCatalogMode,
+        detectLinkableClicks = detectLinkableClicks,
+        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+        postData = postData,
+        postsScreenViewModel = postsScreenViewModel,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked
       )
@@ -1055,9 +1065,12 @@ private fun PostCellContainerInsertAnimation(
 
 @Composable
 private fun PostCell(
-  postsScreenViewModel: PostScreenViewModel,
-  postData: PostData,
   isCatalogMode: Boolean,
+  detectLinkableClicks: Boolean,
+  postCellCommentTextSizeSp: TextUnit,
+  postCellSubjectTextSizeSp: TextUnit,
+  postData: PostData,
+  postsScreenViewModel: PostScreenViewModel,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
@@ -1097,19 +1110,23 @@ private fun PostCell(
   ) {
     PostCellTitle(
       postData = postData,
-      postSubject = postSubject
+      postSubject = postSubject,
+      postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
     )
 
     PostCellComment(
       postData = postData,
       postComment = postComment,
       isCatalogMode = isCatalogMode,
+      detectLinkableClicks = detectLinkableClicks,
+      postCellCommentTextSizeSp = postCellCommentTextSizeSp,
       onPostCellCommentClicked = onPostCellCommentClicked
     )
 
     PostCellFooter(
       postData = postData,
       postFooterText = postFooterText,
+      postCellCommentTextSizeSp = postCellCommentTextSizeSp,
       onPostRepliesClicked = onPostRepliesClicked
     )
   }
@@ -1119,7 +1136,8 @@ private fun PostCell(
 @Composable
 private fun PostCellTitle(
   postData: PostData,
-  postSubject: AnnotatedString
+  postSubject: AnnotatedString,
+  postCellSubjectTextSizeSp: TextUnit,
 ) {
   val chanTheme = LocalChanTheme.current
 
@@ -1165,7 +1183,7 @@ private fun PostCellTitle(
 
     Text(
       text = postSubject,
-      fontSize = 14.sp
+      fontSize = postCellSubjectTextSizeSp
     )
   }
 }
@@ -1175,6 +1193,8 @@ private fun PostCellComment(
   postData: PostData,
   postComment: AnnotatedString,
   isCatalogMode: Boolean,
+  detectLinkableClicks: Boolean,
+  postCellCommentTextSizeSp: TextUnit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -1186,8 +1206,9 @@ private fun PostCellComment(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight(),
-        fontSize = 14.sp,
+        fontSize = postCellCommentTextSizeSp,
         text = postComment,
+        isTextClickable = detectLinkableClicks,
         annotationBgColors = clickedTextBackgroundColorMap,
         detectClickedAnnotations = { offset, textLayoutResult, text ->
           return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)
@@ -1213,6 +1234,7 @@ private fun PostCellCommentSelectionWrapper(isCatalogMode: Boolean, content: @Co
 private fun PostCellFooter(
   postData: PostData,
   postFooterText: AnnotatedString?,
+  postCellCommentTextSizeSp: TextUnit,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -1225,6 +1247,7 @@ private fun PostCellFooter(
         .kurobaClickable(onClick = { onPostRepliesClicked(postData) })
         .padding(vertical = 4.dp),
       color = chanTheme.textColorSecondaryCompose,
+      fontSize = postCellCommentTextSizeSp,
       text = postFooterText
     )
   }
@@ -1366,8 +1389,11 @@ private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChang
 data class PostListOptions(
   val isCatalogMode: Boolean,
   val isInPopup: Boolean,
+  val detectLinkableClicks: Boolean,
   val mainUiLayoutMode: MainUiLayoutMode,
   val contentPadding: PaddingValues,
+  val postCellCommentTextSizeSp: TextUnit,
+  val postCellSubjectTextSizeSp: TextUnit,
 )
 
 class PreviousPostDataInfo(

@@ -5,6 +5,7 @@ import android.util.Log
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
@@ -24,6 +25,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScr
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import com.squareup.moshi.Moshi
 import kotlin.system.exitProcess
+import kotlinx.coroutines.CoroutineScope
 import logcat.LogPriority
 import logcat.LogcatLogger
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -32,6 +34,7 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 class KurobaExLiteApplication : Application() {
+  private val appCoroutineScope = KurobaCoroutineScope()
 
   override fun onCreate() {
     super.onCreate()
@@ -54,6 +57,7 @@ class KurobaExLiteApplication : Application() {
 
     modules += module {
       single { this@KurobaExLiteApplication.applicationContext }
+      single<CoroutineScope> { appCoroutineScope }
       single { ProxiedOkHttpClient() }
       single { GlobalConstants(get()) }
       single { Moshi.Builder().build() }
@@ -75,9 +79,9 @@ class KurobaExLiteApplication : Application() {
       single { ChanThreadManager(siteManager = get()) }
       single { PostReplyChainManager() }
       single { ChanThreadViewManager() }
-      single { UiInfoManager(get()) }
+      single { UiInfoManager(appContext = get(), appSettings = get(), coroutineScope = get()) }
 
-      single { AppSettings(get()) }
+      single { AppSettings(appContext = get()) }
       single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
       single { ThemeEngine() }
       single { PostBindProcessor(get()) }

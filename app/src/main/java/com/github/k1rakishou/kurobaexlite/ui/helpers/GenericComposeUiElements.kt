@@ -1,23 +1,59 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.Card
+import androidx.compose.material.Checkbox
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.LocalTextStyle
+import androidx.compose.material.Text
+import androidx.compose.material.TextField
 import androidx.compose.material.ripple.rememberRipple
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -35,7 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import java.util.*
+import java.util.Locale
 
 private val DefaultFillMaxSizeModifier: Modifier = Modifier.fillMaxSize()
 private val defaultNoopClickCallback = { }
@@ -181,6 +217,7 @@ fun KurobaComposeClickableText(
   overflow: TextOverflow = TextOverflow.Clip,
   softWrap: Boolean = true,
   enabled: Boolean = true,
+  isTextClickable: Boolean = true,
   textAlign: TextAlign? = null,
   inlineContent: Map<String, InlineTextContent> = mapOf(),
   annotationBgColors: Map<String, Color> = mapOf(),
@@ -191,33 +228,37 @@ fun KurobaComposeClickableText(
   var currentlyPressedAnnotationPath by remember { mutableStateOf<Path?>(null) }
   var currentPressedAnnotationBgColor by remember { mutableStateOf<Color?>(null) }
 
-  val pressIndicator = Modifier.pointerInput(key1 = text) {
-    detectTapGesturesWithFilter(
-      processDownEvent = { pos ->
-        val layoutRes = layoutResult
-          ?: return@detectTapGesturesWithFilter false
-        val clickedAnnotation = detectClickedAnnotations(pos, layoutRes, text)
-          ?: return@detectTapGesturesWithFilter false
+  val pointerInputModifier = if (isTextClickable) {
+    Modifier.pointerInput(key1 = text) {
+      detectTapGesturesWithFilter(
+        processDownEvent = { pos ->
+          val layoutRes = layoutResult
+            ?: return@detectTapGesturesWithFilter false
+          val clickedAnnotation = detectClickedAnnotations(pos, layoutRes, text)
+            ?: return@detectTapGesturesWithFilter false
 
-        val path = layoutRes.getPathForRange(clickedAnnotation.start, clickedAnnotation.end)
-        if (path.isEmpty) {
-          return@detectTapGesturesWithFilter false
-        }
+          val path = layoutRes.getPathForRange(clickedAnnotation.start, clickedAnnotation.end)
+          if (path.isEmpty) {
+            return@detectTapGesturesWithFilter false
+          }
 
-        currentPressedAnnotationBgColor = annotationBgColors[clickedAnnotation.tag]
-        currentlyPressedAnnotationPath = path
-        return@detectTapGesturesWithFilter true
-      },
-      onTap = { pos ->
-        currentlyPressedAnnotationPath = null
+          currentPressedAnnotationBgColor = annotationBgColors[clickedAnnotation.tag]
+          currentlyPressedAnnotationPath = path
+          return@detectTapGesturesWithFilter true
+        },
+        onTap = { pos ->
+          currentlyPressedAnnotationPath = null
 
-        layoutResult?.let { result ->
-          val offset = result.getOffsetForPosition(pos)
-          onTextAnnotationClicked(text, offset)
-        }
-      },
-      onUpOrCancel = { currentlyPressedAnnotationPath = null }
-    )
+          layoutResult?.let { result ->
+            val offset = result.getOffsetForPosition(pos)
+            onTextAnnotationClicked(text, offset)
+          }
+        },
+        onUpOrCancel = { currentlyPressedAnnotationPath = null }
+      )
+    }
+  } else {
+    Modifier
   }
 
   Box(
@@ -245,7 +286,7 @@ fun KurobaComposeClickableText(
     }
 
     KurobaComposeText(
-      modifier = modifier.then(pressIndicator),
+      modifier = modifier.then(pointerInputModifier),
       color = color,
       fontSize = fontSize,
       text = text,

@@ -3,7 +3,20 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating
 import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -16,11 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.helpers.*
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.launch
 import logcat.logcat
-import java.util.concurrent.atomic.AtomicLong
 
 class FloatingMenuScreen(
   floatingMenuKey: String,
@@ -362,8 +379,8 @@ class FloatingMenuScreen(
     onItemClicked: (() -> Unit)?
   ) {
     val chanTheme = LocalChanTheme.current
-    val floatingMenuItemTitleSize by remember { uiInfoManager.floatingMenuItemTitleSize }
-    val floatingMenuItemSubTitleSize by remember { uiInfoManager.floatingMenuItemSubTitleSize }
+    val floatingMenuItemTitleSize by uiInfoManager.floatingMenuItemTitleSizeSp.collectAsState()
+    val floatingMenuItemSubTitleSize by uiInfoManager.floatingMenuItemSubTitleSizeSp.collectAsState()
 
     val title = when (text) {
       is FloatingMenuItem.MenuItemText.Id -> stringResource(id = text.id)

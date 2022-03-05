@@ -1,9 +1,20 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -49,14 +60,21 @@ class PopupRepliesScreen(
 
   @Composable
   override fun FloatingContent() {
-    val postListOptions = remember {
+    val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
+    val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+
+    val postListOptions by derivedStateOf {
       PostListOptions(
         isCatalogMode = false,
         isInPopup = true,
         contentPadding = PaddingValues(),
-        mainUiLayoutMode = MainUiLayoutMode.Portrait
+        mainUiLayoutMode = MainUiLayoutMode.Portrait,
+        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+        detectLinkableClicks = true
       )
     }
+
     val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
     val buttonsHeightPx = with(density) { remember(key1 = buttonsHeight) { buttonsHeight.toPx().toInt() } }

@@ -19,7 +19,7 @@ class EnumSetting<T : Enum<T>>(
   private val prefsKey: Preferences.Key<String> = stringPreferencesKey(settingKey)
 
   override suspend fun read(): T {
-    val cached = currentlyCached.value
+    val cached = cachedValue
     if (cached != null) {
       return cached
     }
@@ -42,18 +42,21 @@ class EnumSetting<T : Enum<T>>(
       .firstOrNull()
       ?: defaultValue
 
-    currentlyCached.value = cached
+    cachedValue = readValue
+    _valueFlow.value = readValue
+
     return readValue
   }
 
   override suspend fun write(value: T) {
-    if (currentlyCached.value == value) {
+    if (cachedValue == value) {
       return
     }
 
     dataStore.edit { prefs ->
       prefs.set(prefsKey, value.name)
-      currentlyCached.value = value
+      cachedValue = value
+      _valueFlow.value = value
     }
   }
 

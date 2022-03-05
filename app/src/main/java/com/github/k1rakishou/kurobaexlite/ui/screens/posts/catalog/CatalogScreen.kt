@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -187,8 +188,10 @@ class CatalogScreen(
     val configuration = LocalConfiguration.current
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+    val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
+    val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
 
-    val postListOptions = remember {
+    val postListOptions by derivedStateOf {
       PostListOptions(
         isCatalogMode = isCatalogScreen,
         isInPopup = false,
@@ -196,7 +199,10 @@ class CatalogScreen(
           top = toolbarHeight + windowInsets.top,
           bottom = windowInsets.bottom
         ),
-        mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration)
+        mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
+        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+        detectLinkableClicks = false
       )
     }
 

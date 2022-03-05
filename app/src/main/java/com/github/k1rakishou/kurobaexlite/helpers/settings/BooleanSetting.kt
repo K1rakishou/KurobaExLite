@@ -17,7 +17,7 @@ class BooleanSetting(
   private val prefsKey: Preferences.Key<Boolean> = booleanPreferencesKey(settingKey)
 
   override suspend fun read(): Boolean {
-    val cached = currentlyCached.value
+    val cached = cachedValue
     if (cached != null) {
       return cached
     }
@@ -38,18 +38,21 @@ class BooleanSetting(
       .firstOrNull()
       ?: defaultValue
 
-    currentlyCached.value = cached
+    cachedValue = readValue
+    _valueFlow.value = readValue
+
     return readValue
   }
 
   override suspend fun write(value: Boolean) {
-    if (currentlyCached.value == value) {
+    if (cachedValue == value) {
       return
     }
 
     dataStore.edit { prefs ->
       prefs.set(prefsKey, value)
-      currentlyCached.value = value
+      cachedValue = value
+      _valueFlow.value = value
     }
   }
 

@@ -10,7 +10,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -28,7 +27,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
-import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -45,7 +43,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.detectDrawerDragGest
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import org.koin.java.KoinJavaComponent.inject
 
 val LocalMainUiLayoutMode = staticCompositionLocalOf<MainUiLayoutMode> { error("MainUiLayoutMode not provided") }
 
@@ -54,7 +51,6 @@ class HomeScreen(
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
-  private val appSettings by inject<AppSettings>(AppSettings::class.java)
   private val homeChildScreens by lazy { HomeChildScreens(componentActivity, navigationRouter) }
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -66,19 +62,22 @@ class HomeScreen(
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
     val configuration = LocalConfiguration.current
-    val coroutineScope = rememberCoroutineScope()
 
-    val layoutTypeState by appSettings.layoutType
-      .listenAsStateFlow(coroutineScope).collectAsState()
-    val bookmarksScreenOnLeftSideState by appSettings.bookmarksScreenOnLeftSide
-      .listenAsStateFlow(coroutineScope).collectAsState()
+    var uiInfoManagerInitialized by remember { mutableStateOf(false) }
 
-    val layoutType = layoutTypeState
-    val bookmarksScreenOnLeftSide = bookmarksScreenOnLeftSideState
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        uiInfoManager.init()
+        uiInfoManagerInitialized = true
+      })
 
-    if (layoutType == null || bookmarksScreenOnLeftSide == null) {
+    if (!uiInfoManagerInitialized) {
       return
     }
+
+    val layoutType by uiInfoManager.homeScreenLayoutType.collectAsState()
+    val bookmarksScreenOnLeftSide by uiInfoManager.bookmarksScreenOnLeftSide.collectAsState()
 
     val mainUiLayoutMode = remember(key1 = layoutType, key2 = configuration) {
       homeChildScreens.layoutTypeToMainUiLayoutMode(layoutType, configuration)

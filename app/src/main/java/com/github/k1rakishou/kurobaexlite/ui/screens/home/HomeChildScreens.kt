@@ -10,7 +10,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenW
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
-import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class HomeChildScreens(
@@ -18,7 +17,6 @@ class HomeChildScreens(
   private val navigationRouter: NavigationRouter
 ) {
   private val uiInfoManager by inject<UiInfoManager>(UiInfoManager::class.java)
-  private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val homeScreenLayouter by lazy { HomeScreenLayouter(componentActivity, navigationRouter, uiInfoManager) }
 
   fun getChildScreens(
