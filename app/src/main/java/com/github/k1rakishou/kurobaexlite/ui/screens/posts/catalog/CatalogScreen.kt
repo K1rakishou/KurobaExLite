@@ -195,6 +195,7 @@ class CatalogScreen(
       PostListOptions(
         isCatalogMode = isCatalogScreen,
         isInPopup = false,
+        pullToRefreshEnabled = true,
         contentPadding = PaddingValues(
           top = toolbarHeight + windowInsets.top,
           bottom = windowInsets.bottom

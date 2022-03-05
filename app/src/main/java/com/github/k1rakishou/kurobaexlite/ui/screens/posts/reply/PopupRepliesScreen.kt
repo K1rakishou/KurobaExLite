@@ -67,6 +67,7 @@ class PopupRepliesScreen(
       PostListOptions(
         isCatalogMode = false,
         isInPopup = true,
+        pullToRefreshEnabled = false,
         contentPadding = PaddingValues(),
         mainUiLayoutMode = MainUiLayoutMode.Portrait,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,

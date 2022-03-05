@@ -100,6 +100,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.delay
@@ -353,6 +354,7 @@ private fun PostListInternal(
 ) {
   val mainUiLayoutMode = postListOptions.mainUiLayoutMode
   val isInPopup = postListOptions.isInPopup
+  val pullToRefreshEnabled = postListOptions.pullToRefreshEnabled
   val isCatalogMode = postListOptions.isCatalogMode
   val lastViewedPostDescriptor by postsScreenViewModel.postScreenState.lastViewedPostDescriptor.collectAsState()
   val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
@@ -369,6 +371,8 @@ private fun PostListInternal(
       )
     }
   }
+
+  val pullToRefreshTopPaddingDp = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
 
   val previousPostDataInfoMap = remember(
     key1 = postsScreenViewModel.chanDescriptor,
@@ -425,106 +429,119 @@ private fun PostListInternal(
   }
 
   Box {
-    LazyColumnWithFastScroller(
-      modifier = modifier.then(
-        Modifier
-          .nestedScroll(nestedScrollConnection)
-          .pointerInput(
-            key1 = Unit,
-            block = {
-              processDragEvents { dragging -> onPostListDragStateChanged(dragging) }
-            }
-          )
-      ),
-      lazyListState = lazyListState,
-      contentPadding = contentPadding,
-      onFastScrollerDragStateChanged = { dragging -> onFastScrollerDragStateChanged(dragging) },
-      content = {
-        postListAsyncDataContent(
-          postListAsync = postListAsync,
-          emptyContent = {
-            val text = when {
-              isInPopup -> stringResource(R.string.post_list_no_posts_popup)
-              isCatalogMode -> stringResource(R.string.post_list_no_catalog_selected)
-              else -> stringResource(R.string.post_list_no_thread_selected)
-            }
+    PullToRefresh(
+      pullToRefreshEnabled = pullToRefreshEnabled,
+      topPadding = pullToRefreshTopPaddingDp,
+      onTriggered = {
+        // TODO(KurobaEx): ideally we should have refresh() method for catalogs too
+        if (isCatalogMode) {
+          postsScreenViewModel.reload()
+        } else {
+          postsScreenViewModel.refresh()
+        }
+      }
+    ) {
+      LazyColumnWithFastScroller(
+        modifier = modifier.then(
+          Modifier
+            .nestedScroll(nestedScrollConnection)
+            .pointerInput(
+              key1 = Unit,
+              block = {
+                processDragEvents { dragging -> onPostListDragStateChanged(dragging) }
+              }
+            )
+        ),
+        lazyListState = lazyListState,
+        contentPadding = contentPadding,
+        onFastScrollerDragStateChanged = { dragging -> onFastScrollerDragStateChanged(dragging) },
+        content = {
+          postListAsyncDataContent(
+            postListAsync = postListAsync,
+            emptyContent = {
+              val text = when {
+                isInPopup -> stringResource(R.string.post_list_no_posts_popup)
+                isCatalogMode -> stringResource(R.string.post_list_no_catalog_selected)
+                else -> stringResource(R.string.post_list_no_thread_selected)
+              }
 
-            Box(
-              modifier = Modifier.fillParentMaxSize(),
-              contentAlignment = Alignment.Center
-            ) {
-              KurobaComposeText(
-                text = text
+              Box(
+                modifier = Modifier.fillParentMaxSize(),
+                contentAlignment = Alignment.Center
+              ) {
+                KurobaComposeText(
+                  text = text
+                )
+              }
+            },
+            loadingContent = {
+              val sizeModifier = if (isInPopup) {
+                Modifier
+                  .fillMaxWidth()
+                  .height(180.dp)
+              } else {
+                Modifier.fillParentMaxSize()
+              }
+
+              KurobaComposeLoadingIndicator(
+                modifier = Modifier
+                  .then(sizeModifier)
+                  .padding(8.dp)
+              )
+            },
+            errorContent = { postListAsyncError ->
+              val errorMessage = remember(key1 = postListAsync) {
+                postListAsyncError.error.errorMessageOrClassName()
+              }
+
+              val sizeModifier = if (isInPopup) {
+                Modifier
+                  .fillMaxWidth()
+                  .height(180.dp)
+              } else {
+                Modifier.fillParentMaxSize()
+              }
+
+              KurobaComposeErrorWithButton(
+                modifier = Modifier
+                  .then(sizeModifier)
+                  .padding(8.dp),
+                errorMessage = errorMessage,
+                buttonText = stringResource(R.string.reload),
+                onButtonClicked = { postsScreenViewModel.reload() }
+              )
+            },
+            dataContent = { postListAsyncData ->
+              val abstractPostsState = postListAsyncData.data
+
+              postList(
+                isCatalogMode = isCatalogMode,
+                isInPopup = isInPopup,
+                cellsPadding = cellsPadding,
+                postListOptions = postListOptions,
+                lazyListState = lazyListState,
+                postsScreenViewModel = postsScreenViewModel,
+                abstractPostsState = abstractPostsState,
+                lastViewedPostDescriptor = lastViewedPostDescriptor,
+                previousPostDataInfoMap = previousPostDataInfoMap,
+                onPostCellClicked = onPostCellClicked,
+                onPostCellCommentClicked = onPostCellCommentClicked,
+                onPostRepliesClicked = onPostRepliesClicked,
+                onThreadStatusCellClicked = onThreadStatusCellClicked
               )
             }
-          },
-          loadingContent = {
-            val sizeModifier = if (isInPopup) {
-              Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-            } else {
-              Modifier.fillParentMaxSize()
-            }
+          )
+        }
+      )
 
-            KurobaComposeLoadingIndicator(
-              modifier = Modifier
-                .then(sizeModifier)
-                .padding(8.dp)
-            )
-          },
-          errorContent = { postListAsyncError ->
-            val errorMessage = remember(key1 = postListAsync) {
-              postListAsyncError.error.errorMessageOrClassName()
-            }
-
-            val sizeModifier = if (isInPopup) {
-              Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-            } else {
-              Modifier.fillParentMaxSize()
-            }
-
-            KurobaComposeErrorWithButton(
-              modifier = Modifier
-                .then(sizeModifier)
-                .padding(8.dp),
-              errorMessage = errorMessage,
-              buttonText = stringResource(R.string.reload),
-              onButtonClicked = { postsScreenViewModel.reload() }
-            )
-          },
-          dataContent = { postListAsyncData ->
-            val abstractPostsState = postListAsyncData.data
-
-            postList(
-              isCatalogMode = isCatalogMode,
-              isInPopup = isInPopup,
-              cellsPadding = cellsPadding,
-              postListOptions = postListOptions,
-              lazyListState = lazyListState,
-              postsScreenViewModel = postsScreenViewModel,
-              abstractPostsState = abstractPostsState,
-              lastViewedPostDescriptor = lastViewedPostDescriptor,
-              previousPostDataInfoMap = previousPostDataInfoMap,
-              onPostCellClicked = onPostCellClicked,
-              onPostCellCommentClicked = onPostCellCommentClicked,
-              onPostRepliesClicked = onPostRepliesClicked,
-              onThreadStatusCellClicked = onThreadStatusCellClicked
-            )
-          }
+      if (searchQuery.isNotNullNorEmpty()) {
+        SearchInfoCell(
+          cellsPadding = cellsPadding,
+          contentPadding = postListOptions.contentPadding,
+          postsScreenViewModel = postsScreenViewModel,
+          searchQuery = searchQuery
         )
       }
-    )
-
-    if (searchQuery.isNotNullNorEmpty()) {
-      SearchInfoCell(
-        cellsPadding = cellsPadding,
-        contentPadding = postListOptions.contentPadding,
-        postsScreenViewModel = postsScreenViewModel,
-        searchQuery = searchQuery
-      )
     }
   }
 }
@@ -1389,6 +1406,7 @@ private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChang
 data class PostListOptions(
   val isCatalogMode: Boolean,
   val isInPopup: Boolean,
+  val pullToRefreshEnabled: Boolean,
   val detectLinkableClicks: Boolean,
   val mainUiLayoutMode: MainUiLayoutMode,
   val contentPadding: PaddingValues,
