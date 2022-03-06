@@ -269,7 +269,7 @@ fun PullToRefresh(
               drawArc(
                 color = progressIndicatorColor,
                 startAngle = 0f,
-                sweepAngle = pullProgress * 270f,
+                sweepAngle = 270f,
                 useCenter = false,
                 alpha = indicatorAlpha,
                 topLeft = Offset(
