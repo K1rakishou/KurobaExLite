@@ -1,19 +1,33 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
-import androidx.compose.foundation.gestures.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.remember
+import androidx.compose.foundation.gestures.GestureCancellationException
+import androidx.compose.foundation.gestures.PressGestureScope
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
+import androidx.compose.ui.input.pointer.consumeAllChanges
+import androidx.compose.ui.input.pointer.consumeDownChange
+import androidx.compose.ui.input.pointer.isOutOfBounds
+import androidx.compose.ui.input.pointer.positionChangeConsumed
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
-import kotlinx.coroutines.*
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import logcat.logcat
+import kotlinx.coroutines.withTimeout
 
 private val NoPressGesture: suspend PressGestureScope.(Offset) -> Unit = { }
 
@@ -237,26 +251,3 @@ suspend fun PointerInputScope.kurobaAwaitLongPressOrCancellation(
 
 private fun PointerEvent.isPointerUp(pointerId: PointerId): Boolean =
   changes.fastFirstOrNull { it.id == pointerId }?.pressed != true
-
-class DebugRef(var value: Int)
-
-@Composable
-inline fun LogCompositions(
-  tag: String,
-  logRecompositions: Boolean = true,
-  logEnterExitComposition: Boolean = false
-) {
-  val ref = remember { DebugRef(0) }
-  SideEffect { ref.value++ }
-
-  if (logEnterExitComposition) {
-    DisposableEffect(key1 = Unit, effect = {
-      logcat(tag = "Compositions") { "${tag} onEnteredComposition" }
-      onDispose { logcat(tag = "Compositions") { "${tag} onExitedComposition" } }
-    })
-  }
-
-  if (logRecompositions) {
-    logcat(tag = "Compositions") { "${tag} Count: ${ref.value}, ref=${ref.hashCode()}" }
-  }
-}

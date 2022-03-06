@@ -102,7 +102,7 @@ class CatalogScreenViewModel(
       return
     }
 
-    onLoadingCatalog(loadOptions)
+    onLoadingCatalog(catalogDescriptor, loadOptions)
 
     val startTime = SystemClock.elapsedRealtime()
     _postsFullyParsedOnceFlow.emit(false)

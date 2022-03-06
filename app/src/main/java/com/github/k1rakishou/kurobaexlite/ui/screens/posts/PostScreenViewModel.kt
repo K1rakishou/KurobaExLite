@@ -103,7 +103,9 @@ abstract class PostScreenViewModel(
   
   abstract fun refresh()
 
-  fun onLoadingThread(loadOptions: LoadOptions) {
+  fun onLoadingThread(threadDescriptor: ThreadDescriptor?, loadOptions: LoadOptions) {
+    postScreenState.updateChanDescriptor(threadDescriptor)
+
     if (loadOptions.showLoadingIndicator) {
       postListBuilt = CompletableDeferred()
     } else {
@@ -114,7 +116,9 @@ abstract class PostScreenViewModel(
     postListTouchingBottom.value = false
   }
 
-  fun onLoadingCatalog(loadOptions: LoadOptions) {
+  fun onLoadingCatalog(catalogDescriptor: CatalogDescriptor?, loadOptions: LoadOptions) {
+    postScreenState.updateChanDescriptor(catalogDescriptor)
+
     if (loadOptions.showLoadingIndicator) {
       postListBuilt = CompletableDeferred()
     } else {
@@ -125,31 +129,37 @@ abstract class PostScreenViewModel(
     postListTouchingBottom.value = false
   }
 
-  fun rememberedPosition(chanDescriptor: ChanDescriptor?): LazyColumnRememberedPosition {
-    if (chanDescriptor == null) {
-      return DEFAULT_REMEMBERED_POSITION
+  fun rememberedPosition(chanDescriptor: ChanDescriptor, orientation: Int): LazyColumnRememberedPosition {
+    val rememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
+      ?: DEFAULT_REMEMBERED_POSITION
+
+    val finalRememberedPosition = if (rememberedPosition.orientation != orientation) {
+      rememberedPosition.copy(offset = 0)
+    } else {
+      rememberedPosition
     }
 
-    return lazyColumnRememberedPositionCache[chanDescriptor]
-      ?: DEFAULT_REMEMBERED_POSITION
+    return finalRememberedPosition
   }
 
   fun rememberPosition(
     chanDescriptor: ChanDescriptor,
-    firstVisibleItemIndex: Int,
-    firstVisibleItemScrollOffset: Int
+    orientation: Int,
+    index: Int,
+    offset: Int
   ) {
     val postsFullyParsedOnce = postsFullyParsedOnceFlow.value
     if (!postsFullyParsedOnce) {
       return
     }
 
-    val lazyColumnRememberedPosition = LazyColumnRememberedPosition(
-      firstVisibleItemIndex = firstVisibleItemIndex,
-      firstVisibleItemScrollOffset = firstVisibleItemScrollOffset
+    val rememberedPosition = LazyColumnRememberedPosition(
+      index = index,
+      offset = offset,
+      orientation = orientation
     )
 
-    lazyColumnRememberedPositionCache[chanDescriptor] = lazyColumnRememberedPosition
+    lazyColumnRememberedPositionCache[chanDescriptor] = rememberedPosition
   }
 
   fun resetPosition(chanDescriptor: ChanDescriptor) {
@@ -473,20 +483,28 @@ abstract class PostScreenViewModel(
     val parseRepliesTo: Boolean = false
   )
 
-  interface PostScreenState {
-    val postsAsyncDataState: MutableStateFlow<AsyncData<AbstractPostsState>>
-    val threadCellDataState: MutableStateFlow<ThreadCellData?>
-    val lastViewedPostDescriptor: MutableStateFlow<PostDescriptor?>
-    val searchQueryFlow: MutableStateFlow<String?>
+  abstract class PostScreenState {
+    abstract val postsAsyncDataState: MutableStateFlow<AsyncData<AbstractPostsState>>
+    abstract val threadCellDataState: MutableStateFlow<ThreadCellData?>
+    abstract val lastViewedPostDescriptor: MutableStateFlow<PostDescriptor?>
+    abstract val searchQueryFlow: MutableStateFlow<String?>
 
+    internal val _chanDescriptorFlow = MutableStateFlow<ChanDescriptor?>(null)
+    val chanDescriptorFlow: StateFlow<ChanDescriptor?>
+      get() = _chanDescriptorFlow.asStateFlow()
     val chanDescriptor: ChanDescriptor?
-      get() = doWithDataState { abstractPostsState -> abstractPostsState.chanDescriptor }
+      get() = _chanDescriptorFlow.value
+
     val displayingPostsCount: Int?
       get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
 
-    fun updatePost(postData: PostData)
-    fun updatePosts(postDataCollection: Collection<PostData>)
-    fun updateSearchQuery(searchQuery: String?)
+    abstract fun updatePost(postData: PostData)
+    abstract fun updatePosts(postDataCollection: Collection<PostData>)
+    abstract fun updateSearchQuery(searchQuery: String?)
+
+    fun updateChanDescriptor(chanDescriptor: ChanDescriptor?) {
+      _chanDescriptorFlow.value = chanDescriptor
+    }
 
     private fun <T> doWithDataState(func: (AbstractPostsState) -> T): T? {
       val postAsyncData = postsAsyncDataState.value

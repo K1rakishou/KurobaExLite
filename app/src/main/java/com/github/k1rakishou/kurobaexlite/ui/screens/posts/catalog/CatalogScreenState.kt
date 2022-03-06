@@ -8,7 +8,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.AbstractPostsState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class CatalogScreenState : PostScreenViewModel.PostScreenState {
+class CatalogScreenState : PostScreenViewModel.PostScreenState() {
   override val postsAsyncDataState = MutableStateFlow<AsyncData<AbstractPostsState>>(AsyncData.Empty)
   override val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
   override val lastViewedPostDescriptor = MutableStateFlow<PostDescriptor?>(null)

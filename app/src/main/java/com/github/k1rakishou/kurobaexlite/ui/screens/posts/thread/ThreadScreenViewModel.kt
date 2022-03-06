@@ -225,7 +225,7 @@ class ThreadScreenViewModel(
       return
     }
 
-    onLoadingThread(loadOptions)
+    onLoadingThread(threadDescriptor, loadOptions)
 
     val startTime = SystemClock.elapsedRealtime()
     _postsFullyParsedOnceFlow.emit(false)

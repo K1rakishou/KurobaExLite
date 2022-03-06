@@ -271,6 +271,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
   onCloseSearchClicked: () -> Unit
 ) {
   val keyboardController = LocalSoftwareKeyboardController.current
+  var searchQuery by rememberSaveable(key = searchQuery) { mutableStateOf<String>("") }
 
   KurobaToolbarLayout(
     leftPart = {
@@ -280,16 +281,23 @@ private fun BoxScope.PostsScreenSearchToolbar(
           .kurobaClickable(
             bounded = false,
             onClick = {
-              onSearchQueryUpdated?.invoke(null)
-              onCloseSearchClicked()
+              if (searchQuery.isNotEmpty()) {
+                searchQuery = ""
+                onSearchQueryUpdated?.invoke("")
+              } else {
+                onSearchQueryUpdated?.invoke(null)
+                onCloseSearchClicked()
+              }
             }
           ),
-        drawableId = R.drawable.ic_baseline_clear_24
+        drawableId = if (searchQuery.isNotEmpty()) {
+          R.drawable.ic_baseline_clear_24
+        } else {
+          R.drawable.ic_baseline_arrow_back_24
+        }
       )
     },
     middlePart = {
-      var searchQuery by rememberSaveable(key = searchQuery) { mutableStateOf<String>("") }
-
       LaunchedEffect(
         key1 = Unit,
         block = {

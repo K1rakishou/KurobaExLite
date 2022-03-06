@@ -92,14 +92,15 @@ class PopupRepliesScreenViewModel(
   }
 
   private suspend fun loadRepliesFrom(replyViewMode: PopupRepliesScreen.ReplyViewMode.RepliesFrom): Boolean {
-    postScreenState.postsAsyncDataState.value = AsyncData.Loading
-
     val postDescriptor = replyViewMode.postDescriptor
+
     val repliesFrom = postReplyChainManager.getRepliesFrom(postDescriptor)
     if (repliesFrom.isEmpty()) {
       postScreenState.postsAsyncDataState.value = AsyncData.Empty
       return false
     }
+
+    postScreenState.updateChanDescriptor(postDescriptor.threadDescriptor)
 
     val posts = chanThreadCache.getManyForDescriptor(postDescriptor.threadDescriptor, repliesFrom)
         .let { postDataList -> parsePostDataList(replyViewMode, postDescriptor, postDataList) }

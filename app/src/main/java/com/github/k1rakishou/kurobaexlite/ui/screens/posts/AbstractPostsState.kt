@@ -12,14 +12,15 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import logcat.logcat
 
-abstract class AbstractPostsState {
+abstract class AbstractPostsState(
+  val chanDescriptor: ChanDescriptor
+) {
   @Volatile private var _postsCopy: List<PostData>? = null
   @Volatile private var _lastUpdatedOn: Long = 0
 
   val lastUpdatedOn: Long
     get() = _lastUpdatedOn
 
-  abstract val chanDescriptor: ChanDescriptor
   abstract val posts: List<State<PostData>>
 
   protected abstract val postsMutable: SnapshotStateList<MutableState<PostData>>
@@ -152,6 +153,25 @@ abstract class AbstractPostsState {
     postsMutable.clear()
     postsMutable.addAll(filteredThreads.map { mutableStateOf(it) })
   }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as AbstractPostsState
+
+    if (chanDescriptor != other.chanDescriptor) return false
+    if (posts != other.posts) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = chanDescriptor.hashCode()
+    result = 31 * result + posts.hashCode()
+    return result
+  }
+
 }
 
 data class PostsMergeResult(

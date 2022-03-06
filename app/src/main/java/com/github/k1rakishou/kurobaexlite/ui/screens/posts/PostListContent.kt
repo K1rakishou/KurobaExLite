@@ -129,18 +129,21 @@ internal fun PostListContent(
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
-  val orientation = LocalConfiguration.current.orientation
-  val chanDescriptor = postsScreenViewModel.chanDescriptor
-  val rememberedPosition = remember(key1 = chanDescriptor, key2 = orientation) {
-    postsScreenViewModel.rememberedPosition(postsScreenViewModel.chanDescriptor)
-  }
-  val lazyListState = rememberLazyListState(
-    initialFirstVisibleItemIndex = rememberedPosition.firstVisibleItemIndex,
-    initialFirstVisibleItemScrollOffset = rememberedPosition.firstVisibleItemScrollOffset
-  )
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
-  if (chanDescriptor != null && postListAsync is AsyncData.Data) {
+  val chanDescriptorFromState by postsScreenViewModel.postScreenState.chanDescriptorFlow.collectAsState()
+  val chanDescriptor = chanDescriptorFromState ?: return
+
+  val orientation = LocalConfiguration.current.orientation
+  val rememberedPosition = remember(key1 = chanDescriptor, key2 = orientation) {
+    postsScreenViewModel.rememberedPosition(chanDescriptor, orientation)
+  }
+  val lazyListState = rememberLazyListState(
+    initialFirstVisibleItemIndex = rememberedPosition.index,
+    initialFirstVisibleItemScrollOffset = rememberedPosition.offset
+  )
+
+  if (postListAsync is AsyncData.Data) {
     val delta = 32
 
     LaunchedEffect(
@@ -168,21 +171,23 @@ internal fun PostListContent(
       })
 
     LaunchedEffect(
-      key1 = lazyListState.firstVisibleItemIndex,
-      key2 = lazyListState.firstVisibleItemScrollOffset,
-      key3 = chanDescriptor,
+      lazyListState.firstVisibleItemIndex,
+      lazyListState.firstVisibleItemScrollOffset,
+      chanDescriptor,
+      orientation,
       block = {
         if (lazyListState.firstVisibleItemIndex <= 0) {
           return@LaunchedEffect
         }
 
         // For debouncing purposes
-        delay(125L)
+        delay(50L)
 
         postsScreenViewModel.rememberPosition(
           chanDescriptor = chanDescriptor,
-          firstVisibleItemIndex = lazyListState.firstVisibleItemIndex,
-          firstVisibleItemScrollOffset = lazyListState.firstVisibleItemScrollOffset
+          index = lazyListState.firstVisibleItemIndex,
+          offset = lazyListState.firstVisibleItemScrollOffset,
+          orientation = orientation
         )
       })
 
@@ -191,8 +196,8 @@ internal fun PostListContent(
       block = {
         postsScreenViewModel.scrollRestorationEventFlow.collect { lastRememberedPosition ->
           lazyListState.scrollToItem(
-            index = lastRememberedPosition.firstVisibleItemIndex,
-            scrollOffset = lastRememberedPosition.firstVisibleItemScrollOffset
+            index = lastRememberedPosition.index,
+            scrollOffset = lastRememberedPosition.offset
           )
         }
       })
@@ -245,10 +250,7 @@ internal fun PostListContent(
   // special flag in PostScreenViewModel which then triggers previous scroll position restoration.
   // We need to do all that because otherwise we won't scroll to the last position since the list
   // state might not have the necessary info for that.
-  if (
-    postListAsync is AsyncData.Data
-    && (postListAsync as? AsyncData.Data)?.data?.chanDescriptor != null
-  ) {
+  if (postListAsync is AsyncData.Data) {
     val firstPostDrawn = remember(key1 = lazyListState.layoutInfo) {
       val firstVisibleElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
         ?: return@remember false
