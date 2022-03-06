@@ -17,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
@@ -28,7 +29,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import java.util.Locale
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import logcat.asLog
 
 class ParsedPostDataCache(
@@ -52,7 +52,7 @@ class ParsedPostDataCache(
     chanTheme: ChanTheme,
     force: Boolean
   ): ParsedPostData {
-    return mutex.withLock {
+    return mutex.withLockNonCancellable {
       val postDescriptor = postData.postDescriptor
 
       val oldParsedPostData = when (chanDescriptor) {
@@ -62,7 +62,7 @@ class ParsedPostDataCache(
 
       if (!force && oldParsedPostData != null) {
         postData.updateParsedPostData(oldParsedPostData)
-        return@withLock oldParsedPostData
+        return@withLockNonCancellable oldParsedPostData
       }
 
       val newParsedPostData = calculateParsedPostData(
@@ -78,7 +78,7 @@ class ParsedPostDataCache(
 
       postData.updateParsedPostData(newParsedPostData)
 
-      return@withLock newParsedPostData
+      return@withLockNonCancellable newParsedPostData
     }
   }
 
@@ -91,17 +91,17 @@ class ParsedPostDataCache(
       return "${postDescriptor.siteKeyActual}/${postDescriptor.boardCode}/"
     }
 
-    return mutex.withLock {
+    return mutex.withLockNonCancellable {
       val parsedPostData = when (chanDescriptor) {
         is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor]
         is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor]
-      } ?: return@withLock null
+      } ?: return@withLockNonCancellable null
 
       if (parsedPostData.parsedPostSubject.isNotNullNorBlank()) {
-        return@withLock parsedPostData.parsedPostSubject
+        return@withLockNonCancellable parsedPostData.parsedPostSubject
       }
 
-      return@withLock parsedPostData.parsedPostComment.take(64)
+      return@withLockNonCancellable parsedPostData.parsedPostComment.take(64)
     }
   }
 

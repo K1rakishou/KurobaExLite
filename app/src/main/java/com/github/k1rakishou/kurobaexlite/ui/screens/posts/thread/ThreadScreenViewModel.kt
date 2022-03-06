@@ -24,9 +24,11 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsMergeResult
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
@@ -102,6 +104,7 @@ class ThreadScreenViewModel(
         loadThreadInternal(
           threadDescriptor = threadDescriptor,
           loadOptions = LoadOptions(forced = true),
+          onReloadFinished = null
         )
 
         return@launch
@@ -207,28 +210,24 @@ class ThreadScreenViewModel(
     loadThreadJob = null
 
     loadThreadJob = viewModelScope.launch {
-      try {
-        resetTimer()
-        loadThreadInternal(threadDescriptor, loadOptions)
-      } finally {
-        onReloadFinished?.invoke()
-      }
+      resetTimer()
+      loadThreadInternal(threadDescriptor, loadOptions, onReloadFinished)
     }
   }
 
   private suspend fun loadThreadInternal(
     threadDescriptor: ThreadDescriptor?,
-    loadOptions: LoadOptions
+    loadOptions: LoadOptions,
+    onReloadFinished: (() -> Unit)?
   ) {
     if (!loadOptions.forced && chanThreadManager.currentlyOpenedThread == threadDescriptor) {
+      onReloadFinished?.invoke()
       return
     }
 
-    onLoadingThread()
+    onLoadingThread(loadOptions)
 
-    postListBuilt = CompletableDeferred()
     val startTime = SystemClock.elapsedRealtime()
-
     _postsFullyParsedOnceFlow.emit(false)
 
     if (loadOptions.showLoadingIndicator) {
@@ -256,6 +255,8 @@ class ThreadScreenViewModel(
 
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
       _postsFullyParsedOnceFlow.emit(true)
+      onReloadFinished?.invoke()
+
       return
     }
 
@@ -263,6 +264,8 @@ class ThreadScreenViewModel(
     if (threadData == null || threadDescriptor == null) {
       threadScreenState.postsAsyncDataState.value = AsyncData.Empty
       _postsFullyParsedOnceFlow.emit(true)
+      onReloadFinished?.invoke()
+
       return
     }
 
@@ -271,6 +274,8 @@ class ThreadScreenViewModel(
 
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
       _postsFullyParsedOnceFlow.emit(true)
+      onReloadFinished?.invoke()
+
       return
     }
 
@@ -298,18 +303,29 @@ class ThreadScreenViewModel(
           )
         },
         onPostsParsed = { postDataList ->
-          chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
-          popCatalogOrThreadPostsLoadingSnackbar()
+          logcat {
+            "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+              "threadPosts=${threadData.threadPosts.size}"
+          }
 
-          onPostsParsed(
-            threadDescriptor = threadDescriptor,
-            mergeResult = mergeResult,
-            isInitialThreadLoad = true
-          )
+          try {
+            chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
 
-          postListBuilt?.await()
-          restoreScrollPosition(threadDescriptor)
-          _postsFullyParsedOnceFlow.emit(true)
+            onPostsParsed(
+              threadDescriptor = threadDescriptor,
+              mergeResult = mergeResult,
+              isInitialThreadLoad = true
+            )
+
+            postListBuilt?.await()
+            restoreScrollPosition(threadDescriptor)
+            _postsFullyParsedOnceFlow.emit(true)
+          } finally {
+            withContext(NonCancellable + Dispatchers.Main) {
+              onReloadFinished?.invoke()
+              popCatalogOrThreadPostsLoadingSnackbar()
+            }
+          }
         }
       )
     } else {
@@ -345,25 +361,31 @@ class ThreadScreenViewModel(
           )
         },
         onPostsParsed = { postDataList ->
-          chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
-          popCatalogOrThreadPostsLoadingSnackbar()
+          logcat {
+            "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+              "threadPosts=${threadData.threadPosts.size}"
+          }
 
-          onPostsParsed(
-            threadDescriptor = threadDescriptor,
-            mergeResult = mergeResult,
-            isInitialThreadLoad = true
-          )
+          try {
+            chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
 
-          postListBuilt?.await()
-          restoreScrollPosition(threadDescriptor)
-          _postsFullyParsedOnceFlow.emit(true)
+            onPostsParsed(
+              threadDescriptor = threadDescriptor,
+              mergeResult = mergeResult,
+              isInitialThreadLoad = true
+            )
+
+            postListBuilt?.await()
+            restoreScrollPosition(threadDescriptor)
+            _postsFullyParsedOnceFlow.emit(true)
+          } finally {
+            withContext(NonCancellable + Dispatchers.Main) {
+              onReloadFinished?.invoke()
+              popCatalogOrThreadPostsLoadingSnackbar()
+            }
+          }
         }
       )
-    }
-
-    logcat {
-      "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-        "threadPosts=${threadData.threadPosts.size}"
     }
   }
 

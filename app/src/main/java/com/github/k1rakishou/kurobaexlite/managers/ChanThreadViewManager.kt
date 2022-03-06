@@ -1,10 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import androidx.annotation.GuardedBy
+import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanThreadView
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class ChanThreadViewManager {
   private val mutex = Mutex()
@@ -16,7 +16,7 @@ class ChanThreadViewManager {
     threadDescriptor: ThreadDescriptor,
     updater: ChanThreadView.() -> Unit
   ) {
-    mutex.withLock {
+    mutex.withLockNonCancellable {
       val chanThreadView = chanThreadViews.getOrPut(
         key = threadDescriptor,
         defaultValue = { ChanThreadView() }
@@ -28,7 +28,7 @@ class ChanThreadViewManager {
   }
 
   suspend fun read(threadDescriptor: ThreadDescriptor): ChanThreadView? {
-    return mutex.withLock { chanThreadViews[threadDescriptor] }
+    return mutex.withLockNonCancellable { chanThreadViews[threadDescriptor] }
   }
 
 }

@@ -249,11 +249,6 @@ internal fun PostListContent(
     postListAsync is AsyncData.Data
     && (postListAsync as? AsyncData.Data)?.data?.chanDescriptor != null
   ) {
-    var postBuiltNotified by remember { mutableStateOf(false) }
-    if (postBuiltNotified) {
-      return
-    }
-
     val firstPostDrawn = remember(key1 = lazyListState.layoutInfo) {
       val firstVisibleElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
         ?: return@remember false
@@ -267,7 +262,6 @@ internal fun PostListContent(
       LaunchedEffect(
         key1 = chanDescriptor,
         block = {
-          postBuiltNotified = true
           postsScreenViewModel.onPostListBuilt()
         }
       )
@@ -597,6 +591,7 @@ private fun LazyListScope.postList(
   val postDataList = abstractPostsState.posts
   val totalCount = postDataList.size
   val searchQuery = postsScreenViewModel.postScreenState.searchQueryFlow.value
+  val postsParsedOnce = postsScreenViewModel.postsFullyParsedOnceFlow.value
   val lastUpdatedOn= abstractPostsState.lastUpdatedOn
 
   items(
@@ -609,14 +604,16 @@ private fun LazyListScope.postList(
       val animateInsertion = canAnimateInsertion(
         previousPostDataInfoMap = previousPostDataInfoMap,
         postData = postData,
-        searchQuery = searchQuery
+        searchQuery = searchQuery,
+        postsParsedOnce = postsParsedOnce
       )
       val animateUpdate = canAnimateUpdate(
         previousPostDataInfoMap = previousPostDataInfoMap,
         postData = postData,
         searchQuery = searchQuery,
         currentTime = currentTime,
-        lastUpdatedOn = lastUpdatedOn
+        lastUpdatedOn = lastUpdatedOn,
+        postsParsedOnce = postsParsedOnce
       )
 
       PostCellContainer(
@@ -670,9 +667,10 @@ private fun canAnimateUpdate(
   postData: PostData,
   searchQuery: String?,
   currentTime: Long,
-  lastUpdatedOn: Long
+  lastUpdatedOn: Long,
+  postsParsedOnce: Boolean
 ): Boolean {
-  if (previousPostDataInfoMap == null || searchQuery != null) {
+  if (previousPostDataInfoMap == null || searchQuery != null || !postsParsedOnce) {
     return false
   }
 
@@ -691,9 +689,10 @@ private fun canAnimateUpdate(
 private fun canAnimateInsertion(
   previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
   postData: PostData,
-  searchQuery: String?
+  searchQuery: String?,
+  postsParsedOnce: Boolean
 ): Boolean {
-  if (previousPostDataInfoMap == null || searchQuery != null) {
+  if (previousPostDataInfoMap == null || searchQuery != null || !postsParsedOnce) {
     return false
   }
 

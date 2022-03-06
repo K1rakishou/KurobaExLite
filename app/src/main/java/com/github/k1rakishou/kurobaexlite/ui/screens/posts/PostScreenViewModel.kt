@@ -64,7 +64,7 @@ abstract class PostScreenViewModel(
   private val postBindProcessor by inject<PostBindProcessor>(PostBindProcessor::class.java)
 
   private var currentParseJob: Job? = null
-  protected var postListBuilt: CompletableDeferred<Boolean>? = null
+  protected var postListBuilt: CompletableDeferred<Unit>? = null
 
   private val _snackbarEventFlow = MutableSharedFlow<SnackbarInfoEvent>(extraBufferCapacity = Channel.UNLIMITED)
   val snackbarEventFlow: SharedFlow<SnackbarInfoEvent>
@@ -103,11 +103,25 @@ abstract class PostScreenViewModel(
   
   abstract fun refresh()
 
-  fun onLoadingThread() {
+  fun onLoadingThread(loadOptions: LoadOptions) {
+    if (loadOptions.showLoadingIndicator) {
+      postListBuilt = CompletableDeferred()
+    } else {
+      postListBuilt?.cancel()
+      postListBuilt = null
+    }
+
     postListTouchingBottom.value = false
   }
 
-  fun onLoadingCatalog() {
+  fun onLoadingCatalog(loadOptions: LoadOptions) {
+    if (loadOptions.showLoadingIndicator) {
+      postListBuilt = CompletableDeferred()
+    } else {
+      postListBuilt?.complete(Unit)
+      postListBuilt = null
+    }
+
     postListTouchingBottom.value = false
   }
 
@@ -143,7 +157,7 @@ abstract class PostScreenViewModel(
   }
 
   fun reparsePost(postData: PostData, parsedPostDataContext: ParsedPostDataContext) {
-    viewModelScope.launch(Dispatchers.Default) {
+    viewModelScope.launch(globalConstants.postParserDispatcher) {
       val chanTheme = themeEngine.chanTheme
 
       val parsedPostData = parsedPostDataCache.calculateParsedPostData(
@@ -162,7 +176,7 @@ abstract class PostScreenViewModel(
   ): ParsedPostData {
     val chanTheme = themeEngine.chanTheme
 
-    return withContext(Dispatchers.Default) {
+    return withContext(globalConstants.postParserDispatcher) {
       return@withContext calculatePostData(
         chanDescriptor = chanDescriptor,
         postData = postData,
@@ -183,7 +197,7 @@ abstract class PostScreenViewModel(
   ) {
     val chanTheme = themeEngine.chanTheme
 
-    withContext(Dispatchers.Default) {
+    withContext(globalConstants.postParserDispatcher) {
       postDataList
         .bidirectionalSequence(startPosition = startIndex)
         .take(count)
@@ -209,7 +223,7 @@ abstract class PostScreenViewModel(
   ) {
     val chanTheme = themeEngine.chanTheme
 
-    withContext(Dispatchers.Default) {
+    withContext(globalConstants.postParserDispatcher) {
       for (index in startIndex until (startIndex + count)) {
         val postData = postDataList.getOrNull(index) ?: break
 
@@ -235,7 +249,7 @@ abstract class PostScreenViewModel(
     currentParseJob?.cancel()
     currentParseJob = null
 
-    currentParseJob = viewModelScope.launch(Dispatchers.Default) {
+    currentParseJob = viewModelScope.launch(globalConstants.postParserDispatcher) {
       if (postDataList.isEmpty()) {
         withContext(NonCancellable) { onPostsParsed(postDataList) }
         return@launch
@@ -263,7 +277,7 @@ abstract class PostScreenViewModel(
             .bidirectionalSequenceIndexed(startPosition = 0)
             .chunked(chunkSize)
             .mapIndexed { chunkIndex, postDataListChunk ->
-              return@mapIndexed async(Dispatchers.IO) {
+              return@mapIndexed async(globalConstants.postParserDispatcher) {
                 logcat(tag = TAG) {
                   "parseRemainingPostsAsyncRegular() running chunk ${chunkIndex} with " +
                     "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
@@ -311,7 +325,7 @@ abstract class PostScreenViewModel(
             repliesToPostDataSet
               .chunked(repliesToChunkSize)
               .mapIndexed { chunkIndex, postDataListChunk ->
-                return@mapIndexed async(Dispatchers.IO) {
+                return@mapIndexed async(globalConstants.postParserDispatcher) {
                   logcat(tag = TAG) {
                     "parseRemainingPostsAsyncReplies() running chunk ${chunkIndex} with " +
                       "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
@@ -420,7 +434,7 @@ abstract class PostScreenViewModel(
   }
 
   fun onPostListBuilt() {
-    postListBuilt?.complete(true)
+    postListBuilt?.complete(Unit)
   }
 
   fun onPostBind(postData: PostData) {
@@ -471,6 +485,7 @@ abstract class PostScreenViewModel(
       get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
 
     fun updatePost(postData: PostData)
+    fun updatePosts(postDataCollection: Collection<PostData>)
     fun updateSearchQuery(searchQuery: String?)
 
     private fun <T> doWithDataState(func: (AbstractPostsState) -> T): T? {

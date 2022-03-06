@@ -21,6 +21,13 @@ class ThreadScreenState : PostScreenViewModel.PostScreenState {
     }
   }
 
+  override fun updatePosts(postDataCollection: Collection<PostData>) {
+    val asyncData = postsAsyncDataState.value
+    if (asyncData is AsyncData.Data) {
+      asyncData.data.updateMany(postDataCollection)
+    }
+  }
+
   override fun updateSearchQuery(searchQuery: String?) {
     val asyncData = postsAsyncDataState.value
     if (asyncData is AsyncData.Data) {

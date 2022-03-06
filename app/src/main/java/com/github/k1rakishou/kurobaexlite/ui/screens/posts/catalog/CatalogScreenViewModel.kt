@@ -16,9 +16,11 @@ import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
-import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
 
@@ -82,30 +84,27 @@ class CatalogScreenViewModel(
     loadCatalogJob = null
 
     loadCatalogJob = viewModelScope.launch {
-      try {
-        loadCatalogInternal(
-          catalogDescriptor = catalogDescriptor,
-          loadOptions = loadOptions
-        )
-      } finally {
-        onReloadFinished?.invoke()
-      }
+      loadCatalogInternal(
+        catalogDescriptor = catalogDescriptor,
+        loadOptions = loadOptions,
+        onReloadFinished = onReloadFinished
+      )
     }
   }
 
   private suspend fun loadCatalogInternal(
     catalogDescriptor: CatalogDescriptor?,
-    loadOptions: LoadOptions
+    loadOptions: LoadOptions,
+    onReloadFinished: (() -> Unit)?
   ) {
     if (!loadOptions.forced && chanThreadManager.currentlyOpenedCatalog == catalogDescriptor) {
+      onReloadFinished?.invoke()
       return
     }
 
-    onLoadingCatalog()
+    onLoadingCatalog(loadOptions)
 
-    postListBuilt = CompletableDeferred()
     val startTime = SystemClock.elapsedRealtime()
-
     _postsFullyParsedOnceFlow.emit(false)
 
     if (loadOptions.showLoadingIndicator) {
@@ -121,6 +120,8 @@ class CatalogScreenViewModel(
 
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
       _postsFullyParsedOnceFlow.emit(true)
+      onReloadFinished?.invoke()
+
       return
     }
 
@@ -128,6 +129,8 @@ class CatalogScreenViewModel(
     if (catalogData == null || catalogDescriptor == null) {
       catalogScreenState.postsAsyncDataState.value = AsyncData.Empty
       _postsFullyParsedOnceFlow.emit(true)
+      onReloadFinished?.invoke()
+
       return
     }
 
@@ -136,6 +139,8 @@ class CatalogScreenViewModel(
 
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
       _postsFullyParsedOnceFlow.emit(true)
+      onReloadFinished?.invoke()
+
       return
     }
 
@@ -162,19 +167,25 @@ class CatalogScreenViewModel(
         )
       },
       onPostsParsed = { postDataList ->
-        chanThreadCache.insertCatalogThreads(catalogDescriptor, postDataList)
-        popCatalogOrThreadPostsLoadingSnackbar()
+        logcat {
+          "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+            "catalogThreads=${catalogData.catalogThreads.size}"
+        }
 
-        postListBuilt?.await()
-        restoreScrollPosition(catalogDescriptor)
-        _postsFullyParsedOnceFlow.emit(true)
+        try {
+          chanThreadCache.insertCatalogThreads(catalogDescriptor, postDataList)
+
+          postListBuilt?.await()
+          restoreScrollPosition(catalogDescriptor)
+          _postsFullyParsedOnceFlow.emit(true)
+        } finally {
+          withContext(NonCancellable + Dispatchers.Main) {
+            popCatalogOrThreadPostsLoadingSnackbar()
+            onReloadFinished?.invoke()
+          }
+        }
       }
     )
-
-    logcat {
-      "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-        "catalogThreads=${catalogData.catalogThreads.size}"
-    }
   }
 
   class CatalogDisplayException(message: String) : ClientException(message)

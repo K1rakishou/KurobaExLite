@@ -76,6 +76,7 @@ open class PostData(
     recalculateFullHashes()
   }
 
+  // TODO(KurobaEx): maybe use murmurhash here?
   fun differsWith(other: PostData): Boolean {
     check(postDescriptor == other.postDescriptor) {
       "PostDescriptors differ: " +
@@ -84,6 +85,9 @@ open class PostData(
     }
 
     if (threadRepliesTotal != other.threadRepliesTotal) {
+      return true
+    }
+    if (timeMs != other.timeMs) {
       return true
     }
     if (threadImagesTotal != other.threadImagesTotal) {

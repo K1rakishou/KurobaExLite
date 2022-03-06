@@ -5,7 +5,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import logcat.logcat
 
 class ThreadAutoUpdater(
@@ -32,7 +36,7 @@ class ThreadAutoUpdater(
 
   fun resetTimer() {
     updateIndex = 0
-    nextRunTime = null
+    nextRunTime = SystemClock.elapsedRealtime() + (DELAYS.first() * 1000L)
   }
 
   fun runAutoUpdaterLoop(threadDescriptor: ThreadDescriptor) {

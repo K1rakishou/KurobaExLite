@@ -1,12 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
 import androidx.compose.ui.text.AnnotatedString
-import kotlinx.coroutines.CancellableContinuation
-import kotlinx.coroutines.CancellationException
-import logcat.LogPriority
-import logcat.logcat
-import okio.Buffer
-import okio.ByteString.Companion.decodeBase64
 import java.io.InterruptedIOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -16,6 +10,16 @@ import kotlin.contracts.contract
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.abs
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import logcat.LogPriority
+import logcat.logcat
+import okio.Buffer
+import okio.ByteString.Companion.decodeBase64
 
 
 fun <T> CancellableContinuation<T>.resumeValueSafe(value: T) {
@@ -484,4 +488,8 @@ fun Number.asReadableFileSize(): String {
     1000.let { b /= it; b } < 999950L -> String.format("%s%.1f PB", s, b / 1e3)
     else -> String.format("%s%.1f EB", s, b / 1e6)
   }
+}
+
+suspend fun <T> Mutex.withLockNonCancellable(owner: Any? = null, action: suspend () -> T): T {
+  return withContext(NonCancellable) { withLock(owner) { action.invoke() } }
 }

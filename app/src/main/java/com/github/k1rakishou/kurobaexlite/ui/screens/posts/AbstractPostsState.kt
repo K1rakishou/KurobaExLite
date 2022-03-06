@@ -1,24 +1,110 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
+import android.os.SystemClock
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import logcat.logcat
 
 abstract class AbstractPostsState {
-  protected var _postsCopy: List<PostData>? = null
-  protected var _lastUpdatedOn: Long = 0
+  @Volatile private var _postsCopy: List<PostData>? = null
+  @Volatile private var _lastUpdatedOn: Long = 0
+
   val lastUpdatedOn: Long
     get() = _lastUpdatedOn
 
   abstract val chanDescriptor: ChanDescriptor
   abstract val posts: List<State<PostData>>
-  protected abstract val postsMutable: SnapshotStateList<MutableState<PostData>>
 
-  abstract fun update(postData: PostData)
-  abstract fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult
+  protected abstract val postsMutable: SnapshotStateList<MutableState<PostData>>
+  private val postIndexes = mutableMapOf<PostDescriptor, Int>()
+
+  fun update(postData: PostData) {
+    val index = postIndexes[postData.postDescriptor]
+      ?: return
+
+    _lastUpdatedOn = SystemClock.elapsedRealtime()
+    postsMutable[index].value = postData
+  }
+
+  fun updateMany(postDataCollection: Collection<PostData>) {
+    if (postDataCollection.isEmpty()) {
+      return
+    }
+
+    Snapshot.withMutableSnapshot {
+      for (postData in postDataCollection) {
+        val index = postIndexes[postData.postDescriptor]
+          ?: continue
+
+        _lastUpdatedOn = SystemClock.elapsedRealtime()
+        postsMutable[index].value = postData
+      }
+    }
+  }
+
+  fun mergePostsWith(newThreadPosts: List<PostData>): PostsMergeResult {
+    if (_postsCopy != null) {
+      return PostsMergeResult.EMPTY
+    }
+
+    val prevThreadPostMap = postsMutable.associateBy { it.value.postDescriptor }
+    val postsToUpdate = mutableListOf<PostData>()
+    val postsToInsert = mutableListOf<PostData>()
+    val now = SystemClock.elapsedRealtime()
+
+    for (newThreadPost in newThreadPosts) {
+      val prevThreadPostState = prevThreadPostMap[newThreadPost.postDescriptor]
+      if (prevThreadPostState == null) {
+        postsToInsert += newThreadPost
+        continue
+      }
+
+      val prevThreadPost = prevThreadPostState.value
+      if (prevThreadPost.differsWith(newThreadPost)) {
+        postsToUpdate += newThreadPost
+      }
+    }
+
+    if (postsToInsert.isNotEmpty() || postsToUpdate.isNotEmpty()) {
+      _lastUpdatedOn = now
+    }
+
+    Snapshot.withMutableSnapshot {
+      if (postsToUpdate.isNotEmpty()) {
+        for (postDataToUpdate in postsToUpdate) {
+          val index = postIndexes[postDataToUpdate.postDescriptor] ?: continue
+          postsMutable[index].value = postDataToUpdate
+        }
+      }
+
+      if (postsToInsert.isNotEmpty()) {
+        val lastIndex = postsMutable.size
+        postsMutable.addAll(postsToInsert.map { mutableStateOf(it) })
+
+        for ((index, postToInsert) in postsToInsert.withIndex()) {
+          postIndexes[postToInsert.postDescriptor] = lastIndex + index
+        }
+      }
+    }
+
+    val newOrUpdatedPostsToReparse = mutableListWithCap<PostData>(postsToUpdate.size + postsToInsert.size)
+    newOrUpdatedPostsToReparse.addAll(postsToUpdate)
+    newOrUpdatedPostsToReparse.addAll(postsToInsert)
+
+    logcat { "postsToUpdateCount=${postsToUpdate.size}, postsToInsertCount=${postsToInsert.size}" }
+
+    return PostsMergeResult(
+      newPostsCount = postsToInsert.size,
+      newOrUpdatedPostsToReparse = newOrUpdatedPostsToReparse
+    )
+  }
 
   fun updateSearchQuery(searchQuery: String?) {
     if (searchQuery == null) {

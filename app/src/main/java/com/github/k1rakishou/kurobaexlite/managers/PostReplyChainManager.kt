@@ -3,10 +3,10 @@ package com.github.k1rakishou.kurobaexlite.managers
 import androidx.annotation.GuardedBy
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class PostReplyChainManager {
   private val mutex = Mutex()
@@ -15,7 +15,7 @@ class PostReplyChainManager {
   private val replyChains = mutableMapOf<ThreadDescriptor, ThreadReplyChain>()
 
   suspend fun insert(postDescriptor: PostDescriptor, repliesTo: Set<PostDescriptor>) {
-    val threadReplyChain = mutex.withLock {
+    val threadReplyChain = mutex.withLockNonCancellable {
       replyChains.getOrPut(
         key = postDescriptor.threadDescriptor,
         defaultValue = { ThreadReplyChain() }
@@ -26,21 +26,21 @@ class PostReplyChainManager {
   }
 
   suspend fun getRepliesTo(postDescriptor: PostDescriptor): Set<PostDescriptor> {
-    val threadReplyChain = mutex.withLock { replyChains[postDescriptor.threadDescriptor] }
+    val threadReplyChain = mutex.withLockNonCancellable { replyChains[postDescriptor.threadDescriptor] }
       ?: return emptySet()
 
     return threadReplyChain.getRepliesTo(postDescriptor)
   }
 
   suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor> {
-    val threadReplyChain = mutex.withLock { replyChains[postDescriptor.threadDescriptor] }
+    val threadReplyChain = mutex.withLockNonCancellable { replyChains[postDescriptor.threadDescriptor] }
       ?: return emptySet()
 
     return threadReplyChain.getRepliesFrom(postDescriptor)
   }
 
   suspend fun getManyRepliesTo(postDescriptors: List<PostDescriptor>): Set<PostDescriptor> {
-    val threadReplyChainMap = mutex.withLock {
+    val threadReplyChainMap = mutex.withLockNonCancellable {
       val mapped = postDescriptors
         .mapNotNull { postDescriptor ->
           val threadReplyChain = replyChains[postDescriptor.threadDescriptor]
@@ -50,7 +50,7 @@ class PostReplyChainManager {
         }
 
       if (mapped.isEmpty()) {
-        return@withLock emptyMap()
+        return@withLockNonCancellable emptyMap()
       }
 
       val resultMap = mutableMapWithCap<PostDescriptor, ThreadReplyChain>(mapped.size)
@@ -59,7 +59,7 @@ class PostReplyChainManager {
         resultMap[postDescriptor] = threadReplyChain
       }
 
-      return@withLock resultMap
+      return@withLockNonCancellable resultMap
     }
 
     if (threadReplyChainMap.isEmpty()) {
@@ -87,7 +87,7 @@ private class ThreadReplyChain {
   private val replyFromMap = mutableMapWithCap<PostDescriptor, MutableSet<PostDescriptor>>(128)
 
   suspend fun insert(postDescriptor: PostDescriptor, repliesTo: Set<PostDescriptor>) {
-    mutex.withLock {
+    mutex.withLockNonCancellable {
       replyToMap[postDescriptor] = repliesTo.toMutableSet()
 
       for (replyToDescriptor in repliesTo) {
@@ -102,11 +102,11 @@ private class ThreadReplyChain {
   }
 
   suspend fun getRepliesTo(postDescriptor: PostDescriptor): Set<PostDescriptor> {
-    return mutex.withLock { replyToMap[postDescriptor]?.toSet() ?: emptySet() }
+    return mutex.withLockNonCancellable { replyToMap[postDescriptor]?.toSet() ?: emptySet() }
   }
 
   suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor> {
-    return mutex.withLock { replyFromMap[postDescriptor]?.toSet() ?: emptySet() }
+    return mutex.withLockNonCancellable { replyFromMap[postDescriptor]?.toSet() ?: emptySet() }
   }
 
 }

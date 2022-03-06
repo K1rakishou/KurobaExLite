@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.model.data.local
 
 import androidx.annotation.GuardedBy
+import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import logcat.logcat
 
 class ChanThread {
@@ -15,7 +15,7 @@ class ChanThread {
   private val postsMap = mutableMapOf<PostDescriptor, PostData>()
 
   suspend fun insert(postDataCollection: Collection<PostData>) {
-    mutex.withLock {
+    mutex.withLockNonCancellable {
       var insertedPosts = 0
       var updatedPosts = 0
       var needSorting = false
@@ -51,30 +51,30 @@ class ChanThread {
   }
 
   suspend fun getMany(postDescriptors: Collection<PostDescriptor>): List<PostData> {
-    return mutex.withLock { postDescriptors.mapNotNull { postDescriptor -> postsMap[postDescriptor] } }
+    return mutex.withLockNonCancellable { postDescriptors.mapNotNull { postDescriptor -> postsMap[postDescriptor] } }
   }
 
   suspend fun getAll(): List<PostData> {
-    return mutex.withLock { posts.toList() }
+    return mutex.withLockNonCancellable { posts.toList() }
   }
 
   suspend fun getOriginalPost(): OriginalPostData? {
-    return mutex.withLock {
+    return mutex.withLockNonCancellable {
       val originalPostMaybe = posts.firstOrNull()
-        ?: return@withLock null
+        ?: return@withLockNonCancellable null
 
       check(originalPostMaybe is OriginalPostData) { "originalPostMaybe is not OriginalPostData" }
 
-      return@withLock originalPostMaybe
+      return@withLockNonCancellable originalPostMaybe
     }
   }
 
   suspend fun getPost(postDescriptor: PostDescriptor): PostData? {
-    return mutex.withLock { postsMap[postDescriptor] }
+    return mutex.withLockNonCancellable { postsMap[postDescriptor] }
   }
 
   suspend fun getLastPost(): PostData? {
-    return mutex.withLock { posts.lastOrNull() }
+    return mutex.withLockNonCancellable { posts.lastOrNull() }
   }
 
   companion object {

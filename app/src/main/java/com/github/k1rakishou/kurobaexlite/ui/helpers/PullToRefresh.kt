@@ -7,7 +7,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -29,8 +29,10 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
@@ -198,67 +200,88 @@ fun PullToRefresh(
       )
       .nestedScroll(nestedScrollConnection)
   ) {
-    content()
+    var contentSize by remember { mutableStateOf(IntSize.Zero) }
 
-    val stroke = with(LocalDensity.current) {
-      remember { Stroke(width = 2.dp.toPx(), cap = StrokeCap.Square) }
+    Box(
+      modifier = Modifier
+        .onSizeChanged { size -> contentSize = size }
+    ) {
+      content()
     }
 
-    Canvas(
-      modifier = Modifier.fillMaxSize(),
-      onDraw = {
-        if (!pullToRefreshEnabled || !isPulling || pullToRefreshPulledPx <= 0f) {
-          return@Canvas
-        }
+    if (contentSize.width > 0 && contentSize.height > 0) {
+      val stroke = with(LocalDensity.current) {
+        remember { Stroke(width = 2.dp.toPx(), cap = StrokeCap.Square) }
+      }
 
-        val xPos = size.width / 2f
-        val yPos = pullToRefreshPulledPx + topPaddingPx - circleRadiusPx
-        val center = Offset(xPos, yPos)
+      val widthDp = with(density) { remember(key1 = contentSize.width) { contentSize.width.toDp() } }
+      val heightDp = with(density) { remember(key1 = contentSize.height) { contentSize.height.toDp() } }
 
-        val circleColor = if (pullToRefreshPulledPx > pullThresholdPx) {
-          chanTheme.accentColorCompose
-        } else {
-          Color.White
-        }
+      Canvas(
+        modifier = Modifier.size(width = widthDp, height = heightDp),
+        onDraw = {
+          if (!pullToRefreshEnabled || !isPulling || pullToRefreshPulledPx <= 0f) {
+            return@Canvas
+          }
 
-        val progressIndicatorColor = if (pullToRefreshPulledPx > pullThresholdPx) {
-          Color.White
-        } else {
-          chanTheme.accentColorCompose
-        }
+          val xPos = size.width / 2f
+          val yPos = pullToRefreshPulledPx + topPaddingPx - circleRadiusPx
+          val center = Offset(xPos, yPos)
 
-        drawCircle(
-          color = circleColor,
-          radius = circleRadiusPx,
-          center = center
-        )
+          val circleColor = if (pullToRefreshPulledPx > pullThresholdPx) {
+            chanTheme.accentColorCompose
+          } else {
+            Color.White
+          }
 
-        val pullProgress = if (refreshRotationAnimation != null) {
-          refreshRotationAnimation!!
-        } else {
-          (pullToRefreshPulledPx / pullThresholdPx).coerceIn(0f, 1f)
-        }
+          val progressIndicatorColor = if (pullToRefreshPulledPx > pullThresholdPx) {
+            Color.White
+          } else {
+            chanTheme.accentColorCompose
+          }
 
-        withTransform(
-          transformBlock = {
-            rotate(
-              degrees = pullProgress * 360f,
-              pivot = center
-            )
-          },
-          drawBlock = {
-            drawArc(
-              color = progressIndicatorColor,
-              startAngle = 0f,
-              sweepAngle = pullProgress * 270f,
-              useCenter = false,
-              alpha = pullProgress,
-              topLeft = Offset(center.x - (circleRadiusPx / 2f), center.y - (circleRadiusPx / 2f)),
-              size = Size(circleRadiusPx, circleRadiusPx),
-              style = stroke
-            )
-          })
-      })
+          drawCircle(
+            color = circleColor,
+            radius = circleRadiusPx,
+            center = center
+          )
+
+          val pullProgress = if (refreshRotationAnimation != null) {
+            refreshRotationAnimation!!
+          } else {
+            (pullToRefreshPulledPx / pullThresholdPx).coerceIn(0f, 1f)
+          }
+
+          val indicatorAlpha = if (refreshRotationAnimation == null) {
+            pullProgress
+          } else {
+            1f
+          }
+
+          withTransform(
+            transformBlock = {
+              rotate(
+                degrees = pullProgress * 360f,
+                pivot = center
+              )
+            },
+            drawBlock = {
+              drawArc(
+                color = progressIndicatorColor,
+                startAngle = 0f,
+                sweepAngle = pullProgress * 270f,
+                useCenter = false,
+                alpha = indicatorAlpha,
+                topLeft = Offset(
+                  center.x - (circleRadiusPx / 2f),
+                  center.y - (circleRadiusPx / 2f)
+                ),
+                size = Size(circleRadiusPx, circleRadiusPx),
+                style = stroke
+              )
+            })
+        })
+    }
   }
 }
 
