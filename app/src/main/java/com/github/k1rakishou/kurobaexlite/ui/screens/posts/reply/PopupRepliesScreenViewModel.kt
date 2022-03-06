@@ -37,7 +37,7 @@ class PopupRepliesScreenViewModel(
 
   override val postScreenState: PostScreenState = threadScreenState
 
-  override fun reload() {
+  override fun reload(loadOptions: LoadOptions, onReloadFinished: (() -> Unit)?) {
     // no-op
   }
 

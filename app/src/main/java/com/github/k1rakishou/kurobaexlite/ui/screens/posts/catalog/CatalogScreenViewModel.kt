@@ -42,18 +42,21 @@ class CatalogScreenViewModel(
     if (prevCatalogDescriptor != null) {
       loadCatalog(
         catalogDescriptor = prevCatalogDescriptor,
-        forced = true
+        loadOptions = LoadOptions(forced = true),
       )
     } else {
       // TODO(KurobaEx): remove me once last visited catalog is remembered
       loadCatalog(
         catalogDescriptor = CatalogDescriptor(Chan4.SITE_KEY, "g"),
-        forced = true
+        loadOptions = LoadOptions(forced = true),
       )
     }
   }
 
-  override fun reload() {
+  override fun reload(
+    loadOptions: LoadOptions,
+    onReloadFinished: (() -> Unit)?
+  ) {
     val currentlyOpenedCatalog = chanThreadManager.currentlyOpenedCatalog
     if (currentlyOpenedCatalog != null) {
       resetPosition(currentlyOpenedCatalog)
@@ -61,7 +64,8 @@ class CatalogScreenViewModel(
 
     loadCatalog(
       catalogDescriptor = currentlyOpenedCatalog,
-      forced = true
+      loadOptions = loadOptions.copy(forced = true),
+      onReloadFinished = onReloadFinished,
     )
   }
 
@@ -71,19 +75,29 @@ class CatalogScreenViewModel(
 
   fun loadCatalog(
     catalogDescriptor: CatalogDescriptor?,
-    forced: Boolean = false
+    loadOptions: LoadOptions = LoadOptions(),
+    onReloadFinished: (() -> Unit)? = null
   ) {
     loadCatalogJob?.cancel()
     loadCatalogJob = null
 
-    loadCatalogJob = viewModelScope.launch { loadCatalogInternal(catalogDescriptor, forced) }
+    loadCatalogJob = viewModelScope.launch {
+      try {
+        loadCatalogInternal(
+          catalogDescriptor = catalogDescriptor,
+          loadOptions = loadOptions
+        )
+      } finally {
+        onReloadFinished?.invoke()
+      }
+    }
   }
 
   private suspend fun loadCatalogInternal(
     catalogDescriptor: CatalogDescriptor?,
-    forced: Boolean = false
+    loadOptions: LoadOptions
   ) {
-    if (!forced && chanThreadManager.currentlyOpenedCatalog == catalogDescriptor) {
+    if (!loadOptions.forced && chanThreadManager.currentlyOpenedCatalog == catalogDescriptor) {
       return
     }
 
@@ -93,7 +107,11 @@ class CatalogScreenViewModel(
     val startTime = SystemClock.elapsedRealtime()
 
     _postsFullyParsedOnceFlow.emit(false)
-    catalogScreenState.postsAsyncDataState.value = AsyncData.Loading
+
+    if (loadOptions.showLoadingIndicator) {
+      catalogScreenState.postsAsyncDataState.value = AsyncData.Loading
+    }
+
     savedStateHandle.set(PREV_CATALOG_DESCRIPTOR, catalogDescriptor)
 
     val catalogDataResult = chanThreadManager.loadCatalog(catalogDescriptor)

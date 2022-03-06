@@ -37,6 +37,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
@@ -234,7 +235,7 @@ class ThreadScreen(
                 positiveButton = DialogScreen.okButton {
                   threadScreenViewModel.loadThread(
                     threadDescriptor = linkable.postDescriptor.threadDescriptor,
-                    forced = true
+                    loadOptions = PostScreenViewModel.LoadOptions(forced = true)
                   )
                 }
               )

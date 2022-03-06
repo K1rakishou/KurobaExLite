@@ -61,7 +61,8 @@ class ThreadScreenViewModel(
     if (prevThreadDescriptor != null) {
       loadThread(
         threadDescriptor = prevThreadDescriptor,
-        forced = true
+        loadOptions = LoadOptions(forced = true),
+        onReloadFinished = null
       )
     }
   }
@@ -72,12 +73,16 @@ class ThreadScreenViewModel(
     threadAutoUpdater.stopAutoUpdaterLoop()
   }
 
-  override fun reload() {
+  override fun reload(
+    loadOptions: LoadOptions,
+    onReloadFinished: (() -> Unit)?
+  ) {
     val currentlyOpenedThread = chanThreadManager.currentlyOpenedThread
 
     loadThread(
       threadDescriptor = currentlyOpenedThread,
-      forced = true
+      loadOptions = loadOptions.copy(forced = true),
+      onReloadFinished = onReloadFinished
     )
   }
 
@@ -94,7 +99,11 @@ class ThreadScreenViewModel(
           return@launch
         }
 
-        loadThreadInternal(threadDescriptor = threadDescriptor, forced = true)
+        loadThreadInternal(
+          threadDescriptor = threadDescriptor,
+          loadOptions = LoadOptions(forced = true),
+        )
+
         return@launch
       }
 
@@ -191,19 +200,27 @@ class ThreadScreenViewModel(
 
   fun loadThread(
     threadDescriptor: ThreadDescriptor?,
-    forced: Boolean = false
+    loadOptions: LoadOptions = LoadOptions(),
+    onReloadFinished: (() -> Unit)? = null
   ) {
     loadThreadJob?.cancel()
     loadThreadJob = null
 
-    loadThreadJob = viewModelScope.launch { loadThreadInternal(threadDescriptor, forced) }
+    loadThreadJob = viewModelScope.launch {
+      try {
+        resetTimer()
+        loadThreadInternal(threadDescriptor, loadOptions)
+      } finally {
+        onReloadFinished?.invoke()
+      }
+    }
   }
 
   private suspend fun loadThreadInternal(
     threadDescriptor: ThreadDescriptor?,
-    forced: Boolean
+    loadOptions: LoadOptions
   ) {
-    if (!forced && chanThreadManager.currentlyOpenedThread == threadDescriptor) {
+    if (!loadOptions.forced && chanThreadManager.currentlyOpenedThread == threadDescriptor) {
       return
     }
 
@@ -213,7 +230,11 @@ class ThreadScreenViewModel(
     val startTime = SystemClock.elapsedRealtime()
 
     _postsFullyParsedOnceFlow.emit(false)
-    threadScreenState.postsAsyncDataState.value = AsyncData.Loading
+
+    if (loadOptions.showLoadingIndicator) {
+      threadScreenState.postsAsyncDataState.value = AsyncData.Loading
+    }
+
     savedStateHandle.set(PREV_THREAD_DESCRIPTOR, threadDescriptor)
 
     if (threadDescriptor != null) {

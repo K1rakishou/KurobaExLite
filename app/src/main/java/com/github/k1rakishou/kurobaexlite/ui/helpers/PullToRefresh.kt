@@ -2,7 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
-import androidx.compose.animation.core.repeatable
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.forEachGesture
@@ -36,12 +36,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 
+class PullToRefreshState {
+  internal val animatingRefreshState = mutableStateOf(false)
+  internal val animatingBackState = mutableStateOf(false)
+
+  fun stopRefreshing() {
+    animatingRefreshState.value = false
+    animatingBackState.value = false
+  }
+
+}
+
+@Composable
+fun rememberPullToRefreshState(): PullToRefreshState {
+  return remember { PullToRefreshState() }
+}
+
 @Composable
 fun PullToRefresh(
   pullToRefreshEnabled: Boolean = true,
   topPadding: Dp = 0.dp,
   circleRadius: Dp = 16.dp,
   pullThreshold: Dp = 128.dp,
+  pullToRefreshState: PullToRefreshState,
   onTriggered: suspend () -> Unit,
   content: @Composable () -> Unit
 ) {
@@ -55,10 +72,9 @@ fun PullToRefresh(
   var pullToRefreshPulledPx by remember { mutableStateOf(0f) }
   var isTouching by remember { mutableStateOf(false) }
   var isPulling by remember { mutableStateOf(false) }
-  var animatingRefresh by remember { mutableStateOf(false) }
-  var animatingBack by remember { mutableStateOf(false) }
   var refreshRotationAnimation by remember { mutableStateOf<Float?>(null) }
-
+  var animatingRefresh by pullToRefreshState.animatingRefreshState
+  var animatingBack by pullToRefreshState.animatingBackState
   val pullingBlocked by derivedStateOf { animatingRefresh || animatingBack }
 
   val nestedScrollConnection = remember {
@@ -122,13 +138,11 @@ fun PullToRefresh(
         if (animatingRefresh) {
           onTriggered()
 
-          // TODO(KurobaEx): probably should use infiniteRepeatable here and play the rotation animation
-          //  until the catalog/thread is refreshed
           animate(
             initialValue = 0f,
             targetValue = 1f,
             initialVelocity = 0f,
-            animationSpec = repeatable(iterations = 2, tween(durationMillis = 350, easing = LinearEasing))
+            animationSpec = infiniteRepeatable(tween(durationMillis = 500, easing = LinearEasing))
           ) { progress, _ -> refreshRotationAnimation = progress  }
         } else if (animatingBack) {
           val startY = pullToRefreshPulledPx

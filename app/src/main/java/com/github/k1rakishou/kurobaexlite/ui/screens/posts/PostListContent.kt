@@ -102,6 +102,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -373,6 +374,7 @@ private fun PostListInternal(
   }
 
   val pullToRefreshTopPaddingDp = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
+  val pullToRefreshState = rememberPullToRefreshState()
 
   val previousPostDataInfoMap = remember(
     key1 = postsScreenViewModel.chanDescriptor,
@@ -432,13 +434,15 @@ private fun PostListInternal(
     PullToRefresh(
       pullToRefreshEnabled = pullToRefreshEnabled,
       topPadding = pullToRefreshTopPaddingDp,
+      pullToRefreshState = pullToRefreshState,
       onTriggered = {
-        // TODO(KurobaEx): ideally we should have refresh() method for catalogs too
-        if (isCatalogMode) {
-          postsScreenViewModel.reload()
-        } else {
-          postsScreenViewModel.refresh()
-        }
+        postsScreenViewModel.reload(
+          loadOptions = PostScreenViewModel.LoadOptions(
+            showLoadingIndicator = false,
+            forced = true
+          ),
+          onReloadFinished = { pullToRefreshState.stopRefreshing() }
+        )
       }
     ) {
       LazyColumnWithFastScroller(

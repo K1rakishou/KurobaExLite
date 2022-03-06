@@ -96,7 +96,11 @@ abstract class PostScreenViewModel(
   val chanDescriptor: ChanDescriptor?
     get() = postScreenState.chanDescriptor
 
-  abstract fun reload()
+  abstract fun reload(
+    loadOptions: LoadOptions = LoadOptions(),
+    onReloadFinished: (() -> Unit)? = null
+  )
+  
   abstract fun refresh()
 
   fun onLoadingThread() {
@@ -478,6 +482,11 @@ abstract class PostScreenViewModel(
       return null
     }
   }
+  
+  data class LoadOptions(
+    val showLoadingIndicator: Boolean = true,
+    val forced: Boolean = false
+  )
 
   companion object {
     private const val TAG = "PostScreenViewModel"
