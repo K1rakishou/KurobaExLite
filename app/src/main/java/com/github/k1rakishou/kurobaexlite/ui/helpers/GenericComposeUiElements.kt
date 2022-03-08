@@ -34,6 +34,7 @@ import androidx.compose.material.Card
 import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ContentAlpha
+import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -615,5 +616,23 @@ fun KurobaComposeCheckbox(
         enabled = enabled
       )
     }
+  }
+}
+
+@Composable
+fun KurobaFloatingActionButton(
+  modifier: Modifier = Modifier,
+  @DrawableRes iconDrawableId: Int,
+  onClick: () -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+
+  FloatingActionButton(
+    modifier = modifier,
+    backgroundColor = chanTheme.accentColorCompose,
+    contentColor = Color.White,
+    onClick = onClick
+  ) {
+    KurobaComposeIcon(drawableId = iconDrawableId)
   }
 }

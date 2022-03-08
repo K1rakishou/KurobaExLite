@@ -7,4 +7,8 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenW
 abstract class HomeNavigationScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreenWithToolbar(componentActivity, navigationRouter)
+) : ComposeScreenWithToolbar(componentActivity, navigationRouter) {
+  open val hasFab: Boolean = true
+
+  abstract val screenContentLoaded: Boolean
+}

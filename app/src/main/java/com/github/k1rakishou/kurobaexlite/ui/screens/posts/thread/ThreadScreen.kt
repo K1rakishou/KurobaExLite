@@ -21,7 +21,7 @@ import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
@@ -58,6 +58,7 @@ class ThreadScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
+  override val screenContentLoaded: Boolean = threadScreenViewModel.postScreenState.contentLoaded
 
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
@@ -142,16 +143,8 @@ class ThreadScreen(
 
   @Composable
   private fun ThreadPostListScreenContent() {
-    val kurobaSnackbarState = rememberKurobaSnackbarState()
-
     Box(modifier = Modifier.fillMaxSize()) {
       ThreadPostListScreen()
-
-      KurobaSnackbar(
-        modifier = Modifier.fillMaxSize(),
-        kurobaSnackbarState = kurobaSnackbarState,
-        snackbarEventFlow = threadScreenViewModel.snackbarEventFlow
-      )
     }
   }
 
@@ -161,6 +154,7 @@ class ThreadScreen(
     val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+    val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
 
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
@@ -206,6 +200,13 @@ class ThreadScreen(
       onFastScrollerDragStateChanged = { dragging ->
         homeScreenViewModel.onFastScrollerDragStateChanged(dragging)
       }
+    )
+
+    KurobaSnackbarContainer(
+      modifier = Modifier.fillMaxSize(),
+      screenKey = screenKey,
+      snackbarManager = snackbarManager,
+      kurobaSnackbarState = kurobaSnackbarState
     )
   }
 

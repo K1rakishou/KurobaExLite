@@ -62,6 +62,14 @@ fun safeCapacity(initialCapacity: Int): Int {
   }
 }
 
+fun <T> List<T>.ensureSingleElement(): T {
+  if (size != 1) {
+    error("Expected list to have only one element but got ${size}")
+  }
+
+  return first()
+}
+
 inline fun <T> mutableListWithCap(initialCapacity: Int): MutableList<T> {
   return ArrayList(safeCapacity(initialCapacity))
 }

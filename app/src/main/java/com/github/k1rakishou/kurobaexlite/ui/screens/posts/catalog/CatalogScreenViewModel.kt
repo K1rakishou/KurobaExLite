@@ -15,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,6 +33,7 @@ class CatalogScreenViewModel(
   themeEngine: ThemeEngine,
   savedStateHandle: SavedStateHandle
 ) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
+  private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
   private val catalogScreenState = CatalogScreenState()
   private var loadCatalogJob: Job? = null
 
@@ -162,8 +164,9 @@ class CatalogScreenViewModel(
       chanDescriptor = catalogDescriptor,
       postDataList = catalogData.catalogThreads,
       onStartParsingPosts = {
-        pushCatalogOrThreadPostsLoadingSnackbar(
-          postsCount = catalogData.catalogThreads.size
+        snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
+          postsCount = catalogData.catalogThreads.size,
+          screenKey = screenKey
         )
       },
       onPostsParsed = { postDataList ->
@@ -180,7 +183,7 @@ class CatalogScreenViewModel(
           _postsFullyParsedOnceFlow.emit(true)
         } finally {
           withContext(NonCancellable + Dispatchers.Main) {
-            popCatalogOrThreadPostsLoadingSnackbar()
+            snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
             onReloadFinished?.invoke()
           }
         }

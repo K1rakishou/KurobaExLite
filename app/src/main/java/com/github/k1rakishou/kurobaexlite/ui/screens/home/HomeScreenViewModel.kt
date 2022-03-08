@@ -6,9 +6,15 @@ import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
 import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import logcat.logcat
 
 class HomeScreenViewModel(
   application: KurobaExLiteApplication,
@@ -50,10 +56,6 @@ class HomeScreenViewModel(
 
   fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor? {
     return siteManager.resolveDescriptorFromRawIdentifier(rawIdentifier)
-  }
-
-  fun toast(message: String, duration: Int = 2000) {
-    // TODO(KurobaEx):
   }
 
   fun onChildContentScrolling(delta: Float) {
@@ -124,6 +126,10 @@ class HomeScreenViewModel(
 
   fun dragDrawer(isDragging: Boolean, progress: Float, velocity: Float) {
     _drawerVisibilityFlow.value = DrawerVisibility.Drag(isDragging, progress, velocity)
+  }
+
+  fun onFabClicked(screenKey: ScreenKey) {
+    logcat { "onFabClicked($screenKey)" }
   }
 
   sealed class DrawerVisibility {

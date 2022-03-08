@@ -5,8 +5,18 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
@@ -27,6 +37,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun HomeScreenToolbarContainer(
+  animationDurationMs: Int,
   insets: Insets,
   chanTheme: ChanTheme,
   pagerState: PagerState,
@@ -35,6 +46,13 @@ fun HomeScreenToolbarContainer(
   homeScreenViewModel: HomeScreenViewModel
 ) {
   require(childScreens.isNotEmpty()) { "childScreens is empty!" }
+
+  val currentScreen = childScreens.getOrNull(pagerState.currentPage) ?: return
+  val currentScreenKey = currentScreen.screenKey
+
+  if (currentScreen !is HomeNavigationScreen) {
+    return
+  }
 
   val currentPage = pagerState.currentPage.coerceIn(0, childScreens.lastIndex)
   val targetPage = pagerState.targetPage.coerceIn(0, childScreens.lastIndex)
@@ -51,9 +69,10 @@ fun HomeScreenToolbarContainer(
   val isDraggingFastScroller by homeScreenViewModel.toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
   val screensUsingSearch by homeScreenViewModel.toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
 
-  val combinedToolbarState by remember {
+  val combinedToolbarState by remember(key1 = currentScreenKey) {
     derivedStateOf {
       CombinedToolbarState(
+        currentScreenKey = currentScreenKey,
         postListScrollPosition = postListScrollPosition,
         touchingTopOrBottomOfList = touchingTopOrBottomOfList,
         isDraggingPostList = isDraggingPostList,
@@ -75,17 +94,17 @@ fun HomeScreenToolbarContainer(
       if (targetState.isDraggingFastScroller || targetState.touchingTopOrBottomOfList) {
         snap()
       } else {
-        tween(durationMillis = 200)
+        tween(durationMillis = animationDurationMs)
       }
     },
-    targetValueByState = { targetCombinedToolbarState ->
+    targetValueByState = { state ->
       when {
-        targetCombinedToolbarState.screensUsingSearch.isNotEmpty() -> 1f
-        targetCombinedToolbarState.mainUiLayoutMode == MainUiLayoutMode.Split -> 1f
-        targetCombinedToolbarState.isDraggingFastScroller -> 0f
-        targetCombinedToolbarState.touchingTopOrBottomOfList -> 1f
-        targetCombinedToolbarState.isDraggingPostList -> targetCombinedToolbarState.postListScrollPosition
-        else -> if (targetCombinedToolbarState.postListScrollPosition > 0.5f) 1f else 0f
+        state.currentScreenKey in state.screensUsingSearch -> 1f
+        state.mainUiLayoutMode == MainUiLayoutMode.Split -> 1f
+        state.isDraggingFastScroller -> 0f
+        state.touchingTopOrBottomOfList -> 1f
+        state.isDraggingPostList -> state.postListScrollPosition
+        else -> if (state.postListScrollPosition > 0.5f) 1f else 0f
       }
     }
   )
@@ -199,6 +218,7 @@ private fun BuildChildToolbar(
 }
 
 private data class CombinedToolbarState(
+  val currentScreenKey: ScreenKey,
   val postListScrollPosition: Float,
   val touchingTopOrBottomOfList: Boolean,
   val isDraggingPostList: Boolean,

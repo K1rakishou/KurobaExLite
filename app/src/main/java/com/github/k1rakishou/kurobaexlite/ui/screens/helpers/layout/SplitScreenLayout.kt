@@ -2,7 +2,12 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,6 +26,9 @@ class SplitScreenLayout(
 ) : HomeNavigationScreen(componentActivity, navigationRouter) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
+
+  // TODO(KurobaEx): not implemented
+  override val screenContentLoaded: Boolean = true
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {

@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -23,6 +24,7 @@ class CatalogScreenToolbarActionHandler(
   private val catalogScreenViewModel: CatalogScreenViewModel,
   private val threadScreenViewModel: ThreadScreenViewModel,
   private val homeScreenViewModel: HomeScreenViewModel,
+  private val snackbarManager: SnackbarManager
 ) {
 
   suspend fun processClickedToolbarMenuItem(menuItem: FloatingMenuItem) {
@@ -87,7 +89,7 @@ class CatalogScreenToolbarActionHandler(
 
               val resolvedDescriptor = homeScreenViewModel.resolveDescriptorFromRawIdentifier(value)
               if (resolvedDescriptor == null) {
-                homeScreenViewModel.toast("Failed to parse \'$value'\"")
+                snackbarManager.toast("Failed to parse \'$value'\"")
                 return@PositiveDialogButton
               }
 

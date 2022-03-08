@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
@@ -42,15 +43,18 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.HomeScreenDrawerLayo
 import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.detectDrawerDragGestures
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 val LocalMainUiLayoutMode = staticCompositionLocalOf<MainUiLayoutMode> { error("MainUiLayoutMode not provided") }
+private val animationDurationMs = 200
 
 class HomeScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
+  private val snackbarManager: SnackbarManager by componentActivity.inject()
   private val homeChildScreens by lazy { HomeChildScreens(componentActivity, navigationRouter) }
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -135,7 +139,7 @@ class HomeScreen(
     )
 
     CompositionLocalProvider(LocalMainUiLayoutMode provides mainUiLayoutMode) {
-      ActualContent(
+      HomeScreenContentActual(
         maxDrawerWidth = maxDrawerWidth,
         mainUiLayoutMode = mainUiLayoutMode,
         drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
@@ -150,7 +154,7 @@ class HomeScreen(
 
   @OptIn(ExperimentalPagerApi::class)
   @Composable
-  private fun ActualContent(
+  private fun HomeScreenContentActual(
     maxDrawerWidth: Int,
     mainUiLayoutMode: MainUiLayoutMode,
     drawerPhoneVisibleWindowWidth: Int,
@@ -258,12 +262,23 @@ class HomeScreen(
       }
 
       HomeScreenToolbarContainer(
+        animationDurationMs = animationDurationMs,
         insets = insets,
         chanTheme = chanTheme,
         pagerState = pagerState,
         childScreens = childScreens.screens,
         mainUiLayoutMode = mainUiLayoutMode,
         homeScreenViewModel = homeScreenViewModel
+      )
+
+      HomeScreenFloatingActionButton(
+        animationDurationMs = animationDurationMs,
+        insets = insets,
+        pagerState = pagerState,
+        childScreens = childScreens.screens,
+        mainUiLayoutMode = mainUiLayoutMode,
+        homeScreenViewModel = homeScreenViewModel,
+        snackbarManager = snackbarManager
       )
 
       if (drawerWidth > 0) {

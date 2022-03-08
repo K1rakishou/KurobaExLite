@@ -1,7 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -10,7 +15,11 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
-import com.github.k1rakishou.kurobaexlite.ui.helpers.*
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
 
@@ -20,6 +29,10 @@ class BookmarksScreen(
 ) : HomeNavigationScreen(componentActivity, navigationRouter) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
+  override val hasFab: Boolean = false
+
+  // TODO(KurobaEx): not implemented
+  override val screenContentLoaded: Boolean = true
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {

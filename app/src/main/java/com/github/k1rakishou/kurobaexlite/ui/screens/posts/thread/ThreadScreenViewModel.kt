@@ -4,7 +4,6 @@ import android.os.SystemClock
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
-import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
@@ -19,9 +18,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsMergeResult
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +38,8 @@ class ThreadScreenViewModel(
   themeEngine: ThemeEngine,
   savedStateHandle: SavedStateHandle
 ) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
-  private val chanThreadViewManager by inject<ChanThreadViewManager>(ChanThreadViewManager::class.java)
+  private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
+  private val chanThreadViewManager: ChanThreadViewManager by inject(ChanThreadViewManager::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     executeUpdate = { refresh() },
@@ -152,13 +150,14 @@ class ThreadScreenViewModel(
           parseRepliesTo = true
         ),
         onStartParsingPosts = {
-          pushCatalogOrThreadPostsLoadingSnackbar(
-            postsCount = mergeResult.newOrUpdatedPostsToReparse.size
+          snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
+            postsCount = mergeResult.newOrUpdatedPostsToReparse.size,
+            screenKey = screenKey
           )
         },
         onPostsParsed = { postDataList ->
           chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
-          popCatalogOrThreadPostsLoadingSnackbar()
+          snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
 
           onPostsParsed(
             threadDescriptor = threadDescriptor,
@@ -171,21 +170,9 @@ class ThreadScreenViewModel(
       threadScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
 
       if (mergeResult.isNotEmpty()) {
-        val newPostsCount = mergeResult.newPostsCount
-        val newPostsMessage = appContext.resources.getQuantityString(
-          R.plurals.new_posts_with_number,
-          newPostsCount,
-          newPostsCount
-        )
-
-        pushSnackbar(
-          SnackbarInfo(
-            id = SnackbarId.NewPosts,
-            aliveUntil = System.currentTimeMillis() + 2000L,
-            content = listOf(
-              SnackbarContentItem.Text(newPostsMessage)
-            )
-          )
+        snackbarManager.pushThreadNewPostsSnackbar(
+          newPostsCount = mergeResult.newPostsCount,
+          screenKey = screenKey
         )
       }
 
@@ -298,8 +285,9 @@ class ThreadScreenViewModel(
         postDataList = mergeResult.newOrUpdatedPostsToReparse,
         parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
         onStartParsingPosts = {
-          pushCatalogOrThreadPostsLoadingSnackbar(
-            postsCount = mergeResult.newPostsCount
+          snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
+            postsCount = mergeResult.newPostsCount,
+            screenKey = screenKey
           )
         },
         onPostsParsed = { postDataList ->
@@ -323,7 +311,7 @@ class ThreadScreenViewModel(
           } finally {
             withContext(NonCancellable + Dispatchers.Main) {
               onReloadFinished?.invoke()
-              popCatalogOrThreadPostsLoadingSnackbar()
+              snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
             }
           }
         }
@@ -356,8 +344,9 @@ class ThreadScreenViewModel(
         postDataList = threadData.threadPosts,
         parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
         onStartParsingPosts = {
-          pushCatalogOrThreadPostsLoadingSnackbar(
-            postsCount = threadData.threadPosts.size
+          snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
+            postsCount = threadData.threadPosts.size,
+            screenKey = screenKey
           )
         },
         onPostsParsed = { postDataList ->
@@ -381,7 +370,7 @@ class ThreadScreenViewModel(
           } finally {
             withContext(NonCancellable + Dispatchers.Main) {
               onReloadFinished?.invoke()
-              popCatalogOrThreadPostsLoadingSnackbar()
+              snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
             }
           }
         }

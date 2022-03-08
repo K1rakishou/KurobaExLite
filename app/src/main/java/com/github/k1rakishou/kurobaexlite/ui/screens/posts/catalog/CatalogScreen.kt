@@ -20,7 +20,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
@@ -61,7 +61,8 @@ class CatalogScreen(
       appSettings = appSettings,
       catalogScreenViewModel = catalogScreenViewModel,
       threadScreenViewModel = threadScreenViewModel,
-      homeScreenViewModel = homeScreenViewModel
+      homeScreenViewModel = homeScreenViewModel,
+      snackbarManager = snackbarManager
     )
   }
 
@@ -102,6 +103,7 @@ class CatalogScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = true
+  override val screenContentLoaded: Boolean = catalogScreenViewModel.postScreenState.contentLoaded
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
@@ -170,16 +172,8 @@ class CatalogScreen(
 
   @Composable
   private fun CatalogPostListScreenContent() {
-    val kurobaSnackbarState = rememberKurobaSnackbarState()
-
     Box(modifier = Modifier.fillMaxSize()) {
       CatalogPostListScreen()
-
-      KurobaSnackbar(
-        modifier = Modifier.fillMaxSize(),
-        kurobaSnackbarState = kurobaSnackbarState,
-        snackbarEventFlow = catalogScreenViewModel.snackbarEventFlow
-      )
     }
   }
 
@@ -188,6 +182,8 @@ class CatalogScreen(
     val configuration = LocalConfiguration.current
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+    val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
+
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
 
@@ -239,7 +235,14 @@ class CatalogScreen(
       },
       onFastScrollerDragStateChanged = { dragging ->
         homeScreenViewModel.onFastScrollerDragStateChanged(dragging)
-      },
+      }
+    )
+
+    KurobaSnackbarContainer(
+      modifier = Modifier.fillMaxSize(),
+      screenKey = screenKey,
+      snackbarManager = snackbarManager,
+      kurobaSnackbarState = kurobaSnackbarState
     )
   }
 

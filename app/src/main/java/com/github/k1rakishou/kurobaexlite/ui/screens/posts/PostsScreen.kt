@@ -7,18 +7,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
+import org.koin.android.ext.android.inject
 
 abstract class PostsScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : HomeNavigationScreen(componentActivity, navigationRouter) {
-
   abstract val isCatalogScreen: Boolean
+
+  protected val snackbarManager: SnackbarManager by componentActivity.inject()
 
   protected fun showRepliesForPost(replyViewMode: PopupRepliesScreen.ReplyViewMode) {
     navigationRouter.presentScreen(

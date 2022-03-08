@@ -10,18 +10,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RootRouterHost
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreen
+import org.koin.android.ext.android.inject
 
 class MainScreen(
   componentActivity: ComponentActivity,
   rootNavigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, rootNavigationRouter) {
+  private val snackbarManager: SnackbarManager by componentActivity.inject()
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -37,6 +42,7 @@ class MainScreen(
       val contentPadding = remember(key1 = insets.left, key2 = insets.right) {
         PaddingValues(start = insets.left, end = insets.right)
       }
+      val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
 
       BoxWithConstraints(
         modifier = Modifier
@@ -60,6 +66,13 @@ class MainScreen(
           )
 
           RootRouterHost(screenKey, navigationRouter)
+
+          KurobaSnackbarContainer(
+            modifier = Modifier.fillMaxSize(),
+            screenKey = screenKey,
+            snackbarManager = snackbarManager,
+            kurobaSnackbarState = kurobaSnackbarState
+          )
         }
       }
     }

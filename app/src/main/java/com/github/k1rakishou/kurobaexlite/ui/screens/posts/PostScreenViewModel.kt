@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import android.os.SystemClock
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
@@ -14,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
@@ -27,10 +27,6 @@ import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfoEvent
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -62,13 +58,10 @@ abstract class PostScreenViewModel(
   private val chanThreadManager by inject<ChanThreadManager>(ChanThreadManager::class.java)
   private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
   private val postBindProcessor by inject<PostBindProcessor>(PostBindProcessor::class.java)
+  protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
   private var currentParseJob: Job? = null
   protected var postListBuilt: CompletableDeferred<Unit>? = null
-
-  private val _snackbarEventFlow = MutableSharedFlow<SnackbarInfoEvent>(extraBufferCapacity = Channel.UNLIMITED)
-  val snackbarEventFlow: SharedFlow<SnackbarInfoEvent>
-    get() = _snackbarEventFlow.asSharedFlow()
 
   protected val _postsFullyParsedOnceFlow = MutableStateFlow(false)
   val postsFullyParsedOnceFlow: StateFlow<Boolean>
@@ -399,32 +392,6 @@ abstract class PostScreenViewModel(
     )
   }
 
-  protected suspend fun pushCatalogOrThreadPostsLoadingSnackbar(postsCount: Int) {
-    pushSnackbar(
-      SnackbarInfo(
-        id = SnackbarId.CatalogOrThreadPostsLoading,
-        aliveUntil = null,
-        content = listOf(
-          SnackbarContentItem.LoadingIndicator,
-          SnackbarContentItem.Spacer(8.dp),
-          SnackbarContentItem.Text("Processing ${postsCount} posts…")
-        )
-      )
-    )
-  }
-
-  protected suspend fun popCatalogOrThreadPostsLoadingSnackbar() {
-    popSnackbar(SnackbarId.CatalogOrThreadPostsLoading)
-  }
-
-  protected suspend fun pushSnackbar(snackbarInfo: SnackbarInfo) {
-    _snackbarEventFlow.emit(SnackbarInfoEvent.Push(snackbarInfo))
-  }
-
-  protected suspend fun popSnackbar(id: SnackbarId) {
-    _snackbarEventFlow.emit(SnackbarInfoEvent.Pop(id))
-  }
-
   fun scrollTop() {
     viewModelScope.launch {
       _toolbarScrollEventFlow.emit(false)
@@ -472,6 +439,10 @@ abstract class PostScreenViewModel(
     )
   }
 
+  fun toast(message: String) {
+    snackbarManager.toast(message)
+  }
+
   open fun resetTimer() {
 
   }
@@ -497,6 +468,8 @@ abstract class PostScreenViewModel(
 
     val displayingPostsCount: Int?
       get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
+    val contentLoaded: Boolean
+      get() = postsAsyncDataState.value is AsyncData.Data
 
     abstract fun updatePost(postData: PostData)
     abstract fun updatePosts(postDataCollection: Collection<PostData>)

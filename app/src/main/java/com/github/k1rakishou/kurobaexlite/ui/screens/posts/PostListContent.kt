@@ -100,6 +100,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
@@ -349,6 +350,7 @@ private fun PostListInternal(
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
+  val insets = LocalWindowInsets.current
   val mainUiLayoutMode = postListOptions.mainUiLayoutMode
   val isInPopup = postListOptions.isInPopup
   val pullToRefreshEnabled = postListOptions.pullToRefreshEnabled
