@@ -78,10 +78,9 @@ fun BoxScope.HomeScreenFloatingActionButton(
         touchingTopOrBottomOfList = touchingTopOrBottomOfList,
         isDraggingPostList = isDraggingPostList,
         isDraggingFastScroller = isDraggingFastScroller,
-        mainUiLayoutMode = mainUiLayoutMode,
         activeSnackbarsCount = activeSnackbarsCount,
         screenHasFab = currentScreen.hasFab,
-        // TODO(KurobaEx): screenContentLoaded doesn't work
+        // TODO(KurobaEx): screenContentLoaded doesn't work yet
         screenContentLoaded = true, // currentScreen.screenContentLoaded,
         screensUsingSearch = screensUsingSearch
       )
@@ -104,10 +103,10 @@ fun BoxScope.HomeScreenFloatingActionButton(
     },
     targetValueByState = { state ->
       when {
-        !state.screenHasFab || !state.screenContentLoaded -> 0f
+        !state.screenHasFab -> 0f
+        !state.screenContentLoaded -> 0f
         state.activeSnackbarsCount > 0 -> 0f
         state.screensUsingSearch.isNotEmpty() -> 1f
-        state.mainUiLayoutMode == MainUiLayoutMode.Split -> 1f
         state.isDraggingFastScroller -> 0f
         state.touchingTopOrBottomOfList -> 1f
         state.isDraggingPostList -> state.postListScrollPosition
@@ -137,7 +136,6 @@ private data class CombinedFabState(
   val touchingTopOrBottomOfList: Boolean,
   val isDraggingPostList: Boolean,
   val isDraggingFastScroller: Boolean,
-  val mainUiLayoutMode: MainUiLayoutMode,
   val activeSnackbarsCount: Int,
   val screenHasFab: Boolean,
   val screenContentLoaded: Boolean,

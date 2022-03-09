@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.managers
 
 import android.content.Context
 import android.os.SystemClock
+import androidx.annotation.StringRes
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
@@ -32,18 +33,40 @@ class SnackbarManager(
   }
 
   fun listenForActiveSnackbarsFlow(forScreenKey: ScreenKey): Flow<List<SnackbarInfo>> {
-    return activeSnackbarsFlow.map { map -> map[forScreenKey] ?: emptyList() }
+    return activeSnackbarsFlow.map { map ->
+      val thisScreenSnackbars = map[forScreenKey] ?: emptyList()
+      val mainScreenSnackbars = map[MainScreen.SCREEN_KEY] ?: emptyList()
+
+      return@map thisScreenSnackbars + mainScreenSnackbars
+    }
   }
 
   // A toast is a snack too
   fun toast(
-    message: String,
+    @StringRes messageId: Int,
+    toastId: String = nextToastId(),
     screenKey: ScreenKey = MainScreen.SCREEN_KEY,
     duration: Int = STANDARD_DELAY
   ) {
     pushSnackbar(
       SnackbarInfo(
-        snackbarId = SnackbarId.Toast(nextToastId()),
+        snackbarId = SnackbarId.Toast(toastId),
+        aliveUntil = SystemClock.elapsedRealtime() + duration,
+        screenKey = screenKey,
+        content = listOf(SnackbarContentItem.Text(appContext.getString(messageId)))
+      )
+    )
+  }
+
+  fun toast(
+    message: String,
+    toastId: String = nextToastId(),
+    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
+    duration: Int = STANDARD_DELAY
+  ) {
+    pushSnackbar(
+      SnackbarInfo(
+        snackbarId = SnackbarId.Toast(toastId),
         aliveUntil = SystemClock.elapsedRealtime() + duration,
         screenKey = screenKey,
         content = listOf(SnackbarContentItem.Text(message))

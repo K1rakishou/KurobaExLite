@@ -201,6 +201,8 @@ class KurobaSnackbarState(
     if (indexOfSnackbar < 0) {
       _activeSnackbars.add(snackbarInfo)
       updateSnackbarsCount()
+    } else {
+      _activeSnackbars[indexOfSnackbar] = snackbarInfo
     }
   }
 
@@ -276,6 +278,7 @@ class SnackbarInfo(
     other as SnackbarInfo
 
     if (snackbarId != other.snackbarId) return false
+    if (aliveUntil != other.aliveUntil) return false
     if (screenKey != other.screenKey) return false
 
     return true
@@ -283,6 +286,7 @@ class SnackbarInfo(
 
   override fun hashCode(): Int {
     var result = snackbarId.hashCode()
+    result = 31 * result + (aliveUntil?.hashCode() ?: 0)
     result = 31 * result + screenKey.hashCode()
     return result
   }

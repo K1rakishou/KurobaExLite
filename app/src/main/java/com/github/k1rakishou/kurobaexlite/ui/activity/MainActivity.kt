@@ -2,15 +2,19 @@ package com.github.k1rakishou.kurobaexlite.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.remember
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers.setupEdgeToEdge
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers.setupStatusAndNavBarColors
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideChanTheme
@@ -20,10 +24,14 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity() {
-  private val viewModel by viewModels<MainActivityViewModel>()
-  private val themeEngine by inject<ThemeEngine>(ThemeEngine::class.java)
-  private val uiInfoManager by inject<UiInfoManager>(UiInfoManager::class.java)
+  private val mainActivityViewModel by viewModels<MainActivityViewModel>()
+  private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
+  private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
+  private val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
 
+  private var backPressedOnce = false
+
+  private val handler = Handler(Looper.getMainLooper())
   private val coroutineScope = KurobaCoroutineScope()
   private val backPressExecutor = RendezvousCoroutineExecutor(coroutineScope)
 
@@ -37,7 +45,7 @@ class MainActivity : ComponentActivity() {
       ProvideKurobaViewConfiguration {
         ProvideWindowInsets(window = window) {
           ProvideChanTheme(themeEngine = themeEngine) {
-            val mainScreen = remember { MainScreen(this, viewModel.rootNavigationRouter) }
+            val mainScreen = remember { MainScreen(this, mainActivityViewModel.rootNavigationRouter) }
             mainScreen.Content()
           }
         }
@@ -52,19 +60,32 @@ class MainActivity : ComponentActivity() {
   override fun onDestroy() {
     super.onDestroy()
 
-    viewModel.rootNavigationRouter.onDestroy()
+    mainActivityViewModel.rootNavigationRouter.onDestroy()
     coroutineScope.cancelChildren()
   }
 
   override fun onNewIntent(intent: Intent?) {
     if (intent != null) {
-      viewModel.rootNavigationRouter.onNewIntent(intent)
+      mainActivityViewModel.rootNavigationRouter.onNewIntent(intent)
     }
   }
 
   override fun onBackPressed() {
     backPressExecutor.post {
-      if (viewModel.rootNavigationRouter.onBackPressed()) {
+      if (mainActivityViewModel.rootNavigationRouter.onBackPressed()) {
+        return@post
+      }
+
+      if (!backPressedOnce) {
+        backPressedOnce = true
+
+        snackbarManager.toast(
+          messageId = R.string.main_activity_press_back_again_to_exit,
+          toastId = pressBackMessageToastId,
+          duration = 700
+        )
+
+        handler.postDelayed({ backPressedOnce = false }, 700L)
         return@post
       }
 
@@ -79,4 +100,9 @@ class MainActivity : ComponentActivity() {
 
     return super.dispatchTouchEvent(ev)
   }
+
+  companion object {
+    private const val pressBackMessageToastId = "press_back_to_exit_message_toast"
+  }
+
 }

@@ -50,6 +50,8 @@
     <string name="back">Back</string>
     <string name="close">Close</string>
 
+    <string name="main_activity_press_back_again_to_exit">Press back again to exit the app</string>
+
     <string name="toolbar_loading_title">Loading…</string>
     <string name="toolbar_loading_error">Error loading</string>
     <string name="toolbar_loading_empty">Select a catalog</string>
