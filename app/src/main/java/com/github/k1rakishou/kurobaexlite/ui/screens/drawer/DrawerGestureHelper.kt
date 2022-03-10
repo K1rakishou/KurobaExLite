@@ -4,13 +4,17 @@ import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
+import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import com.github.k1rakishou.kurobaexlite.helpers.kurobaAwaitLongPressOrCancellation
+import kotlin.math.absoluteValue
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
-import kotlin.math.absoluteValue
 
 suspend fun PointerInputScope.detectDrawerDragGestures(
   drawerLongtapGestureZonePx: Float,
@@ -107,8 +111,12 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
         } else {
           onStopConsumingScrollEvents()
 
+          if (downEvent.position.x > drawerLongtapGestureZonePx) {
+            return@forEachGesture
+          }
+
           val longPress = kurobaAwaitLongPressOrCancellation(downEvent)
-          if (longPress == null || longPress.position.x > (drawerLongtapGestureZonePx)) {
+          if (longPress == null || longPress.position.x > drawerLongtapGestureZonePx) {
             return@forEachGesture
           } else {
             val dragProgress = (longPress.position.x / drawerWidth).coerceIn(0f, 1f)

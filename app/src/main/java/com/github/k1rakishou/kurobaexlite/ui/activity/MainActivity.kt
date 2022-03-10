@@ -82,10 +82,10 @@ class MainActivity : ComponentActivity() {
         snackbarManager.toast(
           messageId = R.string.main_activity_press_back_again_to_exit,
           toastId = pressBackMessageToastId,
-          duration = 700
+          duration = pressBackFlagResetTimeMs
         )
 
-        handler.postDelayed({ backPressedOnce = false }, 700L)
+        handler.postDelayed({ backPressedOnce = false }, pressBackFlagResetTimeMs.toLong())
         return@post
       }
 
@@ -102,6 +102,8 @@ class MainActivity : ComponentActivity() {
   }
 
   companion object {
+    private const val pressBackFlagResetTimeMs = 1000
+
     private const val pressBackMessageToastId = "press_back_to_exit_message_toast"
   }
 
