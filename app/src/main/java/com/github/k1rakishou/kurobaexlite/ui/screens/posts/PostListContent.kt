@@ -1245,11 +1245,13 @@ private fun PostCellComment(
 
 @Composable
 private fun PostCellCommentSelectionWrapper(isCatalogMode: Boolean, content: @Composable () -> Unit) {
+  val contentMovable = remember { movableContentOf(content) }
+
   if (isCatalogMode) {
-    content()
+    contentMovable()
   } else {
     SelectionContainer {
-      content()
+      contentMovable()
     }
   }
 }

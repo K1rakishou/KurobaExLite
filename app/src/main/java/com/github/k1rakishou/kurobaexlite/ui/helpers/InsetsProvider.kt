@@ -3,7 +3,14 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers
 import android.view.View
 import android.view.Window
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Density
@@ -37,11 +44,6 @@ fun ProvideWindowInsets(
         }
       }
 
-      // TODO(KurobaEx): this is currently a weird bug where this method is not called sometimes on
-      //  Android 29 (and 27, probably every Android < 31) however it is always called on Android 31.
-      //  For example when a dialog screen is opened with a TextField, when clicking the field
-      //  the keyboard shows up but this method is not called so we never update the insets.
-      //  However longtapping the TextField causes this method to get called.
       val listener = OnApplyWindowInsetsListener { view, insets ->
         val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
 

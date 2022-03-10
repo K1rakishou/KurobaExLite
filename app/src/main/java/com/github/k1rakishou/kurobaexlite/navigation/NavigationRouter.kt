@@ -276,7 +276,6 @@ class NavigationRouter(
 
   fun onDestroy() {
     childRouters.values.forEach { childRouter -> childRouter.onDestroy() }
-    // TODO(KurobaEx):
   }
 
   data class ScreenUpdateTransaction(

@@ -18,6 +18,7 @@
             android:name="com.github.k1rakishou.kurobaexlite.ui.activity.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/DefaultTheme"
             android:launchMode="singleTask">
 
