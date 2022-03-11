@@ -70,9 +70,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
-import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
-import coil.compose.AsyncImageScope
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -1164,6 +1164,7 @@ private fun PostCellTitle(
   postCellSubjectTextSizeSp: TextUnit,
 ) {
   val chanTheme = LocalChanTheme.current
+  val context = LocalContext.current
 
   Row(
     modifier = Modifier
@@ -1179,16 +1180,17 @@ private fun PostCellTitle(
           .wrapContentSize()
           .background(chanTheme.backColorSecondaryCompose)
       ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
           modifier = Modifier.size(60.dp),
-          model = ImageRequest.Builder(LocalContext.current)
+          model = ImageRequest.Builder(context)
             .data(image.thumbnailUrl)
             .crossfade(true)
             .build(),
           contentDescription = null,
           contentScale = ContentScale.Fit,
           alpha = 0.15f,
-          content = { state ->
+          content = {
+            val state = painter.state
             if (state is AsyncImagePainter.State.Error) {
               logcatError {
                 "PostCellTitle() url=${image.thumbnailUrl}, " +
@@ -1197,7 +1199,7 @@ private fun PostCellTitle(
               }
             }
 
-            AsyncImageScope.DefaultContent(this, state)
+            SubcomposeAsyncImageContent()
           }
         )
       }
