@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
@@ -38,9 +39,11 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
+import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -103,7 +106,7 @@ class CatalogScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = true
-  override val screenContentLoaded: Boolean = catalogScreenViewModel.postScreenState.contentLoaded
+  override val screenContentLoadedFlow: StateFlow<Boolean> = catalogScreenViewModel.postScreenState.contentLoaded
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
@@ -142,7 +145,7 @@ class CatalogScreen(
         mainScreenRouter.pushScreen(boardSelectionScreen)
       },
       onSearchQueryUpdated = { searchQuery ->
-        homeScreenViewModel.onChildScreenSearchStateChanged(SCREEN_KEY, searchQuery)
+        homeScreenViewModel.onChildScreenSearchStateChanged(screenKey, searchQuery)
         catalogScreenViewModel.updateSearchQuery(searchQuery)
       },
       onToolbarOverflowMenuClicked = {
@@ -178,9 +181,11 @@ class CatalogScreen(
   }
 
   @Composable
-  private fun CatalogPostListScreen() {
+  private fun BoxScope.CatalogPostListScreen() {
     val configuration = LocalConfiguration.current
     val windowInsets = LocalWindowInsets.current
+    val mainUiLayoutMode = LocalMainUiLayoutMode.current
+
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
 
@@ -225,18 +230,28 @@ class CatalogScreen(
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
       },
       onPostListScrolled = { delta ->
-        homeScreenViewModel.onChildContentScrolling(delta)
+        homeScreenViewModel.onChildContentScrolling(screenKey, delta)
       },
       onPostListTouchingTopOrBottomStateChanged = { touching ->
-        homeScreenViewModel.onPostListTouchingTopOrBottomStateChanged(touching)
+        homeScreenViewModel.onPostListTouchingTopOrBottomStateChanged(screenKey, touching)
       },
       onPostListDragStateChanged = { dragging ->
-        homeScreenViewModel.onPostListDragStateChanged(dragging)
+        homeScreenViewModel.onPostListDragStateChanged(screenKey, dragging)
       },
       onFastScrollerDragStateChanged = { dragging ->
-        homeScreenViewModel.onFastScrollerDragStateChanged(dragging)
+        homeScreenViewModel.onFastScrollerDragStateChanged(screenKey, dragging)
       }
     )
+
+    if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+      PostsScreenFloatingActionButton(
+        screenKey = screenKey,
+        screenContentLoadedFlow = screenContentLoadedFlow,
+        mainUiLayoutMode = mainUiLayoutMode,
+        homeScreenViewModel = homeScreenViewModel,
+        snackbarManager = snackbarManager
+      )
+    }
 
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),

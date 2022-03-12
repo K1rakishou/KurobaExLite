@@ -98,6 +98,7 @@ abstract class PostScreenViewModel(
 
   fun onLoadingThread(threadDescriptor: ThreadDescriptor?, loadOptions: LoadOptions) {
     postScreenState.updateChanDescriptor(threadDescriptor)
+    postScreenState.onStartLoading()
 
     if (loadOptions.showLoadingIndicator) {
       postListBuilt = CompletableDeferred()
@@ -111,6 +112,7 @@ abstract class PostScreenViewModel(
 
   fun onLoadingCatalog(catalogDescriptor: CatalogDescriptor?, loadOptions: LoadOptions) {
     postScreenState.updateChanDescriptor(catalogDescriptor)
+    postScreenState.onStartLoading()
 
     if (loadOptions.showLoadingIndicator) {
       postListBuilt = CompletableDeferred()
@@ -120,6 +122,14 @@ abstract class PostScreenViewModel(
     }
 
     postListTouchingBottom.value = false
+  }
+
+  fun onThreadLoaded(threadDescriptor: ThreadDescriptor) {
+    postScreenState.onEndLoading()
+  }
+
+  fun onCatalogLoaded(catalogDescriptor: CatalogDescriptor) {
+    postScreenState.onEndLoading()
   }
 
   fun rememberedPosition(chanDescriptor: ChanDescriptor, orientation: Int): LazyColumnRememberedPosition {
@@ -460,7 +470,7 @@ abstract class PostScreenViewModel(
     abstract val lastViewedPostDescriptor: MutableStateFlow<PostDescriptor?>
     abstract val searchQueryFlow: MutableStateFlow<String?>
 
-    internal val _chanDescriptorFlow = MutableStateFlow<ChanDescriptor?>(null)
+    private val _chanDescriptorFlow = MutableStateFlow<ChanDescriptor?>(null)
     val chanDescriptorFlow: StateFlow<ChanDescriptor?>
       get() = _chanDescriptorFlow.asStateFlow()
     val chanDescriptor: ChanDescriptor?
@@ -468,8 +478,10 @@ abstract class PostScreenViewModel(
 
     val displayingPostsCount: Int?
       get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
-    val contentLoaded: Boolean
-      get() = postsAsyncDataState.value is AsyncData.Data
+
+    private val _contentLoaded = MutableStateFlow(false)
+    val contentLoaded: StateFlow<Boolean>
+      get() = _contentLoaded.asStateFlow()
 
     abstract fun updatePost(postData: PostData)
     abstract fun updatePosts(postDataCollection: Collection<PostData>)
@@ -477,6 +489,14 @@ abstract class PostScreenViewModel(
 
     fun updateChanDescriptor(chanDescriptor: ChanDescriptor?) {
       _chanDescriptorFlow.value = chanDescriptor
+    }
+
+    fun onStartLoading() {
+      _contentLoaded.value = false
+    }
+
+    fun onEndLoading() {
+      _contentLoaded.value = true
     }
 
     private fun <T> doWithDataState(func: (AbstractPostsState) -> T): T? {

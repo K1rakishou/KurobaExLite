@@ -100,7 +100,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
@@ -350,11 +349,11 @@ private fun PostListInternal(
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit
 ) {
-  val insets = LocalWindowInsets.current
-  val mainUiLayoutMode = postListOptions.mainUiLayoutMode
   val isInPopup = postListOptions.isInPopup
   val pullToRefreshEnabled = postListOptions.pullToRefreshEnabled
   val isCatalogMode = postListOptions.isCatalogMode
+  val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
+
   val lastViewedPostDescriptor by postsScreenViewModel.postScreenState.lastViewedPostDescriptor.collectAsState()
   val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
 
@@ -402,21 +401,6 @@ private fun PostListInternal(
     }
 
     return@remember previousPosts
-  }
-
-  val cellsPadding = remember(key1 = mainUiLayoutMode) {
-    when (mainUiLayoutMode) {
-      MainUiLayoutMode.Portrait -> {
-        PaddingValues(horizontal = 8.dp)
-      }
-      MainUiLayoutMode.Split -> {
-        if (isCatalogMode) {
-          PaddingValues(start = 8.dp, end = 4.dp)
-        } else {
-          PaddingValues(start = 4.dp, end = 8.dp)
-        }
-      }
-    }
   }
 
   val nestedScrollConnection = remember {

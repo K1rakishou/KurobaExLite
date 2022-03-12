@@ -305,6 +305,8 @@ class ThreadScreenViewModel(
               isInitialThreadLoad = true
             )
 
+            onThreadLoaded(threadDescriptor)
+
             postListBuilt?.await()
             restoreScrollPosition(threadDescriptor)
             _postsFullyParsedOnceFlow.emit(true)
@@ -363,6 +365,8 @@ class ThreadScreenViewModel(
               mergeResult = mergeResult,
               isInitialThreadLoad = true
             )
+
+            onThreadLoaded(threadDescriptor)
 
             postListBuilt?.await()
             restoreScrollPosition(threadDescriptor)

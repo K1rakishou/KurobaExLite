@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.home
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
+import kotlinx.coroutines.flow.StateFlow
 
 abstract class HomeNavigationScreen(
   componentActivity: ComponentActivity,
@@ -10,5 +11,5 @@ abstract class HomeNavigationScreen(
 ) : ComposeScreenWithToolbar(componentActivity, navigationRouter) {
   open val hasFab: Boolean = true
 
-  abstract val screenContentLoaded: Boolean
+  abstract val screenContentLoadedFlow: StateFlow<Boolean>
 }

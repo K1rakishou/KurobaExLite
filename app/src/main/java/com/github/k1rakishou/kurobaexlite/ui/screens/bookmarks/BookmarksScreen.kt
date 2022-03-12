@@ -22,6 +22,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class BookmarksScreen(
   componentActivity: ComponentActivity,
@@ -32,7 +34,7 @@ class BookmarksScreen(
   override val hasFab: Boolean = false
 
   // TODO(KurobaEx): not implemented
-  override val screenContentLoaded: Boolean = true
+  override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {

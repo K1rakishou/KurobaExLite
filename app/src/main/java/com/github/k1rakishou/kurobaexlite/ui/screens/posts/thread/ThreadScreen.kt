@@ -39,8 +39,10 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
+import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -58,7 +60,7 @@ class ThreadScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
-  override val screenContentLoaded: Boolean = threadScreenViewModel.postScreenState.contentLoaded
+  override val screenContentLoadedFlow: StateFlow<Boolean> = threadScreenViewModel.postScreenState.contentLoaded
 
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
@@ -114,7 +116,7 @@ class ThreadScreen(
       onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = { searchQuery ->
-        homeScreenViewModel.onChildScreenSearchStateChanged(SCREEN_KEY, searchQuery)
+        homeScreenViewModel.onChildScreenSearchStateChanged(screenKey, searchQuery)
         threadScreenViewModel.updateSearchQuery(searchQuery)
       },
       onToolbarOverflowMenuClicked = {
@@ -149,10 +151,12 @@ class ThreadScreen(
   }
 
   @Composable
-  private fun ThreadPostListScreen() {
+  private fun BoxScope.ThreadPostListScreen() {
     val configuration = LocalConfiguration.current
     val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
+    val mainUiLayoutMode = LocalMainUiLayoutMode.current
+
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
 
@@ -189,18 +193,28 @@ class ThreadScreen(
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
       },
       onPostListScrolled = { delta ->
-        homeScreenViewModel.onChildContentScrolling(delta)
+        homeScreenViewModel.onChildContentScrolling(screenKey, delta)
       },
       onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
-        homeScreenViewModel.onPostListTouchingTopOrBottomStateChanged(touchingBottom)
+        homeScreenViewModel.onPostListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
       },
       onPostListDragStateChanged = { dragging ->
-        homeScreenViewModel.onPostListDragStateChanged(dragging)
+        homeScreenViewModel.onPostListDragStateChanged(screenKey, dragging)
       },
       onFastScrollerDragStateChanged = { dragging ->
-        homeScreenViewModel.onFastScrollerDragStateChanged(dragging)
+        homeScreenViewModel.onFastScrollerDragStateChanged(screenKey, dragging)
       }
     )
+
+    if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+      PostsScreenFloatingActionButton(
+        screenKey = screenKey,
+        screenContentLoadedFlow = screenContentLoadedFlow,
+        mainUiLayoutMode = mainUiLayoutMode,
+        homeScreenViewModel = homeScreenViewModel,
+        snackbarManager = snackbarManager
+      )
+    }
 
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),

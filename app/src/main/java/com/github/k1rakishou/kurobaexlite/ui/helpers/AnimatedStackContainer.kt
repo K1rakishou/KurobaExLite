@@ -22,21 +22,37 @@ fun <T> AnimateableStackContainer(
   state: AnimateableStackContainerState<T>,
   content: @Composable (T) -> Unit
 ) {
+  val composedItems = remember { mutableMapOf<T, @Composable (T) -> Unit>() }
+
   // First iterate and draw all fixed in place elements which are not currently being animated
   for (addedElementWrapper in state.addedElementWrappers) {
+    val element = addedElementWrapper.element
+
     key(addedElementWrapper.key) {
-      content(addedElementWrapper.element)
+      val movableContent = composedItems.getOrPut(
+        key = element,
+        defaultValue = { movableContentOf<T> { content(element) } }
+      )
+
+      movableContent(element)
     }
   }
 
   // Then iterate and draw elements which are currently being animated
   for (animatingElement in state.animatingElements) {
+    val element = animatingElement.elementWrapper.element
+
     key(animatingElement.elementWrapper.key) {
+      val movableContent = composedItems.getOrPut(
+        key = element,
+        defaultValue = { movableContentOf<T> { content(element) } }
+      )
+
       StackContainerTransition(
         stackContainerAnimation = animatingElement,
         onAnimationFinished = { state.onAnimationFinished() }
       ) {
-        content(animatingElement.elementWrapper.element)
+        movableContent(element)
       }
     }
   }

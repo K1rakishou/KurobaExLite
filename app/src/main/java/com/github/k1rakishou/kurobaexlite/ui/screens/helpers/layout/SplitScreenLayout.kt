@@ -18,6 +18,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 class SplitScreenLayout(
   componentActivity: ComponentActivity,
@@ -28,7 +30,7 @@ class SplitScreenLayout(
   override val screenKey: ScreenKey = SCREEN_KEY
 
   // TODO(KurobaEx): not implemented
-  override val screenContentLoaded: Boolean = true
+  override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {

@@ -47,7 +47,6 @@ import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 val LocalMainUiLayoutMode = staticCompositionLocalOf<MainUiLayoutMode> { error("MainUiLayoutMode not provided") }
-private val animationDurationMs = 200
 
 class HomeScreen(
   componentActivity: ComponentActivity,
@@ -262,7 +261,6 @@ class HomeScreen(
       }
 
       HomeScreenToolbarContainer(
-        animationDurationMs = animationDurationMs,
         insets = insets,
         chanTheme = chanTheme,
         pagerState = pagerState,
@@ -272,7 +270,6 @@ class HomeScreen(
       )
 
       HomeScreenFloatingActionButton(
-        animationDurationMs = animationDurationMs,
         insets = insets,
         pagerState = pagerState,
         childScreens = childScreens.screens,

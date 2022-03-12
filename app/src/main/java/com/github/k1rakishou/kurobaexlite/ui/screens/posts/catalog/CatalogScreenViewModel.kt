@@ -178,6 +178,8 @@ class CatalogScreenViewModel(
         try {
           chanThreadCache.insertCatalogThreads(catalogDescriptor, postDataList)
 
+          onCatalogLoaded(catalogDescriptor)
+
           postListBuilt?.await()
           restoreScrollPosition(catalogDescriptor)
           _postsFullyParsedOnceFlow.emit(true)

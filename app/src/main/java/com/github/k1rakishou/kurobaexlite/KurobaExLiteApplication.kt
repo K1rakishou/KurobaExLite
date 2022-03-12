@@ -48,7 +48,7 @@ class KurobaExLiteApplication : Application() {
 
     Thread.setDefaultUncaughtExceptionHandler { thread, e ->
       // if there's any uncaught crash stuff, just dump them to the log and exit immediately
-      logcatError(tag = null) { "Unhandled exception in thread: ${thread.name}, error: ${e.asLog()}" }
+      logcatError { "Unhandled exception in thread: ${thread.name}, error: ${e.asLog()}" }
       exitProcess(-1)
     }
 

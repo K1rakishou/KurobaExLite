@@ -22,7 +22,7 @@ class HomeScreenViewModel(
 ) : BaseAndroidViewModel(application) {
   private val toolbarHeight by lazy { resources.getDimension(R.dimen.toolbar_height) }
   private val currentPageValue = AtomicReference<CurrentPage?>()
-  val toolbarVisibilityInfo = ToolbarVisibilityInfo()
+  private val toolbarVisibilityInfoMap = mutableMapOf<ScreenKey, ToolbarVisibilityInfo>()
 
   private val _drawerVisibilityFlow = MutableStateFlow<DrawerVisibility>(DrawerVisibility.Closed)
   val drawerVisibilityFlow: StateFlow<DrawerVisibility>
@@ -34,6 +34,12 @@ class HomeScreenViewModel(
     get() = _currentPageFlow.asSharedFlow()
   val currentPage: CurrentPage?
     get() = currentPageValue.get()
+
+  fun getOrCreateToolbarVisibilityInfo(screenKey: ScreenKey): ToolbarVisibilityInfo {
+    return toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() })
+  }
 
   fun updateCurrentPage(
     screenKey: ScreenKey,
@@ -51,6 +57,11 @@ class HomeScreenViewModel(
       _currentPageFlow.tryEmit(newCurrentPage)
     }
 
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
     toolbarVisibilityInfo.update(postListScrollState = 1f)
   }
 
@@ -58,7 +69,15 @@ class HomeScreenViewModel(
     return siteManager.resolveDescriptorFromRawIdentifier(rawIdentifier)
   }
 
-  fun onChildContentScrolling(delta: Float) {
+  fun onChildContentScrolling(
+    screenKey: ScreenKey,
+    delta: Float
+  ) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
     var currentTransparency = toolbarVisibilityInfo.postListScrollState.value
     currentTransparency += (delta / toolbarHeight)
 
@@ -73,19 +92,39 @@ class HomeScreenViewModel(
     toolbarVisibilityInfo.update(postListScrollState = currentTransparency)
   }
 
-  fun onPostListDragStateChanged(dragging: Boolean) {
+  fun onPostListDragStateChanged(screenKey: ScreenKey, dragging: Boolean) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
     toolbarVisibilityInfo.update(postListDragState = dragging)
   }
 
-  fun onFastScrollerDragStateChanged(dragging: Boolean) {
+  fun onFastScrollerDragStateChanged(screenKey: ScreenKey, dragging: Boolean) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
     toolbarVisibilityInfo.update(fastScrollerDragState = dragging)
   }
 
-  fun onPostListTouchingTopOrBottomStateChanged(touching: Boolean) {
+  fun onPostListTouchingTopOrBottomStateChanged(screenKey: ScreenKey,touching: Boolean) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
     toolbarVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
   }
 
   fun onChildScreenSearchStateChanged(screenKey: ScreenKey, searchQuery: String?) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
     val childScreenSearchInfo = ChildScreenSearchInfo(
       screenKey = screenKey,
       usingSearch = searchQuery != null
@@ -202,7 +241,7 @@ class HomeScreenViewModel(
       fastScrollerDragState?.let { _fastScrollerDragState.value = it }
 
       childScreenSearchInfo?.let { screenSearchInfo ->
-        val prevValue = _childScreensUsingSearch.value
+        val prevValue = _childScreensUsingSearch.value.toMutableSet()
 
         if (screenSearchInfo.usingSearch) {
           prevValue += screenSearchInfo.screenKey

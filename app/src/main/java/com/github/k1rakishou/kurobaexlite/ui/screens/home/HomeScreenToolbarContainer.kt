@@ -33,11 +33,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.FAB_TRANSITION_ANIMATION_DURATION_MS
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun HomeScreenToolbarContainer(
-  animationDurationMs: Int,
   insets: Insets,
   chanTheme: ChanTheme,
   pagerState: PagerState,
@@ -54,6 +54,7 @@ fun HomeScreenToolbarContainer(
     return
   }
 
+  val toolbarVisibilityInfo = homeScreenViewModel.getOrCreateToolbarVisibilityInfo(currentScreenKey)
   val currentPage = pagerState.currentPage.coerceIn(0, childScreens.lastIndex)
   val targetPage = pagerState.targetPage.coerceIn(0, childScreens.lastIndex)
   val animationProgress = pagerState.currentPageOffset
@@ -63,11 +64,11 @@ fun HomeScreenToolbarContainer(
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
   val transitionIsProgress = currentPage != targetPage
 
-  val postListScrollPosition by homeScreenViewModel.toolbarVisibilityInfo.postListScrollState.collectAsState()
-  val touchingTopOrBottomOfList by homeScreenViewModel.toolbarVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
-  val isDraggingPostList by homeScreenViewModel.toolbarVisibilityInfo.postListDragState.collectAsState()
-  val isDraggingFastScroller by homeScreenViewModel.toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
-  val screensUsingSearch by homeScreenViewModel.toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
+  val postListScrollPosition by toolbarVisibilityInfo.postListScrollState.collectAsState()
+  val touchingTopOrBottomOfList by toolbarVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
+  val isDraggingPostList by toolbarVisibilityInfo.postListDragState.collectAsState()
+  val isDraggingFastScroller by toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
+  val screensUsingSearch by toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
 
   val combinedToolbarState by remember(key1 = currentScreenKey) {
     derivedStateOf {
@@ -94,7 +95,7 @@ fun HomeScreenToolbarContainer(
       if (targetState.isDraggingFastScroller || targetState.touchingTopOrBottomOfList) {
         snap()
       } else {
-        tween(durationMillis = animationDurationMs)
+        tween(durationMillis = FAB_TRANSITION_ANIMATION_DURATION_MS)
       }
     },
     targetValueByState = { state ->

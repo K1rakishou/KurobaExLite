@@ -1,7 +1,6 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.home
+package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.BoxScope
@@ -22,62 +21,46 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
-import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.FAB_TRANSITION_ANIMATION_DURATION_MS
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
+import kotlinx.coroutines.flow.StateFlow
+
+const val FAB_TRANSITION_ANIMATION_DURATION_MS = 200
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun BoxScope.HomeScreenFloatingActionButton(
-  insets: Insets,
-  pagerState: PagerState,
-  childScreens: List<ComposeScreenWithToolbar>,
+fun BoxScope.PostsScreenFloatingActionButton(
+  screenKey: ScreenKey,
+  screenContentLoadedFlow: StateFlow<Boolean>,
   mainUiLayoutMode: MainUiLayoutMode,
   homeScreenViewModel: HomeScreenViewModel,
   snackbarManager: SnackbarManager
 ) {
-  require(childScreens.isNotEmpty()) { "childScreens is empty!" }
-
-  if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+  if (mainUiLayoutMode != MainUiLayoutMode.Split) {
     return
   }
 
-  val currentScreen = childScreens.getOrNull(pagerState.currentPage) ?: return
-  val currentScreenKey = currentScreen.screenKey
+  val toolbarVisibilityInfo = homeScreenViewModel.getOrCreateToolbarVisibilityInfo(screenKey)
+  val insets = LocalWindowInsets.current
 
-  if (currentScreen !is HomeNavigationScreen) {
-    return
-  }
-
-  val toolbarVisibilityInfo = homeScreenViewModel.getOrCreateToolbarVisibilityInfo(currentScreenKey)
   var activeSnackbarsCount by remember { mutableStateOf(0) }
-  val postListScrollPosition by toolbarVisibilityInfo.postListScrollState.collectAsState()
-  val touchingTopOrBottomOfList by toolbarVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
-  val isDraggingPostList by toolbarVisibilityInfo.postListDragState.collectAsState()
-  val isDraggingFastScroller by toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
   val screensUsingSearch by toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
-  val screenContentLoaded by currentScreen.screenContentLoadedFlow.collectAsState()
+  val screenContentLoaded by screenContentLoadedFlow.collectAsState()
 
   LaunchedEffect(
-    key1 = currentScreenKey,
+    key1 = screenKey,
     block = {
       snackbarManager
-        .listenForActiveSnackbarsFlow(currentScreenKey)
+        .listenForActiveSnackbarsFlow(screenKey)
         .collect { activeSnackbars -> activeSnackbarsCount = activeSnackbars.size }
     })
 
-  val combinedFabState by remember(key1 = currentScreen) {
+  val combinedFabState by remember(key1 = screenKey) {
     derivedStateOf {
       CombinedFabState(
-        postListScrollPosition = postListScrollPosition,
-        touchingTopOrBottomOfList = touchingTopOrBottomOfList,
-        isDraggingPostList = isDraggingPostList,
-        isDraggingFastScroller = isDraggingFastScroller,
         activeSnackbarsCount = activeSnackbarsCount,
-        screenHasFab = currentScreen.hasFab,
         screenContentLoaded = screenContentLoaded,
         screensUsingSearch = screensUsingSearch
       )
@@ -91,23 +74,13 @@ fun BoxScope.HomeScreenFloatingActionButton(
 
   val toolbarAlpha by transition.animateFloat(
     label = "fab alpha animation",
-    transitionSpec = {
-      if (targetState.isDraggingFastScroller || targetState.touchingTopOrBottomOfList) {
-        snap()
-      } else {
-        tween(durationMillis = FAB_TRANSITION_ANIMATION_DURATION_MS)
-      }
-    },
+    transitionSpec = { tween(durationMillis = FAB_TRANSITION_ANIMATION_DURATION_MS) },
     targetValueByState = { state ->
       when {
-        !state.screenHasFab -> 0f
         !state.screenContentLoaded -> 0f
         state.activeSnackbarsCount > 0 -> 0f
         state.screensUsingSearch.isNotEmpty() -> 0f
-        state.isDraggingFastScroller -> 0f
-        state.touchingTopOrBottomOfList -> 1f
-        state.isDraggingPostList -> state.postListScrollPosition
-        else -> if (state.postListScrollPosition > 0.5f) 1f else 0f
+        else -> 1f
       }
     }
   )
@@ -123,18 +96,13 @@ fun BoxScope.HomeScreenFloatingActionButton(
         return@KurobaFloatingActionButton
       }
 
-      homeScreenViewModel.onFabClicked(currentScreenKey)
+      homeScreenViewModel.onFabClicked(screenKey)
     }
   )
 }
 
 private data class CombinedFabState(
-  val postListScrollPosition: Float,
-  val touchingTopOrBottomOfList: Boolean,
-  val isDraggingPostList: Boolean,
-  val isDraggingFastScroller: Boolean,
   val activeSnackbarsCount: Int,
-  val screenHasFab: Boolean,
   val screenContentLoaded: Boolean,
   val screensUsingSearch: Set<ScreenKey>
 )
