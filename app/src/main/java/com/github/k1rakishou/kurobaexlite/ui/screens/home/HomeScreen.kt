@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
-import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
@@ -43,7 +42,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.HomeScreenDrawerLayo
 import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.detectDrawerDragGestures
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 val LocalMainUiLayoutMode = staticCompositionLocalOf<MainUiLayoutMode> { error("MainUiLayoutMode not provided") }
@@ -53,7 +51,6 @@ class HomeScreen(
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
-  private val snackbarManager: SnackbarManager by componentActivity.inject()
   private val homeChildScreens by lazy { HomeChildScreens(componentActivity, navigationRouter) }
 
   override val screenKey: ScreenKey = SCREEN_KEY

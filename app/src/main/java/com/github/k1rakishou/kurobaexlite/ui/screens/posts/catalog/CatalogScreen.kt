@@ -132,7 +132,7 @@ class CatalogScreen(
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
-      canProcessBackEvent = { homeScreenViewModel.currentPage?.screenKey == screenKey },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, homeScreenViewModel.currentPage) },
       onLeftIconClicked = { homeScreenViewModel.openDrawer() },
       onMiddleMenuClicked = {
         val mainScreenRouter = navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)
@@ -256,6 +256,7 @@ class CatalogScreen(
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),
       screenKey = screenKey,
+      uiInfoManager = uiInfoManager,
       snackbarManager = snackbarManager,
       kurobaSnackbarState = kurobaSnackbarState
     )

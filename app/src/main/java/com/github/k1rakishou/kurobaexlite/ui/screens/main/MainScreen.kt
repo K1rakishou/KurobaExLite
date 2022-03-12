@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RootRouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
@@ -20,14 +19,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreen
-import org.koin.android.ext.android.inject
 
 class MainScreen(
   componentActivity: ComponentActivity,
   rootNavigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, rootNavigationRouter) {
-  private val snackbarManager: SnackbarManager by componentActivity.inject()
-
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable
@@ -70,6 +66,7 @@ class MainScreen(
           KurobaSnackbarContainer(
             modifier = Modifier.fillMaxSize(),
             screenKey = screenKey,
+            uiInfoManager = uiInfoManager,
             snackbarManager = snackbarManager,
             kurobaSnackbarState = kurobaSnackbarState
           )

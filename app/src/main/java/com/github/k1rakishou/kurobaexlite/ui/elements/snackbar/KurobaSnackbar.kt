@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -21,9 +22,11 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.ensureSingleElement
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -39,11 +42,15 @@ import kotlinx.coroutines.isActive
 fun KurobaSnackbarContainer(
   modifier: Modifier = Modifier,
   screenKey: ScreenKey,
+  uiInfoManager: UiInfoManager,
   snackbarManager: SnackbarManager,
   kurobaSnackbarState: KurobaSnackbarState
 ) {
   val insets = LocalWindowInsets.current
   val chanTheme = LocalChanTheme.current
+
+  val isTablet = uiInfoManager.isTablet
+  val maxSnackbarWidth = if (isTablet) 600.dp else 400.dp
 
   LaunchedEffect(
     key1 = kurobaSnackbarState,
@@ -80,7 +87,8 @@ fun KurobaSnackbarContainer(
         end = insets.right,
         top = insets.top,
         bottom = insets.bottom
-      ),
+      )
+      .requiredWidthIn(max = maxSnackbarWidth),
     contentAlignment = Alignment.BottomCenter
   ) {
     val activeSnackbars = kurobaSnackbarState.activeSnackbars
@@ -93,7 +101,7 @@ fun KurobaSnackbarContainer(
         for ((index, snackbarInfo) in activeSnackbars.withIndex()) {
           val measurable = subcompose(
             slotId = snackbarInfo.snackbarId,
-            content = { KurobaSnackbarLayout(chanTheme, snackbarInfo) }
+            content = { KurobaSnackbarLayout(isTablet, chanTheme, snackbarInfo) }
           ).ensureSingleElement()
 
           measurables[index] = measurable
@@ -127,28 +135,43 @@ fun KurobaSnackbarContainer(
 
 @Composable
 private fun KurobaSnackbarLayout(
+  isTablet: Boolean,
   chanTheme: ChanTheme,
   snackbarInfo: SnackbarInfo
 ) {
+  val containerHorizPadding = if (isTablet) 12.dp else 8.dp
+  val containerVertPadding = if (isTablet) 8.dp else 4.dp
+
+  val contentHorizPadding = if (isTablet) 8.dp else 4.dp
+  val contentVertPadding = if (isTablet) 12.dp else 6.dp
+
   KurobaComposeCardView(
     modifier = Modifier
-      .padding(horizontal = 8.dp, vertical = 4.dp),
+      .padding(
+        horizontal = containerHorizPadding,
+        vertical = containerVertPadding
+      ),
     backgroundColor = chanTheme.backColorSecondaryCompose
   ) {
     Row(
       modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()
-        .padding(horizontal = 4.dp, vertical = 6.dp),
+        .padding(horizontal = contentHorizPadding, vertical = contentVertPadding),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      KurobaSnackbarContent(snackbarInfo.content)
+      KurobaSnackbarContent(isTablet, snackbarInfo.content)
     }
   }
 }
 
 @Composable
-private fun RowScope.KurobaSnackbarContent(content: List<SnackbarContentItem>) {
+private fun RowScope.KurobaSnackbarContent(
+  isTablet: Boolean,
+  content: List<SnackbarContentItem>
+) {
+  val textSize = if (isTablet) 16.sp else 14.sp
+
   for (snackbarContentItem in content) {
     when (snackbarContentItem) {
       SnackbarContentItem.LoadingIndicator -> {
@@ -163,6 +186,7 @@ private fun RowScope.KurobaSnackbarContent(content: List<SnackbarContentItem>) {
       is SnackbarContentItem.Text -> {
         KurobaComposeText(
           modifier = Modifier.weight(1f),
+          fontSize = textSize,
           text = snackbarContentItem.text
         )
       }

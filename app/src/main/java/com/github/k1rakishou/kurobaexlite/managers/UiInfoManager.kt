@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.graphics.Point
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -46,18 +47,23 @@ class UiInfoManager(
     )
   }
 
-  private val _floatingMenuItemTitleSizeSp = MutableStateFlow(0.sp)
-  val floatingMenuItemTitleSizeSp: StateFlow<TextUnit>
-    get() = _floatingMenuItemTitleSizeSp.asStateFlow()
-  private val _floatingMenuItemSubTitleSizeSp = MutableStateFlow(0.sp)
-  val floatingMenuItemSubTitleSizeSp: StateFlow<TextUnit>
-    get() = _floatingMenuItemSubTitleSizeSp.asStateFlow()
+  val defaultHorizPadding by lazy { if (isTablet) 12.dp else 8.dp }
+  val defaultVertPadding by lazy { if (isTablet) 10.dp else 6.dp }
+
+  private val _textTitleSizeSp = MutableStateFlow(0.sp)
+  val textTitleSizeSp: StateFlow<TextUnit>
+    get() = _textTitleSizeSp.asStateFlow()
+  private val _textSubTitleSizeSp = MutableStateFlow(0.sp)
+  val textSubTitleSizeSp: StateFlow<TextUnit>
+    get() = _textSubTitleSizeSp.asStateFlow()
+
   private val _postCellCommentTextSizeSp = MutableStateFlow(0.sp)
   val postCellCommentTextSizeSp: StateFlow<TextUnit>
     get() = _postCellCommentTextSizeSp.asStateFlow()
   private val _postCellSubjectTextSizeSp = MutableStateFlow(0.sp)
   val postCellSubjectTextSizeSp: StateFlow<TextUnit>
     get() = _postCellSubjectTextSizeSp.asStateFlow()
+
   private val _homeScreenLayoutType = MutableStateFlow(LayoutType.Auto)
   val homeScreenLayoutType: StateFlow<LayoutType>
     get() = _homeScreenLayoutType.asStateFlow()
@@ -66,21 +72,21 @@ class UiInfoManager(
     get() = _bookmarksScreenOnLeftSide.asStateFlow()
 
   suspend fun init() {
-    _floatingMenuItemTitleSizeSp.value = appSettings.floatingMenuItemTitleSizeSp.read().sp
-    _floatingMenuItemSubTitleSizeSp.value = appSettings.floatingMenuItemSubTitleSizeSp.read().sp
+    _textTitleSizeSp.value = appSettings.textTitleSizeSp.read().sp
+    _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
     _homeScreenLayoutType.value = appSettings.layoutType.read()
     _bookmarksScreenOnLeftSide.value = appSettings.bookmarksScreenOnLeftSide.read()
 
     coroutineScope.launch {
-      appSettings.floatingMenuItemTitleSizeSp.valueFlow
-        .collectLatest { value -> _floatingMenuItemTitleSizeSp.value = value.sp }
+      appSettings.textTitleSizeSp.valueFlow
+        .collectLatest { value -> _textTitleSizeSp.value = value.sp }
     }
 
     coroutineScope.launch {
-      appSettings.floatingMenuItemSubTitleSizeSp.valueFlow
-        .collectLatest { value -> _floatingMenuItemSubTitleSizeSp.value = value.sp }
+      appSettings.textSubTitleSizeSp.valueFlow
+        .collectLatest { value -> _textSubTitleSizeSp.value = value.sp }
     }
 
     coroutineScope.launch {

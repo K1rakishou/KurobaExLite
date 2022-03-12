@@ -379,8 +379,10 @@ class FloatingMenuScreen(
     onItemClicked: (() -> Unit)?
   ) {
     val chanTheme = LocalChanTheme.current
-    val floatingMenuItemTitleSize by uiInfoManager.floatingMenuItemTitleSizeSp.collectAsState()
-    val floatingMenuItemSubTitleSize by uiInfoManager.floatingMenuItemSubTitleSizeSp.collectAsState()
+    val titleTextSize by uiInfoManager.textTitleSizeSp.collectAsState()
+    val subtitleTextSize by uiInfoManager.textSubTitleSizeSp.collectAsState()
+    val defaultHorizPadding = uiInfoManager.defaultHorizPadding
+    val defaultVertPadding = uiInfoManager.defaultVertPadding
 
     val title = when (text) {
       is FloatingMenuItem.MenuItemText.Id -> stringResource(id = text.id)
@@ -407,7 +409,7 @@ class FloatingMenuScreen(
         .heightIn(min = 40.dp)
         .fillMaxWidth()
         .then(clickModifier)
-        .padding(horizontal = 8.dp, vertical = 4.dp)
+        .padding(horizontal = defaultHorizPadding, vertical = defaultVertPadding)
         .then(modifier)
     ) {
       if (subtitle.isNullOrBlank()) {
@@ -417,7 +419,7 @@ class FloatingMenuScreen(
             .align(Alignment.CenterStart),
           text = title,
           color = chanTheme.textColorPrimaryCompose,
-          fontSize = floatingMenuItemTitleSize
+          fontSize = titleTextSize
         )
       } else {
         Column(
@@ -427,7 +429,7 @@ class FloatingMenuScreen(
             modifier = Modifier.wrapContentHeight(),
             text = title,
             color = chanTheme.textColorPrimaryCompose,
-            fontSize = floatingMenuItemTitleSize
+            fontSize = titleTextSize
           )
 
           Spacer(modifier = Modifier.height(2.dp))
@@ -436,7 +438,7 @@ class FloatingMenuScreen(
             modifier = Modifier.wrapContentHeight(),
             text = subtitle,
             color = chanTheme.textColorSecondaryCompose,
-            fontSize = floatingMenuItemSubTitleSize
+            fontSize = subtitleTextSize
           )
         }
       }

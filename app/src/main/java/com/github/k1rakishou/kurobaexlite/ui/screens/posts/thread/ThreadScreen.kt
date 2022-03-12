@@ -112,7 +112,7 @@ class ThreadScreen(
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
-      canProcessBackEvent = { homeScreenViewModel.currentPage?.screenKey == screenKey },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, homeScreenViewModel.currentPage) },
       onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = { searchQuery ->
@@ -219,6 +219,7 @@ class ThreadScreen(
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),
       screenKey = screenKey,
+      uiInfoManager = uiInfoManager,
       snackbarManager = snackbarManager,
       kurobaSnackbarState = kurobaSnackbarState
     )

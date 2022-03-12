@@ -253,10 +253,6 @@ class NavigationRouter(
   }
 
   suspend fun onBackPressed(): Boolean {
-    if (backPressHandlers.isEmpty()) {
-      return false
-    }
-
     if (childRouters.isNotEmpty()) {
       for ((_, navigationRouter) in childRouters.entries) {
         if (navigationRouter.onBackPressed()) {

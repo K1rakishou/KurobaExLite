@@ -22,8 +22,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
@@ -105,6 +106,11 @@ class BoardSelectionScreen(
       windowInsets.copy(newTop = windowInsets.top + toolbarHeight).asPaddingValues()
     }
 
+    val titleTextSize by uiInfoManager.textTitleSizeSp.collectAsState()
+    val subtitleTextSize by uiInfoManager.textSubTitleSizeSp.collectAsState()
+    val defaultHorizPadding = uiInfoManager.defaultHorizPadding
+    val defaultVertPadding = uiInfoManager.defaultVertPadding
+
     val siteKey = catalogDescriptor?.siteKey
       ?: Chan4.SITE_KEY
 
@@ -172,7 +178,14 @@ class BoardSelectionScreen(
                 )
               }
             } else {
-              buildChanBoardsList(chanBoards, onBoardClicked)
+              buildChanBoardsList(
+                titleTextSize = titleTextSize,
+                subtitleTextSize = subtitleTextSize,
+                horizPadding = defaultHorizPadding,
+                vertPadding = defaultVertPadding,
+                chanBoardUiDataList = chanBoards,
+                onBoardClicked = onBoardClicked
+              )
             }
           }
         }
@@ -180,6 +193,10 @@ class BoardSelectionScreen(
   }
 
   private fun LazyListScope.buildChanBoardsList(
+    titleTextSize: TextUnit,
+    subtitleTextSize: TextUnit,
+    horizPadding: Dp,
+    vertPadding: Dp,
     chanBoardUiDataList: List<ChanBoardUiData>,
     onBoardClicked: (CatalogDescriptor) -> Unit
   ) {
@@ -188,12 +205,24 @@ class BoardSelectionScreen(
       key = { index -> chanBoardUiDataList[index].catalogDescriptor },
       itemContent = { index ->
         val chanBoard = chanBoardUiDataList[index]
-        BuildChanBoardCell(chanBoard, onBoardClicked)
+
+        BuildChanBoardCell(
+          titleTextSize = titleTextSize,
+          subtitleTextSize = subtitleTextSize,
+          horizPadding = horizPadding,
+          vertPadding = vertPadding,
+          chanBoardUiData = chanBoard,
+          onBoardClicked = onBoardClicked
+        )
       })
   }
 
   @Composable
   private fun BuildChanBoardCell(
+    titleTextSize: TextUnit,
+    subtitleTextSize: TextUnit,
+    horizPadding: Dp,
+    vertPadding: Dp,
     chanBoardUiData: ChanBoardUiData,
     onBoardClicked: (CatalogDescriptor) -> Unit
   ) {
@@ -209,13 +238,13 @@ class BoardSelectionScreen(
         .fillMaxWidth()
         .wrapContentHeight()
         .then(backgroundColorModifier)
-        .padding(horizontal = 8.dp, vertical = 4.dp)
         .kurobaClickable(onClick = { onBoardClicked(chanBoardUiData.catalogDescriptor) })
+        .padding(horizontal = horizPadding, vertical = vertPadding)
     ) {
       KurobaComposeText(
         text = chanBoardUiData.title,
         color = chanTheme.textColorPrimaryCompose,
-        fontSize = 14.sp,
+        fontSize = titleTextSize,
         maxLines = 1
       )
 
@@ -223,7 +252,7 @@ class BoardSelectionScreen(
         KurobaComposeText(
           text = chanBoardUiData.subtitle,
           color = chanTheme.textColorSecondaryCompose,
-          fontSize = 12.sp,
+          fontSize = subtitleTextSize,
           maxLines = 3
         )
       }
