@@ -844,13 +844,24 @@ private fun LazyItemScope.ThreadStatusCell(
 
         append("\n")
 
-        val loadingText = if (timeUntilNextUpdateSeconds > 0L) {
-          context.resources.getString(R.string.thread_screen_status_cell_loading_in, timeUntilNextUpdateSeconds)
-        } else {
-          context.resources.getString(R.string.thread_screen_status_cell_loading_right_now)
-        }
+        if (threadStatusCellData.lastLoadError == null) {
+          val loadingText = if (timeUntilNextUpdateSeconds > 0L) {
+            context.resources.getString(
+              R.string.thread_screen_status_cell_loading_in,
+              timeUntilNextUpdateSeconds
+            )
+          } else {
+            context.resources.getString(R.string.thread_screen_status_cell_loading_right_now)
+          }
 
-        append(loadingText)
+          append(loadingText)
+        } else {
+          val lastLoadErrorText = threadStatusCellData.errorMessage(context)
+
+          append(lastLoadErrorText)
+          append("\n")
+          append(context.resources.getString(R.string.thread_load_failed_tap_to_refresh))
+        }
       }
     }
 

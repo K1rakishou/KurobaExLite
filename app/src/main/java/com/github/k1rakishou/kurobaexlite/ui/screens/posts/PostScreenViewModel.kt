@@ -9,7 +9,6 @@ import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -35,6 +34,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
@@ -297,6 +298,8 @@ abstract class PostScreenViewModel(
                 }
 
                 postDataListChunk.forEach { postDataIndexed ->
+                  ensureActive()
+
                   val postData = postDataIndexed.value
 
                   calculatePostData(
@@ -335,32 +338,36 @@ abstract class PostScreenViewModel(
                 "(chunksCount=$chunksCount, chunkSize=$repliesToChunkSize)"
             }
 
-            repliesToPostDataSet
-              .chunked(repliesToChunkSize)
-              .mapIndexed { chunkIndex, postDataListChunk ->
-                return@mapIndexed async(globalConstants.postParserDispatcher) {
-                  logcat(tag = TAG) {
-                    "parseRemainingPostsAsyncReplies() running chunk ${chunkIndex} with " +
-                      "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
-                  }
+            supervisorScope {
+              repliesToPostDataSet
+                .chunked(repliesToChunkSize)
+                .mapIndexed { chunkIndex, postDataListChunk ->
+                  return@mapIndexed async(globalConstants.postParserDispatcher) {
+                    logcat(tag = TAG) {
+                      "parseRemainingPostsAsyncReplies() running chunk ${chunkIndex} with " +
+                        "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
+                    }
 
-                  postDataListChunk.forEach { postData ->
-                    calculatePostData(
-                      chanDescriptor = chanDescriptor,
-                      postData = postData,
-                      chanTheme = chanTheme,
-                      parsedPostDataContext = ParsedPostDataContext(
-                        isParsingCatalog = isParsingCatalog
-                      ),
-                      force = true
-                    )
-                  }
+                    postDataListChunk.forEach { postData ->
+                      ensureActive()
 
-                  logcat(tag = TAG) { "parseRemainingPostsAsyncReplies() chunk ${chunkIndex} processing finished" }
+                      calculatePostData(
+                        chanDescriptor = chanDescriptor,
+                        postData = postData,
+                        chanTheme = chanTheme,
+                        parsedPostDataContext = ParsedPostDataContext(
+                          isParsingCatalog = isParsingCatalog
+                        ),
+                        force = true
+                      )
+                    }
+
+                    logcat(tag = TAG) { "parseRemainingPostsAsyncReplies() chunk ${chunkIndex} processing finished" }
+                  }
                 }
-              }
-              .toList()
-              .awaitAll()
+                .toList()
+                .awaitAll()
+            }
           }
         }
 
@@ -370,7 +377,7 @@ abstract class PostScreenViewModel(
         val deltaTime = SystemClock.elapsedRealtime() - startTime
         logcat(tag = TAG) { "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
       } catch (error: Throwable) {
-        logcat(tag = TAG) { "parseRemainingPostsAsync() error: ${error.errorMessageOrClassName()}" }
+        logcat(tag = TAG) { "parseRemainingPostsAsync() error: ${error.asLog()}" }
       } finally {
         showPostsLoadingSnackbarJob.cancel()
       }

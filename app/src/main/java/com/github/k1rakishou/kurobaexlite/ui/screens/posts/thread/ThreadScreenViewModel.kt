@@ -117,6 +117,7 @@ class ThreadScreenViewModel(
         val error = threadDataResult.exceptionOrThrow()
         logcatError { "refresh($threadDescriptor) error=${error.asLog()}" }
 
+        threadAutoUpdater.stopAutoUpdaterLoop()
         threadScreenState.threadCellDataState.value = formatThreadCellData(
           threadData = null,
           prevCellDataState = prevCellDataState,
@@ -251,6 +252,7 @@ class ThreadScreenViewModel(
       val error = threadDataResult.exceptionOrThrow()
       logcatError { "loadCatalog() error=${error.asLog()}" }
 
+      threadAutoUpdater.stopAutoUpdaterLoop()
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
