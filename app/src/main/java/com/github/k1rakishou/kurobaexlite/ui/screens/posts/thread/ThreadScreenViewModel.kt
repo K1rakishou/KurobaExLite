@@ -93,6 +93,7 @@ class ThreadScreenViewModel(
     loadThreadJob = viewModelScope.launch {
       val threadPostsAsync = threadScreenState.postsAsyncDataState.value
       val threadDescriptor = chanThreadManager.currentlyOpenedThread
+      val prevCellDataState = threadScreenState.threadCellDataState.value
 
       if (threadPostsAsync !is AsyncData.Data) {
         if (threadDescriptor == null) {
@@ -116,7 +117,12 @@ class ThreadScreenViewModel(
         val error = threadDataResult.exceptionOrThrow()
         logcatError { "refresh($threadDescriptor) error=${error.asLog()}" }
 
-        threadScreenState.threadCellDataState.value = formatThreadCellData(null, error)
+        threadScreenState.threadCellDataState.value = formatThreadCellData(
+          threadData = null,
+          prevCellDataState = prevCellDataState,
+          lastLoadError = error
+        )
+
         return@launch
       }
 
@@ -167,7 +173,11 @@ class ThreadScreenViewModel(
         }
       )
 
-      threadScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
+      threadScreenState.threadCellDataState.value = formatThreadCellData(
+        threadData = threadData,
+        prevCellDataState = prevCellDataState,
+        lastLoadError = null
+      )
 
       if (mergeResult.isNotEmpty()) {
         snackbarManager.pushThreadNewPostsSnackbar(
@@ -214,6 +224,7 @@ class ThreadScreenViewModel(
 
     onLoadingThread(threadDescriptor, loadOptions)
 
+    val prevCellDataState = postScreenState.threadCellDataState.value
     val startTime = SystemClock.elapsedRealtime()
     _postsFullyParsedOnceFlow.emit(false)
 
@@ -278,7 +289,11 @@ class ThreadScreenViewModel(
       )
 
       threadScreenState.postsAsyncDataState.value = AsyncData.Data(cachedThreadPostsState)
-      postScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
+      postScreenState.threadCellDataState.value = formatThreadCellData(
+        threadData = threadData,
+        prevCellDataState = prevCellDataState,
+        lastLoadError = null
+      )
 
       parseRemainingPostsAsync(
         chanDescriptor = threadDescriptor,
@@ -339,7 +354,11 @@ class ThreadScreenViewModel(
       )
 
       threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
-      postScreenState.threadCellDataState.value = formatThreadCellData(threadData, null)
+      postScreenState.threadCellDataState.value = formatThreadCellData(
+        threadData = threadData,
+        prevCellDataState = prevCellDataState,
+        lastLoadError = null
+      )
 
       parseRemainingPostsAsync(
         chanDescriptor = threadDescriptor,
@@ -429,16 +448,23 @@ class ThreadScreenViewModel(
     }
   }
 
-  private fun formatThreadCellData(threadData: ThreadData?, lastLoadError: Throwable?): ThreadCellData? {
+  private fun formatThreadCellData(
+    threadData: ThreadData?,
+    prevCellDataState: ThreadCellData?,
+    lastLoadError: Throwable?
+  ): ThreadCellData {
     val originalPostData = threadData
       ?.threadPosts
       ?.firstOrNull { postData -> postData is OriginalPostData } as? OriginalPostData
-      ?: return null
+
+    val totalReplies = originalPostData?.threadRepliesTotal ?: prevCellDataState?.totalReplies ?: 0
+    val totalImages = originalPostData?.threadImagesTotal ?: prevCellDataState?.totalImages ?: 0
+    val totalPosters = originalPostData?.threadPostersTotal ?: prevCellDataState?.totalPosters ?: 0
 
     return ThreadCellData(
-      totalReplies = originalPostData.threadRepliesTotal ?: 0,
-      totalImages = originalPostData.threadImagesTotal ?: 0,
-      totalPosters = originalPostData.threadPostersTotal ?: 0,
+      totalReplies = totalReplies,
+      totalImages = totalImages,
+      totalPosters = totalPosters,
       lastLoadError = lastLoadError
     )
   }
