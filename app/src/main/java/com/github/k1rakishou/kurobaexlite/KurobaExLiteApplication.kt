@@ -48,7 +48,6 @@ class KurobaExLiteApplication : Application() {
   // TODO(KurobaEx): [Click to expand] doesn't work
   // TODO(KurobaEx): PullToRefresh in catalog scrolls to the middle of the catalog
   // TODO(KurobaEx): Text selection doesn't work.
-  // TODO(KurobaEx): FastScroller scrolling is incorrect (when opening already visited threads by url).
   // TODO(KurobaEx): PostReplyChain shows full height view for a split second before resizing.
   //  The problem is most likely in how it's handled in PostListContent.
   // TODO(KurobaEx): When opening already visited threads by url the thread toolbar title is getting
