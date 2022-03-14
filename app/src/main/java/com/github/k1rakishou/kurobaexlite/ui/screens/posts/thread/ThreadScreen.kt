@@ -53,10 +53,7 @@ class ThreadScreen(
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
-
-  private val threadScreenToolbarActionHandler by lazy {
-    ThreadScreenToolbarActionHandler(threadScreenViewModel)
-  }
+  private val threadScreenToolbarActionHandler: ThreadScreenToolbarActionHandler by inject(ThreadScreenToolbarActionHandler::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
@@ -67,6 +64,10 @@ class ThreadScreen(
       FloatingMenuItem.Text(
         menuItemKey = ThreadScreenToolbarActionHandler.ACTION_RELOAD,
         text = FloatingMenuItem.MenuItemText.Id(R.string.reload)
+      ),
+      FloatingMenuItem.Text(
+        menuItemKey = ThreadScreenToolbarActionHandler.ACTION_COPY_THREAD_URL,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.thread_screen_action_copy_thread_url)
       ),
       FloatingMenuItem.Footer(
         items = listOf(
@@ -127,7 +128,10 @@ class ThreadScreen(
             navigationRouter = navigationRouter,
             menuItems = floatingMenuItems,
             onMenuItemClicked = { menuItem ->
-              threadScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
+              threadScreenToolbarActionHandler.processClickedToolbarMenuItem(
+                menuItem = menuItem,
+                threadScreenViewModelProvider = { threadScreenViewModel }
+              )
             }
           )
         )

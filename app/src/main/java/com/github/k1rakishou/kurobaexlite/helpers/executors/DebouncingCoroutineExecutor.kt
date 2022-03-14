@@ -1,71 +1,108 @@
 package com.github.k1rakishou.kurobaexlite.helpers.executors
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.consumeEach
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 @Suppress("JoinDeclarationAndAssignment")
 @OptIn(ExperimentalCoroutinesApi::class)
 class DebouncingCoroutineExecutor(
-  scope: CoroutineScope
+  private val scope: CoroutineScope
 ) {
-  private val channel = Channel<Payload>(Channel.UNLIMITED)
-  private val counter = AtomicLong(0L)
-  private val isProgress = AtomicBoolean(false)
-  private val channelJob: Job
+  private val debouncers = mutableMapOf<String?, Debouncer>()
 
   private val coroutineExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
     throw RuntimeException(throwable)
   }
 
-  init {
-    channelJob = scope.launch(coroutineExceptionHandler) {
-      var activeJob: Job? = null
+  @Synchronized
+  fun post(timeout: Long, key: String? = null, func: suspend () -> Unit): Boolean {
+    require(timeout > 0L) { "Bad timeout!" }
 
-      channel.consumeEach { payload ->
-        if (counter.get() != payload.id || !isActive || isProgress.get()) {
-          return@consumeEach
-        }
+    val debouncer = debouncers.getOrPut(
+      key = key,
+      defaultValue = { Debouncer(scope, coroutineExceptionHandler) }
+    )
 
-        activeJob?.cancel()
-        activeJob = null
+    return debouncer.post(timeout, func)
+  }
 
-        activeJob = scope.launch {
-          delay(payload.timeout)
+  @Synchronized
+  fun stop(key: String? = null) {
+    debouncers.remove(key = key)?.stop()
+  }
 
-          if (counter.get() != payload.id || !isActive) {
-            return@launch
+  @Synchronized
+  fun stopAll() {
+    debouncers.values.forEach { debouncer -> debouncer.stop() }
+    debouncers.clear()
+  }
+
+  class Debouncer(
+    private val scope: CoroutineScope,
+    private val coroutineExceptionHandler: CoroutineExceptionHandler
+  ) {
+    private val channel = Channel<Payload>(Channel.UNLIMITED)
+    private val counter = AtomicLong(0L)
+    private val isProgress = AtomicBoolean(false)
+    private val channelJob: Job
+
+    init {
+      channelJob = scope.launch(coroutineExceptionHandler) {
+        var activeJob: Job? = null
+
+        channel.consumeEach { payload ->
+          if (counter.get() != payload.id || !isActive || isProgress.get()) {
+            return@consumeEach
           }
 
-          if (!isProgress.compareAndSet(false, true)) {
-            return@launch
-          }
+          activeJob?.cancel()
+          activeJob = null
 
-          try {
-            payload.func.invoke()
-          } finally {
-            isProgress.set(false)
+          activeJob = scope.launch {
+            delay(payload.timeout)
+
+            if (counter.get() != payload.id || !isActive) {
+              return@launch
+            }
+
+            if (!isProgress.compareAndSet(false, true)) {
+              return@launch
+            }
+
+            try {
+              payload.func.invoke()
+            } finally {
+              isProgress.set(false)
+            }
           }
         }
       }
     }
-  }
 
-  fun post(timeout: Long, func: suspend () -> Unit): Boolean {
-    require(timeout > 0L) { "Bad timeout!" }
+    fun post(timeout: Long, func: suspend () -> Unit): Boolean {
+      require(timeout > 0L) { "Bad timeout!" }
 
-    if (channel.isClosedForSend) {
-      return false
+      if (channel.isClosedForSend) {
+        return false
+      }
+
+      return channel.trySend(Payload(counter.incrementAndGet(), timeout, func)).isSuccess
     }
 
-    return channel.trySend(Payload(counter.incrementAndGet(), timeout, func)).isSuccess
-  }
+    // For tests. Most of the time you don't really need to call this.
+    fun stop() {
+      channelJob.cancel()
+    }
 
-  // For tests. Most of the time you don't really need to call this.
-  fun stop() {
-    channelJob.cancel()
   }
 
   class Payload(

@@ -11,8 +11,7 @@ import androidx.activity.viewModels
 import androidx.compose.runtime.remember
 import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers.setupEdgeToEdge
-import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers.setupStatusAndNavBarColors
+import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -29,6 +28,7 @@ class MainActivity : ComponentActivity() {
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   private val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
+  private val fullScreenHelpers: FullScreenHelpers by inject(FullScreenHelpers::class.java)
 
   private var backPressedOnce = false
 
@@ -40,8 +40,8 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
 
     WindowCompat.setDecorFitsSystemWindows(window, false)
-    window.setupEdgeToEdge()
-    window.setupStatusAndNavBarColors(theme = themeEngine.chanTheme)
+    fullScreenHelpers.setupEdgeToEdge(window = window)
+    fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
 
     setContent {
       ProvideKurobaViewConfiguration {

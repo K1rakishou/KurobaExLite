@@ -30,6 +30,11 @@ class UiInfoManager(
 
   val isTablet by lazy { resources.getBoolean(R.bool.isTablet) }
 
+  val orientations = arrayOf(
+    Configuration.ORIENTATION_PORTRAIT,
+    Configuration.ORIENTATION_LANDSCAPE
+  )
+
   private var _maxParentWidth: Int = 0
   val maxParentWidth: Int
     get() = _maxParentWidth

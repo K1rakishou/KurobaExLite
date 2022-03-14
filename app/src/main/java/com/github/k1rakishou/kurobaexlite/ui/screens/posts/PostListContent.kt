@@ -155,19 +155,35 @@ internal fun PostListContent(
         delay(16L)
 
         val firstVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
-          ?: return@LaunchedEffect
         val lastVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
-          ?: return@LaunchedEffect
 
-        val firstVisibleItemIndex = firstVisibleItem.index
-        val firstVisibleItemOffset = firstVisibleItem.offset
-        val lastVisibleItemIndex = lastVisibleItem.index
+        if (firstVisibleItem != null && lastVisibleItem != null) {
+          val firstVisibleItemIndex = firstVisibleItem.index
+          val firstVisibleItemOffset = firstVisibleItem.offset
+          val lastVisibleItemIndex = lastVisibleItem.index
 
-        val totalCount = lazyListState.layoutInfo.totalItemsCount
-        val touchingTop = firstVisibleItemIndex <= 0 && firstVisibleItemOffset in 0..delta
-        val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
+          val totalCount = lazyListState.layoutInfo.totalItemsCount
+          val touchingTop = firstVisibleItemIndex <= 0 && firstVisibleItemOffset in 0..delta
+          val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
 
-        onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
+          onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
+        }
+
+        val postDataList = (postListAsync as? AsyncData.Data)?.data?.posts
+
+        if (postsScreenViewModel is ThreadScreenViewModel && postDataList != null) {
+          var firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.offset >= 0 }
+          if (firstCompletelyVisibleItem == null) {
+            firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+          }
+
+          if (firstCompletelyVisibleItem != null) {
+            val firstVisiblePostData = postDataList.getOrNull(firstCompletelyVisibleItem.index)?.value
+            if (firstVisiblePostData != null) {
+              postsScreenViewModel.onFirstVisiblePostScrollChanged(firstVisiblePostData)
+            }
+          }
+        }
       })
 
     LaunchedEffect(
@@ -224,7 +240,7 @@ internal fun PostListContent(
     postListAsync = postListAsync,
     postsScreenViewModel = postsScreenViewModel,
     onPostCellClicked = onPostCellClicked,
-    onPostCellCommentClicked = { postData, postComment, offset ->
+    onPostCellCommentClicked = { postData: PostData, postComment: AnnotatedString, offset: Int ->
       processClickedAnnotation(
         postsScreenViewModel = postsScreenViewModel,
         postData = postData,
@@ -233,10 +249,10 @@ internal fun PostListContent(
         onLinkableClicked = onLinkableClicked
       )
     },
-    onPostRepliesClicked = { postData ->
+    onPostRepliesClicked = { postData: PostData ->
       onPostRepliesClicked(postData.postDescriptor)
     },
-    onThreadStatusCellClicked = {
+    onThreadStatusCellClicked = { threadDescriptor: ThreadDescriptor ->
       postsScreenViewModel.resetTimer()
       postsScreenViewModel.refresh()
     },
@@ -354,8 +370,9 @@ private fun PostListInternal(
   val isCatalogMode = postListOptions.isCatalogMode
   val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
 
-  val lastViewedPostDescriptor by postsScreenViewModel.postScreenState.lastViewedPostDescriptor.collectAsState()
+  val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostDescriptorForIndicator.collectAsState()
   val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
+  val postsParsedOnce by postsScreenViewModel.postsFullyParsedOnceFlow.collectAsState()
 
   val contentPadding = remember(key1 = searchQuery, key2 = postListOptions.contentPadding) {
     if (searchQuery.isNullOrEmpty()) {
@@ -506,9 +523,11 @@ private fun PostListInternal(
                 cellsPadding = cellsPadding,
                 postListOptions = postListOptions,
                 lazyListState = lazyListState,
+                searchQuery = searchQuery,
+                postsParsedOnce = postsParsedOnce,
                 postsScreenViewModel = postsScreenViewModel,
                 abstractPostsState = abstractPostsState,
-                lastViewedPostDescriptor = lastViewedPostDescriptor,
+                lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
                 previousPostDataInfoMap = previousPostDataInfoMap,
                 onPostCellClicked = onPostCellClicked,
                 onPostCellCommentClicked = onPostCellCommentClicked,
@@ -567,9 +586,11 @@ private fun LazyListScope.postList(
   cellsPadding: PaddingValues,
   postListOptions: PostListOptions,
   lazyListState: LazyListState,
+  searchQuery: String?,
+  postsParsedOnce: Boolean,
   postsScreenViewModel: PostScreenViewModel,
   abstractPostsState: AbstractPostsState,
-  lastViewedPostDescriptor: PostDescriptor?,
+  lastViewedPostDescriptorForIndicator: PostDescriptor?,
   previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
@@ -578,16 +599,13 @@ private fun LazyListScope.postList(
 ) {
   val postDataList = abstractPostsState.posts
   val totalCount = postDataList.size
-  val searchQuery = postsScreenViewModel.postScreenState.searchQueryFlow.value
-  val postsParsedOnce = postsScreenViewModel.postsFullyParsedOnceFlow.value
-  val lastUpdatedOn= abstractPostsState.lastUpdatedOn
+  val lastUpdatedOn = abstractPostsState.lastUpdatedOn
 
   items(
     count = totalCount,
     key = { index -> "${postCellKeyPrefix}_${postDataList[index].value.postDescriptor}" },
     itemContent = { index ->
       val postData by postDataList[index]
-      val currentTime = SystemClock.elapsedRealtime()
 
       val animateInsertion = canAnimateInsertion(
         previousPostDataInfoMap = previousPostDataInfoMap,
@@ -599,7 +617,6 @@ private fun LazyListScope.postList(
         previousPostDataInfoMap = previousPostDataInfoMap,
         postData = postData,
         searchQuery = searchQuery,
-        currentTime = currentTime,
         lastUpdatedOn = lastUpdatedOn,
         postsParsedOnce = postsParsedOnce
       )
@@ -616,7 +633,7 @@ private fun LazyListScope.postList(
         totalCount = totalCount,
         animateInsertion = animateInsertion,
         animateUpdate = animateUpdate,
-        lastViewedPostDescriptor = lastViewedPostDescriptor,
+        lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked
       )
@@ -654,7 +671,6 @@ private fun canAnimateUpdate(
   previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
   postData: PostData,
   searchQuery: String?,
-  currentTime: Long,
   lastUpdatedOn: Long,
   postsParsedOnce: Boolean
 ): Boolean {
@@ -671,7 +687,7 @@ private fun canAnimateUpdate(
     return false
   }
 
-  return lastUpdatedOn + updateAnimationTotalDurationMs >= currentTime
+  return lastUpdatedOn + updateAnimationTotalDurationMs >= SystemClock.elapsedRealtime()
 }
 
 private fun canAnimateInsertion(
@@ -899,7 +915,7 @@ private fun LazyItemScope.PostCellContainer(
   totalCount: Int,
   animateInsertion: Boolean,
   animateUpdate: Boolean,
-  lastViewedPostDescriptor: PostDescriptor?,
+  lastViewedPostDescriptorForIndicator: PostDescriptor?,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit
 ) {
@@ -934,7 +950,7 @@ private fun LazyItemScope.PostCellContainer(
 
       val canDisplayLastViewedPostMarker = !isInPopup
         && !isCatalogMode
-        && lastViewedPostDescriptor == postData.postDescriptor
+        && lastViewedPostDescriptorForIndicator == postData.postDescriptor
         && index < (totalCount - 1)
 
       if (canDisplayLastViewedPostMarker) {

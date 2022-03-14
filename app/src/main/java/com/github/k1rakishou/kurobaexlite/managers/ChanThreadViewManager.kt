@@ -15,15 +15,17 @@ class ChanThreadViewManager {
   suspend fun insertOrUpdate(
     threadDescriptor: ThreadDescriptor,
     updater: ChanThreadView.() -> Unit
-  ) {
-    mutex.withLockNonCancellable {
+  ): ChanThreadView {
+    return mutex.withLockNonCancellable {
       val chanThreadView = chanThreadViews.getOrPut(
         key = threadDescriptor,
-        defaultValue = { ChanThreadView() }
+        defaultValue = { ChanThreadView(threadDescriptor = threadDescriptor) }
       )
 
       updater(chanThreadView)
       chanThreadViews[threadDescriptor] = chanThreadView
+
+      return@withLockNonCancellable chanThreadView
     }
   }
 

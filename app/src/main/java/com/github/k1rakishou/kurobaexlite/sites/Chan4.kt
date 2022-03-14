@@ -73,6 +73,24 @@ class Chan4 : Site {
     return ResolvedDescriptor.Post(postDescriptor)
   }
 
+  override fun desktopUrl(
+    threadDescriptor: ThreadDescriptor,
+    postNo: Long?,
+    postSubNo: Long?
+  ): String {
+    return buildString {
+      append("https://boards.4channel.org/")
+      append(threadDescriptor.boardCode)
+      append("/thread/")
+      append(threadDescriptor.threadNo)
+
+      if (postNo != null && postNo > 0) {
+        append("#p")
+        append(postNo)
+      }
+    }
+  }
+
   class CatalogInfo(private val chan4DataSource: Chan4DataSource) : Site.CatalogInfo {
 
     override fun catalogUrl(boardCode: String): String {

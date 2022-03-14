@@ -39,6 +39,9 @@ class CatalogScreenViewModel(
 
   override val postScreenState: PostScreenState = catalogScreenState
 
+  val catalogDescriptor: CatalogDescriptor?
+    get() = chanDescriptor as? CatalogDescriptor
+
   override suspend fun onViewModelReady() {
     val prevCatalogDescriptor = savedStateHandle.get<CatalogDescriptor>(PREV_CATALOG_DESCRIPTOR)
     logcat(tag = TAG) { "onViewModelReady() prevCatalogDescriptor=${prevCatalogDescriptor}" }
@@ -147,7 +150,7 @@ class CatalogScreenViewModel(
     }
 
     parsePostsAround(
-      startIndex = 0,
+      startPostDescriptor = null,
       chanDescriptor = catalogDescriptor,
       postDataList = catalogData.catalogThreads,
       isCatalogMode = true
@@ -159,6 +162,8 @@ class CatalogScreenViewModel(
     )
 
     catalogScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
+    postListBuilt?.await()
+    restoreScrollPosition(catalogDescriptor)
 
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,
@@ -177,11 +182,8 @@ class CatalogScreenViewModel(
 
         try {
           chanThreadCache.insertCatalogThreads(catalogDescriptor, postDataList)
-
           onCatalogLoaded(catalogDescriptor)
 
-          postListBuilt?.await()
-          restoreScrollPosition(catalogDescriptor)
           _postsFullyParsedOnceFlow.emit(true)
         } finally {
           withContext(NonCancellable + Dispatchers.Main) {

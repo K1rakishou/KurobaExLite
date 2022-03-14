@@ -21,6 +21,7 @@ interface Site {
   fun boardsInfo(): BoardsInfo?
 
   fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor?
+  fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String?
 
   interface CatalogInfo  {
     fun catalogUrl(boardCode: String): String

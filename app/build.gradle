@@ -19,6 +19,10 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas".toString())
+        }
     }
 
     buildTypes {
@@ -72,8 +76,12 @@ dependencies {
     implementation "io.coil-kt:coil:${coil}"
     implementation "io.coil-kt:coil-compose:${coil}"
 
-    implementation("com.squareup.moshi:moshi-kotlin:${moshi}")
-    ksp("com.squareup.moshi:moshi-kotlin-codegen:${moshi}")
+    implementation "com.squareup.moshi:moshi-kotlin:${moshi}"
+    ksp "com.squareup.moshi:moshi-kotlin-codegen:${moshi}"
+
+    implementation "androidx.room:room-runtime:${room}"
+    implementation "androidx.room:room-ktx:${room}"
+    ksp "androidx.room:room-compiler:${room}"
 
     testImplementation 'junit:junit:4.+'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'

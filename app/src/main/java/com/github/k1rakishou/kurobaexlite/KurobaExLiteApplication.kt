@@ -3,12 +3,17 @@ package com.github.k1rakishou.kurobaexlite
 import android.app.Application
 import android.util.Log
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
+import com.github.k1rakishou.kurobaexlite.database.KurobaExLiteDatabase
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
+import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadViewManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
@@ -24,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.boards.BoardSelectionScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenToolbarActionHandler
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import com.squareup.moshi.Moshi
 import kotlin.system.exitProcess
@@ -42,6 +48,11 @@ class KurobaExLiteApplication : Application() {
   // TODO(KurobaEx): [Click to expand] doesn't work
   // TODO(KurobaEx): PullToRefresh in catalog scrolls to the middle of the catalog
   // TODO(KurobaEx): Text selection doesn't work.
+  // TODO(KurobaEx): FastScroller scrolling is incorrect (when opening already visited threads by url).
+  // TODO(KurobaEx): PostReplyChain shows full height view for a split second before resizing.
+  //  The problem is most likely in how it's handled in PostListContent.
+  // TODO(KurobaEx): When opening already visited threads by url the thread toolbar title is getting
+  //  stuck at "Loading..." title.
 
   override fun onCreate() {
     super.onCreate()
@@ -64,12 +75,29 @@ class KurobaExLiteApplication : Application() {
 
     modules += module {
       single { this@KurobaExLiteApplication.applicationContext }
+      single<Application> { this@KurobaExLiteApplication }
       single<CoroutineScope> { appCoroutineScope }
+      single { KurobaExLiteDatabase.buildDatabase(this@KurobaExLiteApplication) }
       single { ProxiedOkHttpClient() }
       single { GlobalConstants(get()) }
       single { Moshi.Builder().build() }
       single { PostCommentParser() }
       single { PostCommentApplier() }
+      single { FullScreenHelpers(get()) }
+      single { AndroidHelpers(get()) }
+
+      single {
+        LoadChanThreadView(
+          chanThreadViewManager = get(),
+          kurobaExLiteDatabase = get()
+        )
+      }
+      single {
+        UpdateChanThreadView(
+          chanThreadViewManager = get(),
+          kurobaExLiteDatabase = get()
+        )
+      }
 
       single {
         ParsedPostDataCache(
@@ -81,18 +109,23 @@ class KurobaExLiteApplication : Application() {
         )
       }
       single { ChanThreadCache() }
-
       single { SiteManager() }
       single { ChanThreadManager(siteManager = get()) }
       single { PostReplyChainManager() }
       single { ChanThreadViewManager() }
       single { SnackbarManager(appContext = get()) }
       single { UiInfoManager(appContext = get(), appSettings = get(), coroutineScope = get()) }
-
       single { AppSettings(appContext = get()) }
       single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
       single { ThemeEngine() }
       single { PostBindProcessor(get()) }
+      single {
+        ThreadScreenToolbarActionHandler(
+          siteManager = get(),
+          snackbarManager = get(),
+          androidHelpers = get()
+        )
+      }
 
       viewModel {
         HomeScreenViewModel(

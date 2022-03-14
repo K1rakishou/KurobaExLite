@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
-import com.github.k1rakishou.kurobaexlite.helpers.maxOfByOrNull
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -39,26 +38,7 @@ class PostBindProcessor(
     postsParsedOnce: Boolean,
     postDescriptor: PostDescriptor
   ) {
-    if (!isCatalogMode && postsParsedOnce) {
-      chanThreadViewManager.insertOrUpdate(postDescriptor.threadDescriptor) {
-        val prevLastViewedPostDescriptor = lastViewedPostDescriptor
-
-        val newLastViewedPostDescriptor: PostDescriptor? = when {
-          prevLastViewedPostDescriptor == null -> postDescriptor
-          prevLastViewedPostDescriptor.postNo != postDescriptor.postNo -> {
-            maxOfByOrNull(prevLastViewedPostDescriptor, postDescriptor) { it.postNo }
-          }
-          prevLastViewedPostDescriptor.postSubNo != postDescriptor.postSubNo -> {
-            maxOfByOrNull(prevLastViewedPostDescriptor, postDescriptor) { it.postSubNo }
-          }
-          else -> null
-        }
-
-        if (newLastViewedPostDescriptor != null) {
-          lastViewedPostDescriptor = newLastViewedPostDescriptor
-        }
-      }
-    }
+    // TODO(KurobaEx):
   }
 
   companion object {

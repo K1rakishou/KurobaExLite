@@ -2,17 +2,9 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
-import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
-import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.AbstractPostsState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 
 class CatalogScreenState : PostScreenViewModel.PostScreenState() {
-  override val postsAsyncDataState = MutableStateFlow<AsyncData<AbstractPostsState>>(AsyncData.Empty)
-  override val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
-  override val lastViewedPostDescriptor = MutableStateFlow<PostDescriptor?>(null)
-  override val searchQueryFlow = MutableStateFlow<String?>(null)
 
   override fun updatePost(postData: PostData) {
     val asyncData = postsAsyncDataState.value

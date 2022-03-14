@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
@@ -54,12 +55,13 @@ abstract class PostScreenViewModel(
   protected val themeEngine: ThemeEngine,
   protected val savedStateHandle: SavedStateHandle
 ) : BaseAndroidViewModel(application) {
-  private val postReplyChainManager by inject<PostReplyChainManager>(PostReplyChainManager::class.java)
-  private val chanThreadCache by inject<ChanThreadCache>(ChanThreadCache::class.java)
-  private val chanThreadManager by inject<ChanThreadManager>(ChanThreadManager::class.java)
-  private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
-  private val postBindProcessor by inject<PostBindProcessor>(PostBindProcessor::class.java)
+  private val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
+  private val chanThreadCache: ChanThreadCache by inject(ChanThreadCache::class.java)
+  private val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
+  private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
+  private val postBindProcessor: PostBindProcessor by inject(PostBindProcessor::class.java)
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
+  protected val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
 
   private var currentParseJob: Job? = null
   protected var postListBuilt: CompletableDeferred<Unit>? = null
@@ -203,15 +205,24 @@ abstract class PostScreenViewModel(
   }
 
   suspend fun parsePostsAround(
-    startIndex: Int = 0,
+    startPostDescriptor: PostDescriptor?,
     count: Int = 32,
     chanDescriptor: ChanDescriptor,
     postDataList: List<PostData>,
     isCatalogMode: Boolean,
   ) {
+    if (postDataList.isEmpty()) {
+      return
+    }
+
     val chanTheme = themeEngine.chanTheme
 
     withContext(globalConstants.postParserDispatcher) {
+      val startIndex = postDataList
+        .indexOfFirst { postData -> postData.postDescriptor == startPostDescriptor }
+        .takeIf { index -> index >= 0 }
+        ?: 0
+
       postDataList
         .bidirectionalSequence(startPosition = startIndex)
         .take(count)
@@ -229,7 +240,7 @@ abstract class PostScreenViewModel(
   }
 
   suspend fun parsePosts(
-    startIndex: Int = 0,
+    startPostDescriptor: PostDescriptor?,
     chanDescriptor: ChanDescriptor,
     postDataList: List<PostData>,
     count: Int,
@@ -238,6 +249,11 @@ abstract class PostScreenViewModel(
     val chanTheme = themeEngine.chanTheme
 
     withContext(globalConstants.postParserDispatcher) {
+      val startIndex = postDataList
+        .indexOfFirst { postData -> postData.postDescriptor == startPostDescriptor }
+        .takeIf { index -> index >= 0 }
+        ?: 0
+
       for (index in startIndex until (startIndex + count)) {
         val postData = postDataList.getOrNull(index) ?: break
 
@@ -389,6 +405,27 @@ abstract class PostScreenViewModel(
       val lastRememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
       if (lastRememberedPosition != null) {
         _scrollRestorationEventFlow.emit(lastRememberedPosition)
+        return@withContext
+      }
+
+      val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
+      val lastViewedPostDescriptor = postScreenState.lastViewedPostDescriptorForScrollRestoration.value
+
+      if (posts != null && lastViewedPostDescriptor != null) {
+        val index = posts
+          .indexOfLast { postDataState -> postDataState.value.postDescriptor == lastViewedPostDescriptor }
+
+        if (index > 0) {
+          uiInfoManager.orientations.forEach { orientation ->
+            val newLastRememberedPosition = LazyColumnRememberedPosition(
+              orientation = orientation,
+              index = index,
+              offset = 0
+            )
+
+            _scrollRestorationEventFlow.emit(newLastRememberedPosition)
+          }
+        }
       }
     }
   }
@@ -472,10 +509,12 @@ abstract class PostScreenViewModel(
   )
 
   abstract class PostScreenState {
-    abstract val postsAsyncDataState: MutableStateFlow<AsyncData<AbstractPostsState>>
-    abstract val threadCellDataState: MutableStateFlow<ThreadCellData?>
-    abstract val lastViewedPostDescriptor: MutableStateFlow<PostDescriptor?>
-    abstract val searchQueryFlow: MutableStateFlow<String?>
+    val postsAsyncDataState = MutableStateFlow<AsyncData<AbstractPostsState>>(AsyncData.Empty)
+    val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
+    val searchQueryFlow = MutableStateFlow<String?>(null)
+
+    val lastViewedPostDescriptorForScrollRestoration = MutableStateFlow<PostDescriptor?>(null)
+    val lastViewedPostDescriptorForIndicator = MutableStateFlow<PostDescriptor?>(null)
 
     private val _chanDescriptorFlow = MutableStateFlow<ChanDescriptor?>(null)
     val chanDescriptorFlow: StateFlow<ChanDescriptor?>
@@ -523,7 +562,11 @@ abstract class PostScreenViewModel(
 
   companion object {
     private const val TAG = "PostScreenViewModel"
-    private val DEFAULT_REMEMBERED_POSITION = LazyColumnRememberedPosition(0, 0)
+    private val DEFAULT_REMEMBERED_POSITION = LazyColumnRememberedPosition(
+      orientation = 0,
+      index = 0,
+      offset = 0
+    )
   }
 
 }
