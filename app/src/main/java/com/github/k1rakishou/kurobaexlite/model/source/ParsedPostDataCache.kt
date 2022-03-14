@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.buildAnnotatedString
+import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
@@ -28,11 +29,21 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import logcat.asLog
 
 class ParsedPostDataCache(
   private val appContext: Context,
+  private val coroutineScope: CoroutineScope,
   private val globalConstants: GlobalConstants,
   private val postCommentParser: PostCommentParser,
   private val postCommentApplier: PostCommentApplier,
@@ -45,6 +56,54 @@ class ParsedPostDataCache(
   @GuardedBy("mutex")
   private val threadParsedPostDataMap = mutableMapWithCap<PostDescriptor, ParsedPostData>(1024)
 
+  @GuardedBy("mutex")
+  private val catalogPendingUpdated = mutableSetOf<PostDescriptor>()
+  @GuardedBy("mutex")
+  private val threadPendingUpdated = mutableSetOf<PostDescriptor>()
+
+  private val updateNotifyDebouncer = DebouncingCoroutineExecutor(coroutineScope)
+
+  private val _postDataUpdatesFlow = MutableSharedFlow<Set<PostDescriptor>>(extraBufferCapacity = Channel.UNLIMITED)
+  val postDataUpdatesFlow: SharedFlow<Set<PostDescriptor>>
+    get() = _postDataUpdatesFlow.asSharedFlow()
+
+  suspend fun ensurePostDataLoaded(
+    postDescriptor: PostDescriptor,
+    func: suspend () -> Unit
+  ) {
+    val alreadyLoaded = mutex.withLock {
+      return@withLock threadParsedPostDataMap.containsKey(postDescriptor)
+        || catalogParsedPostDataMap.containsKey(postDescriptor)
+    }
+
+    if (alreadyLoaded) {
+      func()
+      return
+    }
+
+    val found = AtomicBoolean(false)
+    val processed = AtomicBoolean(false)
+
+    postDataUpdatesFlow
+      .takeWhile { !processed.get() }
+      .cancellable()
+      .collect { updated ->
+        if (!updated.contains(postDescriptor)) {
+          return@collect
+        }
+
+        if (!found.compareAndSet(false, true)) {
+          return@collect
+        }
+
+        try {
+          func()
+        } finally {
+          processed.set(true)
+        }
+      }
+  }
+
   suspend fun getOrCalculateParsedPostData(
     chanDescriptor: ChanDescriptor,
     postData: PostData,
@@ -52,50 +111,86 @@ class ParsedPostDataCache(
     chanTheme: ChanTheme,
     force: Boolean
   ): ParsedPostData {
-    return mutex.withLockNonCancellable {
-      val postDescriptor = postData.postDescriptor
+    val postDescriptor = postData.postDescriptor
 
-      val oldParsedPostData = when (chanDescriptor) {
+    val oldParsedPostData = mutex.withLockNonCancellable {
+      when (chanDescriptor) {
         is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor]
         is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor]
       }
+    }
 
-      if (!force && oldParsedPostData != null) {
-        postData.updateParsedPostData(oldParsedPostData)
-        return@withLockNonCancellable oldParsedPostData
-      }
+    if (!force && oldParsedPostData != null) {
+      postData.updateParsedPostData(oldParsedPostData)
+      notifyListenersPostDataUpdated(chanDescriptor, postData.postDescriptor)
 
-      val newParsedPostData = calculateParsedPostData(
-        postData = postData,
-        parsedPostDataContext = parsedPostDataContext,
-        chanTheme = chanTheme
-      )
+      return oldParsedPostData
+    }
 
+    val newParsedPostData = calculateParsedPostData(
+      postData = postData,
+      parsedPostDataContext = parsedPostDataContext,
+      chanTheme = chanTheme
+    )
+
+    mutex.withLockNonCancellable {
       when (chanDescriptor) {
         is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor] = newParsedPostData
         is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor] = newParsedPostData
       }
+    }
 
-      postData.updateParsedPostData(newParsedPostData)
+    postData.updateParsedPostData(newParsedPostData)
+    notifyListenersPostDataUpdated(chanDescriptor, postData.postDescriptor)
 
-      return@withLockNonCancellable newParsedPostData
+    return newParsedPostData
+  }
+
+  private suspend fun notifyListenersPostDataUpdated(
+    chanDescriptor: ChanDescriptor,
+    postDescriptor: PostDescriptor
+  ) {
+    mutex.withLockNonCancellable {
+      when (chanDescriptor) {
+        is CatalogDescriptor -> catalogPendingUpdated += postDescriptor
+        is ThreadDescriptor -> threadPendingUpdated += postDescriptor
+      }
+    }
+
+    updateNotifyDebouncer.post(timeout = 100L) {
+      val updates = mutex.withLockNonCancellable {
+        when (chanDescriptor) {
+          is CatalogDescriptor -> {
+            val updates = catalogPendingUpdated.toSet()
+            catalogPendingUpdated.clear()
+
+            return@withLockNonCancellable updates
+          }
+          is ThreadDescriptor -> {
+            val updates = threadPendingUpdated.toSet()
+            threadPendingUpdated.clear()
+
+            return@withLockNonCancellable updates
+          }
+        }
+      }
+
+      if (updates.isEmpty()) {
+        return@post
+      }
+
+      _postDataUpdatesFlow.emit(updates)
     }
   }
 
-  suspend fun formatToolbarTitle(
-    chanDescriptor: ChanDescriptor,
-    postDescriptor: PostDescriptor,
-    catalogMode: Boolean
-  ): String? {
-    if (catalogMode) {
-      return "${postDescriptor.siteKeyActual}/${postDescriptor.boardCode}/"
-    }
+  fun formatCatalogToolbarTitle(catalogDescriptor: CatalogDescriptor): String {
+    return "${catalogDescriptor.siteKeyActual}/${catalogDescriptor.boardCode}/"
+  }
 
+  suspend fun formatThreadToolbarTitle(postDescriptor: PostDescriptor): String? {
     return mutex.withLockNonCancellable {
-      val parsedPostData = when (chanDescriptor) {
-        is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor]
-        is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor]
-      } ?: return@withLockNonCancellable null
+      val parsedPostData = threadParsedPostDataMap[postDescriptor]
+        ?: return@withLockNonCancellable null
 
       if (parsedPostData.parsedPostSubject.isNotNullNorBlank()) {
         return@withLockNonCancellable parsedPostData.parsedPostSubject

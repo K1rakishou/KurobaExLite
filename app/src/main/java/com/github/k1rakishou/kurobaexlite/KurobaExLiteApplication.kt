@@ -50,8 +50,6 @@ class KurobaExLiteApplication : Application() {
   // TODO(KurobaEx): Text selection doesn't work.
   // TODO(KurobaEx): PostReplyChain shows full height view for a split second before resizing.
   //  The problem is most likely in how it's handled in PostListContent.
-  // TODO(KurobaEx): When opening already visited threads by url the thread toolbar title is getting
-  //  stuck at "Loading..." title.
 
   override fun onCreate() {
     super.onCreate()
@@ -101,6 +99,7 @@ class KurobaExLiteApplication : Application() {
       single {
         ParsedPostDataCache(
           appContext = get(),
+          coroutineScope = get(),
           globalConstants = get(),
           postCommentParser = get(),
           postCommentApplier = get(),

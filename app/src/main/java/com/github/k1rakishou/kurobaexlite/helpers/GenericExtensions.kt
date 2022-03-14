@@ -501,3 +501,5 @@ fun Number.asReadableFileSize(): String {
 suspend fun <T> Mutex.withLockNonCancellable(owner: Any? = null, action: suspend () -> T): T {
   return withContext(NonCancellable) { withLock(owner) { action.invoke() } }
 }
+
+fun unreachable(): Nothing = error("Unreachable!")

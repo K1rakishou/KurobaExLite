@@ -7,7 +7,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
@@ -55,30 +58,53 @@ abstract class PostsScreen(
         kurobaToolbarState.toolbarTitleState.value = stringResource(R.string.toolbar_loading_error)
       }
       is AsyncData.Data -> {
-        LaunchedEffect(
-          key1 = isCatalogScreen,
-          key2 = postListAsync,
-          block = {
-            val postListState = postListAsync.data.posts.firstOrNull()
-              ?: return@LaunchedEffect
-
-            val originalPost by postListState
-            val chanDescriptor = postListAsync.data.chanDescriptor
-
-            val title = parsedPostDataCache.formatToolbarTitle(
-              chanDescriptor = chanDescriptor,
-              postDescriptor = originalPost.postDescriptor,
-              catalogMode = isCatalogScreen
+        when (val chanDescriptor = postListAsync.data.chanDescriptor) {
+          is CatalogDescriptor -> {
+            kurobaToolbarState.toolbarTitleState.value =
+              parsedPostDataCache.formatCatalogToolbarTitle(chanDescriptor)
+          }
+          is ThreadDescriptor -> {
+            UpdateThreadToolbarTitle(
+              threadDescriptor = chanDescriptor,
+              postListAsync = postListAsync,
+              parsedPostDataCache = parsedPostDataCache,
+              kurobaToolbarState = kurobaToolbarState
             )
-
-            if (title == null) {
-              return@LaunchedEffect
-            }
-
-            kurobaToolbarState.toolbarTitleState.value = title
-          })
+          }
+          else -> {
+            unreachable()
+          }
+        }
       }
     }
+  }
+
+  @Composable
+  private fun UpdateThreadToolbarTitle(
+    threadDescriptor: ThreadDescriptor,
+    postListAsync: AsyncData.Data<AbstractPostsState>,
+    parsedPostDataCache: ParsedPostDataCache,
+    kurobaToolbarState: KurobaToolbarState
+  ) {
+    LaunchedEffect(
+      key1 = threadDescriptor,
+      key2 = postListAsync,
+      block = {
+        val postListState = postListAsync.data.posts.firstOrNull()
+          ?: return@LaunchedEffect
+
+        val originalPost by postListState
+
+        parsedPostDataCache.ensurePostDataLoaded(
+          postDescriptor = originalPost.postDescriptor,
+          func = {
+            val title = parsedPostDataCache.formatThreadToolbarTitle(originalPost.postDescriptor)
+              ?: return@ensurePostDataLoaded
+
+            kurobaToolbarState.toolbarTitleState.value = title
+          }
+        )
+      })
   }
 
   protected fun canProcessBackEvent(

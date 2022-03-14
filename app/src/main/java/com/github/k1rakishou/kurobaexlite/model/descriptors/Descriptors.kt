@@ -66,6 +66,10 @@ data class ThreadDescriptor(
   val boardCode: String
     get() = catalogDescriptor.boardCode
 
+  fun toOriginalPostDescriptor(): PostDescriptor {
+    return PostDescriptor(threadDescriptor = this, postNo = threadNo)
+  }
+
   fun serialize(buff: Buffer?): Buffer {
     val buffer = buff ?: Buffer()
 
