@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts
 
 import android.os.SystemClock
+import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
@@ -185,6 +186,24 @@ abstract class PostScreenViewModel(
       )
 
       postScreenState.updatePost(postData.copy(parsedPostData = parsedPostData))
+    }
+  }
+
+  suspend fun reparsePostSubject(postData: PostData): AnnotatedString? {
+    val parsedPostData = postData.parsedPostDataRead
+      ?: return null
+    val chanTheme = themeEngine.chanTheme
+
+    return withContext(globalConstants.postParserDispatcher) {
+      return@withContext parsedPostDataCache.parseAndProcessPostSubject(
+        chanTheme = chanTheme,
+        postIndex = postData.postIndex,
+        postDescriptor = postData.postDescriptor,
+        postTimeMs = postData.timeMs,
+        postImages = postData.images,
+        postSubjectParsed = parsedPostData.parsedPostSubject,
+        parsedPostDataContext = parsedPostData.parsedPostDataContext
+      )
     }
   }
 

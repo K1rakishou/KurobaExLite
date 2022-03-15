@@ -1163,7 +1163,8 @@ private fun PostCell(
     PostCellTitle(
       postData = postData,
       postSubject = postSubject,
-      postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
+      postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+      postsScreenViewModel = postsScreenViewModel
     )
 
     PostCellComment(
@@ -1190,6 +1191,7 @@ private fun PostCellTitle(
   postData: PostData,
   postSubject: AnnotatedString,
   postCellSubjectTextSizeSp: TextUnit,
+  postsScreenViewModel: PostScreenViewModel,
 ) {
   val chanTheme = LocalChanTheme.current
   val context = LocalContext.current
@@ -1235,8 +1237,29 @@ private fun PostCellTitle(
       Spacer(modifier = Modifier.width(4.dp))
     }
 
+    var actualPostSubject by remember { mutableStateOf(postSubject) }
+
+    LaunchedEffect(
+      key1 = postData,
+      block = {
+        val initialTime = postData.timeMs
+          ?: return@LaunchedEffect
+
+        while (isActive) {
+          val now = System.currentTimeMillis()
+          val delay = if (now - initialTime <= 60_000L) 5000L else 60_000L
+
+          delay(delay)
+
+          val newPostSubject = postsScreenViewModel.reparsePostSubject(postData)
+            ?: continue
+
+          actualPostSubject = newPostSubject
+        }
+      })
+
     Text(
-      text = postSubject,
+      text = actualPostSubject,
       fontSize = postCellSubjectTextSizeSp
     )
   }

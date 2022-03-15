@@ -23,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -235,7 +236,10 @@ class ParsedPostDataCache(
         parsedPostSubject = postSubjectParsed,
         processedPostSubject = parseAndProcessPostSubject(
           chanTheme = chanTheme,
-          postData = postData,
+          postIndex = postData.postIndex,
+          postDescriptor = postData.postDescriptor,
+          postTimeMs = postData.timeMs,
+          postImages = postData.images,
           postSubjectParsed = postSubjectParsed,
           parsedPostDataContext = parsedPostDataContext
         ),
@@ -290,13 +294,16 @@ class ParsedPostDataCache(
     }
   }
 
-  private fun parseAndProcessPostSubject(
+  suspend fun parseAndProcessPostSubject(
     chanTheme: ChanTheme,
-    postData: PostData,
+    postIndex: Int,
+    postDescriptor: PostDescriptor,
+    postTimeMs: Long?,
+    postImages: List<PostImageData>?,
     postSubjectParsed: String,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
-    val hasImages = postData.images?.isNotNullNorEmpty() ?: false
+    val hasImages = postImages?.isNotNullNorEmpty() ?: false
     val hasSubject = postSubjectParsed.isNotBlank()
 
     return buildAnnotatedString(capacity = postSubjectParsed.length) {
@@ -315,12 +322,12 @@ class ParsedPostDataCache(
       val postInfoPart = buildString(capacity = 32) {
         if (parsedPostDataContext.isParsingThread) {
           append("#")
-          append(postData.postIndex + 1)
+          append(postIndex + 1)
           append(TEXT_SEPARATOR)
         }
 
         append("No. ")
-        append(postData.postNo)
+        append(postDescriptor.postNo)
       }
 
       val postInfoPartAnnotatedString = AnnotatedString(
@@ -332,12 +339,10 @@ class ParsedPostDataCache(
 
       append(postInfoPartAnnotatedString)
 
-      if (postData.timeMs != null) {
-        val timeMs = postData.timeMs
-
+      if (postTimeMs != null) {
         val relativeTime = buildString {
           val timeString = DateUtils.getRelativeTimeSpanString(
-            timeMs,
+            postTimeMs,
             System.currentTimeMillis(),
             DateUtils.SECOND_IN_MILLIS,
             0
@@ -361,8 +366,7 @@ class ParsedPostDataCache(
         append("\n")
 
         val imagesInfoAnnotatedString = buildAnnotatedString(capacity = 64) {
-          val postImages = postData.images!!
-          if (postImages.size > 1) {
+          if (postImages!!.size > 1) {
             val imagesCount = postImages.size
             val totalFileSize = postImages.sumOf { it.fileSize }
 
