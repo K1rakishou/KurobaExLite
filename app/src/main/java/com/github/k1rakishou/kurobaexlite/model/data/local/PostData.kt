@@ -57,12 +57,12 @@ open class PostData(
       .combine(MurmurHashUtils.murmurhash3_x64_128(postCommentUnparsed))
       .combine(MurmurHashUtils.murmurhash3_x64_128(timeMs))
       .combine(MurmurHashUtils.murmurhash3_x64_128(images))
+
+    _postFullHashMut = hash
       .combine(MurmurHashUtils.murmurhash3_x64_128(threadRepliesTotal))
       .combine(MurmurHashUtils.murmurhash3_x64_128(threadImagesTotal))
       .combine(MurmurHashUtils.murmurhash3_x64_128(threadPostersTotal))
-
-    _postFullHashMut = hash.combine((parsedPostData?.murmurhash())
-      ?: MurmurHashUtils.Murmur3Hash.EMPTY)
+      .combine(parsedPostData?.murmurhash() ?: MurmurHashUtils.Murmur3Hash.EMPTY)
 
     _postServerDataHashMut = hash.combine(MurmurHashUtils.murmurhash3_x64_128(parsedPostData?.postFooterText))
   }

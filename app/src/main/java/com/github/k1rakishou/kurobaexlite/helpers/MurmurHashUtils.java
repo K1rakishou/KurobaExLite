@@ -23,6 +23,7 @@ package com.github.k1rakishou.kurobaexlite.helpers;
 import android.text.Spannable;
 import android.text.style.CharacterStyle;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.compose.ui.text.AnnotatedString;
 
@@ -210,7 +211,7 @@ public class MurmurHashUtils {
             this.val2 = val2;
         }
 
-        public Murmur3Hash combine(Murmur3Hash other) {
+        public Murmur3Hash combine(@NonNull Murmur3Hash other) {
             return new Murmur3Hash(val1 ^ other.val1, val2 ^ other.val2);
         }
 
