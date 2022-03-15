@@ -14,13 +14,13 @@ import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
@@ -36,7 +36,7 @@ import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreenViewModel(
   private val chanThreadManager: ChanThreadManager,
-  private val chanThreadCache: ChanThreadCache,
+  private val chanCache: ChanCache,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
   themeEngine: ThemeEngine,
@@ -176,7 +176,7 @@ class ThreadScreenViewModel(
           )
         },
         onPostsParsed = { postDataList ->
-          chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
+          chanCache.insertThreadPosts(threadDescriptor, postDataList)
           snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
 
           onPostsParsed(
@@ -256,7 +256,7 @@ class ThreadScreenViewModel(
     }
 
     val cachedThreadPostsState = if (threadDescriptor != null) {
-      val postsFromCache = chanThreadCache.getThreadPosts(threadDescriptor)
+      val postsFromCache = chanCache.getThreadPosts(threadDescriptor)
       ThreadPostsState(threadDescriptor, postsFromCache)
     } else {
       null
@@ -332,7 +332,7 @@ class ThreadScreenViewModel(
           }
 
           try {
-            chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
+            chanCache.insertThreadPosts(threadDescriptor, postDataList)
 
             onPostsParsed(
               threadDescriptor = threadDescriptor,
@@ -397,7 +397,7 @@ class ThreadScreenViewModel(
           }
 
           try {
-            chanThreadCache.insertThreadPosts(threadDescriptor, postDataList)
+            chanCache.insertThreadPosts(threadDescriptor, postDataList)
 
             onPostsParsed(
               threadDescriptor = threadDescriptor,
@@ -471,7 +471,7 @@ class ThreadScreenViewModel(
     updateChanThreadViewExecutor.post(timeout = 200L, key = key) {
       val updatedChanThreadView = updateChanThreadView.execute(
         threadDescriptor = threadDescriptor,
-        threadLastPostDescriptor = chanThreadCache.getLastPost(threadDescriptor)?.postDescriptor,
+        threadLastPostDescriptor = chanCache.getLastPost(threadDescriptor)?.postDescriptor,
         threadBoundPostDescriptor = boundPostDescriptor,
         isBottomOnThreadReached = postListTouchingBottom.value
       )

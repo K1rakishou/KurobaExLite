@@ -1,18 +1,39 @@
-package com.github.k1rakishou.kurobaexlite.model.data.local
+package com.github.k1rakishou.kurobaexlite.model.cache
 
+import android.os.SystemClock
 import androidx.annotation.GuardedBy
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
+import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.sync.Mutex
 import logcat.logcat
 
-class ChanThread {
+class ChanThreadCache(
+  val threadDescriptor: ThreadDescriptor
+) : IChanCache {
   private val mutex = Mutex()
 
   @GuardedBy("mutex")
   private val posts = mutableListOf<PostData>()
   @GuardedBy("mutex")
   private val postsMap = mutableMapOf<PostDescriptor, PostData>()
+
+  @Volatile
+  override var lastUpdateTime: Long = SystemClock.elapsedRealtime()
+    private set
+
+  override val chanDescriptor: ChanDescriptor = threadDescriptor
+
+  override suspend fun hasPosts(): Boolean {
+    return mutex.withLockNonCancellable { posts.isNotEmpty() }
+  }
+
+  suspend fun onThreadAccessed() {
+    mutex.withLockNonCancellable { lastUpdateTime = SystemClock.elapsedRealtime() }
+  }
 
   suspend fun insert(postDataCollection: Collection<PostData>) {
     mutex.withLockNonCancellable {

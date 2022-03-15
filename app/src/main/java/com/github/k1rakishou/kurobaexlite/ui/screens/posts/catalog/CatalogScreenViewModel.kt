@@ -11,8 +11,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
@@ -27,7 +27,7 @@ import logcat.logcat
 
 class CatalogScreenViewModel(
   private val chanThreadManager: ChanThreadManager,
-  private val chanThreadCache: ChanThreadCache,
+  private val chanCache: ChanCache,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
   themeEngine: ThemeEngine,
@@ -181,7 +181,7 @@ class CatalogScreenViewModel(
         }
 
         try {
-          chanThreadCache.insertCatalogThreads(catalogDescriptor, postDataList)
+          chanCache.insertCatalogThreads(catalogDescriptor, postDataList)
           onCatalogLoaded(catalogDescriptor)
 
           _postsFullyParsedOnceFlow.emit(true)

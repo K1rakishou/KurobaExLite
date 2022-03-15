@@ -96,6 +96,7 @@ abstract class PostsScreen(
         val originalPost by postListState
 
         parsedPostDataCache.ensurePostDataLoaded(
+          isCatalog = false,
           postDescriptor = originalPost.postDescriptor,
           func = {
             val title = parsedPostDataCache.formatThreadToolbarTitle(originalPost.postDescriptor)

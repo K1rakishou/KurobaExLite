@@ -68,12 +68,16 @@ class ParsedPostDataCache(
     get() = _postDataUpdatesFlow.asSharedFlow()
 
   suspend fun ensurePostDataLoaded(
+    isCatalog: Boolean,
     postDescriptor: PostDescriptor,
     func: suspend () -> Unit
   ) {
     val alreadyLoaded = mutex.withLock {
-      return@withLock threadParsedPostDataMap.containsKey(postDescriptor)
-        || catalogParsedPostDataMap.containsKey(postDescriptor)
+      return@withLock if (isCatalog) {
+        catalogParsedPostDataMap.containsKey(postDescriptor)
+      } else {
+        threadParsedPostDataMap.containsKey(postDescriptor)
+      }
     }
 
     if (alreadyLoaded) {

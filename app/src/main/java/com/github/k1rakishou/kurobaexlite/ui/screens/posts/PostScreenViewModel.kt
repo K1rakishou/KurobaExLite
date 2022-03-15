@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
@@ -23,7 +24,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -56,7 +56,7 @@ abstract class PostScreenViewModel(
   protected val savedStateHandle: SavedStateHandle
 ) : BaseAndroidViewModel(application) {
   private val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
-  private val chanThreadCache: ChanThreadCache by inject(ChanThreadCache::class.java)
+  private val chanCache: ChanCache by inject(ChanCache::class.java)
   private val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val postBindProcessor: PostBindProcessor by inject(PostBindProcessor::class.java)
@@ -127,11 +127,13 @@ abstract class PostScreenViewModel(
     postListTouchingBottom.value = false
   }
 
-  fun onThreadLoaded(threadDescriptor: ThreadDescriptor) {
+  suspend fun onThreadLoaded(threadDescriptor: ThreadDescriptor) {
+    chanCache.onCatalogOrThreadAccessed(threadDescriptor)
     postScreenState.onEndLoading()
   }
 
-  fun onCatalogLoaded(catalogDescriptor: CatalogDescriptor) {
+  suspend fun onCatalogLoaded(catalogDescriptor: CatalogDescriptor) {
+    chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
     postScreenState.onEndLoading()
   }
 
@@ -342,7 +344,7 @@ abstract class PostScreenViewModel(
           val repliesToPostDescriptorSet = postReplyChainManager.getManyRepliesTo(postDescriptors)
 
           val repliesToPostDataSet = hashSetOf<PostData>()
-          repliesToPostDataSet += chanThreadCache.getManyForDescriptor(chanDescriptor, repliesToPostDescriptorSet)
+          repliesToPostDataSet += chanCache.getManyForDescriptor(chanDescriptor, repliesToPostDescriptorSet)
           repliesToPostDataSet += postReplyChainManager.getManyRepliesTo(postDescriptors)
             .mapNotNull { postDescriptor -> postDataMap[postDescriptor] }
 
@@ -401,6 +403,8 @@ abstract class PostScreenViewModel(
   }
 
   suspend fun restoreScrollPosition(chanDescriptor: ChanDescriptor) {
+    logcat(tag = TAG) { "restoreScrollPosition($chanDescriptor)" }
+
     withContext(Dispatchers.Main) {
       val lastRememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
       if (lastRememberedPosition != null) {

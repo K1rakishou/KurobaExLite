@@ -6,10 +6,10 @@ import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
 import org.koin.java.KoinJavaComponent.inject
 
 class PopupRepliesScreenViewModel(
-  private val chanThreadCache: ChanThreadCache,
+  private val chanCache: ChanCache,
   private val postReplyChainManager: PostReplyChainManager,
   application: KurobaExLiteApplication,
   globalConstants: GlobalConstants,
@@ -101,7 +101,7 @@ class PopupRepliesScreenViewModel(
       return false
     }
 
-    val posts = chanThreadCache.getManyForDescriptor(postDescriptor.threadDescriptor, repliesFrom)
+    val posts = chanCache.getManyForDescriptor(postDescriptor.threadDescriptor, repliesFrom)
         .let { postDataList -> parsePostDataList(replyViewMode, postDescriptor, postDataList) }
 
     if (posts.isEmpty()) {
@@ -122,7 +122,7 @@ class PopupRepliesScreenViewModel(
     val postDescriptor = replyViewMode.postDescriptor
     postScreenState.updateChanDescriptor(postDescriptor.threadDescriptor)
 
-    val threadPosts = chanThreadCache.getPost(postDescriptor)
+    val threadPosts = chanCache.getPost(postDescriptor)
       ?.let { postData -> parsePostData(replyViewMode, postDescriptor, postData) }
 
     if (threadPosts == null || threadPosts.isEmpty()) {

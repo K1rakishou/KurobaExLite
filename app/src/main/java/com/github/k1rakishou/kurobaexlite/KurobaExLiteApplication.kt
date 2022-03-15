@@ -21,7 +21,7 @@ import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
-import com.github.k1rakishou.kurobaexlite.model.source.ChanThreadCache
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -106,7 +106,7 @@ class KurobaExLiteApplication : Application() {
           postReplyChainManager = get()
         )
       }
-      single { ChanThreadCache() }
+      single { ChanCache() }
       single { SiteManager() }
       single { ChanThreadManager(siteManager = get()) }
       single { PostReplyChainManager() }
@@ -134,7 +134,7 @@ class KurobaExLiteApplication : Application() {
       viewModel {
         CatalogScreenViewModel(
           chanThreadManager = get(),
-          chanThreadCache = get(),
+          chanCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
           themeEngine = get(),
@@ -144,7 +144,7 @@ class KurobaExLiteApplication : Application() {
       viewModel {
         ThreadScreenViewModel(
           chanThreadManager = get(),
-          chanThreadCache = get(),
+          chanCache = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
           themeEngine = get(),
@@ -153,7 +153,7 @@ class KurobaExLiteApplication : Application() {
       }
       viewModel {
         PopupRepliesScreenViewModel(
-          chanThreadCache = get(),
+          chanCache = get(),
           postReplyChainManager = get(),
           application = this@KurobaExLiteApplication,
           globalConstants = get(),
