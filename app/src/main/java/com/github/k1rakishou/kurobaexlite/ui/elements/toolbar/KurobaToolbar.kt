@@ -218,7 +218,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
             colorBehindIcon = parentBgColor
           )
 
-          Spacer(modifier = Modifier.width(4.dp))
+          Spacer(modifier = Modifier.width(8.dp))
         }
 
         if (onToolbarOverflowMenuClicked != null) {

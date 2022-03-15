@@ -61,6 +61,7 @@ fun PullToRefresh(
   circleRadius: Dp = 16.dp,
   pullThreshold: Dp = 128.dp,
   pullToRefreshState: PullToRefreshState,
+  canPull: () -> Boolean = { true },
   onTriggered: suspend () -> Unit,
   content: @Composable () -> Unit
 ) {
@@ -83,7 +84,7 @@ fun PullToRefresh(
     object : NestedScrollConnection {
 
       override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        if (pullToRefreshEnabled && !pullingBlocked && isTouching && isPulling && available.y < 0f) {
+        if (canPull() && pullToRefreshEnabled && !pullingBlocked && isTouching && isPulling && available.y < 0f) {
           pullToRefreshPulledPx = calculateNextPulledPx(
             pullToRefreshPulledPx = pullToRefreshPulledPx,
             pullThresholdPx = pullThresholdPx,
@@ -102,7 +103,7 @@ fun PullToRefresh(
         available: Offset,
         source: NestedScrollSource
       ): Offset {
-        if (pullToRefreshEnabled && !pullingBlocked && isTouching && available.y != 0f) {
+        if (canPull() && pullToRefreshEnabled && !pullingBlocked && isTouching && available.y != 0f) {
           isPulling = true
           pullToRefreshPulledPx = calculateNextPulledPx(
             pullToRefreshPulledPx = pullToRefreshPulledPx,

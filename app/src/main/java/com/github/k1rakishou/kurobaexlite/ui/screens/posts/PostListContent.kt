@@ -435,6 +435,7 @@ private fun PostListInternal(
       pullToRefreshEnabled = pullToRefreshEnabled,
       topPadding = pullToRefreshTopPaddingDp,
       pullToRefreshState = pullToRefreshState,
+      canPull = { searchQuery == null },
       onTriggered = {
         postsScreenViewModel.reload(
           loadOptions = PostScreenViewModel.LoadOptions(
