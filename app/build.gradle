@@ -8,6 +8,10 @@ plugins {
 android {
     compileSdk 31
 
+    productFlavors.all {
+        ext.apkVersionNameSuffix = null
+    }
+
     defaultConfig {
         applicationId "com.github.k1rakishou.kurobaexlite"
         minSdk 21
@@ -25,12 +29,137 @@ android {
         }
     }
 
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    flavorDimensions "default"
+
+    productFlavors {
+        // FLAVOR_TYPE 0 - release (stable) build
+        // FLAVOR_TYPE 1 - beta build
+        // FLAVOR_TYPE 2 - dev build
+
+        stable {
+            dimension "default"
+            applicationIdSuffix ""
+            apkVersionNameSuffix = ""
+
+            buildConfigField "int", "FLAVOR_TYPE", "0"
+
+            manifestPlaceholders = [
+                    appName              : "KurobaExLite",
+                    iconLoc              : "@mipmap/ic_launcher_release",
+                    fileProviderAuthority: "${defaultConfig.applicationId}${applicationIdSuffix}.fileprovider"
+            ]
+        }
+        beta {
+            dimension "default"
+            // Different app ids for different flavors so that the users are able to install both
+            // of them without deleting anything
+            applicationIdSuffix ".beta"
+            apkVersionNameSuffix = "-beta"
+
+            buildConfigField "int", "FLAVOR_TYPE", "1"
+
+            // The same as in stable flavor
+            manifestPlaceholders = [
+                    appName              : "KurobaExLite-beta",
+                    iconLoc              : "@mipmap/ic_launcher_beta",
+                    fileProviderAuthority: "${defaultConfig.applicationId}${applicationIdSuffix}.fileprovider"
+            ]
+        }
+        dev {
+            dimension "default"
+            // Different app ids for different flavors so that the users are able to install both
+            // of them without deleting anything
+            applicationIdSuffix ".dev"
+            apkVersionNameSuffix = "-dev"
+
+            buildConfigField "int", "FLAVOR_TYPE", "2"
+
+            // The same as in stable flavor
+            manifestPlaceholders = [
+                    appName              : "KurobaExLite-dev",
+                    iconLoc              : "@mipmap/ic_launcher_dev",
+                    fileProviderAuthority: "${defaultConfig.applicationId}${applicationIdSuffix}.fileprovider"
+            ]
         }
     }
+
+    buildTypes {
+        // manifestPlaceholders do not work here for some reason so here is a little hack.
+        // We need to iterate each build variant and for each build variant we need to find it's
+        // flavor then we need to extract the versionNameSuffix from the flavor and update the output
+        // apk name with it.
+        android.applicationVariants.all { variant ->
+            variant.outputs.all {
+                Object flavor = getCurrentFlavor(variant.flavorName)
+                if (flavor == null) {
+                    throw new GradleException("Couldn't find flavor by variant.flavorName = ${variant.flavorName}")
+                }
+
+                outputFileName = "KurobaExLite${flavor.apkVersionNameSuffix}.apk"
+            }
+        }
+
+        release {
+            File propsFile = file('release.properties')
+
+            if (propsFile.exists()) {
+                Properties props = new Properties()
+                InputStream is = new FileInputStream(propsFile)
+                props.load(is)
+
+                signingConfigs {
+                    release {
+                        storeFile file(props['keystoreFile'])
+                        storePassword props['keystorePass']
+                        keyAlias props['keyAlias']
+                        keyPassword props['keyPass']
+
+                        v1SigningEnabled true
+                        v2SigningEnabled true
+                        enableV3Signing = true
+                        enableV4Signing = true
+                    }
+                }
+
+                is.close()
+                signingConfig signingConfigs.release
+            }
+
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard.cfg'
+
+            debuggable = false
+        }
+        debug {
+            File f = file('debug.properties')
+            if (f.exists()) {
+                Properties props = new Properties()
+                InputStream is = new FileInputStream(f)
+                props.load(is)
+
+                signingConfigs {
+                    debug {
+                        storeFile file(props['keystoreFile'])
+                        storePassword props['keystorePass']
+                        keyAlias props['keyAlias']
+                        keyPassword props['keyPass']
+
+                        v1SigningEnabled true
+                        v2SigningEnabled true
+                        enableV3Signing = true
+                        enableV4Signing = true
+                    }
+                }
+
+                is.close()
+                signingConfig signingConfigs.debug
+            }
+
+            minifyEnabled false
+            debuggable = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -89,4 +218,16 @@ dependencies {
     androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
 
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
+}
+
+def getCurrentFlavor(String name) {
+    Object resultFlavor = null
+
+    android.productFlavors.all { flavor ->
+        if (flavor.name == name) {
+            resultFlavor = flavor
+        }
+    }
+
+    return resultFlavor
 }
