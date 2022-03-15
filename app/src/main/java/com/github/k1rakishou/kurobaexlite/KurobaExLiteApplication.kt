@@ -22,7 +22,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
-import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.boards.BoardSelectionScreenViewModel
@@ -48,8 +48,6 @@ class KurobaExLiteApplication : Application() {
   // TODO(KurobaEx): [Click to expand] doesn't work
   // TODO(KurobaEx): PullToRefresh in catalog scrolls to the middle of the catalog
   // TODO(KurobaEx): Text selection doesn't work.
-  // TODO(KurobaEx): PostReplyChain shows full height view for a split second before resizing.
-  //  The problem is most likely in how it's handled in PostListContent.
 
   override fun onCreate() {
     super.onCreate()

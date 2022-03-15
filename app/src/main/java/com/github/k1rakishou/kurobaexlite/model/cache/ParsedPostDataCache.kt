@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.model.source
+package com.github.k1rakishou.kurobaexlite.model.cache
 
 import android.content.Context
 import android.text.format.DateUtils
@@ -52,14 +52,14 @@ class ParsedPostDataCache(
   private val mutex = Mutex()
 
   @GuardedBy("mutex")
-  private val catalogParsedPostDataMap = mutableMapWithCap<PostDescriptor, ParsedPostData>(1024)
+  private val catalogParsedPostDataMap = mutableMapWithCap<PostDescriptor, ParsedPostData>(128)
   @GuardedBy("mutex")
   private val threadParsedPostDataMap = mutableMapWithCap<PostDescriptor, ParsedPostData>(1024)
 
   @GuardedBy("mutex")
-  private val catalogPendingUpdated = mutableSetOf<PostDescriptor>()
+  private val catalogPendingUpdates = mutableSetOf<PostDescriptor>()
   @GuardedBy("mutex")
-  private val threadPendingUpdated = mutableSetOf<PostDescriptor>()
+  private val threadPendingUpdates = mutableSetOf<PostDescriptor>()
 
   private val updateNotifyDebouncer = DebouncingCoroutineExecutor(coroutineScope)
 
@@ -156,8 +156,8 @@ class ParsedPostDataCache(
   ) {
     mutex.withLockNonCancellable {
       when (chanDescriptor) {
-        is CatalogDescriptor -> catalogPendingUpdated += postDescriptor
-        is ThreadDescriptor -> threadPendingUpdated += postDescriptor
+        is CatalogDescriptor -> catalogPendingUpdates += postDescriptor
+        is ThreadDescriptor -> threadPendingUpdates += postDescriptor
       }
     }
 
@@ -165,14 +165,14 @@ class ParsedPostDataCache(
       val updates = mutex.withLockNonCancellable {
         when (chanDescriptor) {
           is CatalogDescriptor -> {
-            val updates = catalogPendingUpdated.toSet()
-            catalogPendingUpdated.clear()
+            val updates = catalogPendingUpdates.toSet()
+            catalogPendingUpdates.clear()
 
             return@withLockNonCancellable updates
           }
           is ThreadDescriptor -> {
-            val updates = threadPendingUpdated.toSet()
-            threadPendingUpdated.clear()
+            val updates = threadPendingUpdates.toSet()
+            threadPendingUpdates.clear()
 
             return@withLockNonCancellable updates
           }

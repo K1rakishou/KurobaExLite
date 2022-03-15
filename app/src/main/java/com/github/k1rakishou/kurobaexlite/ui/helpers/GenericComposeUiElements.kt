@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -59,6 +60,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -70,6 +72,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import java.util.Locale
@@ -623,12 +626,26 @@ fun KurobaComposeCheckbox(
 fun KurobaFloatingActionButton(
   modifier: Modifier = Modifier,
   @DrawableRes iconDrawableId: Int,
+  horizOffset: Dp? = null,
+  vertOffset: Dp? = null,
+  fabSize: Dp? = null,
   onClick: () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+  val actualFabSize = fabSize ?: dimensionResource(id = R.dimen.fab_size)
+
+  val offsetModifier = if (horizOffset != null || vertOffset != null) {
+    Modifier.offset(x = horizOffset ?: 0.dp, y = vertOffset ?: 0.dp)
+  } else {
+    Modifier
+  }
 
   FloatingActionButton(
-    modifier = modifier,
+    modifier = modifier.then(
+      Modifier
+        .size(actualFabSize)
+        .then(offsetModifier)
+    ),
     backgroundColor = chanTheme.accentColorCompose,
     contentColor = Color.White,
     onClick = onClick

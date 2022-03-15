@@ -59,6 +59,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -468,8 +469,16 @@ private fun PostListInternal(
                 else -> stringResource(R.string.post_list_no_thread_selected)
               }
 
+              val sizeModifier = if (isInPopup) {
+                Modifier
+                  .fillMaxWidth()
+                  .height(180.dp)
+              } else {
+                Modifier.fillParentMaxSize()
+              }
+
               Box(
-                modifier = Modifier.fillParentMaxSize(),
+                modifier = Modifier.then(sizeModifier),
                 contentAlignment = Alignment.Center
               ) {
                 KurobaComposeText(
@@ -789,6 +798,9 @@ private fun LazyItemScope.ThreadStatusCell(
     return
   }
 
+  val fabSize = dimensionResource(id = R.dimen.fab_size)
+  val fabEndOffset = dimensionResource(id = R.dimen.post_list_fab_end_offset)
+
   val coroutineScope = rememberCoroutineScope()
   val lastItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
 
@@ -881,10 +893,16 @@ private fun LazyItemScope.ThreadStatusCell(
       }
     }
 
-    val combinedPaddings = remember {
+    val combinedPaddings = remember(key1 = threadStatusCellData.lastLoadError) {
+      val endPadding = if (threadStatusCellData.lastLoadError != null) {
+        fabSize + fabEndOffset
+      } else {
+        0.dp
+      }
+
       PaddingValues(
         start = padding.calculateStartPadding(LayoutDirection.Ltr),
-        end = padding.calculateEndPadding(LayoutDirection.Ltr),
+        end = padding.calculateEndPadding(LayoutDirection.Ltr) + endPadding,
         top = 16.dp,
         bottom = 16.dp
       )
@@ -1009,7 +1027,7 @@ private fun PostCellContainerAnimated(
   val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
   val bgColor = remember(key1 = isCatalogMode, key2 = currentlyOpenedThread) {
     if (isCatalogMode && currentlyOpenedThread == postData.postDescriptor.threadDescriptor) {
-      chanTheme.postHighlightedColorCompose
+      chanTheme.highlighterColorCompose.copy(alpha = 0.3f)
     } else {
       Color.Unspecified
     }
@@ -1032,10 +1050,9 @@ private fun PostCellContainerUpdateAnimation(
 ) {
   val chanTheme = LocalChanTheme.current
   val bgColorAnimatable = remember { Animatable(Color.Unspecified) }
+
   val startColor = chanTheme.backColorCompose
-  val endColor = remember(key1 = chanTheme.postHighlightedColorCompose) {
-    chanTheme.postHighlightedColorCompose.copy(alpha = 0.25f)
-  }
+  val endColor = chanTheme.selectedOnBackColorCompose
 
   LaunchedEffect(
     key1 = Unit,

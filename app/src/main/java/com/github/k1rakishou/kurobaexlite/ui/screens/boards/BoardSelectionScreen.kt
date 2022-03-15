@@ -227,8 +227,12 @@ class BoardSelectionScreen(
     onBoardClicked: (CatalogDescriptor) -> Unit
   ) {
     val chanTheme = LocalChanTheme.current
+    val bgColorWithAlpha = remember(key1 = chanTheme.highlighterColorCompose) {
+      chanTheme.highlighterColorCompose.copy(alpha = 0.3f)
+    }
+
     val backgroundColorModifier = if (chanBoardUiData.catalogDescriptor == catalogDescriptor) {
-      Modifier.background(chanTheme.postHighlightedColorCompose)
+      Modifier.background(bgColorWithAlpha)
     } else {
       Modifier
     }

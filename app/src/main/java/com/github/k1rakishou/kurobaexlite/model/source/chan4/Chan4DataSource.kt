@@ -8,7 +8,13 @@ import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertIntoJsonObjectWi
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.model.data.local.*
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ChanBoard
+import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardsDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.PostImageDataJson
@@ -70,7 +76,7 @@ class Chan4DataSource(
         val threadDataJson = threadDataJsonResult.unwrap()
           ?: throw ChanDataSourceException("Failed to convert thread json into ThreadDataJson object")
 
-        val postDataList = mutableListWithCap<PostData>(initialCapacity = 16)
+        val postDataList = mutableListWithCap<PostData>(initialCapacity = threadDataJson.posts.size)
 
         postDataList += threadDataJson.posts.mapIndexed { index, threadPost ->
           val postDescriptor = PostDescriptor.create(
@@ -154,7 +160,8 @@ class Chan4DataSource(
         val catalogPagesDataJson = catalogPagesDataJsonResult.unwrap()
           ?: throw ChanDataSourceException("Failed to convert catalog json into CatalogDataJson object")
 
-        val postDataList = mutableListWithCap<PostData>(initialCapacity = 150)
+        val totalCount = catalogPagesDataJson.sumOf { catalogPageData -> catalogPageData.threads.size }
+        val postDataList = mutableListWithCap<PostData>(initialCapacity = totalCount)
 
         catalogPagesDataJson.forEachIndexed { index, catalogPage ->
           postDataList += catalogPage.threads.map { catalogThread ->

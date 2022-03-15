@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
@@ -33,6 +34,7 @@ class Chan4 : Site {
   override fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor? {
     val parts = url.pathSegments
     if (parts.isEmpty()) {
+      logcatError { "Failed to parse \'$url\' (no pathSegments)" }
       return null
     }
 
@@ -44,18 +46,19 @@ class Chan4 : Site {
     }
 
     // Thread mode
-    val threadNo = (parts[2].toIntOrNull() ?: -1).toLong()
-    var postId = -1L
+    val threadNo: Long? = parts[2].toLongOrNull()
+    var postId: Long? = null
     val fragment = url.fragment
 
     if (fragment != null) {
       val index = fragment.indexOf("p")
       if (index >= 0) {
-        postId = (fragment.substring(index + 1).toIntOrNull() ?: -1).toLong()
+        postId = fragment.substring(index + 1).toLongOrNull()
       }
     }
 
-    if (threadNo < 0L) {
+    if (threadNo == null || threadNo <= 0L) {
+      logcatError { "Failed to parse \'$url\' (threadNo is bad)" }
       return null
     }
 
@@ -65,7 +68,7 @@ class Chan4 : Site {
       threadNo = threadNo
     )
 
-    if (postId <= 0) {
+    if (postId == null || postId <= 0L) {
       return ResolvedDescriptor.CatalogOrThread(threadDescriptor)
     }
 

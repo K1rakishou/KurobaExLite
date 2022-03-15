@@ -2,10 +2,21 @@ package com.github.k1rakishou.kurobaexlite.themes
 
 import android.annotation.SuppressLint
 import android.graphics.Typeface
-import androidx.compose.material.*
+import androidx.compose.material.ButtonColors
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.CheckboxColors
+import androidx.compose.material.CheckboxDefaults
+import androidx.compose.material.ContentAlpha
+import androidx.compose.material.SliderColors
+import androidx.compose.material.SliderDefaults
 import androidx.compose.material.SliderDefaults.DisabledTickAlpha
 import androidx.compose.material.SliderDefaults.InactiveTrackAlpha
 import androidx.compose.material.SliderDefaults.TickAlpha
+import androidx.compose.material.SwitchColors
+import androidx.compose.material.SwitchDefaults
+import androidx.compose.material.TextFieldColors
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -23,11 +34,12 @@ abstract class ChanTheme {
   abstract val primaryColor: Int
   abstract val backColor: Int
   abstract val backColorSecondary: Int
+  abstract val selectedOnBackColor: Int
+  abstract val highlighterColor: Int
   abstract val errorColor: Int
   abstract val textColorPrimary: Int
   abstract val textColorSecondary: Int
   abstract val textColorHint: Int
-  abstract val postHighlightedColor: Int
   abstract val postSavedReplyColor: Int
   abstract val postSubjectColor: Int
   abstract val postDetailsColor: Int
@@ -40,9 +52,6 @@ abstract class ChanTheme {
   abstract val postSpoilerRevealTextColor: Int
   abstract val postUnseenLabelColor: Int
   abstract val dividerColor: Int
-  abstract val bookmarkCounterNotWatchingColor: Int
-  abstract val bookmarkCounterHasRepliesColor: Int
-  abstract val bookmarkCounterNormalColor: Int
 
   abstract fun fullCopy(): ChanTheme
 
@@ -58,16 +67,16 @@ abstract class ChanTheme {
   val primaryColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(primaryColor) }
   val backColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(backColor) }
   val backColorSecondaryCompose by lazy(LazyThreadSafetyMode.NONE) { Color(backColorSecondary) }
+  val selectedOnBackColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(selectedOnBackColor) }
+  val highlighterColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(highlighterColor) }
+  val errorColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(errorColor) }
+
   val textColorPrimaryCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorPrimary) }
   val textColorSecondaryCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorSecondary) }
   val textColorHintCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorHint) }
-  val errorColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(errorColor) }
+
   val dividerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(dividerColor) }
   val postSubjectColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSubjectColor) }
-  val postHighlightedColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postHighlightedColor) }
-  val bookmarkCounterNotWatchingColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterNotWatchingColor) }
-  val bookmarkCounterHasRepliesColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterHasRepliesColor) }
-  val bookmarkCounterNormalColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterNormalColor) }
   val postLinkColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postLinkColor) }
   val postSpoilerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerColor) }
   val postSpoilerRevealTextColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerRevealTextColor) }

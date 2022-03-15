@@ -16,9 +16,9 @@ import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.model.source.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
@@ -187,8 +187,10 @@ class CatalogScreen(
     val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-    val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
+    val fabSize = dimensionResource(id = R.dimen.fab_size)
+    val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
 
+    val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
 
@@ -199,7 +201,7 @@ class CatalogScreen(
         pullToRefreshEnabled = true,
         contentPadding = PaddingValues(
           top = toolbarHeight + windowInsets.top,
-          bottom = windowInsets.bottom
+          bottom = windowInsets.bottom + fabSize + fabVertOffset
         ),
         mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,

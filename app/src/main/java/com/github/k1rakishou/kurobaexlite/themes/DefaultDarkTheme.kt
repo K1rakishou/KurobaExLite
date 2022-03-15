@@ -11,11 +11,12 @@ data class DefaultDarkTheme(
   override val primaryColor: Int = Color.parseColor("#090909"),
   override val backColor: Int = Color.parseColor("#212121"),
   override val backColorSecondary: Int = Color.parseColor("#171717"),
+  override val selectedOnBackColor: Int = Color.parseColor("#474747"),
+  override val highlighterColor: Int = Color.parseColor("#947383"),
   override val errorColor: Int = Color.parseColor("#ff4444"),
   override val textColorPrimary: Int = Color.parseColor("#aeaed6"),
   override val textColorSecondary: Int = Color.parseColor("#8c8ca1"),
   override val textColorHint: Int = Color.parseColor("#7b7b85"),
-  override val postHighlightedColor: Int = Color.parseColor("#30947383"),
   override val postSavedReplyColor: Int = Color.parseColor("#753ecf"),
   override val postSubjectColor: Int = Color.parseColor("#d5a6bd"),
   override val postDetailsColor: Int = textColorHint,
@@ -28,9 +29,6 @@ data class DefaultDarkTheme(
   override val postSpoilerRevealTextColor: Int = Color.parseColor("#ffffff"),
   override val postUnseenLabelColor: Int = Color.parseColor("#bf3232"),
   override val dividerColor: Int = Color.parseColor("#1effffff"),
-  override val bookmarkCounterNotWatchingColor: Int = Color.parseColor("#898989"),
-  override val bookmarkCounterHasRepliesColor: Int = Color.parseColor("#ff4444"),
-  override val bookmarkCounterNormalColor: Int = Color.parseColor("#33B5E5"),
 ) : ChanTheme() {
 
   override fun fullCopy(): ChanTheme {

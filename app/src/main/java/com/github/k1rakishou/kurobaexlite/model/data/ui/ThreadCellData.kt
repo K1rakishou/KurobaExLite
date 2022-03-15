@@ -12,6 +12,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.CancellationException
 import javax.net.ssl.SSLException
+import org.apache.http.conn.ConnectTimeoutException
 
 data class ThreadCellData(
   val totalReplies: Int = 0,
@@ -24,10 +25,11 @@ data class ThreadCellData(
     val error = requireNotNull(lastLoadError) { "lastLoadError is null" }
 
     return when (error) {
-      is CancellationException -> ""
-      is SocketTimeoutException,
+      is CancellationException -> context.resources.getString(R.string.thread_load_failed_canceled)
+      is ConnectTimeoutException,
+      is SocketTimeoutException -> context.resources.getString(R.string.thread_load_failed_timeout)
       is SocketException,
-      is UnknownHostException -> context.resources.getString(R.string.thread_load_failed_canceled)
+      is UnknownHostException -> context.resources.getString(R.string.thread_load_failed_network)
       is BadStatusResponseException -> {
         when {
           error.isAuthError() -> context.resources.getString(R.string.thread_load_failed_auth_error)
@@ -47,7 +49,13 @@ data class ThreadCellData(
       is JsonDataException,
       is JsonEncodingException,
       is ClientException -> error.errorMessageOrClassName()
-      else -> error.message ?: context.resources.getString(R.string.thread_load_failed_unknown)
+      else -> {
+        if (error.message != null) {
+          return error.message!!
+        }
+
+        return context.resources.getString(R.string.thread_load_failed_unknown, error.javaClass.simpleName)
+      }
     }
   }
 }

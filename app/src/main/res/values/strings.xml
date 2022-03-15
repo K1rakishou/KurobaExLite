@@ -86,11 +86,12 @@
     <string name="thread_load_failed_cloud_flare_detected">Rejected by CloudFlare.</string>
     <string name="thread_load_failed_canceled">Loading canceled</string>
     <string name="thread_load_failed_network">Network error</string>
+    <string name="thread_load_failed_timeout">Connection timeout</string>
     <string name="thread_load_failed_auth_error">Auth error</string>
     <string name="thread_load_failed_forbidden_error">Forbidden error</string>
-    <string name="thread_load_failed_server">Server error. Status code: %1$d</string>
+    <string name="thread_load_failed_server">Server error. (Status code: %1$d)</string>
     <string name="thread_load_failed_not_found">404 not found</string>
-    <string name="thread_load_failed_unknown">Unknown load error</string>
+    <string name="thread_load_failed_unknown">Unknown load error. (Error class: \'%1$s\')</string>
     <string name="thread_load_failed_tap_to_refresh">Tap to refresh</string>
 
 </resources>

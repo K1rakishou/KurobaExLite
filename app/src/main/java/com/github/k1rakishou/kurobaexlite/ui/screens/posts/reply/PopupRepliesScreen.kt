@@ -122,7 +122,10 @@ class PopupRepliesScreen(
   ) {
     val chanTheme = LocalChanTheme.current
 
-    Box(modifier = Modifier.layoutId(postListLayoutId)) {
+    Box(
+      modifier = Modifier
+        .layoutId(postListLayoutId)
+    ) {
       PostListContent(
         postListOptions = postListOptions,
         postsScreenViewModel = popupRepliesScreenViewModel,
@@ -215,6 +218,7 @@ class PopupRepliesScreen(
   }
 
   override fun onDestroy() {
+    cardAlphaState.value = 0f
     popupRepliesScreenViewModel.clearPostReplyChainStack()
   }
 

@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -49,6 +52,8 @@ abstract class FloatingComposeScreen(
 
   open val contentAlignment: Alignment = Alignment.Center
 
+  protected var cardAlphaState = mutableStateOf(1f)
+
   @Composable
   override fun Content() {
     val insets = LocalWindowInsets.current
@@ -82,11 +87,14 @@ abstract class FloatingComposeScreen(
         val maxWidthDp = maxAvailableWidth()
         val maxHeightDp = maxAvailableHeight()
 
+        val alpha by cardAlphaState
+
         KurobaComposeCardView(
           modifier = Modifier
             .wrapContentSize()
             .widthIn(max = maxWidthDp)
             .heightIn(max = maxHeightDp)
+            .alpha(alpha)
             .consumeClicks()
         ) {
           FloatingContent()

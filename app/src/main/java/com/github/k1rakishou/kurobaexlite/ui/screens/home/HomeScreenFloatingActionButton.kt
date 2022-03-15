@@ -5,7 +5,6 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -112,12 +111,16 @@ fun BoxScope.HomeScreenFloatingActionButton(
     }
   )
 
+  val horizOffset = dimensionResource(id = R.dimen.post_list_fab_end_offset)
+  val vertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
+
   KurobaFloatingActionButton(
     modifier = Modifier
       .align(Alignment.BottomEnd)
-      .offset(y = -(insets.bottom + 16.dp), x = -(24.dp))
       .alpha(toolbarAlpha),
     iconDrawableId = R.drawable.ic_baseline_create_24,
+    horizOffset = -(horizOffset),
+    vertOffset = -(insets.bottom + vertOffset),
     onClick = {
       if (toolbarAlpha <= 0.99f) {
         return@KurobaFloatingActionButton
