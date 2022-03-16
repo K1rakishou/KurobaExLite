@@ -1,8 +1,8 @@
-This project is an experimental playground to try implementing an application with only Jetpack Compose without using the old Android UI framework.
+This project is an experimental playground to try implementing an application entirely with Jetpack Compose without using the old Android UI framework.
 This application will only have the minimal feature support (Catalog/Thread viewing, posting, bookmarks, album, media viewer, some other stuff). 
 No advansed stuff like archives, sound posts, thirdeye, anti-captcha services etc.
 
-From the technology perspective, this project uses a lot of home-made compose stuff:
+This is a 100% Jetpack Compose project with the goal to try to implement as many UI/UX elements from scratch as possible (There are exceptions like HorizontalPager/Coil). Here are examples of custom compose elements implemented in this project.
 - Compose navigation (Normal screens/dialog screen/screen transitions).
 - PullToRefresh.
 - Toolbar (with ability to switch between different toolbar types like normal toolbar -> search toolbar). Toolbar auto hides/reveals itself depending on a number of factors (like when scroll lazyColumn down).
