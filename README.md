@@ -26,9 +26,11 @@ Right now you can:
 - Thread scroll position is stored/restored.
 
 What you can't do which will be implemented in the future:
+- Media viewer (Tachiyomi's image decoder for images/gifs, mpv for videos (no exoplayer)).
 - Reply to posts.
-- View media.
-- Navigate other sites.
-- Open thread albums.
+- Navigate other sites (maybe?).
+- Albums.
+- Bookmarks.
+- Navigation history.
 
 The Main work is currently being done on the general UI/UX which is going to be different from KurobaEx.
