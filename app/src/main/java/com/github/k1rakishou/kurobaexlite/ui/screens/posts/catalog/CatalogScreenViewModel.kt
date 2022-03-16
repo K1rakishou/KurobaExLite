@@ -189,7 +189,7 @@ class CatalogScreenViewModel(
         }
 
         try {
-          chanCache.insertCatalogThreads(catalogDescriptor, postDataList)
+          chanCache.insertCatalogThreads(catalogDescriptor, catalogData.catalogThreads)
           onCatalogLoadingEnd(catalogDescriptor)
 
           _postsFullyParsedOnceFlow.emit(true)
