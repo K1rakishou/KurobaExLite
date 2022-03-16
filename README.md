@@ -9,6 +9,7 @@ This is a 100% Jetpack Compose project with the goal to try to implement as many
 - Drawer.
 - Snackbars (toasts show up as snackbars too).
 - LazyColumn with scrollbar and fast scroller (drag the scrollbar thumb to scroll).
+- Custom insert/update animations for LazyColumn.
 - Two main layout types: normal (for phones) and split (mostly for tablets). Can be locked into either of them or set to be determined automatically (when using tablet or when switching to album orientation on phones).
 - A lot of custom gesture handling (swipe bottom left corner to right to pull the drawer on any pager screen, pull left when on the 0th screen to pull the drawer).
 
