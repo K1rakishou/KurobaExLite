@@ -9,10 +9,10 @@ From the technology perspective, this project uses a lot of home-made compose st
 - Drawer.
 - Snackbars (toasts show up as snackbars too).
 - LazyColumn with scrollbar and fast scroller (drag the scrollbar thumb to scroll).
-- Two layout types: normal and split. Can be locked into either of them or set to be applied automatically (when using tablet or when switching to album orientation).
+- Two main layout types: normal (for phones) and split (mostly for tablets). Can be locked into either of them or set to be determined automatically (when using tablet or when switching to album orientation on phones).
 - A lot of custom gesture handling (swipe bottom left corner to right to pull the drawer on any pager screen, pull left when on the 0th screen to pull the drawer).
 
-If you are interested in advanced compose stuff then you may find it interesting.
+If you are interested in advanced compose then you may find it interesting.
 
 One of the main goals of the app is to make catalog/thread loading as fast as possible by utilizing asynchronous post parsing. In KurobaEx all posts are fully parsed before being displayed (reply chains/filters/etc are processed before the posts are displayed as well) which makes catalog/thread loading very slow. In KurobaExLite, however, we only initially parse a very small window of posts (16-32) and the rest is parsed asynchronously while you navigate the catalog/thread. This makes catalog/thread loading instantaneous (Threads with ~1k posts are displayed in less than a second).
 
