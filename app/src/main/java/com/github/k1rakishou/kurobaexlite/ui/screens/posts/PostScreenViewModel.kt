@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -28,6 +29,8 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -61,8 +64,10 @@ abstract class PostScreenViewModel(
   private val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val postBindProcessor: PostBindProcessor by inject(PostBindProcessor::class.java)
+
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   protected val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
+  protected val appSettings: AppSettings by inject(AppSettings::class.java)
 
   private var currentParseJob: Job? = null
   protected var postListBuilt: CompletableDeferred<Unit>? = null
@@ -100,7 +105,11 @@ abstract class PostScreenViewModel(
   
   abstract fun refresh()
 
-  fun onLoadingThread(threadDescriptor: ThreadDescriptor?, loadOptions: LoadOptions) {
+  suspend fun onThreadLoadingStart(threadDescriptor: ThreadDescriptor?, loadOptions: LoadOptions) {
+    if (loadOptions.showLoadingIndicator) {
+      postScreenState.postsAsyncDataState.value = AsyncData.Loading
+    }
+
     postScreenState.updateChanDescriptor(threadDescriptor)
     postScreenState.onStartLoading()
 
@@ -111,10 +120,15 @@ abstract class PostScreenViewModel(
       postListBuilt = null
     }
 
+    _postsFullyParsedOnceFlow.emit(false)
     postListTouchingBottom.value = false
   }
 
-  fun onLoadingCatalog(catalogDescriptor: CatalogDescriptor?, loadOptions: LoadOptions) {
+  suspend fun onCatalogLoadingStart(catalogDescriptor: CatalogDescriptor?, loadOptions: LoadOptions) {
+    if (loadOptions.showLoadingIndicator) {
+      postScreenState.postsAsyncDataState.value = AsyncData.Loading
+    }
+
     postScreenState.updateChanDescriptor(catalogDescriptor)
     postScreenState.onStartLoading()
 
@@ -125,15 +139,20 @@ abstract class PostScreenViewModel(
       postListBuilt = null
     }
 
+    _postsFullyParsedOnceFlow.emit(false)
     postListTouchingBottom.value = false
   }
 
-  suspend fun onThreadLoaded(threadDescriptor: ThreadDescriptor) {
+  suspend fun onThreadLoadingEnd(threadDescriptor: ThreadDescriptor) {
+    savedStateHandle.set(ThreadScreenViewModel.PREV_THREAD_DESCRIPTOR, threadDescriptor)
+
     chanCache.onCatalogOrThreadAccessed(threadDescriptor)
     postScreenState.onEndLoading()
   }
 
-  suspend fun onCatalogLoaded(catalogDescriptor: CatalogDescriptor) {
+  suspend fun onCatalogLoadingEnd(catalogDescriptor: CatalogDescriptor) {
+    savedStateHandle.set(CatalogScreenViewModel.PREV_CATALOG_DESCRIPTOR, catalogDescriptor)
+
     chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
     postScreenState.onEndLoading()
   }
@@ -197,7 +216,7 @@ abstract class PostScreenViewModel(
     return withContext(globalConstants.postParserDispatcher) {
       return@withContext parsedPostDataCache.parseAndProcessPostSubject(
         chanTheme = chanTheme,
-        postIndex = postData.postIndex,
+        postIndex = postData.originalPostOrder,
         postDescriptor = postData.postDescriptor,
         postTimeMs = postData.timeMs,
         postImages = postData.images,
@@ -580,7 +599,8 @@ abstract class PostScreenViewModel(
   
   data class LoadOptions(
     val showLoadingIndicator: Boolean = true,
-    val forced: Boolean = false
+    val forced: Boolean = false,
+    val loadFromNetwork: Boolean = true
   )
 
   companion object {

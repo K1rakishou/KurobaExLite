@@ -236,7 +236,7 @@ class ParsedPostDataCache(
         parsedPostSubject = postSubjectParsed,
         processedPostSubject = parseAndProcessPostSubject(
           chanTheme = chanTheme,
-          postIndex = postData.postIndex,
+          postIndex = postData.originalPostOrder,
           postDescriptor = postData.postDescriptor,
           postTimeMs = postData.timeMs,
           postImages = postData.images,

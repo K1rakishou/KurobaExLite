@@ -120,6 +120,7 @@ class ThreadScreen(
         homeScreenViewModel.onChildScreenSearchStateChanged(screenKey, searchQuery)
         threadScreenViewModel.updateSearchQuery(searchQuery)
       },
+      onToolbarSortClicked = null,
       onToolbarOverflowMenuClicked = {
         navigationRouter.presentScreen(
           FloatingMenuScreen(

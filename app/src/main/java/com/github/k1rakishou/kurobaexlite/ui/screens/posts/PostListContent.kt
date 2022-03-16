@@ -442,7 +442,10 @@ private fun PostListInternal(
             showLoadingIndicator = false,
             forced = true
           ),
-          onReloadFinished = { pullToRefreshState.stopRefreshing() }
+          onReloadFinished = {
+            pullToRefreshState.stopRefreshing()
+            postsScreenViewModel.scrollTop()
+          }
         )
       }
     ) {

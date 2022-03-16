@@ -5,7 +5,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 open class PostData(
-  val postIndex: Int,
+  val originalPostOrder: Int,
   val postDescriptor: PostDescriptor,
   val postSubjectUnparsed: String,
   val postCommentUnparsed: String,
@@ -14,6 +14,7 @@ open class PostData(
   val threadRepliesTotal: Int? = null,
   val threadImagesTotal: Int? = null,
   val threadPostersTotal: Int? = null,
+  val lastModified: Long? = null,
   @Volatile private var parsedPostData: ParsedPostData?
 ) {
   // Full hash of PostData + ParsedPostData
@@ -90,6 +91,9 @@ open class PostData(
     if (timeMs != other.timeMs) {
       return true
     }
+    if (lastModified != other.lastModified) {
+      return true
+    }
     if (threadImagesTotal != other.threadImagesTotal) {
       return true
     }
@@ -130,7 +134,7 @@ open class PostData(
   }
 
   open fun copy(
-    postIndex: Int = this.postIndex,
+    originalPostOrder: Int = this.originalPostOrder,
     postDescriptor: PostDescriptor = this.postDescriptor,
     postSubjectUnparsed: String = this.postSubjectUnparsed,
     postCommentUnparsed: String = this.postCommentUnparsed,
@@ -139,10 +143,11 @@ open class PostData(
     threadRepliesTotal: Int? = this.threadRepliesTotal,
     threadImagesTotal: Int? = this.threadImagesTotal,
     threadPostersTotal: Int? = this.threadPostersTotal,
+    lastModified: Long? = this.lastModified,
     parsedPostData: ParsedPostData? = this.parsedPostData
   ): PostData {
     return PostData(
-      postIndex = postIndex,
+      originalPostOrder = originalPostOrder,
       postDescriptor = postDescriptor,
       postSubjectUnparsed = postSubjectUnparsed,
       postCommentUnparsed = postCommentUnparsed,
@@ -151,6 +156,7 @@ open class PostData(
       threadRepliesTotal = threadRepliesTotal,
       threadImagesTotal = threadImagesTotal,
       threadPostersTotal = threadPostersTotal,
+      lastModified = lastModified,
       parsedPostData = parsedPostData?.copy()
     )
   }
@@ -165,6 +171,7 @@ open class PostData(
     if (postSubjectUnparsed != other.postSubjectUnparsed) return false
     if (postCommentUnparsed != other.postCommentUnparsed) return false
     if (timeMs != other.timeMs) return false
+    if (lastModified != other.lastModified) return false
     if (images != other.images) return false
     if (parsedPostData != other.parsedPostData) return false
 
@@ -176,6 +183,7 @@ open class PostData(
     result = 31 * result + postSubjectUnparsed.hashCode()
     result = 31 * result + postCommentUnparsed.hashCode()
     result = 31 * result + timeMs.hashCode()
+    result = 31 * result + lastModified.hashCode()
     result = 31 * result + (images?.hashCode() ?: 0)
     result = 31 * result + (parsedPostData?.hashCode() ?: 0)
     return result

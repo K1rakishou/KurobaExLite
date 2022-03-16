@@ -111,7 +111,7 @@ class KurobaExLiteApplication : Application() {
       single { ChanThreadViewManager() }
       single { SnackbarManager(appContext = get()) }
       single { UiInfoManager(appContext = get(), appSettings = get(), coroutineScope = get()) }
-      single { AppSettings(appContext = get()) }
+      single { AppSettings(appContext = get(), moshi = get()) }
       single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
       single { ThemeEngine() }
       single { PostBindProcessor(get()) }

@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -41,6 +40,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.sort.SortCatalogThreadsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.flow.StateFlow
@@ -55,7 +55,6 @@ class CatalogScreen(
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
-  private val appSettings: AppSettings by inject(AppSettings::class.java)
 
   private val catalogScreenToolbarActionHandler by lazy {
     CatalogScreenToolbarActionHandler(
@@ -147,6 +146,15 @@ class CatalogScreen(
       onSearchQueryUpdated = { searchQuery ->
         homeScreenViewModel.onChildScreenSearchStateChanged(screenKey, searchQuery)
         catalogScreenViewModel.updateSearchQuery(searchQuery)
+      },
+      onToolbarSortClicked = {
+        val sortCatalogThreadsScreen = SortCatalogThreadsScreen(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          onApplied = { catalogScreenViewModel.onCatalogSortChanged() }
+        )
+
+        navigationRouter.presentScreen(sortCatalogThreadsScreen)
       },
       onToolbarOverflowMenuClicked = {
         navigationRouter.presentScreen(

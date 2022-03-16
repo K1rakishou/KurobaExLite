@@ -299,8 +299,9 @@ class BoardSelectionScreen(
           navigationRouter = navigationRouter,
           canProcessBackEvent = { true },
           onLeftIconClicked = onBackArrowClicked,
-          onSearchQueryUpdated = onSearchQueryUpdated,
           onMiddleMenuClicked = null,
+          onSearchQueryUpdated = onSearchQueryUpdated,
+          onToolbarSortClicked = null,
           onToolbarOverflowMenuClicked = null
         )
       }

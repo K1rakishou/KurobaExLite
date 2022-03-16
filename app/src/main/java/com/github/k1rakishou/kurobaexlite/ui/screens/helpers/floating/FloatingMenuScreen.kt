@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
@@ -49,33 +48,12 @@ class FloatingMenuScreen(
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
   private val floatingMenuScreenKey = ScreenKey("FloatingMenuScreen_${floatingMenuKey}")
 
-  private val lastTouchPosition = uiInfoManager.lastTouchPosition
   private val callbacksToInvokeMap = mutableMapOf<Any, FloatingMenuItem>()
   private val coroutineScope = KurobaCoroutineScope()
   private var shouldCallOnDismiss = true
 
-  private val customAlignment by lazy {
-    return@lazy Alignment { size, space, _ ->
-      val availableWidth = uiInfoManager.maxParentWidth
-      val availableHeight = uiInfoManager.maxParentHeight
-
-      val biasX = (lastTouchPosition.x.toFloat() / availableWidth.toFloat()).coerceIn(0f, 1f)
-      val biasY = (lastTouchPosition.y.toFloat() / availableHeight.toFloat()).coerceIn(0f, 1f)
-
-      val horizPadding = horizPaddingPx.toInt()
-      val vertPadding = vertPaddingPx.toInt()
-
-      val offsetX = ((space.width - size.width).toFloat() * biasX).toInt()
-        .coerceIn(horizPadding, availableWidth - horizPadding)
-      val offsetY = ((space.height - size.height).toFloat() * biasY).toInt()
-        .coerceIn(vertPadding, availableHeight - vertPadding)
-
-      return@Alignment IntOffset(x = offsetX, y = offsetY)
-    }
-  }
-
   override val screenKey: ScreenKey = floatingMenuScreenKey
-  override val contentAlignment: Alignment = customAlignment
+  override val contentAlignment: Alignment = touchPositionDependantAlignment
 
   override fun onDestroy() {
     coroutineScope.launch {

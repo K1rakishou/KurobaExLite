@@ -72,6 +72,7 @@ fun KurobaToolbar(
   onLeftIconClicked: () -> Unit,
   onMiddleMenuClicked: (() -> Unit)?,
   onSearchQueryUpdated: ((String?) -> Unit)?,
+  onToolbarSortClicked: (() -> Unit)?,
   onToolbarOverflowMenuClicked: (() -> Unit)?
 ) {
   val chanTheme = LocalChanTheme.current
@@ -131,6 +132,7 @@ fun KurobaToolbar(
                 )
               )
             },
+            onToolbarSortClicked = onToolbarSortClicked,
             onToolbarOverflowMenuClicked = onToolbarOverflowMenuClicked
           )
         }
@@ -154,6 +156,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
   onLeftIconClicked: () -> Unit,
   onMiddleMenuClicked: (() -> Unit)? = null,
   onToolbarSearchClicked: (() -> Unit)? = null,
+  onToolbarSortClicked: (() -> Unit)? = null,
   onToolbarOverflowMenuClicked: (() -> Unit)? = null
 ) {
   val leftToolbarPart = leftToolbarPartBuilder(
@@ -215,6 +218,21 @@ private fun BoxScope.PostsScreenNormalToolbar(
                 onClick = onToolbarSearchClicked
               ),
             drawableId = R.drawable.ic_baseline_search_24,
+            colorBehindIcon = parentBgColor
+          )
+
+          Spacer(modifier = Modifier.width(8.dp))
+        }
+
+        if (onToolbarSortClicked != null) {
+          KurobaComposeIcon(
+            modifier = Modifier
+              .size(24.dp)
+              .kurobaClickable(
+                bounded = false,
+                onClick = onToolbarSortClicked
+              ),
+            drawableId = R.drawable.ic_baseline_sort_24,
             colorBehindIcon = parentBgColor
           )
 

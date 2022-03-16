@@ -97,6 +97,10 @@ class ChanCache {
     return threads[threadDescriptor]?.getAll() ?: emptyList()
   }
 
+  suspend fun getCatalogThreads(catalogDescriptor: CatalogDescriptor): List<PostData> {
+    return catalogs[catalogDescriptor]?.getPostDataList() ?: emptyList()
+  }
+
   suspend fun getPost(postDescriptor: PostDescriptor): PostData? {
     return threads[postDescriptor.threadDescriptor]?.getPost(postDescriptor)
   }

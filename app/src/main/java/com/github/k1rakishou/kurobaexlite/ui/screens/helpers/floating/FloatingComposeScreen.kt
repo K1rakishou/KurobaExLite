@@ -18,7 +18,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -31,21 +35,8 @@ abstract class FloatingComposeScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
-  val horizPaddingDp by lazy {
-    if (uiInfoManager.isTablet) {
-      HPADDING_TABLET_COMPOSE
-    } else {
-      HPADDING_COMPOSE
-    }
-  }
-
-  val vertPaddingDp by lazy {
-    if (uiInfoManager.isTablet) {
-      VPADDING_TABLET_COMPOSE
-    } else {
-      VPADDING_COMPOSE
-    }
-  }
+  val horizPaddingDp by lazy { if (uiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
+  val vertPaddingDp by lazy { if (uiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
 
   val horizPaddingPx by lazy { with(uiInfoManager.composeDensity) { horizPaddingDp.toPx() } }
   val vertPaddingPx by lazy { with(uiInfoManager.composeDensity) { vertPaddingDp.toPx() } }
@@ -53,6 +44,7 @@ abstract class FloatingComposeScreen(
   open val contentAlignment: Alignment = Alignment.Center
 
   protected var cardAlphaState = mutableStateOf(1f)
+  protected val touchPositionDependantAlignment by lazy { TouchPositionDependantAlignment(uiInfoManager) }
 
   @Composable
   override fun Content() {
@@ -168,6 +160,27 @@ abstract class FloatingComposeScreen(
     }
 
     return success
+  }
+
+  protected class TouchPositionDependantAlignment(
+    private val uiInfoManager: UiInfoManager
+  ) : Alignment {
+    override fun align(size: IntSize, space: IntSize, layoutDirection: LayoutDirection): IntOffset {
+      val availableWidth = space.width
+      val availableHeight = space.height
+
+      if (availableWidth <= 0 || availableHeight <= 0 || size.width <= 0 || size.height <= 0) {
+        return IntOffset.Zero
+      }
+
+      val biasX = (uiInfoManager.lastTouchPosition.x.toFloat() / availableWidth.toFloat()).coerceIn(0f, 1f)
+      val biasY = (uiInfoManager.lastTouchPosition.y.toFloat() / availableHeight.toFloat()).coerceIn(0f, 1f)
+
+      val offsetX = ((availableWidth - (size.width)).toFloat() * biasX).toInt()
+      val offsetY = ((availableHeight - (size.height)).toFloat() * biasY).toInt()
+
+      return IntOffset(x = offsetX, y = offsetY)
+    }
   }
 
   companion object {

@@ -7,24 +7,28 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import logcat.logcat
+import org.koin.java.KoinJavaComponent.inject
 
 abstract class AbstractPostsState(
   val chanDescriptor: ChanDescriptor
 ) {
+  protected val appSettings: AppSettings by inject(AppSettings::class.java)
+
   @Volatile private var _postsCopy: List<PostData>? = null
   @Volatile private var _lastUpdatedOn: Long = 0
+
+  private val postIndexes = mutableMapOf<PostDescriptor, Int>()
 
   val lastUpdatedOn: Long
     get() = _lastUpdatedOn
 
   abstract val posts: List<State<PostData>>
-
   protected abstract val postsMutable: SnapshotStateList<MutableState<PostData>>
-  private val postIndexes = mutableMapOf<PostDescriptor, Int>()
 
   fun update(postData: PostData) {
     val index = postIndexes[postData.postDescriptor]

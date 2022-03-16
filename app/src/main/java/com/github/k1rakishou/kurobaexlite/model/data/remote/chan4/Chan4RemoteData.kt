@@ -41,6 +41,7 @@ data class ThreadPostDataJson(
   val time: Long?,
   val replies: Int?,
   val images: Int?,
+  @Json(name = "last_modified") val lastModified: Long?,
   @Json(name = "unique_ips") val posters: Int?,
   // image info
   override val filename: String?,
@@ -59,6 +60,7 @@ data class CatalogThreadDataJson(
   val time: Long?,
   val replies: Int?,
   val images: Int?,
+  @Json(name = "last_modified") val lastModified: Long?,
   // image info
   override val filename: String?,
   override val ext: String?,

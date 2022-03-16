@@ -60,7 +60,7 @@ class ChanCatalogCache(
     }
   }
 
-  suspend fun getPostDataList(): Collection<PostData> {
+  suspend fun getPostDataList(): List<PostData> {
     return mutex.withLockNonCancellable { threads.toList() }
   }
 

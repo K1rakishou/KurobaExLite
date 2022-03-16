@@ -88,7 +88,7 @@ class Chan4DataSource(
 
           if (postDescriptor.isOP) {
             return@mapIndexed OriginalPostData(
-              postIndex = index,
+              originalPostOrder = index,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.sub ?: "",
               postCommentUnparsed = threadPost.com ?: "",
@@ -101,11 +101,12 @@ class Chan4DataSource(
               threadRepliesTotal = threadPost.replies,
               threadImagesTotal = threadPost.images,
               threadPostersTotal = threadPost.posters,
+              lastModified = threadPost.lastModified,
               parsedPostData = null
             )
           } else {
             return@mapIndexed PostData(
-              postIndex = index,
+              originalPostOrder = index,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.sub ?: "",
               postCommentUnparsed = threadPost.com ?: "",
@@ -163,8 +164,8 @@ class Chan4DataSource(
         val totalCount = catalogPagesDataJson.sumOf { catalogPageData -> catalogPageData.threads.size }
         val postDataList = mutableListWithCap<PostData>(initialCapacity = totalCount)
 
-        catalogPagesDataJson.forEachIndexed { index, catalogPage ->
-          postDataList += catalogPage.threads.map { catalogThread ->
+        catalogPagesDataJson.forEachIndexed { page, catalogPage ->
+          postDataList += catalogPage.threads.mapIndexed { index, catalogThread ->
             val postDescriptor = PostDescriptor.create(
               siteKey = site.siteKey,
               boardCode = boardCode,
@@ -172,8 +173,8 @@ class Chan4DataSource(
               postNo = catalogThread.no
             )
 
-            return@map OriginalPostData(
-              postIndex = index,
+            return@mapIndexed OriginalPostData(
+              originalPostOrder = page * index,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = catalogThread.sub ?: "",
               postCommentUnparsed = catalogThread.com ?: "",
@@ -185,6 +186,7 @@ class Chan4DataSource(
               ),
               threadRepliesTotal = catalogThread.replies,
               threadImagesTotal = catalogThread.images,
+              lastModified = catalogThread.lastModified,
               threadPostersTotal = null,
               parsedPostData = null
             )

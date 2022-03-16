@@ -49,6 +49,7 @@
     <string name="reload">Reload</string>
     <string name="back">Back</string>
     <string name="close">Close</string>
+    <string name="apply">Apply</string>
 
     <string name="main_activity_press_back_again_to_exit">Press back again to exit the app</string>
 
@@ -93,5 +94,12 @@
     <string name="thread_load_failed_not_found">404 not found</string>
     <string name="thread_load_failed_unknown">Unknown load error. (Error class: \'%1$s\')</string>
     <string name="thread_load_failed_tap_to_refresh">Tap to refresh</string>
+
+    <string name="catalog_sort_order_bump">Bump</string>
+    <string name="catalog_sort_order_thread_reply_count">Thread reply count</string>
+    <string name="catalog_sort_order_thread_image_count">Thread image count</string>
+    <string name="catalog_sort_order_thread_creation_time">Thread creation time</string>
+    <string name="catalog_sort_order_thread_last_modified_time">Thread last modified time</string>
+    <string name="catalog_sort_order_thread_activity">Thread activity</string>
 
 </resources>

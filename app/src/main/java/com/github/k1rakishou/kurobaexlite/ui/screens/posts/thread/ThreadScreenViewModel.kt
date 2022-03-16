@@ -236,17 +236,9 @@ class ThreadScreenViewModel(
       return
     }
 
-    onLoadingThread(threadDescriptor, loadOptions)
-
-    val prevCellDataState = postScreenState.threadCellDataState.value
     val startTime = SystemClock.elapsedRealtime()
-    _postsFullyParsedOnceFlow.emit(false)
-
-    if (loadOptions.showLoadingIndicator) {
-      threadScreenState.postsAsyncDataState.value = AsyncData.Loading
-    }
-
-    savedStateHandle.set(PREV_THREAD_DESCRIPTOR, threadDescriptor)
+    val prevCellDataState = postScreenState.threadCellDataState.value
+    onThreadLoadingStart(threadDescriptor, loadOptions)
 
     if (threadDescriptor != null) {
       val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)
@@ -340,7 +332,7 @@ class ThreadScreenViewModel(
               isInitialThreadLoad = true
             )
 
-            onThreadLoaded(threadDescriptor)
+            onThreadLoadingEnd(threadDescriptor)
             _postsFullyParsedOnceFlow.emit(true)
           } finally {
             withContext(NonCancellable + Dispatchers.Main) {
@@ -405,7 +397,7 @@ class ThreadScreenViewModel(
               isInitialThreadLoad = true
             )
 
-            onThreadLoaded(threadDescriptor)
+            onThreadLoadingEnd(threadDescriptor)
             _postsFullyParsedOnceFlow.emit(true)
           } finally {
             withContext(NonCancellable + Dispatchers.Main) {
@@ -509,7 +501,7 @@ class ThreadScreenViewModel(
   companion object {
     private const val TAG = "ThreadScreenViewModel"
 
-    private const val PREV_THREAD_DESCRIPTOR = "prev_thread_descriptor"
+    const val PREV_THREAD_DESCRIPTOR = "prev_thread_descriptor"
   }
 
 }

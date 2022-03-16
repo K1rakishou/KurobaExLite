@@ -12,6 +12,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -107,18 +108,17 @@ class CatalogScreenViewModel(
       return
     }
 
-    onLoadingCatalog(catalogDescriptor, loadOptions)
-
     val startTime = SystemClock.elapsedRealtime()
-    _postsFullyParsedOnceFlow.emit(false)
+    onCatalogLoadingStart(catalogDescriptor, loadOptions)
 
-    if (loadOptions.showLoadingIndicator) {
-      catalogScreenState.postsAsyncDataState.value = AsyncData.Loading
+    val catalogDataResult = if (loadOptions.loadFromNetwork || catalogDescriptor == null) {
+      chanThreadManager.loadCatalog(catalogDescriptor)
+    } else {
+      val catalogThreads = chanCache.getCatalogThreads(catalogDescriptor)
+      val catalogData = CatalogData(catalogDescriptor, catalogThreads)
+      Result.success(catalogData)
     }
 
-    savedStateHandle.set(PREV_CATALOG_DESCRIPTOR, catalogDescriptor)
-
-    val catalogDataResult = chanThreadManager.loadCatalog(catalogDescriptor)
     if (catalogDataResult.isFailure) {
       val error = catalogDataResult.exceptionOrThrow()
       logcatError { "loadCatalog() error=${error.asLog()}" }
@@ -149,16 +149,24 @@ class CatalogScreenViewModel(
       return
     }
 
+    val catalogSortSetting = appSettings.catalogSort.read()
+    val sortedThreads = CatalogThreadSorter.sortCatalogThreads(
+      catalogThreads = catalogData.catalogThreads,
+      catalogSortSetting = catalogSortSetting
+    )
+
+    val sortedCatalogData = CatalogData(catalogDescriptor, sortedThreads)
+
     parsePostsAround(
       startPostDescriptor = null,
       chanDescriptor = catalogDescriptor,
-      postDataList = catalogData.catalogThreads,
+      postDataList = sortedCatalogData.catalogThreads,
       isCatalogMode = true
     )
 
     val catalogThreadsState = CatalogThreadsState(
       catalogDescriptor = catalogDescriptor,
-      catalogThreads = catalogData.catalogThreads
+      catalogThreads = sortedCatalogData.catalogThreads
     )
 
     catalogScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
@@ -167,22 +175,22 @@ class CatalogScreenViewModel(
 
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,
-      postDataList = catalogData.catalogThreads,
+      postDataList = sortedCatalogData.catalogThreads,
       onStartParsingPosts = {
         snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
-          postsCount = catalogData.catalogThreads.size,
+          postsCount = sortedCatalogData.catalogThreads.size,
           screenKey = screenKey
         )
       },
       onPostsParsed = { postDataList ->
         logcat {
           "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-            "catalogThreads=${catalogData.catalogThreads.size}"
+            "catalogThreads=${sortedCatalogData.catalogThreads.size}"
         }
 
         try {
           chanCache.insertCatalogThreads(catalogDescriptor, postDataList)
-          onCatalogLoaded(catalogDescriptor)
+          onCatalogLoadingEnd(catalogDescriptor)
 
           _postsFullyParsedOnceFlow.emit(true)
         } finally {
@@ -195,12 +203,29 @@ class CatalogScreenViewModel(
     )
   }
 
+  fun onCatalogSortChanged() {
+    viewModelScope.launch {
+      val catalogDescriptor = chanDescriptor as? CatalogDescriptor
+        ?: return@launch
+
+      loadCatalog(
+        catalogDescriptor = catalogDescriptor,
+        loadOptions = LoadOptions(
+          showLoadingIndicator = false,
+          forced = true,
+          loadFromNetwork = false
+        ),
+        onReloadFinished = { scrollTop() }
+      )
+    }
+  }
+
   class CatalogDisplayException(message: String) : ClientException(message)
 
   companion object {
     private const val TAG = "CatalogScreenViewModel"
 
-    private const val PREV_CATALOG_DESCRIPTOR = "prev_catalog_descriptor"
+    const val PREV_CATALOG_DESCRIPTOR = "prev_catalog_descriptor"
   }
 
 }
