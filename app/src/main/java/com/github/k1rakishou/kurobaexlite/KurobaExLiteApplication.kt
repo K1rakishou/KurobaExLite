@@ -1,7 +1,11 @@
 package com.github.k1rakishou.kurobaexlite
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
+import coil.ImageLoader
+import coil.annotation.ExperimentalCoilApi
+import coil.disk.DiskCache
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
@@ -48,6 +52,8 @@ class KurobaExLiteApplication : Application() {
   // TODO(KurobaEx): [Click to expand] doesn't work
   // TODO(KurobaEx): PullToRefresh in catalog scrolls to the middle of the catalog
   // TODO(KurobaEx): Text selection doesn't work.
+  // TODO(KurobaEx): When using search on BoardSelectionScreen and then navigating to a board without
+  //  closing the search first will keep the search toolbar but loose the search query.
 
   override fun onCreate() {
     super.onCreate()
@@ -80,6 +86,9 @@ class KurobaExLiteApplication : Application() {
       single { PostCommentApplier() }
       single { FullScreenHelpers(get()) }
       single { AndroidHelpers(get()) }
+
+      mediaDiskCache()
+      coilImageLoader()
 
       single {
         LoadChanThreadView(
@@ -168,6 +177,32 @@ class KurobaExLiteApplication : Application() {
     }
 
     return modules
+  }
+
+  @OptIn(ExperimentalCoilApi::class)
+  private fun Module.mediaDiskCache() {
+    single {
+      val context: Context = get()
+      val safeCacheDir = context.cacheDir.apply { mkdirs() }
+
+      return@single DiskCache.Builder()
+        .directory(safeCacheDir.resolve("media_cache"))
+        .build()
+    }
+  }
+
+  @OptIn(ExperimentalCoilApi::class)
+  private fun Module.coilImageLoader() {
+    single {
+      val context: Context = get()
+      val diskCacheInit = { get<DiskCache>() }
+
+      return@single ImageLoader.Builder(context).apply {
+        components {
+          diskCache(diskCacheInit)
+        }
+      }
+    }
   }
 
   class KurobaExLiteLogger : LogcatLogger {

@@ -94,6 +94,7 @@ class Chan4DataSource(
               postCommentUnparsed = threadPost.com ?: "",
               timeMs = threadPost.time?.times(1000L),
               images = parsePostImages(
+                postDescriptor = postDescriptor,
                 postImageInfo = postImageInfo,
                 postImageDataJson = threadPost,
                 boardCode = boardCode
@@ -112,6 +113,7 @@ class Chan4DataSource(
               postCommentUnparsed = threadPost.com ?: "",
               timeMs = threadPost.time?.times(1000L),
               images = parsePostImages(
+                postDescriptor = postDescriptor,
                 postImageInfo = postImageInfo,
                 postImageDataJson = threadPost,
                 boardCode = boardCode
@@ -180,6 +182,7 @@ class Chan4DataSource(
               postCommentUnparsed = catalogThread.com ?: "",
               timeMs = catalogThread.time?.times(1000L),
               images = parsePostImages(
+                postDescriptor = postDescriptor,
                 postImageInfo = postImageInfo,
                 postImageDataJson = catalogThread,
                 boardCode = boardCode
@@ -244,6 +247,7 @@ class Chan4DataSource(
   }
 
   private fun parsePostImages(
+    postDescriptor: PostDescriptor,
     postImageInfo: Site.PostImageInfo?,
     postImageDataJson: PostImageDataJson,
     boardCode: String
@@ -261,18 +265,27 @@ class Chan4DataSource(
     ).toHttpUrlOrNull()
       ?: return emptyList()
 
+    val fullUrl = postImageInfo.fullUrl(
+      boardCode = boardCode,
+      tim = postImageDataJson.tim!!,
+      extension = extension
+    ).toHttpUrlOrNull()
+      ?: return emptyList()
+
     val serverFileName = postImageDataJson.tim.toString()
     val originalFileName = postImageDataJson.filename
       ?: serverFileName
 
     val postImageData = PostImageData(
       thumbnailUrl = thumbnailUrl,
+      fullImageUrl = fullUrl,
       originalFileName = originalFileName,
       serverFileName = serverFileName,
       ext = extension,
       width = postImageDataJson.w!!,
       height = postImageDataJson.h!!,
-      fileSize = postImageDataJson.fsize!!
+      fileSize = postImageDataJson.fsize!!,
+      ownerPostDescriptor = postDescriptor
     )
 
     return listOf(postImageData)

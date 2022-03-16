@@ -133,6 +133,10 @@ class Chan4 : Site {
     override fun thumbnailUrl(boardCode: String, tim: Long, extension: String): String {
       return "https://i.4cdn.org/${boardCode}/${tim}s.${extension}"
     }
+
+    override fun fullUrl(boardCode: String, tim: Long, extension: String): String {
+      return "https://i.4cdn.org/${boardCode}/${tim}.${extension}"
+    }
   }
 
   companion object {

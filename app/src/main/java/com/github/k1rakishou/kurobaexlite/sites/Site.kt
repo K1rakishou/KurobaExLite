@@ -35,6 +35,7 @@ interface Site {
 
   interface PostImageInfo {
     fun thumbnailUrl(boardCode: String, tim: Long, extension: String): String
+    fun fullUrl(boardCode: String, tim: Long, extension: String): String
   }
 
   interface BoardsInfo {

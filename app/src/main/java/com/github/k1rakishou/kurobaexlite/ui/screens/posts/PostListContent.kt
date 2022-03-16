@@ -88,7 +88,9 @@ import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -128,7 +130,8 @@ internal fun PostListContent(
   onPostListScrolled: (Float) -> Unit,
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
-  onFastScrollerDragStateChanged: (Boolean) -> Unit
+  onFastScrollerDragStateChanged: (Boolean) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit
 ) {
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
@@ -236,6 +239,7 @@ internal fun PostListContent(
 
   PostListInternal(
     modifier = modifier,
+    chanDescriptor = chanDescriptor,
     lazyListState = lazyListState,
     postListOptions = postListOptions,
     postListAsync = postListAsync,
@@ -259,7 +263,8 @@ internal fun PostListContent(
     },
     onPostListScrolled = onPostListScrolled,
     onPostListDragStateChanged = onPostListDragStateChanged,
-    onFastScrollerDragStateChanged = onFastScrollerDragStateChanged
+    onFastScrollerDragStateChanged = onFastScrollerDragStateChanged,
+    onPostImageClicked = onPostImageClicked
   )
 
   // This piece of code waits until postListAsync is loaded (basically when it becomes AsyncData.Data)
@@ -354,6 +359,7 @@ private fun processClickedAnnotation(
 @Composable
 private fun PostListInternal(
   modifier: Modifier,
+  chanDescriptor: ChanDescriptor,
   lazyListState: LazyListState,
   postListOptions: PostListOptions,
   postListAsync: AsyncData<AbstractPostsState>,
@@ -362,9 +368,10 @@ private fun PostListInternal(
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
-  onFastScrollerDragStateChanged: (Boolean) -> Unit
+  onFastScrollerDragStateChanged: (Boolean) -> Unit,
 ) {
   val isInPopup = postListOptions.isInPopup
   val pullToRefreshEnabled = postListOptions.pullToRefreshEnabled
@@ -533,6 +540,7 @@ private fun PostListInternal(
               postList(
                 isCatalogMode = isCatalogMode,
                 isInPopup = isInPopup,
+                chanDescriptor = chanDescriptor,
                 cellsPadding = cellsPadding,
                 postListOptions = postListOptions,
                 lazyListState = lazyListState,
@@ -545,7 +553,8 @@ private fun PostListInternal(
                 onPostCellClicked = onPostCellClicked,
                 onPostCellCommentClicked = onPostCellCommentClicked,
                 onPostRepliesClicked = onPostRepliesClicked,
-                onThreadStatusCellClicked = onThreadStatusCellClicked
+                onThreadStatusCellClicked = onThreadStatusCellClicked,
+                onPostImageClicked = onPostImageClicked
               )
             }
           )
@@ -596,6 +605,7 @@ private fun LazyListScope.postListAsyncDataContent(
 private fun LazyListScope.postList(
   isCatalogMode: Boolean,
   isInPopup: Boolean,
+  chanDescriptor: ChanDescriptor,
   cellsPadding: PaddingValues,
   postListOptions: PostListOptions,
   lazyListState: LazyListState,
@@ -608,7 +618,8 @@ private fun LazyListScope.postList(
   onPostCellClicked: (PostData) -> Unit,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostData) -> Unit,
-  onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
+  onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
 ) {
   val postDataList = abstractPostsState.posts
   val totalCount = postDataList.size
@@ -637,6 +648,7 @@ private fun LazyListScope.postList(
       PostCellContainer(
         padding = cellsPadding,
         isCatalogMode = isCatalogMode,
+        chanDescriptor = chanDescriptor,
         isInPopup = isInPopup,
         onPostCellClicked = onPostCellClicked,
         postData = postData,
@@ -648,7 +660,8 @@ private fun LazyListScope.postList(
         animateUpdate = animateUpdate,
         lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
         onPostCellCommentClicked = onPostCellCommentClicked,
-        onPostRepliesClicked = onPostRepliesClicked
+        onPostRepliesClicked = onPostRepliesClicked,
+        onPostImageClicked = onPostImageClicked
       )
 
       if (previousPostDataInfoMap != null) {
@@ -928,6 +941,7 @@ private fun LazyItemScope.ThreadStatusCell(
 private fun LazyItemScope.PostCellContainer(
   padding: PaddingValues,
   isCatalogMode: Boolean,
+  chanDescriptor: ChanDescriptor,
   isInPopup: Boolean,
   onPostCellClicked: (PostData) -> Unit,
   postData: PostData,
@@ -939,7 +953,8 @@ private fun LazyItemScope.PostCellContainer(
   animateUpdate: Boolean,
   lastViewedPostDescriptorForIndicator: PostDescriptor?,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit
+  onPostRepliesClicked: (PostData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
 
@@ -961,13 +976,15 @@ private fun LazyItemScope.PostCellContainer(
     ) {
       PostCell(
         isCatalogMode = isCatalogMode,
+        chanDescriptor = chanDescriptor,
         detectLinkableClicks = detectLinkableClicks,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         postData = postData,
         postsScreenViewModel = postsScreenViewModel,
         onPostCellCommentClicked = onPostCellCommentClicked,
-        onPostRepliesClicked = onPostRepliesClicked
+        onPostRepliesClicked = onPostRepliesClicked,
+        onPostImageClicked = onPostImageClicked
       )
 
       val canDisplayLastViewedPostMarker = !isInPopup
@@ -1122,13 +1139,15 @@ private fun PostCellContainerInsertAnimation(
 @Composable
 private fun PostCell(
   isCatalogMode: Boolean,
+  chanDescriptor: ChanDescriptor,
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
   postCellSubjectTextSizeSp: TextUnit,
   postData: PostData,
   postsScreenViewModel: PostScreenViewModel,
   onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit
+  onPostRepliesClicked: (PostData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
 ) {
   var postComment by postComment(postData)
   var postSubject by postSubject(postData)
@@ -1165,10 +1184,12 @@ private fun PostCell(
       .padding(vertical = 8.dp)
   ) {
     PostCellTitle(
+      chanDescriptor = chanDescriptor,
       postData = postData,
       postSubject = postSubject,
       postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-      postsScreenViewModel = postsScreenViewModel
+      postsScreenViewModel = postsScreenViewModel,
+      onPostImageClicked = onPostImageClicked
     )
 
     PostCellComment(
@@ -1192,10 +1213,12 @@ private fun PostCell(
 
 @Composable
 private fun PostCellTitle(
+  chanDescriptor: ChanDescriptor,
   postData: PostData,
   postSubject: AnnotatedString,
   postCellSubjectTextSizeSp: TextUnit,
   postsScreenViewModel: PostScreenViewModel,
+  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
   val context = LocalContext.current
@@ -1213,6 +1236,7 @@ private fun PostCellTitle(
         modifier = Modifier
           .wrapContentSize()
           .background(chanTheme.backColorSecondaryCompose)
+          .kurobaClickable(onClick = { onPostImageClicked(chanDescriptor, image) })
       ) {
         SubcomposeAsyncImage(
           modifier = Modifier.size(60.dp),

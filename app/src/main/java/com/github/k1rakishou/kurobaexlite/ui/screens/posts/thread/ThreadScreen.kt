@@ -35,6 +35,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMe
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
@@ -197,6 +198,17 @@ class ThreadScreen(
       },
       onPostRepliesClicked = { postDescriptor ->
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
+      },
+      onPostImageClicked = { chanDescriptor, postImageData ->
+        val mediaViewerScreen = MediaViewerScreen(
+          chanDescriptor = chanDescriptor,
+          inputImages = listOf(postImageData),
+          initialImageUrl = postImageData.fullImageUrl,
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter
+        )
+
+        navigationRouter.pushScreen(mediaViewerScreen)
       },
       onPostListScrolled = { delta ->
         homeScreenViewModel.onChildContentScrolling(screenKey, delta)
