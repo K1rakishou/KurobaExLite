@@ -50,6 +50,10 @@ class NavigationRouter(
   }
 
   fun pushScreen(newComposeScreen: ComposeScreen): Boolean {
+    if (newComposeScreen is FloatingComposeScreen) {
+      error("FloatingComposeScreens must be added via presentScreen() function!")
+    }
+
     val indexOfPrev = navigationScreensStack
       .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
 

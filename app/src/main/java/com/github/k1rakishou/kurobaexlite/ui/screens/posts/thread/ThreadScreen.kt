@@ -19,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
@@ -35,6 +36,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMe
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
@@ -200,15 +202,18 @@ class ThreadScreen(
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
       },
       onPostImageClicked = { chanDescriptor, postImageData ->
+        val threadDescriptor = chanDescriptor as ThreadDescriptor
+
         val mediaViewerScreen = MediaViewerScreen(
-          chanDescriptor = chanDescriptor,
-          inputImages = listOf(postImageData),
-          initialImageUrl = postImageData.fullImageUrl,
+          mediaViewerParams = MediaViewerParams.Thread(
+            threadDescriptor = threadDescriptor,
+            initialImageUrl = postImageData.fullImageUrl
+          ),
           componentActivity = componentActivity,
           navigationRouter = navigationRouter
         )
 
-        navigationRouter.pushScreen(mediaViewerScreen)
+        navigationRouter.presentScreen(mediaViewerScreen)
       },
       onPostListScrolled = { delta ->
         homeScreenViewModel.onChildContentScrolling(screenKey, delta)

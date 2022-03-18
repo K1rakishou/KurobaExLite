@@ -39,7 +39,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
 import kotlinx.coroutines.CoroutineScope
@@ -141,15 +140,16 @@ class PopupRepliesScreen(
           }
         },
         onPostImageClicked = { chanDescriptor, postImageData ->
-          val mediaViewerScreen = MediaViewerScreen(
-            chanDescriptor = chanDescriptor,
-            inputImages = listOf(postImageData),
-            initialImageUrl = postImageData.fullImageUrl,
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter
-          )
-
-          navigationRouter.pushScreen(mediaViewerScreen)
+          // TODO(KurobaEx):
+//          val mediaViewerScreen = MediaViewerScreen(
+//            chanDescriptor = chanDescriptor,
+//            inputImages = listOf(postImageData),
+//            initialImageUrl = postImageData.fullImageUrl,
+//            componentActivity = componentActivity,
+//            navigationRouter = navigationRouter
+//          )
+//
+//          navigationRouter.presentScreen(mediaViewerScreen)
         },
         onPostListScrolled = { delta ->
         },

@@ -48,13 +48,18 @@ abstract class FloatingComposeScreen(
 
   @Composable
   override fun Content() {
-    val insets = LocalWindowInsets.current
-    val coroutineScope = rememberCoroutineScope()
-
     navigationRouter.HandleBackPresses(
       screenKey = screenKey,
       onBackPressed = { onBackPressed() }
     )
+
+    CardContent()
+  }
+
+  @Composable
+  open fun CardContent() {
+    val insets = LocalWindowInsets.current
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
       modifier = Modifier
@@ -93,6 +98,11 @@ abstract class FloatingComposeScreen(
         }
       }
     }
+  }
+
+  @Composable
+  open fun FloatingContent() {
+
   }
 
   @Composable
@@ -137,11 +147,6 @@ abstract class FloatingComposeScreen(
   @Composable
   fun maxAvailableWidthPx(): Float {
     return with(LocalDensity.current) { maxAvailableWidth().toPx() }
-  }
-
-  @Composable
-  open fun FloatingContent() {
-
   }
 
   @CallSuper

@@ -1,5 +1,5 @@
 @file:JvmName("Pager")
-package com.github.k1rakishou.kurobaexlite.ui.elements
+package com.github.k1rakishou.kurobaexlite.ui.elements.pager
 
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import dev.chrisbanes.snapper.*
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter

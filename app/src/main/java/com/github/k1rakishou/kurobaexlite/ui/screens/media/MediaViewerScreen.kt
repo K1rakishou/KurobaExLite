@@ -6,160 +6,235 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.unit.IntSize
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
-import coil.disk.DiskCache
 import coil.request.ImageRequest
-import com.davemorrissey.labs.subscaleview.ImageSource
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
-import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
-import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
-import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
-import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
+import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.compose_subsampling_image.ComposeSubsamplingImage
+import com.github.k1rakishou.kurobaexlite.ui.helpers.compose_subsampling_image.ComposeSubsamplingImageSource
+import com.github.k1rakishou.kurobaexlite.ui.helpers.compose_subsampling_image.MaxTileSizeInfo
+import com.github.k1rakishou.kurobaexlite.ui.helpers.compose_subsampling_image.rememberComposeSubsamplingImageState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import java.io.File
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import logcat.asLog
-import okhttp3.HttpUrl
-import okhttp3.Request
-import okio.Path
-import org.koin.java.KoinJavaComponent.inject
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
+import kotlinx.coroutines.launch
+import logcat.logcat
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MediaViewerScreen(
-  private val chanDescriptor: ChanDescriptor,
-  private val inputImages: List<PostImageData>,
-  private val initialImageUrl: HttpUrl,
+  private val mediaViewerParams: MediaViewerParams,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreen(componentActivity, navigationRouter) {
-  private val proxiedOkHttpClient: ProxiedOkHttpClient by inject(ProxiedOkHttpClient::class.java)
-  private val diskCache: DiskCache by inject(DiskCache::class.java)
-
+) : FloatingComposeScreen(componentActivity, navigationRouter) {
+  private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
   private val bgColor = Color.Black.copy(alpha = 0.5f)
-  private val images = mutableStateListOf<ImageLoadState>()
-  private val initialPage: Int
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
-  init {
-    inputImages.forEach { postImageData ->
-      images.add(ImageLoadState.Loading(postImageData))
-    }
+  class MediaViewerScreenState {
+    var images: SnapshotStateList<ImageLoadState>? = null
+    val initialPage = mutableStateOf<Int?>(null)
 
-    initialPage = inputImages.indexOfFirst { it.fullImageUrl == initialImageUrl }
+    fun isLoaded(): Boolean = initialPage.value != null && images != null
+    fun requireImages(): SnapshotStateList<ImageLoadState> = requireNotNull(images) { "images not initialized yet!" }
   }
 
-  @OptIn(ExperimentalPagerApi::class)
   @Composable
-  override fun Content() {
-    navigationRouter.HandleBackPresses(
-      screenKey = screenKey,
-      onBackPressed = { popScreen() }
+  override fun CardContent() {
+    val coroutineScope = rememberCoroutineScope()
+    val mediaViewerScreenState = remember { MediaViewerScreenState() }
+
+    LaunchedEffect(
+      key1 = mediaViewerParams,
+      block = {
+        val initResult = mediaViewerScreenViewModel.init(mediaViewerParams)
+
+        Snapshot.withMutableSnapshot {
+          val images = mutableStateListOf<ImageLoadState>()
+          images.addAll(initResult.images)
+
+          mediaViewerScreenState.images = images
+          mediaViewerScreenState.initialPage.value = initResult.initialPage
+        }
+      }
     )
 
     Box(
       modifier = Modifier
         .fillMaxSize()
         .background(bgColor)
+        .kurobaClickable(
+          hasClickIndication = false,
+          onClick = { coroutineScope.launch { onBackPressed() } }
+        )
     ) {
-      val configuration = LocalConfiguration.current
+      ActualContent(mediaViewerScreenState)
+    }
+  }
 
-      val pagerState = rememberPagerState(
-        key1 = configuration.orientation,
-        initialPage = initialPage
-      )
+  @OptIn(ExperimentalPagerApi::class)
+  @Composable
+  private fun ActualContent(
+    mediaViewerScreenState: MediaViewerScreenState
+  ) {
+    if (!mediaViewerScreenState.isLoaded()) {
+      return
+    }
 
-      HorizontalPager(
-        count = images.size,
-        state = pagerState
-      ) { page ->
-        when (val postImageDataLoadState = images[page]) {
-          is ImageLoadState.Loading -> {
-            LoadFullImage(postImageDataLoadState)
-            DisplayImagePreview(postImageDataLoadState)
+    val configuration = LocalConfiguration.current
+    val initialPageMut by mediaViewerScreenState.initialPage
+    val imagesMut = mediaViewerScreenState.images
+
+    val initialPage = initialPageMut
+    val images = imagesMut
+
+    if (initialPage == null || images == null) {
+      return
+    }
+
+    if (images.isEmpty()) {
+      InsetsAwareBox(modifier = Modifier.fillMaxSize()) {
+        KurobaComposeText(text = "No images to show")
+      }
+
+      return
+    }
+
+    SideEffect {
+      logcat { "initialPage=$initialPage, initialImage=${images[initialPage].fullImageUrlAsString}" }
+    }
+
+    val pagerState = rememberPagerState(
+      key1 = configuration.orientation,
+      initialPage = initialPage
+    )
+
+    HorizontalPager(
+      modifier = Modifier.fillMaxSize(),
+      count = images.size,
+      state = pagerState,
+      key = { page -> images[page].fullImageUrlAsString }
+    ) { page ->
+      val postImageDataLoadState = images[page]
+
+      val displayImagePreviewMovable = remember {
+        movableContentOf {
+          DisplayImagePreview(postImageDataLoadState)
+        }
+      }
+
+      when (postImageDataLoadState) {
+        is ImageLoadState.Loading -> {
+          LoadFullImage(mediaViewerScreenState, postImageDataLoadState)
+          displayImagePreviewMovable()
+        }
+        is ImageLoadState.Ready -> {
+          var fullImageLoaded by remember { mutableStateOf(false) }
+          if (!fullImageLoaded) {
+            displayImagePreviewMovable()
           }
-          is ImageLoadState.Error -> {
-            DisplayImageLoadError(postImageDataLoadState)
-          }
-          is ImageLoadState.Ready -> {
-            DisplayFullImage(postImageDataLoadState)
-          }
+
+          DisplayFullImage(
+            postImageDataLoadState = postImageDataLoadState,
+            onFullImageLoaded = { fullImageLoaded = true },
+            onFullImageFailedToLoad = { fullImageLoaded = false }
+          )
+        }
+        is ImageLoadState.Error -> {
+          DisplayImageLoadError(postImageDataLoadState)
         }
       }
     }
   }
 
   @Composable
-  private fun LoadFullImage(postImageDataLoadState: ImageLoadState.Loading) {
+  private fun LoadFullImage(
+    mediaViewerScreenState: MediaViewerScreenState,
+    postImageDataLoadState: ImageLoadState.Loading
+  ) {
     LaunchedEffect(
-      key1 = postImageDataLoadState.postImageData.fullImageUrl,
+      key1 = postImageDataLoadState.postImageData,
       block = {
         val postImageData = postImageDataLoadState.postImageData
+        val fullImageUrl = postImageData.fullImageUrl
 
-        val loadImageResult = withContext(Dispatchers.IO) {
-          Result.Try { loadFullImage(postImageDataLoadState.postImageData) }
-        }
-
-        val index = images.indexOfFirst { imageLoadState ->
+        val index = mediaViewerScreenState.requireImages().indexOfFirst { imageLoadState ->
           imageLoadState.fullImageUrl == postImageData.fullImageUrl
         }
 
-        if (index < 0) {
-          return@LaunchedEffect
+        val imageLoadState = if (index >= 0) {
+          mediaViewerScreenViewModel.loadFullImageAndGetFile(postImageDataLoadState.postImageData)
+        } else {
+          // TODO(KurobaEx): strings
+          val exception =  MediaViewerScreenViewModel.ImageLoadException(
+            fullImageUrl,
+            "Failed to find previous image in images"
+          )
+
+          ImageLoadState.Error(postImageData, exception)
         }
 
-        if (loadImageResult.isSuccess) {
-          val resultFilePath = loadImageResult.getOrThrow()
-          images.set(index, ImageLoadState.Ready(postImageData, resultFilePath.toFile()))
-        } else {
-          val error = loadImageResult.exceptionOrNull()!!
-          images.set(index, ImageLoadState.Error(postImageData, error))
-        }
+        mediaViewerScreenState.requireImages().set(index, imageLoadState)
       }
     )
   }
 
   @Composable
   private fun DisplayImageLoadError(postImageDataLoadState: ImageLoadState.Error) {
-    // TODO(KurobaEx):
-    KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.asLog()}")
+    InsetsAwareBox(modifier = Modifier.fillMaxSize()) {
+      // TODO(KurobaEx):
+      KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName()}")
+    }
   }
 
   @Composable
-  private fun DisplayFullImage(postImageDataLoadState: ImageLoadState.Ready) {
-    AndroidView(
+  private fun DisplayFullImage(
+    postImageDataLoadState: ImageLoadState.Ready,
+    onFullImageLoaded: () -> Unit,
+    onFullImageFailedToLoad: () -> Unit
+  ) {
+    ComposeSubsamplingImage(
       modifier = Modifier.fillMaxSize(),
-      factory = { context ->
-        SubsamplingScaleImageView(context).also { imageView ->
-          imageView.setImage(ImageSource.inputStream(postImageDataLoadState.imageFile.inputStream()))
-        }
-      }
+      state = rememberComposeSubsamplingImageState(
+        maxMaxTileSizeInfo = MaxTileSizeInfo.Fixed(IntSize(192, 192)),
+        sourceDebugKey = postImageDataLoadState.fullImageUrlAsString,
+        debug = true
+      ),
+      imageSource = { ComposeSubsamplingImageSource.Stream(postImageDataLoadState.imageFile.inputStream()) },
+      onFullImageLoaded = onFullImageLoaded,
+      onFullImageFailedToLoad = onFullImageFailedToLoad
     )
   }
 
   @Composable
-  private fun DisplayImagePreview(postImageDataLoadState: ImageLoadState.Loading) {
+  private fun DisplayImagePreview(postImageDataState: ImageLoadState) {
+    val postImageDataLoadState = (postImageDataState as? ImageLoadState.Loading)
+      ?: return
+
     val context = LocalContext.current
     val postImageData = postImageDataLoadState.postImageData
 
@@ -167,14 +242,14 @@ class MediaViewerScreen(
       modifier = Modifier.fillMaxSize(),
       model = ImageRequest.Builder(context)
         .data(postImageData.thumbnailUrl)
-        .crossfade(true)
+        .crossfade(false)
         .build(),
       contentDescription = null,
       contentScale = ContentScale.Fit,
       content = {
         val state = painter.state
         if (state is AsyncImagePainter.State.Error) {
-          logcatError {
+          logcatError(tag = TAG) {
             "DisplayImagePreview() url=${postImageData}, " +
               "postDescriptor=${postImageData.ownerPostDescriptor}, " +
               "error=${state.result.throwable}"
@@ -186,84 +261,10 @@ class MediaViewerScreen(
     )
   }
 
-  private suspend fun loadFullImage(postImageData: PostImageData): Path {
-    BackgroundUtils.ensureBackgroundThread()
 
-    val imageUrl = postImageData.fullImageUrl
-
-    val request = Request.Builder()
-      .url(imageUrl)
-      .get()
-      .build()
-
-    val response = proxiedOkHttpClient.okHttpClient().suspendCall(request)
-    if (!response.isSuccessful) {
-      throw BadStatusResponseException(response.code)
-    }
-
-    val responseBody = response.body
-      ?: throw EmptyBodyResponseException()
-
-    val diskCacheKey = imageUrl.toString()
-    val snapshot = diskCache.get(diskCacheKey)
-
-    val editor = if (snapshot != null) {
-      snapshot.closeAndEdit()
-    } else {
-      diskCache.edit(diskCacheKey)
-    }
-
-    if (editor == null) {
-      throw ImageLoadException(imageUrl, "Failed to edit disk cache")
-    }
-
-    try {
-      diskCache.fileSystem.write(editor.data) {
-        responseBody.source().readAll(this)
-      }
-
-      return editor.commitAndGet()?.data
-        ?: throw ImageLoadException(imageUrl, "Failed to store in disk cache")
-    } catch (e: Exception) {
-      try {
-        editor.abort()
-      } catch (ignored: Exception) {
-      }
-
-      throw e
-    }
-  }
-
-  class ImageLoadException : ClientException {
-    constructor(url: HttpUrl) : super("Failed to load image \'$url\'")
-    constructor(url: HttpUrl, cause: Throwable) : super("Failed to load image \'$url\'", cause)
-    constructor(url: HttpUrl, message: String) : super("Failed to load image \'$url\', reason: $message")
-  }
-
-  sealed class ImageLoadState {
-    val fullImageUrl: HttpUrl
-      get() {
-        return when (this) {
-          is Loading -> postImageData.fullImageUrl
-          is Error -> postImageData.fullImageUrl
-          is Ready -> postImageData.fullImageUrl
-        }
-      }
-
-    data class Loading(val postImageData: PostImageData) : ImageLoadState()
-
-    data class Error(
-      val postImageData: PostImageData,
-      val exception: Throwable
-    ) : ImageLoadState()
-
-    data class Ready(
-      val postImageData: PostImageData,
-      val imageFile: File
-    ) : ImageLoadState()
-  }
 
   companion object {
+    private const val TAG = "MediaViewerScreen"
     val SCREEN_KEY = ScreenKey("MediaViewerScreen")
   }
 

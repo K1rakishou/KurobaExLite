@@ -1,10 +1,16 @@
 package com.github.k1rakishou.kurobaexlite.helpers.executors
 
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.launch
 import logcat.asLog
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -13,6 +19,7 @@ class RendezvousCoroutineExecutor(
   private val dispatcher: CoroutineDispatcher = Dispatchers.Main
 ) {
   private val coroutineExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
+    logcatError(tag = TAG) { "serializedAction unhandled exception, ${throwable.asLog()}" }
     throw RuntimeException(throwable)
   }
 
@@ -26,11 +33,7 @@ class RendezvousCoroutineExecutor(
   init {
     job = scope.launch(context = dispatcher + coroutineExceptionHandler) {
       channel.consumeEach { serializedAction ->
-        try {
-          serializedAction.action()
-        } catch (error: Throwable) {
-          logcatError(tag = TAG) { "serializedAction unhandled exception, ${error.asLog()}" }
-        }
+        serializedAction.action()
       }
     }
   }

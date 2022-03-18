@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.executors
 
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -11,6 +12,7 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import logcat.asLog
 
 @Suppress("JoinDeclarationAndAssignment")
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -20,6 +22,7 @@ class DebouncingCoroutineExecutor(
   private val debouncers = mutableMapOf<String?, Debouncer>()
 
   private val coroutineExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
+    logcatError(tag = TAG) { "serializedAction unhandled exception, ${throwable.asLog()}" }
     throw RuntimeException(throwable)
   }
 
@@ -110,4 +113,8 @@ class DebouncingCoroutineExecutor(
     val timeout: Long,
     val func: suspend () -> Unit
   )
+
+  companion object {
+    private const val TAG = "DebouncingCoroutineExecutor"
+  }
 }

@@ -31,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.boards.BoardSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenToolbarActionHandler
@@ -172,6 +173,13 @@ class KurobaExLiteApplication : Application() {
         BoardSelectionScreenViewModel(
           application = this@KurobaExLiteApplication,
           siteManager = get()
+        )
+      }
+      viewModel {
+        MediaViewerScreenViewModel(
+          chanCache = get(),
+          proxiedOkHttpClient = get(),
+          diskCache = get()
         )
       }
     }

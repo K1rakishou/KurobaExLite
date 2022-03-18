@@ -30,8 +30,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.elements.ExperimentalPagerApi
-import com.github.k1rakishou.kurobaexlite.ui.elements.HorizontalPager
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
