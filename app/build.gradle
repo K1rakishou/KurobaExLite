@@ -227,6 +227,7 @@ dependencies {
     implementation "io.coil-kt:coil-compose:${coil}"
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
+    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:1aa8ca8455'
 
     implementation "com.squareup.moshi:moshi-kotlin:${moshi}"
     ksp "com.squareup.moshi:moshi-kotlin-codegen:${moshi}"

@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.elements
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -10,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 @Composable
 fun InsetsAwareBox(
   modifier: Modifier = Modifier,
+  contentAlignment: Alignment = Alignment.TopStart,
   applyLeft: Boolean = true,
   applyRight: Boolean = true,
   applyTop: Boolean = true,
@@ -27,7 +29,8 @@ fun InsetsAwareBox(
           top = insets.top.takeIf { applyTop } ?: 0.dp,
           bottom = insets.bottom.takeIf { applyBottom } ?: 0.dp
         )
-    )
+    ),
+    contentAlignment = contentAlignment
   ) {
     content()
   }

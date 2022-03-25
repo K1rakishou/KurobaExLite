@@ -21,11 +21,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.IntSize
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImage
+import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageEventListener
+import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageSource
+import com.github.k1rakishou.cssi_lib.ImageSourceProvider
+import com.github.k1rakishou.cssi_lib.MaxTileSize
+import com.github.k1rakishou.cssi_lib.MinimumScaleType
+import com.github.k1rakishou.cssi_lib.rememberComposeSubsamplingScaleImageState
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -34,10 +40,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.compose_subsampling_image.ComposeSubsamplingImage
-import com.github.k1rakishou.kurobaexlite.ui.helpers.compose_subsampling_image.ComposeSubsamplingImageSource
-import com.github.k1rakishou.kurobaexlite.ui.helpers.compose_subsampling_image.MaxTileSizeInfo
-import com.github.k1rakishou.kurobaexlite.ui.helpers.compose_subsampling_image.rememberComposeSubsamplingImageState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
@@ -159,6 +161,7 @@ class MediaViewerScreen(
           }
 
           DisplayFullImage(
+            currentPage = { pagerState.currentPage },
             postImageDataLoadState = postImageDataLoadState,
             onFullImageLoaded = { fullImageLoaded = true },
             onFullImageFailedToLoad = { fullImageLoaded = false }
@@ -213,20 +216,44 @@ class MediaViewerScreen(
 
   @Composable
   private fun DisplayFullImage(
+    currentPage: () -> Int,
     postImageDataLoadState: ImageLoadState.Ready,
     onFullImageLoaded: () -> Unit,
     onFullImageFailedToLoad: () -> Unit
   ) {
-    ComposeSubsamplingImage(
+    val eventListener = object : ComposeSubsamplingScaleImageEventListener() {
+      override fun onFailedToLoadFullImage(error: Throwable) {
+        val url = postImageDataLoadState.fullImageUrlAsString
+        logcat { "onFailedToLoadFullImage() url=$url, error=${error.errorMessageOrClassName()}" }
+
+        onFullImageFailedToLoad()
+      }
+
+      override fun onFullImageLoaded() {
+        onFullImageLoaded()
+      }
+    }
+
+    val imageSourceProvider = remember(key1 = postImageDataLoadState.imageFile) {
+      object : ImageSourceProvider {
+        override suspend fun provide(): ComposeSubsamplingScaleImageSource {
+          return ComposeSubsamplingScaleImageSource(
+            debugKey = postImageDataLoadState.fullImageUrlAsString,
+            inputStream = postImageDataLoadState.imageFile.inputStream()
+          )
+        }
+      }
+    }
+
+    ComposeSubsamplingScaleImage(
       modifier = Modifier.fillMaxSize(),
-      state = rememberComposeSubsamplingImageState(
-        maxMaxTileSizeInfo = MaxTileSizeInfo.Fixed(IntSize(192, 192)),
-        sourceDebugKey = postImageDataLoadState.fullImageUrlAsString,
-        debug = true
+      pointerInputKey = currentPage(),
+      state = rememberComposeSubsamplingScaleImageState(
+        maxMaxTileSize = { MaxTileSize.Auto() },
+        minimumScaleType = { MinimumScaleType.ScaleTypeCenterInside },
       ),
-      imageSource = { ComposeSubsamplingImageSource.Stream(postImageDataLoadState.imageFile.inputStream()) },
-      onFullImageLoaded = onFullImageLoaded,
-      onFullImageFailedToLoad = onFullImageFailedToLoad
+      imageSourceProvider = imageSourceProvider,
+      eventListener = eventListener
     )
   }
 
