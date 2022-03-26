@@ -6,6 +6,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -60,6 +61,7 @@ class KurobaToolbarState(
   val postScreenToolbarInfo: PostScreenToolbarInfo? = null
 ) {
   val toolbarTitleState = mutableStateOf<String?>(null)
+  val toolbarSubtitleState = mutableStateOf<String?>(null)
 }
 
 @Composable
@@ -168,11 +170,13 @@ private fun BoxScope.PostsScreenNormalToolbar(
     leftPart = leftToolbarPart,
     middlePart = {
       val toolbarTitle by kurobaToolbarState.toolbarTitleState
+      val toolbarSubtitle by kurobaToolbarState.toolbarSubtitleState
+
       if (toolbarTitle != null) {
         val horizontalAlignment = if (kurobaToolbarState.middlePartInfo.centerContent) {
-          Arrangement.Center
+          Alignment.CenterHorizontally
         } else {
-          Arrangement.Start
+          Alignment.Start
         }
 
         val clickableModifier = if (onMiddleMenuClicked != null) {
@@ -181,28 +185,40 @@ private fun BoxScope.PostsScreenNormalToolbar(
           Modifier
         }
 
-        Row(
+        Column(
           modifier = Modifier
             .fillMaxHeight()
             .fillMaxWidth()
             .then(clickableModifier),
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = horizontalAlignment
+          verticalArrangement = Arrangement.Center,
+          horizontalAlignment = horizontalAlignment
         ) {
-          Text(
-            text = toolbarTitle!!,
-            color = Color.White,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            fontSize = 16.sp
-          )
+          Row {
+            Text(
+              text = toolbarTitle!!,
+              color = Color.White,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+              fontSize = 16.sp
+            )
 
-          if (kurobaToolbarState.postScreenToolbarInfo?.isCatalogScreen == true) {
-            Spacer(modifier = Modifier.width(8.dp))
+            if (kurobaToolbarState.postScreenToolbarInfo?.isCatalogScreen == true) {
+              Spacer(modifier = Modifier.width(8.dp))
 
-            KurobaComposeIcon(drawableId = R.drawable.ic_baseline_keyboard_arrow_down_24)
+              KurobaComposeIcon(drawableId = R.drawable.ic_baseline_keyboard_arrow_down_24)
 
-            Spacer(modifier = Modifier.width(8.dp))
+              Spacer(modifier = Modifier.width(8.dp))
+            }
+          }
+
+          if (toolbarSubtitle != null) {
+            Text(
+              text = toolbarSubtitle!!,
+              color = Color.White,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+              fontSize = 12.sp
+            )
           }
         }
       }

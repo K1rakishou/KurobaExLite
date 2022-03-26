@@ -1017,8 +1017,8 @@ private fun PostCellContainerAnimated(
   postsScreenViewModel: PostScreenViewModel,
   content: @Composable () -> Unit
 ) {
-  var currentAnimation by remember { mutableStateOf<AnimationType?>(null) }
   val chanTheme = LocalChanTheme.current
+  var currentAnimation by remember { mutableStateOf<AnimationType?>(null) }
   val contentMovable = remember { movableContentOf { content() } }
 
   if (animateInsertion || animateUpdate || currentAnimation != null) {

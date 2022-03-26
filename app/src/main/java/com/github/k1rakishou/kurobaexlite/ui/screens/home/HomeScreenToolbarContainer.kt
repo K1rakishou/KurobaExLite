@@ -43,7 +43,8 @@ fun HomeScreenToolbarContainer(
   pagerState: PagerState,
   childScreens: List<ComposeScreenWithToolbar>,
   mainUiLayoutMode: MainUiLayoutMode,
-  homeScreenViewModel: HomeScreenViewModel
+  homeScreenViewModel: HomeScreenViewModel,
+  maxZOrder: Int = 1000
 ) {
   require(childScreens.isNotEmpty()) { "childScreens is empty!" }
 
@@ -130,9 +131,9 @@ fun HomeScreenToolbarContainer(
       for ((pageIndex, _) in childScreens.withIndex()) {
         when (pageIndex) {
           // (Currently animated) Always behind the target and above everything else
-          currentPage -> zOrders[pageIndex] = 999
+          currentPage -> zOrders[pageIndex] = maxZOrder - 1
           // (Currently animated) Always at the top
-          targetPage -> zOrders[pageIndex] = 1000
+          targetPage -> zOrders[pageIndex] = maxZOrder
           else -> zOrders[pageIndex] = pageIndex
         }
       }

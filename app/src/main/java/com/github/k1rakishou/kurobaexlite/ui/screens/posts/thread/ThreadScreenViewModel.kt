@@ -286,6 +286,8 @@ class ThreadScreenViewModel(
       return
     }
 
+    chanCache.insertThreadPosts(threadDescriptor, threadData.threadPosts)
+
     if (cachedThreadPostsState != null) {
       val mergeResult = cachedThreadPostsState.mergePostsWith(threadData.threadPosts)
       logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${mergeResult.info()}" }
@@ -324,8 +326,6 @@ class ThreadScreenViewModel(
           }
 
           try {
-            chanCache.insertThreadPosts(threadDescriptor, postDataList)
-
             onPostsParsed(
               threadDescriptor = threadDescriptor,
               mergeResult = mergeResult,
@@ -389,8 +389,6 @@ class ThreadScreenViewModel(
           }
 
           try {
-            chanCache.insertThreadPosts(threadDescriptor, postDataList)
-
             onPostsParsed(
               threadDescriptor = threadDescriptor,
               mergeResult = mergeResult,

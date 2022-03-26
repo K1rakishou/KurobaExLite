@@ -3,7 +3,7 @@ buildscript {
     ext {
         kotlin_version = "1.6.10"
         kotlin_coroutines_version = "1.6.0"
-        compose_version = "1.2.0-alpha05"
+        compose_version = "1.2.0-alpha06"
         koin_version = "3.1.5"
         okhttp = "4.9.2"
         moshi = "1.13.0"

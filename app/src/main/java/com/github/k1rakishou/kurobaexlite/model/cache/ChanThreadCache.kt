@@ -42,10 +42,6 @@ class ChanThreadCache(
       var needSorting = false
 
       postDataCollection.forEach { postData ->
-        if (postData.parsedPostDataRead == null) {
-          error("parsedPostDataRead is null")
-        }
-
         if (postsMap.contains(postData.postDescriptor)) {
           val index = posts.indexOfFirst { oldPostData -> oldPostData.postDescriptor == postData.postDescriptor }
           check(index >= 0) { "postMap contains this post but posts list does not!" }

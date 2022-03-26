@@ -26,23 +26,34 @@ import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImage
+import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageDecoder
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageEventListener
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageSource
+import com.github.k1rakishou.cssi_lib.ImageDecoderProvider
 import com.github.k1rakishou.cssi_lib.ImageSourceProvider
 import com.github.k1rakishou.cssi_lib.MaxTileSize
 import com.github.k1rakishou.cssi_lib.MinimumScaleType
 import com.github.k1rakishou.cssi_lib.rememberComposeSubsamplingScaleImageState
+import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.decoder.TachiyomiImageDecoder
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
+import java.util.Locale
 import kotlinx.coroutines.launch
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -67,7 +78,7 @@ class MediaViewerScreen(
 
   @Composable
   override fun CardContent() {
-    val coroutineScope = rememberCoroutineScope()
+    val insets = LocalWindowInsets.current
     val mediaViewerScreenState = remember { MediaViewerScreenState() }
 
     LaunchedEffect(
@@ -89,19 +100,178 @@ class MediaViewerScreen(
       modifier = Modifier
         .fillMaxSize()
         .background(bgColor)
-        .kurobaClickable(
-          hasClickIndication = false,
-          onClick = { coroutineScope.launch { onBackPressed() } }
-        )
     ) {
-      ActualContent(mediaViewerScreenState)
+      var currentImageIndex by remember { mutableStateOf(0) }
+      var targetImageIndex by remember { mutableStateOf(0) }
+      var offset by remember { mutableStateOf(0f) }
+
+      MediaViewerPager(
+        mediaViewerScreenState = mediaViewerScreenState,
+        onPageChanged = { currentPage, targetPage, pageOffset ->
+          currentImageIndex = currentPage
+          targetImageIndex = targetPage
+          offset = pageOffset
+        }
+      )
+
+      MediaViewerToolbar(
+        mediaViewerScreenState = mediaViewerScreenState,
+        currentImageIndex = currentImageIndex,
+        targetImageIndex = targetImageIndex,
+        offset = offset
+      )
+    }
+  }
+
+  @Composable
+  private fun MediaViewerToolbar(
+    mediaViewerScreenState: MediaViewerScreenState,
+    currentImageIndex: Int,
+    targetImageIndex: Int,
+    offset: Float
+  ) {
+    if (mediaViewerScreenState.isLoaded()) {
+      val childToolbars = remember(key1 = currentImageIndex, key2 = targetImageIndex) {
+        val childToolbars = mutableListOf<ChildToolbar>()
+
+        childToolbars += ChildToolbar(
+          key = mediaViewerScreenState.requireImages().get(currentImageIndex).fullImageUrlAsString,
+          indexInList = currentImageIndex,
+          content = {
+            MediaToolbar(
+              mediaViewerScreenState = mediaViewerScreenState,
+              currentPagerPage = currentImageIndex
+            )
+          })
+
+        if (currentImageIndex != targetImageIndex) {
+          childToolbars += ChildToolbar(
+            key = mediaViewerScreenState.requireImages().get(targetImageIndex).fullImageUrlAsString,
+            indexInList = targetImageIndex,
+            content = {
+              MediaToolbar(
+                mediaViewerScreenState = mediaViewerScreenState,
+                currentPagerPage = targetImageIndex
+              )
+            })
+        }
+
+        return@remember childToolbars
+      }
+
+      MediaViewerScreenToolbarContainer(
+        currentToolbarIndex = currentImageIndex,
+        targetToolbarIndex = targetImageIndex,
+        offset = offset,
+        childToolbars = childToolbars
+      )
+    }
+  }
+
+  @Composable
+  private fun MediaToolbar(
+    mediaViewerScreenState: MediaViewerScreenState,
+    currentPagerPage: Int
+  ) {
+    val coroutineScope = rememberCoroutineScope()
+
+    val kurobaToolbarState = remember {
+      return@remember KurobaToolbarState(
+        leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
+        middlePartInfo = MiddlePartInfo(centerContent = false),
+      )
+    }
+
+    UpdateMediaViewerToolbarTitle(
+      mediaViewerScreenState = mediaViewerScreenState,
+      kurobaToolbarState = kurobaToolbarState,
+      currentPagerPage = currentPagerPage
+    )
+
+    KurobaToolbar(
+      screenKey = screenKey,
+      componentActivity = componentActivity,
+      kurobaToolbarState = kurobaToolbarState,
+      navigationRouter = navigationRouter,
+      canProcessBackEvent = { true },
+      onLeftIconClicked = { coroutineScope.launch { onBackPressed() } },
+      onMiddleMenuClicked = {
+        // no-op
+      },
+      onSearchQueryUpdated = null,
+      onToolbarSortClicked = null,
+      onToolbarOverflowMenuClicked = {
+        // no-op
+      }
+    )
+  }
+
+  @Composable
+  private fun UpdateMediaViewerToolbarTitle(
+    mediaViewerScreenState: MediaViewerScreenState,
+    kurobaToolbarState: KurobaToolbarState,
+    currentPagerPage: Int
+  ) {
+    val isLoaded = mediaViewerScreenState.isLoaded()
+    if (!isLoaded) {
+      return
+    }
+
+    val currentImageData = remember(key1 = currentPagerPage) {
+      val images = mediaViewerScreenState.images
+        ?: return@remember null
+
+      return@remember images.getOrNull(currentPagerPage)?.postImageData
+    }
+
+    LaunchedEffect(
+      key1 = currentImageData,
+      block = {
+        if (currentImageData == null) {
+          return@LaunchedEffect
+        }
+
+        Snapshot.withMutableSnapshot {
+          val imagesCount = mediaViewerScreenState.images?.size
+
+          kurobaToolbarState.toolbarTitleState.value = currentImageData.originalFileName
+          kurobaToolbarState.toolbarSubtitleState.value = formatImageInfo(
+            currentPagerPage = currentPagerPage,
+            imagesCount = imagesCount,
+            currentImageData = currentImageData
+          )
+        }
+      })
+  }
+
+  private fun formatImageInfo(
+    currentPagerPage: Int,
+    imagesCount: Int?,
+    currentImageData: PostImageData
+  ): String {
+    return buildString {
+      append(currentPagerPage + 1)
+      append("/")
+      append(imagesCount?.toString() ?: "?")
+      append(", ")
+
+      append(currentImageData.ext.uppercase(Locale.ENGLISH))
+      append(", ")
+
+      append(currentImageData.width)
+      append("x")
+      append(currentImageData.height)
+      append(", ")
+
+      append(currentImageData.fileSize.asReadableFileSize())
     }
   }
 
   @OptIn(ExperimentalPagerApi::class)
   @Composable
-  private fun ActualContent(
-    mediaViewerScreenState: MediaViewerScreenState
+  private fun MediaViewerPager(
+    mediaViewerScreenState: MediaViewerScreenState,
+    onPageChanged: (Int, Int, Float) -> Unit
   ) {
     if (!mediaViewerScreenState.isLoaded()) {
       return
@@ -133,6 +303,13 @@ class MediaViewerScreen(
     val pagerState = rememberPagerState(
       key1 = configuration.orientation,
       initialPage = initialPage
+    )
+
+    LaunchedEffect(
+      key1 = pagerState.currentPage,
+      key2 = pagerState.targetPage,
+      key3 = pagerState.currentPageOffset,
+      block = { onPageChanged(pagerState.currentPage, pagerState.targetPage, pagerState.currentPageOffset) }
     )
 
     HorizontalPager(
@@ -245,12 +422,26 @@ class MediaViewerScreen(
       }
     }
 
+    val imageDecoderProvider = remember {
+      object : ImageDecoderProvider {
+        override suspend fun provide(): ComposeSubsamplingScaleImageDecoder {
+          return TachiyomiImageDecoder()
+        }
+      }
+    }
+
+    // TODO(KurobaEx): add onClick once it's supported
+    //  onClick = { coroutineScope.launch { onBackPressed() } }
+
     ComposeSubsamplingScaleImage(
       modifier = Modifier.fillMaxSize(),
       pointerInputKey = currentPage(),
       state = rememberComposeSubsamplingScaleImageState(
+        doubleTapZoom = 2f,
+        maxScale = 3f,
         maxMaxTileSize = { MaxTileSize.Auto() },
         minimumScaleType = { MinimumScaleType.ScaleTypeCenterInside },
+        imageDecoderProvider = imageDecoderProvider
       ),
       imageSourceProvider = imageSourceProvider,
       eventListener = eventListener

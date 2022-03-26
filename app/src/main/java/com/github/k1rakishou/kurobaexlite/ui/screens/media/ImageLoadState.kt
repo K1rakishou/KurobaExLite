@@ -5,26 +5,24 @@ import java.io.File
 import okhttp3.HttpUrl
 
 sealed class ImageLoadState {
+  abstract val postImageData: PostImageData
+
   val fullImageUrl: HttpUrl
-    get() {
-      return when (this) {
-        is Loading -> postImageData.fullImageUrl
-        is Error -> postImageData.fullImageUrl
-        is Ready -> postImageData.fullImageUrl
-      }
-    }
+    get() = postImageData.fullImageUrl
 
   val fullImageUrlAsString: String by lazy { fullImageUrl.toString() }
 
-  data class Loading(val postImageData: PostImageData) : ImageLoadState()
+  data class Loading(
+    override val postImageData: PostImageData
+    ) : ImageLoadState()
 
   data class Error(
-    val postImageData: PostImageData,
+    override val postImageData: PostImageData,
     val exception: Throwable
   ) : ImageLoadState()
 
   data class Ready(
-    val postImageData: PostImageData,
+    override val postImageData: PostImageData,
     val imageFile: File
   ) : ImageLoadState()
 }

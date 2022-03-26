@@ -112,7 +112,14 @@ class CatalogScreenViewModel(
     onCatalogLoadingStart(catalogDescriptor, loadOptions)
 
     val catalogDataResult = if (loadOptions.loadFromNetwork || catalogDescriptor == null) {
-      chanThreadManager.loadCatalog(catalogDescriptor)
+      val catalogDataResult = chanThreadManager.loadCatalog(catalogDescriptor)
+      catalogDataResult.getOrNull()?.let { catalogData ->
+        if (catalogDescriptor != null) {
+          chanCache.insertCatalogThreads(catalogDescriptor, catalogData.catalogThreads)
+        }
+      }
+
+      catalogDataResult
     } else {
       val catalogThreads = chanCache.getCatalogThreads(catalogDescriptor)
       val catalogData = CatalogData(catalogDescriptor, catalogThreads)
@@ -189,7 +196,6 @@ class CatalogScreenViewModel(
         }
 
         try {
-          chanCache.insertCatalogThreads(catalogDescriptor, catalogData.catalogThreads)
           onCatalogLoadingEnd(catalogDescriptor)
 
           _postsFullyParsedOnceFlow.emit(true)

@@ -218,7 +218,7 @@ dependencies {
     implementation "androidx.datastore:datastore-preferences:1.0.0"
     implementation "io.insert-koin:koin-core:$koin_version"
     implementation "io.insert-koin:koin-android:$koin_version"
-    implementation 'dev.chrisbanes.snapper:snapper:0.1.2'
+    implementation 'dev.chrisbanes.snapper:snapper:0.2.0'
     implementation 'com.squareup.logcat:logcat:0.1'
     implementation "com.squareup.okhttp3:okhttp:${okhttp}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlin_coroutines_version}"
@@ -227,7 +227,7 @@ dependencies {
     implementation "io.coil-kt:coil-compose:${coil}"
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
-    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:1aa8ca8455'
+    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:0a9e79779c'
 
     implementation "com.squareup.moshi:moshi-kotlin:${moshi}"
     ksp "com.squareup.moshi:moshi-kotlin-codegen:${moshi}"
