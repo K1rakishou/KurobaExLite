@@ -508,9 +508,7 @@ fun unreachable(): Nothing = error("Unreachable!")
 fun DiskCache.Editor.abortQuietly() {
   try {
     abort()
-  } catch (rethrown: RuntimeException) {
-    throw rethrown
-  } catch (_: Exception) {
+  } catch (_: Throwable) {
 
   }
 }
