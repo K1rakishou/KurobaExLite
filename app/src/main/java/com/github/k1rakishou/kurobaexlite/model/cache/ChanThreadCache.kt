@@ -2,9 +2,11 @@ package com.github.k1rakishou.kurobaexlite.model.cache
 
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
+import com.github.k1rakishou.kurobaexlite.helpers.PostDiffer
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
+import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -17,9 +19,9 @@ class ChanThreadCache(
   private val mutex = Mutex()
 
   @GuardedBy("mutex")
-  private val posts = mutableListOf<PostData>()
+  private val posts = mutableListOf<IPostData>()
   @GuardedBy("mutex")
-  private val postsMap = mutableMapOf<PostDescriptor, PostData>()
+  private val postsMap = mutableMapOf<PostDescriptor, IPostData>()
 
   @Volatile
   override var lastUpdateTime: Long = SystemClock.elapsedRealtime()
@@ -35,26 +37,32 @@ class ChanThreadCache(
     mutex.withLockNonCancellable { lastUpdateTime = SystemClock.elapsedRealtime() }
   }
 
-  suspend fun insert(postDataCollection: Collection<PostData>) {
-    mutex.withLockNonCancellable {
-      var insertedPosts = 0
-      var updatedPosts = 0
+  suspend fun insert(postCellDataCollection: Collection<IPostData>): PostsLoadResult {
+    return mutex.withLockNonCancellable {
+      val insertedPosts = mutableListOf<IPostData>()
+      val updatedPosts = mutableListOf<IPostData>()
       var needSorting = false
 
-      postDataCollection.forEach { postData ->
-        if (postsMap.contains(postData.postDescriptor)) {
-          val index = posts.indexOfFirst { oldPostData -> oldPostData.postDescriptor == postData.postDescriptor }
-          check(index >= 0) { "postMap contains this post but posts list does not!" }
+      postCellDataCollection.forEach { postData ->
+        val prevPostData = postsMap[postData.postDescriptor]
 
-          posts[index] = postData
-          postsMap[postData.postDescriptor] = postData
+        if (prevPostData != null) {
+          if (PostDiffer.postsDiffer(postData, prevPostData)) {
+            val index = posts.indexOfFirst { oldPostData ->
+              oldPostData.postDescriptor == postData.postDescriptor
+            }
+            check(index >= 0) { "postMap contains this post but posts list does not!" }
 
-          ++updatedPosts
+            posts[index] = postData
+            postsMap[postData.postDescriptor] = postData
+
+            updatedPosts += postData
+          }
         } else {
           posts.add(postData)
           postsMap[postData.postDescriptor] = postData
 
-          ++insertedPosts
+          insertedPosts += postData
           needSorting = true
         }
       }
@@ -63,15 +71,26 @@ class ChanThreadCache(
         posts.sortWith(POSTS_COMPARATOR)
       }
 
-      logcat(tag = TAG) { "insert() insertedPosts=$insertedPosts, updatedPosts=$updatedPosts" }
+      logcat(tag = TAG) {
+        "insert() insertedPosts=${insertedPosts.size}, " +
+          "updatedPosts=${updatedPosts.size} " +
+          "out of ${postCellDataCollection.size}"
+      }
+
+      return@withLockNonCancellable PostsLoadResult(
+        newPosts = insertedPosts,
+        updatedPosts = updatedPosts
+      )
     }
   }
 
-  suspend fun getMany(postDescriptors: Collection<PostDescriptor>): List<PostData> {
-    return mutex.withLockNonCancellable { postDescriptors.mapNotNull { postDescriptor -> postsMap[postDescriptor] } }
+  suspend fun getMany(postDescriptors: Collection<PostDescriptor>): List<IPostData> {
+    return mutex.withLockNonCancellable {
+      postDescriptors.mapNotNull { postDescriptor -> postsMap[postDescriptor] }
+    }
   }
 
-  suspend fun getAll(): List<PostData> {
+  suspend fun getAll(): List<IPostData> {
     return mutex.withLockNonCancellable { posts.toList() }
   }
 
@@ -86,19 +105,19 @@ class ChanThreadCache(
     }
   }
 
-  suspend fun getPost(postDescriptor: PostDescriptor): PostData? {
+  suspend fun getPost(postDescriptor: PostDescriptor): IPostData? {
     return mutex.withLockNonCancellable { postsMap[postDescriptor] }
   }
 
-  suspend fun getLastPost(): PostData? {
+  suspend fun getLastPost(): IPostData? {
     return mutex.withLockNonCancellable { posts.lastOrNull() }
   }
 
   companion object {
     private const val TAG = "ChanThread"
 
-    private val POSTS_SUB_NO_COMPARATOR = compareBy<PostData> { it.postSubNo }
-    private val POSTS_COMPARATOR = compareBy<PostData> { it.postNo }.then(POSTS_SUB_NO_COMPARATOR)
+    private val POSTS_SUB_NO_COMPARATOR = compareBy<IPostData> { it.postSubNo }
+    private val POSTS_COMPARATOR = compareBy<IPostData> { it.postNo }.then(POSTS_SUB_NO_COMPARATOR)
   }
 
 }

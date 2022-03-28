@@ -39,7 +39,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.decoder.TachiyomiImageDecoder
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
@@ -247,7 +247,7 @@ class MediaViewerScreen(
   private fun formatImageInfo(
     currentPagerPage: Int,
     imagesCount: Int?,
-    currentImageData: PostImageData
+    currentImageData: IPostImage
   ): String {
     return buildString {
       append(currentPagerPage + 1)
@@ -360,10 +360,10 @@ class MediaViewerScreen(
       key1 = postImageDataLoadState.postImageData,
       block = {
         val postImageData = postImageDataLoadState.postImageData
-        val fullImageUrl = postImageData.fullImageUrl
+        val fullImageUrl = postImageData.fullImageAsUrl
 
         val index = mediaViewerScreenState.requireImages().indexOfFirst { imageLoadState ->
-          imageLoadState.fullImageUrl == postImageData.fullImageUrl
+          imageLoadState.fullImageUrl == postImageData.fullImageAsUrl
         }
 
         val imageLoadState = if (index >= 0) {
@@ -459,7 +459,7 @@ class MediaViewerScreen(
     SubcomposeAsyncImage(
       modifier = Modifier.fillMaxSize(),
       model = ImageRequest.Builder(context)
-        .data(postImageData.thumbnailUrl)
+        .data(postImageData.thumbnailAsUrl)
         .crossfade(false)
         .build(),
       contentDescription = null,

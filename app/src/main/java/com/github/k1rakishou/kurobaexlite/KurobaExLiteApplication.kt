@@ -116,7 +116,7 @@ class KurobaExLiteApplication : Application() {
       }
       single { ChanCache() }
       single { SiteManager() }
-      single { ChanThreadManager(siteManager = get()) }
+      single { ChanThreadManager(siteManager = get(), chanCache = get()) }
       single { PostReplyChainManager() }
       single { ChanThreadViewManager() }
       single { SnackbarManager(appContext = get()) }
@@ -141,31 +141,19 @@ class KurobaExLiteApplication : Application() {
       }
       viewModel {
         CatalogScreenViewModel(
-          chanThreadManager = get(),
-          chanCache = get(),
           application = this@KurobaExLiteApplication,
-          globalConstants = get(),
-          themeEngine = get(),
           savedStateHandle = get()
         )
       }
       viewModel {
         ThreadScreenViewModel(
-          chanThreadManager = get(),
-          chanCache = get(),
           application = this@KurobaExLiteApplication,
-          globalConstants = get(),
-          themeEngine = get(),
           savedStateHandle = get()
         )
       }
       viewModel {
         PopupRepliesScreenViewModel(
-          chanCache = get(),
-          postReplyChainManager = get(),
           application = this@KurobaExLiteApplication,
-          globalConstants = get(),
-          themeEngine = get(),
           savedStateHandle = get()
         )
       }

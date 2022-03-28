@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
-import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class ChanThreadManager(
-  private val siteManager: SiteManager
+  private val siteManager: SiteManager,
+  private val chanCache: ChanCache
 ) {
   private val _currentlyOpenedCatalogFlow = MutableStateFlow<CatalogDescriptor?>(null)
   val currentlyOpenedCatalogFlow: StateFlow<CatalogDescriptor?>
@@ -25,7 +26,7 @@ class ChanThreadManager(
   val currentlyOpenedThread: ThreadDescriptor?
     get() = _currentlyOpenedThreadFlow.value
 
-  suspend fun loadCatalog(catalogDescriptor: CatalogDescriptor?): Result<CatalogData?> {
+  suspend fun loadCatalog(catalogDescriptor: CatalogDescriptor?): Result<PostsLoadResult?> {
     _currentlyOpenedCatalogFlow.value = catalogDescriptor
 
     if (catalogDescriptor == null) {
@@ -38,9 +39,10 @@ class ChanThreadManager(
       ?: return Result.failure(CatalogNotSupported(catalogDescriptor.siteKey))
 
     return catalogDataSource.loadCatalog(catalogDescriptor)
+      .map { catalogData -> chanCache.insertCatalogThreads(catalogDescriptor, catalogData.catalogThreads) }
   }
 
-  suspend fun loadThread(threadDescriptor: ThreadDescriptor?): Result<ThreadData?> {
+  suspend fun loadThread(threadDescriptor: ThreadDescriptor?): Result<PostsLoadResult?> {
     _currentlyOpenedThreadFlow.value = threadDescriptor
 
     if (threadDescriptor == null) {
@@ -53,6 +55,7 @@ class ChanThreadManager(
       ?: return Result.failure(ThreadNotSupported(threadDescriptor.siteKey))
 
     return threadDataSource.loadThread(threadDescriptor)
+      .map { threadData -> chanCache.insertThreadPosts(threadDescriptor, threadData.threadPosts) }
   }
 
   class CatalogNotSupported(siteKey: SiteKey) : ClientException("Site \'${siteKey.key}\' does not support catalogs")

@@ -4,36 +4,25 @@ import android.util.LruCache
 import androidx.lifecycle.SavedStateHandle
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadPostsState
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.koin.java.KoinJavaComponent.inject
 
 class PopupRepliesScreenViewModel(
-  private val chanCache: ChanCache,
-  private val postReplyChainManager: PostReplyChainManager,
   application: KurobaExLiteApplication,
-  globalConstants: GlobalConstants,
-  themeEngine: ThemeEngine,
   savedStateHandle: SavedStateHandle
-) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
-  private val parsedPostDataCache by inject<ParsedPostDataCache>(ParsedPostDataCache::class.java)
-
-  private val threadScreenState = ThreadScreenState()
+) : PostScreenViewModel(application, savedStateHandle) {
+  private val threadScreenState = PostScreenState()
   private val postReplyChainStack = mutableListOf<PopupRepliesScreen.ReplyViewMode>()
 
-  private val parsedReplyToCache = LruCache<PostDescriptor, List<PostData>>(32)
-  private val parsedReplyFromCache = LruCache<PostDescriptor, List<PostData>>(32)
+  private val parsedReplyToCache = LruCache<PostDescriptor, List<PostCellData>>(32)
+  private val parsedReplyFromCache = LruCache<PostDescriptor, List<PostCellData>>(32)
 
   override val postScreenState: PostScreenState = threadScreenState
 
@@ -110,9 +99,9 @@ class PopupRepliesScreenViewModel(
       return false
     }
 
-    val threadPostsState = ThreadPostsState(
-      threadDescriptor = postDescriptor.threadDescriptor,
-      threadPosts = posts
+    val threadPostsState = PostsState(
+      chanDescriptor = postDescriptor.threadDescriptor,
+      posts = posts
     )
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
@@ -131,9 +120,9 @@ class PopupRepliesScreenViewModel(
       return false
     }
 
-    val threadPostsState = ThreadPostsState(
-      threadDescriptor = postDescriptor.threadDescriptor,
-      threadPosts = threadPosts
+    val threadPostsState = PostsState(
+      chanDescriptor = postDescriptor.threadDescriptor,
+      posts = threadPosts
     )
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
@@ -143,16 +132,16 @@ class PopupRepliesScreenViewModel(
   private suspend fun parsePostData(
     replyViewMode: PopupRepliesScreen.ReplyViewMode,
     forPostDescriptor: PostDescriptor,
-    postData: PostData
-  ): List<PostData> {
+    postData: IPostData
+  ): List<PostCellData> {
     return parsePostDataList(replyViewMode, forPostDescriptor, listOf(postData))
   }
 
   private suspend fun parsePostDataList(
     replyViewMode: PopupRepliesScreen.ReplyViewMode,
     forPostDescriptor: PostDescriptor,
-    postDataList: List<PostData>
-  ): List<PostData> {
+    postCellDataList: List<IPostData>
+  ): List<PostCellData> {
     val fromCache = when (replyViewMode) {
       is PopupRepliesScreen.ReplyViewMode.RepliesFrom -> {
         parsedReplyFromCache[forPostDescriptor]
@@ -166,25 +155,35 @@ class PopupRepliesScreenViewModel(
       return fromCache
     }
 
-    if (postDataList.isEmpty()) {
+    if (postCellDataList.isEmpty()) {
       return emptyList()
     }
 
     val chanTheme = themeEngine.chanTheme
 
     val updatedPostDataList = withContext(Dispatchers.Default) {
-      return@withContext postDataList.map { oldPostData ->
-        val newParsedPostDataContext = oldPostData.parsedPostDataContext
+      return@withContext postCellDataList.map { oldPostData ->
+        val oldParsedPostDataContext = parsedPostDataCache.getParsedPostDataContext(
+          oldPostData.postDescriptor.threadDescriptor,
+          oldPostData.postDescriptor
+        )?.parsedPostDataContext
+
+        val newParsedPostDataContext = oldParsedPostDataContext
           ?.copy(markedPostDescriptor = forPostDescriptor)
           ?: ParsedPostDataContext(isParsingCatalog = false, markedPostDescriptor = forPostDescriptor)
 
-        val parsedPostData = parsedPostDataCache.calculateParsedPostData(
+        val parsedPostData = parsedPostDataCache.getOrCalculateParsedPostData(
+          chanDescriptor = oldPostData.postDescriptor.threadDescriptor,
           postData = oldPostData,
           parsedPostDataContext = newParsedPostDataContext,
-          chanTheme = chanTheme
+          chanTheme = chanTheme,
+          force = true
         )
 
-        return@map oldPostData.copy(parsedPostData = parsedPostData)
+        return@map PostCellData.fromPostData(
+          postData = oldPostData,
+          parsedPostData = parsedPostData
+        )
       }
     }
 

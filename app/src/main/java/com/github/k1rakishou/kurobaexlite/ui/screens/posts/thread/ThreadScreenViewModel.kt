@@ -5,26 +5,23 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
-import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsMergeResult
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -35,13 +32,9 @@ import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreenViewModel(
-  private val chanThreadManager: ChanThreadManager,
-  private val chanCache: ChanCache,
   application: KurobaExLiteApplication,
-  globalConstants: GlobalConstants,
-  themeEngine: ThemeEngine,
   savedStateHandle: SavedStateHandle
-) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
+) : PostScreenViewModel(application, savedStateHandle) {
   private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
 
   private val loadChanThreadView: LoadChanThreadView by inject(LoadChanThreadView::class.java)
@@ -52,7 +45,7 @@ class ThreadScreenViewModel(
     canUpdate = { threadScreenState.searchQueryFlow.value == null }
   )
 
-  private val threadScreenState = ThreadScreenState()
+  private val threadScreenState = PostScreenState()
   private var loadThreadJob: Job? = null
 
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
@@ -122,14 +115,14 @@ class ThreadScreenViewModel(
       val startTime = SystemClock.elapsedRealtime()
       logcat { "refresh($threadDescriptor)" }
 
-      val threadDataResult = chanThreadManager.loadThread(threadDescriptor)
-      if (threadDataResult.isFailure) {
-        val error = threadDataResult.exceptionOrThrow()
+      val postLoadResultMaybe = chanThreadManager.loadThread(threadDescriptor)
+      if (postLoadResultMaybe.isFailure) {
+        val error = postLoadResultMaybe.exceptionOrThrow()
         logcatError { "refresh($threadDescriptor) error=${error.asLog()}" }
 
         threadAutoUpdater.stopAutoUpdaterLoop()
         threadScreenState.threadCellDataState.value = formatThreadCellData(
-          threadData = null,
+          postLoadResult = null,
           prevCellDataState = prevCellDataState,
           lastLoadError = error
         )
@@ -137,73 +130,51 @@ class ThreadScreenViewModel(
         return@launch
       }
 
-      val threadData = threadDataResult.unwrap()
-      if (threadData == null || threadDescriptor == null) {
+      val postLoadResult = postLoadResultMaybe.unwrap()
+      if (postLoadResult == null || threadDescriptor == null) {
         return@launch
       }
 
-      val originalPostIndex = threadData.threadPosts
-        .indexOfFirst { postData -> postData is OriginalPostData }
-      if (originalPostIndex >= 0) {
-        val startPostDescriptor = (threadData.threadPosts.getOrNull(originalPostIndex) as? OriginalPostData)
-          ?.postDescriptor
-
-        // We need to always reparse the OP eagerly whenever it changes otherwise stuff depending on
-        // it's ParsedPostData will become incorrect (since we reset it to null every time we detect
-        // a post received from the server differs from ours.
-        parsePosts(
-          startPostDescriptor = startPostDescriptor,
-          chanDescriptor = threadDescriptor,
-          postDataList = threadData.threadPosts,
-          count = 1,
-          isCatalogMode = false
-        )
-      }
-
-      val mergeResult = threadPostsAsync.data.mergePostsWith(threadData.threadPosts)
-
       parseRemainingPostsAsync(
         chanDescriptor = threadDescriptor,
-        postDataList = mergeResult.newOrUpdatedPostsToReparse,
+        postDataList = postLoadResult.combined(),
         parsePostsOptions = ParsePostsOptions(
           forced = true,
           parseRepliesTo = true
         ),
         onStartParsingPosts = {
           snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
-            postsCount = mergeResult.newOrUpdatedPostsToReparse.size,
+            postsCount = postLoadResult.newOrUpdatedCount,
             screenKey = screenKey
           )
         },
         onPostsParsed = { postDataList ->
-          chanCache.insertThreadPosts(threadDescriptor, postDataList)
           snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
 
           onPostsParsed(
             threadDescriptor = threadDescriptor,
-            mergeResult = mergeResult,
+            postLoadResult = postLoadResult,
             isInitialThreadLoad = false
           )
         }
       )
 
       threadScreenState.threadCellDataState.value = formatThreadCellData(
-        threadData = threadData,
+        postLoadResult = postLoadResult,
         prevCellDataState = prevCellDataState,
         lastLoadError = null
       )
 
-      if (mergeResult.isNotEmpty()) {
+      if (postLoadResult.isNotEmpty()) {
         snackbarManager.pushThreadNewPostsSnackbar(
-          newPostsCount = mergeResult.newPostsCount,
+          newPostsCount = postLoadResult.newPostsCount,
           screenKey = screenKey
         )
       }
 
       logcat {
         "refresh($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-          "threadPosts=${threadData.threadPosts.size}, " +
-          "newPostsCount=${mergeResult.newPostsCount}"
+          "newPostsCount=${postLoadResult.newPostsCount}"
       }
     }
   }
@@ -247,16 +218,9 @@ class ThreadScreenViewModel(
       threadScreenState.lastViewedPostDescriptorForScrollRestoration.value = lastViewedPostDescriptor
     }
 
-    val cachedThreadPostsState = if (threadDescriptor != null) {
-      val postsFromCache = chanCache.getThreadPosts(threadDescriptor)
-      ThreadPostsState(threadDescriptor, postsFromCache)
-    } else {
-      null
-    }
-
-    val threadDataResult = chanThreadManager.loadThread(threadDescriptor)
-    if (threadDataResult.isFailure) {
-      val error = threadDataResult.exceptionOrThrow()
+    val postLoadResultMaybe = chanThreadManager.loadThread(threadDescriptor)
+    if (postLoadResultMaybe.isFailure) {
+      val error = postLoadResultMaybe.exceptionOrThrow()
       logcatError { "loadCatalog() error=${error.asLog()}" }
 
       threadAutoUpdater.stopAutoUpdaterLoop()
@@ -267,8 +231,8 @@ class ThreadScreenViewModel(
       return
     }
 
-    val threadData = threadDataResult.unwrap()
-    if (threadData == null || threadDescriptor == null) {
+    val postLoadResult = postLoadResultMaybe.unwrap()
+    if (postLoadResult == null || threadDescriptor == null) {
       threadScreenState.postsAsyncDataState.value = AsyncData.Empty
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
@@ -276,7 +240,7 @@ class ThreadScreenViewModel(
       return
     }
 
-    if (threadData.threadPosts.isEmpty()) {
+    if (postLoadResult.isEmpty()) {
       val error = ThreadDisplayException("Thread /${threadDescriptor}/ has no posts")
 
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
@@ -286,22 +250,22 @@ class ThreadScreenViewModel(
       return
     }
 
-    chanCache.insertThreadPosts(threadDescriptor, threadData.threadPosts)
+//    if (cachedThreadPostsState != null) {
+      logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${postLoadResult.info()}" }
 
-    if (cachedThreadPostsState != null) {
-      val mergeResult = cachedThreadPostsState.mergePostsWith(threadData.threadPosts)
-      logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${mergeResult.info()}" }
-
-      parsePostsAround(
+      val initiallyParsedPosts = parseInitialBatchOfPosts(
         startPostDescriptor = threadScreenState.lastViewedPostDescriptorForScrollRestoration.value,
         chanDescriptor = threadDescriptor,
-        postDataList = mergeResult.newOrUpdatedPostsToReparse,
+        postDataList = postLoadResult.combined(),
         isCatalogMode = false
       )
 
-      threadScreenState.postsAsyncDataState.value = AsyncData.Data(cachedThreadPostsState)
+      val catalogThreadsState = PostsState(threadDescriptor)
+      catalogThreadsState.insertOrUpdateMany(initiallyParsedPosts)
+
+      threadScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
       postScreenState.threadCellDataState.value = formatThreadCellData(
-        threadData = threadData,
+        postLoadResult = postLoadResult,
         prevCellDataState = prevCellDataState,
         lastLoadError = null
       )
@@ -311,24 +275,26 @@ class ThreadScreenViewModel(
 
       parseRemainingPostsAsync(
         chanDescriptor = threadDescriptor,
-        postDataList = mergeResult.newOrUpdatedPostsToReparse,
+        postDataList = postLoadResult.combined(),
         parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
         onStartParsingPosts = {
           snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
-            postsCount = mergeResult.newPostsCount,
+            postsCount = postLoadResult.newPostsCount,
             screenKey = screenKey
           )
         },
         onPostsParsed = { postDataList ->
           logcat {
             "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-              "threadPosts=${threadData.threadPosts.size}"
+              "threadPosts=${initiallyParsedPosts.size}"
           }
 
           try {
+            catalogThreadsState.insertOrUpdateMany(postDataList)
+
             onPostsParsed(
               threadDescriptor = threadDescriptor,
-              mergeResult = mergeResult,
+              postLoadResult = postLoadResult,
               isInitialThreadLoad = true
             )
 
@@ -342,13 +308,14 @@ class ThreadScreenViewModel(
           }
         }
       )
-    } else {
+    // TODO(KurobaEx):
+    /*} else {
       logcat(tag = "loadThreadInternal") { "No cached posts, using posts from the server." }
 
-      parsePostsAround(
+      parseInitialBatchOfPosts(
         startPostDescriptor = threadScreenState.lastViewedPostDescriptorForScrollRestoration.value,
         chanDescriptor = threadDescriptor,
-        postDataList = threadData.threadPosts,
+        postCellDataList = threadData.threadPosts,
         isCatalogMode = false
       )
 
@@ -405,12 +372,12 @@ class ThreadScreenViewModel(
           }
         }
       )
-    }
+    }*/
   }
 
   private suspend fun onPostsParsed(
     threadDescriptor: ThreadDescriptor,
-    mergeResult: PostsMergeResult,
+    postLoadResult: PostsLoadResult,
     isInitialThreadLoad: Boolean
   ) {
     if (isInitialThreadLoad) {
@@ -421,7 +388,7 @@ class ThreadScreenViewModel(
       )
     }
 
-    if (mergeResult.newPostsCount > 0) {
+    if (postLoadResult.newPostsCount > 0) {
       threadAutoUpdater.resetTimer()
     }
 
@@ -445,11 +412,11 @@ class ThreadScreenViewModel(
     postListTouchingBottom.value = false
   }
 
-  fun onFirstVisiblePostScrollChanged(postData: PostData) {
+  fun onFirstVisiblePostScrollChanged(postCellData: PostCellData) {
     updateLastLoadedAndViewedPosts(
       key = "onFirstVisiblePostScrollChanged",
-      threadDescriptor = postData.postDescriptor.threadDescriptor,
-      boundPostDescriptor = postData.postDescriptor
+      threadDescriptor = postCellData.postDescriptor.threadDescriptor,
+      boundPostDescriptor = postCellData.postDescriptor
     )
   }
 
@@ -474,12 +441,11 @@ class ThreadScreenViewModel(
   }
 
   private fun formatThreadCellData(
-    threadData: ThreadData?,
+    postLoadResult: PostsLoadResult?,
     prevCellDataState: ThreadCellData?,
     lastLoadError: Throwable?
   ): ThreadCellData {
-    val originalPostData = threadData
-      ?.threadPosts
+    val originalPostData = postLoadResult
       ?.firstOrNull { postData -> postData is OriginalPostData } as? OriginalPostData
 
     val totalReplies = originalPostData?.threadRepliesTotal ?: prevCellDataState?.totalReplies ?: 0

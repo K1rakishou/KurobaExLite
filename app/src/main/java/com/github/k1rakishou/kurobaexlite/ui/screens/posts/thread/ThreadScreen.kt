@@ -38,13 +38,13 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListContent
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListOptions
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreenFloatingActionButton
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -172,20 +172,22 @@ class ThreadScreen(
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
 
-    val postListOptions by derivedStateOf {
-      PostListOptions(
-        isCatalogMode = isCatalogScreen,
-        isInPopup = false,
-        pullToRefreshEnabled = true,
-        contentPadding = PaddingValues(
-          top = toolbarHeight + windowInsets.top,
-          bottom = windowInsets.bottom + fabVertOffset
-        ),
-        mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-        detectLinkableClicks = true
-      )
+    val postListOptions by remember {
+      derivedStateOf {
+        PostListOptions(
+          isCatalogMode = isCatalogScreen,
+          isInPopup = false,
+          pullToRefreshEnabled = true,
+          contentPadding = PaddingValues(
+            top = toolbarHeight + windowInsets.top,
+            bottom = windowInsets.bottom + fabVertOffset
+          ),
+          mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
+          postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+          detectLinkableClicks = true
+        )
+      }
     }
 
     PostListContent(
@@ -207,7 +209,7 @@ class ThreadScreen(
         val mediaViewerScreen = MediaViewerScreen(
           mediaViewerParams = MediaViewerParams.Thread(
             threadDescriptor = threadDescriptor,
-            initialImageUrl = postImageData.fullImageUrl
+            initialImageUrl = postImageData.fullImageAsUrl
           ),
           componentActivity = componentActivity,
           navigationRouter = navigationRouter

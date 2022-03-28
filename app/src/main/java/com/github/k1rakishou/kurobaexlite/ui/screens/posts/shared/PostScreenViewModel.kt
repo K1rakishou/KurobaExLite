@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts
+package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared
 
 import android.os.SystemClock
 import androidx.compose.ui.text.AnnotatedString
@@ -10,6 +10,8 @@ import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
+import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
@@ -18,11 +20,12 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosition
-import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -48,6 +51,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
@@ -55,19 +60,18 @@ import org.koin.java.KoinJavaComponent.inject
 
 abstract class PostScreenViewModel(
   private val application: KurobaExLiteApplication,
-  protected val globalConstants: GlobalConstants,
-  protected val themeEngine: ThemeEngine,
   protected val savedStateHandle: SavedStateHandle
 ) : BaseAndroidViewModel(application) {
-  private val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
-  private val chanCache: ChanCache by inject(ChanCache::class.java)
-  private val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
-  private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
-  private val postBindProcessor: PostBindProcessor by inject(PostBindProcessor::class.java)
-
+  protected val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
+  protected val chanCache: ChanCache by inject(ChanCache::class.java)
+  protected val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
+  protected val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
+  protected val postBindProcessor: PostBindProcessor by inject(PostBindProcessor::class.java)
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   protected val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
+  protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
+  protected val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
 
   private var currentParseJob: Job? = null
   protected var postListBuilt: CompletableDeferred<Unit>? = null
@@ -194,79 +198,74 @@ abstract class PostScreenViewModel(
     lazyColumnRememberedPositionCache.remove(chanDescriptor)
   }
 
-  fun reparsePost(postData: PostData, parsedPostDataContext: ParsedPostDataContext) {
+  fun reparsePost(postCellData: PostCellData, parsedPostDataContext: ParsedPostDataContext) {
     viewModelScope.launch(globalConstants.postParserDispatcher) {
       val chanTheme = themeEngine.chanTheme
 
       val parsedPostData = parsedPostDataCache.calculateParsedPostData(
-        postData = postData,
+        postCellData = postCellData,
         chanTheme = chanTheme,
         parsedPostDataContext = parsedPostDataContext
       )
 
-      postScreenState.updatePost(postData.copy(parsedPostData = parsedPostData))
+      postScreenState.insertOrUpdate(postCellData.copy(parsedPostData = parsedPostData))
     }
   }
 
-  suspend fun reparsePostSubject(postData: PostData): AnnotatedString? {
-    val parsedPostData = postData.parsedPostDataRead
+  suspend fun reparsePostSubject(postCellData: PostCellData): AnnotatedString? {
+    val parsedPostData = postCellData.parsedPostData
       ?: return null
     val chanTheme = themeEngine.chanTheme
 
     return withContext(globalConstants.postParserDispatcher) {
       return@withContext parsedPostDataCache.parseAndProcessPostSubject(
         chanTheme = chanTheme,
-        postIndex = postData.originalPostOrder,
-        postDescriptor = postData.postDescriptor,
-        postTimeMs = postData.timeMs,
-        postImages = postData.images,
+        postIndex = postCellData.originalPostOrder,
+        postDescriptor = postCellData.postDescriptor,
+        postTimeMs = postCellData.timeMs,
+        postImages = postCellData.images,
         postSubjectParsed = parsedPostData.parsedPostSubject,
         parsedPostDataContext = parsedPostData.parsedPostDataContext
       )
     }
   }
 
-  suspend fun parseComment(
-    chanDescriptor: ChanDescriptor,
-    postData: PostData
-  ): ParsedPostData {
-    val chanTheme = themeEngine.chanTheme
-
-    return withContext(globalConstants.postParserDispatcher) {
-      return@withContext calculatePostData(
-        chanDescriptor = chanDescriptor,
-        postData = postData,
-        chanTheme = chanTheme,
-        parsedPostDataContext = ParsedPostDataContext(
-          isParsingCatalog = chanDescriptor is CatalogDescriptor
-        )
-      )
-    }
-  }
-
-  suspend fun parsePostsAround(
+  suspend fun parseInitialBatchOfPosts(
     startPostDescriptor: PostDescriptor?,
     count: Int = 32,
     chanDescriptor: ChanDescriptor,
-    postDataList: List<PostData>,
+    postDataList: List<IPostData>,
     isCatalogMode: Boolean,
-  ) {
+  ): List<PostCellData> {
     if (postDataList.isEmpty()) {
-      return
+      return emptyList()
     }
 
     val chanTheme = themeEngine.chanTheme
 
-    withContext(globalConstants.postParserDispatcher) {
+    return withContext(globalConstants.postParserDispatcher) {
       val startIndex = postDataList
         .indexOfFirst { postData -> postData.postDescriptor == startPostDescriptor }
         .takeIf { index -> index >= 0 }
         ?: 0
 
-      postDataList
+      val indexesOfPostsToParse = postDataList.indices
+        .toList()
         .bidirectionalSequence(startPosition = startIndex)
         .take(count)
-        .forEach { postData ->
+        .toSet()
+
+      logcat {
+        "Parsing posts ${indexesOfPostsToParse.size} out of ${postDataList.size}, " +
+          "indexes=${indexesOfPostsToParse.joinToString()}"
+      }
+
+      val resultList = mutableListWithCap<PostCellData>(postDataList.size)
+
+      for (index in postDataList.indices) {
+        val postData = postDataList[index]
+
+        val parsedPostData = if (index in indexesOfPostsToParse) {
           calculatePostData(
             chanDescriptor = chanDescriptor,
             postData = postData,
@@ -275,27 +274,34 @@ abstract class PostScreenViewModel(
               isParsingCatalog = isCatalogMode
             )
           )
+        } else {
+          null
         }
+
+        resultList += PostCellData.fromPostData(postData, parsedPostData)
+      }
+
+      return@withContext resultList
     }
   }
 
   suspend fun parsePosts(
     startPostDescriptor: PostDescriptor?,
     chanDescriptor: ChanDescriptor,
-    postDataList: List<PostData>,
+    postCellDataList: List<PostData>,
     count: Int,
     isCatalogMode: Boolean,
   ) {
     val chanTheme = themeEngine.chanTheme
 
     withContext(globalConstants.postParserDispatcher) {
-      val startIndex = postDataList
+      val startIndex = postCellDataList
         .indexOfFirst { postData -> postData.postDescriptor == startPostDescriptor }
         .takeIf { index -> index >= 0 }
         ?: 0
 
       for (index in startIndex until (startIndex + count)) {
-        val postData = postDataList.getOrNull(index) ?: break
+        val postData = postCellDataList.getOrNull(index) ?: break
 
         calculatePostData(
           chanDescriptor = chanDescriptor,
@@ -311,17 +317,17 @@ abstract class PostScreenViewModel(
 
   fun parseRemainingPostsAsync(
     chanDescriptor: ChanDescriptor,
-    postDataList: List<PostData>,
+    postDataList: List<IPostData>,
     parsePostsOptions: ParsePostsOptions = ParsePostsOptions(),
     onStartParsingPosts: suspend () -> Unit,
-    onPostsParsed: suspend (List<PostData>) -> Unit
+    onPostsParsed: suspend (List<PostCellData>) -> Unit
   ) {
     currentParseJob?.cancel()
     currentParseJob = null
 
     currentParseJob = viewModelScope.launch(globalConstants.postParserDispatcher) {
       if (postDataList.isEmpty()) {
-        withContext(NonCancellable) { onPostsParsed(postDataList) }
+        withContext(NonCancellable) { onPostsParsed(emptyList()) }
         return@launch
       }
 
@@ -329,6 +335,9 @@ abstract class PostScreenViewModel(
       val chunkSize = (postDataList.size / chunksCount).coerceAtLeast(chunksCount)
       val chanTheme = themeEngine.chanTheme
       val isParsingCatalog = chanDescriptor is CatalogDescriptor
+
+      val mutex = Mutex()
+      val resultMap = mutableMapWithCap<PostDescriptor, PostCellData>(postDataList.size)
 
       val showPostsLoadingSnackbarJob = launch {
         delay(125L)
@@ -358,7 +367,7 @@ abstract class PostScreenViewModel(
 
                   val postData = postDataIndexed.value
 
-                  calculatePostData(
+                  val parsedPostData = calculatePostData(
                     chanDescriptor = chanDescriptor,
                     postData = postData,
                     chanTheme = chanTheme,
@@ -367,6 +376,13 @@ abstract class PostScreenViewModel(
                     ),
                     force = parsePostsOptions.forced
                   )
+
+                  mutex.withLock {
+                    resultMap[postData.postDescriptor] = PostCellData.fromPostData(
+                      postData = postData,
+                      parsedPostData = parsedPostData
+                    )
+                  }
                 }
 
                 logcat(tag = TAG) { "parseRemainingPostsAsyncRegular() chunk ${chunkIndex} processing finished" }
@@ -381,7 +397,7 @@ abstract class PostScreenViewModel(
           val postDataMap = postDataList.associateBy { postData -> postData.postDescriptor }
           val repliesToPostDescriptorSet = postReplyChainManager.getManyRepliesTo(postDescriptors)
 
-          val repliesToPostDataSet = hashSetOf<PostData>()
+          val repliesToPostDataSet = hashSetOf<IPostData>()
           repliesToPostDataSet += chanCache.getManyForDescriptor(chanDescriptor, repliesToPostDescriptorSet)
           repliesToPostDataSet += postReplyChainManager.getManyRepliesTo(postDescriptors)
             .mapNotNull { postDescriptor -> postDataMap[postDescriptor] }
@@ -407,7 +423,7 @@ abstract class PostScreenViewModel(
                     postDataListChunk.forEach { postData ->
                       ensureActive()
 
-                      calculatePostData(
+                      val parsedPostData = calculatePostData(
                         chanDescriptor = chanDescriptor,
                         postData = postData,
                         chanTheme = chanTheme,
@@ -416,6 +432,13 @@ abstract class PostScreenViewModel(
                         ),
                         force = true
                       )
+
+                      mutex.withLock {
+                        resultMap[postData.postDescriptor] = PostCellData.fromPostData(
+                          postData = postData,
+                          parsedPostData = parsedPostData
+                        )
+                      }
                     }
 
                     logcat(tag = TAG) { "parseRemainingPostsAsyncReplies() chunk ${chunkIndex} processing finished" }
@@ -427,8 +450,12 @@ abstract class PostScreenViewModel(
           }
         }
 
+        val postCellDataList = postDataList.mapNotNull { postData ->
+          resultMap[postData.postDescriptor]
+        }
+
         showPostsLoadingSnackbarJob.cancel()
-        withContext(NonCancellable) { onPostsParsed(postDataList) }
+        withContext(NonCancellable) { onPostsParsed(postCellDataList) }
 
         val deltaTime = SystemClock.elapsedRealtime() - startTime
         logcat(tag = TAG) { "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
@@ -474,7 +501,7 @@ abstract class PostScreenViewModel(
 
   private suspend fun calculatePostData(
     chanDescriptor: ChanDescriptor,
-    postData: PostData,
+    postData: IPostData,
     chanTheme: ChanTheme,
     parsedPostDataContext: ParsedPostDataContext,
     force: Boolean = false
@@ -502,7 +529,8 @@ abstract class PostScreenViewModel(
 
   fun updateSearchQuery(searchQuery: String?) {
     viewModelScope.launch {
-      postScreenState.updateSearchQuery(searchQuery)
+      // TODO(KurobaEx): rewrite this
+//      postScreenState.updateSearchQuery(searchQuery)
     }
   }
 
@@ -510,7 +538,7 @@ abstract class PostScreenViewModel(
     postListBuilt?.complete(Unit)
   }
 
-  fun onPostBind(postData: PostData) {
+  fun onPostBind(postCellData: PostCellData) {
     val descriptor = chanDescriptor
       ?: return
 
@@ -519,11 +547,11 @@ abstract class PostScreenViewModel(
     postBindProcessor.onPostBind(
       isCatalogMode = catalogMode,
       postsParsedOnce = postsFullyParsedOnceFlow.value,
-      postDescriptor = postData.postDescriptor
+      postDescriptor = postCellData.postDescriptor
     )
   }
 
-  fun onPostUnbind(postData: PostData) {
+  fun onPostUnbind(postCellData: PostCellData) {
     val descriptor = chanDescriptor
       ?: return
 
@@ -531,7 +559,7 @@ abstract class PostScreenViewModel(
 
     postBindProcessor.onPostUnbind(
       isCatalogMode = catalogMode,
-      postDescriptor = postData.postDescriptor
+      postDescriptor = postCellData.postDescriptor
     )
   }
 
@@ -550,53 +578,6 @@ abstract class PostScreenViewModel(
     val parseRepliesTo: Boolean = false
   )
 
-  abstract class PostScreenState {
-    val postsAsyncDataState = MutableStateFlow<AsyncData<AbstractPostsState>>(AsyncData.Empty)
-    val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
-    val searchQueryFlow = MutableStateFlow<String?>(null)
-
-    val lastViewedPostDescriptorForScrollRestoration = MutableStateFlow<PostDescriptor?>(null)
-    val lastViewedPostDescriptorForIndicator = MutableStateFlow<PostDescriptor?>(null)
-
-    private val _chanDescriptorFlow = MutableStateFlow<ChanDescriptor?>(null)
-    val chanDescriptorFlow: StateFlow<ChanDescriptor?>
-      get() = _chanDescriptorFlow.asStateFlow()
-    val chanDescriptor: ChanDescriptor?
-      get() = _chanDescriptorFlow.value
-
-    val displayingPostsCount: Int?
-      get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
-
-    private val _contentLoaded = MutableStateFlow(false)
-    val contentLoaded: StateFlow<Boolean>
-      get() = _contentLoaded.asStateFlow()
-
-    abstract fun updatePost(postData: PostData)
-    abstract fun updatePosts(postDataCollection: Collection<PostData>)
-    abstract fun updateSearchQuery(searchQuery: String?)
-
-    fun updateChanDescriptor(chanDescriptor: ChanDescriptor?) {
-      _chanDescriptorFlow.value = chanDescriptor
-    }
-
-    fun onStartLoading() {
-      _contentLoaded.value = false
-    }
-
-    fun onEndLoading() {
-      _contentLoaded.value = true
-    }
-
-    private fun <T> doWithDataState(func: (AbstractPostsState) -> T): T? {
-      val postAsyncData = postsAsyncDataState.value
-      if (postAsyncData is AsyncData.Data) {
-        return func(postAsyncData.data)
-      }
-
-      return null
-    }
-  }
-  
   data class LoadOptions(
     val showLoadingIndicator: Boolean = true,
     val forced: Boolean = false,

@@ -78,7 +78,7 @@ fun PullToRefresh(
   var refreshRotationAnimation by remember { mutableStateOf<Float?>(null) }
   var animatingRefresh by pullToRefreshState.animatingRefreshState
   var animatingBack by pullToRefreshState.animatingBackState
-  val pullingBlocked by derivedStateOf { animatingRefresh || animatingBack }
+  val pullingBlocked by remember { derivedStateOf { animatingRefresh || animatingBack } }
 
   val nestedScrollConnection = remember {
     object : NestedScrollConnection {

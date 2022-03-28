@@ -37,10 +37,18 @@ fun LazyColumnWithFastScroller(
   content: LazyListScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val scrollbarWidth = with(LocalDensity.current) { SCROLLBAR_WIDTH.toPx() }
-  val scrollbarMinHeightPx = with(LocalDensity.current) { SCROLLBAR_MIN_HEIGHT.toPx() }
-  val paddingTopPx = with(LocalDensity.current) { contentPadding.calculateTopPadding().toPx() }
-  val paddingBottomPx = with(LocalDensity.current) { contentPadding.calculateBottomPadding().toPx() }
+  val scrollbarWidth = with(LocalDensity.current) {
+    remember { SCROLLBAR_WIDTH.toPx() }
+  }
+  val scrollbarMinHeightPx = with(LocalDensity.current) {
+    remember { SCROLLBAR_MIN_HEIGHT.toPx() }
+  }
+  val paddingTopPx = with(LocalDensity.current) {
+    remember(contentPadding) { contentPadding.calculateTopPadding().toPx() }
+  }
+  val paddingBottomPx = with(LocalDensity.current) {
+    remember(contentPadding) { contentPadding.calculateBottomPadding().toPx() }
+  }
   val coroutineScope = rememberCoroutineScope()
   var scrollbarDragged by remember { mutableStateOf(false) }
 

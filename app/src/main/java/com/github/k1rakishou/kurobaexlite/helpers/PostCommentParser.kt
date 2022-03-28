@@ -1,16 +1,17 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
 import androidx.annotation.VisibleForTesting
+import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlNode
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlParser
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
+import java.nio.charset.StandardCharsets
+import java.util.concurrent.Executors
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import okio.Buffer
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.Executors
 
 class PostCommentParser {
   private val htmlParser = HtmlParser()
@@ -45,17 +46,18 @@ class PostCommentParser {
   ): List<TextPart> {
     val htmlNodes = htmlParser.parse(postCommentUnparsed).nodes
     return processNodes(postDescriptor, htmlNodes)
+      .map { textPartMut -> textPartMut.toTextPart() }
   }
 
   private fun processNodes(
     postDescriptor: PostDescriptor,
     htmlNodes: List<HtmlNode>
-  ): MutableList<TextPart> {
+  ): MutableList<TextPartMut> {
     if (htmlNodes.isEmpty()) {
       return mutableListOf()
     }
 
-    val currentTextPartsLazy = lazy(mode = LazyThreadSafetyMode.NONE) { mutableListWithCap<TextPart>(16) }
+    val currentTextPartsLazy = lazy(mode = LazyThreadSafetyMode.NONE) { mutableListWithCap<TextPartMut>(16) }
     val currentTextParts by currentTextPartsLazy
 
     for (htmlNode in htmlNodes) {
@@ -68,7 +70,7 @@ class PostCommentParser {
           currentTextParts.addAll(childTextParts)
         }
         is HtmlNode.Text -> {
-          currentTextParts += TextPart(htmlNode.text)
+          currentTextParts += TextPartMut(htmlNode.text)
         }
       }
     }
@@ -82,12 +84,12 @@ class PostCommentParser {
 
   private fun parseHtmlNode(
     htmlTag: HtmlTag,
-    childTextParts: MutableList<TextPart>,
+    childTextParts: MutableList<TextPartMut>,
     postDescriptor: PostDescriptor
   ) {
     when (htmlTag.tagName) {
       "br" -> {
-        childTextParts += TextPart(text = "\n")
+        childTextParts += TextPartMut(text = "\n")
       }
       "s" -> {
         for (childTextPart in childTextParts) {
@@ -151,8 +153,8 @@ class PostCommentParser {
   }
 
   private fun mergeChildTextPartsIntoOne(
-    childTextParts: List<TextPart>
-  ): TextPart {
+    childTextParts: List<TextPartMut>
+  ): TextPartMut {
     val totalText = StringBuilder(childTextParts.sumOf { it.text.length })
     val totalSpans = mutableListWithCap<TextPartSpan>(childTextParts.sumOf { it.spans.size })
 
@@ -161,7 +163,7 @@ class PostCommentParser {
       totalSpans.addAll(inputChildTextPart.spans)
     }
 
-    return TextPart(
+    return TextPartMut(
       text = totalText.toString(),
       spans = totalSpans
     )
@@ -323,11 +325,10 @@ class PostCommentParser {
     return resultHref.removePrefix("/")
   }
 
-  data class TextPart(
+  data class TextPartMut(
     val text: String,
     val spans: MutableList<TextPartSpan> = mutableListOf()
   ) {
-
     fun isLinkable(): Boolean {
       for (span in spans) {
         if (span is TextPartSpan.Linkable) {
@@ -338,16 +339,37 @@ class PostCommentParser {
       return false
     }
 
+    fun toTextPart(): TextPart {
+      return TextPart(text, spans)
+    }
   }
 
+  @Immutable
+  data class TextPart(
+    val text: String,
+    val spans: List<TextPartSpan> = emptyList()
+  ) {
+    fun isLinkable(): Boolean {
+      for (span in spans) {
+        if (span is TextPartSpan.Linkable) {
+          return true
+        }
+      }
+
+      return false
+    }
+  }
+
+  @Immutable
   sealed class TextPartSpan {
 
-    class BgColor(val color: Int) : TextPartSpan()
-    class FgColor(val color: Int) : TextPartSpan()
-    class BgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
-    class FgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
-    object Spoiler : TextPartSpan()
+    @Immutable class BgColor(val color: Int) : TextPartSpan()
+    @Immutable class FgColor(val color: Int) : TextPartSpan()
+    @Immutable class BgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
+    @Immutable class FgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
+    @Immutable object Spoiler : TextPartSpan()
 
+    @Immutable
     sealed class Linkable : TextPartSpan() {
 
       fun serialize(): Buffer {
@@ -370,6 +392,7 @@ class PostCommentParser {
 
       protected abstract fun serializeLinkable(buffer: Buffer)
 
+      @Immutable
       data class Quote(
         val crossThread: Boolean,
         val dead: Boolean,
@@ -392,6 +415,7 @@ class PostCommentParser {
         }
       }
 
+      @Immutable
       data class Search(
         val boardCode: String,
         val searchQuery: String
@@ -411,6 +435,7 @@ class PostCommentParser {
         }
       }
 
+      @Immutable
       data class Board(
         val boardCode: String
       ) : Linkable() {
@@ -426,6 +451,7 @@ class PostCommentParser {
         }
       }
 
+      @Immutable
       data class Url(
         val url: String
       ) : Linkable() {
@@ -441,6 +467,7 @@ class PostCommentParser {
         }
       }
 
+      @Immutable
       enum class Id(val value: Int) {
         Quote(0),
         Search(1),

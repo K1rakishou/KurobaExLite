@@ -18,12 +18,14 @@ import androidx.compose.material.TextFieldColors
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine.Companion.manipulateColor
 
 @SuppressLint("ResourceType")
+@Stable
 abstract class ChanTheme {
   // Don't forget to update ThemeParser's gson when this class changes !!!
   abstract val name: String

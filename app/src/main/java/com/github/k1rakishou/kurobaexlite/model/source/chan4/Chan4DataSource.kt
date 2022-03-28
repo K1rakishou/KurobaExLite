@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertIntoJsonObjectWi
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
+import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanBoard
@@ -76,7 +77,7 @@ class Chan4DataSource(
         val threadDataJson = threadDataJsonResult.unwrap()
           ?: throw ChanDataSourceException("Failed to convert thread json into ThreadDataJson object")
 
-        val postDataList = mutableListWithCap<PostData>(initialCapacity = threadDataJson.posts.size)
+        val postDataList = mutableListWithCap<IPostData>(initialCapacity = threadDataJson.posts.size)
 
         postDataList += threadDataJson.posts.mapIndexed { index, threadPost ->
           val postDescriptor = PostDescriptor.create(
@@ -102,8 +103,7 @@ class Chan4DataSource(
               threadRepliesTotal = threadPost.replies,
               threadImagesTotal = threadPost.images,
               threadPostersTotal = threadPost.posters,
-              lastModified = threadPost.lastModified,
-              parsedPostData = null
+              lastModified = threadPost.lastModified
             )
           } else {
             return@mapIndexed PostData(
@@ -117,8 +117,7 @@ class Chan4DataSource(
                 postImageInfo = postImageInfo,
                 postImageDataJson = threadPost,
                 boardCode = boardCode
-              ),
-              parsedPostData = null
+              )
             )
           }
         }
@@ -164,7 +163,7 @@ class Chan4DataSource(
           ?: throw ChanDataSourceException("Failed to convert catalog json into CatalogDataJson object")
 
         val totalCount = catalogPagesDataJson.sumOf { catalogPageData -> catalogPageData.threads.size }
-        val postDataList = mutableListWithCap<PostData>(initialCapacity = totalCount)
+        val postDataList = mutableListWithCap<IPostData>(initialCapacity = totalCount)
 
         catalogPagesDataJson.forEachIndexed { page, catalogPage ->
           postDataList += catalogPage.threads.mapIndexed { index, catalogThread ->
@@ -190,8 +189,7 @@ class Chan4DataSource(
               threadRepliesTotal = catalogThread.replies,
               threadImagesTotal = catalogThread.images,
               lastModified = catalogThread.lastModified,
-              threadPostersTotal = null,
-              parsedPostData = null
+              threadPostersTotal = null
             )
           }
         }

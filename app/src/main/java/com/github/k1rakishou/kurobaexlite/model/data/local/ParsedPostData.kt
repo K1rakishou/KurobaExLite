@@ -1,10 +1,13 @@
 package com.github.k1rakishou.kurobaexlite.model.data.local
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
-import com.github.k1rakishou.kurobaexlite.helpers.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
+import com.github.k1rakishou.kurobaexlite.helpers.hash.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
+@Immutable
 data class ParsedPostData(
   val parsedPostParts: List<PostCommentParser.TextPart>,
   val parsedPostComment: String,
@@ -15,7 +18,7 @@ data class ParsedPostData(
   val parsedPostDataContext: ParsedPostDataContext
 ) {
 
-  fun murmurhash(): MurmurHashUtils.Murmur3Hash {
+  fun murmurhash(): Murmur3Hash {
     return MurmurHashUtils.murmurhash3_x64_128(parsedPostParts)
       .combine(MurmurHashUtils.murmurhash3_x64_128(parsedPostComment))
       .combine(MurmurHashUtils.murmurhash3_x64_128(processedPostComment))
@@ -28,6 +31,7 @@ data class ParsedPostData(
 }
 
 // Options used to parse this post
+@Immutable
 data class ParsedPostDataContext(
   val isParsingCatalog: Boolean,
   val revealFullPostComment: Boolean = false,
@@ -48,7 +52,7 @@ data class ParsedPostDataContext(
     return Int.MAX_VALUE
   }
 
-  fun murmurhash(): MurmurHashUtils.Murmur3Hash {
+  fun murmurhash(): Murmur3Hash {
     return MurmurHashUtils.murmurhash3_x64_128(isParsingCatalog)
       .combine(MurmurHashUtils.murmurhash3_x64_128(revealFullPostComment))
       .combine(MurmurHashUtils.murmurhash3_x64_128(textSpoilerOpenedPositionSet))
@@ -57,4 +61,5 @@ data class ParsedPostDataContext(
 
 }
 
+@Immutable
 data class SpoilerPosition(val start: Int, val end: Int)

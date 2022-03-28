@@ -1,28 +1,25 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import java.io.File
-import okhttp3.HttpUrl
 
 sealed class ImageLoadState {
-  abstract val postImageData: PostImageData
+  abstract val postImageData: IPostImage
 
-  val fullImageUrl: HttpUrl
-    get() = postImageData.fullImageUrl
-
-  val fullImageUrlAsString: String by lazy { fullImageUrl.toString() }
+  val fullImageUrl by lazy { postImageData.fullImageAsUrl }
+  val fullImageUrlAsString by lazy { postImageData.fullImageAsString }
 
   data class Loading(
-    override val postImageData: PostImageData
+    override val postImageData: IPostImage
     ) : ImageLoadState()
 
   data class Error(
-    override val postImageData: PostImageData,
+    override val postImageData: IPostImage,
     val exception: Throwable
   ) : ImageLoadState()
 
   data class Ready(
-    override val postImageData: PostImageData,
+    override val postImageData: IPostImage,
     val imageFile: File
   ) : ImageLoadState()
 }

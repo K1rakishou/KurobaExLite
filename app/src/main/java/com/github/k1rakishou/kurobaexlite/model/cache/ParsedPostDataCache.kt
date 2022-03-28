@@ -20,10 +20,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
+import com.github.k1rakishou.kurobaexlite.model.data.IPostData
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -109,9 +110,39 @@ class ParsedPostDataCache(
       }
   }
 
+  suspend fun getManyParsedPostData(
+    chanDescriptor: ChanDescriptor,
+    postDescriptors: List<PostDescriptor>
+  ): Map<PostDescriptor, ParsedPostData> {
+    return mutex.withLock {
+      val resultMap = mutableMapWithCap<PostDescriptor, ParsedPostData>(postDescriptors.size)
+
+      val parsedPostDataMap = when (chanDescriptor) {
+        is CatalogDescriptor -> catalogParsedPostDataMap
+        is ThreadDescriptor -> threadParsedPostDataMap
+      }
+
+      for (postDescriptor in postDescriptors) {
+        resultMap[postDescriptor] = parsedPostDataMap[postDescriptor]
+          ?: continue
+      }
+
+      return@withLock resultMap
+    }
+  }
+
+  suspend fun getParsedPostDataContext(chanDescriptor: ChanDescriptor, postDescriptor: PostDescriptor): ParsedPostData? {
+    return mutex.withLock {
+      when (chanDescriptor) {
+        is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor]
+        is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor]
+      }
+    }
+  }
+
   suspend fun getOrCalculateParsedPostData(
     chanDescriptor: ChanDescriptor,
-    postData: PostData,
+    postData: IPostData,
     parsedPostDataContext: ParsedPostDataContext,
     chanTheme: ChanTheme,
     force: Boolean
@@ -126,9 +157,7 @@ class ParsedPostDataCache(
     }
 
     if (!force && oldParsedPostData != null) {
-      postData.updateParsedPostData(oldParsedPostData)
       notifyListenersPostDataUpdated(chanDescriptor, postData.postDescriptor)
-
       return oldParsedPostData
     }
 
@@ -145,9 +174,7 @@ class ParsedPostDataCache(
       }
     }
 
-    postData.updateParsedPostData(newParsedPostData)
     notifyListenersPostDataUpdated(chanDescriptor, postData.postDescriptor)
-
     return newParsedPostData
   }
 
@@ -206,7 +233,55 @@ class ParsedPostDataCache(
   }
 
   suspend fun calculateParsedPostData(
-    postData: PostData,
+    postData: IPostData,
+    parsedPostDataContext: ParsedPostDataContext,
+    chanTheme: ChanTheme
+  ): ParsedPostData {
+    return calculateParsedPostData(
+      originalPostOrder = postData.originalPostOrder,
+      postCommentUnparsed = postData.postCommentUnparsed,
+      postSubjectUnparsed = postData.postSubjectUnparsed,
+      timeMs = postData.timeMs,
+      threadRepliesTotal = postData.threadRepliesTotal,
+      threadImagesTotal = postData.threadImagesTotal,
+      threadPostersTotal = postData.threadPostersTotal,
+      images = postData.images,
+      postDescriptor = postData.postDescriptor,
+      parsedPostDataContext = parsedPostDataContext,
+      chanTheme = chanTheme
+    )
+  }
+
+  suspend fun calculateParsedPostData(
+    postCellData: PostCellData,
+    parsedPostDataContext: ParsedPostDataContext,
+    chanTheme: ChanTheme
+  ): ParsedPostData {
+    return calculateParsedPostData(
+      originalPostOrder = postCellData.originalPostOrder,
+      postCommentUnparsed = postCellData.postCommentUnparsed,
+      postSubjectUnparsed = postCellData.postSubjectUnparsed,
+      timeMs = postCellData.timeMs,
+      threadRepliesTotal = postCellData.threadRepliesTotal,
+      threadImagesTotal = postCellData.threadImagesTotal,
+      threadPostersTotal = postCellData.threadPostersTotal,
+      images = postCellData.images,
+      postDescriptor = postCellData.postDescriptor,
+      parsedPostDataContext = parsedPostDataContext,
+      chanTheme = chanTheme
+    )
+  }
+
+  suspend fun calculateParsedPostData(
+    originalPostOrder: Int,
+    postCommentUnparsed: String,
+    postSubjectUnparsed: String,
+    timeMs: Long?,
+    threadRepliesTotal: Int?,
+    threadImagesTotal: Int?,
+    threadPostersTotal: Int?,
+    images: List<IPostImage>?,
+    postDescriptor: PostDescriptor,
     parsedPostDataContext: ParsedPostDataContext,
     chanTheme: ChanTheme
   ): ParsedPostData {
@@ -214,12 +289,12 @@ class ParsedPostDataCache(
 
     try {
       val textParts = postCommentParser.parsePostComment(
-        postData.postCommentUnparsed,
-        postData.postDescriptor
+        postCommentUnparsed = postCommentUnparsed,
+        postDescriptor = postDescriptor
       )
 
       if (parsedPostDataContext.isParsingThread) {
-        processReplyChains(postData.postDescriptor, textParts)
+        processReplyChains(postDescriptor, textParts)
       }
 
       val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
@@ -227,7 +302,7 @@ class ParsedPostDataCache(
         textParts = textParts,
         parsedPostDataContext = parsedPostDataContext
       )
-      val postSubjectParsed = HtmlUnescape.unescape(postData.postSubjectUnparsed)
+      val postSubjectParsed = HtmlUnescape.unescape(postSubjectUnparsed)
 
       return ParsedPostData(
         parsedPostParts = textParts,
@@ -236,18 +311,24 @@ class ParsedPostDataCache(
         parsedPostSubject = postSubjectParsed,
         processedPostSubject = parseAndProcessPostSubject(
           chanTheme = chanTheme,
-          postIndex = postData.originalPostOrder,
-          postDescriptor = postData.postDescriptor,
-          postTimeMs = postData.timeMs,
-          postImages = postData.images,
+          postIndex = originalPostOrder,
+          postDescriptor = postDescriptor,
+          postTimeMs = timeMs,
+          postImages = images,
           postSubjectParsed = postSubjectParsed,
           parsedPostDataContext = parsedPostDataContext
         ),
-        postFooterText = formatFooterText(postData, parsedPostDataContext),
+        postFooterText = formatFooterText(
+          postDescriptor = postDescriptor,
+          threadRepliesTotal = threadRepliesTotal,
+          threadImagesTotal = threadImagesTotal,
+          threadPostersTotal = threadPostersTotal,
+          parsedPostDataContext = parsedPostDataContext
+        ),
         parsedPostDataContext = parsedPostDataContext,
       )
     } catch (error: Throwable) {
-      val postComment = "Error parsing ${postData.postNo}!\n\nError: ${error.asLog()}"
+      val postComment = "Error parsing ${postDescriptor.postNo}!\n\nError: ${error.asLog()}"
       val postCommentAnnotated = AnnotatedString(postComment)
 
       return ParsedPostData(
@@ -299,7 +380,7 @@ class ParsedPostDataCache(
     postIndex: Int,
     postDescriptor: PostDescriptor,
     postTimeMs: Long?,
-    postImages: List<PostImageData>?,
+    postImages: List<IPostImage>?,
     postSubjectParsed: String,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
@@ -407,13 +488,12 @@ class ParsedPostDataCache(
   }
 
   private suspend fun formatFooterText(
-    postData: PostData,
+    postDescriptor: PostDescriptor,
+    threadRepliesTotal: Int?,
+    threadImagesTotal: Int?,
+    threadPostersTotal: Int?,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString? {
-    val postDescriptor = postData.postDescriptor
-    val threadImagesTotal = postData.threadImagesTotal
-    val threadRepliesTotal = postData.threadRepliesTotal
-    val threadPostersTotal = postData.threadPostersTotal
     val isCatalogMode = parsedPostDataContext.isParsingCatalog
     val hasThreadInfo = threadImagesTotal != null || threadRepliesTotal != null || threadPostersTotal != null
 

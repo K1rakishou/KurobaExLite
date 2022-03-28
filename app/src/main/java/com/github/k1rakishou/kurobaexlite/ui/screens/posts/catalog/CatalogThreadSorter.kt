@@ -2,11 +2,11 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
 import com.github.k1rakishou.kurobaexlite.helpers.settings.CatalogSort
 import com.github.k1rakishou.kurobaexlite.helpers.settings.CatalogSortSetting
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 
 object CatalogThreadSorter {
 
-  fun sortCatalogThreads(catalogThreads: List<PostData>, catalogSortSetting: CatalogSortSetting): List<PostData> {
+  fun sortCatalogThreads(catalogThreads: List<IPostData>, catalogSortSetting: CatalogSortSetting): List<IPostData> {
     return when (catalogSortSetting.sort) {
       CatalogSort.BUMP -> {
         // Reverse the "ascending" flag for BUMP sorting. We want to most recently bumped posts to go
@@ -50,13 +50,13 @@ object CatalogThreadSorter {
 
   private inline fun sortPosts(
     ascending: Boolean,
-    catalogThreads: List<PostData>,
-    crossinline selector: (PostData) -> Comparable<*>
-  ): List<PostData> {
+    catalogThreads: List<IPostData>,
+    crossinline selector: (IPostData) -> Comparable<*>
+  ): List<IPostData> {
     val comparator = if (ascending) {
-      compareBy<PostData>(selector)
+      compareBy<IPostData>(selector)
     } else {
-      compareByDescending<PostData>(selector)
+      compareByDescending<IPostData>(selector)
     }
 
     return catalogThreads.sortedWith(comparator)
@@ -64,10 +64,10 @@ object CatalogThreadSorter {
 
   class ThreadActivityComparator(
     private val ascending: Boolean
-  ) : Comparator<PostData> {
+  ) : Comparator<IPostData> {
     private val currentTimeMs: Long = System.currentTimeMillis()
 
-    override fun compare(lhs: PostData, rhs: PostData): Int {
+    override fun compare(lhs: IPostData, rhs: IPostData): Int {
       // we can't divide by zero, but we can divide by the smallest thing that's closest to 0 instead
       val eps = 0.0001f
 

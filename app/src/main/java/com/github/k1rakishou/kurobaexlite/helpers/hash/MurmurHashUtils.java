@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers;
+package com.github.k1rakishou.kurobaexlite.helpers.hash;
 
 /**
  *  The MurmurHash3 algorithm was created by Austin Appleby and placed in the public domain.
@@ -23,7 +23,6 @@ package com.github.k1rakishou.kurobaexlite.helpers;
 import android.text.Spannable;
 import android.text.style.CharacterStyle;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.compose.ui.text.AnnotatedString;
 
@@ -197,53 +196,6 @@ public class MurmurHashUtils {
         h2 += h1;
 
         return new Murmur3Hash(h1, h2);
-    }
-
-    /** 128 bits of state */
-    public static final class Murmur3Hash {
-        public static final Murmur3Hash EMPTY = new Murmur3Hash(0L, 0L);
-
-        public long val1;
-        public long val2;
-
-        public Murmur3Hash(long val1, long val2) {
-            this.val1 = val1;
-            this.val2 = val2;
-        }
-
-        public Murmur3Hash combine(@NonNull Murmur3Hash other) {
-            return new Murmur3Hash(val1 ^ other.val1, val2 ^ other.val2);
-        }
-
-        public Murmur3Hash copy() {
-            return new Murmur3Hash(val1, val2);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Murmur3Hash murMur3Hash = (Murmur3Hash) o;
-
-            if (val1 != murMur3Hash.val1) return false;
-            return val2 == murMur3Hash.val2;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = (int) (val1 ^ (val1 >>> 32));
-            result = 31 * result + (int) (val2 ^ (val2 >>> 32));
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return "Murmur3Hash{" +
-                    "val1=" + val1 +
-                    ", val2=" + val2 +
-                    '}';
-        }
     }
 
 }

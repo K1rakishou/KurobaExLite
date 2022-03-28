@@ -1,11 +1,13 @@
 package com.github.k1rakishou.kurobaexlite.model.descriptors
 
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.helpers.readUtfString
 import com.github.k1rakishou.kurobaexlite.helpers.writeUtfString
 import kotlinx.parcelize.Parcelize
 import okio.Buffer
 
+@Immutable
 @Parcelize
 inline class SiteKey(val key: String) : Parcelable {
   override fun toString(): String {
@@ -13,10 +15,12 @@ inline class SiteKey(val key: String) : Parcelable {
   }
 }
 
+@Immutable
 sealed class ChanDescriptor {
   abstract val siteKey: SiteKey
 }
 
+@Immutable
 @Parcelize
 data class CatalogDescriptor(
   override val siteKey: SiteKey,
@@ -54,6 +58,7 @@ data class CatalogDescriptor(
   }
 }
 
+@Immutable
 @Parcelize
 data class ThreadDescriptor(
   val catalogDescriptor: CatalogDescriptor,
@@ -113,6 +118,7 @@ data class ThreadDescriptor(
   }
 }
 
+@Immutable
 @Parcelize
 data class PostDescriptor(
   val threadDescriptor: ThreadDescriptor,

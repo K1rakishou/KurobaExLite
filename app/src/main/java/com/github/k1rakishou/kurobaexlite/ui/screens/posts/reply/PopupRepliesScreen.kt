@@ -39,8 +39,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListContent
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostListOptions
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListContent
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -63,17 +63,19 @@ class PopupRepliesScreen(
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
 
-    val postListOptions by derivedStateOf {
-      PostListOptions(
-        isCatalogMode = false,
-        isInPopup = true,
-        pullToRefreshEnabled = false,
-        contentPadding = PaddingValues(),
-        mainUiLayoutMode = MainUiLayoutMode.Portrait,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-        detectLinkableClicks = true
-      )
+    val postListOptions by remember {
+      derivedStateOf {
+        PostListOptions(
+          isCatalogMode = false,
+          isInPopup = true,
+          pullToRefreshEnabled = false,
+          contentPadding = PaddingValues(),
+          mainUiLayoutMode = MainUiLayoutMode.Portrait,
+          postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+          detectLinkableClicks = true
+        )
+      }
     }
 
     val density = LocalDensity.current

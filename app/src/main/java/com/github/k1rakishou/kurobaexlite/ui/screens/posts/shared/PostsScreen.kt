@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts
+package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
@@ -39,7 +39,7 @@ abstract class PostsScreen(
   @Composable
   protected fun UpdateToolbarTitle(
     parsedPostDataCache: ParsedPostDataCache,
-    postListAsync: AsyncData<AbstractPostsState>,
+    postListAsync: AsyncData<PostsState>,
     kurobaToolbarState: KurobaToolbarState
   ) {
     when (postListAsync) {
@@ -82,7 +82,7 @@ abstract class PostsScreen(
   @Composable
   private fun UpdateThreadToolbarTitle(
     threadDescriptor: ThreadDescriptor,
-    postListAsync: AsyncData.Data<AbstractPostsState>,
+    postListAsync: AsyncData.Data<PostsState>,
     parsedPostDataCache: ParsedPostDataCache,
     kurobaToolbarState: KurobaToolbarState
   ) {

@@ -12,7 +12,7 @@ import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import logcat.asLog
@@ -31,7 +31,7 @@ class MediaViewerScreenViewModel(
   suspend fun init(mediaViewerParams: MediaViewerParams): InitResult {
     return withContext(Dispatchers.Default) {
       val initialImageUrl = mediaViewerParams.initialImage
-      val imagesToShow = mutableListOf<PostImageData>()
+      val imagesToShow = mutableListOf<IPostImage>()
 
       when (mediaViewerParams) {
         is MediaViewerParams.Catalog -> {
@@ -57,7 +57,7 @@ class MediaViewerScreenViewModel(
         is MediaViewerParams.Images -> TODO()
       }
 
-      var initialPage = imagesToShow.indexOfFirst { it.fullImageUrl == initialImageUrl }
+      var initialPage = imagesToShow.indexOfFirst { it.fullImageAsUrl == initialImageUrl }
       if (initialPage < 0) {
         logcatError { "Failed to find post image with url: \'${initialImageUrl}\', resetting it" }
         initialPage = 0
@@ -70,8 +70,8 @@ class MediaViewerScreenViewModel(
     }
   }
 
-  suspend fun loadFullImageAndGetFile(postImageData: PostImageData): ImageLoadState {
-    val fullImageUrl = postImageData.fullImageUrl
+  suspend fun loadFullImageAndGetFile(postImageData: IPostImage): ImageLoadState {
+    val fullImageUrl = postImageData.fullImageAsUrl
 
     val loadImageResult = withContext(Dispatchers.IO) {
       Result.Try { loadFullImageInternal(postImageData) }
@@ -90,10 +90,10 @@ class MediaViewerScreenViewModel(
     }
   }
 
-  private suspend fun loadFullImageInternal(postImageData: PostImageData): Path {
+  private suspend fun loadFullImageInternal(postImageData: IPostImage): Path {
     BackgroundUtils.ensureBackgroundThread()
 
-    val fullImageUrl = postImageData.fullImageUrl
+    val fullImageUrl = postImageData.fullImageAsUrl
     val diskCacheKey = fullImageUrl.toString()
 
     val snapshot = diskCache.get(diskCacheKey)

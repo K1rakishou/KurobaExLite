@@ -3,7 +3,9 @@ package com.github.k1rakishou.kurobaexlite.model.cache
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
+import com.github.k1rakishou.kurobaexlite.model.data.IPostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -27,10 +29,10 @@ class ChanCache {
 
   suspend fun insertCatalogThreads(
     catalogDescriptor: CatalogDescriptor,
-    catalogThreads: Collection<PostData>
-  ) {
+    catalogThreads: Collection<IPostData>
+  ): PostsLoadResult {
     if (catalogThreads.isEmpty()) {
-      return
+      return PostsLoadResult.EMPTY
     }
 
     val chanCatalog = catalogs.getOrPut(
@@ -45,14 +47,19 @@ class ChanCache {
     if (!hasPosts) {
       evictOld(catalogs as ConcurrentHashMap<ChanDescriptor, IChanCache>, maxCachedCatalogs)
     }
+
+    return PostsLoadResult(
+      newPosts = catalogThreads.toList(),
+      updatedPosts = emptyList()
+    )
   }
 
   suspend fun insertThreadPosts(
     threadDescriptor: ThreadDescriptor,
-    threadPosts: Collection<PostData>
-  ) {
-    if (threadPosts.isEmpty()) {
-      return
+    threadPostCells: Collection<IPostData>
+  ): PostsLoadResult {
+    if (threadPostCells.isEmpty()) {
+      return PostsLoadResult.EMPTY
     }
 
     val chanThread = threads.getOrPut(
@@ -61,19 +68,21 @@ class ChanCache {
     )
 
     val hasPosts = chanThread.hasPosts()
-    chanThread.insert(threadPosts)
+    val postsMergeResult = chanThread.insert(threadPostCells)
 
     // Only run evictOld() routine when inserting new threads into the cache
     if (!hasPosts) {
       evictOld(threads as ConcurrentHashMap<ChanDescriptor, IChanCache>, maxCachedThreads)
     }
+
+    return postsMergeResult
   }
 
   suspend fun getManyForDescriptor(
     chanDescriptor: ChanDescriptor,
     postDescriptors: Collection<PostDescriptor>
-  ): List<PostData> {
-    val resultList = mutableListWithCap<PostData>(postDescriptors.size)
+  ): List<IPostData> {
+    val resultList = mutableListWithCap<IPostData>(postDescriptors.size)
 
     when (chanDescriptor) {
       is CatalogDescriptor -> {
@@ -93,19 +102,19 @@ class ChanCache {
     return resultList
   }
 
-  suspend fun getThreadPosts(threadDescriptor: ThreadDescriptor): List<PostData> {
+  suspend fun getThreadPosts(threadDescriptor: ThreadDescriptor): List<IPostData> {
     return threads[threadDescriptor]?.getAll() ?: emptyList()
   }
 
-  suspend fun getCatalogThreads(catalogDescriptor: CatalogDescriptor): List<PostData> {
+  suspend fun getCatalogThreads(catalogDescriptor: CatalogDescriptor): List<OriginalPostData> {
     return catalogs[catalogDescriptor]?.getPostDataList() ?: emptyList()
   }
 
-  suspend fun getPost(postDescriptor: PostDescriptor): PostData? {
+  suspend fun getPost(postDescriptor: PostDescriptor): IPostData? {
     return threads[postDescriptor.threadDescriptor]?.getPost(postDescriptor)
   }
 
-  suspend fun getLastPost(threadDescriptor: ThreadDescriptor): PostData? {
+  suspend fun getLastPost(threadDescriptor: ThreadDescriptor): IPostData? {
     return threads[threadDescriptor]?.getLastPost()
   }
 

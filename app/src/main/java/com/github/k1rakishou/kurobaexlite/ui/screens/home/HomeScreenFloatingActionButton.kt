@@ -26,7 +26,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.FAB_TRANSITION_ANIMATION_DURATION_MS
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.FAB_TRANSITION_ANIMATION_DURATION_MS
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable

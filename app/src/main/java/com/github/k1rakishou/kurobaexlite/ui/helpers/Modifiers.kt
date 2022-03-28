@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 
@@ -27,62 +28,72 @@ fun Modifier.simpleVerticalScrollbar(
   scrollbarMinHeight: Float,
   scrollbarDragged: Boolean
 ): Modifier {
-  return composed {
-    val topPaddingPx = with(LocalDensity.current) {
-      remember(key1 = contentPadding) {
-        contentPadding.calculateTopPadding().toPx()
-      }
-    }
-    val bottomPaddingPx = with(LocalDensity.current) {
-      remember(key1 = contentPadding) {
-        contentPadding.calculateBottomPadding().toPx()
-      }
-    }
-
-    val targetAlpha = if (state.isScrollInProgress || scrollbarDragged) 0.8f else 0f
-    val duration = if (state.isScrollInProgress || scrollbarDragged) 10 else 1500
-
-    val alpha by animateFloatAsState(
-      targetValue = targetAlpha,
-      animationSpec = tween(durationMillis = duration)
-    )
-
-    this.then(
-      Modifier.drawWithContent {
-        drawContent()
-
-        val layoutInfo = state.layoutInfo
-        val firstVisibleElementIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index
-        val needDrawScrollbar = layoutInfo.totalItemsCount > layoutInfo.visibleItemsInfo.size
-          && (state.isScrollInProgress || alpha > 0.0f)
-
-        // Draw scrollbar if total item count is greater than visible item count and either
-        // currently scrolling or if the animation is still running and lazy column has content
-        if (!needDrawScrollbar || firstVisibleElementIndex == null) {
-          return@drawWithContent
+  return composed(
+    inspectorInfo = debugInspectorInfo {
+      name = "simpleVerticalScrollbar"
+      properties["chanTheme"] = chanTheme
+      properties["contentPadding"] = contentPadding
+      properties["scrollbarWidth"] = scrollbarWidth
+      properties["scrollbarMinHeight"] = scrollbarMinHeight
+      properties["scrollbarDragged"] = scrollbarDragged
+    },
+    factory = {
+      val topPaddingPx = with(LocalDensity.current) {
+        remember(key1 = contentPadding) {
+          contentPadding.calculateTopPadding().toPx()
         }
-
-        val (scrollbarOffsetY, scrollbarHeightAdjusted) = calculateScrollbarHeight(
-          topPaddingPx = topPaddingPx,
-          bottomPaddingPx = bottomPaddingPx,
-          layoutInfo = layoutInfo,
-          firstVisibleElementIndex = firstVisibleElementIndex,
-          scrollbarMinHeight = scrollbarMinHeight,
-          realScrollbarHeightDiff = null
-        )
-
-        val offsetY = topPaddingPx + scrollbarOffsetY
-        val offsetX = this.size.width - scrollbarWidth
-
-        drawRect(
-          color = chanTheme.textColorHintCompose,
-          topLeft = Offset(offsetX, offsetY),
-          size = Size(scrollbarWidth, scrollbarHeightAdjusted),
-          alpha = alpha
-        )
       }
-    )
-  }
+      val bottomPaddingPx = with(LocalDensity.current) {
+        remember(key1 = contentPadding) {
+          contentPadding.calculateBottomPadding().toPx()
+        }
+      }
+
+      val targetAlpha = if (state.isScrollInProgress || scrollbarDragged) 0.8f else 0f
+      val duration = if (state.isScrollInProgress || scrollbarDragged) 10 else 1500
+
+      val alpha by animateFloatAsState(
+        targetValue = targetAlpha,
+        animationSpec = tween(durationMillis = duration)
+      )
+
+      this.then(
+        Modifier.drawWithContent {
+          drawContent()
+
+          val layoutInfo = state.layoutInfo
+          val firstVisibleElementIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index
+          val needDrawScrollbar = layoutInfo.totalItemsCount > layoutInfo.visibleItemsInfo.size
+            && (state.isScrollInProgress || alpha > 0.0f)
+
+          // Draw scrollbar if total item count is greater than visible item count and either
+          // currently scrolling or if the animation is still running and lazy column has content
+          if (!needDrawScrollbar || firstVisibleElementIndex == null) {
+            return@drawWithContent
+          }
+
+          val (scrollbarOffsetY, scrollbarHeightAdjusted) = calculateScrollbarHeight(
+            topPaddingPx = topPaddingPx,
+            bottomPaddingPx = bottomPaddingPx,
+            layoutInfo = layoutInfo,
+            firstVisibleElementIndex = firstVisibleElementIndex,
+            scrollbarMinHeight = scrollbarMinHeight,
+            realScrollbarHeightDiff = null
+          )
+
+          val offsetY = topPaddingPx + scrollbarOffsetY
+          val offsetX = this.size.width - scrollbarWidth
+
+          drawRect(
+            color = chanTheme.textColorHintCompose,
+            topLeft = Offset(offsetX, offsetY),
+            size = Size(scrollbarWidth, scrollbarHeightAdjusted),
+            alpha = alpha
+          )
+        }
+      )
+    }
+  )
 }
 
 private fun ContentDrawScope.calculateScrollbarHeight(

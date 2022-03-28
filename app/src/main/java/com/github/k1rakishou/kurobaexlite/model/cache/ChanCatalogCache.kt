@@ -3,8 +3,8 @@ package com.github.k1rakishou.kurobaexlite.model.cache
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
+import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -35,16 +35,16 @@ class ChanCatalogCache(
     mutex.withLockNonCancellable { lastUpdateTime = SystemClock.elapsedRealtime() }
   }
 
-  suspend fun insert(postDataCollection: Collection<PostData>) {
+  suspend fun insert(postCellDataCollection: Collection<IPostData>) {
     mutex.withLockNonCancellable {
-      for (postData in postDataCollection) {
+      for (postData in postCellDataCollection) {
         check(postData is OriginalPostData) { "postData is not OriginalPostData" }
       }
 
       threads.clear()
       threadsMap.clear()
 
-      val originalPostDataCollection = postDataCollection
+      val originalPostDataCollection = postCellDataCollection
         .map { postData -> postData as OriginalPostData }
 
       threads.addAll(originalPostDataCollection)
@@ -52,11 +52,11 @@ class ChanCatalogCache(
         threadsMap[originalPostData.postDescriptor] = originalPostData
       }
 
-      logcat(tag = TAG) { "insert() ${postDataCollection.size} threads inserted or updated" }
+      logcat(tag = TAG) { "insert() ${postCellDataCollection.size} threads inserted or updated" }
     }
   }
 
-  suspend fun getPostDataList(): List<PostData> {
+  suspend fun getPostDataList(): List<OriginalPostData> {
     return mutex.withLockNonCancellable { threads.toList() }
   }
 

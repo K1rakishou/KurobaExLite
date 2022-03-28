@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts
+package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared
 
 import android.os.SystemClock
 import androidx.compose.animation.Animatable
@@ -32,9 +32,10 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
@@ -77,19 +78,19 @@ import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.helpers.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.extractLinkableAnnotationItem
+import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -124,17 +125,16 @@ internal fun PostListContent(
   modifier: Modifier = Modifier,
   postListOptions: PostListOptions,
   postsScreenViewModel: PostScreenViewModel,
-  onPostCellClicked: (PostData) -> Unit,
-  onLinkableClicked: (PostData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
+  onPostCellClicked: (PostCellData) -> Unit,
+  onLinkableClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
   onPostRepliesClicked: (PostDescriptor) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit
+  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit
 ) {
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-
   val chanDescriptorFromState by postsScreenViewModel.postScreenState.chanDescriptorFlow.collectAsState()
   val chanDescriptor = chanDescriptorFromState ?: return
 
@@ -245,21 +245,27 @@ internal fun PostListContent(
     postListAsync = postListAsync,
     postsScreenViewModel = postsScreenViewModel,
     onPostCellClicked = onPostCellClicked,
-    onPostCellCommentClicked = { postData: PostData, postComment: AnnotatedString, offset: Int ->
-      processClickedAnnotation(
-        postsScreenViewModel = postsScreenViewModel,
-        postData = postData,
-        postComment = postComment,
-        characterOffset = offset,
-        onLinkableClicked = onLinkableClicked
-      )
+    onPostCellCommentClicked = remember {
+      { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
+        processClickedAnnotation(
+          postsScreenViewModel = postsScreenViewModel,
+          postCellData = postCellData,
+          postComment = postComment,
+          characterOffset = offset,
+          onLinkableClicked = onLinkableClicked
+        )
+      }
     },
-    onPostRepliesClicked = { postData: PostData ->
-      onPostRepliesClicked(postData.postDescriptor)
+    onPostRepliesClicked = remember {
+      { postCellData: PostCellData ->
+        onPostRepliesClicked(postCellData.postDescriptor)
+      }
     },
-    onThreadStatusCellClicked = { threadDescriptor: ThreadDescriptor ->
-      postsScreenViewModel.resetTimer()
-      postsScreenViewModel.refresh()
+    onThreadStatusCellClicked = remember {
+      { threadDescriptor: ThreadDescriptor ->
+        postsScreenViewModel.resetTimer()
+        postsScreenViewModel.refresh()
+      }
     },
     onPostListScrolled = onPostListScrolled,
     onPostListDragStateChanged = onPostListDragStateChanged,
@@ -295,12 +301,12 @@ internal fun PostListContent(
 
 private fun processClickedAnnotation(
   postsScreenViewModel: PostScreenViewModel,
-  postData: PostData,
+  postCellData: PostCellData,
   postComment: AnnotatedString,
   characterOffset: Int,
-  onLinkableClicked: (PostData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
+  onLinkableClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
 ) {
-  val parsedPostDataContext = postData.parsedPostDataContext
+  val parsedPostDataContext = postCellData.parsedPostData?.parsedPostDataContext
     ?: return
   val offset = findFirstNonNewLineCharReversed(characterOffset, postComment)
     ?: return
@@ -312,7 +318,7 @@ private fun processClickedAnnotation(
       PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG -> {
         if (!parsedPostDataContext.revealFullPostComment) {
           postsScreenViewModel.reparsePost(
-            postData = postData,
+            postCellData = postCellData,
             parsedPostDataContext = parsedPostDataContext.copy(revealFullPostComment = true)
           )
         }
@@ -327,7 +333,7 @@ private fun processClickedAnnotation(
         }
 
         if (linkable != null) {
-          onLinkableClicked(postData, linkable)
+          onLinkableClicked(postCellData, linkable)
         }
 
         break
@@ -347,7 +353,7 @@ private fun processClickedAnnotation(
         }
 
         postsScreenViewModel.reparsePost(
-          postData = postData,
+          postCellData = postCellData,
           parsedPostDataContext = parsedPostDataContext
             .copy(textSpoilerOpenedPositionSet = textSpoilerOpenedPositionSet)
         )
@@ -362,13 +368,13 @@ private fun PostListInternal(
   chanDescriptor: ChanDescriptor,
   lazyListState: LazyListState,
   postListOptions: PostListOptions,
-  postListAsync: AsyncData<AbstractPostsState>,
+  postListAsync: AsyncData<PostsState>,
   postsScreenViewModel: PostScreenViewModel,
-  onPostCellClicked: (PostData) -> Unit,
-  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit,
+  onPostCellClicked: (PostCellData) -> Unit,
+  onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostRepliesClicked: (PostCellData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
@@ -381,6 +387,7 @@ private fun PostListInternal(
   val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostDescriptorForIndicator.collectAsState()
   val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
   val postsParsedOnce by postsScreenViewModel.postsFullyParsedOnceFlow.collectAsState()
+  val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
 
   val contentPadding = remember(key1 = searchQuery, key2 = postListOptions.contentPadding) {
     if (searchQuery.isNullOrEmpty()) {
@@ -420,9 +427,9 @@ private fun PostListInternal(
     val previousPosts = mutableMapOf<PostDescriptor, PreviousPostDataInfo>()
 
     postDataList.forEach { postDataState ->
-      previousPosts[postDataState.value.postDescriptor] = PreviousPostDataInfo(
-        hash = postDataState.value.postOnlyDataHashMut
-      )
+      postDataState.value.postServerDataHashForListAnimations?.let { hash ->
+        previousPosts[postDataState.value.postDescriptor] = PreviousPostDataInfo(hash)
+      }
     }
 
     return@remember previousPosts
@@ -435,6 +442,25 @@ private fun PostListInternal(
         return Offset.Zero
       }
     }
+  }
+
+  val buildThreadStatusCellFunc: @Composable ((LazyItemScope) -> Unit)? = if (
+    !isCatalogMode &&
+    searchQuery == null &&
+    postsScreenViewModel is ThreadScreenViewModel
+  ) {
+    { lazyItemScope: LazyItemScope ->
+      with(lazyItemScope) {
+        ThreadStatusCell(
+          padding = cellsPadding,
+          lazyListState = lazyListState,
+          threadScreenViewModel = postsScreenViewModel,
+          onThreadStatusCellClicked = onThreadStatusCellClicked
+        )
+      }
+    }
+  } else {
+    null
   }
 
   Box {
@@ -473,67 +499,9 @@ private fun PostListInternal(
         content = {
           postListAsyncDataContent(
             postListAsync = postListAsync,
-            emptyContent = {
-              val text = when {
-                isInPopup -> stringResource(R.string.post_list_no_posts_popup)
-                isCatalogMode -> stringResource(R.string.post_list_no_catalog_selected)
-                else -> stringResource(R.string.post_list_no_thread_selected)
-              }
-
-              val sizeModifier = if (isInPopup) {
-                Modifier
-                  .fillMaxWidth()
-                  .height(180.dp)
-              } else {
-                Modifier.fillParentMaxSize()
-              }
-
-              Box(
-                modifier = Modifier.then(sizeModifier),
-                contentAlignment = Alignment.Center
-              ) {
-                KurobaComposeText(
-                  text = text
-                )
-              }
-            },
-            loadingContent = {
-              val sizeModifier = if (isInPopup) {
-                Modifier
-                  .fillMaxWidth()
-                  .height(180.dp)
-              } else {
-                Modifier.fillParentMaxSize()
-              }
-
-              KurobaComposeLoadingIndicator(
-                modifier = Modifier
-                  .then(sizeModifier)
-                  .padding(8.dp)
-              )
-            },
-            errorContent = { postListAsyncError ->
-              val errorMessage = remember(key1 = postListAsync) {
-                postListAsyncError.error.errorMessageOrClassName()
-              }
-
-              val sizeModifier = if (isInPopup) {
-                Modifier
-                  .fillMaxWidth()
-                  .height(180.dp)
-              } else {
-                Modifier.fillParentMaxSize()
-              }
-
-              KurobaComposeErrorWithButton(
-                modifier = Modifier
-                  .then(sizeModifier)
-                  .padding(8.dp),
-                errorMessage = errorMessage,
-                buttonText = stringResource(R.string.reload),
-                onButtonClicked = { postsScreenViewModel.reload() }
-              )
-            },
+            emptyContent = { PostListEmptyContent(isInPopup, isCatalogMode) },
+            loadingContent = { PostListLoadingContent(isInPopup) },
+            errorContent = { postListAsyncError -> PostListErrorContent(postListAsyncError, isInPopup, postsScreenViewModel) },
             dataContent = { postListAsyncData ->
               val abstractPostsState = postListAsyncData.data
 
@@ -541,20 +509,50 @@ private fun PostListInternal(
                 isCatalogMode = isCatalogMode,
                 isInPopup = isInPopup,
                 chanDescriptor = chanDescriptor,
+                currentlyOpenedThread = currentlyOpenedThread,
                 cellsPadding = cellsPadding,
                 postListOptions = postListOptions,
-                lazyListState = lazyListState,
-                searchQuery = searchQuery,
-                postsParsedOnce = postsParsedOnce,
-                postsScreenViewModel = postsScreenViewModel,
-                abstractPostsState = abstractPostsState,
+                postDataList = abstractPostsState.posts,
                 lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
-                previousPostDataInfoMap = previousPostDataInfoMap,
+                onPostBind = { postCellData -> postsScreenViewModel.onPostBind(postCellData) },
+                onPostUnbind = { postCellData -> postsScreenViewModel.onPostUnbind(postCellData) },
+                canAnimateInsertion = { postCellData ->
+                  canAnimateInsertion(
+                    previousPostDataInfoMap = previousPostDataInfoMap,
+                    postCellData = postCellData,
+                    searchQuery = searchQuery,
+                    postsParsedOnce = postsParsedOnce
+                  )
+                },
+                canAnimateUpdate = { postCellData ->
+                  canAnimateUpdate(
+                    previousPostDataInfoMap = previousPostDataInfoMap,
+                    postCellData = postCellData,
+                    searchQuery = searchQuery,
+                    lastUpdatedOn = abstractPostsState.lastUpdatedOn,
+                    postsParsedOnce = postsParsedOnce
+                  )
+                },
+                onPostCellAnimatedContainerBuilt = { postCellData ->
+                  val hash = postCellData.postServerDataHashForListAnimations
+
+                  if (previousPostDataInfoMap != null && hash != null) {
+                    // Add each post into the previousPostDataInfoMap so that we don't run animations more than
+                    // once for each post.
+                    val previousPostDataInfo = previousPostDataInfoMap[postCellData.postDescriptor]
+                    if (previousPostDataInfo == null) {
+                      previousPostDataInfoMap[postCellData.postDescriptor] = PreviousPostDataInfo(hash)
+                    } else if (previousPostDataInfo.hash != hash) {
+                      previousPostDataInfoMap[postCellData.postDescriptor]!!.hash = hash
+                    }
+                  }
+                },
                 onPostCellClicked = onPostCellClicked,
                 onPostCellCommentClicked = onPostCellCommentClicked,
                 onPostRepliesClicked = onPostRepliesClicked,
-                onThreadStatusCellClicked = onThreadStatusCellClicked,
-                onPostImageClicked = onPostImageClicked
+                onPostImageClicked = onPostImageClicked,
+                reparsePostSubject = { postCellData -> postsScreenViewModel.reparsePostSubject(postCellData) },
+                buildThreadStatusCell = buildThreadStatusCellFunc
               )
             }
           )
@@ -573,12 +571,86 @@ private fun PostListInternal(
   }
 }
 
+@Composable
+private fun LazyItemScope.PostListErrorContent(
+  postListAsyncError: AsyncData.Error,
+  isInPopup: Boolean,
+  postsScreenViewModel: PostScreenViewModel
+) {
+  val errorMessage = remember(key1 = postListAsyncError) {
+    postListAsyncError.error.errorMessageOrClassName()
+  }
+
+  val sizeModifier = if (isInPopup) {
+    Modifier
+      .fillMaxWidth()
+      .height(180.dp)
+  } else {
+    Modifier.fillParentMaxSize()
+  }
+
+  KurobaComposeErrorWithButton(
+    modifier = Modifier
+      .then(sizeModifier)
+      .padding(8.dp),
+    errorMessage = errorMessage,
+    buttonText = stringResource(R.string.reload),
+    onButtonClicked = { postsScreenViewModel.reload() }
+  )
+}
+
+@Composable
+private fun LazyItemScope.PostListLoadingContent(isInPopup: Boolean) {
+  val sizeModifier = if (isInPopup) {
+    Modifier
+      .fillMaxWidth()
+      .height(180.dp)
+  } else {
+    Modifier.fillParentMaxSize()
+  }
+
+  KurobaComposeLoadingIndicator(
+    modifier = Modifier
+      .then(sizeModifier)
+      .padding(8.dp)
+  )
+}
+
+@Composable
+private fun LazyItemScope.PostListEmptyContent(
+  isInPopup: Boolean,
+  isCatalogMode: Boolean
+) {
+  val text = when {
+    isInPopup -> stringResource(R.string.post_list_no_posts_popup)
+    isCatalogMode -> stringResource(R.string.post_list_no_catalog_selected)
+    else -> stringResource(R.string.post_list_no_thread_selected)
+  }
+
+  val sizeModifier = if (isInPopup) {
+    Modifier
+      .fillMaxWidth()
+      .height(180.dp)
+  } else {
+    Modifier.fillParentMaxSize()
+  }
+
+  Box(
+    modifier = Modifier.then(sizeModifier),
+    contentAlignment = Alignment.Center
+  ) {
+    KurobaComposeText(
+      text = text
+    )
+  }
+}
+
 private fun LazyListScope.postListAsyncDataContent(
-  postListAsync: AsyncData<AbstractPostsState>,
+  postListAsync: AsyncData<PostsState>,
   emptyContent: @Composable LazyItemScope.() -> Unit,
   loadingContent: @Composable LazyItemScope.() -> Unit,
   errorContent: @Composable LazyItemScope.(AsyncData.Error) -> Unit,
-  dataContent: (AsyncData.Data<AbstractPostsState>) -> Unit
+  dataContent: (AsyncData.Data<PostsState>) -> Unit
 ) {
   when (postListAsync) {
     AsyncData.Empty -> {
@@ -606,96 +678,68 @@ private fun LazyListScope.postList(
   isCatalogMode: Boolean,
   isInPopup: Boolean,
   chanDescriptor: ChanDescriptor,
+  currentlyOpenedThread: ThreadDescriptor?,
+  lastViewedPostDescriptorForIndicator: PostDescriptor?,
   cellsPadding: PaddingValues,
   postListOptions: PostListOptions,
-  lazyListState: LazyListState,
-  searchQuery: String?,
-  postsParsedOnce: Boolean,
-  postsScreenViewModel: PostScreenViewModel,
-  abstractPostsState: AbstractPostsState,
-  lastViewedPostDescriptorForIndicator: PostDescriptor?,
-  previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
-  onPostCellClicked: (PostData) -> Unit,
-  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit,
-  onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
+  postDataList: List<State<PostCellData>>,
+  onPostBind: (PostCellData) -> Unit,
+  onPostUnbind: (PostCellData) -> Unit,
+  canAnimateInsertion: (PostCellData) -> Boolean,
+  canAnimateUpdate: (PostCellData) -> Boolean,
+  onPostCellAnimatedContainerBuilt: (PostCellData) -> Unit,
+  onPostCellClicked: (PostCellData) -> Unit,
+  onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostRepliesClicked: (PostCellData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  reparsePostSubject: suspend (PostCellData) -> AnnotatedString?,
+  buildThreadStatusCell: @Composable (LazyItemScope.() -> Unit)? = null
 ) {
-  val postDataList = abstractPostsState.posts
-  val totalCount = postDataList.size
-  val lastUpdatedOn = abstractPostsState.lastUpdatedOn
-
   items(
-    count = totalCount,
+    count = postDataList.size,
     key = { index -> "${postCellKeyPrefix}_${postDataList[index].value.postDescriptor}" },
     itemContent = { index ->
-      val postData by postDataList[index]
+      val postCellData by postDataList[index]
 
-      val animateInsertion = canAnimateInsertion(
-        previousPostDataInfoMap = previousPostDataInfoMap,
-        postData = postData,
-        searchQuery = searchQuery,
-        postsParsedOnce = postsParsedOnce
-      )
-      val animateUpdate = canAnimateUpdate(
-        previousPostDataInfoMap = previousPostDataInfoMap,
-        postData = postData,
-        searchQuery = searchQuery,
-        lastUpdatedOn = lastUpdatedOn,
-        postsParsedOnce = postsParsedOnce
-      )
+      val animateInsertion = remember(postCellData) { canAnimateInsertion(postCellData) }
+      val animateUpdate = remember(postCellData) { canAnimateUpdate(postCellData) }
 
       PostCellContainer(
-        padding = cellsPadding,
+        cellsPadding = cellsPadding,
         isCatalogMode = isCatalogMode,
         chanDescriptor = chanDescriptor,
+        currentlyOpenedThread = currentlyOpenedThread,
         isInPopup = isInPopup,
-        onPostCellClicked = onPostCellClicked,
-        postData = postData,
+        postCellData = postCellData,
         postListOptions = postListOptions,
-        postsScreenViewModel = postsScreenViewModel,
         index = index,
-        totalCount = totalCount,
+        totalCount = postDataList.size,
         animateInsertion = animateInsertion,
         animateUpdate = animateUpdate,
         lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
+        onPostBind = onPostBind,
+        onPostUnbind = onPostUnbind,
+        onPostCellClicked = onPostCellClicked,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked,
-        onPostImageClicked = onPostImageClicked
+        onPostImageClicked = onPostImageClicked,
+        reparsePostSubject = reparsePostSubject
       )
 
-      if (previousPostDataInfoMap != null) {
-        // Add each post into the previousPostDataInfoMap so that we don't run animations more than
-        // once for each post.
-        SideEffect {
-          val previousPostDataInfo = previousPostDataInfoMap[postData.postDescriptor]
-          if (previousPostDataInfo == null) {
-            previousPostDataInfoMap[postData.postDescriptor] = PreviousPostDataInfo(
-              hash = postData.postOnlyDataHashMut
-            )
-          } else if (previousPostDataInfo.hash != postData.postOnlyDataHashMut) {
-            previousPostDataInfoMap[postData.postDescriptor]!!.hash = postData.postOnlyDataHashMut
-          }
-        }
-      }
+      SideEffect { onPostCellAnimatedContainerBuilt(postCellData) }
     }
   )
 
-  if (!isCatalogMode && searchQuery == null && postsScreenViewModel is ThreadScreenViewModel) {
+  if (buildThreadStatusCell != null) {
     item(key = threadStatusCellKey) {
-      ThreadStatusCell(
-        padding = cellsPadding,
-        lazyListState = lazyListState,
-        threadScreenViewModel = postsScreenViewModel,
-        onThreadStatusCellClicked = onThreadStatusCellClicked
-      )
+      buildThreadStatusCell()
     }
   }
 }
 
 private fun canAnimateUpdate(
   previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
-  postData: PostData,
+  postCellData: PostCellData,
   searchQuery: String?,
   lastUpdatedOn: Long,
   postsParsedOnce: Boolean
@@ -704,12 +748,12 @@ private fun canAnimateUpdate(
     return false
   }
 
-  val previousPostDataInfo = previousPostDataInfoMap[postData.postDescriptor]
+  val previousPostDataInfo = previousPostDataInfoMap[postCellData.postDescriptor]
   if (previousPostDataInfo == null) {
     return false
   }
 
-  if (previousPostDataInfo.hash == postData.postOnlyDataHashMut) {
+  if (previousPostDataInfo.hash == postCellData.postServerDataHashForListAnimations) {
     return false
   }
 
@@ -718,7 +762,7 @@ private fun canAnimateUpdate(
 
 private fun canAnimateInsertion(
   previousPostDataInfoMap: MutableMap<PostDescriptor, PreviousPostDataInfo>?,
-  postData: PostData,
+  postCellData: PostCellData,
   searchQuery: String?,
   postsParsedOnce: Boolean
 ): Boolean {
@@ -726,7 +770,7 @@ private fun canAnimateInsertion(
     return false
   }
 
-  val previousPostDataInfo = previousPostDataInfoMap[postData.postDescriptor]
+  val previousPostDataInfo = previousPostDataInfoMap[postCellData.postDescriptor]
   if (previousPostDataInfo == null) {
     return true
   }
@@ -939,40 +983,43 @@ private fun LazyItemScope.ThreadStatusCell(
 
 @Composable
 private fun LazyItemScope.PostCellContainer(
-  padding: PaddingValues,
+  cellsPadding: PaddingValues,
   isCatalogMode: Boolean,
   chanDescriptor: ChanDescriptor,
+  currentlyOpenedThread: ThreadDescriptor?,
   isInPopup: Boolean,
-  onPostCellClicked: (PostData) -> Unit,
-  postData: PostData,
+  postCellData: PostCellData,
   postListOptions: PostListOptions,
-  postsScreenViewModel: PostScreenViewModel,
   index: Int,
   totalCount: Int,
   animateInsertion: Boolean,
   animateUpdate: Boolean,
   lastViewedPostDescriptorForIndicator: PostDescriptor?,
-  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
+  onPostBind: (PostCellData) -> Unit,
+  onPostUnbind: (PostCellData) -> Unit,
+  onPostCellClicked: (PostCellData) -> Unit,
+  onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostRepliesClicked: (PostCellData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val chanTheme = LocalChanTheme.current
 
-  val postCellCommentTextSizeSp = postListOptions.postCellCommentTextSizeSp
-  val postCellSubjectTextSizeSp = postListOptions.postCellSubjectTextSizeSp
-  val detectLinkableClicks = postListOptions.detectLinkableClicks
+  val postCellCommentTextSizeSp = remember(postListOptions) { postListOptions.postCellCommentTextSizeSp }
+  val postCellSubjectTextSizeSp = remember(postListOptions) { postListOptions.postCellSubjectTextSizeSp }
+  val detectLinkableClicks = remember(postListOptions) { postListOptions.detectLinkableClicks }
 
   PostCellContainerAnimated(
     animateInsertion = animateInsertion,
     animateUpdate = animateUpdate,
     isCatalogMode = isCatalogMode,
-    postData = postData,
-    postsScreenViewModel = postsScreenViewModel
+    postCellData = postCellData,
+    currentlyOpenedThread = currentlyOpenedThread
   ) {
     Column(
       modifier = Modifier
-        .kurobaClickable(onClick = { onPostCellClicked(postData) })
-        .padding(padding)
+        .kurobaClickable(onClick = { onPostCellClicked(postCellData) })
+        .padding(cellsPadding)
     ) {
       PostCell(
         isCatalogMode = isCatalogMode,
@@ -980,16 +1027,18 @@ private fun LazyItemScope.PostCellContainer(
         detectLinkableClicks = detectLinkableClicks,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-        postData = postData,
-        postsScreenViewModel = postsScreenViewModel,
+        postCellData = postCellData,
+        onPostBind = onPostBind,
+        onPostUnbind = onPostUnbind,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked,
-        onPostImageClicked = onPostImageClicked
+        onPostImageClicked = onPostImageClicked,
+        reparsePostSubject = reparsePostSubject
       )
 
       val canDisplayLastViewedPostMarker = !isInPopup
         && !isCatalogMode
-        && lastViewedPostDescriptorForIndicator == postData.postDescriptor
+        && lastViewedPostDescriptorForIndicator == postCellData.postDescriptor
         && index < (totalCount - 1)
 
       if (canDisplayLastViewedPostMarker) {
@@ -1013,8 +1062,8 @@ private fun PostCellContainerAnimated(
   animateInsertion: Boolean,
   animateUpdate: Boolean,
   isCatalogMode: Boolean,
-  postData: PostData,
-  postsScreenViewModel: PostScreenViewModel,
+  postCellData: PostCellData,
+  currentlyOpenedThread: ThreadDescriptor?,
   content: @Composable () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -1023,7 +1072,7 @@ private fun PostCellContainerAnimated(
 
   if (animateInsertion || animateUpdate || currentAnimation != null) {
     if (animateInsertion || currentAnimation == AnimationType.Insertion) {
-      currentAnimation = AnimationType.Insertion
+      SideEffect { currentAnimation = AnimationType.Insertion }
 
       PostCellContainerInsertAnimation(
         onAnimationFinished = { currentAnimation = null },
@@ -1034,7 +1083,7 @@ private fun PostCellContainerAnimated(
     }
 
     if (animateUpdate || currentAnimation == AnimationType.Update) {
-      currentAnimation = AnimationType.Update
+      SideEffect { currentAnimation = AnimationType.Update }
 
       PostCellContainerUpdateAnimation(
         onAnimationFinished = { currentAnimation = null },
@@ -1045,9 +1094,8 @@ private fun PostCellContainerAnimated(
     }
   }
 
-  val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
   val bgColor = remember(key1 = isCatalogMode, key2 = currentlyOpenedThread) {
-    if (isCatalogMode && currentlyOpenedThread == postData.postDescriptor.threadDescriptor) {
+    if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
       chanTheme.highlighterColorCompose.copy(alpha = 0.3f)
     } else {
       Color.Unspecified
@@ -1143,39 +1191,24 @@ private fun PostCell(
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
   postCellSubjectTextSizeSp: TextUnit,
-  postData: PostData,
-  postsScreenViewModel: PostScreenViewModel,
-  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit,
-  onPostRepliesClicked: (PostData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
+  postCellData: PostCellData,
+  onPostBind: (PostCellData) -> Unit,
+  onPostUnbind: (PostCellData) -> Unit,
+  onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostRepliesClicked: (PostCellData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
-  var postComment by postComment(postData)
-  var postSubject by postSubject(postData)
-  var postFooterText by postFooterText(postData)
+  val postComment = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostComment }
+  val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
+  val postFooterText = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.postFooterText }
 
   DisposableEffect(
-    key1 = postData,
+    key1 = postCellData,
     effect = {
-      postsScreenViewModel.onPostBind(postData)
-
-      onDispose { postsScreenViewModel.onPostUnbind(postData) }
+      onPostBind(postCellData)
+      onDispose { onPostUnbind(postCellData) }
     })
-
-  if (postData.postCommentParsedAndProcessed == null) {
-    LaunchedEffect(
-      key1 = postData.postCommentUnparsed,
-      key2 = postsScreenViewModel.chanDescriptor,
-      block = {
-        val chanDescriptor = postsScreenViewModel.chanDescriptor
-          ?: return@LaunchedEffect
-
-        val parsedPostData = postsScreenViewModel.parseComment(chanDescriptor, postData)
-        postComment = parsedPostData.processedPostComment
-        postSubject = parsedPostData.processedPostSubject
-        postFooterText = parsedPostData.postFooterText
-      }
-    )
-  }
 
   Column(
     modifier = Modifier
@@ -1185,15 +1218,15 @@ private fun PostCell(
   ) {
     PostCellTitle(
       chanDescriptor = chanDescriptor,
-      postData = postData,
+      postCellData = postCellData,
       postSubject = postSubject,
       postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-      postsScreenViewModel = postsScreenViewModel,
-      onPostImageClicked = onPostImageClicked
+      onPostImageClicked = onPostImageClicked,
+      reparsePostSubject = reparsePostSubject
     )
 
     PostCellComment(
-      postData = postData,
+      postCellData = postCellData,
       postComment = postComment,
       isCatalogMode = isCatalogMode,
       detectLinkableClicks = detectLinkableClicks,
@@ -1202,23 +1235,22 @@ private fun PostCell(
     )
 
     PostCellFooter(
-      postData = postData,
+      postCellData = postCellData,
       postFooterText = postFooterText,
       postCellCommentTextSizeSp = postCellCommentTextSizeSp,
       onPostRepliesClicked = onPostRepliesClicked
     )
   }
-
 }
 
 @Composable
 private fun PostCellTitle(
   chanDescriptor: ChanDescriptor,
-  postData: PostData,
-  postSubject: AnnotatedString,
+  postCellData: PostCellData,
+  postSubject: AnnotatedString?,
   postCellSubjectTextSizeSp: TextUnit,
-  postsScreenViewModel: PostScreenViewModel,
-  onPostImageClicked: (ChanDescriptor, PostImageData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val chanTheme = LocalChanTheme.current
   val context = LocalContext.current
@@ -1229,8 +1261,8 @@ private fun PostCellTitle(
       .fillMaxWidth(),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    if (postData.images.isNotNullNorEmpty()) {
-      val image = postData.images.first()
+    if (postCellData.images.isNotNullNorEmpty()) {
+      val image = postCellData.images.first()
 
       Box(
         modifier = Modifier
@@ -1252,7 +1284,7 @@ private fun PostCellTitle(
             if (state is AsyncImagePainter.State.Error) {
               logcatError {
                 "PostCellTitle() url=${image.thumbnailUrl}, " +
-                  "postDescriptor=${postData.postDescriptor}, " +
+                  "postDescriptor=${postCellData.postDescriptor}, " +
                   "error=${state.result.throwable}"
               }
             }
@@ -1265,42 +1297,46 @@ private fun PostCellTitle(
       Spacer(modifier = Modifier.width(4.dp))
     }
 
-    var actualPostSubject by remember { mutableStateOf(postSubject) }
+    if (postSubject == null) {
+      // TODO(KurobaEx): shimmer animation
+    } else {
+      var actualPostSubject by remember { mutableStateOf(postSubject) }
 
-    LaunchedEffect(
-      key1 = postData,
-      block = {
-        val initialTime = postData.timeMs
-          ?: return@LaunchedEffect
+      LaunchedEffect(
+        key1 = postCellData,
+        block = {
+          val initialTime = postCellData.timeMs
+            ?: return@LaunchedEffect
 
-        while (isActive) {
-          val now = System.currentTimeMillis()
-          val delay = if (now - initialTime <= 60_000L) 5000L else 60_000L
+          while (isActive) {
+            val now = System.currentTimeMillis()
+            val delay = if (now - initialTime <= 60_000L) 5000L else 60_000L
 
-          delay(delay)
+            delay(delay)
 
-          val newPostSubject = postsScreenViewModel.reparsePostSubject(postData)
-            ?: continue
+            val newPostSubject = reparsePostSubject(postCellData)
+              ?: continue
 
-          actualPostSubject = newPostSubject
-        }
-      })
+            actualPostSubject = newPostSubject
+          }
+        })
 
-    Text(
-      text = actualPostSubject,
-      fontSize = postCellSubjectTextSizeSp
-    )
+      Text(
+        text = actualPostSubject,
+        fontSize = postCellSubjectTextSizeSp
+      )
+    }
   }
 }
 
 @Composable
 private fun PostCellComment(
-  postData: PostData,
-  postComment: AnnotatedString,
+  postCellData: PostCellData,
+  postComment: AnnotatedString?,
   isCatalogMode: Boolean,
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
-  onPostCellCommentClicked: (PostData, AnnotatedString, Int) -> Unit
+  onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val clickedTextBackgroundColorMap = remember(key1 = chanTheme) { createClickableTextColorMap(chanTheme) }
@@ -1318,9 +1354,11 @@ private fun PostCellComment(
         detectClickedAnnotations = { offset, textLayoutResult, text ->
           return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)
         },
-        onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(postData, text, offset) }
+        onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(postCellData, text, offset) }
       )
     }
+  } else if (postComment == null) {
+    // TODO(KurobaEx): shimmer animation
   }
 }
 
@@ -1339,10 +1377,10 @@ private fun PostCellCommentSelectionWrapper(isCatalogMode: Boolean, content: @Co
 
 @Composable
 private fun PostCellFooter(
-  postData: PostData,
+  postCellData: PostCellData,
   postFooterText: AnnotatedString?,
   postCellCommentTextSizeSp: TextUnit,
-  onPostRepliesClicked: (PostData) -> Unit
+  onPostRepliesClicked: (PostCellData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
 
@@ -1351,58 +1389,13 @@ private fun PostCellFooter(
       modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()
-        .kurobaClickable(onClick = { onPostRepliesClicked(postData) })
+        .kurobaClickable(onClick = { onPostRepliesClicked(postCellData) })
         .padding(vertical = 4.dp),
       color = chanTheme.textColorSecondaryCompose,
       fontSize = postCellCommentTextSizeSp,
       text = postFooterText
     )
   }
-}
-
-@Composable
-private fun postSubject(postData: PostData): MutableState<AnnotatedString> {
-  val postSubject = remember(
-    key1 = postData.postSubjectParsedAndProcessed,
-    key2 = postData.postSubjectUnparsed
-  ) {
-    val initial = if (postData.postSubjectParsedAndProcessed != null) {
-      postData.postSubjectParsedAndProcessed!!
-    } else {
-      AnnotatedString(postData.postSubjectUnparsed)
-    }
-
-    mutableStateOf<AnnotatedString>(initial)
-  }
-
-  return postSubject
-}
-
-@Composable
-private fun postFooterText(postData: PostData): MutableState<AnnotatedString?> {
-  val postSubject = remember(key1 = postData.postFooterText) {
-    mutableStateOf<AnnotatedString?>(postData.postFooterText)
-  }
-
-  return postSubject
-}
-
-@Composable
-private fun postComment(postData: PostData): MutableState<AnnotatedString> {
-  val postComment = remember(
-    key1 = postData.postCommentParsedAndProcessed,
-    key2 = postData.postCommentUnparsed
-  ) {
-    val initial = if (postData.postCommentParsedAndProcessed != null) {
-      postData.postCommentParsedAndProcessed!!
-    } else {
-      AnnotatedString(postData.postCommentUnparsed)
-    }
-
-    mutableStateOf<AnnotatedString>(initial)
-  }
-
-  return postComment
 }
 
 private fun createClickableTextColorMap(chanTheme: ChanTheme): Map<String, Color> {
@@ -1493,6 +1486,7 @@ private suspend fun PointerInputScope.processDragEvents(onPostListDragStateChang
   }
 }
 
+@Immutable
 data class PostListOptions(
   val isCatalogMode: Boolean,
   val isInPopup: Boolean,
@@ -1505,5 +1499,5 @@ data class PostListOptions(
 )
 
 class PreviousPostDataInfo(
-  var hash: MurmurHashUtils.Murmur3Hash
+  var hash: Murmur3Hash
 )

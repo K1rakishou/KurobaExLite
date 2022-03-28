@@ -5,19 +5,17 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
-import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
-import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -27,15 +25,11 @@ import logcat.asLog
 import logcat.logcat
 
 class CatalogScreenViewModel(
-  private val chanThreadManager: ChanThreadManager,
-  private val chanCache: ChanCache,
   application: KurobaExLiteApplication,
-  globalConstants: GlobalConstants,
-  themeEngine: ThemeEngine,
   savedStateHandle: SavedStateHandle
-) : PostScreenViewModel(application, globalConstants, themeEngine, savedStateHandle) {
+) : PostScreenViewModel(application, savedStateHandle) {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
-  private val catalogScreenState = CatalogScreenState()
+  private val catalogScreenState = PostScreenState()
   private var loadCatalogJob: Job? = null
 
   override val postScreenState: PostScreenState = catalogScreenState
@@ -111,23 +105,15 @@ class CatalogScreenViewModel(
     val startTime = SystemClock.elapsedRealtime()
     onCatalogLoadingStart(catalogDescriptor, loadOptions)
 
-    val catalogDataResult = if (loadOptions.loadFromNetwork || catalogDescriptor == null) {
-      val catalogDataResult = chanThreadManager.loadCatalog(catalogDescriptor)
-      catalogDataResult.getOrNull()?.let { catalogData ->
-        if (catalogDescriptor != null) {
-          chanCache.insertCatalogThreads(catalogDescriptor, catalogData.catalogThreads)
-        }
-      }
-
-      catalogDataResult
+    val postsLoadResultMaybe = if (loadOptions.loadFromNetwork || catalogDescriptor == null) {
+      chanThreadManager.loadCatalog(catalogDescriptor)
     } else {
       val catalogThreads = chanCache.getCatalogThreads(catalogDescriptor)
-      val catalogData = CatalogData(catalogDescriptor, catalogThreads)
-      Result.success(catalogData)
+      Result.success(PostsLoadResult(updatedPosts = catalogThreads, newPosts = emptyList()))
     }
 
-    if (catalogDataResult.isFailure) {
-      val error = catalogDataResult.exceptionOrThrow()
+    if (postsLoadResultMaybe.isFailure) {
+      val error = postsLoadResultMaybe.exceptionOrThrow()
       logcatError { "loadCatalog() error=${error.asLog()}" }
 
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
@@ -137,8 +123,8 @@ class CatalogScreenViewModel(
       return
     }
 
-    val catalogData = catalogDataResult.unwrap()
-    if (catalogData == null || catalogDescriptor == null) {
+    val postsLoadResult = postsLoadResultMaybe.unwrap()
+    if (postsLoadResult == null || catalogDescriptor == null) {
       catalogScreenState.postsAsyncDataState.value = AsyncData.Empty
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
@@ -146,7 +132,7 @@ class CatalogScreenViewModel(
       return
     }
 
-    if (catalogData.catalogThreads.isEmpty()) {
+    if (postsLoadResult.isEmpty()) {
       val error = CatalogDisplayException("Catalog /${catalogDescriptor}/ has no posts")
 
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
@@ -158,23 +144,19 @@ class CatalogScreenViewModel(
 
     val catalogSortSetting = appSettings.catalogSort.read()
     val sortedThreads = CatalogThreadSorter.sortCatalogThreads(
-      catalogThreads = catalogData.catalogThreads,
+      catalogThreads = postsLoadResult.combined(),
       catalogSortSetting = catalogSortSetting
     )
 
-    val sortedCatalogData = CatalogData(catalogDescriptor, sortedThreads)
-
-    parsePostsAround(
+    val initialParsedPosts = parseInitialBatchOfPosts(
       startPostDescriptor = null,
       chanDescriptor = catalogDescriptor,
-      postDataList = sortedCatalogData.catalogThreads,
+      postDataList = sortedThreads,
       isCatalogMode = true
     )
 
-    val catalogThreadsState = CatalogThreadsState(
-      catalogDescriptor = catalogDescriptor,
-      catalogThreads = sortedCatalogData.catalogThreads
-    )
+    val catalogThreadsState = PostsState(catalogDescriptor)
+    catalogThreadsState.insertOrUpdateMany(initialParsedPosts)
 
     catalogScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
     postListBuilt?.await()
@@ -182,20 +164,21 @@ class CatalogScreenViewModel(
 
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,
-      postDataList = sortedCatalogData.catalogThreads,
+      postDataList = sortedThreads,
       onStartParsingPosts = {
         snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
-          postsCount = sortedCatalogData.catalogThreads.size,
+          postsCount = sortedThreads.size,
           screenKey = screenKey
         )
       },
-      onPostsParsed = { postDataList ->
+      onPostsParsed = { postCellDataList ->
         logcat {
           "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-            "catalogThreads=${sortedCatalogData.catalogThreads.size}"
+            "catalogThreads=${sortedThreads.size}"
         }
 
         try {
+          catalogThreadsState.insertOrUpdateMany(postCellDataList)
           onCatalogLoadingEnd(catalogDescriptor)
 
           _postsFullyParsedOnceFlow.emit(true)

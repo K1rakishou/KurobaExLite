@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts
+package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared
 
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween

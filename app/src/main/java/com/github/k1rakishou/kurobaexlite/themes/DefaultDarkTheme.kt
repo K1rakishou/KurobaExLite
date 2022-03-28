@@ -1,7 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.themes
 
 import android.graphics.Color
+import androidx.compose.runtime.Stable
 
+@Stable
 data class DefaultDarkTheme(
   override val name: String = "Kuroneko",
   override val isLightTheme: Boolean = false,

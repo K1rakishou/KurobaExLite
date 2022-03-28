@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.managers
 import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Point
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -139,6 +140,7 @@ class UiInfoManager(
 
 }
 
+@Immutable
 enum class MainUiLayoutMode {
   Portrait,
   Split
