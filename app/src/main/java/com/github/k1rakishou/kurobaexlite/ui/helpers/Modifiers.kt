@@ -24,8 +24,8 @@ fun Modifier.simpleVerticalScrollbar(
   state: LazyListState,
   chanTheme: ChanTheme,
   contentPadding: PaddingValues = DefaultPaddingValues,
-  scrollbarWidth: Float,
-  scrollbarMinHeight: Float,
+  scrollbarWidth: Int,
+  scrollbarMinHeight: Int,
   scrollbarDragged: Boolean
 ): Modifier {
   return composed(
@@ -77,7 +77,7 @@ fun Modifier.simpleVerticalScrollbar(
             bottomPaddingPx = bottomPaddingPx,
             layoutInfo = layoutInfo,
             firstVisibleElementIndex = firstVisibleElementIndex,
-            scrollbarMinHeight = scrollbarMinHeight,
+            scrollbarMinHeight = scrollbarMinHeight.toFloat(),
             realScrollbarHeightDiff = null
           )
 
@@ -87,7 +87,7 @@ fun Modifier.simpleVerticalScrollbar(
           drawRect(
             color = chanTheme.textColorHintCompose,
             topLeft = Offset(offsetX, offsetY),
-            size = Size(scrollbarWidth, scrollbarHeightAdjusted),
+            size = Size(scrollbarWidth.toFloat(), scrollbarHeightAdjusted),
             alpha = alpha
           )
         }

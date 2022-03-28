@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,30 +30,30 @@ private val SCROLLBAR_MIN_HEIGHT = 36.dp
 @Composable
 fun LazyColumnWithFastScroller(
   modifier: Modifier = Modifier,
-  lazyListState: LazyListState = rememberLazyListState(),
-  contentPadding: PaddingValues = PaddingValues(),
+  lazyListState: LazyListState,
+  contentPadding: PaddingValues,
   onFastScrollerDragStateChanged: ((Boolean) -> Unit)? = null,
   content: LazyListScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val scrollbarWidth = with(LocalDensity.current) {
-    remember { SCROLLBAR_WIDTH.toPx() }
+    remember { SCROLLBAR_WIDTH.toPx().toInt() }
   }
   val scrollbarMinHeightPx = with(LocalDensity.current) {
-    remember { SCROLLBAR_MIN_HEIGHT.toPx() }
+    remember { SCROLLBAR_MIN_HEIGHT.toPx().toInt() }
   }
   val paddingTopPx = with(LocalDensity.current) {
-    remember(contentPadding) { contentPadding.calculateTopPadding().toPx() }
+    remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
   }
   val paddingBottomPx = with(LocalDensity.current) {
-    remember(contentPadding) { contentPadding.calculateBottomPadding().toPx() }
+    remember(contentPadding) { contentPadding.calculateBottomPadding().toPx().toInt() }
   }
   val coroutineScope = rememberCoroutineScope()
   var scrollbarDragged by remember { mutableStateOf(false) }
 
   BoxWithConstraints(modifier = modifier) {
-    val maxWidthPx = with(LocalDensity.current) { remember(key1 = maxWidth) { maxWidth.toPx() } }
-    val maxHeightPx = with(LocalDensity.current) { remember(key1 = maxHeight) { maxHeight.toPx() } }
+    val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
+    val maxHeightPx = with(LocalDensity.current) { maxHeight.toPx().toInt() }
 
     Box(
       modifier = Modifier
@@ -101,11 +100,11 @@ fun LazyColumnWithFastScroller(
 suspend fun PointerInputScope.processFastScrollerInputs(
   coroutineScope: CoroutineScope,
   lazyListState: LazyListState,
-  width: Float,
-  height: Float,
-  paddingTop: Float,
-  paddingBottom: Float,
-  scrollbarWidth: Float,
+  width: Int,
+  height: Int,
+  paddingTop: Int,
+  paddingBottom: Int,
+  scrollbarWidth: Int,
   onScrollbarDragStateUpdated: (Boolean) -> Unit
 ) {
   forEachGesture {

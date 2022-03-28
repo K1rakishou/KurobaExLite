@@ -279,22 +279,26 @@ internal fun PostListContent(
   // We need to do all that because otherwise we won't scroll to the last position since the list
   // state might not have the necessary info for that.
   if (postListAsync is AsyncData.Data) {
-    val firstPostDrawn = remember(key1 = lazyListState.layoutInfo) {
-      val firstVisibleElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
-        ?: return@remember false
+    var postListBuiltNotified by remember { mutableStateOf(false) }
+    if (!postListBuiltNotified) {
+      val firstPostDrawn = remember(key1 = lazyListState.layoutInfo) {
+        val firstVisibleElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+          ?: return@remember false
 
-      return@remember (firstVisibleElement.key as? String)
-        ?.startsWith(postCellKeyPrefix)
-        ?: false
-    }
+        return@remember (firstVisibleElement.key as? String)
+          ?.startsWith(postCellKeyPrefix)
+          ?: false
+      }
 
-    if (firstPostDrawn) {
-      LaunchedEffect(
-        key1 = chanDescriptor,
-        block = {
-          postsScreenViewModel.onPostListBuilt()
-        }
-      )
+      if (firstPostDrawn) {
+        LaunchedEffect(
+          key1 = chanDescriptor,
+          block = {
+            postListBuiltNotified = true
+            postsScreenViewModel.onPostListBuilt()
+          }
+        )
+      }
     }
   }
 }
@@ -469,17 +473,19 @@ private fun PostListInternal(
       topPadding = pullToRefreshTopPaddingDp,
       pullToRefreshState = pullToRefreshState,
       canPull = { searchQuery == null },
-      onTriggered = {
-        postsScreenViewModel.reload(
-          loadOptions = PostScreenViewModel.LoadOptions(
-            showLoadingIndicator = false,
-            forced = true
-          ),
-          onReloadFinished = {
-            pullToRefreshState.stopRefreshing()
-            postsScreenViewModel.scrollTop()
-          }
-        )
+      onTriggered = remember {
+        {
+          postsScreenViewModel.reload(
+            loadOptions = PostScreenViewModel.LoadOptions(
+              showLoadingIndicator = false,
+              forced = true
+            ),
+            onReloadFinished = {
+              pullToRefreshState.stopRefreshing()
+              postsScreenViewModel.scrollTop()
+            }
+          )
+        }
       }
     ) {
       LazyColumnWithFastScroller(
