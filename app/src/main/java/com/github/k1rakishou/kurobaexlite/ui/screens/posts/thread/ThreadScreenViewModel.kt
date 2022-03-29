@@ -385,6 +385,8 @@ class ThreadScreenViewModel(
       threadDescriptor = threadDescriptor,
       boundPostDescriptor = null
     )
+
+    snackbarManager.popThreadNewPostsSnackbar()
   }
 
   fun onPostListNotTouchingBottom() {

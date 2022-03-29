@@ -74,10 +74,6 @@ class SnackbarManager(
     )
   }
 
-  fun popCatalogOrThreadPostsLoadingSnackbar() {
-    popSnackbar(SnackbarId.CatalogOrThreadPostsLoading)
-  }
-
   fun pushSnackbar(snackbarInfo: SnackbarInfo) {
     _snackbarEventFlow.tryEmit(SnackbarInfoEvent.Push(snackbarInfo))
   }
@@ -107,6 +103,10 @@ class SnackbarManager(
     )
   }
 
+  fun popThreadNewPostsSnackbar() {
+    popSnackbar(SnackbarId.NewPosts)
+  }
+
   fun pushCatalogOrThreadPostsLoadingSnackbar(postsCount: Int, screenKey: ScreenKey) {
     if (postsCount <= 0) {
       return
@@ -130,6 +130,10 @@ class SnackbarManager(
         )
       )
     )
+  }
+
+  fun popCatalogOrThreadPostsLoadingSnackbar() {
+    popSnackbar(SnackbarId.CatalogOrThreadPostsLoading)
   }
 
   private fun standardAliveUntil() = SystemClock.elapsedRealtime() + STANDARD_DELAY
