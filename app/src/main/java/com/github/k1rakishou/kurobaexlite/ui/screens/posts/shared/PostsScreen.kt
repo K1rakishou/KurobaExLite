@@ -18,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenL
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
 
 abstract class PostsScreen(
   componentActivity: ComponentActivity,

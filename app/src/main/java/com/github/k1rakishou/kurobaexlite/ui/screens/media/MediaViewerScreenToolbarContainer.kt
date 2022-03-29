@@ -14,9 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
-import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -24,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
 @Composable
 fun MediaViewerScreenToolbarContainer(
+  toolbarHeight: Dp,
   currentToolbarIndex: Int,
   targetToolbarIndex: Int,
   offset: Float,
@@ -35,7 +35,6 @@ fun MediaViewerScreenToolbarContainer(
   val insets = LocalWindowInsets.current
   val chanTheme = LocalChanTheme.current
 
-  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
   val transitionIsProgress = currentToolbarIndex != targetToolbarIndex

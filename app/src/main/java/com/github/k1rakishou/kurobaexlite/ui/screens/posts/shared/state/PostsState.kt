@@ -1,9 +1,10 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared
+package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state
 
 import android.os.SystemClock
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -11,8 +12,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 class PostsState(
-  val chanDescriptor: ChanDescriptor,
-  posts: List<PostCellData>? = null
+  val chanDescriptor: ChanDescriptor
 ) {
 
   @Volatile private var _lastUpdatedOn: Long = 0
@@ -25,26 +25,28 @@ class PostsState(
   val posts: List<State<PostCellData>>
     get() = postsMutable
 
-  init {
-    if (posts != null) {
-      insertOrUpdateMany(posts)
-    }
-  }
+  val postListAnimationInfoMap = mutableStateMapOf<PostDescriptor, PreviousPostDataInfo>()
 
   fun insertOrUpdate(postCellData: PostCellData) {
-    val index = postIndexes[postCellData.postDescriptor]
-    if (index == null) {
-      val nextPostIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
-      postIndexes[postCellData.postDescriptor] = nextPostIndex
+    Snapshot.withMutableSnapshot {
+      val index = postIndexes[postCellData.postDescriptor]
+      if (index == null) {
+        val nextPostIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
+        postIndexes[postCellData.postDescriptor] = nextPostIndex
 
-      // We assume that posts can only be inserted at the end of the post list
-      postsMutable += mutableStateOf(postCellData)
+        // We assume that posts can only be inserted at the end of the post list
+        postsMutable += mutableStateOf(postCellData)
+      } else {
+        _lastUpdatedOn = SystemClock.elapsedRealtime()
+        postsMutable[index].value = postCellData
+      }
 
-      return
+      check(postIndexes.size == postsMutable.size) {
+        "postIndexes.size (${postIndexes.size}) != postsMutable.size (${postsMutable.size})"
+      }
+
+      updatePostListAnimationInfoMap(listOf(postCellData))
     }
-
-    _lastUpdatedOn = SystemClock.elapsedRealtime()
-    postsMutable[index].value = postCellData
   }
 
   fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
@@ -53,23 +55,28 @@ class PostsState(
     }
 
     Snapshot.withMutableSnapshot {
-      var initialIndex = postIndexes.values.maxOrNull() ?: 0
+      var initialIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
 
       for (postCellData in postCellDataCollection) {
-        val index = postIndexes[postCellData.postDescriptor]
+        val postDescriptor = postCellData.postDescriptor
+
+        val index = postIndexes[postDescriptor]
         if (index == null) {
-          postIndexes[postCellData.postDescriptor] = initialIndex++
+          postIndexes[postDescriptor] = initialIndex++
 
           // We assume that posts can only be inserted at the end of the post list
           postsMutable += mutableStateOf(postCellData)
-
-          continue
+        } else {
+          postsMutable[index].value = postCellData
         }
+      }
 
-        postsMutable[index].value = postCellData
+      check(postIndexes.size == postsMutable.size) {
+        "postIndexes.size (${postIndexes.size}) != postsMutable.size (${postsMutable.size})"
       }
 
       _lastUpdatedOn = SystemClock.elapsedRealtime()
+      updatePostListAnimationInfoMap(postCellDataCollection)
     }
   }
 
@@ -122,6 +129,21 @@ class PostsState(
 //    postsMutable.clear()
 //    postsMutable.addAll(filteredThreads.map { mutableStateOf(it) })
 //  }
+
+  private fun updatePostListAnimationInfoMap(postDataList: Collection<PostCellData>) {
+    // Pre-insert first batch of posts into the previousPostDataInfoMap so that we don't play
+    // animations for recently opened catalogs/threads. We are doing this right inside of the
+    // composition because otherwise there is some kind of a delay before LaunchedEffect is executed
+    // so the first posts are always animated.
+
+    val now = SystemClock.elapsedRealtime()
+
+    postDataList.forEach { postDataState ->
+      postDataState.postServerDataHashForListAnimations?.let { hash ->
+        postListAnimationInfoMap[postDataState.postDescriptor] = PreviousPostDataInfo(hash, now)
+      }
+    }
+  }
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

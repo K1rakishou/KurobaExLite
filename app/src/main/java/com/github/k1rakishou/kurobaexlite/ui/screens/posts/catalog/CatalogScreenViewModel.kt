@@ -7,15 +7,16 @@ import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -143,7 +144,7 @@ class CatalogScreenViewModel(
     }
 
     val catalogSortSetting = appSettings.catalogSort.read()
-    val sortedThreads = CatalogThreadSorter.sortCatalogThreads(
+    val sortedThreads = CatalogThreadSorter.sortCatalogPostData(
       catalogThreads = postsLoadResult.combined(),
       catalogSortSetting = catalogSortSetting
     )
@@ -165,6 +166,12 @@ class CatalogScreenViewModel(
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,
       postDataList = sortedThreads,
+      sorter = { postCellData ->
+        CatalogThreadSorter.sortCatalogPostCellData(
+          catalogThreads = postCellData,
+          catalogSortSetting = catalogSortSetting
+        )
+      },
       onStartParsingPosts = {
         snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
           postsCount = sortedThreads.size,

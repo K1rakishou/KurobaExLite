@@ -40,11 +40,11 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListContent
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreenFloatingActionButton
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListContent
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListOptions
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject

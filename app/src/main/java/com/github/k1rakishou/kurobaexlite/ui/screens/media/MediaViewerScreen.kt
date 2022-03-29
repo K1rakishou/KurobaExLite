@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.media
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
@@ -80,6 +83,7 @@ class MediaViewerScreen(
   override fun CardContent() {
     val insets = LocalWindowInsets.current
     val mediaViewerScreenState = remember { MediaViewerScreenState() }
+    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
     LaunchedEffect(
       key1 = mediaViewerParams,
@@ -106,6 +110,7 @@ class MediaViewerScreen(
       var offset by remember { mutableStateOf(0f) }
 
       MediaViewerPager(
+        toolbarHeight = toolbarHeight,
         mediaViewerScreenState = mediaViewerScreenState,
         onPageChanged = { currentPage, targetPage, pageOffset ->
           currentImageIndex = currentPage
@@ -115,6 +120,7 @@ class MediaViewerScreen(
       )
 
       MediaViewerToolbar(
+        toolbarHeight = toolbarHeight,
         mediaViewerScreenState = mediaViewerScreenState,
         currentImageIndex = currentImageIndex,
         targetImageIndex = targetImageIndex,
@@ -125,6 +131,7 @@ class MediaViewerScreen(
 
   @Composable
   private fun MediaViewerToolbar(
+    toolbarHeight: Dp,
     mediaViewerScreenState: MediaViewerScreenState,
     currentImageIndex: Int,
     targetImageIndex: Int,
@@ -160,6 +167,7 @@ class MediaViewerScreen(
       }
 
       MediaViewerScreenToolbarContainer(
+        toolbarHeight = toolbarHeight,
         currentToolbarIndex = currentImageIndex,
         targetToolbarIndex = targetImageIndex,
         offset = offset,
@@ -270,6 +278,7 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun MediaViewerPager(
+    toolbarHeight: Dp,
     mediaViewerScreenState: MediaViewerScreenState,
     onPageChanged: (Int, Int, Float) -> Unit
   ) {
@@ -289,7 +298,12 @@ class MediaViewerScreen(
     }
 
     if (images.isEmpty()) {
-      InsetsAwareBox(modifier = Modifier.fillMaxSize()) {
+      val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
+
+      InsetsAwareBox(
+        modifier = Modifier.fillMaxSize(),
+        additionalPaddings = additionalPaddings
+      ) {
         KurobaComposeText(text = "No images to show")
       }
 
@@ -345,7 +359,10 @@ class MediaViewerScreen(
           )
         }
         is ImageLoadState.Error -> {
-          DisplayImageLoadError(postImageDataLoadState)
+          DisplayImageLoadError(
+            toolbarHeight = toolbarHeight,
+            postImageDataLoadState = postImageDataLoadState
+          )
         }
       }
     }
@@ -357,7 +374,7 @@ class MediaViewerScreen(
     postImageDataLoadState: ImageLoadState.Loading
   ) {
     LaunchedEffect(
-      key1 = postImageDataLoadState.postImageData,
+      key1 = postImageDataLoadState.postImageData.fullImageAsUrl,
       block = {
         val postImageData = postImageDataLoadState.postImageData
         val fullImageUrl = postImageData.fullImageAsUrl
@@ -384,8 +401,16 @@ class MediaViewerScreen(
   }
 
   @Composable
-  private fun DisplayImageLoadError(postImageDataLoadState: ImageLoadState.Error) {
-    InsetsAwareBox(modifier = Modifier.fillMaxSize()) {
+  private fun DisplayImageLoadError(
+    toolbarHeight: Dp,
+    postImageDataLoadState: ImageLoadState.Error
+  ) {
+    val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
+
+    InsetsAwareBox(
+      modifier = Modifier.fillMaxSize(),
+      additionalPaddings = additionalPaddings
+    ) {
       // TODO(KurobaEx):
       KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName()}")
     }
@@ -399,6 +424,13 @@ class MediaViewerScreen(
     onFullImageFailedToLoad: () -> Unit
   ) {
     val eventListener = object : ComposeSubsamplingScaleImageEventListener() {
+      override fun onFailedToDecodeImageInfo(error: Throwable) {
+        val url = postImageDataLoadState.fullImageUrlAsString
+        logcat { "onFailedToDecodeImageInfo() url=$url, error=${error.errorMessageOrClassName()}" }
+
+        onFullImageFailedToLoad()
+      }
+
       override fun onFailedToLoadFullImage(error: Throwable) {
         val url = postImageDataLoadState.fullImageUrlAsString
         logcat { "onFailedToLoadFullImage() url=$url, error=${error.errorMessageOrClassName()}" }

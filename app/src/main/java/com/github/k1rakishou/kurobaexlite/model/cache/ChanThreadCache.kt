@@ -73,8 +73,8 @@ class ChanThreadCache(
 
       logcat(tag = TAG) {
         "insert() insertedPosts=${insertedPosts.size}, " +
-          "updatedPosts=${updatedPosts.size} " +
-          "out of ${postCellDataCollection.size}"
+          "updatedPosts=${updatedPosts.size}, " +
+          "total=${postCellDataCollection.size}"
       }
 
       return@withLockNonCancellable PostsLoadResult(
@@ -114,7 +114,7 @@ class ChanThreadCache(
   }
 
   companion object {
-    private const val TAG = "ChanThread"
+    private const val TAG = "ChanThreadCache"
 
     private val POSTS_SUB_NO_COMPARATOR = compareBy<IPostData> { it.postSubNo }
     private val POSTS_COMPARATOR = compareBy<IPostData> { it.postNo }.then(POSTS_SUB_NO_COMPARATOR)

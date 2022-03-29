@@ -1,6 +1,8 @@
-package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared
+package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state
 
+import androidx.compose.runtime.Stable
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -64,4 +66,12 @@ class PostScreenState {
 
     return null
   }
+
 }
+
+@Stable
+data class PreviousPostDataInfo(
+  val hash: Murmur3Hash,
+  val time: Long,
+  val alreadyAnimatedInsertion: Boolean = false
+)

@@ -39,8 +39,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListContent
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListOptions
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListContent
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel

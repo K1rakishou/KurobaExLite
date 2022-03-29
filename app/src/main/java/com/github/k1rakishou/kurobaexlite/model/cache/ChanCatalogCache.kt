@@ -61,6 +61,6 @@ class ChanCatalogCache(
   }
 
   companion object {
-    private const val TAG = "ChanCatalog"
+    private const val TAG = "ChanCatalogCache"
   }
 }

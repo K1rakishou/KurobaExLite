@@ -8,9 +8,9 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -99,12 +99,9 @@ class PopupRepliesScreenViewModel(
       return false
     }
 
-    val threadPostsState = PostsState(
-      chanDescriptor = postDescriptor.threadDescriptor,
-      posts = posts
-    )
+    postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(postDescriptor.threadDescriptor))
+    postScreenState.insertOrUpdateMany(posts)
 
-    postScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
     return true
   }
 
@@ -120,12 +117,9 @@ class PopupRepliesScreenViewModel(
       return false
     }
 
-    val threadPostsState = PostsState(
-      chanDescriptor = postDescriptor.threadDescriptor,
-      posts = threadPosts
-    )
+    postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(postDescriptor.threadDescriptor))
+    postScreenState.insertOrUpdateMany(threadPosts)
 
-    postScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
     return true
   }
 

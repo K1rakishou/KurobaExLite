@@ -33,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -256,8 +257,8 @@ abstract class PostScreenViewModel(
         .toSet()
 
       logcat {
-        "Parsing posts ${indexesOfPostsToParse.size} out of ${postDataList.size}, " +
-          "indexes=${indexesOfPostsToParse.joinToString()}"
+        "Parsing posts ${indexesOfPostsToParse.size}/${postDataList.size}, " +
+          "indexes=[${indexesOfPostsToParse.joinToString()}], startIndex=$startIndex"
       }
 
       val resultList = mutableListWithCap<PostCellData>(postDataList.size)
@@ -319,6 +320,7 @@ abstract class PostScreenViewModel(
     chanDescriptor: ChanDescriptor,
     postDataList: List<IPostData>,
     parsePostsOptions: ParsePostsOptions = ParsePostsOptions(),
+    sorter: suspend (Collection<PostCellData>) -> List<PostCellData>,
     onStartParsingPosts: suspend () -> Unit,
     onPostsParsed: suspend (List<PostCellData>) -> Unit
   ) {
@@ -399,7 +401,7 @@ abstract class PostScreenViewModel(
 
           val repliesToPostDataSet = hashSetOf<IPostData>()
           repliesToPostDataSet += chanCache.getManyForDescriptor(chanDescriptor, repliesToPostDescriptorSet)
-          repliesToPostDataSet += postReplyChainManager.getManyRepliesTo(postDescriptors)
+          repliesToPostDataSet += repliesToPostDescriptorSet
             .mapNotNull { postDescriptor -> postDataMap[postDescriptor] }
 
           val repliesToChunkSize = (repliesToPostDataSet.size / chunksCount).coerceAtLeast(chunksCount)
@@ -407,7 +409,7 @@ abstract class PostScreenViewModel(
           if (repliesToPostDataSet.isNotEmpty()) {
             logcat(tag = TAG) {
               "parseRemainingPostsAsyncReplies() starting parsing ${repliesToPostDataSet.size} posts... " +
-                "(chunksCount=$chunksCount, chunkSize=$repliesToChunkSize)"
+                "(repliesToPostDescriptorSet=${repliesToPostDescriptorSet.size}, chunksCount=$chunksCount, chunkSize=$repliesToChunkSize)"
             }
 
             supervisorScope {
@@ -450,12 +452,11 @@ abstract class PostScreenViewModel(
           }
         }
 
-        val postCellDataList = postDataList.mapNotNull { postData ->
-          resultMap[postData.postDescriptor]
-        }
+        val postCellDataListSorted = sorter(resultMap.values)
+        logcat(tag = TAG) { "parseRemainingPostsAsync() resultMap=${resultMap.size}, postDataList=${postDataList.size}" }
 
         showPostsLoadingSnackbarJob.cancel()
-        withContext(NonCancellable) { onPostsParsed(postCellDataList) }
+        withContext(NonCancellable) { onPostsParsed(postCellDataListSorted) }
 
         val deltaTime = SystemClock.elapsedRealtime() - startTime
         logcat(tag = TAG) { "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }

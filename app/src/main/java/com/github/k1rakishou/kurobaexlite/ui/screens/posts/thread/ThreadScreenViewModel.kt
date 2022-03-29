@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
@@ -19,9 +20,9 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -42,7 +43,10 @@ class ThreadScreenViewModel(
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     executeUpdate = { refresh() },
-    canUpdate = { threadScreenState.searchQueryFlow.value == null }
+    canUpdate = {
+      return@ThreadAutoUpdater threadScreenState.postsAsyncDataState.value is AsyncData.Data &&
+        threadScreenState.searchQueryFlow.value == null
+    }
   )
 
   private val threadScreenState = PostScreenState()
@@ -98,7 +102,7 @@ class ThreadScreenViewModel(
       val threadDescriptor = chanThreadManager.currentlyOpenedThread
       val prevCellDataState = threadScreenState.threadCellDataState.value
 
-      if (threadPostsAsync !is AsyncData.Data) {
+      val threadPostsState = if (threadPostsAsync !is AsyncData.Data) {
         if (threadDescriptor == null) {
           return@launch
         }
@@ -110,6 +114,8 @@ class ThreadScreenViewModel(
         )
 
         return@launch
+      } else {
+        threadPostsAsync.data
       }
 
       val startTime = SystemClock.elapsedRealtime()
@@ -142,6 +148,7 @@ class ThreadScreenViewModel(
           forced = true,
           parseRepliesTo = true
         ),
+        sorter = { postCellData -> ThreadPostSorter.sortThreadPostCellData(postCellData) },
         onStartParsingPosts = {
           snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
             postsCount = postLoadResult.newOrUpdatedCount,
@@ -149,6 +156,12 @@ class ThreadScreenViewModel(
           )
         },
         onPostsParsed = { postDataList ->
+          logcat {
+            "refresh($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+              "threadPosts=${postDataList.size}"
+          }
+
+          threadPostsState.insertOrUpdateMany(postDataList)
           snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
 
           onPostsParsed(
@@ -170,11 +183,6 @@ class ThreadScreenViewModel(
           newPostsCount = postLoadResult.newPostsCount,
           screenKey = screenKey
         )
-      }
-
-      logcat {
-        "refresh($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-          "newPostsCount=${postLoadResult.newPostsCount}"
       }
     }
   }
@@ -250,129 +258,83 @@ class ThreadScreenViewModel(
       return
     }
 
-//    if (cachedThreadPostsState != null) {
+    val cachedThreadPostsState = (threadScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data
+    val newAndUpdatedPosts = postLoadResult.combined()
+
+    val threadPostsState = if (cachedThreadPostsState != null && cachedThreadPostsState.chanDescriptor == chanDescriptor) {
       logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${postLoadResult.info()}" }
 
       val initiallyParsedPosts = parseInitialBatchOfPosts(
         startPostDescriptor = threadScreenState.lastViewedPostDescriptorForScrollRestoration.value,
         chanDescriptor = threadDescriptor,
-        postDataList = postLoadResult.combined(),
+        postDataList = newAndUpdatedPosts,
         isCatalogMode = false
       )
 
-      val catalogThreadsState = PostsState(threadDescriptor)
-      catalogThreadsState.insertOrUpdateMany(initiallyParsedPosts)
-
-      threadScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
-      postScreenState.threadCellDataState.value = formatThreadCellData(
-        postLoadResult = postLoadResult,
-        prevCellDataState = prevCellDataState,
-        lastLoadError = null
-      )
-
-      postListBuilt?.await()
-      restoreScrollPosition(threadDescriptor)
-
-      parseRemainingPostsAsync(
-        chanDescriptor = threadDescriptor,
-        postDataList = postLoadResult.combined(),
-        parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
-        onStartParsingPosts = {
-          snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
-            postsCount = postLoadResult.newPostsCount,
-            screenKey = screenKey
-          )
-        },
-        onPostsParsed = { postDataList ->
-          logcat {
-            "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-              "threadPosts=${initiallyParsedPosts.size}"
-          }
-
-          try {
-            catalogThreadsState.insertOrUpdateMany(postDataList)
-
-            onPostsParsed(
-              threadDescriptor = threadDescriptor,
-              postLoadResult = postLoadResult,
-              isInitialThreadLoad = true
-            )
-
-            onThreadLoadingEnd(threadDescriptor)
-            _postsFullyParsedOnceFlow.emit(true)
-          } finally {
-            withContext(NonCancellable + Dispatchers.Main) {
-              onReloadFinished?.invoke()
-              snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
-            }
-          }
-        }
-      )
-    // TODO(KurobaEx):
-    /*} else {
+      cachedThreadPostsState.insertOrUpdateMany(initiallyParsedPosts)
+      cachedThreadPostsState
+    } else {
       logcat(tag = "loadThreadInternal") { "No cached posts, using posts from the server." }
 
-      parseInitialBatchOfPosts(
+      val initiallyParsedPosts = parseInitialBatchOfPosts(
         startPostDescriptor = threadScreenState.lastViewedPostDescriptorForScrollRestoration.value,
         chanDescriptor = threadDescriptor,
-        postCellDataList = threadData.threadPosts,
+        postDataList = newAndUpdatedPosts,
         isCatalogMode = false
       )
 
-      val threadPostsState = ThreadPostsState(
-        threadDescriptor = threadDescriptor,
-        threadPosts = threadData.threadPosts
-      )
-
-      val mergeResult = PostsMergeResult(
-        newPostsCount = threadData.threadPosts.size,
-        newOrUpdatedPostsToReparse = emptyList()
-      )
+      val threadPostsState = PostsState(threadDescriptor)
+      threadPostsState.insertOrUpdateMany(initiallyParsedPosts)
 
       threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
-      postScreenState.threadCellDataState.value = formatThreadCellData(
-        threadData = threadData,
-        prevCellDataState = prevCellDataState,
-        lastLoadError = null
-      )
+      threadPostsState
+    }
 
-      postListBuilt?.await()
-      restoreScrollPosition(threadDescriptor)
+    postScreenState.threadCellDataState.value = formatThreadCellData(
+      postLoadResult = postLoadResult,
+      prevCellDataState = prevCellDataState,
+      lastLoadError = null
+    )
 
-      parseRemainingPostsAsync(
-        chanDescriptor = threadDescriptor,
-        postDataList = threadData.threadPosts,
-        parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
-        onStartParsingPosts = {
-          snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
-            postsCount = threadData.threadPosts.size,
-            screenKey = screenKey
+    postListBuilt?.await()
+    restoreScrollPosition(threadDescriptor)
+
+    parseRemainingPostsAsync(
+      chanDescriptor = threadDescriptor,
+      postDataList =  newAndUpdatedPosts,
+      parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
+      sorter = { postCellData -> ThreadPostSorter.sortThreadPostCellData(postCellData) },
+      onStartParsingPosts = {
+        snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
+          postsCount = postLoadResult.newPostsCount,
+          screenKey = screenKey
+        )
+      },
+      onPostsParsed = { postDataList ->
+        logcat {
+          "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+            "newAndUpdatedPosts=${newAndUpdatedPosts.size}, postDataList=${postDataList.size}"
+        }
+
+        try {
+          threadPostsState.insertOrUpdateMany(postDataList)
+
+          onPostsParsed(
+            threadDescriptor = threadDescriptor,
+            postLoadResult = postLoadResult,
+            isInitialThreadLoad = true
           )
-        },
-        onPostsParsed = { postDataList ->
-          logcat {
-            "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-              "threadPosts=${threadData.threadPosts.size}"
-          }
 
-          try {
-            onPostsParsed(
-              threadDescriptor = threadDescriptor,
-              mergeResult = mergeResult,
-              isInitialThreadLoad = true
-            )
-
-            onThreadLoadingEnd(threadDescriptor)
-            _postsFullyParsedOnceFlow.emit(true)
-          } finally {
-            withContext(NonCancellable + Dispatchers.Main) {
-              onReloadFinished?.invoke()
-              snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
-            }
+          onThreadLoadingEnd(threadDescriptor)
+          _postsFullyParsedOnceFlow.emit(true)
+        } finally {
+          withContext(NonCancellable + Dispatchers.Main) {
+            onReloadFinished?.invoke()
+            snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
           }
         }
-      )
-    }*/
+      }
+    )
   }
 
   private suspend fun onPostsParsed(

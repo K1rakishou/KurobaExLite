@@ -38,10 +38,10 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListContent
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreenFloatingActionButton
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListContent
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.sort.SortCatalogThreadsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel

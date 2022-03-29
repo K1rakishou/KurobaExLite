@@ -115,9 +115,14 @@ class BoardSelectionScreen(
     val siteKey = catalogDescriptor?.siteKey
       ?: Chan4.SITE_KEY
 
-    val loadBoardsForSiteEvent by boardSelectionScreenViewModel
-      .getOrLoadBoardsForSite(siteKey)
-      .collectAsState(initial = AsyncData.Empty)
+    val loadBoardsForSiteEvent by produceState<AsyncData<List<ChanBoardUiData>>>(
+      initialValue = AsyncData.Empty,
+      producer = {
+        boardSelectionScreenViewModel
+          .getOrLoadBoardsForSite(siteKey)
+          .collect { boardsListAsync -> value = boardsListAsync }
+      }
+    )
 
     val filteredBoardsAsyncData by produceState(
       initialValue = loadBoardsForSiteEvent,
