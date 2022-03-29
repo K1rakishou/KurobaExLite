@@ -93,7 +93,7 @@ class ThreadScreenViewModel(
     )
   }
 
-  override fun refresh() {
+  override fun refresh(onRefreshFinished: (() -> Unit)?) {
     loadThreadJob?.cancel()
     loadThreadJob = null
 
@@ -104,6 +104,7 @@ class ThreadScreenViewModel(
 
       val threadPostsState = if (threadPostsAsync !is AsyncData.Data) {
         if (threadDescriptor == null) {
+          onRefreshFinished?.invoke()
           return@launch
         }
 
@@ -113,6 +114,7 @@ class ThreadScreenViewModel(
           onReloadFinished = null
         )
 
+        onRefreshFinished?.invoke()
         return@launch
       } else {
         threadPostsAsync.data
@@ -133,11 +135,13 @@ class ThreadScreenViewModel(
           lastLoadError = error
         )
 
+        onRefreshFinished?.invoke()
         return@launch
       }
 
       val postLoadResult = postLoadResultMaybe.unwrap()
       if (postLoadResult == null || threadDescriptor == null) {
+        onRefreshFinished?.invoke()
         return@launch
       }
 
@@ -161,14 +165,18 @@ class ThreadScreenViewModel(
               "threadPosts=${postDataList.size}"
           }
 
-          threadPostsState.insertOrUpdateMany(postDataList)
-          snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
+          try {
+            threadPostsState.insertOrUpdateMany(postDataList)
+            snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
 
-          onPostsParsed(
-            threadDescriptor = threadDescriptor,
-            postLoadResult = postLoadResult,
-            isInitialThreadLoad = false
-          )
+            onPostsParsed(
+              threadDescriptor = threadDescriptor,
+              postLoadResult = postLoadResult,
+              isInitialThreadLoad = false
+            )
+          } finally {
+            withContext(Dispatchers.Main) { onRefreshFinished?.invoke() }
+          }
         }
       )
 
@@ -226,6 +234,10 @@ class ThreadScreenViewModel(
       threadScreenState.lastViewedPostDescriptorForScrollRestoration.value = lastViewedPostDescriptor
     }
 
+    if (loadOptions.deleteCached && threadDescriptor != null) {
+      chanThreadManager.delete(threadDescriptor)
+    }
+
     val postLoadResultMaybe = chanThreadManager.loadThread(threadDescriptor)
     if (postLoadResultMaybe.isFailure) {
       val error = postLoadResultMaybe.exceptionOrThrow()
@@ -249,11 +261,18 @@ class ThreadScreenViewModel(
     }
 
     if (postLoadResult.isEmpty()) {
-      val error = ThreadDisplayException("Thread /${threadDescriptor}/ has no posts")
+      val postsAsyncData = threadScreenState.postsAsyncDataState.value
 
-      threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
-      _postsFullyParsedOnceFlow.emit(true)
-      onReloadFinished?.invoke()
+      if (loadOptions.showLoadingIndicator || postsAsyncData !is AsyncData.Data) {
+        val error = ThreadDisplayException("Thread /${threadDescriptor}/ has no posts")
+
+        threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+        _postsFullyParsedOnceFlow.emit(true)
+        onReloadFinished?.invoke()
+      } else {
+        _postsFullyParsedOnceFlow.emit(true)
+        onReloadFinished?.invoke()
+      }
 
       return
     }

@@ -108,7 +108,7 @@ abstract class PostScreenViewModel(
     onReloadFinished: (() -> Unit)? = null
   )
   
-  abstract fun refresh()
+  abstract fun refresh(onRefreshFinished: (() -> Unit)? = null)
 
   suspend fun onThreadLoadingStart(threadDescriptor: ThreadDescriptor?, loadOptions: LoadOptions) {
     if (loadOptions.showLoadingIndicator) {
@@ -582,6 +582,7 @@ abstract class PostScreenViewModel(
   data class LoadOptions(
     val showLoadingIndicator: Boolean = true,
     val forced: Boolean = false,
+    val deleteCached: Boolean = false,
     val loadFromNetwork: Boolean = true
   )
 

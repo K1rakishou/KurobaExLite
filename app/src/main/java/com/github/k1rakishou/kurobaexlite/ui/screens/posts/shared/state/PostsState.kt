@@ -7,13 +7,17 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.toHashSetByKey
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import org.koin.java.KoinJavaComponent.inject
 
 class PostsState(
   val chanDescriptor: ChanDescriptor
 ) {
+  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
 
   @Volatile private var _lastUpdatedOn: Long = 0
   val lastUpdatedOn: Long
@@ -45,6 +49,15 @@ class PostsState(
         "postIndexes.size (${postIndexes.size}) != postsMutable.size (${postsMutable.size})"
       }
 
+      if (androidHelpers.isDevFlavor()) {
+        val postMutableDeduplicated = postsMutable.toHashSetByKey { it.value.postDescriptor }
+        check(postMutableDeduplicated.size == postsMutable.size) {
+          "Duplicates found in postsMutable " +
+            "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
+            "postsMutable.size=${postsMutable.size})"
+        }
+      }
+
       updatePostListAnimationInfoMap(listOf(postCellData))
     }
   }
@@ -73,6 +86,15 @@ class PostsState(
 
       check(postIndexes.size == postsMutable.size) {
         "postIndexes.size (${postIndexes.size}) != postsMutable.size (${postsMutable.size})"
+      }
+
+      if (androidHelpers.isDevFlavor()) {
+        val postMutableDeduplicated = postsMutable.toHashSetByKey { it.value.postDescriptor }
+        check(postMutableDeduplicated.size == postsMutable.size) {
+          "Duplicates found in postsMutable " +
+            "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
+            "postsMutable.size=${postsMutable.size})"
+        }
       }
 
       _lastUpdatedOn = SystemClock.elapsedRealtime()

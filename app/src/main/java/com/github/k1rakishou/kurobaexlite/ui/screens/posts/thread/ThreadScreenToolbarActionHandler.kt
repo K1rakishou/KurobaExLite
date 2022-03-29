@@ -4,6 +4,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
 import logcat.logcat
 
 class ThreadScreenToolbarActionHandler(
@@ -19,7 +20,9 @@ class ThreadScreenToolbarActionHandler(
     logcat { "thread processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
     when (menuItem.menuItemKey) {
-      ACTION_RELOAD -> threadScreenViewModelProvider().reload()
+      ACTION_RELOAD -> {
+        threadScreenViewModelProvider().reload(PostScreenViewModel.LoadOptions(deleteCached = true))
+      }
       ACTION_COPY_THREAD_URL -> {
         val threadDescriptor = threadScreenViewModelProvider().threadDescriptor
           ?: return

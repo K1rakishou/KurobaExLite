@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.cache
 
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
+import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.PostDiffer
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
@@ -38,6 +39,8 @@ class ChanThreadCache(
   }
 
   suspend fun insert(postCellDataCollection: Collection<IPostData>): PostsLoadResult {
+    BackgroundUtils.ensureBackgroundThread()
+
     return mutex.withLockNonCancellable {
       val insertedPosts = mutableListOf<IPostData>()
       val updatedPosts = mutableListOf<IPostData>()

@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.cache
 
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
+import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
@@ -36,6 +37,8 @@ class ChanCatalogCache(
   }
 
   suspend fun insert(postCellDataCollection: Collection<IPostData>) {
+    BackgroundUtils.ensureBackgroundThread()
+
     mutex.withLockNonCancellable {
       for (postData in postCellDataCollection) {
         check(postData is OriginalPostData) { "postData is not OriginalPostData" }

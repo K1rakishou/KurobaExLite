@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
+import com.github.k1rakishou.kurobaexlite.BuildConfig
 
 class AndroidHelpers(
   private val application: Application
@@ -49,6 +50,23 @@ class AndroidHelpers(
 
   fun setClipboardContent(label: String, content: String) {
     clipboardManager.setPrimaryClip(ClipData.newPlainText(label, content))
+  }
+
+  fun getFlavorType(): FlavorType {
+    return when (BuildConfig.FLAVOR_TYPE) {
+      0 -> FlavorType.Stable
+      1 -> FlavorType.Beta
+      2 -> FlavorType.Dev
+      else -> throw RuntimeException("Unknown flavor type " + BuildConfig.FLAVOR_TYPE)
+    }
+  }
+
+  fun isDevFlavor(): Boolean = getFlavorType() == FlavorType.Dev
+
+  enum class FlavorType {
+    Stable,
+    Beta,
+    Dev
   }
 
 }

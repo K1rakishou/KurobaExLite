@@ -27,11 +27,11 @@ class PopupRepliesScreenViewModel(
   override val postScreenState: PostScreenState = threadScreenState
 
   override fun reload(loadOptions: LoadOptions, onReloadFinished: (() -> Unit)?) {
-    // no-op
+    error("Reloading reply popups is not supported")
   }
 
-  override fun refresh() {
-    // no-op
+  override fun refresh(onRefreshFinished: (() -> Unit)?) {
+    error("Refreshing reply popups is not supported")
   }
 
   suspend fun loadRepliesForModeInitial(

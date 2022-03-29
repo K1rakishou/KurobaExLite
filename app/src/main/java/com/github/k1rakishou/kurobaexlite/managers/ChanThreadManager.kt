@@ -4,6 +4,7 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,10 @@ class ChanThreadManager(
     get() = _currentlyOpenedThreadFlow.asStateFlow()
   val currentlyOpenedThread: ThreadDescriptor?
     get() = _currentlyOpenedThreadFlow.value
+
+  suspend fun delete(chanDescriptor: ChanDescriptor) {
+    chanCache.delete(chanDescriptor)
+  }
 
   suspend fun loadCatalog(catalogDescriptor: CatalogDescriptor?): Result<PostsLoadResult?> {
     _currentlyOpenedCatalogFlow.value = catalogDescriptor

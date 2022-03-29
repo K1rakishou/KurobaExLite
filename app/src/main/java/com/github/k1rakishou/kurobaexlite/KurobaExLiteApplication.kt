@@ -114,7 +114,7 @@ class KurobaExLiteApplication : Application() {
           postReplyChainManager = get()
         )
       }
-      single { ChanCache() }
+      single { ChanCache(androidHelpers = get()) }
       single { SiteManager() }
       single { ChanThreadManager(siteManager = get(), chanCache = get()) }
       single { PostReplyChainManager() }

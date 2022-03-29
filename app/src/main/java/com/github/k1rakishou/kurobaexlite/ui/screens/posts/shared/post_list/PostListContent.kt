@@ -419,7 +419,7 @@ private fun LazyItemScope.PostListErrorContent(
       .padding(8.dp),
     errorMessage = errorMessage,
     buttonText = stringResource(R.string.reload),
-    onButtonClicked = { postsScreenViewModel.reload() }
+    onButtonClicked = { postsScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true)) }
   )
 }
 

@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import logcat.logcat
@@ -31,7 +32,9 @@ class CatalogScreenToolbarActionHandler(
     logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
     when (menuItem.menuItemKey) {
-      ACTION_RELOAD -> catalogScreenViewModel.reload()
+      ACTION_RELOAD -> {
+        catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
+      }
       ACTION_LAYOUT_MODE -> handleLayoutMode()
       ACTION_BOOKMARKS_SCREEN_POSITION -> appSettings.bookmarksScreenOnLeftSide.toggle()
       ACTION_OPEN_THREAD_BY_IDENTIFIER -> handleOpenThreadByIdentifier()

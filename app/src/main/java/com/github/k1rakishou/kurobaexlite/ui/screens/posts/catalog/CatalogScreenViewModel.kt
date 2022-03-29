@@ -72,7 +72,7 @@ class CatalogScreenViewModel(
     )
   }
 
-  override fun refresh() {
+  override fun refresh(onRefreshFinished: (() -> Unit)?) {
     error("Refreshing catalogs is not supported")
   }
 
@@ -107,6 +107,10 @@ class CatalogScreenViewModel(
     onCatalogLoadingStart(catalogDescriptor, loadOptions)
 
     val postsLoadResultMaybe = if (loadOptions.loadFromNetwork || catalogDescriptor == null) {
+      if (loadOptions.deleteCached && catalogDescriptor != null) {
+        chanThreadManager.delete(catalogDescriptor)
+      }
+
       chanThreadManager.loadCatalog(catalogDescriptor)
     } else {
       val catalogThreads = chanCache.getCatalogThreads(catalogDescriptor)

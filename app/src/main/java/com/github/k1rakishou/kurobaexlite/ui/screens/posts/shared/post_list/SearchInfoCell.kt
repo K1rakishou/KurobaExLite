@@ -85,7 +85,5 @@ internal fun BoxScope.SearchInfoCell(
         overflow = TextOverflow.Ellipsis
       )
     }
-
   }
-
 }
