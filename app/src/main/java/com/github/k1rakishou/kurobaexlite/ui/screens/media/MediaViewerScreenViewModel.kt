@@ -1,12 +1,13 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
-import coil.disk.DiskCache
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.abortQuietly
+import com.github.k1rakishou.kurobaexlite.helpers.cache.SuspendDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
 import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
@@ -14,6 +15,11 @@ import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.ProducerScope
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
@@ -25,7 +31,7 @@ import okio.Path
 class MediaViewerScreenViewModel(
   private val chanCache: ChanCache,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
-  private val diskCache: DiskCache
+  private val suspendDiskCache: SuspendDiskCache
 ) : BaseViewModel() {
 
   suspend fun init(mediaViewerParams: MediaViewerParams): InitResult {
@@ -64,45 +70,69 @@ class MediaViewerScreenViewModel(
       }
 
       return@withContext InitResult(
-        images = imagesToShow.map { postImageData -> ImageLoadState.Loading(postImageData) },
+        images = imagesToShow.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) },
         initialPage = initialPage
       )
     }
   }
 
-  suspend fun loadFullImageAndGetFile(postImageData: IPostImage): ImageLoadState {
-    val fullImageUrl = postImageData.fullImageAsUrl
+  suspend fun loadFullImageAndGetFile(
+    postImageData: IPostImage,
+    prevRestartIndex: Int?
+  ): Flow<ImageLoadState> {
+    return callbackFlow {
+      val fullImageUrl = postImageData.fullImageAsUrl
 
-    val loadImageResult = withContext(Dispatchers.IO) {
-      Result.Try { loadFullImageInternal(postImageData) }
-    }
+      val loadImageResult = withContext(Dispatchers.IO) {
+        try {
+          logcat { "loadFullImageInternal(${fullImageUrl}) start" }
+          Result.Try { loadFullImageInternal(postImageData, this@callbackFlow) }
+        } finally {
+          logcat { "loadFullImageInternal(${fullImageUrl}) end" }
+        }
+      }
 
-    if (loadImageResult.isSuccess) {
-      val resultFilePath = loadImageResult.getOrThrow()
-      logcat(tag = TAG) { "LoadFullImage() Successfully loaded \'$fullImageUrl\'" }
+      if (loadImageResult.isSuccess) {
+        val resultFilePath = loadImageResult.getOrThrow()
+        if (resultFilePath == null) {
+          val nextRestartIndex = prevRestartIndex?.plus(1) ?: 1
+          if (nextRestartIndex > MAX_RESTARTS) {
+            val error = ImageLoadException(fullImageUrl, "Max restarts reached")
+            logcatError(tag = TAG) { "loadFullImageAndGetFile() ${error.errorMessageOrClassName()}" }
 
-      return ImageLoadState.Ready(postImageData, resultFilePath.toFile())
-    } else {
-      val error = loadImageResult.exceptionOrNull()!!
-      logcatError(tag = TAG) { "LoadFullImage() Failed to load \'$fullImageUrl\', error=${error.asLog()}" }
+            send(ImageLoadState.Error(postImageData, error))
+          } else {
+            logcat(tag = TAG) { "loadFullImageAndGetFile() Need restart \'$fullImageUrl\'" }
+            send(ImageLoadState.NeedRestart(postImageData, nextRestartIndex))
+          }
+        } else {
+          logcat(tag = TAG) { "loadFullImageAndGetFile() Successfully loaded \'$fullImageUrl\'" }
+          send(ImageLoadState.Ready(postImageData, resultFilePath.toFile()))
+        }
+      } else {
+        val error = loadImageResult.exceptionOrNull()!!
+        logcatError(tag = TAG) { "loadFullImageAndGetFile() Failed to load \'$fullImageUrl\', error=${error.asLog()}" }
 
-      return ImageLoadState.Error(postImageData, error)
+        send(ImageLoadState.Error(postImageData, error))
+      }
+
+      awaitClose()
     }
   }
 
-  private suspend fun loadFullImageInternal(postImageData: IPostImage): Path {
+  private suspend fun loadFullImageInternal(
+    postImageData: IPostImage,
+    producer: ProducerScope<ImageLoadState>
+  ): Path? {
     BackgroundUtils.ensureBackgroundThread()
 
     val fullImageUrl = postImageData.fullImageAsUrl
     val diskCacheKey = fullImageUrl.toString()
 
-    val snapshot = diskCache.get(diskCacheKey)
-    if (snapshot != null) {
-      val path = snapshot.data
-      snapshot.closeQuietly()
-
-      logcat(tag = TAG) { "loadFullImage($fullImageUrl) got image from disk cache ($path)" }
-      return path
+    val cachedPath = suspendDiskCache.withSnapshot(diskCacheKey) { data }
+    if (cachedPath != null) {
+      logcat(tag = TAG) { "loadFullImage($fullImageUrl) got image from disk cache ($cachedPath)" }
+      return cachedPath
     }
 
     val request = Request.Builder()
@@ -118,22 +148,41 @@ class MediaViewerScreenViewModel(
     val responseBody = response.body
       ?: throw EmptyBodyResponseException()
 
-    val editor = diskCache.edit(diskCacheKey)
-      ?: throw ImageLoadException(fullImageUrl, "Failed to edit disk cache")
-
     try {
-      diskCache.fileSystem.write(editor.data) {
-        responseBody.source().readAll(this)
+      return suspendDiskCache.withEditor(diskCacheKey) {
+        runInterruptible {
+          suspendDiskCache.fileSystem.write(this.data) {
+            val progressResponseBody = ProgressResponseBody(
+              responseBody = responseBody,
+              progressListener = { read, total, done ->
+                var progress = read.toFloat() / total.toFloat()
+                if (done) {
+                  progress = 1f
+                }
+
+                producer.trySend(ImageLoadState.Progress(progress, postImageData))
+              }
+            )
+
+            progressResponseBody.use { prb ->
+              prb.source().use { source ->
+                source.readAll(this)
+              }
+            }
+          }
+        }
+
+        val path = this.commitAndGet()?.data
+        if (path == null) {
+          logcatError(tag = TAG) { "loadFullImage(${fullImageUrl} cannot display image right away, need restart" }
+        } else {
+          logcat(tag = TAG) { "loadFullImage($fullImageUrl) got image from network ($path)" }
+        }
+
+        return@withEditor path
       }
-
-      val path = editor.commitAndGet()?.data
-        ?: throw ImageLoadException(fullImageUrl, "Failed to store in disk cache")
-
-      logcat(tag = TAG) { "loadFullImage($fullImageUrl) got image from network ($path)" }
-      return path
-    } catch (e: Exception) {
-      editor.abortQuietly()
-      throw e
+    } finally {
+      responseBody.closeQuietly()
     }
   }
 
@@ -150,6 +199,8 @@ class MediaViewerScreenViewModel(
 
   companion object {
     private const val TAG = "MediaViewerScreenViewModel"
+
+    const val MAX_RESTARTS = 5
   }
 
 }

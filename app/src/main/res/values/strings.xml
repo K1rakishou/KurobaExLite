@@ -102,4 +102,6 @@
     <string name="catalog_sort_order_thread_last_modified_time">Thread last modified time</string>
     <string name="catalog_sort_order_thread_activity">Thread activity</string>
 
+    <string name="media_viewer_failed_to_find_image_in_images">Failed to find previous image in images</string>
+
 </resources>

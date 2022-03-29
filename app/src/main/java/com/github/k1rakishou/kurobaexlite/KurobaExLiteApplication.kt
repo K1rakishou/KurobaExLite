@@ -12,6 +12,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.cache.SuspendDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -167,7 +168,7 @@ class KurobaExLiteApplication : Application() {
         MediaViewerScreenViewModel(
           chanCache = get(),
           proxiedOkHttpClient = get(),
-          diskCache = get()
+          suspendDiskCache = get()
         )
       }
     }
@@ -181,9 +182,11 @@ class KurobaExLiteApplication : Application() {
       val context: Context = get()
       val safeCacheDir = context.cacheDir.apply { mkdirs() }
 
-      return@single DiskCache.Builder()
+      val diskCache = DiskCache.Builder()
         .directory(safeCacheDir.resolve("media_cache"))
         .build()
+
+      return@single SuspendDiskCache(diskCache)
     }
   }
 

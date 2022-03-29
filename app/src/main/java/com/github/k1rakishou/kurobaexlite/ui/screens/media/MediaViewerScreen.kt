@@ -1,6 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
+import android.content.Context
+import android.graphics.Paint
+import android.graphics.Rect
+import android.text.TextPaint
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,12 +27,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
@@ -53,13 +70,17 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import java.util.Locale
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
+
 
 class MediaViewerScreen(
   private val mediaViewerParams: MediaViewerParams,
@@ -341,9 +362,25 @@ class MediaViewerScreen(
       }
 
       when (postImageDataLoadState) {
-        is ImageLoadState.Loading -> {
-          LoadFullImage(mediaViewerScreenState, postImageDataLoadState)
+        is ImageLoadState.PreparingForLoading -> {
+          var loadingProgressMut by remember { mutableStateOf<Pair<Int, Float>?>(null) }
+
+          LoadFullImage(
+            mediaViewerScreenState = mediaViewerScreenState,
+            postImageDataLoadState = postImageDataLoadState,
+            onLoadProgressUpdated = { restartIndex, progress -> loadingProgressMut = Pair(restartIndex, progress) }
+          )
+
           displayImagePreviewMovable()
+
+          val loadingProgress = loadingProgressMut
+          if (loadingProgress != null) {
+            DisplayLoadingProgressIndicator(loadingProgress)
+          }
+        }
+        is ImageLoadState.NeedRestart,
+        is ImageLoadState.Progress -> {
+          // no-op
         }
         is ImageLoadState.Ready -> {
           var fullImageLoaded by remember { mutableStateOf(false) }
@@ -369,35 +406,164 @@ class MediaViewerScreen(
   }
 
   @Composable
+  private fun DisplayLoadingProgressIndicator(loadingProgress: Pair<Int, Float>) {
+    val chanTheme = LocalChanTheme.current
+    val density = LocalDensity.current
+
+    val arcSize = with(density) { remember { 42.dp.toPx() } }
+    val width = with(density) { remember { 4.dp.toPx() } }
+    val textSize = with(density) { 14.dp.toPx() }
+
+    val style = remember { Stroke(width = width) }
+    val rotationAnimateable = remember { Animatable(0f) }
+    val animationSpec = remember {
+      infiniteRepeatable<Float>(animation = tween(durationMillis = 2500), repeatMode = RepeatMode.Restart)
+    }
+    val textPaint = remember {
+      TextPaint().apply {
+        this.textSize = textSize
+        this.color = android.graphics.Color.WHITE
+        this.style = Paint.Style.FILL
+        this.setShadowLayer(4f, 0f, 0f, android.graphics.Color.BLACK)
+      }
+    }
+
+    val restartIndex = loadingProgress.first
+    val progress = loadingProgress.second
+    val maxRestarts = MediaViewerScreenViewModel.MAX_RESTARTS
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = { rotationAnimateable.animateTo(targetValue = 1f, animationSpec = animationSpec) }
+    )
+
+    val rotation by rotationAnimateable.asState()
+    val text = "${restartIndex}/$maxRestarts"
+
+    val textSizeMeasured = remember(key1 = text) {
+      val rect = Rect()
+      textPaint.getTextBounds(text, 0, text.length, rect)
+
+      return@remember Size(
+        rect.width().toFloat(),
+        rect.height().toFloat()
+      )
+    }
+
+    Canvas(
+      modifier = Modifier.fillMaxSize(),
+      onDraw = {
+        val center = this.size.center
+        val topLeft = Offset(center.x - (arcSize / 2f), center.y - (arcSize / 2f))
+        val size = Size(arcSize, arcSize)
+
+        rotate(degrees = rotation * 360f, pivot = center) {
+          drawArc(
+            color = chanTheme.accentColorCompose,
+            startAngle = 0f,
+            sweepAngle = 360f * progress,
+            useCenter = false,
+            topLeft = topLeft,
+            size = size,
+            style = style
+          )
+        }
+
+        if (restartIndex > 0) {
+          drawContext.canvas.nativeCanvas.drawText(
+            text,
+            center.x - (textSizeMeasured.width / 2f),
+            center.y + (textSizeMeasured.height / 2f),
+            textPaint
+          )
+        }
+      }
+    )
+  }
+
+  @Composable
   private fun LoadFullImage(
     mediaViewerScreenState: MediaViewerScreenState,
-    postImageDataLoadState: ImageLoadState.Loading
+    postImageDataLoadState: ImageLoadState.PreparingForLoading,
+    onLoadProgressUpdated: (Int, Float) -> Unit
   ) {
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
     LaunchedEffect(
       key1 = postImageDataLoadState.postImageData.fullImageAsUrl,
       block = {
-        val postImageData = postImageDataLoadState.postImageData
-        val fullImageUrl = postImageData.fullImageAsUrl
-
-        val index = mediaViewerScreenState.requireImages().indexOfFirst { imageLoadState ->
-          imageLoadState.fullImageUrl == postImageData.fullImageAsUrl
-        }
-
-        val imageLoadState = if (index >= 0) {
-          mediaViewerScreenViewModel.loadFullImageAndGetFile(postImageDataLoadState.postImageData)
-        } else {
-          // TODO(KurobaEx): strings
-          val exception =  MediaViewerScreenViewModel.ImageLoadException(
-            fullImageUrl,
-            "Failed to find previous image in images"
-          )
-
-          ImageLoadState.Error(postImageData, exception)
-        }
-
-        mediaViewerScreenState.requireImages().set(index, imageLoadState)
+        loadFullImageInternal(
+          appContenxt = context.applicationContext,
+          coroutineScope = coroutineScope,
+          postImageDataLoadState = postImageDataLoadState,
+          mediaViewerScreenState = mediaViewerScreenState,
+          onLoadProgressUpdated = onLoadProgressUpdated
+        )
       }
     )
+  }
+
+  private suspend fun loadFullImageInternal(
+    appContenxt: Context,
+    coroutineScope: CoroutineScope,
+    postImageDataLoadState: ImageLoadState.PreparingForLoading,
+    mediaViewerScreenState: MediaViewerScreenState,
+    prevRestartIndex: Int? = null,
+    onLoadProgressUpdated: (Int, Float) -> Unit
+  ) {
+    val postImageData = postImageDataLoadState.postImageData
+    val fullImageUrl = postImageData.fullImageAsUrl
+
+    val index = mediaViewerScreenState.requireImages().indexOfFirst { imageLoadState ->
+      imageLoadState.fullImageUrl == postImageData.fullImageAsUrl
+    }
+
+    if (index < 0) {
+      val exception = MediaViewerScreenViewModel.ImageLoadException(
+        fullImageUrl,
+        appContenxt.getString(R.string.media_viewer_failed_to_find_image_in_images)
+      )
+
+      val imageLoadState = ImageLoadState.Error(postImageData, exception)
+      mediaViewerScreenState.requireImages().set(index, imageLoadState)
+
+      return
+    }
+
+    mediaViewerScreenViewModel.loadFullImageAndGetFile(
+      postImageData = postImageDataLoadState.postImageData,
+      prevRestartIndex = prevRestartIndex,
+    ).collect { imageLoadState ->
+      when (imageLoadState) {
+        is ImageLoadState.Progress -> {
+          onLoadProgressUpdated(prevRestartIndex ?: 0, imageLoadState.progress)
+        }
+        is ImageLoadState.NeedRestart -> {
+          coroutineScope.launch {
+            val restartIndex = imageLoadState.restartIndex
+            check(restartIndex > 0) { "Bad restartIndex: ${restartIndex}" }
+
+            logcat { "Got NeedRestart state, waiting ${restartIndex} seconds and then restarting image load" }
+            delay(restartIndex * 1000L)
+
+            loadFullImageInternal(
+              appContenxt = appContenxt,
+              coroutineScope = coroutineScope,
+              postImageDataLoadState = postImageDataLoadState,
+              mediaViewerScreenState = mediaViewerScreenState,
+              prevRestartIndex = restartIndex,
+              onLoadProgressUpdated = onLoadProgressUpdated
+            )
+          }
+        }
+        is ImageLoadState.Error,
+        is ImageLoadState.PreparingForLoading,
+        is ImageLoadState.Ready -> {
+          mediaViewerScreenState.requireImages().set(index, imageLoadState)
+        }
+      }
+    }
   }
 
   @Composable
@@ -482,7 +648,7 @@ class MediaViewerScreen(
 
   @Composable
   private fun DisplayImagePreview(postImageDataState: ImageLoadState) {
-    val postImageDataLoadState = (postImageDataState as? ImageLoadState.Loading)
+    val postImageDataLoadState = (postImageDataState as? ImageLoadState.PreparingForLoading)
       ?: return
 
     val context = LocalContext.current
