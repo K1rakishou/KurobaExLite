@@ -149,7 +149,7 @@ class CatalogScreenViewModel(
 
     val catalogSortSetting = appSettings.catalogSort.read()
     val sortedThreads = CatalogThreadSorter.sortCatalogPostData(
-      catalogThreads = postsLoadResult.combined(),
+      catalogThreads = postsLoadResult.allCombined(),
       catalogSortSetting = catalogSortSetting
     )
 
@@ -191,8 +191,6 @@ class CatalogScreenViewModel(
         try {
           catalogThreadsState.insertOrUpdateMany(postCellDataList)
           onCatalogLoadingEnd(catalogDescriptor)
-
-          _postsFullyParsedOnceFlow.emit(true)
         } finally {
           withContext(NonCancellable + Dispatchers.Main) {
             snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()

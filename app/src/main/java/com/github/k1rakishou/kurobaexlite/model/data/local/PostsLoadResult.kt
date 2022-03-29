@@ -7,7 +7,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 data class PostsLoadResult(
   val newPosts: List<IPostData>,
   val updatedPosts: List<IPostData>,
-  // TODO(KurobaEx): deleted posts
+  val unchangedPosts: List<IPostData> = emptyList(),
+  val deletedPosts: List<IPostData> = emptyList(),
 ) {
   val newPostsCount: Int
     get() = newPosts.size
@@ -40,9 +41,15 @@ data class PostsLoadResult(
         return
       }
     }
+
+    for (newPost in unchangedPosts) {
+      if (!iterator(newPost)) {
+        return
+      }
+    }
   }
 
-  fun combined(): List<IPostData> {
+  fun newAndUpdatedCombined(): List<IPostData> {
     val resultList = mutableListWithCap<IPostData>(newPosts.size + updatedPosts.size)
 
     resultList.addAll(newPosts)
@@ -51,8 +58,18 @@ data class PostsLoadResult(
     return resultList
   }
 
+  fun allCombined(): List<IPostData> {
+    val resultList = mutableListWithCap<IPostData>(newPosts.size + updatedPosts.size + unchangedPosts.size)
+
+    resultList.addAll(newPosts)
+    resultList.addAll(updatedPosts)
+    resultList.addAll(unchangedPosts)
+
+    return resultList
+  }
+
   fun isEmpty(): Boolean {
-    return newPosts.isEmpty() && updatedPosts.isEmpty()
+    return newPosts.isEmpty() && updatedPosts.isEmpty() && unchangedPosts.isEmpty()
   }
 
   fun isNotEmpty(): Boolean {
@@ -60,11 +77,12 @@ data class PostsLoadResult(
   }
 
   fun info(): String {
-    return "newPosts=${newPosts.size}, updatedPosts=${updatedPosts.size}"
+    return "newPosts=${newPosts.size}, updatedPosts=${updatedPosts.size}, " +
+      "unchangedPosts=${unchangedPosts.size}, deletedPosts=${deletedPosts.size}"
   }
 
   companion object {
-    val EMPTY = PostsLoadResult(emptyList(), emptyList())
+    val EMPTY = PostsLoadResult(emptyList(), emptyList(), emptyList(), emptyList())
   }
 
 }

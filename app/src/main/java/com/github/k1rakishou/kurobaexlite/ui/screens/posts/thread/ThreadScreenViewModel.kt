@@ -147,7 +147,7 @@ class ThreadScreenViewModel(
 
       parseRemainingPostsAsync(
         chanDescriptor = threadDescriptor,
-        postDataList = postLoadResult.combined(),
+        postDataList = postLoadResult.newAndUpdatedCombined(),
         parsePostsOptions = ParsePostsOptions(
           forced = true,
           parseRepliesTo = true
@@ -262,15 +262,14 @@ class ThreadScreenViewModel(
 
     if (postLoadResult.isEmpty()) {
       val postsAsyncData = threadScreenState.postsAsyncDataState.value
+      _postsFullyParsedOnceFlow.emit(true)
 
       if (loadOptions.showLoadingIndicator || postsAsyncData !is AsyncData.Data) {
         val error = ThreadDisplayException("Thread /${threadDescriptor}/ has no posts")
 
         threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
-        _postsFullyParsedOnceFlow.emit(true)
         onReloadFinished?.invoke()
       } else {
-        _postsFullyParsedOnceFlow.emit(true)
         onReloadFinished?.invoke()
       }
 
@@ -278,7 +277,7 @@ class ThreadScreenViewModel(
     }
 
     val cachedThreadPostsState = (threadScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data
-    val newAndUpdatedPosts = postLoadResult.combined()
+    val allCombinedPosts = postLoadResult.allCombined()
 
     val threadPostsState = if (cachedThreadPostsState != null && cachedThreadPostsState.chanDescriptor == chanDescriptor) {
       logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${postLoadResult.info()}" }
@@ -286,7 +285,7 @@ class ThreadScreenViewModel(
       val initiallyParsedPosts = parseInitialBatchOfPosts(
         startPostDescriptor = threadScreenState.lastViewedPostDescriptorForScrollRestoration.value,
         chanDescriptor = threadDescriptor,
-        postDataList = newAndUpdatedPosts,
+        postDataList = allCombinedPosts,
         isCatalogMode = false
       )
 
@@ -298,7 +297,7 @@ class ThreadScreenViewModel(
       val initiallyParsedPosts = parseInitialBatchOfPosts(
         startPostDescriptor = threadScreenState.lastViewedPostDescriptorForScrollRestoration.value,
         chanDescriptor = threadDescriptor,
-        postDataList = newAndUpdatedPosts,
+        postDataList = allCombinedPosts,
         isCatalogMode = false
       )
 
@@ -320,7 +319,7 @@ class ThreadScreenViewModel(
 
     parseRemainingPostsAsync(
       chanDescriptor = threadDescriptor,
-      postDataList =  newAndUpdatedPosts,
+      postDataList =  allCombinedPosts,
       parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
       sorter = { postCellData -> ThreadPostSorter.sortThreadPostCellData(postCellData) },
       onStartParsingPosts = {
@@ -332,7 +331,7 @@ class ThreadScreenViewModel(
       onPostsParsed = { postDataList ->
         logcat {
           "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-            "newAndUpdatedPosts=${newAndUpdatedPosts.size}, postDataList=${postDataList.size}"
+            "newAndUpdatedPosts=${allCombinedPosts.size}, postDataList=${postDataList.size}"
         }
 
         try {
@@ -345,7 +344,6 @@ class ThreadScreenViewModel(
           )
 
           onThreadLoadingEnd(threadDescriptor)
-          _postsFullyParsedOnceFlow.emit(true)
         } finally {
           withContext(NonCancellable + Dispatchers.Main) {
             onReloadFinished?.invoke()

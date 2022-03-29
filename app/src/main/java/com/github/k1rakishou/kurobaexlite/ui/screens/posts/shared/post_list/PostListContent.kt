@@ -249,7 +249,6 @@ private fun PostListInternal(
 
   val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostDescriptorForIndicator.collectAsState()
   val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
-  val postsParsedOnce by postsScreenViewModel.postsFullyParsedOnceFlow.collectAsState()
   val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
 
   val contentPadding = remember(key1 = searchQuery, key2 = postListOptions.contentPadding) {
@@ -356,19 +355,19 @@ private fun PostListInternal(
                   return@postList canAnimateInsertion(
                     previousPostDataInfoMap = previousPostDataInfoMap,
                     postCellData = postCellData,
-                    searchQuery = searchQuery,
+                    searchQuery = postsScreenViewModel.postScreenState.searchQueryFlow.value,
                     inPopup = isInPopup,
-                    postsParsedOnce = postsParsedOnce
+                    postsParsedOnce = postsScreenViewModel.postsFullyParsedOnceFlow.value
                   )
                 },
                 canAnimateUpdate = { postCellData, rememberedHashForListAnimations ->
                   return@postList canAnimateUpdate(
                     previousPostDataInfoMap = previousPostDataInfoMap,
                     postCellData = postCellData,
-                    searchQuery = searchQuery,
+                    searchQuery = postsScreenViewModel.postScreenState.searchQueryFlow.value,
                     inPopup = isInPopup,
                     rememberedHashForListAnimations = rememberedHashForListAnimations,
-                    postsParsedOnce = postsParsedOnce
+                    postsParsedOnce = postsScreenViewModel.postsFullyParsedOnceFlow.value
                   )
                 },
                 onPostCellClicked = onPostCellClicked,

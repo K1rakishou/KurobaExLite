@@ -87,6 +87,10 @@ class SnackbarManager(
   }
 
   fun pushThreadNewPostsSnackbar(newPostsCount: Int, screenKey: ScreenKey) {
+    if (newPostsCount <= 0) {
+      return
+    }
+
     val newPostsMessage = appContext.resources.getQuantityString(
       R.plurals.new_posts_with_number,
       newPostsCount,
@@ -104,6 +108,10 @@ class SnackbarManager(
   }
 
   fun pushCatalogOrThreadPostsLoadingSnackbar(postsCount: Int, screenKey: ScreenKey) {
+    if (postsCount <= 0) {
+      return
+    }
+
     val processingPostsMessage = appContext.resources.getQuantityString(
       R.plurals.processing_posts_with_number,
       postsCount,

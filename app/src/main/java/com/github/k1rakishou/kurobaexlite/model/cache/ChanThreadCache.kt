@@ -44,29 +44,30 @@ class ChanThreadCache(
     return mutex.withLockNonCancellable {
       val insertedPosts = mutableListOf<IPostData>()
       val updatedPosts = mutableListOf<IPostData>()
+      val unchangedPosts = mutableListOf<IPostData>()
       var needSorting = false
 
       postCellDataCollection.forEach { postData ->
         val prevPostData = postsMap[postData.postDescriptor]
 
-        if (prevPostData != null) {
-          if (PostDiffer.postsDiffer(postData, prevPostData)) {
-            val index = posts.indexOfFirst { oldPostData ->
-              oldPostData.postDescriptor == postData.postDescriptor
-            }
-            check(index >= 0) { "postMap contains this post but posts list does not!" }
-
-            posts[index] = postData
-            postsMap[postData.postDescriptor] = postData
-
-            updatedPosts += postData
+        if (prevPostData != null && PostDiffer.postsDiffer(postData, prevPostData)) {
+          val index = posts.indexOfFirst { oldPostData ->
+            oldPostData.postDescriptor == postData.postDescriptor
           }
-        } else {
+          check(index >= 0) { "postMap contains this post but posts list does not!" }
+
+          posts[index] = postData
+          postsMap[postData.postDescriptor] = postData
+
+          updatedPosts += postData
+        } else if (prevPostData == null) {
           posts.add(postData)
           postsMap[postData.postDescriptor] = postData
 
           insertedPosts += postData
           needSorting = true
+        } else {
+          unchangedPosts += postData
         }
       }
 
@@ -82,7 +83,8 @@ class ChanThreadCache(
 
       return@withLockNonCancellable PostsLoadResult(
         newPosts = insertedPosts,
-        updatedPosts = updatedPosts
+        updatedPosts = updatedPosts,
+        unchangedPosts = unchangedPosts
       )
     }
   }

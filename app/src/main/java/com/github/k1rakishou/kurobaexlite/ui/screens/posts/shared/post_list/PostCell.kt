@@ -24,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -42,7 +41,9 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -86,6 +87,8 @@ internal fun PostCell(
       onPostImageClicked = onPostImageClicked,
       reparsePostSubject = reparsePostSubject
     )
+
+    Spacer(modifier = Modifier.height(4.dp))
 
     PostCellComment(
       postCellData = postCellData,
@@ -160,12 +163,11 @@ private fun PostCellTitle(
     }
 
     if (postSubject == null) {
-      // TODO(KurobaEx): shimmer animation
-      Box(
+      Shimmer(
         modifier = Modifier
           .weight(1f)
-          .height(42.dp)
-          .background(Color.Red)
+          .height(42.dp),
+        shimmerState = rememberShimmerState(bgColor = chanTheme.backColorCompose)
       )
     } else {
       var actualPostSubject by remember { mutableStateOf(postSubject) }
@@ -190,6 +192,7 @@ private fun PostCellTitle(
         })
 
       Text(
+        modifier = Modifier.weight(1f),
         text = actualPostSubject,
         fontSize = postCellSubjectTextSizeSp
       )
@@ -226,12 +229,11 @@ private fun PostCellComment(
       )
     }
   } else if (postComment == null) {
-    // TODO(KurobaEx): shimmer animation
-    Box(
+    Shimmer(
       modifier = Modifier
         .fillMaxWidth()
-        .height(42.dp)
-        .background(Color.Green)
+        .height(80.dp),
+      shimmerState = rememberShimmerState(bgColor = chanTheme.backColorCompose)
     )
   }
 }

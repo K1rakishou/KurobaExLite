@@ -75,6 +75,7 @@ abstract class PostScreenViewModel(
   protected val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
 
   private var currentParseJob: Job? = null
+  private var updatePostsParsedOnceJob: Job? = null
   protected var postListBuilt: CompletableDeferred<Unit>? = null
 
   protected val _postsFullyParsedOnceFlow = MutableStateFlow(false)
@@ -125,6 +126,9 @@ abstract class PostScreenViewModel(
       postListBuilt = null
     }
 
+    updatePostsParsedOnceJob?.cancel()
+    updatePostsParsedOnceJob = null
+
     _postsFullyParsedOnceFlow.emit(false)
     postListTouchingBottom.value = false
   }
@@ -144,6 +148,9 @@ abstract class PostScreenViewModel(
       postListBuilt = null
     }
 
+    updatePostsParsedOnceJob?.cancel()
+    updatePostsParsedOnceJob = null
+
     _postsFullyParsedOnceFlow.emit(false)
     postListTouchingBottom.value = false
   }
@@ -153,6 +160,11 @@ abstract class PostScreenViewModel(
 
     chanCache.onCatalogOrThreadAccessed(threadDescriptor)
     postScreenState.onEndLoading()
+
+    updatePostsParsedOnceJob = viewModelScope.launch {
+      delay(250L)
+      _postsFullyParsedOnceFlow.emit(true)
+    }
   }
 
   suspend fun onCatalogLoadingEnd(catalogDescriptor: CatalogDescriptor) {
@@ -160,6 +172,11 @@ abstract class PostScreenViewModel(
 
     chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
     postScreenState.onEndLoading()
+
+    updatePostsParsedOnceJob = viewModelScope.launch {
+      delay(250L)
+      _postsFullyParsedOnceFlow.emit(true)
+    }
   }
 
   fun rememberedPosition(chanDescriptor: ChanDescriptor, orientation: Int): LazyColumnRememberedPosition {
