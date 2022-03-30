@@ -10,7 +10,7 @@ class PostCommentParserTest {
   @Test
   fun internalQuote() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -27,7 +27,7 @@ class PostCommentParserTest {
   @Test
   fun catalogSearchLink1() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -43,7 +43,7 @@ class PostCommentParserTest {
   @Test
   fun catalogSearchLink2() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -58,7 +58,7 @@ class PostCommentParserTest {
   @Test
   fun crossThreadLink1() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -74,7 +74,7 @@ class PostCommentParserTest {
   @Test
   fun crossThreadLink2() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -90,7 +90,7 @@ class PostCommentParserTest {
   @Test
   fun crossThreadLink3() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -106,7 +106,7 @@ class PostCommentParserTest {
   @Test
   fun crossThreadLink4() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -122,7 +122,7 @@ class PostCommentParserTest {
   @Test
   fun crossThreadLink5() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -138,7 +138,7 @@ class PostCommentParserTest {
   @Test
   fun boardLink1() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",
@@ -152,7 +152,7 @@ class PostCommentParserTest {
   @Test
   fun boardLink2() {
     val postCommentParser = PostCommentParser()
-    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111, null)
+    val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
       className = "quotelink",

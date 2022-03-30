@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
 import androidx.compose.ui.text.AnnotatedString
-import coil.disk.DiskCache
 import java.io.InterruptedIOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -505,10 +504,11 @@ suspend fun <T> Mutex.withLockNonCancellable(owner: Any? = null, action: suspend
 
 fun unreachable(): Nothing = error("Unreachable!")
 
-fun DiskCache.Editor.abortQuietly() {
-  try {
-    abort()
-  } catch (_: Throwable) {
-
+fun String.removeExtensionFromFileName(): String {
+  val index = this.lastIndexOf('.')
+  if (index == -1) {
+    return this
   }
+
+  return this.substring(0, index)
 }

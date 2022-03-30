@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateListOf
@@ -74,7 +74,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
+import java.io.IOException
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -331,10 +333,6 @@ class MediaViewerScreen(
       return
     }
 
-    SideEffect {
-      logcat { "initialPage=$initialPage, initialImage=${images[initialPage].fullImageUrlAsString}" }
-    }
-
     val pagerState = rememberPagerState(
       key1 = configuration.orientation,
       initialPage = initialPage
@@ -354,6 +352,27 @@ class MediaViewerScreen(
       key = { page -> images[page].fullImageUrlAsString }
     ) { page ->
       val postImageDataLoadState = images[page]
+
+      DisposableEffect(
+        key1 = Unit,
+        effect = {
+          // When a page with media is being disposed we need to replace the current ImageLoadState
+          // with ImageLoadState.PreparingForLoading so that when we go back to this page we reload
+          // it again from cache/network. Otherwise we may use the cached ImageLoadState and while
+          // it might it set to ImageLoadState.Ready in reality the file on disk may long be
+          // removed so it will cause a crash.
+          onDispose {
+            val currentImages = mediaViewerScreenState.images
+              ?: return@onDispose
+
+            val indexOfThisImage = currentImages.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }
+            if (indexOfThisImage >= 0) {
+              val prevPostImageData = currentImages[indexOfThisImage].postImageData
+              currentImages.set(indexOfThisImage, ImageLoadState.PreparingForLoading(prevPostImageData))
+            }
+          }
+        }
+      )
 
       val displayImagePreviewMovable = remember {
         movableContentOf {
@@ -378,7 +397,6 @@ class MediaViewerScreen(
             DisplayLoadingProgressIndicator(loadingProgress)
           }
         }
-        is ImageLoadState.NeedRestart,
         is ImageLoadState.Progress -> {
           // no-op
         }
@@ -430,7 +448,7 @@ class MediaViewerScreen(
 
     val restartIndex = loadingProgress.first
     val progress = loadingProgress.second
-    val maxRestarts = MediaViewerScreenViewModel.MAX_RESTARTS
+    val maxRestarts = MediaViewerScreenViewModel.MAX_RETRIES
 
     LaunchedEffect(
       key1 = Unit,
@@ -493,9 +511,12 @@ class MediaViewerScreen(
     LaunchedEffect(
       key1 = postImageDataLoadState.postImageData.fullImageAsUrl,
       block = {
+        val retriesCount = AtomicInteger(0)
+
         loadFullImageInternal(
           appContenxt = context.applicationContext,
           coroutineScope = coroutineScope,
+          retriesCount = retriesCount,
           postImageDataLoadState = postImageDataLoadState,
           mediaViewerScreenState = mediaViewerScreenState,
           onLoadProgressUpdated = onLoadProgressUpdated
@@ -507,9 +528,9 @@ class MediaViewerScreen(
   private suspend fun loadFullImageInternal(
     appContenxt: Context,
     coroutineScope: CoroutineScope,
+    retriesCount: AtomicInteger,
     postImageDataLoadState: ImageLoadState.PreparingForLoading,
     mediaViewerScreenState: MediaViewerScreenState,
-    prevRestartIndex: Int? = null,
     onLoadProgressUpdated: (Int, Float) -> Unit
   ) {
     val postImageData = postImageDataLoadState.postImageData
@@ -531,39 +552,45 @@ class MediaViewerScreen(
       return
     }
 
-    mediaViewerScreenViewModel.loadFullImageAndGetFile(
-      postImageData = postImageDataLoadState.postImageData,
-      prevRestartIndex = prevRestartIndex,
-    ).collect { imageLoadState ->
-      when (imageLoadState) {
-        is ImageLoadState.Progress -> {
-          onLoadProgressUpdated(prevRestartIndex ?: 0, imageLoadState.progress)
-        }
-        is ImageLoadState.NeedRestart -> {
-          coroutineScope.launch {
-            val restartIndex = imageLoadState.restartIndex
-            check(restartIndex > 0) { "Bad restartIndex: ${restartIndex}" }
+    mediaViewerScreenViewModel.loadFullImageAndGetFile(postImageDataLoadState.postImageData)
+      .collect { imageLoadState ->
+        when (imageLoadState) {
+          is ImageLoadState.Progress -> {
+            onLoadProgressUpdated(retriesCount.get(), imageLoadState.progress)
+          }
+          is ImageLoadState.Error -> {
+            val canRetry = imageLoadState.exception is IOException
+            if (canRetry) {
+              val currentRetryIndex = retriesCount.incrementAndGet()
+              if (currentRetryIndex <= MediaViewerScreenViewModel.MAX_RETRIES) {
+                coroutineScope.launch {
+                  logcat { "Got NeedRestart state, waiting ${currentRetryIndex} seconds and then restarting image load" }
+                  delay(currentRetryIndex * 1000L)
 
-            logcat { "Got NeedRestart state, waiting ${restartIndex} seconds and then restarting image load" }
-            delay(restartIndex * 1000L)
+                  loadFullImageInternal(
+                    appContenxt = appContenxt,
+                    coroutineScope = coroutineScope,
+                    retriesCount = retriesCount,
+                    postImageDataLoadState = postImageDataLoadState,
+                    mediaViewerScreenState = mediaViewerScreenState,
+                    onLoadProgressUpdated = onLoadProgressUpdated
+                  )
+                }
 
-            loadFullImageInternal(
-              appContenxt = appContenxt,
-              coroutineScope = coroutineScope,
-              postImageDataLoadState = postImageDataLoadState,
-              mediaViewerScreenState = mediaViewerScreenState,
-              prevRestartIndex = restartIndex,
-              onLoadProgressUpdated = onLoadProgressUpdated
-            )
+                return@collect
+              }
+
+              // fallthrough
+            }
+
+            mediaViewerScreenState.requireImages().set(index, imageLoadState)
+          }
+          is ImageLoadState.PreparingForLoading,
+          is ImageLoadState.Ready -> {
+            mediaViewerScreenState.requireImages().set(index, imageLoadState)
           }
         }
-        is ImageLoadState.Error,
-        is ImageLoadState.PreparingForLoading,
-        is ImageLoadState.Ready -> {
-          mediaViewerScreenState.requireImages().set(index, imageLoadState)
-        }
       }
-    }
   }
 
   @Composable
@@ -592,14 +619,14 @@ class MediaViewerScreen(
     val eventListener = object : ComposeSubsamplingScaleImageEventListener() {
       override fun onFailedToDecodeImageInfo(error: Throwable) {
         val url = postImageDataLoadState.fullImageUrlAsString
-        logcat { "onFailedToDecodeImageInfo() url=$url, error=${error.errorMessageOrClassName()}" }
+        logcatError { "onFailedToDecodeImageInfo() url=$url, error=${error.errorMessageOrClassName()}" }
 
         onFullImageFailedToLoad()
       }
 
       override fun onFailedToLoadFullImage(error: Throwable) {
         val url = postImageDataLoadState.fullImageUrlAsString
-        logcat { "onFailedToLoadFullImage() url=$url, error=${error.errorMessageOrClassName()}" }
+        logcatError { "onFailedToLoadFullImage() url=$url, error=${error.errorMessageOrClassName()}" }
 
         onFullImageFailedToLoad()
       }
@@ -612,9 +639,23 @@ class MediaViewerScreen(
     val imageSourceProvider = remember(key1 = postImageDataLoadState.imageFile) {
       object : ImageSourceProvider {
         override suspend fun provide(): ComposeSubsamplingScaleImageSource {
+          val inputStream = try {
+            postImageDataLoadState.imageFile.inputStream()
+          } catch (error: Throwable) {
+            val imageFile = postImageDataLoadState.imageFile
+
+            throw MediaViewerScreenViewModel.ImageLoadException(
+              postImageDataLoadState.fullImageUrl,
+              "Failed to open input stream of file: ${imageFile.name}, " +
+                "exists: ${imageFile.exists()}, " +
+                "length: ${imageFile.length()}, " +
+                "canRead: ${imageFile.canRead()}"
+            )
+          }
+
           return ComposeSubsamplingScaleImageSource(
             debugKey = postImageDataLoadState.fullImageUrlAsString,
-            inputStream = postImageDataLoadState.imageFile.inputStream()
+            inputStream = inputStream
           )
         }
       }

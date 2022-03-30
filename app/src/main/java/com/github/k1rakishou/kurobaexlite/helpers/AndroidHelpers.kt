@@ -5,7 +5,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.Build
+import android.os.StatFs
 import com.github.k1rakishou.kurobaexlite.BuildConfig
+import java.io.File
 
 class AndroidHelpers(
   private val application: Application
@@ -62,6 +64,12 @@ class AndroidHelpers(
   }
 
   fun isDevFlavor(): Boolean = getFlavorType() == FlavorType.Dev
+
+  fun getAvailableSpaceInBytes(file: File): Long {
+    val stat = StatFs(file.path)
+    return stat.availableBlocksLong * stat.blockSizeLong
+  }
+
 
   enum class FlavorType {
     Stable,

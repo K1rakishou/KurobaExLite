@@ -23,11 +23,6 @@ sealed class ImageLoadState {
     val exception: Throwable
   ) : ImageLoadState()
 
-  data class NeedRestart(
-    override val postImageData: IPostImage,
-    val restartIndex: Int
-  ) : ImageLoadState()
-
   data class Ready(
     override val postImageData: IPostImage,
     val imageFile: File

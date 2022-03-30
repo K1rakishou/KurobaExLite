@@ -34,6 +34,7 @@ fun MediaViewerScreenToolbarContainer(
 
   val insets = LocalWindowInsets.current
   val chanTheme = LocalChanTheme.current
+  val bgColor = remember(chanTheme.primaryColorCompose) { chanTheme.primaryColorCompose.copy(alpha = 0.5f) }
 
   val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
@@ -44,7 +45,7 @@ fun MediaViewerScreenToolbarContainer(
     modifier = Modifier
       .fillMaxWidth()
       .height(toolbarTotalHeight)
-      .background(chanTheme.primaryColorCompose)
+      .background(bgColor)
       .consumeClicks()
   ) {
     Spacer(modifier = Modifier.height(insets.top))

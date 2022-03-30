@@ -12,7 +12,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
-import com.github.k1rakishou.kurobaexlite.helpers.cache.SuspendDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.cache.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -38,6 +38,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScr
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenToolbarActionHandler
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import com.squareup.moshi.Moshi
+import java.io.File
 import kotlin.system.exitProcess
 import kotlinx.coroutines.CoroutineScope
 import logcat.LogPriority
@@ -89,7 +90,8 @@ class KurobaExLiteApplication : Application() {
       single { FullScreenHelpers(get()) }
       single { AndroidHelpers(get()) }
 
-      mediaDiskCache()
+      kurobaDiskLruCache()
+      coilMediaDiskCache()
       coilImageLoader()
 
       single {
@@ -168,7 +170,7 @@ class KurobaExLiteApplication : Application() {
         MediaViewerScreenViewModel(
           chanCache = get(),
           proxiedOkHttpClient = get(),
-          suspendDiskCache = get()
+          kurobaLruDiskCache = get()
         )
       }
     }
@@ -177,26 +179,47 @@ class KurobaExLiteApplication : Application() {
   }
 
   @OptIn(ExperimentalCoilApi::class)
-  private fun Module.mediaDiskCache() {
+  private fun Module.coilMediaDiskCache() {
     single {
       val context: Context = get()
       val safeCacheDir = context.cacheDir.apply { mkdirs() }
 
       val diskCache = DiskCache.Builder()
-        .directory(safeCacheDir.resolve("media_cache"))
+        .directory(safeCacheDir.resolve("coil_media_cache"))
         .build()
 
-      return@single SuspendDiskCache(diskCache)
+      return@single diskCache
+    }
+  }
+
+  private fun Module.kurobaDiskLruCache() {
+    single {
+      val applicationContext = get<Context>().applicationContext
+      val androidHelpers = get<AndroidHelpers>()
+      val diskCacheFile = File(applicationContext.cacheDir, "kuroba_disk_cache")
+
+      val cacheSize = if (androidHelpers.isDevFlavor()) {
+        32L * 1024 * 1024
+      } else {
+        256L * 1024 * 1024
+      }
+
+      return@single KurobaLruDiskCache(
+        appContext = applicationContext,
+        diskCacheDir = diskCacheFile,
+        androidHelpers = get(),
+        totalFileCacheDiskSizeBytes = cacheSize
+      )
     }
   }
 
   @OptIn(ExperimentalCoilApi::class)
   private fun Module.coilImageLoader() {
     single {
-      val context: Context = get()
+      val applicationContext = get<Context>().applicationContext
       val diskCacheInit = { get<DiskCache>() }
 
-      return@single ImageLoader.Builder(context).apply {
+      return@single ImageLoader.Builder(applicationContext).apply {
         components {
           diskCache(diskCacheInit)
         }

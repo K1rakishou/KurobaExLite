@@ -3,8 +3,8 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.media
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.cache.SuspendDiskCache
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.cache.CacheFileType
+import com.github.k1rakishou.kurobaexlite.helpers.cache.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
@@ -26,12 +27,12 @@ import logcat.logcat
 import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.internal.closeQuietly
-import okio.Path
+import okio.sink
 
 class MediaViewerScreenViewModel(
   private val chanCache: ChanCache,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
-  private val suspendDiskCache: SuspendDiskCache
+  private val kurobaLruDiskCache: KurobaLruDiskCache
 ) : BaseViewModel() {
 
   suspend fun init(mediaViewerParams: MediaViewerParams): InitResult {
@@ -77,8 +78,7 @@ class MediaViewerScreenViewModel(
   }
 
   suspend fun loadFullImageAndGetFile(
-    postImageData: IPostImage,
-    prevRestartIndex: Int?
+    postImageData: IPostImage
   ): Flow<ImageLoadState> {
     return callbackFlow {
       val fullImageUrl = postImageData.fullImageAsUrl
@@ -93,22 +93,9 @@ class MediaViewerScreenViewModel(
       }
 
       if (loadImageResult.isSuccess) {
-        val resultFilePath = loadImageResult.getOrThrow()
-        if (resultFilePath == null) {
-          val nextRestartIndex = prevRestartIndex?.plus(1) ?: 1
-          if (nextRestartIndex > MAX_RESTARTS) {
-            val error = ImageLoadException(fullImageUrl, "Max restarts reached")
-            logcatError(tag = TAG) { "loadFullImageAndGetFile() ${error.errorMessageOrClassName()}" }
-
-            send(ImageLoadState.Error(postImageData, error))
-          } else {
-            logcat(tag = TAG) { "loadFullImageAndGetFile() Need restart \'$fullImageUrl\'" }
-            send(ImageLoadState.NeedRestart(postImageData, nextRestartIndex))
-          }
-        } else {
-          logcat(tag = TAG) { "loadFullImageAndGetFile() Successfully loaded \'$fullImageUrl\'" }
-          send(ImageLoadState.Ready(postImageData, resultFilePath.toFile()))
-        }
+        val resultFile = loadImageResult.getOrThrow()
+        logcat(tag = TAG) { "loadFullImageAndGetFile() Successfully loaded \'$fullImageUrl\'" }
+        send(ImageLoadState.Ready(postImageData, resultFile))
       } else {
         val error = loadImageResult.exceptionOrNull()!!
         logcatError(tag = TAG) { "loadFullImageAndGetFile() Failed to load \'$fullImageUrl\', error=${error.asLog()}" }
@@ -123,16 +110,16 @@ class MediaViewerScreenViewModel(
   private suspend fun loadFullImageInternal(
     postImageData: IPostImage,
     producer: ProducerScope<ImageLoadState>
-  ): Path? {
+  ): File {
     BackgroundUtils.ensureBackgroundThread()
 
     val fullImageUrl = postImageData.fullImageAsUrl
-    val diskCacheKey = fullImageUrl.toString()
+    val cacheFileType = CacheFileType.PostMediaFull
 
-    val cachedPath = suspendDiskCache.withSnapshot(diskCacheKey) { data }
-    if (cachedPath != null) {
-      logcat(tag = TAG) { "loadFullImage($fullImageUrl) got image from disk cache ($cachedPath)" }
-      return cachedPath
+    val cachedFile = kurobaLruDiskCache.getCacheFileOrNull(cacheFileType, fullImageUrl)
+    if (cachedFile != null) {
+      logcat(tag = TAG) { "loadFullImage($fullImageUrl) got image from disk cache (${cachedFile.absolutePath})" }
+      return cachedFile
     }
 
     val request = Request.Builder()
@@ -148,39 +135,37 @@ class MediaViewerScreenViewModel(
     val responseBody = response.body
       ?: throw EmptyBodyResponseException()
 
+    val diskFile = kurobaLruDiskCache.getOrCreateCacheFile(cacheFileType, fullImageUrl)
+      ?: throw ImageLoadException(fullImageUrl, "Failed to create cache file on disk")
+
     try {
-      return suspendDiskCache.withEditor(diskCacheKey) {
-        runInterruptible {
-          suspendDiskCache.fileSystem.write(this.data) {
-            val progressResponseBody = ProgressResponseBody(
-              responseBody = responseBody,
-              progressListener = { read, total, done ->
-                var progress = read.toFloat() / total.toFloat()
-                if (done) {
-                  progress = 1f
-                }
+      runInterruptible {
+        val progressResponseBody = ProgressResponseBody(
+          responseBody = responseBody,
+          progressListener = { read, total, done ->
+            var progress = read.toFloat() / total.toFloat()
+            if (done) {
+              progress = 1f
+            }
 
-                producer.trySend(ImageLoadState.Progress(progress, postImageData))
-              }
-            )
+            producer.trySend(ImageLoadState.Progress(progress, postImageData))
+          }
+        )
 
-            progressResponseBody.use { prb ->
-              prb.source().use { source ->
-                source.readAll(this)
-              }
+        progressResponseBody.use { prb ->
+          prb.source().use { source ->
+            diskFile.outputStream().sink().use { sink ->
+              source.readAll(sink)
             }
           }
         }
-
-        val path = this.commitAndGet()?.data
-        if (path == null) {
-          logcatError(tag = TAG) { "loadFullImage(${fullImageUrl} cannot display image right away, need restart" }
-        } else {
-          logcat(tag = TAG) { "loadFullImage($fullImageUrl) got image from network ($path)" }
-        }
-
-        return@withEditor path
       }
+
+      kurobaLruDiskCache.markFileDownloaded(cacheFileType, diskFile)
+      return diskFile
+    } catch (error: Throwable) {
+      kurobaLruDiskCache.deleteCacheFile(cacheFileType, diskFile)
+      throw error
     } finally {
       responseBody.closeQuietly()
     }
@@ -200,7 +185,7 @@ class MediaViewerScreenViewModel(
   companion object {
     private const val TAG = "MediaViewerScreenViewModel"
 
-    const val MAX_RESTARTS = 5
+    const val MAX_RETRIES = 5
   }
 
 }
