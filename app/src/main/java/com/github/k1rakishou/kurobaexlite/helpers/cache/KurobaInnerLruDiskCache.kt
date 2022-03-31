@@ -6,6 +6,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.ConversionUtils
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
@@ -22,7 +23,9 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.asLog
@@ -40,12 +43,14 @@ internal class KurobaInnerLruDiskCache(
   private val fileCacheDiskSizeBytes: Long,
   private val cacheFileType: CacheFileType,
   private val diskCacheCleanupRemovePercent: Int = 25,
-  private val isDevBuild: Boolean
+  private val isDevFlavor: Boolean
 ) {
   private val TAG = "KurobaInnerLruDiskCache{${cacheFileType.id}}"
 
   private val coroutineScope = CoroutineScope(sharedDispatcher + SupervisorJob())
-  private val cacheHandlerSynchronizer = CacheHandlerSynchronizer<FileId>()
+  private val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<FileId>()
+
+  private var currentAutoTrimJob: Job? = null
 
   /**
    * An estimation of the current size of the directory. Used to check if trim must be run
@@ -160,13 +165,13 @@ internal class KurobaInnerLruDiskCache(
         try {
           val cacheFile = getCacheFileByFileId(fileId)
           if (!cacheFile.exists() && !cacheFile.createNewFile()) {
-            throw IOException("Couldn't create cache file, path = ${cacheFile.absolutePath}")
+            throw IOException("Couldn't create cache file, path = ${cacheFile.name}")
           }
 
           val cacheFileMeta = getCacheFileMetaByFileId(fileId)
           if (!cacheFileMeta.exists()) {
             if (!cacheFileMeta.createNewFile()) {
-              throw IOException("Couldn't create cache file meta, path = ${cacheFileMeta.absolutePath}")
+              throw IOException("Couldn't create cache file meta, path = ${cacheFileMeta.name}")
             }
 
             val result = updateCacheFileMeta(
@@ -242,27 +247,27 @@ internal class KurobaInnerLruDiskCache(
           }
 
           if (!cacheFile.name.endsWith(CACHE_EXTENSION)) {
-            logcat(TAG) { "Not a cache file (deleting). file: ${cacheFile.absolutePath}" }
+            logcat(TAG) { "Not a cache file (deleting). file: ${cacheFile.name}" }
             deleteCacheFile(fileId)
             return@withLocalLock false
           }
 
           val cacheFileMetaFile = getCacheFileMetaByFileId(fileId)
           if (!cacheFileMetaFile.exists()) {
-            logcat(TAG) { "Cache file meta does not exist (deleting). cacheFileMetaFile: ${cacheFileMetaFile.absolutePath}" }
+            logcat(TAG) { "Cache file meta does not exist (deleting). cacheFileMetaFile: ${cacheFileMetaFile.name}" }
             deleteCacheFile(fileId)
             return@withLocalLock false
           }
 
           if (cacheFileMetaFile.length() <= 0) {
-            logcat(TAG) { "Cache file meta is empty (deleting). cacheFileMetaFile: ${cacheFileMetaFile.absolutePath}" }
+            logcat(TAG) { "Cache file meta is empty (deleting). cacheFileMetaFile: ${cacheFileMetaFile.name}" }
             deleteCacheFile(fileId)
             return@withLocalLock false
           }
 
           val cacheFileMeta = readCacheFileMeta(cacheFileMetaFile)
           if (cacheFileMeta == null) {
-            logcat(TAG) { "Failed to read cache file meta (deleting). cacheFileMetaFile: ${cacheFileMetaFile.absolutePath}" }
+            logcat(TAG) { "Failed to read cache file meta (deleting). cacheFileMetaFile: ${cacheFileMetaFile.name}" }
             deleteCacheFile(fileId)
             return@withLocalLock false
           }
@@ -291,7 +296,7 @@ internal class KurobaInnerLruDiskCache(
       return@withContext cacheHandlerSynchronizer.withLocalLock(fileId) {
         try {
           if (!output.exists()) {
-            logcat(TAG) { "File does not exist (deleting). file: ${output.absolutePath}" }
+            logcat(TAG) { "File does not exist (deleting). file: ${output.name}" }
             deleteCacheFile(fileId)
             return@withLocalLock false
           }
@@ -308,7 +313,7 @@ internal class KurobaInnerLruDiskCache(
 
             logcatError(TAG) {
               "Failed to update cache file meta (deleting). " +
-                "cacheFileMeta: ${cacheFileMeta.absolutePath}, output: ${output.absolutePath}"
+                "cacheFileMeta: ${cacheFileMeta.name}, output: ${output.name}"
             }
 
             deleteCacheFile(fileId)
@@ -330,36 +335,48 @@ internal class KurobaInnerLruDiskCache(
     val totalSize = size.addAndGet(fileLen.coerceAtLeast(0))
     val trimTime = lastTrimTime.get()
     val now = System.currentTimeMillis()
-
-    val minTrimInterval = if (androidHelpers.isDevFlavor()) {
-      0
-    } else {
-      // If the user scrolls through high-res images very fast we may end up in a situation
-      // where the cache limit is hit but all the files in it were created earlier than
-      // MIN_CACHE_FILE_LIFE_TIME ago. So in such case trim() will be called on EVERY
-      // new opened image and since trim() is a pretty slow operation it may overload the
-      // disk IO. So to avoid it we run trim() only once per MIN_TRIM_INTERVAL.
-      MIN_TRIM_INTERVAL
-    }
+    val minTrimInterval = MIN_TRIM_INTERVAL
 
     val canRunTrim = totalSize > fileCacheDiskSizeBytes
       && now - trimTime > minTrimInterval
       && trimRunning.compareAndSet(false, true)
 
     if (canRunTrim) {
-      coroutineScope.launch {
+      currentAutoTrimJob?.cancel()
+      currentAutoTrimJob = null
+
+      currentAutoTrimJob = coroutineScope.launch {
         try {
-          trim()
+          trim(isAutoTrim = true)
         } catch (error: Throwable) {
           logcat(TAG) { "trim() error, ${error.asLog()}" }
         } finally {
-          lastTrimTime.set(now)
+          lastTrimTime.set(System.currentTimeMillis())
           trimRunning.set(false)
+          currentAutoTrimJob = null
         }
       }
     }
 
     return totalSize
+  }
+
+  suspend fun manualTrim() {
+    val totalSize = size.get()
+    if (totalSize > fileCacheDiskSizeBytes) {
+      currentAutoTrimJob?.cancel()
+      currentAutoTrimJob = null
+
+      withContext(sharedDispatcher) {
+        try {
+          trimRunning.set(true)
+          trim(isAutoTrim = false)
+        } finally {
+          lastTrimTime.set(System.currentTimeMillis())
+          trimRunning.set(false)
+        }
+      }
+    }
   }
 
   suspend fun deleteCacheFile(cacheFile: File): Boolean {
@@ -385,12 +402,12 @@ internal class KurobaInnerLruDiskCache(
 
         val deleteCacheFileResult = !cacheFile.exists() || cacheFile.delete()
         if (!deleteCacheFileResult) {
-          logcat(TAG) { "Failed to delete cache file, fileName = ${cacheFile.absolutePath}" }
+          logcat(TAG) { "Failed to delete cache file, fileName = ${cacheFile.name}" }
         }
 
         val deleteCacheFileMetaResult = !cacheMetaFile.exists() || cacheMetaFile.delete()
         if (!deleteCacheFileMetaResult) {
-          logcat(TAG) { "Failed to delete cache file meta = ${cacheMetaFile.absolutePath}" }
+          logcat(TAG) { "Failed to delete cache file meta = ${cacheMetaFile.name}" }
         }
 
         synchronized(filesOnDiskCache) { filesOnDiskCache.remove(fileId) }
@@ -409,11 +426,11 @@ internal class KurobaInnerLruDiskCache(
               size.set(0L)
             }
 
-            if (isDevBuild) {
+            if (isDevFlavor) {
               logcat(TAG) {
                 "Deleted ${cacheFile.name} and it's meta ${cacheMetaFile.name}, " +
-                  "fileSize = ${fileSize.asReadableFileSize()}, " +
-                  "cache size = ${size.get().asReadableFileSize()}"
+                  "fileSize: ${fileSize.asReadableFileSize()}, " +
+                  "cache size: ${size.get().asReadableFileSize()}"
               }
             }
           }
@@ -435,7 +452,7 @@ internal class KurobaInnerLruDiskCache(
         if (cacheDirFile.exists() && cacheDirFile.isDirectory) {
           for (file in cacheDirFile.listFiles() ?: emptyArray()) {
             if (!deleteCacheFile(file)) {
-              logcat(TAG) { "Could not delete cache file while clearing cache ${file.absolutePath}" }
+              logcat(TAG) { "Could not delete cache file while clearing cache ${file.name}" }
             }
           }
         }
@@ -443,7 +460,7 @@ internal class KurobaInnerLruDiskCache(
         if (chunksCacheDirFile.exists() && chunksCacheDirFile.isDirectory) {
           for (file in chunksCacheDirFile.listFiles() ?: emptyArray()) {
             if (!file.delete()) {
-              logcat(TAG) { "Could not delete cache chunk file while clearing cache ${file.absolutePath}" }
+              logcat(TAG) { "Could not delete cache chunk file while clearing cache ${file.name}" }
             }
           }
         }
@@ -470,7 +487,7 @@ internal class KurobaInnerLruDiskCache(
       }
 
       if (!file.name.endsWith(CACHE_META_EXTENSION)) {
-        logcat(TAG) { "Not a cache file meta! file = ${file.absolutePath}" }
+        logcat(TAG) { "Not a cache file meta! file = ${file.name}" }
         return@withLocalLock false
       }
 
@@ -526,7 +543,7 @@ internal class KurobaInnerLruDiskCache(
 
   private fun readCacheFileMeta(cacheFileMeta: File): CacheFileMeta? {
     if (!cacheFileMeta.exists()) {
-      throw IOException("Cache file meta does not exist, path = ${cacheFileMeta.absolutePath}")
+      throw IOException("Cache file meta does not exist, path = ${cacheFileMeta.name}")
     }
 
     if (!cacheFileMeta.isFile) {
@@ -543,7 +560,7 @@ internal class KurobaInnerLruDiskCache(
     }
 
     if (!cacheFileMeta.name.endsWith(CACHE_META_EXTENSION)) {
-      throw IOException("Not a cache file meta! file = ${cacheFileMeta.absolutePath}")
+      throw IOException("Not a cache file meta! file = ${cacheFileMeta.name}")
     }
 
     return cacheFileMeta.reader().use { reader ->
@@ -581,10 +598,15 @@ internal class KurobaInnerLruDiskCache(
         throw IOException("Bad file version: $fileVersion")
       }
 
+      val createdOn = split[1].toLong()
+      val isDownloaded = split[2].toBoolean()
+
+      check(createdOn > 0L) { "Bad createdOn: $createdOn" }
+
       return@use CacheFileMeta(
-        fileVersion,
-        split[1].toLong(),
-        split[2].toBoolean()
+        version = fileVersion,
+        createdOn = createdOn,
+        isDownloaded = isDownloaded
       )
     }
   }
@@ -720,16 +742,20 @@ internal class KurobaInnerLruDiskCache(
     }
   }
 
-  private suspend fun trim() {
+  private suspend fun CoroutineScope.trim(isAutoTrim: Boolean) {
     BackgroundUtils.ensureBackgroundThread()
 
-    val directoryFiles = cacheHandlerSynchronizer.withGlobalLock { cacheDirFile.listFiles() ?: emptyArray() }
+    val (directoryFiles, fileIdsToSkip) = cacheHandlerSynchronizer.withGlobalLock {
+      val allFiles = cacheDirFile.listFiles() ?: emptyArray()
+      val allKeys = cacheHandlerSynchronizer.getActiveSynchronizerKeys()
+
+      return@withGlobalLock allFiles to allKeys
+    }
+
     if (directoryFiles.size <= MIN_FILES_IN_DIRECTORY_FOR_TRIM_TO_START) {
       logcat(TAG) { "trim() too few files to start trim: ${directoryFiles.size}, needed: $MIN_FILES_IN_DIRECTORY_FOR_TRIM_TO_START" }
       return
     }
-
-    val start = System.currentTimeMillis()
 
     // LastModified doesn't work on some platforms/phones
     // (https://issuetracker.google.com/issues/36930892)
@@ -757,22 +783,37 @@ internal class KurobaInnerLruDiskCache(
 
     logcat(TAG) {
       "trim() started, " +
+      "isAutoTrim=${isAutoTrim}, " +
       "cacheFileType=${cacheFileType}, " +
+      "fileIdsToSkipSize=${fileIdsToSkip.size}, " +
       "directoryFilesCount=${directoryFiles.size}, " +
       "currentCacheSize=${size.get().asReadableFileSize()}, " +
       "fileCacheDiskSizeBytes=${fileCacheDiskSizeBytes.asReadableFileSize()}, " +
       "sizeToFree=${sizeToFree.asReadableFileSize()}"
     }
 
+    val start = System.currentTimeMillis()
+
     // We either delete all files we can in the cache directory or at most half of the cache
     for (cacheFile in sortedFiles) {
+      if (!isActive) {
+        logcat(TAG) { "Exiting trim() early because coroutine scope is no longer active" }
+        break
+      }
+
       val file = cacheFile.file
       val createdOn = cacheFile.createdOn
+      val fileId = FileId.fromFile(file)
+
+      if (fileId in fileIdsToSkip) {
+        logcat(TAG) { "Skipping ${cacheFile.file.name} with fileId: $fileId because it's currently being processed in other place'" }
+        continue
+      }
 
       if (now - createdOn < MIN_CACHE_FILE_LIFE_TIME) {
         val timeDelta = (now - createdOn)
         logcat(TAG) { "Skipping ${cacheFile.file.name} because it was created not long ago, timeDelta: $timeDelta" }
-        break
+        continue
       }
 
       if (totalDeleted >= sizeToFree) {
@@ -786,7 +827,7 @@ internal class KurobaInnerLruDiskCache(
         ++filesDeleted
       }
 
-      if (System.currentTimeMillis() - start > MAX_TRIM_TIME_MS) {
+      if (isAutoTrim && (System.currentTimeMillis() - start > MAX_TRIM_TIME_MS)) {
         logcat(TAG) { "Exiting trim() early, the time bound exceeded" }
         break
       }
@@ -797,7 +838,9 @@ internal class KurobaInnerLruDiskCache(
 
     logcat(TAG) {
       "trim() ended (took ${timeDiff} ms), " +
-        "cacheFileType=$cacheFileType, filesDeleted=$filesDeleted, " +
+        "isAutoTrim=$isAutoTrim, " +
+        "cacheFileType=$cacheFileType, " +
+        "filesDeleted=$filesDeleted, " +
         "total space freed=${totalDeleted.asReadableFileSize()}"
     }
   }
@@ -811,16 +854,19 @@ internal class KurobaInnerLruDiskCache(
     for ((cacheFile, cacheMetaFile) in groupedCacheFiles) {
       val cacheFileMeta = try {
         readCacheFileMeta(cacheMetaFile)
-
       } catch (error: IOException) {
+        if (isDevFlavor) {
+          logcatError(TAG) { "readCacheFileMeta(${cacheMetaFile.name}) error: ${error.errorMessageOrClassName()}" }
+        }
+
         null
       }
 
       if (cacheFileMeta == null) {
-        logcat(TAG) { "Couldn't read cache meta for file = ${cacheFile.absolutePath}" }
+        logcat(TAG) { "Couldn't read cache meta for file = ${cacheFile.name}" }
 
         if (!deleteCacheFile(cacheFile)) {
-          logcat(TAG) { "Couldn't delete cache file with meta for file = ${cacheFile.absolutePath}" }
+          logcat(TAG) { "Couldn't delete cache file with meta for file = ${cacheFile.name}" }
         }
         continue
       }
@@ -908,7 +954,7 @@ internal class KurobaInnerLruDiskCache(
 
     override fun toString(): String {
       return "CacheFile{" +
-        "file=${file.absolutePath}" +
+        "file=${file.name}" +
         ", cacheFileMeta=${cacheFileMeta}" +
         "}"
     }
@@ -948,7 +994,7 @@ internal class KurobaInnerLruDiskCache(
   companion object {
     private const val CURRENT_META_FILE_VERSION = 1
     private const val CACHE_FILE_META_HEADER_SIZE = 4
-    private const val MAX_TRIM_TIME_MS = 3000L
+    private const val MAX_TRIM_TIME_MS = 2000L
 
     // I don't think it will ever get this big but just in case don't forget to update it if it
     // ever gets

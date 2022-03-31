@@ -17,9 +17,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import logcat.asLog
@@ -37,6 +36,9 @@ class MediaViewerScreenViewModel(
 
   suspend fun init(mediaViewerParams: MediaViewerParams): InitResult {
     return withContext(Dispatchers.Default) {
+      // Trim the cache every time we open the media viewer
+      kurobaLruDiskCache.manualTrim(CacheFileType.PostMediaFull)
+
       val initialImageUrl = mediaViewerParams.initialImage
       val imagesToShow = mutableListOf<IPostImage>()
 
@@ -80,13 +82,13 @@ class MediaViewerScreenViewModel(
   suspend fun loadFullImageAndGetFile(
     postImageData: IPostImage
   ): Flow<ImageLoadState> {
-    return callbackFlow {
+    return channelFlow {
       val fullImageUrl = postImageData.fullImageAsUrl
 
       val loadImageResult = withContext(Dispatchers.IO) {
         try {
           logcat { "loadFullImageInternal(${fullImageUrl}) start" }
-          Result.Try { loadFullImageInternal(postImageData, this@callbackFlow) }
+          Result.Try { loadFullImageInternal(postImageData, this@channelFlow) }
         } finally {
           logcat { "loadFullImageInternal(${fullImageUrl}) end" }
         }
@@ -102,8 +104,6 @@ class MediaViewerScreenViewModel(
 
         send(ImageLoadState.Error(postImageData, error))
       }
-
-      awaitClose()
     }
   }
 

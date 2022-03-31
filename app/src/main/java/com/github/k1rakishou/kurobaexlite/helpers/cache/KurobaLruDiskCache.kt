@@ -62,10 +62,18 @@ class KurobaLruDiskCache(
         chunksCacheDirFile = innerCacheChunksDirFile,
         fileCacheDiskSizeBytes = cacheFileType.calculateDiskSize(totalFileCacheDiskSizeBytes),
         cacheFileType = cacheFileType,
-        isDevBuild = ENABLE_LOGGING
+        isDevFlavor = androidHelpers.isDevFlavor()
       )
 
       innerCaches.put(cacheFileType, innerCache)
+    }
+  }
+
+  suspend fun manualTrim(vararg cacheFileTypes: CacheFileType) {
+    check(cacheFileTypes.isNotEmpty()) { "cacheFileTypes must not be empty!" }
+
+    cacheFileTypes.forEach { cacheFileType ->
+      getInnerCacheByFileType(cacheFileType).manualTrim()
     }
   }
 

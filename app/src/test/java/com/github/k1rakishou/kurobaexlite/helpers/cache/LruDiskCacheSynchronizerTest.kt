@@ -5,14 +5,15 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CacheHandlerSynchronizerTest {
+class LruDiskCacheSynchronizerTest {
 
   @Test
   fun `should not deadlock when locking with different keys`() = runTest {
     var value = 0
-    val cacheHandlerSynchronizer = CacheHandlerSynchronizer<String>()
+    val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<String>()
 
     cacheHandlerSynchronizer.withLocalLock("1") {
       cacheHandlerSynchronizer.withLocalLock("2") {
@@ -25,12 +26,13 @@ class CacheHandlerSynchronizerTest {
     }
 
     assertEquals(1, value)
+    assertTrue(cacheHandlerSynchronizer.getActiveSynchronizerKeys().isEmpty())
   }
 
   @Test
   fun `should not deadlock when nested locking with the same key`() = runTest {
     var value = 0
-    val cacheHandlerSynchronizer = CacheHandlerSynchronizer<String>()
+    val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<String>()
 
     cacheHandlerSynchronizer.withLocalLock("1") {
       cacheHandlerSynchronizer.withLocalLock("1") {
@@ -39,12 +41,13 @@ class CacheHandlerSynchronizerTest {
     }
 
     assertEquals(1, value)
+    assertTrue(cacheHandlerSynchronizer.getActiveSynchronizerKeys().isEmpty())
   }
 
   @Test
   fun `should not deadlock when nested locking with global lock`() = runTest {
     var value = 0
-    val cacheHandlerSynchronizer = CacheHandlerSynchronizer<String>()
+    val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<String>()
 
     cacheHandlerSynchronizer.withGlobalLock {
       cacheHandlerSynchronizer.withGlobalLock {
@@ -53,12 +56,13 @@ class CacheHandlerSynchronizerTest {
     }
 
     assertEquals(1, value)
+    assertTrue(cacheHandlerSynchronizer.getActiveSynchronizerKeys().isEmpty())
   }
 
   @Test
   fun `should not deadlock when mixing local and global locks`() = runTest {
     var value = 0
-    val cacheHandlerSynchronizer = CacheHandlerSynchronizer<String>()
+    val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<String>()
 
     cacheHandlerSynchronizer.withGlobalLock {
       cacheHandlerSynchronizer.withLocalLock("1") {
@@ -77,12 +81,13 @@ class CacheHandlerSynchronizerTest {
     }
 
     assertEquals(1, value)
+    assertTrue(cacheHandlerSynchronizer.getActiveSynchronizerKeys().isEmpty())
   }
 
   @Test
   fun `concurrent access from multiple threads only local`() = runTest {
     val values = IntArray(50) { 0 }
-    val cacheHandlerSynchronizer = CacheHandlerSynchronizer<String>()
+    val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<String>()
 
     (0 until 50).map { id ->
       async(Dispatchers.IO) {
@@ -95,12 +100,13 @@ class CacheHandlerSynchronizerTest {
     }.awaitAll()
 
     assertEquals(50 * 100, values.sum())
+    assertTrue(cacheHandlerSynchronizer.getActiveSynchronizerKeys().isEmpty())
   }
 
   @Test
   fun `concurrent access from multiple threads only global`() = runTest {
     var value = 0
-    val cacheHandlerSynchronizer = CacheHandlerSynchronizer<String>()
+    val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<String>()
 
     (0 until 50).map { id ->
       async(Dispatchers.IO) {
@@ -113,12 +119,13 @@ class CacheHandlerSynchronizerTest {
     }.awaitAll()
 
     assertEquals(50 * 100, value)
+    assertTrue(cacheHandlerSynchronizer.getActiveSynchronizerKeys().isEmpty())
   }
 
   @Test
   fun `concurrent access from multiple threads mixed 1`() = runTest {
     var value = 0
-    val cacheHandlerSynchronizer = CacheHandlerSynchronizer<String>()
+    val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<String>()
 
     (0 until 50).map { id ->
       async(Dispatchers.IO) {
@@ -133,12 +140,13 @@ class CacheHandlerSynchronizerTest {
     }.awaitAll()
 
     assertEquals(50 * 100, value)
+    assertTrue(cacheHandlerSynchronizer.getActiveSynchronizerKeys().isEmpty())
   }
 
   @Test
   fun `concurrent access from multiple threads mixed 2`() = runTest {
     var value = 0
-    val cacheHandlerSynchronizer = CacheHandlerSynchronizer<String>()
+    val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<String>()
 
     (0 until 50).map { id ->
       async(Dispatchers.IO) {
@@ -153,6 +161,7 @@ class CacheHandlerSynchronizerTest {
     }.awaitAll()
 
     assertEquals(50 * 100, value)
+    assertTrue(cacheHandlerSynchronizer.getActiveSynchronizerKeys().isEmpty())
   }
 
 }
