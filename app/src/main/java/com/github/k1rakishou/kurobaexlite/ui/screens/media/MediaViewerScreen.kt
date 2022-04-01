@@ -53,6 +53,7 @@ import com.github.k1rakishou.cssi_lib.ImageDecoderProvider
 import com.github.k1rakishou.cssi_lib.ImageSourceProvider
 import com.github.k1rakishou.cssi_lib.MaxTileSize
 import com.github.k1rakishou.cssi_lib.MinimumScaleType
+import com.github.k1rakishou.cssi_lib.ScrollableContainerDirection
 import com.github.k1rakishou.cssi_lib.rememberComposeSubsamplingScaleImageState
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
@@ -394,7 +395,10 @@ class MediaViewerScreen(
 
           val loadingProgress = loadingProgressMut
           if (loadingProgress != null) {
-            DisplayLoadingProgressIndicator(loadingProgress)
+            val restartIndex = loadingProgress.first
+            val progress = loadingProgress.second
+
+            DisplayLoadingProgressIndicator(restartIndex, progress)
           }
         }
         is ImageLoadState.Progress -> {
@@ -407,7 +411,6 @@ class MediaViewerScreen(
           }
 
           DisplayFullImage(
-            currentPage = { pagerState.currentPage },
             postImageDataLoadState = postImageDataLoadState,
             onFullImageLoaded = { fullImageLoaded = true },
             onFullImageFailedToLoad = { fullImageLoaded = false }
@@ -424,7 +427,7 @@ class MediaViewerScreen(
   }
 
   @Composable
-  private fun DisplayLoadingProgressIndicator(loadingProgress: Pair<Int, Float>) {
+  private fun DisplayLoadingProgressIndicator(restartIndex: Int, progress: Float) {
     val chanTheme = LocalChanTheme.current
     val density = LocalDensity.current
 
@@ -446,8 +449,6 @@ class MediaViewerScreen(
       }
     }
 
-    val restartIndex = loadingProgress.first
-    val progress = loadingProgress.second
     val maxRestarts = MediaViewerScreenViewModel.MAX_RETRIES
 
     LaunchedEffect(
@@ -611,11 +612,12 @@ class MediaViewerScreen(
 
   @Composable
   private fun DisplayFullImage(
-    currentPage: () -> Int,
     postImageDataLoadState: ImageLoadState.Ready,
     onFullImageLoaded: () -> Unit,
     onFullImageFailedToLoad: () -> Unit
   ) {
+    val coroutineScope = rememberCoroutineScope()
+
     val eventListener = object : ComposeSubsamplingScaleImageEventListener() {
       override fun onFailedToDecodeImageInfo(error: Throwable) {
         val url = postImageDataLoadState.fullImageUrlAsString
@@ -669,13 +671,10 @@ class MediaViewerScreen(
       }
     }
 
-    // TODO(KurobaEx): add onClick once it's supported
-    //  onClick = { coroutineScope.launch { onBackPressed() } }
-
     ComposeSubsamplingScaleImage(
       modifier = Modifier.fillMaxSize(),
-      pointerInputKey = currentPage(),
       state = rememberComposeSubsamplingScaleImageState(
+        scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
         doubleTapZoom = 2f,
         maxScale = 3f,
         maxMaxTileSize = { MaxTileSize.Auto() },
@@ -683,7 +682,8 @@ class MediaViewerScreen(
         imageDecoderProvider = imageDecoderProvider
       ),
       imageSourceProvider = imageSourceProvider,
-      eventListener = eventListener
+      eventListener = eventListener,
+      onImageTapped = { coroutineScope.launch { onBackPressed() } }
     )
   }
 

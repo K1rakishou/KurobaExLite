@@ -19,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -210,10 +212,14 @@ fun PullToRefresh(
       content()
     }
 
+    val trianglePath = remember { Path() }
+
     if (contentSize.width > 0 && contentSize.height > 0) {
       val stroke = with(LocalDensity.current) {
         remember { Stroke(width = 2.dp.toPx(), cap = StrokeCap.Square) }
       }
+      val triangleHeight = with(LocalDensity.current) { remember { 6.dp.toPx() } }
+      val triangleWidth = with(LocalDensity.current) { remember { 4.dp.toPx() } }
 
       val widthDp = with(density) { remember(key1 = contentSize.width) { contentSize.width.toDp() } }
       val heightDp = with(density) { remember(key1 = contentSize.height) { contentSize.height.toDp() } }
@@ -228,6 +234,16 @@ fun PullToRefresh(
           val xPos = size.width / 2f
           val yPos = pullToRefreshPulledPx + topPaddingPx - circleRadiusPx
           val center = Offset(xPos, yPos)
+
+          val cx = center.x
+          val cy = center.y
+
+          trianglePath.reset()
+          trianglePath.moveTo(cx - triangleWidth, cy)   // left bottom
+          trianglePath.lineTo(cx, cy - triangleHeight)  // top center
+          trianglePath.lineTo(cx + triangleWidth, cy)   // right bottom
+          trianglePath.moveTo(cx - triangleWidth, cy)   // left bottom
+          trianglePath.close()
 
           val circleColor = if (pullToRefreshPulledPx > pullThresholdPx) {
             chanTheme.accentColorCompose
@@ -280,8 +296,25 @@ fun PullToRefresh(
                 size = Size(circleRadiusPx, circleRadiusPx),
                 style = stroke
               )
-            })
-        })
+
+              withTransform(
+                transformBlock = {
+                  translate(top = -(circleRadiusPx / 2f))
+                  rotate(90f, center)
+                },
+                drawBlock = {
+                  drawPath(
+                    path = trianglePath,
+                    color = progressIndicatorColor,
+                    alpha = indicatorAlpha,
+                    style = Fill
+                  )
+                }
+              )
+            }
+          )
+        }
+      )
     }
   }
 }

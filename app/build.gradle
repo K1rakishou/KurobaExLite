@@ -227,7 +227,7 @@ dependencies {
     implementation "joda-time:joda-time:${joda_time}"
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
-    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:0a9e79779c'
+    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:fab4ae38cb'
 
     implementation "com.squareup.moshi:moshi-kotlin:${moshi}"
     ksp "com.squareup.moshi:moshi-kotlin-codegen:${moshi}"
