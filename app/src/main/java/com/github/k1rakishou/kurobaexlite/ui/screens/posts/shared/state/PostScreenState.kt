@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state
 
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
@@ -33,16 +34,19 @@ class PostScreenState {
     get() = _contentLoaded.asStateFlow()
 
   fun insertOrUpdate(postCellData: PostCellData) {
-    val asyncData = postsAsyncDataState.value
-    if (asyncData is AsyncData.Data) {
-      asyncData.data.insertOrUpdate(postCellData)
-    }
+    doWithDataState { postsState -> postsState.insertOrUpdate(postCellData) }
   }
 
   fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
-    val asyncData = postsAsyncDataState.value
-    if (asyncData is AsyncData.Data) {
-      asyncData.data.insertOrUpdateMany(postCellDataCollection)
+    doWithDataState { postsState -> postsState.insertOrUpdateMany(postCellDataCollection) }
+  }
+
+  fun onSearchQueryUpdated(searchQuery: String?) {
+    doWithDataState { postsState ->
+      Snapshot.withMutableSnapshot {
+        postsState.onSearchQueryUpdated(searchQuery)
+        searchQueryFlow.value = searchQuery
+      }
     }
   }
 

@@ -248,11 +248,11 @@ private fun PostListInternal(
   val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
 
   val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostDescriptorForIndicator.collectAsState()
-  val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
+  val searchQueryMut by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
   val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
 
-  val contentPadding = remember(key1 = searchQuery, key2 = postListOptions.contentPadding) {
-    if (searchQuery.isNullOrEmpty()) {
+  val contentPadding = remember(key1 = searchQueryMut, key2 = postListOptions.contentPadding) {
+    if (searchQueryMut.isNullOrEmpty()) {
       postListOptions.contentPadding
     } else {
       PaddingValues(
@@ -278,7 +278,7 @@ private fun PostListInternal(
 
   val buildThreadStatusCellFunc: @Composable ((LazyItemScope) -> Unit)? = if (
     !isCatalogMode &&
-    searchQuery == null &&
+    searchQueryMut == null &&
     postsScreenViewModel is ThreadScreenViewModel
   ) {
     { lazyItemScope: LazyItemScope ->
@@ -300,7 +300,7 @@ private fun PostListInternal(
       pullToRefreshEnabled = pullToRefreshEnabled,
       topPadding = pullToRefreshTopPaddingDp,
       pullToRefreshState = pullToRefreshState,
-      canPull = { searchQuery == null },
+      canPull = { searchQueryMut == null },
       onTriggered = remember {
         {
           postsScreenViewModel.reload(
@@ -339,6 +339,7 @@ private fun PostListInternal(
             dataContent = { postListAsyncData ->
               val abstractPostsState = postListAsyncData.data
               val previousPostDataInfoMap = abstractPostsState.postListAnimationInfoMap
+              val postCellDataList = abstractPostsState.posts
 
               postList(
                 isCatalogMode = isCatalogMode,
@@ -347,7 +348,7 @@ private fun PostListInternal(
                 currentlyOpenedThread = currentlyOpenedThread,
                 cellsPadding = cellsPadding,
                 postListOptions = postListOptions,
-                postDataList = abstractPostsState.posts,
+                postCellDataList = postCellDataList,
                 lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
                 onPostBind = { postCellData -> postsScreenViewModel.onPostBind(postCellData) },
                 onPostUnbind = { postCellData -> postsScreenViewModel.onPostUnbind(postCellData) },
@@ -382,12 +383,12 @@ private fun PostListInternal(
         }
       )
 
-      if (searchQuery.isNotNullNorEmpty()) {
+      if (searchQueryMut.isNotNullNorEmpty()) {
         SearchInfoCell(
           cellsPadding = cellsPadding,
           contentPadding = postListOptions.contentPadding,
           postsScreenViewModel = postsScreenViewModel,
-          searchQuery = searchQuery
+          searchQuery = searchQueryMut
         )
       }
     }
@@ -505,7 +506,7 @@ private fun LazyListScope.postList(
   lastViewedPostDescriptorForIndicator: PostDescriptor?,
   cellsPadding: PaddingValues,
   postListOptions: PostListOptions,
-  postDataList: List<State<PostCellData>>,
+  postCellDataList: List<State<PostCellData>>,
   onPostBind: (PostCellData) -> Unit,
   onPostUnbind: (PostCellData) -> Unit,
   canAnimateInsertion: (PostCellData) -> Boolean,
@@ -518,10 +519,10 @@ private fun LazyListScope.postList(
   buildThreadStatusCell: @Composable (LazyItemScope.() -> Unit)? = null
 ) {
   items(
-    count = postDataList.size,
-    key = { index -> "${postCellKeyPrefix}_${postDataList[index].value.postDescriptor}" },
+    count = postCellDataList.size,
+    key = { index -> "${postCellKeyPrefix}_${postCellDataList[index].value.postDescriptor}" },
     itemContent = { index ->
-      val postCellData by postDataList[index]
+      val postCellData by postCellDataList[index]
 
       var rememberedHashForUpdateAnimation by remember {
         mutableStateOf(postCellData.postServerDataHashForListAnimations)
@@ -546,7 +547,7 @@ private fun LazyListScope.postList(
         postCellData = postCellData,
         postListOptions = postListOptions,
         index = index,
-        totalCount = postDataList.size,
+        totalCount = postCellDataList.size,
         animateInsertion = animateInsertion,
         animateUpdate = animateUpdate,
         lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,

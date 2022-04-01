@@ -8,10 +8,13 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.linkedMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.toHashSetByKey
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.java.KoinJavaComponent.inject
 
 class PostsState(
@@ -23,13 +26,59 @@ class PostsState(
   val lastUpdatedOn: Long
     get() = _lastUpdatedOn
 
-  private val postIndexes = linkedMapOf<PostDescriptor, Int>()
+  private val postIndexes = linkedMapWithCap<PostDescriptor, Int>(128)
+  private val allPosts = mutableListWithCap<MutableState<PostCellData>>(128)
 
-  private val postsMutable = mutableStateListOf<MutableState<PostCellData>>()
+  private val postsProcessed = mutableStateListOf<MutableState<PostCellData>>()
   val posts: List<State<PostCellData>>
-    get() = postsMutable
+    get() = postsProcessed
+
+  private val searchQueryFlow = MutableStateFlow<String?>(null)
 
   val postListAnimationInfoMap = mutableStateMapOf<PostDescriptor, PreviousPostDataInfo>()
+
+  fun onSearchQueryUpdated(searchQuery: String?) {
+    if (searchQuery == searchQueryFlow.value || searchQuery.isNullOrEmpty()) {
+      postsProcessed.clear()
+      postsProcessed.addAll(allPosts)
+      return
+    }
+
+    val matchedPostCellDataStates = allPosts.mapNotNull { postCellDataState ->
+      val postCellData = postCellDataState.value
+
+      if (searchQuery.isEmpty()) {
+        return@mapNotNull postCellDataState
+      }
+
+      val commentMatchesQuery = postCellData.parsedPostData
+        ?.processedPostComment
+        ?.text
+        ?.contains(other = searchQuery, ignoreCase = true)
+        ?: false
+
+      if (commentMatchesQuery) {
+        return@mapNotNull postCellDataState
+      }
+
+      val subjectMatchesQuery = postCellData.parsedPostData
+        ?.processedPostSubject
+        ?.text
+        ?.contains(other = searchQuery, ignoreCase = true)
+        ?: false
+
+      if (subjectMatchesQuery) {
+        return@mapNotNull postCellDataState
+      }
+
+      return@mapNotNull null
+    }
+
+    postsProcessed.clear()
+    postsProcessed.addAll(matchedPostCellDataStates)
+
+    searchQueryFlow.value = searchQuery
+  }
 
   fun insertOrUpdate(postCellData: PostCellData) {
     Snapshot.withMutableSnapshot {
@@ -39,26 +88,30 @@ class PostsState(
         postIndexes[postCellData.postDescriptor] = nextPostIndex
 
         // We assume that posts can only be inserted at the end of the post list
-        postsMutable += mutableStateOf(postCellData)
+        allPosts += mutableStateOf(postCellData)
       } else {
         _lastUpdatedOn = SystemClock.elapsedRealtime()
-        postsMutable[index].value = postCellData
+        allPosts[index].value = postCellData
       }
 
-      check(postIndexes.size == postsMutable.size) {
-        "postIndexes.size (${postIndexes.size}) != postsMutable.size (${postsMutable.size})"
+      check(postIndexes.size == allPosts.size) {
+        "postIndexes.size (${postIndexes.size}) != postsMutable.size (${allPosts.size})"
       }
 
       if (androidHelpers.isDevFlavor()) {
-        val postMutableDeduplicated = postsMutable.toHashSetByKey { it.value.postDescriptor }
-        check(postMutableDeduplicated.size == postsMutable.size) {
+        val postMutableDeduplicated = allPosts.toHashSetByKey { postCellDataState ->
+          postCellDataState.value.postDescriptor
+        }
+
+        check(postMutableDeduplicated.size == allPosts.size) {
           "Duplicates found in postsMutable " +
             "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
-            "postsMutable.size=${postsMutable.size})"
+            "postsMutable.size=${allPosts.size})"
         }
       }
 
       updatePostListAnimationInfoMap(listOf(postCellData))
+      onSearchQueryUpdated(searchQueryFlow.value)
     }
   }
 
@@ -78,79 +131,33 @@ class PostsState(
           postIndexes[postDescriptor] = initialIndex++
 
           // We assume that posts can only be inserted at the end of the post list
-          postsMutable += mutableStateOf(postCellData)
+          allPosts += mutableStateOf(postCellData)
         } else {
-          postsMutable[index].value = postCellData
+          allPosts[index].value = postCellData
         }
       }
 
-      check(postIndexes.size == postsMutable.size) {
-        "postIndexes.size (${postIndexes.size}) != postsMutable.size (${postsMutable.size})"
+      check(postIndexes.size == allPosts.size) {
+        "postIndexes.size (${postIndexes.size}) != postsMutable.size (${allPosts.size})"
       }
 
       if (androidHelpers.isDevFlavor()) {
-        val postMutableDeduplicated = postsMutable.toHashSetByKey { it.value.postDescriptor }
-        check(postMutableDeduplicated.size == postsMutable.size) {
+        val postMutableDeduplicated = allPosts.toHashSetByKey { postCellDataState ->
+          postCellDataState.value.postDescriptor
+        }
+
+        check(postMutableDeduplicated.size == allPosts.size) {
           "Duplicates found in postsMutable " +
             "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
-            "postsMutable.size=${postsMutable.size})"
+            "postsMutable.size=${allPosts.size})"
         }
       }
 
       _lastUpdatedOn = SystemClock.elapsedRealtime()
       updatePostListAnimationInfoMap(postCellDataCollection)
+      onSearchQueryUpdated(searchQueryFlow.value)
     }
   }
-
-  // TODO(KurobaEx):
-//  fun updateSearchQuery(searchQuery: String?) {
-//    if (searchQuery == null) {
-//      if (_postsCopy != null) {
-//        val oldThreads = _postsCopy!!.map { mutableStateOf(it) }
-//
-//        postsMutable.clear()
-//        postsMutable.addAll(oldThreads)
-//      }
-//
-//      _postsCopy = null
-//      return
-//    }
-//
-//    if (_postsCopy == null) {
-//      _postsCopy = postsMutable.map { it.value.copy() as PostCellData }
-//    }
-//
-//    val filteredThreads = _postsCopy!!.filter { postData ->
-//      if (searchQuery.isEmpty()) {
-//        return@filter true
-//      }
-//
-//      val commentMatchesQuery = postData.parsedPostData
-//        ?.processedPostComment
-//        ?.text
-//        ?.contains(other = searchQuery, ignoreCase = true)
-//        ?: false
-//
-//      if (commentMatchesQuery) {
-//        return@filter true
-//      }
-//
-//      val subjectMatchesQuery = postData.parsedPostData
-//        ?.processedPostSubject
-//        ?.text
-//        ?.contains(other = searchQuery, ignoreCase = true)
-//        ?: false
-//
-//      if (subjectMatchesQuery) {
-//        return@filter true
-//      }
-//
-//      return@filter false
-//    }
-//
-//    postsMutable.clear()
-//    postsMutable.addAll(filteredThreads.map { mutableStateOf(it) })
-//  }
 
   private fun updatePostListAnimationInfoMap(postDataList: Collection<PostCellData>) {
     // Pre-insert first batch of posts into the previousPostDataInfoMap so that we don't play
@@ -174,14 +181,14 @@ class PostsState(
     other as PostsState
 
     if (chanDescriptor != other.chanDescriptor) return false
-    if (posts != other.posts) return false
+    if (allPosts != other.allPosts) return false
 
     return true
   }
 
   override fun hashCode(): Int {
     var result = chanDescriptor.hashCode()
-    result = 31 * result + posts.hashCode()
+    result = 31 * result + allPosts.hashCode()
     return result
   }
 
