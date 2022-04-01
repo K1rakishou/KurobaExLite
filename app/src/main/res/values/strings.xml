@@ -104,4 +104,14 @@
 
     <string name="media_viewer_failed_to_find_image_in_images">Failed to find previous image in images</string>
 
+    <string name="media_viewer_plugins_failed_to_load_mpv_libs">Failed to load mpv libraries! Check that they are installed and restart the app.</string>
+    <string name="media_viewer_plugins_install_mpv_libs_from_github">Install mpv libs from Github</string>
+    <string name="media_viewer_plugins_loading_libs">Loading mpv libraries…</string>
+    <string name="media_viewer_plugins_libs_status_lib_installed">Installed</string>
+    <string name="media_viewer_plugins_libs_status_lib_missing">Missing</string>
+    <string name="media_viewer_plugins_libs_installation_failure">Failure</string>
+    <string name="media_viewer_plugins_libs_installation_success">Success</string>
+    <string name="media_viewer_plugins_libs_installation_description_failure">Failed to install mpv libraries! Error: \'%1$s\'</string>
+    <string name="media_viewer_plugins_libs_installation_description_success">Successfully installed mpv libraries! The app will now be restarted.</string>
+
 </resources>

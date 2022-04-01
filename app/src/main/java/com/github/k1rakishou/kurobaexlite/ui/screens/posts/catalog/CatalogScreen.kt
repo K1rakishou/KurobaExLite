@@ -60,15 +60,7 @@ class CatalogScreen(
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
 
   private val catalogScreenToolbarActionHandler by lazy {
-    CatalogScreenToolbarActionHandler(
-      componentActivity = componentActivity,
-      navigationRouter = navigationRouter,
-      appSettings = appSettings,
-      catalogScreenViewModel = catalogScreenViewModel,
-      threadScreenViewModel = threadScreenViewModel,
-      homeScreenViewModel = homeScreenViewModel,
-      snackbarManager = snackbarManager
-    )
+    CatalogScreenToolbarActionHandler()
   }
 
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
@@ -167,7 +159,11 @@ class CatalogScreen(
             navigationRouter = navigationRouter,
             menuItems = floatingMenuItems,
             onMenuItemClicked = { menuItem ->
-              catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(menuItem)
+              catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter,
+                menuItem = menuItem
+              )
             }
           )
         )

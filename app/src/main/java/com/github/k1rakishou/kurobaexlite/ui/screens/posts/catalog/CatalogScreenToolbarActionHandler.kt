@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
@@ -17,33 +18,53 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenView
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import logcat.logcat
+import org.koin.java.KoinJavaComponent.inject
 
-class CatalogScreenToolbarActionHandler(
-  private val componentActivity: ComponentActivity,
-  private val navigationRouter: NavigationRouter,
-  private val appSettings: AppSettings,
-  private val catalogScreenViewModel: CatalogScreenViewModel,
-  private val threadScreenViewModel: ThreadScreenViewModel,
-  private val homeScreenViewModel: HomeScreenViewModel,
-  private val snackbarManager: SnackbarManager
-) {
+class CatalogScreenToolbarActionHandler {
+  private val appSettings: AppSettings by inject(AppSettings::class.java)
+  private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
-  suspend fun processClickedToolbarMenuItem(menuItem: FloatingMenuItem) {
+  private lateinit var catalogScreenViewModel: CatalogScreenViewModel
+  private lateinit var threadScreenViewModel: ThreadScreenViewModel
+  private lateinit var homeScreenViewModel: HomeScreenViewModel
+
+  suspend fun processClickedToolbarMenuItem(
+    componentActivity: ComponentActivity,
+    navigationRouter: NavigationRouter,
+    menuItem: FloatingMenuItem
+  ) {
+    catalogScreenViewModel = componentActivity.viewModels<CatalogScreenViewModel>().value
+    threadScreenViewModel = componentActivity.viewModels<ThreadScreenViewModel>().value
+    homeScreenViewModel = componentActivity.viewModels<HomeScreenViewModel>().value
+
     logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
     when (menuItem.menuItemKey) {
       ACTION_RELOAD -> {
         catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
       }
-      ACTION_LAYOUT_MODE -> handleLayoutMode()
+      ACTION_LAYOUT_MODE -> {
+        handleLayoutMode(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter
+        )
+      }
       ACTION_BOOKMARKS_SCREEN_POSITION -> appSettings.bookmarksScreenOnLeftSide.toggle()
-      ACTION_OPEN_THREAD_BY_IDENTIFIER -> handleOpenThreadByIdentifier()
+      ACTION_OPEN_THREAD_BY_IDENTIFIER -> {
+        handleOpenThreadByIdentifier(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter
+        )
+      }
       ACTION_SCROLL_TOP -> catalogScreenViewModel.scrollTop()
       ACTION_SCROLL_BOTTOM -> catalogScreenViewModel.scrollBottom()
     }
   }
 
-  private suspend fun handleLayoutMode() {
+  private suspend fun handleLayoutMode(
+    componentActivity: ComponentActivity,
+    navigationRouter: NavigationRouter,
+  ) {
     val floatingMenuItems = mutableListOf<FloatingMenuItem>()
 
     floatingMenuItems += FloatingMenuItem.Group(
@@ -72,7 +93,10 @@ class CatalogScreenToolbarActionHandler(
     )
   }
 
-  private fun handleOpenThreadByIdentifier() {
+  private fun handleOpenThreadByIdentifier(
+    componentActivity: ComponentActivity,
+    navigationRouter: NavigationRouter,
+  ) {
     navigationRouter.presentScreen(
       DialogScreen(
         dialogKey = DialogScreen.CATALOG_OVERFLOW_OPEN_THREAD_BY_IDENTIFIER,

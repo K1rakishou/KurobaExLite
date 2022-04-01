@@ -6,12 +6,12 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
 import logcat.logcat
+import org.koin.java.KoinJavaComponent.inject
 
-class ThreadScreenToolbarActionHandler(
-  private val siteManager: SiteManager,
-  private val snackbarManager: SnackbarManager,
-  private val androidHelpers: AndroidHelpers
-) {
+class ThreadScreenToolbarActionHandler {
+  private val siteManager: SiteManager by inject(SiteManager::class.java)
+  private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
+  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
 
   fun processClickedToolbarMenuItem(
     menuItem: FloatingMenuItem,

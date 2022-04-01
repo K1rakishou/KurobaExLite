@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.Paint
 import android.graphics.Rect
@@ -45,22 +46,16 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
-import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImage
-import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageDecoder
-import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageEventListener
-import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageSource
-import com.github.k1rakishou.cssi_lib.ImageDecoderProvider
-import com.github.k1rakishou.cssi_lib.ImageSourceProvider
-import com.github.k1rakishou.cssi_lib.MaxTileSize
-import com.github.k1rakishou.cssi_lib.MinimumScaleType
-import com.github.k1rakishou.cssi_lib.ScrollableContainerDirection
-import com.github.k1rakishou.cssi_lib.rememberComposeSubsamplingScaleImageState
+import com.github.k1rakishou.chan.core.mpv.MPVLib
+import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
-import com.github.k1rakishou.kurobaexlite.helpers.decoder.TachiyomiImageDecoder
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.ImageType
+import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
@@ -72,9 +67,13 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.progress.ProgressScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.DisplayFullImage
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.DisplayUnsupportedMedia
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.DisplayVideo
 import java.io.IOException
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
@@ -83,6 +82,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.java.KoinJavaComponent.inject
 
 
 class MediaViewerScreen(
@@ -91,7 +91,7 @@ class MediaViewerScreen(
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
-  private val bgColor = Color.Black.copy(alpha = 0.5f)
+  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -105,7 +105,6 @@ class MediaViewerScreen(
 
   @Composable
   override fun CardContent() {
-    val insets = LocalWindowInsets.current
     val mediaViewerScreenState = remember { MediaViewerScreenState() }
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
@@ -127,7 +126,7 @@ class MediaViewerScreen(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(bgColor)
+        .background(Color.Black)
     ) {
       var currentImageIndex by remember { mutableStateOf(0) }
       var targetImageIndex by remember { mutableStateOf(0) }
@@ -310,6 +309,7 @@ class MediaViewerScreen(
       return
     }
 
+    val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val initialPageMut by mediaViewerScreenState.initialPage
     val imagesMut = mediaViewerScreenState.images
@@ -332,6 +332,19 @@ class MediaViewerScreen(
       }
 
       return
+    }
+
+    val mpvSettings = mediaViewerScreenViewModel.mpvSettings
+
+    val mpvLibsInstalledAndLoaded = remember {
+      lazy {
+        val librariesInstalled = MPVLib.checkLibrariesInstalled(context.applicationContext, mpvSettings)
+        if (!librariesInstalled) {
+          return@lazy false
+        }
+
+        return@lazy MPVLib.librariesAreLoaded()
+      }
     }
 
     val pagerState = rememberPagerState(
@@ -381,6 +394,8 @@ class MediaViewerScreen(
         }
       }
 
+      val coroutineScope = rememberCoroutineScope()
+
       when (postImageDataLoadState) {
         is ImageLoadState.PreparingForLoading -> {
           var loadingProgressMut by remember { mutableStateOf<Pair<Int, Float>?>(null) }
@@ -405,16 +420,50 @@ class MediaViewerScreen(
           // no-op
         }
         is ImageLoadState.Ready -> {
-          var fullImageLoaded by remember { mutableStateOf(false) }
-          if (!fullImageLoaded) {
+          var fullMediaLoaded by remember { mutableStateOf(false) }
+          if (!fullMediaLoaded) {
             displayImagePreviewMovable()
           }
 
-          DisplayFullImage(
-            postImageDataLoadState = postImageDataLoadState,
-            onFullImageLoaded = { fullImageLoaded = true },
-            onFullImageFailedToLoad = { fullImageLoaded = false }
-          )
+          when (postImageDataLoadState.postImageData.imageType()) {
+            ImageType.Static -> {
+              val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
+
+              DisplayFullImage(
+                postImageDataLoadState = postImageDataLoadState,
+                imageFile = imageFile,
+                onFullImageLoaded = { fullMediaLoaded = true },
+                onFullImageFailedToLoad = { fullMediaLoaded = false },
+                onImageTapped = { coroutineScope.launch { onBackPressed() } }
+              )
+            }
+            ImageType.Video -> {
+              DisplayVideo(
+                pageIndex = page,
+                pagerState = pagerState,
+                toolbarHeight = toolbarHeight,
+                mpvSettings = mpvSettings,
+                postImageDataLoadState = postImageDataLoadState,
+                snackbarManager = snackbarManager,
+                checkLibrariesInstalledAndLoaded = { mpvLibsInstalledAndLoaded.value },
+                onPlayerLoaded = { fullMediaLoaded = true },
+                onPlayerUnloaded = { fullMediaLoaded = false },
+                showVideoControls = { /*TODO*/ },
+                hideVideoControls = { /*TODO*/ },
+                onVideoTapped = { coroutineScope.launch { onBackPressed() } },
+                installMpvLibsFromGithubButtonClicked = { onInstallMpvLibsFromGithubButtonClicked(mpvSettings, context) }
+              )
+            }
+            ImageType.Unsupported -> {
+              DisplayUnsupportedMedia(
+                toolbarHeight = toolbarHeight,
+                postImageDataLoadState = postImageDataLoadState,
+                onFullImageLoaded = { fullMediaLoaded = true },
+                onFullImageFailedToLoad = { fullMediaLoaded = false },
+                onImageTapped = { coroutineScope.launch { onBackPressed() } }
+              )
+            }
+          }
         }
         is ImageLoadState.Error -> {
           DisplayImageLoadError(
@@ -424,6 +473,56 @@ class MediaViewerScreen(
         }
       }
     }
+  }
+
+  private fun onInstallMpvLibsFromGithubButtonClicked(
+    mpvSettings: MpvSettings,
+    context: Context
+  ) {
+    val progressScreen = ProgressScreen(
+      componentActivity = componentActivity,
+      navigationRouter = navigationRouter,
+      title = context.resources.getString(R.string.media_viewer_plugins_loading_libs)
+    )
+
+    mediaViewerScreenViewModel.installMpvLibsFromGithub(
+      mpvSettings = mpvSettings,
+      showLoading = { navigationRouter.presentScreen(progressScreen) },
+      hideLoading = { navigationRouter.stopPresentingScreen(progressScreen.screenKey) },
+      onFailed = { error ->
+        val dialogScreen = DialogScreen(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          params = DialogScreen.Params(
+            title = DialogScreen.Text.Id(R.string.media_viewer_plugins_libs_installation_failure),
+            description = DialogScreen.Text.String(
+              context.resources.getString(
+                R.string.media_viewer_plugins_libs_installation_description_failure,
+                error.errorMessageOrClassName()
+              )
+            ),
+            positiveButton = DialogScreen.okButton()
+          )
+        )
+
+        navigationRouter.presentScreen(dialogScreen)
+      },
+      onSuccess = {
+        val dialogScreen = DialogScreen(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          params = DialogScreen.Params(
+            title = DialogScreen.Text.Id(R.string.media_viewer_plugins_libs_installation_success),
+            description = DialogScreen.Text.Id(R.string.media_viewer_plugins_libs_installation_description_success),
+            positiveButton = DialogScreen.okButton(
+              onClick = { androidHelpers.restartApp(context as Activity) }
+            )
+          )
+        )
+
+        navigationRouter.presentScreen(dialogScreen)
+      }
+    )
   }
 
   @Composable
@@ -541,6 +640,12 @@ class MediaViewerScreen(
       imageLoadState.fullImageUrl == postImageData.fullImageAsUrl
     }
 
+    // We can just stream videos without having to load the first
+    if (postImageDataLoadState.postImageData.imageType() == ImageType.Video) {
+      mediaViewerScreenState.requireImages().set(index, ImageLoadState.Ready(postImageData, null))
+      return
+    }
+
     if (index < 0) {
       val exception = MediaViewerScreenViewModel.ImageLoadException(
         fullImageUrl,
@@ -608,83 +713,6 @@ class MediaViewerScreen(
       // TODO(KurobaEx):
       KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName()}")
     }
-  }
-
-  @Composable
-  private fun DisplayFullImage(
-    postImageDataLoadState: ImageLoadState.Ready,
-    onFullImageLoaded: () -> Unit,
-    onFullImageFailedToLoad: () -> Unit
-  ) {
-    val coroutineScope = rememberCoroutineScope()
-
-    val eventListener = object : ComposeSubsamplingScaleImageEventListener() {
-      override fun onFailedToDecodeImageInfo(error: Throwable) {
-        val url = postImageDataLoadState.fullImageUrlAsString
-        logcatError { "onFailedToDecodeImageInfo() url=$url, error=${error.errorMessageOrClassName()}" }
-
-        onFullImageFailedToLoad()
-      }
-
-      override fun onFailedToLoadFullImage(error: Throwable) {
-        val url = postImageDataLoadState.fullImageUrlAsString
-        logcatError { "onFailedToLoadFullImage() url=$url, error=${error.errorMessageOrClassName()}" }
-
-        onFullImageFailedToLoad()
-      }
-
-      override fun onFullImageLoaded() {
-        onFullImageLoaded()
-      }
-    }
-
-    val imageSourceProvider = remember(key1 = postImageDataLoadState.imageFile) {
-      object : ImageSourceProvider {
-        override suspend fun provide(): ComposeSubsamplingScaleImageSource {
-          val inputStream = try {
-            postImageDataLoadState.imageFile.inputStream()
-          } catch (error: Throwable) {
-            val imageFile = postImageDataLoadState.imageFile
-
-            throw MediaViewerScreenViewModel.ImageLoadException(
-              postImageDataLoadState.fullImageUrl,
-              "Failed to open input stream of file: ${imageFile.name}, " +
-                "exists: ${imageFile.exists()}, " +
-                "length: ${imageFile.length()}, " +
-                "canRead: ${imageFile.canRead()}"
-            )
-          }
-
-          return ComposeSubsamplingScaleImageSource(
-            debugKey = postImageDataLoadState.fullImageUrlAsString,
-            inputStream = inputStream
-          )
-        }
-      }
-    }
-
-    val imageDecoderProvider = remember {
-      object : ImageDecoderProvider {
-        override suspend fun provide(): ComposeSubsamplingScaleImageDecoder {
-          return TachiyomiImageDecoder()
-        }
-      }
-    }
-
-    ComposeSubsamplingScaleImage(
-      modifier = Modifier.fillMaxSize(),
-      state = rememberComposeSubsamplingScaleImageState(
-        scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
-        doubleTapZoom = 2f,
-        maxScale = 3f,
-        maxMaxTileSize = { MaxTileSize.Auto() },
-        minimumScaleType = { MinimumScaleType.ScaleTypeCenterInside },
-        imageDecoderProvider = imageDecoderProvider
-      ),
-      imageSourceProvider = imageSourceProvider,
-      eventListener = eventListener,
-      onImageTapped = { coroutineScope.launch { onBackPressed() } }
-    )
   }
 
   @Composable

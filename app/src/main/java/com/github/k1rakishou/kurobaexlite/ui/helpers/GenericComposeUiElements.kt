@@ -328,7 +328,7 @@ fun KurobaComposeTextButton(
 }
 
 @Composable
-fun KurobaComposeButton(
+private fun KurobaComposeButton(
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,

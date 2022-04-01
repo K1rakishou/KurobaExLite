@@ -180,6 +180,13 @@ fun Throwable.isExceptionImportant(): Boolean {
   }
 }
 
+inline fun logcatError(
+  tag: String,
+  message: () -> String
+) {
+  logcat(priority = LogPriority.ERROR, tag = tag, message = message)
+}
+
 inline fun Any.logcatError(
   tag: String? = null,
   message: () -> String

@@ -1,14 +1,20 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
-import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
+import androidx.lifecycle.viewModelScope
+import com.github.k1rakishou.chan.core.mpv.MpvInitializer
+import com.github.k1rakishou.chan.core.mpv.MpvSettings
+import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
+import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.cache.CacheFileType
 import com.github.k1rakishou.kurobaexlite.helpers.cache.KurobaLruDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
 import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
+import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
@@ -19,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import logcat.asLog
@@ -27,14 +34,27 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.internal.closeQuietly
 import okio.sink
+import org.koin.java.KoinJavaComponent.inject
 
 class MediaViewerScreenViewModel(
+  private val application: KurobaExLiteApplication,
+  val mpvSettings: MpvSettings,
   private val chanCache: ChanCache,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val kurobaLruDiskCache: KurobaLruDiskCache
-) : BaseViewModel() {
+) : BaseAndroidViewModel(application) {
+  private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub by inject(InstallMpvNativeLibrariesFromGithub::class.java)
+  private val mpvInitializer = MpvInitializer(appContext, mpvSettings)
+
+  override fun onCleared() {
+    super.onCleared()
+
+    mpvInitializer.destroy()
+  }
 
   suspend fun init(mediaViewerParams: MediaViewerParams): InitResult {
+    mpvInitializer.init()
+
     return withContext(Dispatchers.Default) {
       // Trim the cache every time we open the media viewer
       kurobaLruDiskCache.manualTrim(CacheFileType.PostMediaFull)
@@ -168,6 +188,34 @@ class MediaViewerScreenViewModel(
       throw error
     } finally {
       responseBody.closeQuietly()
+    }
+  }
+
+  fun installMpvLibsFromGithub(
+    mpvSettings: MpvSettings,
+    showLoading: () -> Unit,
+    hideLoading: () -> Unit,
+    onFailed: (Throwable) -> Unit,
+    onSuccess: () -> Unit
+  ) {
+    viewModelScope.launch {
+      val result = try {
+        showLoading()
+        installMpvNativeLibrariesFromGithub.execute(mpvSettings)
+      } finally {
+        hideLoading()
+      }
+
+      if (result.isFailure) {
+        val error = result.exceptionOrThrow()
+        logcatError(TAG) { "installMpvLibrariesFromGithub error: ${error.asLog()}" }
+
+        onFailed(error)
+      } else {
+        logcat(TAG) { "installMpvLibrariesFromGithub success" }
+
+        onSuccess()
+      }
     }
   }
 

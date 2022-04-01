@@ -56,7 +56,10 @@ class ThreadScreen(
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
-  private val threadScreenToolbarActionHandler: ThreadScreenToolbarActionHandler by inject(ThreadScreenToolbarActionHandler::class.java)
+
+  private val threadScreenToolbarActionHandler by lazy {
+    ThreadScreenToolbarActionHandler()
+  }
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
