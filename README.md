@@ -5,7 +5,7 @@ No advansed stuff like composite catalogs, archives (maybe?), sound posts, third
 This is a 100% Jetpack Compose project with the goal to try to implement as many UI/UX elements from scratch as possible (There are exceptions like HorizontalPager/Coil). Here are examples of custom compose elements implemented in this project.
 - Compose navigation (Normal screens/dialog screen/screen transitions).
 - PullToRefresh.
-- Toolbar (with ability to switch between different toolbar types like normal toolbar -> search toolbar). Toolbar auto hides/reveals itself depending on a number of factors (like when scroll lazyColumn down).
+- Toolbar (with ability to switch between different toolbar types like normal toolbar -> search toolbar). Toolbar auto hides/reveals itself depending on a number of factors (like when scrolling the LazyColumn down).
 - Drawer.
 - Snackbars (toasts show up as snackbars too).
 - LazyColumn with scrollbar and fast scroller (drag the scrollbar thumb to scroll).
