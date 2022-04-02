@@ -20,6 +20,8 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.ImageType
+import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
@@ -46,15 +48,7 @@ class MediaViewerScreenViewModel(
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub by inject(InstallMpvNativeLibrariesFromGithub::class.java)
   private val mpvInitializer = MpvInitializer(appContext, mpvSettings)
 
-  override fun onCleared() {
-    super.onCleared()
-
-    mpvInitializer.destroy()
-  }
-
   suspend fun init(mediaViewerParams: MediaViewerParams): InitResult {
-    mpvInitializer.init()
-
     return withContext(Dispatchers.Default) {
       // Trim the cache every time we open the media viewer
       kurobaLruDiskCache.manualTrim(CacheFileType.PostMediaFull)
@@ -92,11 +86,20 @@ class MediaViewerScreenViewModel(
         initialPage = 0
       }
 
+      val hasVideos = imagesToShow.any { postImage -> postImage.imageType() == ImageType.Video }
+      if (hasVideos) {
+        mpvInitializer.init()
+      }
+
       return@withContext InitResult(
         images = imagesToShow.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) },
         initialPage = initialPage
       )
     }
+  }
+
+  fun destroy() {
+    mpvInitializer.destroy()
   }
 
   suspend fun loadFullImageAndGetFile(

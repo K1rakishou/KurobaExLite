@@ -15,21 +15,23 @@ class MpvInitializer(
 
   fun init() {
     if (initialized) {
+      logcat(TAG) { "init() already initialized" }
       return
     }
 
     MPVLib.tryLoadLibraries(mpvSettings)
 
     if (!MPVLib.librariesAreLoaded()) {
-      logcat(TAG) { "create() librariesAreLoaded: false" }
+      initialized = false
+      logcat(TAG) { "init() librariesAreLoaded: false" }
       return
     }
 
     if (MPVLib.isCreated()) {
+      initialized = false
+      logcat(TAG) { "init() already created" }
       return
     }
-
-    logcat(TAG) { "create()" }
 
     MPVLib.mpvCreate(applicationContext)
     MPVLib.mpvInit()
@@ -41,19 +43,17 @@ class MpvInitializer(
       "no"
     }
 
-    logcat(TAG) { "initOptions() hwdec: $hwdec" }
-
     // vo: set display fps as reported by android
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       val wm = applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
       val disp = wm.defaultDisplay
       val refreshRate = disp.mode.refreshRate
 
-      logcat(TAG) { "Display ${disp.displayId} reports FPS of $refreshRate" }
+      logcat(TAG) { "init() Display ${disp.displayId} reports FPS of $refreshRate" }
       MPVLib.mpvSetOptionString("override-display-fps", refreshRate.toString())
     } else {
       logcat(TAG) {
-        "Android version too old, disabling refresh rate functionality " +
+        "init() Android version too old, disabling refresh rate functionality " +
           "(${Build.VERSION.SDK_INT} < ${Build.VERSION_CODES.M})"
       }
     }
@@ -72,33 +72,42 @@ class MpvInitializer(
     MPVLib.mpvSetOptionString("input-default-bindings", "yes")
 
     val demuxerCacheSize = mpvSettings.demuxerCacheSizeBytes
-    logcat(TAG) { "initOptions() mpvDemuxerCacheMaxSize: ${demuxerCacheSize.asReadableFileSize()}" }
     MPVLib.mpvSetOptionString("demuxer-max-bytes", "${demuxerCacheSize}")
     MPVLib.mpvSetOptionString("demuxer-max-back-bytes", "${demuxerCacheSize}")
 
     // certain options are hardcoded:
     MPVLib.mpvSetOptionString("save-position-on-quit", "no")
     MPVLib.mpvSetOptionString("force-window", "no")
+
     initialized = true
+
+    logcat(TAG) {
+      "init() mpv initialized, hwdec: $hwdec, " +
+        "mpvDemuxerCacheMaxSize: ${demuxerCacheSize.asReadableFileSize()}, " +
+        "videoFastCode: ${mpvSettings.videoFastCode}"
+    }
   }
 
   fun destroy() {
     if (!initialized) {
+      logcat(TAG) { "destroy() already destroyed" }
       return
     }
 
+    initialized = false
+
     if (!MPVLib.librariesAreLoaded()) {
       logcat(TAG) { "destroy() librariesAreLoaded: false" }
-      initialized = false
       return
     }
 
     if (!MPVLib.isCreated()) {
+      logcat(TAG) { "destroy() mpv is not created" }
       return
     }
 
-    logcat(TAG) { "destroy()" }
     MPVLib.mpvDestroy()
+    logcat(TAG) { "destroy() mpv destroyed" }
   }
 
   private fun reloadFastVideoDecodeOption(mpvSettings: MpvSettings) {
@@ -108,13 +117,9 @@ class MpvInitializer(
     }
 
     if (mpvSettings.videoFastCode) {
-      logcat(TAG) { "initOptions() videoFastCode: true" }
-
       MPVLib.mpvSetOptionString("vd-lavc-fast", "yes")
       MPVLib.mpvSetOptionString("vd-lavc-skiploopfilter", "nonkey")
     } else {
-      logcat(TAG) { "initOptions() videoFastCode: false" }
-
       MPVLib.mpvSetOptionString("vd-lavc-fast", "null")
       MPVLib.mpvSetOptionString("vd-lavc-skiploopfilter", "null")
     }

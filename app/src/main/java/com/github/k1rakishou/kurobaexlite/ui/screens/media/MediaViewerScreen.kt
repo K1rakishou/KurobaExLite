@@ -123,6 +123,13 @@ class MediaViewerScreen(
       }
     )
 
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        onDispose { mediaViewerScreenViewModel.destroy() }
+      }
+    )
+
     Box(
       modifier = Modifier
         .fillMaxSize()

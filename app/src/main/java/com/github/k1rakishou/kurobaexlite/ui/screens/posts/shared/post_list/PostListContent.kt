@@ -60,7 +60,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenVi
 import kotlinx.coroutines.delay
 
 
-private val postCellKeyPrefix = "post_cell"
+private const val postCellKeyPrefix = "post_cell"
 
 @Composable
 internal fun PostListContent(
@@ -77,8 +77,9 @@ internal fun PostListContent(
   onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit
 ) {
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-  val chanDescriptorFromState by postsScreenViewModel.postScreenState.chanDescriptorFlow.collectAsState()
-  val chanDescriptor = chanDescriptorFromState ?: return
+  val chanDescriptorMut by postsScreenViewModel.postScreenState.chanDescriptorFlow.collectAsState()
+  val chanDescriptor = chanDescriptorMut
+    ?: return
 
   val orientation = LocalConfiguration.current.orientation
   val rememberedPosition = remember(key1 = chanDescriptor, key2 = orientation) {
@@ -216,12 +217,16 @@ internal fun PostListContent(
   )
 
   // This piece of code waits until postListAsync is loaded (basically when it becomes AsyncData.Data)
-  // and then also wait until at least PostCell is built and drawn in the LazyColumn then sets a
+  // and then also waits until at least one PostCell is built and drawn in the LazyColumn then sets a
   // special flag in PostScreenViewModel which then triggers previous scroll position restoration.
   // We need to do all that because otherwise we won't scroll to the last position since the list
   // state might not have the necessary info for that.
   if (postListAsync is AsyncData.Data) {
-    NotifyPostListBuiltIfNeeded(lazyListState, chanDescriptor, postsScreenViewModel)
+    NotifyPostListBuiltIfNeeded(
+      lazyListState = lazyListState,
+      chanDescriptor = chanDescriptor,
+      postsScreenViewModel = postsScreenViewModel
+    )
   }
 }
 
