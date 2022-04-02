@@ -53,7 +53,13 @@ class SnackbarManager(
         snackbarId = SnackbarId.Toast(toastId),
         aliveUntil = SystemClock.elapsedRealtime() + duration,
         screenKey = screenKey,
-        content = listOf(SnackbarContentItem.Text(appContext.getString(messageId)))
+        content = listOf(
+          SnackbarContentItem.Text(
+            text = appContext.getString(messageId),
+            takeWholeWidth = false
+          )
+        ),
+        isToast = true
       )
     )
   }
@@ -69,7 +75,13 @@ class SnackbarManager(
         snackbarId = SnackbarId.Toast(toastId),
         aliveUntil = SystemClock.elapsedRealtime() + duration,
         screenKey = screenKey,
-        content = listOf(SnackbarContentItem.Text(message))
+        content = listOf(
+          SnackbarContentItem.Text(
+            text = message,
+            takeWholeWidth = false
+          )
+        ),
+        isToast = true
       )
     )
   }

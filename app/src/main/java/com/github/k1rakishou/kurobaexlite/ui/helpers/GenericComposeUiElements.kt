@@ -36,6 +36,7 @@ import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -50,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -480,6 +482,8 @@ fun KurobaComposeIcon(
   colorBehindIcon: Color? = null
 ) {
   val chanTheme = LocalChanTheme.current
+  val alpha = LocalContentAlpha.current
+
   val tintColor = remember(key1 = chanTheme) {
     if (colorBehindIcon == null) {
       Color(ThemeEngine.resolveDrawableTintColor(chanTheme))
@@ -489,7 +493,7 @@ fun KurobaComposeIcon(
   }
 
   Image(
-    modifier = modifier,
+    modifier = modifier.alpha(alpha),
     painter = painterResource(id = drawableId),
     colorFilter = ColorFilter.tint(tintColor),
     contentDescription = null

@@ -32,13 +32,8 @@ class MPVView(
 
     private lateinit var mpvSettings: MpvSettings
 
-    val initialized: Boolean
-        get() = _initialized
-
-    fun create(applicationContext: Context, mpvSettings: MpvSettings) {
+    fun create(mpvSettings: MpvSettings) {
         this.mpvSettings = mpvSettings
-
-        muteUnmute(true)
 
         surfaceTextureListener = this
         observeProperties()
@@ -188,11 +183,23 @@ class MPVView(
     val isMuted: Boolean
         get() = MPVLib.mpvGetPropertyString("mute") != "no"
 
+    fun pauseUnpause(pause: Boolean) {
+        MPVLib.mpvSetPropertyBoolean("pause", pause)
+    }
+
     fun muteUnmute(mute: Boolean) {
         if (mute) {
             MPVLib.mpvSetPropertyString("mute", "yes")
         } else {
             MPVLib.mpvSetPropertyString("mute", "no")
+        }
+    }
+
+    fun enableDisableHwDec(enable: Boolean) {
+        if (enable) {
+            MPVLib.mpvSetPropertyString("hwdec", "mediacodec-copy")
+        } else {
+            MPVLib.mpvSetPropertyString("hwdec", "no")
         }
     }
 

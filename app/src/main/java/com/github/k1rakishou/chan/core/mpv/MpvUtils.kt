@@ -17,7 +17,7 @@ import logcat.logcat
 object MpvUtils {
   private const val TAG = "MpvUtils"
 
-  fun prettyTime(d: Int, sign: Boolean = false): String {
+  fun prettyTime(d: Long, sign: Boolean = false): String {
     if (sign) {
       return (if (d >= 0) "+" else "-") + prettyTime(abs(d))
     }
@@ -25,7 +25,7 @@ object MpvUtils {
     val hours = d / 3600
     val minutes = d % 3600 / 60
     val seconds = d % 60
-    if (hours == 0) {
+    if (hours == 0L) {
       return "%02d:%02d".format(minutes, seconds)
     }
 

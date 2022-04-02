@@ -5,12 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +34,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import kotlinx.coroutines.delay
@@ -95,13 +97,24 @@ fun KurobaSnackbarContainer(
 
     SubcomposeLayout(
       measurePolicy = { constraints ->
+        if (activeSnackbars.isEmpty()) {
+          return@SubcomposeLayout layout(0, 0) { /*no-op*/ }
+        }
+
         val measurables = arrayOfNulls<Measurable>(activeSnackbars.size)
         val placeables = arrayOfNulls<Placeable>(activeSnackbars.size)
 
         for ((index, snackbarInfo) in activeSnackbars.withIndex()) {
           val measurable = subcompose(
             slotId = snackbarInfo.snackbarId,
-            content = { KurobaSnackbarLayout(isTablet, chanTheme, snackbarInfo) }
+            content = {
+              KurobaSnackbarLayout(
+                isTablet = isTablet,
+                chanTheme = chanTheme,
+                snackbarInfo = snackbarInfo,
+                onSnackbarClicked = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
+              )
+            }
           ).ensureSingleElement()
 
           measurables[index] = measurable
@@ -137,30 +150,40 @@ fun KurobaSnackbarContainer(
 private fun KurobaSnackbarLayout(
   isTablet: Boolean,
   chanTheme: ChanTheme,
-  snackbarInfo: SnackbarInfo
+  snackbarInfo: SnackbarInfo,
+  onSnackbarClicked: (SnackbarId) -> Unit
 ) {
-  val containerHorizPadding = if (isTablet) 12.dp else 8.dp
-  val containerVertPadding = if (isTablet) 8.dp else 4.dp
+  val containerHorizPadding = if (isTablet) 14.dp else 10.dp
+  val containerVertPadding = if (isTablet) 10.dp else 6.dp
 
-  val contentHorizPadding = if (isTablet) 8.dp else 4.dp
-  val contentVertPadding = if (isTablet) 12.dp else 6.dp
+  val contentHorizPadding = if (isTablet) 10.dp else 6.dp
+  val contentVertPadding = if (isTablet) 14.dp else 8.dp
+
+  val isToast = snackbarInfo.isToast
 
   KurobaComposeCardView(
     modifier = Modifier
       .padding(
         horizontal = containerHorizPadding,
         vertical = containerVertPadding
+      )
+      .wrapContentWidth()
+      .kurobaClickable(
+        onClick = { onSnackbarClicked(snackbarInfo.snackbarId) }
       ),
     backgroundColor = chanTheme.backColorSecondaryCompose
   ) {
     Row(
       modifier = Modifier
-        .fillMaxWidth()
         .wrapContentHeight()
         .padding(horizontal = contentHorizPadding, vertical = contentVertPadding),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      KurobaSnackbarContent(isTablet, snackbarInfo.content)
+      KurobaSnackbarContent(
+        isTablet = isTablet,
+        isToast = isToast,
+        content = snackbarInfo.content
+      )
     }
   }
 }
@@ -168,9 +191,10 @@ private fun KurobaSnackbarLayout(
 @Composable
 private fun RowScope.KurobaSnackbarContent(
   isTablet: Boolean,
+  isToast: Boolean,
   content: List<SnackbarContentItem>
 ) {
-  val textSize = if (isTablet) 16.sp else 14.sp
+  val textSize = if (isTablet) 18.sp else 16.sp
 
   for (snackbarContentItem in content) {
     when (snackbarContentItem) {
@@ -184,9 +208,17 @@ private fun RowScope.KurobaSnackbarContent(
         Spacer(modifier = Modifier.width(snackbarContentItem.space))
       }
       is SnackbarContentItem.Text -> {
+        val widthModifier = if (isToast || !snackbarContentItem.takeWholeWidth) {
+          Modifier.wrapContentWidth()
+        } else {
+          Modifier.weight(1f)
+        }
+
         KurobaComposeText(
-          modifier = Modifier.weight(1f),
+          modifier = widthModifier,
           fontSize = textSize,
+          maxLines = 3,
+          overflow = TextOverflow.Ellipsis,
           text = snackbarContentItem.text
         )
       }
@@ -292,7 +324,8 @@ class SnackbarInfo(
   val snackbarId: SnackbarId,
   val aliveUntil: Long?,
   val screenKey: ScreenKey = MainScreen.SCREEN_KEY,
-  val content: List<SnackbarContentItem>
+  val content: List<SnackbarContentItem>,
+  val isToast: Boolean = false
 ) {
 
   override fun equals(other: Any?): Boolean {
@@ -304,6 +337,7 @@ class SnackbarInfo(
     if (snackbarId != other.snackbarId) return false
     if (aliveUntil != other.aliveUntil) return false
     if (screenKey != other.screenKey) return false
+    if (isToast != other.isToast) return false
 
     return true
   }
@@ -312,13 +346,14 @@ class SnackbarInfo(
     var result = snackbarId.hashCode()
     result = 31 * result + (aliveUntil?.hashCode() ?: 0)
     result = 31 * result + screenKey.hashCode()
+    result = 31 * result + isToast.hashCode()
     return result
   }
 }
 
 sealed class SnackbarContentItem {
   object LoadingIndicator : SnackbarContentItem()
-  data class Text(val text: String) : SnackbarContentItem()
+  data class Text(val text: String, val takeWholeWidth: Boolean = true) : SnackbarContentItem()
   data class Spacer(val space: Dp) : SnackbarContentItem()
 }
 

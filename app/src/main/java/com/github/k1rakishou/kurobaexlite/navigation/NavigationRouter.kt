@@ -278,6 +278,18 @@ class NavigationRouter(
     childRouters.values.forEach { childRouter -> childRouter.onDestroy() }
   }
 
+  fun isInsideScreen(lookupScreenKey: ScreenKey): Boolean {
+    if (navigationScreensStack.any { composeScreen -> composeScreen.screenKey == lookupScreenKey }) {
+      return true
+    }
+
+    if (parentRouter == null) {
+      return false
+    }
+
+    return parentRouter.isInsideScreen(lookupScreenKey)
+  }
+
   data class ScreenUpdateTransaction(
     val navigationScreenUpdates: List<ScreenUpdate>,
     val floatingScreenUpdates: List<ScreenUpdate>

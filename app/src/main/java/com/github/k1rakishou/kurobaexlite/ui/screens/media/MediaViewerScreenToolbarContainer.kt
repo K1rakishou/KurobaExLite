@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
@@ -33,8 +31,6 @@ fun MediaViewerScreenToolbarContainer(
   check(childToolbars.size <= 2) { "Can only handle 2 toolbars at once" }
 
   val insets = LocalWindowInsets.current
-  val chanTheme = LocalChanTheme.current
-  val bgColor = remember(chanTheme.primaryColorCompose) { chanTheme.primaryColorCompose.copy(alpha = 0.5f) }
 
   val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
@@ -45,7 +41,6 @@ fun MediaViewerScreenToolbarContainer(
     modifier = Modifier
       .fillMaxWidth()
       .height(toolbarTotalHeight)
-      .background(bgColor)
       .consumeClicks()
   ) {
     Spacer(modifier = Modifier.height(insets.top))
