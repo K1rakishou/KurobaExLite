@@ -16,15 +16,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
+import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
+@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun MediaViewerScreenToolbarContainer(
   toolbarHeight: Dp,
-  currentToolbarIndex: Int,
-  targetToolbarIndex: Int,
-  offset: Float,
+  pagerState: PagerState,
   childToolbars: List<ChildToolbar>,
   maxZOrder: Int = 1000
 ) {
@@ -32,10 +33,13 @@ fun MediaViewerScreenToolbarContainer(
 
   val insets = LocalWindowInsets.current
 
+  val currentToolbarIndex = pagerState.currentPage
+  val targetToolbarIndex = pagerState.targetPage
+  val animationProgress = pagerState.currentPageOffset
+
   val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
   val transitionIsProgress = currentToolbarIndex != targetToolbarIndex
-  val animationProgress = offset
 
   Column(
     modifier = Modifier
@@ -66,6 +70,7 @@ fun MediaViewerScreenToolbarContainer(
 
       for ((indexInZOrders, currentToolbar) in childToolbars.withIndex()) {
         val zOrder = zOrders[indexInZOrders]
+
         val screenToolbarMovable = remember(currentToolbar.key) {
           movableContentOf { currentToolbar.content(this) }
         }

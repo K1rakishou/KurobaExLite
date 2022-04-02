@@ -134,6 +134,7 @@ class MediaViewerScreen(
     fun requireImages(): SnapshotStateList<ImageLoadState> = requireNotNull(images) { "images not initialized yet!" }
   }
 
+  @OptIn(ExperimentalPagerApi::class)
   @Composable
   override fun CardContent() {
     val chanTheme = LocalChanTheme.current
@@ -170,7 +171,8 @@ class MediaViewerScreen(
     ) {
       var currentImageIndex by remember { mutableStateOf(0) }
       var targetImageIndex by remember { mutableStateOf(0) }
-      var currentPageOffset by remember { mutableStateOf(0f) }
+      var pagerStateHolder by remember { mutableStateOf<PagerState?>(null) }
+
       val videoMediaState = remember(key1 = currentImageIndex) {
         val videoControlsVisible = mediaViewerScreenState.images
           ?.getOrNull(currentImageIndex)
@@ -187,26 +189,26 @@ class MediaViewerScreen(
       MediaViewerPager(
         toolbarHeight = toolbarHeight,
         mediaViewerScreenState = mediaViewerScreenState,
-        onPageChanged = { currentPage, targetPage, pageOffset ->
+        onPageChanged = { currentPage, targetPage ->
           currentImageIndex = currentPage
           targetImageIndex = targetPage
-          currentPageOffset = pageOffset
         },
+        onViewPagerInitialized = { pagerState -> pagerStateHolder = pagerState },
         videoMediaState = videoMediaState
       )
 
-      Box(
-        modifier = Modifier
-          .align(Alignment.TopCenter)
-          .background(bgColor)
-      ) {
-        MediaViewerToolbar(
-          toolbarHeight = toolbarHeight,
-          mediaViewerScreenState = mediaViewerScreenState,
-          currentImageIndex = currentImageIndex,
-          targetImageIndex = targetImageIndex,
-          offset = currentPageOffset
-        )
+      if (pagerStateHolder != null) {
+        Box(
+          modifier = Modifier
+            .align(Alignment.TopCenter)
+            .background(bgColor)
+        ) {
+          MediaViewerToolbar(
+            toolbarHeight = toolbarHeight,
+            mediaViewerScreenState = mediaViewerScreenState,
+            pagerState = pagerStateHolder
+          )
+        }
       }
 
       val videoControlsVisible by videoMediaState.videoControlsVisibleState
@@ -230,57 +232,70 @@ class MediaViewerScreen(
     }
   }
 
+  @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun MediaViewerToolbar(
     toolbarHeight: Dp,
     mediaViewerScreenState: MediaViewerScreenState,
-    currentImageIndex: Int,
-    targetImageIndex: Int,
-    offset: Float
+    pagerState: PagerState?
   ) {
-    if (mediaViewerScreenState.isLoaded()) {
-      val childToolbars = remember(key1 = currentImageIndex, key2 = targetImageIndex) {
-        val childToolbars = mutableListOf<ChildToolbar>()
-
-        childToolbars += ChildToolbar(
-          key = mediaViewerScreenState.requireImages().get(currentImageIndex).fullImageUrlAsString,
-          indexInList = currentImageIndex,
-          content = {
-            MediaToolbar(
-              mediaViewerScreenState = mediaViewerScreenState,
-              currentPagerPage = currentImageIndex
-            )
-          })
-
-        if (currentImageIndex != targetImageIndex) {
-          childToolbars += ChildToolbar(
-            key = mediaViewerScreenState.requireImages().get(targetImageIndex).fullImageUrlAsString,
-            indexInList = targetImageIndex,
-            content = {
-              MediaToolbar(
-                mediaViewerScreenState = mediaViewerScreenState,
-                currentPagerPage = targetImageIndex
-              )
-            })
-        }
-
-        return@remember childToolbars
-      }
-
-      MediaViewerScreenToolbarContainer(
-        toolbarHeight = toolbarHeight,
-        currentToolbarIndex = currentImageIndex,
-        targetToolbarIndex = targetImageIndex,
-        offset = offset,
-        childToolbars = childToolbars
-      )
+    if (!mediaViewerScreenState.isLoaded() || pagerState == null) {
+      return
     }
+
+    val currentImageIndex = pagerState.currentPage
+    val targetImageIndex = pagerState.targetPage
+
+    val currentToolbarKey = remember(key1 = currentImageIndex) {
+      mediaViewerScreenState.requireImages().get(currentImageIndex).fullImageUrlAsString
+    }
+
+    val targetToolbarKey = remember(key1 = targetImageIndex) {
+      mediaViewerScreenState.requireImages().get(targetImageIndex).fullImageUrlAsString
+    }
+
+    val childToolbars = remember(key1 = currentToolbarKey, key2 = targetToolbarKey) {
+      val childToolbars = mutableListOf<ChildToolbar>()
+
+      childToolbars += ChildToolbar(
+        key = currentToolbarKey,
+        indexInList = currentImageIndex,
+        content = {
+          MediaToolbar(
+            mediaViewerScreenState = mediaViewerScreenState,
+            currentPagerPage = currentImageIndex,
+            toolbarKey = currentToolbarKey
+          )
+        }
+      )
+
+      childToolbars += ChildToolbar(
+        key = targetToolbarKey,
+        indexInList = targetImageIndex,
+        content = {
+          MediaToolbar(
+            mediaViewerScreenState = mediaViewerScreenState,
+            currentPagerPage = targetImageIndex,
+            toolbarKey = targetToolbarKey
+          )
+        }
+      )
+
+      return@remember childToolbars
+    }
+
+    MediaViewerScreenToolbarContainer(
+      toolbarHeight = toolbarHeight,
+      pagerState = pagerState,
+      childToolbars = childToolbars
+    )
   }
 
   @Composable
   private fun MediaToolbar(
     mediaViewerScreenState: MediaViewerScreenState,
-    currentPagerPage: Int
+    currentPagerPage: Int,
+    toolbarKey: String,
   ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -381,7 +396,8 @@ class MediaViewerScreen(
   private fun MediaViewerPager(
     toolbarHeight: Dp,
     mediaViewerScreenState: MediaViewerScreenState,
-    onPageChanged: (Int, Int, Float) -> Unit,
+    onPageChanged: (Int, Int) -> Unit,
+    onViewPagerInitialized: (PagerState) -> Unit,
     videoMediaState: VideoMediaState
   ) {
     if (!mediaViewerScreenState.isLoaded()) {
@@ -435,7 +451,12 @@ class MediaViewerScreen(
       key1 = pagerState.currentPage,
       key2 = pagerState.targetPage,
       key3 = pagerState.currentPageOffset,
-      block = { onPageChanged(pagerState.currentPage, pagerState.targetPage, pagerState.currentPageOffset) }
+      block = { onPageChanged(pagerState.currentPage, pagerState.targetPage) }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = { onViewPagerInitialized(pagerState) }
     )
 
     HorizontalPager(
@@ -517,7 +538,8 @@ class MediaViewerScreen(
                     videoMediaState.blockAutoPositionUpdateState.value = true
 
                     while (true) {
-                      val event = awaitPointerEventScope { awaitPointerEvent(PointerEventPass.Main) }
+                      val event =
+                        awaitPointerEventScope { awaitPointerEvent(PointerEventPass.Main) }
                       if (event.changes.fastAll { !it.pressed }) {
                         break
                       }
