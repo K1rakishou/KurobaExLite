@@ -5,13 +5,14 @@ No advansed stuff like composite catalogs, archives (maybe?), sound posts, third
 This is a 100% Jetpack Compose project with the goal to try to implement as many UI/UX elements from scratch as possible (There are exceptions like HorizontalPager/Coil). Here are examples of custom compose elements implemented in this project.
 - Compose navigation (Normal screens/dialog screen/screen transitions).
 - PullToRefresh.
-- Toolbar (with ability to switch between different toolbar types like normal toolbar -> search toolbar). Toolbar auto hides/reveals itself depending on a number of factors (like when scroll lazyColumn down).
+- Toolbar (with ability to switch between different toolbar types like normal toolbar -> search toolbar). Toolbar auto hides/reveals itself depending on a number of factors (like when scrolling the LazyColumn down).
 - Drawer.
 - Snackbars (toasts show up as snackbars too).
 - LazyColumn with scrollbar and fast scroller (drag the scrollbar thumb to scroll).
 - Custom insert/update animations for LazyColumn.
 - Two main layout types: normal (for phones) and split (mostly for tablets). Can be locked into either of them or set to be determined automatically (when using tablet or when switching to album orientation on phones).
 - A lot of custom gesture handling (swipe bottom left corner to right to pull the drawer on any pager screen, pull left when on the 0th screen to pull the drawer).
+- [ComposeSubsamplingScaleImage](https://github.com/K1rakishou/ComposeSubsamplingScaleImage)
 
 If you are interested in advanced compose then you may find it interesting.
 
@@ -24,9 +25,9 @@ Right now you can:
 - Navigate reply chains. 
 - Use search.
 - Thread scroll position is stored/restored.
+- View media. ComposeSubsamplingScaleImage for static images, mpv (downloadable) for gifs/videos.
 
 What you can't do which will be implemented in the future:
-- Media viewer (Tachiyomi's image decoder for images/gifs, mpv for videos (no exoplayer)).
 - Reply to posts.
 - Navigate other sites (maybe?).
 - Albums.
