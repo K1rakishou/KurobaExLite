@@ -25,7 +25,7 @@ Right now you can:
 - Navigate reply chains. 
 - Use search.
 - Thread scroll position is stored/restored.
-- View media. ComposeSubsamplingScaleImage for static images, mpv for gifs/videos.
+- View media. ComposeSubsamplingScaleImage for static images, mpv (downloadable) for gifs/videos.
 
 What you can't do which will be implemented in the future:
 - Reply to posts.
