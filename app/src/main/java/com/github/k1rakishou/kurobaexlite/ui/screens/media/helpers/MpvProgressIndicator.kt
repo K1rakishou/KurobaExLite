@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.helpers
+package com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.MutatePriority
@@ -35,7 +35,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 
 @Composable
-fun KurobaComposeSnappingSlider(
+fun MpvProgressIndicator(
   modifier: Modifier = Modifier,
   trackColor: Color,
   thumbColorNormal: Color,
@@ -44,6 +44,7 @@ fun KurobaComposeSnappingSlider(
   thumbRadiusNormalDp: Dp = 12.dp,
   thumbRadiusPressedDp: Dp = 16.dp,
   slideOffsetState: MutableState<Float>,
+  demuxerCachePercents: Float?,
   onValueChange: (Float) -> Unit,
   slideSteps: Int? = null,
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
@@ -54,6 +55,8 @@ fun KurobaComposeSnappingSlider(
   val trackHeightPx = with(density) { remember(trackHeightDp) { trackHeightDp.toPx() } }
   val thumbRadiusNormalPx = with(density) { remember(thumbRadiusNormalDp) { thumbRadiusNormalDp.toPx() } }
   val thumbRadiusPressedPx = with(density) { remember(thumbRadiusPressedDp) { thumbRadiusPressedDp.toPx() } }
+
+  val unCachedColor = remember(key1 = trackColor) { trackColor.copy(alpha = 0.6f) }
 
   BoxWithConstraints(modifier) {
     val maxWidthPx = constraints.maxWidth.toFloat()
@@ -134,10 +137,18 @@ fun KurobaComposeSnappingSlider(
         val halfRadius = thumbRadiusNormalPx / 2
 
         drawRect(
-          color = trackColor,
+          color = unCachedColor,
           topLeft = Offset(0f, centerY),
           size = Size(size.width, trackHeightPx)
         )
+
+        if (demuxerCachePercents != null) {
+          drawRect(
+            color = trackColor,
+            topLeft = Offset(0f, centerY),
+            size = Size(size.width * demuxerCachePercents, trackHeightPx)
+          )
+        }
 
         val positionX = (slideOffset * size.width)
           .coerceIn(halfRadius, size.width - halfRadius)

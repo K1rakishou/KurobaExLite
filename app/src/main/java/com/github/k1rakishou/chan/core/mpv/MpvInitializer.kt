@@ -34,6 +34,7 @@ class MpvInitializer(
     }
 
     MPVLib.mpvCreate(applicationContext)
+    MPVLib.mpvSetOptionString("config", "no")
     MPVLib.mpvInit()
 
     // hwdec
@@ -68,12 +69,20 @@ class MpvInitializer(
     MPVLib.mpvSetOptionString("hwdec", hwdec)
     MPVLib.mpvSetOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
     MPVLib.mpvSetOptionString("ao", "audiotrack,opensles")
-
     MPVLib.mpvSetOptionString("input-default-bindings", "yes")
 
     val demuxerCacheSize = mpvSettings.demuxerCacheSizeBytes
+    val demuxerBackCacheSize = (demuxerCacheSize / 3)
+    val mpvDiskCacheDir = mpvSettings.mpvDiskCacheDir
+
+    // TODO(KurobaEx): this shit doesn't work for some reason.
+    //  There is nothing being cached on the disk.
+    MPVLib.mpvSetOptionString("cache", "yes")
+    MPVLib.mpvSetOptionString("cache-on-disk", "yes")
+    MPVLib.mpvSetOptionString("cache-dir", mpvDiskCacheDir.path)
+    MPVLib.mpvSetOptionString("demuxer-seekable-cache", "yes")
     MPVLib.mpvSetOptionString("demuxer-max-bytes", "${demuxerCacheSize}")
-    MPVLib.mpvSetOptionString("demuxer-max-back-bytes", "${demuxerCacheSize}")
+    MPVLib.mpvSetOptionString("demuxer-max-back-bytes", "${demuxerBackCacheSize}")
 
     // certain options are hardcoded:
     MPVLib.mpvSetOptionString("save-position-on-quit", "no")
@@ -84,6 +93,8 @@ class MpvInitializer(
     logcat(TAG) {
       "init() mpv initialized, hwdec: $hwdec, " +
         "mpvDemuxerCacheMaxSize: ${demuxerCacheSize.asReadableFileSize()}, " +
+        "mpvDemuxerBackCacheMaxSize: ${demuxerBackCacheSize.asReadableFileSize()}, " +
+        "mpvDiskCacheDir: ${mpvDiskCacheDir.path}, " +
         "videoFastCode: ${mpvSettings.videoFastCode}"
     }
   }

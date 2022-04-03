@@ -271,6 +271,7 @@ private fun rememberEventObserver(
   var hasAudio by hasAudioState
   var videoStartedPlaying by videoStartedPlayingState
   val mpvViewMutUpdated by rememberUpdatedState(newValue = mpvViewMut)
+  val videoMediaStateUpdated by rememberUpdatedState(newValue = videoMediaState)
   val videoMediaStateSaveableUpdated by rememberUpdatedState(newValue = videoMediaStateSaveable)
 
   return remember {
@@ -284,6 +285,12 @@ private fun rememberEventObserver(
           "time-pos" -> {
             if (canUpdateState) {
               videoMediaState.timePositionState.value = value
+              mpvViewMut?.let { mpvView ->
+                val prev = videoMediaState.demuxerCacheDurationState.value ?: 0L
+                val current = mpvView.demuxerCacheDuration?.toLong() ?: 0L
+
+                videoMediaState.demuxerCacheDurationState.value = Math.max(prev, current)
+              }
               videoMediaStateSaveableUpdated.prevTimePosition = value.toInt()
               updateSliderPositionState()
 
@@ -296,10 +303,10 @@ private fun rememberEventObserver(
                   }
                 }
 
-                if (videoMediaState.demuxedCacheDuraionState.value == null) {
+                if (videoMediaState.demuxerCacheDurationState.value == null) {
                   mpvViewMutUpdated?.let { mpvView ->
                     mpvView.demuxerCacheDuration?.let { cacheDuration ->
-                      videoMediaState.demuxedCacheDuraionState.value = cacheDuration.toLong()
+                      videoMediaState.demuxerCacheDurationState.value = cacheDuration.toLong()
                     }
                   }
                 }
@@ -308,7 +315,8 @@ private fun rememberEventObserver(
           }
           "demuxer-cache-duration" -> {
             if (canUpdateState) {
-              videoMediaState.demuxedCacheDuraionState.value = value
+              val prev = videoMediaState.demuxerCacheDurationState.value ?: 0L
+              videoMediaState.demuxerCacheDurationState.value = Math.max(prev, value)
             }
           }
           "duration" -> {
@@ -362,8 +370,8 @@ private fun rememberEventObserver(
             videoStartedPlaying = true
             hasAudio = mpvViewMutUpdated?.audioCodec != null
 
-            if (videoMediaStateSaveableUpdated.needRestoreState) {
-              mpvViewMutUpdated?.let { mpvView ->
+            mpvViewMutUpdated?.let { mpvView ->
+              if (videoMediaStateSaveableUpdated.needRestoreState) {
                 videoMediaStateSaveableUpdated.wasMuted
                   ?.let { mute -> mpvView.muteUnmute(mute) }
                 videoMediaStateSaveableUpdated.wasPaused
@@ -375,6 +383,10 @@ private fun rememberEventObserver(
 
                 videoMediaStateSaveableUpdated.needRestoreState = false
               }
+
+              videoMediaStateUpdated.timePositionState.value = mpvView.timePos?.toLong()
+              videoMediaStateUpdated.durationState.value = mpvView.duration?.toLong()
+              videoMediaStateUpdated.demuxerCacheDurationState.value = mpvView.demuxerCacheDuration?.toLong()
             }
           }
           MPVLib.mpvEventId.MPV_EVENT_AUDIO_RECONFIG -> {
@@ -556,7 +568,7 @@ class VideoMediaState(
   val isPausedState = mutableStateOf(false)
   val hardwareDecodingEnabledState = mutableStateOf(true)
   val timePositionState = mutableStateOf<Long?>(null)
-  val demuxedCacheDuraionState = mutableStateOf<Long?>(null)
+  val demuxerCacheDurationState = mutableStateOf<Long?>(null)
   val durationState = mutableStateOf<Long?>(null)
 
   val muteEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)

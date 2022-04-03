@@ -22,6 +22,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -32,7 +33,6 @@ import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.chan.core.mpv.MpvUtils
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeSnappingSlider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.VideoMediaState
@@ -53,8 +53,15 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
     ) {
       val timePosition by videoMediaState.timePositionState
       val duration by videoMediaState.durationState
+      val demuxerCacheDuration by videoMediaState.demuxerCacheDurationState
       val videoDurationMut by rememberUpdatedState(newValue = videoMediaState.durationState.value)
       val lastSlideOffsetMut by rememberUpdatedState(newValue = videoMediaState.slideOffsetState.value)
+
+      val demuxerCachePercents = if (timePosition != null && duration != null && demuxerCacheDuration != null) {
+        ((timePosition!!.toFloat() + demuxerCacheDuration!!.toFloat()) / duration!!.toFloat()).coerceIn(0f, 1f)
+      } else {
+        null
+      }
 
       val unknownTimeText = stringResource(id = R.string.media_viewer_mpv_unknown_time)
 
@@ -82,7 +89,7 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
 
       Spacer(modifier = Modifier.width(10.dp))
 
-      KurobaComposeSnappingSlider(
+      MpvProgressIndicator(
         modifier = Modifier
           .height(42.dp)
           .weight(1f)
@@ -116,12 +123,13 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
               }
             }
           ),
-        trackColor = androidx.compose.ui.graphics.Color.White,
+        trackColor = Color.White,
         thumbColorNormal = chanTheme.accentColorCompose,
-        thumbColorPressed = androidx.compose.ui.graphics.Color.White,
+        thumbColorPressed = Color.White,
         thumbRadiusNormalDp = 8.dp,
         thumbRadiusPressedDp = 10.dp,
         slideOffsetState = videoMediaState.slideOffsetState,
+        demuxerCachePercents = demuxerCachePercents,
         onValueChange = { offset -> videoMediaState.slideOffsetState.value = offset }
       )
 
