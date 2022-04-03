@@ -43,6 +43,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberAnimateableStackContainerState
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 private const val searchQuery = "search_query"
 
@@ -62,6 +64,13 @@ class KurobaToolbarState(
 ) {
   val toolbarTitleState = mutableStateOf<String?>(null)
   val toolbarSubtitleState = mutableStateOf<String?>(null)
+
+  val popChildToolbarsEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
+
+  fun popChildToolbars() {
+    popChildToolbarsEventFlow.tryEmit(Unit)
+  }
+
 }
 
 @Composable
@@ -103,6 +112,14 @@ fun KurobaToolbar(
 
     return@HandleBackPresses false
   }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      kurobaToolbarState.popChildToolbarsEventFlow.collect {
+        stackContainerState.popTillRoot()
+      }
+    })
 
   val bgColor = if (stackContainerState.addedElementsCount <= 1) {
     Color.Unspecified

@@ -30,6 +30,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.sort.WeightedSorter
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.Chan4
@@ -47,6 +48,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
+import kotlinx.coroutines.android.awaitFrame
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class BoardSelectionScreen(
@@ -83,6 +85,8 @@ class BoardSelectionScreen(
       BuildBoardsList(
         searchQuery = searchQuery,
         onBoardClicked = { clickedCatalogDescriptor ->
+          kurobaToolbarState.popChildToolbars()
+
           catalogScreenViewModel.loadCatalog(clickedCatalogDescriptor)
           popScreen()
         }
@@ -137,10 +141,29 @@ class BoardSelectionScreen(
         val chanBoards = (loadBoardsForSiteEvent as AsyncData.Data).data
         val filteredBoards = chanBoards.filter { chanBoardUiData -> chanBoardUiData.matchesQuery(searchQuery) }
 
-        value = AsyncData.Data(filteredBoards)
+        val sortedBoards = WeightedSorter.sort(
+          input = filteredBoards,
+          query = searchQuery,
+          textSelector = { chanBoardUiData -> chanBoardUiData.boardCode }
+        )
+
+        value = AsyncData.Data(sortedBoards)
       })
 
     val lazyListState = rememberLazyListState()
+
+    LaunchedEffect(
+      key1 = searchQuery,
+      block = {
+        awaitFrame()
+
+        if (lazyListState.firstVisibleItemIndex <= 0) {
+          return@LaunchedEffect
+        }
+
+        lazyListState.scrollToItem(0)
+      }
+    )
 
     LazyColumnWithFastScroller(
       modifier = Modifier

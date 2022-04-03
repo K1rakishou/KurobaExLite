@@ -332,6 +332,14 @@ class AnimateableStackContainerState<T>(
     _animatingElements.add(StackContainerAnimation.Push<T>(elementWrapper))
   }
 
+  fun popTillRoot() {
+    _animatingElements.clear()
+
+    while (addedElementsCount > 1) {
+      removeTop(withAnimation = false)
+    }
+  }
+
   fun removeTop(withAnimation: Boolean = true): Boolean {
     val topElement = _addedElementWrappers.lastOrNull()
       ?: return false
@@ -342,6 +350,8 @@ class AnimateableStackContainerState<T>(
 
     if (!withAnimation) {
       _addedElementWrappers.removeIfKt { it.elementWrapper.key == topElement.elementWrapper.key }
+      duplicateChecker.remove(topElement.elementWrapper.key)
+
       return true
     }
 

@@ -7,6 +7,10 @@ data class ChanBoardUiData(
   val title: String,
   val subtitle: String?
 ) {
+
+  val boardCode: String
+    get() = catalogDescriptor.boardCode
+
   fun matchesQuery(searchQuery: String): Boolean {
     if (title.contains(searchQuery, ignoreCase = true)) {
       return true
