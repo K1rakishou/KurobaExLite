@@ -32,7 +32,7 @@ class MPVView(
 
     private lateinit var mpvSettings: MpvSettings
 
-    fun create(mpvSettings: MpvSettings) {
+    fun attach(mpvSettings: MpvSettings) {
         this.mpvSettings = mpvSettings
 
         surfaceTextureListener = this
@@ -41,7 +41,7 @@ class MPVView(
         _initialized = true
     }
 
-    fun destroy() {
+    fun detach() {
         this.filePath = null
 
         // Disable surface callbacks to avoid using unintialized mpv state

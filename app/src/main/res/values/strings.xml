@@ -114,5 +114,7 @@
     <string name="media_viewer_plugins_libs_installation_description_failure">Failed to install mpv libraries! Error: \'%1$s\'</string>
     <string name="media_viewer_plugins_libs_installation_description_success">Successfully installed mpv libraries! The app will now be restarted.</string>
     <string name="media_viewer_mpv_unknown_time">--:--</string>
+    <string name="media_viewer_mpv_hw_decoding">HW</string>
+    <string name="media_viewer_mpv_sw_decoding">SW</string>
 
 </resources>

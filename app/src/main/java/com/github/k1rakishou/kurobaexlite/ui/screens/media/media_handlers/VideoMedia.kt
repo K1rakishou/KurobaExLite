@@ -69,10 +69,10 @@ fun DisplayVideo(
   onPlayerLoaded: () -> Unit,
   onPlayerUnloaded: () -> Unit,
   onVideoTapped: () -> Unit,
-  videoMediaState: VideoMediaState,
+  videoMediaState: VideoMediaState?,
   installMpvLibsFromGithubButtonClicked: () -> Unit
 ) {
-  if (pagerState.currentPage != pageIndex) {
+  if (pagerState.currentPage != pageIndex || videoMediaState == null) {
     SideEffect { onPlayerUnloaded() }
     return
   }
@@ -102,7 +102,7 @@ fun DisplayVideo(
     return
   }
 
-  var mpvViewMut by remember { mutableStateOf<MPVView?>(null) }
+  var mpvViewMut by remember(key1 = videoMediaState) { mutableStateOf<MPVView?>(null) }
   val videoStartedPlaying by videoMediaState.videoStartedPlayingState
   val blockAutoPositionUpdate by rememberUpdatedState(newValue = videoMediaState.blockAutoPositionUpdateState.value)
   val videoMediaStateSaveable = rememberSaveable(
@@ -201,16 +201,16 @@ fun DisplayVideo(
     }
   )
 
+  if (videoStartedPlaying) {
+    LaunchedEffect(key1 = Unit, block = { onPlayerLoaded() })
+  }
+
   val mpvView = mpvViewMut
   if (mpvView != null) {
-    if (videoStartedPlaying) {
-      LaunchedEffect(key1 = Unit, block = { onPlayerLoaded() })
-    }
-
     DisposableEffect(
-      key1 = mpvView,
+      key1 = videoMediaState,
       effect = {
-        mpvView.create(mpvSettings)
+        mpvView.attach(mpvSettings)
         mpvView.addObserver(eventObserver)
         MPVLib.addLogObserver(logObserver)
 
@@ -221,10 +221,12 @@ fun DisplayVideo(
 
         return@DisposableEffect onDispose {
           videoMediaState.videoControlsVisibleState.value = false
+          videoMediaState.videoStartedPlayingState.value = false
 
-          mpvView.destroy()
+          mpvView.detach()
           mpvView.removeObserver(eventObserver)
           MPVLib.removeLogObserver(logObserver)
+          mpvViewMut = null
         }
       }
     )
@@ -232,7 +234,9 @@ fun DisplayVideo(
 }
 
 @Composable
-private fun rememberLogObserver(snackbarManager: SnackbarManager): MPVLib.LogObserver {
+private fun rememberLogObserver(
+  snackbarManager: SnackbarManager
+): MPVLib.LogObserver {
   return remember {
     MPVLib.LogObserver { prefix, level, text ->
       when (level) {
@@ -271,21 +275,44 @@ private fun rememberEventObserver(
 
   return remember {
     object : MPVLib.EventObserver {
+      val canUpdateState: Boolean
+        get() = !blockAutoPositionUpdate && !videoMediaStateSaveableUpdated.needRestoreState && videoStartedPlaying
+
       override fun eventProperty(property: String) {}
       override fun eventProperty(property: String, value: Long) {
         when (property) {
           "time-pos" -> {
-            if (!blockAutoPositionUpdate && !videoMediaStateSaveableUpdated.needRestoreState) {
+            if (canUpdateState) {
               videoMediaState.timePositionState.value = value
               videoMediaStateSaveableUpdated.prevTimePosition = value.toInt()
               updateSliderPositionState()
+
+              if (mpvViewMutUpdated != null) {
+                if (videoMediaState.durationState.value == null) {
+                  mpvViewMutUpdated?.let { mpvView ->
+                    mpvView.duration?.let { duration ->
+                      videoMediaState.durationState.value = duration.toLong()
+                    }
+                  }
+                }
+
+                if (videoMediaState.demuxedCacheDuraionState.value == null) {
+                  mpvViewMutUpdated?.let { mpvView ->
+                    mpvView.demuxerCacheDuration?.let { cacheDuration ->
+                      videoMediaState.demuxedCacheDuraionState.value = cacheDuration.toLong()
+                    }
+                  }
+                }
+              }
             }
           }
           "demuxer-cache-duration" -> {
-            videoMediaState.demuxedCacheDuraionState.value = value
+            if (canUpdateState) {
+              videoMediaState.demuxedCacheDuraionState.value = value
+            }
           }
           "duration" -> {
-            if (!blockAutoPositionUpdate) {
+            if (canUpdateState) {
               videoMediaState.durationState.value = value
               updateSliderPositionState()
             }
@@ -516,6 +543,7 @@ private class VideoMediaStateSaveable(
 }
 
 class VideoMediaState(
+  val pageIndex: Int,
   videoControlsVisible: Boolean
 ) {
   val slideOffsetState = mutableStateOf(0f)
@@ -550,6 +578,27 @@ class VideoMediaState(
 
   suspend fun seekTo(position: Int) {
     seekEventFlow.emit(position)
+  }
+
+  override fun toString(): String {
+    return "VideoMediaState(slideOffset=${slideOffsetState.value}, isMuted=${isMutedState.value}, " +
+      "isPaused=${isPausedState.value}, hardwareDecodingEnabled=${hardwareDecodingEnabledState.value}, " +
+      "timePosition=${timePositionState.value}, duration=${durationState.value})"
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as VideoMediaState
+
+    if (pageIndex != other.pageIndex) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return pageIndex
   }
 
 }

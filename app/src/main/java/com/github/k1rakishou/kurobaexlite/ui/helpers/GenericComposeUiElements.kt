@@ -80,7 +80,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import java.util.Locale
 
 private val DefaultFillMaxSizeModifier: Modifier = Modifier.fillMaxSize()
-private val defaultNoopClickCallback = { }
+private val DefaultNoopClickCallback = { }
 
 @Composable
 fun KurobaComposeLoadingIndicator(
@@ -451,7 +451,7 @@ fun Modifier.kurobaClickable(
         indication = indication,
         interactionSource = remember { MutableInteractionSource() },
         onLongClick = onLongClick,
-        onClick = onClick ?: defaultNoopClickCallback
+        onClick = onClick ?: DefaultNoopClickCallback
       )
     )
   }
