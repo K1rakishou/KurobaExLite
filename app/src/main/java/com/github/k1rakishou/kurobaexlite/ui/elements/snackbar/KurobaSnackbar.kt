@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -153,13 +154,24 @@ private fun KurobaSnackbarLayout(
   snackbarInfo: SnackbarInfo,
   onSnackbarClicked: (SnackbarId) -> Unit
 ) {
+  val isToast = snackbarInfo.isToast
+
   val containerHorizPadding = if (isTablet) 14.dp else 10.dp
   val containerVertPadding = if (isTablet) 10.dp else 6.dp
 
-  val contentHorizPadding = if (isTablet) 10.dp else 6.dp
-  val contentVertPadding = if (isTablet) 14.dp else 8.dp
+  var contentHorizPadding = if (isTablet) 10.dp else 6.dp
+  var contentVertPadding = if (isTablet) 14.dp else 8.dp
 
-  val isToast = snackbarInfo.isToast
+  if (isToast) {
+    contentHorizPadding *= 1.5f
+    contentVertPadding *= 1.25f
+  }
+
+  val backgroundColor = if (isToast) {
+    Color.White
+  } else {
+    chanTheme.backColorSecondaryCompose
+  }
 
   KurobaComposeCardView(
     modifier = Modifier
@@ -171,12 +183,15 @@ private fun KurobaSnackbarLayout(
       .kurobaClickable(
         onClick = { onSnackbarClicked(snackbarInfo.snackbarId) }
       ),
-    backgroundColor = chanTheme.backColorSecondaryCompose
+    backgroundColor = backgroundColor
   ) {
     Row(
       modifier = Modifier
         .wrapContentHeight()
-        .padding(horizontal = contentHorizPadding, vertical = contentVertPadding),
+        .padding(
+          horizontal = contentHorizPadding,
+          vertical = contentVertPadding
+        ),
       verticalAlignment = Alignment.CenterVertically
     ) {
       KurobaSnackbarContent(
@@ -214,9 +229,16 @@ private fun RowScope.KurobaSnackbarContent(
           Modifier.weight(1f)
         }
 
+        val textColor = when {
+          snackbarContentItem.textColor != null -> snackbarContentItem.textColor
+          isToast -> Color.Black
+          else -> null
+        }
+
         KurobaComposeText(
           modifier = widthModifier,
           fontSize = textSize,
+          color = textColor,
           maxLines = 3,
           overflow = TextOverflow.Ellipsis,
           text = snackbarContentItem.text
@@ -353,7 +375,11 @@ class SnackbarInfo(
 
 sealed class SnackbarContentItem {
   object LoadingIndicator : SnackbarContentItem()
-  data class Text(val text: String, val takeWholeWidth: Boolean = true) : SnackbarContentItem()
+  data class Text(
+    val text: String,
+    val textColor: Color? = null,
+    val takeWholeWidth: Boolean = true
+  ) : SnackbarContentItem()
   data class Spacer(val space: Dp) : SnackbarContentItem()
 }
 
