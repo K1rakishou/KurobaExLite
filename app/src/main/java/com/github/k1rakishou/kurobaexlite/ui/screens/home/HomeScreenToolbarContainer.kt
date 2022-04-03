@@ -26,6 +26,7 @@ import androidx.compose.ui.zIndex
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
@@ -43,7 +44,7 @@ fun HomeScreenToolbarContainer(
   pagerState: PagerState,
   childScreens: List<ComposeScreenWithToolbar>,
   mainUiLayoutMode: MainUiLayoutMode,
-  homeScreenViewModel: HomeScreenViewModel,
+  uiInfoManager: UiInfoManager,
   maxZOrder: Int = 1000
 ) {
   require(childScreens.isNotEmpty()) { "childScreens is empty!" }
@@ -55,7 +56,7 @@ fun HomeScreenToolbarContainer(
     return
   }
 
-  val toolbarVisibilityInfo = homeScreenViewModel.getOrCreateToolbarVisibilityInfo(currentScreenKey)
+  val toolbarVisibilityInfo = uiInfoManager.getOrCreateToolbarVisibilityInfo(currentScreenKey)
   val currentPage = pagerState.currentPage.coerceIn(0, childScreens.lastIndex)
   val targetPage = pagerState.targetPage.coerceIn(0, childScreens.lastIndex)
   val animationProgress = pagerState.currentPageOffset

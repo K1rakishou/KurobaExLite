@@ -12,7 +12,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
@@ -39,21 +38,35 @@ class CatalogScreenViewModel(
     get() = chanDescriptor as? CatalogDescriptor
 
   override suspend fun onViewModelReady() {
-    val prevCatalogDescriptor = savedStateHandle.get<CatalogDescriptor>(PREV_CATALOG_DESCRIPTOR)
-    logcat(tag = TAG) { "onViewModelReady() prevCatalogDescriptor=${prevCatalogDescriptor}" }
+    loadPrevVisitedCatalog()
+  }
 
+  private suspend fun loadPrevVisitedCatalog() {
+    val prevCatalogDescriptor = savedStateHandle.get<CatalogDescriptor>(PREV_CATALOG_DESCRIPTOR)
     if (prevCatalogDescriptor != null) {
+      logcat(tag = TAG) { "loadPrevVisitedCatalog() loading ${prevCatalogDescriptor} from savedStateHandle" }
+
       loadCatalog(
         catalogDescriptor = prevCatalogDescriptor,
-        loadOptions = LoadOptions(forced = true),
+        loadOptions = LoadOptions(forced = true)
       )
-    } else {
-      // TODO(KurobaEx): remove me once last visited catalog is remembered
-      loadCatalog(
-        catalogDescriptor = CatalogDescriptor(Chan4.SITE_KEY, "g"),
-        loadOptions = LoadOptions(forced = true),
-      )
+
+      return
     }
+
+    val lastVisitedCatalog = appSettings.lastVisitedCatalog.read()?.toCatalogDescriptor()
+    if (lastVisitedCatalog != null) {
+      logcat(tag = TAG) { "loadPrevVisitedCatalog() loading ${prevCatalogDescriptor} from appSettings.lastVisitedCatalog" }
+
+      loadCatalog(
+        catalogDescriptor = lastVisitedCatalog,
+        loadOptions = LoadOptions(forced = true)
+      )
+
+      return
+    }
+
+    logcat(tag = TAG) { "loadPrevVisitedCatalog() prevCatalogDescriptor is null" }
   }
 
   override fun reload(

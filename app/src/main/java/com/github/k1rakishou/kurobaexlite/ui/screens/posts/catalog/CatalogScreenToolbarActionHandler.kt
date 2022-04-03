@@ -6,6 +6,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -23,6 +24,7 @@ import org.koin.java.KoinJavaComponent.inject
 class CatalogScreenToolbarActionHandler {
   private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
+  private val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
 
   private lateinit var catalogScreenViewModel: CatalogScreenViewModel
   private lateinit var threadScreenViewModel: ThreadScreenViewModel
@@ -95,7 +97,7 @@ class CatalogScreenToolbarActionHandler {
 
   private fun handleOpenThreadByIdentifier(
     componentActivity: ComponentActivity,
-    navigationRouter: NavigationRouter,
+    navigationRouter: NavigationRouter
   ) {
     navigationRouter.presentScreen(
       DialogScreen(
@@ -121,7 +123,7 @@ class CatalogScreenToolbarActionHandler {
               }
 
               // TODO(KurobaEx): come up with a better solution than doing it manually
-              homeScreenViewModel.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
+              uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
 
               when (resolvedDescriptor) {
                 is ResolvedDescriptor.CatalogOrThread -> {

@@ -19,6 +19,7 @@ import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -35,13 +36,14 @@ fun BoxScope.PostsScreenFloatingActionButton(
   screenContentLoadedFlow: StateFlow<Boolean>,
   mainUiLayoutMode: MainUiLayoutMode,
   homeScreenViewModel: HomeScreenViewModel,
+  uiInfoManager: UiInfoManager,
   snackbarManager: SnackbarManager
 ) {
   if (mainUiLayoutMode != MainUiLayoutMode.Split) {
     return
   }
 
-  val toolbarVisibilityInfo = homeScreenViewModel.getOrCreateToolbarVisibilityInfo(screenKey)
+  val toolbarVisibilityInfo = uiInfoManager.getOrCreateToolbarVisibilityInfo(screenKey)
   val insets = LocalWindowInsets.current
 
   var activeSnackbarsCount by remember { mutableStateOf(0) }

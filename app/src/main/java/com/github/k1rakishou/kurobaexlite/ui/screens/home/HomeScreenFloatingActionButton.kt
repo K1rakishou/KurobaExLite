@@ -20,6 +20,7 @@ import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
@@ -36,6 +37,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
   childScreens: List<ComposeScreenWithToolbar>,
   mainUiLayoutMode: MainUiLayoutMode,
   homeScreenViewModel: HomeScreenViewModel,
+  uiInfoManager: UiInfoManager,
   snackbarManager: SnackbarManager
 ) {
   require(childScreens.isNotEmpty()) { "childScreens is empty!" }
@@ -51,7 +53,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
     return
   }
 
-  val toolbarVisibilityInfo = homeScreenViewModel.getOrCreateToolbarVisibilityInfo(currentScreenKey)
+  val toolbarVisibilityInfo = uiInfoManager.getOrCreateToolbarVisibilityInfo(currentScreenKey)
   var activeSnackbarsCount by remember { mutableStateOf(0) }
   val postListScrollPosition by toolbarVisibilityInfo.postListScrollState.collectAsState()
   val touchingTopOrBottomOfList by toolbarVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()

@@ -1,18 +1,24 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -24,16 +30,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
@@ -45,6 +54,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -54,6 +64,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
@@ -78,8 +89,17 @@ internal fun PostListContent(
 ) {
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
   val chanDescriptorMut by postsScreenViewModel.postScreenState.chanDescriptorFlow.collectAsState()
+
   val chanDescriptor = chanDescriptorMut
-    ?: return
+  if (chanDescriptor == null) {
+    if (postListOptions.isInPopup) {
+      return
+    }
+
+    val isCatalog = postsScreenViewModel is CatalogScreenViewModel
+    OnChanDescriptorNotSet(isCatalog)
+    return
+  }
 
   val orientation = LocalConfiguration.current.orientation
   val rememberedPosition = remember(key1 = chanDescriptor, key2 = orientation) {
@@ -679,4 +699,65 @@ private fun NotifyPostListBuiltIfNeeded(
       )
     }
   }
+}
+
+@Composable
+private fun OnChanDescriptorNotSet(isCatalogMode: Boolean) {
+  var canRender by remember { mutableStateOf(false) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      delay(250L)
+      canRender = true
+    })
+
+  if (!canRender) {
+    return
+  }
+
+  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+  val additionalPaddings = remember(key1 = toolbarHeight) {
+    PaddingValues(top = toolbarHeight)
+  }
+
+  val alphaAnimatable = remember { Animatable(initialValue = 0f) }
+  val alphaAnimation by alphaAnimatable.asState()
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = { alphaAnimatable.animateTo(1f, animationSpec = tween(500)) }
+  )
+
+  InsetsAwareBox(
+    modifier = Modifier
+      .fillMaxSize()
+      .alpha(alphaAnimation),
+    additionalPaddings = additionalPaddings,
+    contentAlignment = Alignment.Center
+  ) {
+    Column(
+      modifier = Modifier.wrapContentSize(),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Text(
+        text = stringResource(id = R.string.empty_setup_feature),
+        fontSize = 50.sp
+      )
+
+      Spacer(modifier = Modifier.height(24.dp))
+
+      val text = if (isCatalogMode) {
+        stringResource(id = R.string.empty_setup_no_catalog_selected)
+      } else {
+        stringResource(id = R.string.empty_setup_no_thread_selected)
+      }
+
+      KurobaComposeText(
+        text = text,
+        fontSize = 20.sp
+      )
+    }
+  }
+
 }

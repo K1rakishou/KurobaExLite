@@ -14,6 +14,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedCatalog
+import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedThread
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -160,6 +162,7 @@ abstract class PostScreenViewModel(
 
   suspend fun onThreadLoadingEnd(threadDescriptor: ThreadDescriptor) {
     savedStateHandle.set(ThreadScreenViewModel.PREV_THREAD_DESCRIPTOR, threadDescriptor)
+    appSettings.lastVisitedThread.write(LastVisitedThread.fromThreadDescriptor(threadDescriptor))
 
     chanCache.onCatalogOrThreadAccessed(threadDescriptor)
     postScreenState.onEndLoading()
@@ -172,6 +175,7 @@ abstract class PostScreenViewModel(
 
   suspend fun onCatalogLoadingEnd(catalogDescriptor: CatalogDescriptor) {
     savedStateHandle.set(CatalogScreenViewModel.PREV_CATALOG_DESCRIPTOR, catalogDescriptor)
+    appSettings.lastVisitedCatalog.write(LastVisitedCatalog.fromCatalogDescriptor(catalogDescriptor))
 
     chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
     postScreenState.onEndLoading()

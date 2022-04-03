@@ -11,9 +11,19 @@ import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
+import com.github.k1rakishou.kurobaexlite.model.data.ui.ChildScreenSearchInfo
+import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
+import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
+import com.github.k1rakishou.kurobaexlite.model.data.ui.ToolbarVisibilityInfo
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -24,6 +34,10 @@ class UiInfoManager(
   private val coroutineScope: CoroutineScope
 ) {
   private val resources by lazy { appContext.resources }
+
+  private val toolbarHeight by lazy { resources.getDimension(R.dimen.toolbar_height) }
+  private val currentPageValue = AtomicReference<CurrentPage?>()
+  private val toolbarVisibilityInfoMap = mutableMapOf<ScreenKey, ToolbarVisibilityInfo>()
 
   private val _lastTouchPosition = Point(0, 0)
   val lastTouchPosition: Point
@@ -52,6 +66,18 @@ class UiInfoManager(
       appContext.resources.configuration.fontScale
     )
   }
+
+  private val _drawerVisibilityFlow = MutableStateFlow<DrawerVisibility>(
+    DrawerVisibility.Closed)
+  val drawerVisibilityFlow: StateFlow<DrawerVisibility>
+    get() = _drawerVisibilityFlow.asStateFlow()
+
+  private val _currentPageFlow = MutableSharedFlow<CurrentPage>(extraBufferCapacity = Channel.UNLIMITED)
+
+  val currentPageFlow: SharedFlow<CurrentPage>
+    get() = _currentPageFlow.asSharedFlow()
+  val currentPage: CurrentPage?
+    get() = currentPageValue.get()
 
   val defaultHorizPadding by lazy { if (isTablet) 12.dp else 8.dp }
   val defaultVertPadding by lazy { if (isTablet) 10.dp else 6.dp }
@@ -136,6 +162,135 @@ class UiInfoManager(
 
   fun setLastTouchPosition(x: Float, y: Float) {
     _lastTouchPosition.set(x.toInt(), y.toInt())
+  }
+
+  fun getOrCreateToolbarVisibilityInfo(screenKey: ScreenKey): ToolbarVisibilityInfo {
+    return toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+  }
+
+  fun updateCurrentPage(
+    screenKey: ScreenKey,
+    animate: Boolean = true,
+    notifyListeners: Boolean = true
+  ) {
+    if (screenKey == currentPage?.screenKey) {
+      return
+    }
+
+    val newCurrentPage = CurrentPage(screenKey, animate)
+    currentPageValue.set(newCurrentPage)
+
+    if (notifyListeners) {
+      _currentPageFlow.tryEmit(newCurrentPage)
+    }
+
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    toolbarVisibilityInfo.update(postListScrollState = 1f)
+  }
+
+  fun onChildContentScrolling(
+    screenKey: ScreenKey,
+    delta: Float
+  ) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    var currentTransparency = toolbarVisibilityInfo.postListScrollState.value
+    currentTransparency += (delta / toolbarHeight)
+
+    if (currentTransparency < 0f) {
+      currentTransparency = 0f
+    }
+
+    if (currentTransparency > 1f) {
+      currentTransparency = 1f
+    }
+
+    toolbarVisibilityInfo.update(postListScrollState = currentTransparency)
+  }
+
+  fun onPostListDragStateChanged(screenKey: ScreenKey, dragging: Boolean) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    toolbarVisibilityInfo.update(postListDragState = dragging)
+  }
+
+  fun onFastScrollerDragStateChanged(screenKey: ScreenKey, dragging: Boolean) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    toolbarVisibilityInfo.update(fastScrollerDragState = dragging)
+  }
+
+  fun onPostListTouchingTopOrBottomStateChanged(screenKey: ScreenKey,touching: Boolean) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    toolbarVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
+  }
+
+  fun onChildScreenSearchStateChanged(screenKey: ScreenKey, searchQuery: String?) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    val childScreenSearchInfo = ChildScreenSearchInfo(
+      screenKey = screenKey,
+      usingSearch = searchQuery != null
+    )
+
+    toolbarVisibilityInfo.update(childScreenSearchInfo = childScreenSearchInfo)
+  }
+
+  fun isDrawerOpenedOrOpening(): Boolean {
+    return when (_drawerVisibilityFlow.value) {
+      is DrawerVisibility.Drag -> true
+      DrawerVisibility.Closed,
+      DrawerVisibility.Closing -> false
+      DrawerVisibility.Opened,
+      DrawerVisibility.Opening -> true
+    }
+  }
+
+  fun isDrawerFullyOpened(): Boolean {
+    return _drawerVisibilityFlow.value is DrawerVisibility.Opened
+  }
+
+  fun openDrawer(withAnimation: Boolean = true) {
+    if (withAnimation) {
+      _drawerVisibilityFlow.value = DrawerVisibility.Opening
+    } else {
+      _drawerVisibilityFlow.value = DrawerVisibility.Opened
+    }
+  }
+
+  fun closeDrawer(withAnimation: Boolean = true) {
+    if (withAnimation) {
+      _drawerVisibilityFlow.value = DrawerVisibility.Closing
+    } else {
+      _drawerVisibilityFlow.value = DrawerVisibility.Closed
+    }
+  }
+
+  fun dragDrawer(isDragging: Boolean, progress: Float, velocity: Float) {
+    _drawerVisibilityFlow.value = DrawerVisibility.Drag(isDragging, progress, velocity)
   }
 
 }

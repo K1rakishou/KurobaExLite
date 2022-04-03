@@ -81,6 +81,10 @@
 
     <string name="search_hint">Displaying %1$d %2$s with query \'%3$s\'</string>
 
+    <string name="empty_setup_feature" translatable="false">&#128564;</string>
+    <string name="empty_setup_no_catalog_selected">No catalog selected</string>
+    <string name="empty_setup_no_thread_selected">No thread selected</string>
+
     <string name="thread_load_failed_ssl">HTTPS error</string>
     <string name="thread_load_failed_ssl_with_reason">HTTPS error\nReason: %1$s</string>
     <string name="thread_load_failed_json_parsing">Error while trying to parse server response.</string>

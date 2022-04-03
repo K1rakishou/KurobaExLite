@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
@@ -38,7 +39,6 @@ class HomeChildScreens(
     configuration: Configuration,
     childScreens: ChildScreens
   ): Int {
-
     return when (layoutTypeToMainUiLayoutMode(layoutType, configuration)) {
       MainUiLayoutMode.Portrait -> {
         childScreens.screens
@@ -62,7 +62,7 @@ class HomeChildScreens(
     }
   }
 
-  fun isMainScreen(configuration: Configuration, currentPage: HomeScreenViewModel.CurrentPage): Boolean {
+  fun isMainScreen(configuration: Configuration, currentPage: CurrentPage): Boolean {
     return mainScreenKey(configuration) == currentPage.screenKey
   }
 

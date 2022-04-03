@@ -10,13 +10,13 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
 
@@ -111,7 +111,7 @@ abstract class PostsScreen(
 
   protected fun canProcessBackEvent(
     uiLayoutMode: MainUiLayoutMode,
-    currentPage: HomeScreenViewModel.CurrentPage?
+    currentPage: CurrentPage?
   ): Boolean {
     return when (uiLayoutMode) {
       MainUiLayoutMode.Portrait -> currentPage?.screenKey == screenKey

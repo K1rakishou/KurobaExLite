@@ -26,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsSta
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.asLog
@@ -51,7 +52,6 @@ class ThreadScreenViewModel(
 
   private val threadScreenState = PostScreenState()
   private var loadThreadJob: Job? = null
-
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
 
   override val postScreenState: PostScreenState = threadScreenState
@@ -62,16 +62,57 @@ class ThreadScreenViewModel(
     get() = chanDescriptor as? ThreadDescriptor
 
   override suspend fun onViewModelReady() {
-    val prevThreadDescriptor = savedStateHandle.get<ThreadDescriptor>(PREV_THREAD_DESCRIPTOR)
-    logcat(tag = TAG) { "onViewModelReady() prevThreadDescriptor=${prevThreadDescriptor}" }
+    loadPrevVisitedThread()
+  }
 
+  private suspend fun loadPrevVisitedThread() {
+    val prevThreadDescriptor = savedStateHandle.get<ThreadDescriptor>(PREV_THREAD_DESCRIPTOR)
     if (prevThreadDescriptor != null) {
+      logcat(tag = TAG) { "loadPrevVisitedThread() loading ${prevThreadDescriptor} from savedStateHandle" }
+
       loadThread(
         threadDescriptor = prevThreadDescriptor,
         loadOptions = LoadOptions(forced = true),
         onReloadFinished = null
       )
+
+      viewModelScope.launch {
+        delay(250)
+
+        uiInfoManager.updateCurrentPage(
+          screenKey = ThreadScreen.SCREEN_KEY,
+          animate = true,
+          notifyListeners = true
+        )
+      }
+
+      return
     }
+
+    val lastVisitedThread = appSettings.lastVisitedThread.read()?.toThreadDescriptor()
+    if (lastVisitedThread != null) {
+      logcat(tag = TAG) { "loadPrevVisitedThread() loading ${prevThreadDescriptor} from appSettings.lastVisitedThread" }
+
+      loadThread(
+        threadDescriptor = lastVisitedThread,
+        loadOptions = LoadOptions(forced = true),
+        onReloadFinished = null
+      )
+
+      viewModelScope.launch {
+        delay(250)
+
+        uiInfoManager.updateCurrentPage(
+          screenKey = ThreadScreen.SCREEN_KEY,
+          animate = true,
+          notifyListeners = true
+        )
+      }
+
+      return
+    }
+
+    logcat(tag = TAG) { "loadPrevVisitedThread() prevThreadDescriptor is null" }
   }
 
   override fun onCleared() {

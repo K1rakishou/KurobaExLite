@@ -5,6 +5,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -44,6 +47,14 @@ class AppSettings(
     JsonSetting(moshi.adapter(CatalogSortSetting::class.java), CatalogSortSetting(), "catalog_sort_setting", dataStore)
   }
 
+  val lastVisitedCatalog by lazy {
+    JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore)
+  }
+
+  val lastVisitedThread by lazy {
+    JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore)
+  }
+
 }
 
 enum class LayoutType {
@@ -57,6 +68,55 @@ data class CatalogSortSetting(
   @Json (name = "sort") val sort: CatalogSort = CatalogSort.BUMP,
   @Json (name = "ascending") val ascending: Boolean = false
 )
+
+@JsonClass(generateAdapter = true)
+data class LastVisitedCatalog(
+  @Json (name = "site_key") val siteKey: String,
+  @Json (name = "board_code") val boardCode: String
+) {
+
+  fun toCatalogDescriptor(): CatalogDescriptor {
+    return CatalogDescriptor(
+      siteKey = SiteKey(siteKey),
+      boardCode = boardCode
+    )
+  }
+
+  companion object {
+    fun fromCatalogDescriptor(catalogDescriptor: CatalogDescriptor): LastVisitedCatalog {
+      return LastVisitedCatalog(
+        siteKey = catalogDescriptor.siteKeyActual,
+        boardCode = catalogDescriptor.boardCode
+      )
+    }
+  }
+}
+
+@JsonClass(generateAdapter = true)
+data class LastVisitedThread(
+  @Json (name = "site_key") val siteKey: String,
+  @Json (name = "board_code") val boardCode: String,
+  @Json (name = "thread_no") val threadNo: Long,
+) {
+
+  fun toThreadDescriptor(): ThreadDescriptor {
+    return ThreadDescriptor.create(
+      siteKey = SiteKey(siteKey),
+      boardCode = boardCode,
+      threadNo = threadNo
+    )
+  }
+
+  companion object {
+    fun fromThreadDescriptor(threadDescriptor: ThreadDescriptor): LastVisitedThread {
+      return LastVisitedThread(
+        siteKey = threadDescriptor.siteKeyActual,
+        boardCode = threadDescriptor.boardCode,
+        threadNo = threadDescriptor.threadNo
+      )
+    }
+  }
+}
 
 enum class CatalogSort(val orderName: String) {
   BUMP("bump"),

@@ -126,8 +126,8 @@ class CatalogScreen(
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, homeScreenViewModel.currentPage) },
-      onLeftIconClicked = { homeScreenViewModel.openDrawer() },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage) },
+      onLeftIconClicked = { uiInfoManager.openDrawer() },
       onMiddleMenuClicked = {
         val mainScreenRouter = navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)
         val boardSelectionScreen = BoardSelectionScreen(
@@ -139,7 +139,7 @@ class CatalogScreen(
         mainScreenRouter.pushScreen(boardSelectionScreen)
       },
       onSearchQueryUpdated = { searchQuery ->
-        homeScreenViewModel.onChildScreenSearchStateChanged(screenKey, searchQuery)
+        uiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
         catalogScreenViewModel.updateSearchQuery(searchQuery)
       },
       onToolbarSortClicked = {
@@ -225,7 +225,7 @@ class CatalogScreen(
       postsScreenViewModel = catalogScreenViewModel,
       onPostCellClicked = { postData ->
         // TODO(KurobaEx): come up with a better solution than doing it manually
-        homeScreenViewModel.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
+        uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
 
         val threadDescriptor = ThreadDescriptor(
           catalogDescriptor = postData.postDescriptor.catalogDescriptor,
@@ -255,16 +255,16 @@ class CatalogScreen(
         navigationRouter.presentScreen(mediaViewerScreen)
       },
       onPostListScrolled = { delta ->
-        homeScreenViewModel.onChildContentScrolling(screenKey, delta)
+        uiInfoManager.onChildContentScrolling(screenKey, delta)
       },
       onPostListTouchingTopOrBottomStateChanged = { touching ->
-        homeScreenViewModel.onPostListTouchingTopOrBottomStateChanged(screenKey, touching)
+        uiInfoManager.onPostListTouchingTopOrBottomStateChanged(screenKey, touching)
       },
       onPostListDragStateChanged = { dragging ->
-        homeScreenViewModel.onPostListDragStateChanged(screenKey, dragging)
+        uiInfoManager.onPostListDragStateChanged(screenKey, dragging)
       },
       onFastScrollerDragStateChanged = { dragging ->
-        homeScreenViewModel.onFastScrollerDragStateChanged(screenKey, dragging)
+        uiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
       }
     )
 
@@ -274,6 +274,7 @@ class CatalogScreen(
         screenContentLoadedFlow = screenContentLoadedFlow,
         mainUiLayoutMode = mainUiLayoutMode,
         homeScreenViewModel = homeScreenViewModel,
+        uiInfoManager = uiInfoManager,
         snackbarManager = snackbarManager
       )
     }

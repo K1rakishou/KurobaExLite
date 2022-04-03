@@ -100,14 +100,17 @@ class HomeScreen(
     // being 2 while there are only 2 screens in landscape mode.
     // There is an issue to add support for that on the google's issues tracker but it's almost
     // 2 years old. So for the time being we have to hack around the issue.
-    val pagerState = rememberPagerState(key1 = configuration.orientation, initialPage = initialScreenIndex)
+    val pagerState = rememberPagerState(
+      key1 = configuration.orientation,
+      initialPage = initialScreenIndex
+    )
 
     LaunchedEffect(
       layoutType,
       configuration.orientation,
       bookmarksScreenOnLeftSide,
       block = {
-        homeScreenViewModel.currentPageFlow.collect { currentPage ->
+        uiInfoManager.currentPageFlow.collect { currentPage ->
           scrollToPageByScreenKey(
             screenKey = currentPage.screenKey,
             childScreens = childScreens,
@@ -120,10 +123,10 @@ class HomeScreen(
     navigationRouter.HandleBackPresses(
       screenKey = screenKey,
       onBackPressed = {
-        val currentPage = homeScreenViewModel.currentPage
+        val currentPage = uiInfoManager.currentPage
 
         if (currentPage != null && !homeChildScreens.isMainScreen(configuration, currentPage)) {
-          homeScreenViewModel.updateCurrentPage(
+          uiInfoManager.updateCurrentPage(
             screenKey = homeChildScreens.mainScreenKey(configuration)
           )
 
@@ -180,7 +183,7 @@ class HomeScreen(
         currentPagerPage = { pagerState.currentPage },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
         onDragging = { dragging, progress, velocity ->
-          homeScreenViewModel.dragDrawer(dragging, progress, velocity)
+          uiInfoManager.dragDrawer(dragging, progress, velocity)
         })
     }
 
@@ -201,10 +204,10 @@ class HomeScreen(
               drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
-              isDrawerOpened = { homeScreenViewModel.isDrawerFullyOpened() },
+              isDrawerOpened = { uiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               onDraggingDrawer = { dragging, progress, velocity ->
-                homeScreenViewModel.dragDrawer(dragging, progress, velocity)
+                uiInfoManager.dragDrawer(dragging, progress, velocity)
               }
             )
           }
@@ -225,7 +228,7 @@ class HomeScreen(
 
             // When we manually scroll the pager we need to keep track of the current page,
             // however we don't want to notify the listeners in this case.
-            homeScreenViewModel.updateCurrentPage(
+            uiInfoManager.updateCurrentPage(
               screenKey = screenKey,
               animate = false,
               notifyListeners = false
@@ -263,7 +266,7 @@ class HomeScreen(
         pagerState = pagerState,
         childScreens = childScreens.screens,
         mainUiLayoutMode = mainUiLayoutMode,
-        homeScreenViewModel = homeScreenViewModel
+        uiInfoManager = uiInfoManager
       )
 
       HomeScreenFloatingActionButton(
@@ -272,6 +275,7 @@ class HomeScreen(
         childScreens = childScreens.screens,
         mainUiLayoutMode = mainUiLayoutMode,
         homeScreenViewModel = homeScreenViewModel,
+        uiInfoManager = uiInfoManager,
         snackbarManager = snackbarManager
       )
 
@@ -281,7 +285,7 @@ class HomeScreen(
           drawerWidth = drawerWidth,
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
-          homeScreenViewModel = homeScreenViewModel
+          uiInfoManager = uiInfoManager
         )
       }
     }

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
-class JsonSetting<T>(
+class JsonSetting<T : Any?>(
   val jsonAdapter: JsonAdapter<T>,
   override val defaultValue: T,
   override val settingKey: String,

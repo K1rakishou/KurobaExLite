@@ -119,11 +119,11 @@ class ThreadScreen(
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, homeScreenViewModel.currentPage) },
-      onLeftIconClicked = { homeScreenViewModel.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage) },
+      onLeftIconClicked = { uiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = { searchQuery ->
-        homeScreenViewModel.onChildScreenSearchStateChanged(screenKey, searchQuery)
+        uiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
         threadScreenViewModel.updateSearchQuery(searchQuery)
       },
       onToolbarSortClicked = null,
@@ -221,16 +221,16 @@ class ThreadScreen(
         navigationRouter.presentScreen(mediaViewerScreen)
       },
       onPostListScrolled = { delta ->
-        homeScreenViewModel.onChildContentScrolling(screenKey, delta)
+        uiInfoManager.onChildContentScrolling(screenKey, delta)
       },
       onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
-        homeScreenViewModel.onPostListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
+        uiInfoManager.onPostListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
       },
       onPostListDragStateChanged = { dragging ->
-        homeScreenViewModel.onPostListDragStateChanged(screenKey, dragging)
+        uiInfoManager.onPostListDragStateChanged(screenKey, dragging)
       },
       onFastScrollerDragStateChanged = { dragging ->
-        homeScreenViewModel.onFastScrollerDragStateChanged(screenKey, dragging)
+        uiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
       }
     )
 
@@ -240,6 +240,7 @@ class ThreadScreen(
         screenContentLoadedFlow = screenContentLoadedFlow,
         mainUiLayoutMode = mainUiLayoutMode,
         homeScreenViewModel = homeScreenViewModel,
+        uiInfoManager = uiInfoManager,
         snackbarManager = snackbarManager
       )
     }

@@ -21,11 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import kotlinx.coroutines.delay
 
 
@@ -38,11 +39,11 @@ fun HomeScreenDrawerLayout(
   drawerWidth: Int,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  homeScreenViewModel: HomeScreenViewModel
+  uiInfoManager: UiInfoManager
 ) {
   val childRouter = remember { navigationRouter.childRouter(DrawerScreen.SCREEN_KEY.key) }
   val drawerScreen = remember { DrawerScreen(componentActivity, navigationRouter) }
-  val drawerVisibility by homeScreenViewModel.drawerVisibilityFlow.collectAsState()
+  val drawerVisibility by uiInfoManager.drawerVisibilityFlow.collectAsState()
   val maxOffsetDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { -drawerWidth.toDp() } }
   val drawerWidthDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
 
@@ -55,8 +56,8 @@ fun HomeScreenDrawerLayout(
     label = "Offset animation",
     transitionSpec = {
       if (
-        targetState is HomeScreenViewModel.DrawerVisibility.Closing
-        || targetState is HomeScreenViewModel.DrawerVisibility.Opening
+        targetState is DrawerVisibility.Closing
+        || targetState is DrawerVisibility.Opening
       ) {
         tween(durationMillis = 250)
       } else {
@@ -65,11 +66,11 @@ fun HomeScreenDrawerLayout(
     },
     targetValueByState = { dv ->
       return@animateDp when (dv) {
-        HomeScreenViewModel.DrawerVisibility.Closing -> maxOffsetDp
-        HomeScreenViewModel.DrawerVisibility.Opening -> 0.dp
-        is HomeScreenViewModel.DrawerVisibility.Drag -> maxOffsetDp * dv.progressInverted
-        HomeScreenViewModel.DrawerVisibility.Closed -> maxOffsetDp
-        HomeScreenViewModel.DrawerVisibility.Opened -> 0.dp
+        DrawerVisibility.Closing -> maxOffsetDp
+        DrawerVisibility.Opening -> 0.dp
+        is DrawerVisibility.Drag -> maxOffsetDp * dv.progressInverted
+        DrawerVisibility.Closed -> maxOffsetDp
+        DrawerVisibility.Opened -> 0.dp
       }
     }
   )
@@ -78,8 +79,8 @@ fun HomeScreenDrawerLayout(
     label = "Color animation",
     transitionSpec = {
       if (
-        targetState is HomeScreenViewModel.DrawerVisibility.Closing
-        || targetState is HomeScreenViewModel.DrawerVisibility.Opening
+        targetState is DrawerVisibility.Closing
+        || targetState is DrawerVisibility.Opening
       ) {
         tween(durationMillis = 250)
       } else {
@@ -88,37 +89,37 @@ fun HomeScreenDrawerLayout(
     },
     targetValueByState = { dv ->
       return@animateColor when (dv) {
-        HomeScreenViewModel.DrawerVisibility.Closing -> COLOR_INVISIBLE
-        HomeScreenViewModel.DrawerVisibility.Opening -> COLOR_VISIBLE
-        is HomeScreenViewModel.DrawerVisibility.Drag -> {
+        DrawerVisibility.Closing -> COLOR_INVISIBLE
+        DrawerVisibility.Opening -> COLOR_VISIBLE
+        is DrawerVisibility.Drag -> {
           COLOR_VISIBLE.copy(alpha = COLOR_VISIBLE.alpha * dv.progress)
         }
-        HomeScreenViewModel.DrawerVisibility.Closed -> COLOR_INVISIBLE
-        HomeScreenViewModel.DrawerVisibility.Opened -> COLOR_VISIBLE
+        DrawerVisibility.Closed -> COLOR_INVISIBLE
+        DrawerVisibility.Opened -> COLOR_VISIBLE
       }
     }
   )
 
   val clickable = remember(key1 = drawerVisibility) {
     when (drawerVisibility) {
-      HomeScreenViewModel.DrawerVisibility.Closed -> false
-      HomeScreenViewModel.DrawerVisibility.Closing,
-      is HomeScreenViewModel.DrawerVisibility.Drag,
-      HomeScreenViewModel.DrawerVisibility.Opened,
-      HomeScreenViewModel.DrawerVisibility.Opening -> true
+      DrawerVisibility.Closed -> false
+      DrawerVisibility.Closing,
+      is DrawerVisibility.Drag,
+      DrawerVisibility.Opened,
+      DrawerVisibility.Opening -> true
     }
   }
 
   val clickableModifier = remember(key1 = clickable) {
     if (clickable) {
-      Modifier.kurobaClickable(hasClickIndication = false) { homeScreenViewModel.closeDrawer() }
+      Modifier.kurobaClickable(hasClickIndication = false) { uiInfoManager.closeDrawer() }
     } else {
       Modifier
     }
   }
 
-  val isAnimationRunning = if (drawerVisibility is HomeScreenViewModel.DrawerVisibility.Drag) {
-    (drawerVisibility as HomeScreenViewModel.DrawerVisibility.Drag).isDragging
+  val isAnimationRunning = if (drawerVisibility is DrawerVisibility.Drag) {
+    (drawerVisibility as DrawerVisibility.Drag).isDragging
   } else {
     transition.isRunning
   }
@@ -133,21 +134,21 @@ fun HomeScreenDrawerLayout(
         delay(50)
 
         when (val dv = drawerVisibility) {
-          HomeScreenViewModel.DrawerVisibility.Closing -> {
-            homeScreenViewModel.closeDrawer(withAnimation = false)
+          DrawerVisibility.Closing -> {
+            uiInfoManager.closeDrawer(withAnimation = false)
           }
-          HomeScreenViewModel.DrawerVisibility.Opening -> {
-            homeScreenViewModel.openDrawer(withAnimation = false)
+          DrawerVisibility.Opening -> {
+            uiInfoManager.openDrawer(withAnimation = false)
           }
-          is HomeScreenViewModel.DrawerVisibility.Drag -> {
+          is DrawerVisibility.Drag -> {
             when {
-              dv.velocity > velocityEnoughToAnimate -> homeScreenViewModel.openDrawer()
-              dv.velocity < -velocityEnoughToAnimate -> homeScreenViewModel.closeDrawer()
+              dv.velocity > velocityEnoughToAnimate -> uiInfoManager.openDrawer()
+              dv.velocity < -velocityEnoughToAnimate -> uiInfoManager.closeDrawer()
               else -> {
                 if (dv.progress > 0.5f) {
-                  homeScreenViewModel.openDrawer()
+                  uiInfoManager.openDrawer()
                 } else {
-                  homeScreenViewModel.closeDrawer()
+                  uiInfoManager.closeDrawer()
                 }
               }
             }
