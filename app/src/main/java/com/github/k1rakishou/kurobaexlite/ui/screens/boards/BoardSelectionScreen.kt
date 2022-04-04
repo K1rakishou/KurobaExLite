@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -82,6 +83,12 @@ class BoardSelectionScreen(
     val siteKey = catalogDescriptor?.siteKey
       ?: Chan4.SITE_KEY
 
+    val windowInsets = LocalWindowInsets.current
+    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+    val paddingValues = remember(key1 = windowInsets) {
+      windowInsets.copy(newTop = windowInsets.top + toolbarHeight).asPaddingValues()
+    }
+
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf<String?>(null) }
@@ -93,8 +100,11 @@ class BoardSelectionScreen(
         .background(chanTheme.backColorCompose)
         .consumeClicks()
     ) {
+      val pullToRefreshToPadding = remember(key1 = paddingValues) { paddingValues.calculateTopPadding() }
+
       PullToRefresh(
         pullToRefreshState = pullToRefreshState,
+        topPadding = pullToRefreshToPadding,
         onTriggered = {
           coroutineScope.launch {
             boardSelectionScreenViewModel
@@ -117,6 +127,7 @@ class BoardSelectionScreen(
         BuildBoardsList(
           searchQuery = searchQuery,
           loadBoardsForSiteEvent = loadBoardsForSiteEvent,
+          paddingValues = paddingValues,
           onBoardClicked = { clickedCatalogDescriptor ->
             kurobaToolbarState.popChildToolbars()
 
@@ -138,14 +149,9 @@ class BoardSelectionScreen(
   private fun BuildBoardsList(
     searchQuery: String?,
     loadBoardsForSiteEvent: AsyncData<List<ChanBoardUiData>>,
+    paddingValues: PaddingValues,
     onBoardClicked: (CatalogDescriptor) -> Unit
   ) {
-    val windowInsets = LocalWindowInsets.current
-    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-    val paddingValues = remember(key1 = windowInsets) {
-      windowInsets.copy(newTop = windowInsets.top + toolbarHeight).asPaddingValues()
-    }
-
     val titleTextSize by uiInfoManager.textTitleSizeSp.collectAsState()
     val subtitleTextSize by uiInfoManager.textSubTitleSizeSp.collectAsState()
     val defaultHorizPadding = uiInfoManager.defaultHorizPadding
@@ -189,8 +195,7 @@ class BoardSelectionScreen(
     )
 
     LazyColumnWithFastScroller(
-      modifier = Modifier
-        .fillMaxSize(),
+      modifier = Modifier.fillMaxSize(),
       contentPadding = paddingValues,
       lazyListState = lazyListState,
       content = {
@@ -222,8 +227,8 @@ class BoardSelectionScreen(
             }
           }
           is AsyncData.Data -> {
-            val chanBoards = loadBoardsForSiteAsyncData.data
-            if (chanBoards.isEmpty()) {
+            val siteBoards = loadBoardsForSiteAsyncData.data
+            if (siteBoards.isEmpty()) {
               item(key = "no_boards_indicator") {
                 KurobaComposeText(
                   modifier = Modifier
@@ -238,7 +243,7 @@ class BoardSelectionScreen(
                 subtitleTextSize = subtitleTextSize,
                 horizPadding = defaultHorizPadding,
                 vertPadding = defaultVertPadding,
-                chanBoardUiDataList = chanBoards,
+                chanBoardUiDataList = siteBoards,
                 onBoardClicked = onBoardClicked
               )
             }
