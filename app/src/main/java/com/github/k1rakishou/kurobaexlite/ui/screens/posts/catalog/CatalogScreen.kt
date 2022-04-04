@@ -214,7 +214,7 @@ class CatalogScreen(
           mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
           postCellCommentTextSizeSp = postCellCommentTextSizeSp,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-          detectLinkableClicks = false
+          detectLinkableClicks = true
         )
       }
     }

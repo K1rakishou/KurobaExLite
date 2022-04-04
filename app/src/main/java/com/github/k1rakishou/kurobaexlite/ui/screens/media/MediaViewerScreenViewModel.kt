@@ -77,7 +77,11 @@ class MediaViewerScreenViewModel(
             }
           }
         }
-        is MediaViewerParams.Images -> TODO()
+        is MediaViewerParams.Images -> {
+          for (postCellImageData in mediaViewerParams.images) {
+            imagesToShow += postCellImageData
+          }
+        }
       }
 
       var initialPage = imagesToShow.indexOfFirst { it.fullImageAsUrl == initialImageUrl }

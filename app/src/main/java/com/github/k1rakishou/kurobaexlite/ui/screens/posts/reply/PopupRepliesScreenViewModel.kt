@@ -4,9 +4,11 @@ import android.util.LruCache
 import androidx.lifecycle.SavedStateHandle
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.helpers.flatMapNotNull
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
@@ -32,6 +34,22 @@ class PopupRepliesScreenViewModel(
 
   override fun refresh(onRefreshFinished: (() -> Unit)?) {
     error("Refreshing reply popups is not supported")
+  }
+
+  fun collectCurrentImages(): List<PostCellImageData> {
+    val replyViewMode = postReplyChainStack.lastOrNull()
+      ?: return emptyList()
+
+    val cachedPostCellDataList = when (replyViewMode) {
+      is PopupRepliesScreen.ReplyViewMode.RepliesFrom -> {
+        parsedReplyFromCache[replyViewMode.postDescriptor] ?: emptyList()
+      }
+      is PopupRepliesScreen.ReplyViewMode.ReplyTo -> {
+        parsedReplyToCache[replyViewMode.postDescriptor] ?: emptyList()
+      }
+    }
+
+    return cachedPostCellDataList.flatMapNotNull { postCellData -> postCellData.images }
   }
 
   suspend fun loadRepliesForModeInitial(

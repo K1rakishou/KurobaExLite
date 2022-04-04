@@ -102,6 +102,21 @@ inline fun <T> mutableSetWithCap(collection: Collection<*>): HashSet<T> {
   return HashSet(safeCapacity(collection.size))
 }
 
+inline fun <T, R> Iterable<T>.flatMapNotNull(transform: (T) -> Iterable<R>?): List<R> {
+  return flatMapNotNullTo(java.util.ArrayList<R>(), transform)
+}
+
+inline fun <T, R, C : MutableCollection<in R>> Iterable<T>.flatMapNotNullTo(
+  destination: C,
+  transform: (T) -> Iterable<R>?
+): C {
+  this
+    .mapNotNull { transform(it) }
+    .forEach { destination.addAll(it) }
+  return destination
+}
+
+
 @Suppress("ReplaceSizeCheckWithIsNotEmpty", "NOTHING_TO_INLINE")
 @OptIn(ExperimentalContracts::class)
 inline fun CharSequence?.isNotNullNorEmpty(): Boolean {
