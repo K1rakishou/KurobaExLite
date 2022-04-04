@@ -11,8 +11,11 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.SiteBoard
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
 import logcat.asLog
 import org.koin.java.KoinJavaComponent.inject
 
@@ -29,7 +32,7 @@ class BoardSelectionScreenViewModel(
     page: Int,
     forceReload: Boolean
   ): Flow<AsyncData<List<ChanBoardUiData>>> {
-    return flow {
+    return channelFlow {
       val loadedBoardsForSite = loadedBoardsPerSite.getOrPut(
         key = siteKey,
         defaultValue = { mutableListWithCap(64) }
@@ -40,13 +43,27 @@ class BoardSelectionScreenViewModel(
           val chanBoards = loadedBoardsForSite
             .mapNotNull { catalogDescriptor -> boardsCache[catalogDescriptor] }
 
-          emit(AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) }))
-          return@flow
+          send(AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) }))
+          return@channelFlow
         }
       }
 
-      emit(AsyncData.Loading)
-      val siteBoardsResult = getSiteBoardList.await(siteKey, page, forceReload)
+      val emitLoadingStateJob = coroutineScope {
+        launch {
+          if (forceReload) {
+            return@launch
+          }
+
+          delay(125L)
+          send(AsyncData.Loading)
+        }
+      }
+
+      val siteBoardsResult = try {
+        getSiteBoardList.await(siteKey, page, forceReload)
+      } finally {
+        emitLoadingStateJob.cancel()
+      }
 
       val siteBoards = if (siteBoardsResult.isFailure) {
         val exception = BoardsScreenException(
@@ -54,16 +71,16 @@ class BoardSelectionScreenViewModel(
             "error=${siteBoardsResult.exceptionOrThrow().asLog()}"
         )
 
-        emit(AsyncData.Error(exception))
-        return@flow
+        send(AsyncData.Error(exception))
+        return@channelFlow
       } else {
         siteBoardsResult.getOrThrow()
       }
 
       if (siteBoards.isEmpty()) {
         val exception = BoardsScreenException("Boards list for site \'$siteKey\' is empty")
-        emit(AsyncData.Error(exception))
-        return@flow
+        send(AsyncData.Error(exception))
+        return@channelFlow
       }
 
       siteBoards.forEach { chanBoard ->
@@ -71,7 +88,7 @@ class BoardSelectionScreenViewModel(
         loadedBoardsForSite.add(chanBoard.catalogDescriptor)
       }
 
-      emit(AsyncData.Data(siteBoards.map { mapChanBoardToChanBoardUiData(it) }))
+      send(AsyncData.Data(siteBoards.map { mapChanBoardToChanBoardUiData(it) }))
     }
   }
 
