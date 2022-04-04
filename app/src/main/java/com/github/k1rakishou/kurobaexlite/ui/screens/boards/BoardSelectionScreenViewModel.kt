@@ -3,89 +3,94 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.boards
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.interactors.GetSiteBoardList
 import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.model.data.local.ChanBoard
+import com.github.k1rakishou.kurobaexlite.model.data.local.SiteBoard
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import logcat.asLog
+import org.koin.java.KoinJavaComponent.inject
 
 class BoardSelectionScreenViewModel(
-  application: KurobaExLiteApplication,
-  private val siteManager: SiteManager
+  application: KurobaExLiteApplication
 ) : BaseAndroidViewModel(application) {
-  private val boardsCache = mutableMapOf<CatalogDescriptor, ChanBoard>()
+  private val getSiteBoardList: GetSiteBoardList by inject(GetSiteBoardList::class.java)
+
+  private val boardsCache = mutableMapOf<CatalogDescriptor, SiteBoard>()
   private val loadedBoardsPerSite = mutableMapOf<SiteKey, MutableList<CatalogDescriptor>>()
 
-  fun getOrLoadBoardsForSite(siteKey: SiteKey): Flow<AsyncData<List<ChanBoardUiData>>> {
+  fun getOrLoadBoardsForSite(
+    siteKey: SiteKey,
+    page: Int,
+    forceReload: Boolean
+  ): Flow<AsyncData<List<ChanBoardUiData>>> {
     return flow {
-      val loadedBoardsForSite = loadedBoardsPerSite.getOrPut(siteKey, defaultValue = { mutableListWithCap(64) })
-      if (loadedBoardsForSite.isNotEmpty()) {
-        val chanBoards = loadedBoardsForSite.mapNotNull { catalogDescriptor -> boardsCache[catalogDescriptor] }
-        emit(AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) }))
-        return@flow
+      val loadedBoardsForSite = loadedBoardsPerSite.getOrPut(
+        key = siteKey,
+        defaultValue = { mutableListWithCap(64) }
+      )
+
+      if (!forceReload) {
+        if (loadedBoardsForSite.isNotEmpty()) {
+          val chanBoards = loadedBoardsForSite
+            .mapNotNull { catalogDescriptor -> boardsCache[catalogDescriptor] }
+
+          emit(AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) }))
+          return@flow
+        }
       }
 
       emit(AsyncData.Loading)
+      val siteBoardsResult = getSiteBoardList.await(siteKey, page, forceReload)
 
-      val site = siteManager.bySiteKey(siteKey)
-      if (site == null) {
-        val exception = BoardsScreenException("No site found by key \'$siteKey\'")
+      val siteBoards = if (siteBoardsResult.isFailure) {
+        val exception = BoardsScreenException(
+          "Failed to load site \'$siteKey\' boards, " +
+            "error=${siteBoardsResult.exceptionOrThrow().asLog()}"
+        )
+
         emit(AsyncData.Error(exception))
         return@flow
+      } else {
+        siteBoardsResult.getOrThrow()
       }
 
-      val loadBoardsResult = site.boardsInfo()?.siteBoardsDataSource()?.loadBoards(siteKey)
-      if (loadBoardsResult == null) {
-        val exception = BoardsScreenException("Site with key \'$siteKey\' does not support board list")
-        emit(AsyncData.Error(exception))
-        return@flow
-      }
-
-      val loadBoardsError = loadBoardsResult.exceptionOrNull()
-      if (loadBoardsError != null) {
-        val exception = BoardsScreenException("Failed to load board list for site \'$siteKey\'", loadBoardsError)
-        emit(AsyncData.Error(exception))
-        return@flow
-      }
-
-      val chanBoards = loadBoardsResult.getOrThrow().chanBoards
-        .sortedBy { it.catalogDescriptor.boardCode }
-
-      if (chanBoards.isEmpty()) {
+      if (siteBoards.isEmpty()) {
         val exception = BoardsScreenException("Boards list for site \'$siteKey\' is empty")
         emit(AsyncData.Error(exception))
         return@flow
       }
 
-      chanBoards.forEach { chanBoard ->
+      siteBoards.forEach { chanBoard ->
         boardsCache[chanBoard.catalogDescriptor] = chanBoard
         loadedBoardsForSite.add(chanBoard.catalogDescriptor)
       }
 
-      emit(AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) }))
+      emit(AsyncData.Data(siteBoards.map { mapChanBoardToChanBoardUiData(it) }))
     }
   }
 
-  private fun mapChanBoardToChanBoardUiData(chanBoard: ChanBoard): ChanBoardUiData {
+  private fun mapChanBoardToChanBoardUiData(siteBoard: SiteBoard): ChanBoardUiData {
     val title = buildString {
       append("/")
-      append(chanBoard.catalogDescriptor.boardCode)
+      append(siteBoard.catalogDescriptor.boardCode)
       append("/")
 
-      if (chanBoard.boardTitle.isNotNullNorEmpty()) {
+      if (siteBoard.boardTitle.isNotNullNorEmpty()) {
         append(" — ")
-        append(chanBoard.boardTitle)
+        append(siteBoard.boardTitle)
       }
     }
 
     return ChanBoardUiData(
-      catalogDescriptor = chanBoard.catalogDescriptor,
+      catalogDescriptor = siteBoard.catalogDescriptor,
       title = title,
-      subtitle = chanBoard.boardDescription
+      subtitle = siteBoard.boardDescription
     )
   }
 

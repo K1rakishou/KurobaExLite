@@ -7,8 +7,8 @@ import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.cache.CacheFileType
-import com.github.k1rakishou.kurobaexlite.helpers.cache.KurobaLruDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.CacheFileType
+import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError

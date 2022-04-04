@@ -8,35 +8,25 @@ import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import java.nio.charset.StandardCharsets
-import java.util.concurrent.Executors
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.withContext
 import okio.Buffer
 
 class PostCommentParser {
   private val htmlParser = HtmlParser()
 
-  private val dispatcher = Executors.newFixedThreadPool(
-    Runtime
-      .getRuntime()
-      .availableProcessors()
-      .coerceAtLeast(4)
-  ).asCoroutineDispatcher()
-
-  suspend fun parsePostComment(
+  fun parsePostComment(
     postCommentUnparsed: String,
     postDescriptor: PostDescriptor
   ): List<TextPart> {
-    return withContext(dispatcher) {
-      return@withContext Result
-        .Try { parsePostCommentInternal(postCommentUnparsed, postDescriptor) }
-        .getOrElse { error ->
-          val errorMessage = "Failed to parse post '${postDescriptor}', " +
-            "error: ${error.errorMessageOrClassName()}"
+    BackgroundUtils.ensureBackgroundThread()
 
-          return@getOrElse listOf(TextPart(text = errorMessage))
-        }
-    }
+    return Result
+      .Try { parsePostCommentInternal(postCommentUnparsed, postDescriptor) }
+      .getOrElse { error ->
+        val errorMessage = "Failed to parse post '${postDescriptor}', " +
+          "error: ${error.errorMessageOrClassName()}"
+
+        return@getOrElse listOf(TextPart(text = errorMessage))
+      }
   }
 
   @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)

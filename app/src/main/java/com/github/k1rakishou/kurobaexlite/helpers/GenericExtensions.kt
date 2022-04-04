@@ -1,5 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
+import android.app.Activity
+import android.view.MotionEvent
+import android.view.View
 import androidx.compose.ui.text.AnnotatedString
 import java.io.InterruptedIOException
 import java.net.URLDecoder
@@ -533,4 +536,10 @@ fun String.removeExtensionFromFileName(): String {
   }
 
   return this.substring(0, index)
+}
+
+fun View.emulateMotionEvent(downTime: Long, eventTime: Long, action: Int, x: Float, y: Float) {
+  val motionEvent = MotionEvent.obtain(downTime, eventTime, action, x, y, 0)
+  (context as Activity).dispatchTouchEvent(motionEvent)
+  motionEvent.recycle()
 }

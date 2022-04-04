@@ -11,10 +11,10 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
-import com.github.k1rakishou.kurobaexlite.model.data.local.ChanBoard
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.local.SiteBoard
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardsDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageDataJson
@@ -248,7 +248,7 @@ class Chan4DataSource(
           val boardTitle = boardDataJson.boardTitle
           val boardDescription = boardDataJson.boardDescription?.let { HtmlUnescape.unescape(it) }
 
-          return@mapNotNull ChanBoard(
+          return@mapNotNull SiteBoard(
             catalogDescriptor = CatalogDescriptor(input, boardCode),
             boardTitle = boardTitle,
             boardDescription = boardDescription

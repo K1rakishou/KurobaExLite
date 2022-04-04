@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers.cache
+package com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru
 
 import android.content.Context
 import androidx.annotation.GuardedBy
@@ -6,6 +6,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.ConversionUtils
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.cache.sync.KeySynchronizer
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
@@ -48,7 +49,7 @@ internal class KurobaInnerLruDiskCache(
   private val TAG = "KurobaInnerLruDiskCache{${cacheFileType.id}}"
 
   private val coroutineScope = CoroutineScope(sharedDispatcher + SupervisorJob())
-  private val cacheHandlerSynchronizer = LruDiskCacheSynchronizer<FileId>()
+  private val cacheHandlerSynchronizer = KeySynchronizer<FileId>()
 
   private var currentAutoTrimJob: Job? = null
 

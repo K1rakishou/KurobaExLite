@@ -13,9 +13,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
-import com.github.k1rakishou.kurobaexlite.helpers.cache.KurobaLruDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.cache.site_data.SiteDataPersister
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.interactors.GetSiteBoardList
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
@@ -79,6 +81,7 @@ object DependencyGraph {
           postReplyChainManager = get()
         )
       }
+      single { SiteDataPersister(appContext = get(), moshi = get()) }
 
       kurobaDiskLruCache()
       coilMediaDiskCache()
@@ -126,10 +129,7 @@ object DependencyGraph {
       )
     }
     viewModel {
-      BoardSelectionScreenViewModel(
-        application = get(),
-        siteManager = get()
-      )
+      BoardSelectionScreenViewModel(application = get())
     }
     viewModel {
       MediaViewerScreenViewModel(
@@ -163,6 +163,12 @@ object DependencyGraph {
         appContext = get(),
         moshi = get(),
         proxiedOkHttpClient = get()
+      )
+    }
+    single {
+      GetSiteBoardList(
+        siteManager = get(),
+        siteDataPersister = get()
       )
     }
   }

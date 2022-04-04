@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
@@ -43,12 +44,15 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class BoardSelectionScreen(
@@ -70,11 +74,18 @@ class BoardSelectionScreen(
         middlePartInfo = MiddlePartInfo(centerContent = false)
       )
     }
-    var searchQuery by remember { mutableStateOf<String?>(null) }
 
     navigationRouter.HandleBackPresses(screenKey = screenKey) {
       popScreen()
     }
+
+    val siteKey = catalogDescriptor?.siteKey
+      ?: Chan4.SITE_KEY
+
+    val pullToRefreshState = rememberPullToRefreshState()
+    val coroutineScope = rememberCoroutineScope()
+    var searchQuery by remember { mutableStateOf<String?>(null) }
+    var loadBoardsForSiteEvent by remember { mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Empty) }
 
     Box(
       modifier = Modifier
@@ -82,15 +93,38 @@ class BoardSelectionScreen(
         .background(chanTheme.backColorCompose)
         .consumeClicks()
     ) {
-      BuildBoardsList(
-        searchQuery = searchQuery,
-        onBoardClicked = { clickedCatalogDescriptor ->
-          kurobaToolbarState.popChildToolbars()
+      PullToRefresh(
+        pullToRefreshState = pullToRefreshState,
+        onTriggered = {
+          coroutineScope.launch {
+            boardSelectionScreenViewModel
+              .getOrLoadBoardsForSite(siteKey = siteKey, page = 0, forceReload = true)
+              .collect { boardsListAsync -> loadBoardsForSiteEvent = boardsListAsync }
 
-          catalogScreenViewModel.loadCatalog(clickedCatalogDescriptor)
-          popScreen()
+            pullToRefreshState.stopRefreshing()
+          }
         }
-      )
+      ) {
+        LaunchedEffect(
+          key1 = Unit,
+          block = {
+            boardSelectionScreenViewModel
+              .getOrLoadBoardsForSite(siteKey = siteKey, page = 0, forceReload = false)
+              .collect { boardsListAsync -> loadBoardsForSiteEvent = boardsListAsync }
+          }
+        )
+
+        BuildBoardsList(
+          searchQuery = searchQuery,
+          loadBoardsForSiteEvent = loadBoardsForSiteEvent,
+          onBoardClicked = { clickedCatalogDescriptor ->
+            kurobaToolbarState.popChildToolbars()
+
+            catalogScreenViewModel.loadCatalog(clickedCatalogDescriptor)
+            popScreen()
+          }
+        )
+      }
 
       ScreenToolbar(
         kurobaToolbarState = kurobaToolbarState,
@@ -103,6 +137,7 @@ class BoardSelectionScreen(
   @Composable
   private fun BuildBoardsList(
     searchQuery: String?,
+    loadBoardsForSiteEvent: AsyncData<List<ChanBoardUiData>>,
     onBoardClicked: (CatalogDescriptor) -> Unit
   ) {
     val windowInsets = LocalWindowInsets.current
@@ -116,18 +151,6 @@ class BoardSelectionScreen(
     val defaultHorizPadding = uiInfoManager.defaultHorizPadding
     val defaultVertPadding = uiInfoManager.defaultVertPadding
 
-    val siteKey = catalogDescriptor?.siteKey
-      ?: Chan4.SITE_KEY
-
-    val loadBoardsForSiteEvent by produceState<AsyncData<List<ChanBoardUiData>>>(
-      initialValue = AsyncData.Empty,
-      producer = {
-        boardSelectionScreenViewModel
-          .getOrLoadBoardsForSite(siteKey)
-          .collect { boardsListAsync -> value = boardsListAsync }
-      }
-    )
-
     val filteredBoardsAsyncData by produceState(
       initialValue = loadBoardsForSiteEvent,
       key1 = searchQuery,
@@ -138,7 +161,7 @@ class BoardSelectionScreen(
           return@produceState
         }
 
-        val chanBoards = (loadBoardsForSiteEvent as AsyncData.Data).data
+        val chanBoards = loadBoardsForSiteEvent.data
         val filteredBoards = chanBoards.filter { chanBoardUiData -> chanBoardUiData.matchesQuery(searchQuery) }
 
         val sortedBoards = WeightedSorter.sort(

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers.cache
+package com.github.k1rakishou.kurobaexlite.helpers.cache.sync
 
 import androidx.annotation.GuardedBy
 import androidx.annotation.VisibleForTesting
@@ -7,7 +7,7 @@ import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.sync.Mutex
 
-class LruDiskCacheSynchronizer<Key : Any> {
+class KeySynchronizer<Key : Any> {
 
   @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
   @GuardedBy("this")

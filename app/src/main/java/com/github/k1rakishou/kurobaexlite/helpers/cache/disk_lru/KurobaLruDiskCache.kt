@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers.cache
+package com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru
 
 import android.content.Context
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
