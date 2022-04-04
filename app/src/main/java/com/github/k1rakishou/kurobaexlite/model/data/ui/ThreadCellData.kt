@@ -18,6 +18,11 @@ data class ThreadCellData(
   val totalReplies: Int = 0,
   val totalImages: Int = 0,
   val totalPosters: Int = 0,
+  val archived: Boolean? = null,
+  val closed: Boolean? = null,
+  val sticky: Boolean? = null,
+  val bumpLimit: Boolean? = null,
+  val imageLimit: Boolean? = null,
   val lastLoadError: Throwable? = null
 ) {
 
@@ -58,4 +63,17 @@ data class ThreadCellData(
       }
     }
   }
+
+  fun canRefresh(): Boolean {
+    if (archived == true) {
+      return false
+    }
+
+    if (closed == true) {
+      return false
+    }
+
+    return true
+  }
+
 }

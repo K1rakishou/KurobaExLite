@@ -103,7 +103,12 @@ class Chan4DataSource(
               threadRepliesTotal = threadPost.replies,
               threadImagesTotal = threadPost.images,
               threadPostersTotal = threadPost.posters,
-              lastModified = threadPost.lastModified
+              lastModified = threadPost.lastModified,
+              archived = threadPost.archived?.let { archived -> archived == 1 },
+              closed = threadPost.closed?.let { closed -> closed == 1 },
+              sticky = threadPost.sticky?.let { sticky -> sticky == 1 },
+              bumpLimit = threadPost.bumpLimit?.let { bumpLimit -> bumpLimit == 1 },
+              imageLimit = threadPost.imageLimit?.let { imageLimit -> imageLimit == 1 },
             )
           } else {
             return@mapIndexed PostData(
@@ -117,7 +122,13 @@ class Chan4DataSource(
                 postImageInfo = postImageInfo,
                 postImageDataJson = threadPost,
                 boardCode = boardCode
-              )
+              ),
+              lastModified = null,
+              archived = null,
+              closed = null,
+              sticky = null,
+              bumpLimit = null,
+              imageLimit = null,
             )
           }
         }
@@ -188,8 +199,13 @@ class Chan4DataSource(
               ),
               threadRepliesTotal = catalogThread.replies,
               threadImagesTotal = catalogThread.images,
+              threadPostersTotal = catalogThread.posters,
               lastModified = catalogThread.lastModified,
-              threadPostersTotal = null
+              archived = catalogThread.archived?.let { archived -> archived == 1 },
+              closed = catalogThread.closed?.let { closed -> closed == 1 },
+              sticky = catalogThread.sticky?.let { sticky -> sticky == 1 },
+              bumpLimit = catalogThread.bumpLimit?.let { bumpLimit -> bumpLimit == 1 },
+              imageLimit = catalogThread.imageLimit?.let { imageLimit -> imageLimit == 1 },
             )
           }
         }

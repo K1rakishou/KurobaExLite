@@ -15,6 +15,11 @@ interface IPostData {
   val threadImagesTotal: Int?
   val threadPostersTotal: Int?
   val lastModified: Long?
+  val archived: Boolean?
+  val closed: Boolean?
+  val sticky: Boolean?
+  val bumpLimit: Boolean?
+  val imageLimit: Boolean?
 
   val postNo: Long
     get() = postDescriptor.postNo
@@ -34,5 +39,10 @@ interface IPostData {
     threadImagesTotal: Int? = this.threadImagesTotal,
     threadPostersTotal: Int? = this.threadPostersTotal,
     lastModified: Long? = this.lastModified,
+    archived: Boolean? = this.archived,
+    closed: Boolean? = this.closed,
+    sticky: Boolean? = this.sticky,
+    bumpLimit: Boolean? = this.bumpLimit,
+    imageLimit: Boolean? = this.imageLimit,
   ): IPostData
 }

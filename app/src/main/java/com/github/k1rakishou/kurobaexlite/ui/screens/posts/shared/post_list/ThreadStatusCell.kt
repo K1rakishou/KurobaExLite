@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,9 +52,11 @@ internal fun LazyItemScope.ThreadStatusCell(
   val chanTheme = LocalChanTheme.current
   val threadStatusCellDataFromState by threadScreenViewModel.postScreenState.threadCellDataState.collectAsState()
   val chanDescriptor = threadScreenViewModel.postScreenState.chanDescriptor
-  val threadStatusCellData = threadStatusCellDataFromState
 
-  if (threadStatusCellData == null || (chanDescriptor == null || chanDescriptor !is ThreadDescriptor)) {
+  val threadStatusCellDataUpdatedMut by rememberUpdatedState(newValue = threadStatusCellDataFromState)
+  val threadStatusCellDataUpdated = threadStatusCellDataUpdatedMut
+
+  if (threadStatusCellDataUpdated == null || (chanDescriptor == null || chanDescriptor !is ThreadDescriptor)) {
     Spacer(modifier = Modifier.height(Dp.Hairline))
     return
   }
@@ -101,38 +104,98 @@ internal fun LazyItemScope.ThreadStatusCell(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
-      .kurobaClickable(onClick = { onThreadStatusCellClicked(chanDescriptor) })
+      .kurobaClickable(
+        onClick = {
+          if (threadStatusCellDataUpdated.canRefresh()) {
+            onThreadStatusCellClicked(chanDescriptor)
+          }
+        }
+      )
   ) {
     val context = LocalContext.current
 
-    val threadStatusCellText = remember(key1 = threadStatusCellData, key2 = timeUntilNextUpdateSeconds) {
+    val threadStatusCellText = remember(key1 = threadStatusCellDataUpdated, key2 = timeUntilNextUpdateSeconds) {
       buildAnnotatedString {
-        if (threadStatusCellData.totalReplies > 0) {
-          append(threadStatusCellData.totalReplies.toString())
+        if (threadStatusCellDataUpdated.totalReplies > 0) {
+          append(threadStatusCellDataUpdated.totalReplies.toString())
           append("R")
         }
 
-        if (threadStatusCellData.totalImages > 0) {
+        if (threadStatusCellDataUpdated.totalImages > 0) {
           if (length > 0) {
             append(", ")
           }
 
-          append(threadStatusCellData.totalImages.toString())
+          append(threadStatusCellDataUpdated.totalImages.toString())
           append("I")
         }
 
-        if (threadStatusCellData.totalPosters > 0) {
+        if (threadStatusCellDataUpdated.totalPosters > 0) {
           if (length > 0) {
             append(", ")
           }
 
-          append(threadStatusCellData.totalPosters.toString())
+          append(threadStatusCellDataUpdated.totalPosters.toString())
           append("P")
         }
 
-        append("\n")
+        if (threadStatusCellDataUpdated.bumpLimit == true) {
+          if (length > 0) {
+            append(", ")
+          }
 
-        if (threadStatusCellData.lastLoadError == null) {
+          append("BL")
+        }
+
+        if (threadStatusCellDataUpdated.imageLimit == true) {
+          if (length > 0) {
+            append(", ")
+          }
+
+          append("IL")
+        }
+
+        val threadStatusText = buildAnnotatedString {
+          if (threadStatusCellDataUpdated.archived == true) {
+            if (length > 0) {
+              append(", ")
+            }
+
+            append(context.getString(R.string.thread_status_archived))
+          }
+
+          if (threadStatusCellDataUpdated.closed == true) {
+            if (length > 0) {
+              append(", ")
+            }
+
+            append(context.getString(R.string.thread_status_closed))
+          }
+
+          if (threadStatusCellDataUpdated.sticky == true) {
+            if (length > 0) {
+              append(", ")
+            }
+
+            append(context.getString(R.string.thread_status_pinned))
+          }
+        }
+
+        if (threadStatusText.isNotEmpty()) {
+          append("\n")
+          append(threadStatusText)
+        }
+
+        if (threadStatusCellDataUpdated.lastLoadError != null) {
+          val lastLoadErrorText = threadStatusCellDataUpdated.errorMessage(context)
+
+          append("\n")
+          append(lastLoadErrorText)
+          append("\n")
+          append(context.resources.getString(R.string.thread_load_failed_tap_to_refresh))
+        } else if (threadStatusCellDataUpdated.canRefresh()) {
+          append("\n")
+
           val loadingText = if (timeUntilNextUpdateSeconds > 0L) {
             context.resources.getString(
               R.string.thread_screen_status_cell_loading_in,
@@ -143,18 +206,12 @@ internal fun LazyItemScope.ThreadStatusCell(
           }
 
           append(loadingText)
-        } else {
-          val lastLoadErrorText = threadStatusCellData.errorMessage(context)
-
-          append(lastLoadErrorText)
-          append("\n")
-          append(context.resources.getString(R.string.thread_load_failed_tap_to_refresh))
         }
       }
     }
 
-    val combinedPaddings = remember(key1 = threadStatusCellData.lastLoadError) {
-      val endPadding = if (threadStatusCellData.lastLoadError != null) {
+    val combinedPaddings = remember(key1 = threadStatusCellDataUpdated.lastLoadError) {
+      val endPadding = if (threadStatusCellDataUpdated.lastLoadError != null) {
         fabSize + fabEndOffset
       } else {
         0.dp

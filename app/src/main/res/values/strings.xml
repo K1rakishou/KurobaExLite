@@ -98,6 +98,9 @@
     <string name="thread_load_failed_not_found">404 not found</string>
     <string name="thread_load_failed_unknown">Unknown load error. (Error class: \'%1$s\')</string>
     <string name="thread_load_failed_tap_to_refresh">Tap to refresh</string>
+    <string name="thread_status_archived">Archived</string>
+    <string name="thread_status_closed">Closed</string>
+    <string name="thread_status_pinned">Pinned</string>
 
     <string name="catalog_sort_order_bump">Bump</string>
     <string name="catalog_sort_order_thread_reply_count">Thread reply count</string>

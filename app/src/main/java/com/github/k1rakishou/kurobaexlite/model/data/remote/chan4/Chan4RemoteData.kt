@@ -43,6 +43,12 @@ data class ThreadPostDataJson(
   val images: Int?,
   @Json(name = "last_modified") val lastModified: Long?,
   @Json(name = "unique_ips") val posters: Int?,
+  @Json(name = "archived") val archived: Int?,
+  @Json(name = "closed") val closed: Int?,
+  @Json(name = "sticky") val sticky: Int?,
+  @Json(name = "bumplimit") val bumpLimit: Int?,
+  @Json(name = "imagelimit") val imageLimit: Int?,
+
   // image info
   override val filename: String?,
   override val ext: String?,
@@ -61,6 +67,13 @@ data class CatalogThreadDataJson(
   val replies: Int?,
   val images: Int?,
   @Json(name = "last_modified") val lastModified: Long?,
+  @Json(name = "unique_ips") val posters: Int?,
+  @Json(name = "archived") val archived: Int?,
+  @Json(name = "closed") val closed: Int?,
+  @Json(name = "sticky") val sticky: Int?,
+  @Json(name = "bumplimit") val bumpLimit: Int?,
+  @Json(name = "imagelimit") val imageLimit: Int?,
+
   // image info
   override val filename: String?,
   override val ext: String?,

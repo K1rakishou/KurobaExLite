@@ -21,6 +21,11 @@ data class PostCellData(
   val threadImagesTotal: Int? = null,
   val threadPostersTotal: Int? = null,
   val lastModified: Long? = null,
+  val archived: Boolean?,
+  val closed: Boolean?,
+  val sticky: Boolean?,
+  val bumpLimit: Boolean?,
+  val imageLimit: Boolean?,
   val parsedPostData: ParsedPostData?,
   val postServerDataHashForListAnimations: Murmur3Hash?
 ) {
@@ -63,6 +68,11 @@ data class PostCellData(
         threadImagesTotal = postData.threadImagesTotal,
         threadPostersTotal = postData.threadPostersTotal,
         lastModified = postData.lastModified,
+        archived = postData.archived,
+        closed = postData.closed,
+        sticky = postData.sticky,
+        bumpLimit = postData.bumpLimit,
+        imageLimit = postData.imageLimit,
         parsedPostData = parsedPostData,
         postServerDataHashForListAnimations = postServerDataHashForListAnimations
       )

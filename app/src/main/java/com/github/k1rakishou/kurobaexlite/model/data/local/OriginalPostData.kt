@@ -14,7 +14,12 @@ data class OriginalPostData(
   override val threadRepliesTotal: Int?,
   override val threadImagesTotal: Int?,
   override val threadPostersTotal: Int?,
-  override val lastModified: Long?
+  override val lastModified: Long?,
+  override val archived: Boolean?,
+  override val closed: Boolean?,
+  override val sticky: Boolean?,
+  override val bumpLimit: Boolean?,
+  override val imageLimit: Boolean?,
 ) : IPostData {
 
   override fun copy(
@@ -28,6 +33,11 @@ data class OriginalPostData(
     threadImagesTotal: Int?,
     threadPostersTotal: Int?,
     lastModified: Long?,
+    archived: Boolean?,
+    closed: Boolean?,
+    sticky: Boolean?,
+    bumpLimit: Boolean?,
+    imageLimit: Boolean?,
   ): IPostData {
     return OriginalPostData(
       originalPostOrder = originalPostOrder,
@@ -40,6 +50,11 @@ data class OriginalPostData(
       threadImagesTotal = threadImagesTotal,
       threadPostersTotal = threadPostersTotal,
       lastModified = lastModified,
+      archived = archived,
+      closed = closed,
+      sticky = sticky,
+      bumpLimit = bumpLimit,
+      imageLimit = imageLimit,
     )
   }
 }

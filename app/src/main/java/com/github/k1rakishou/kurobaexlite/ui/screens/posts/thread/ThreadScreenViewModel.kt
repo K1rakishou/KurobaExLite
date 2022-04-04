@@ -259,13 +259,20 @@ class ThreadScreenViewModel(
     loadOptions: LoadOptions,
     onReloadFinished: (() -> Unit)?
   ) {
-    if (!loadOptions.forced && chanThreadManager.currentlyOpenedThread == threadDescriptor) {
+    val reloadingTheSameThread = chanThreadManager.currentlyOpenedThread == threadDescriptor
+
+    if (!loadOptions.forced && reloadingTheSameThread) {
       onReloadFinished?.invoke()
       return
     }
 
     val startTime = SystemClock.elapsedRealtime()
-    val prevCellDataState = postScreenState.threadCellDataState.value
+    val prevCellDataState = if (reloadingTheSameThread) {
+      postScreenState.threadCellDataState.value
+    } else {
+      null
+    }
+
     onThreadLoadingStart(threadDescriptor, loadOptions)
 
     if (threadDescriptor != null) {
@@ -408,11 +415,22 @@ class ThreadScreenViewModel(
       )
     }
 
-    if (postLoadResult.newPostsCount > 0) {
-      threadAutoUpdater.resetTimer()
-    }
 
-    threadAutoUpdater.runAutoUpdaterLoop(threadDescriptor)
+    val originalPost = postLoadResult.firstOrNull { postData -> postData is OriginalPostData }
+    if (originalPost != null && (originalPost.archived == true || originalPost.closed == true)) {
+      logcat {
+        "refresh($threadDescriptor) stopping auto-updater " +
+          "(archived=${originalPost.archived}, closed=${originalPost.closed})"
+      }
+
+      threadAutoUpdater.stopAutoUpdaterLoop()
+    } else {
+      if (postLoadResult.newPostsCount > 0) {
+        threadAutoUpdater.resetTimer()
+      }
+
+      threadAutoUpdater.runAutoUpdaterLoop(threadDescriptor)
+    }
   }
 
   fun onPostListTouchingBottom() {
@@ -473,12 +491,22 @@ class ThreadScreenViewModel(
     val totalReplies = originalPostData?.threadRepliesTotal ?: prevCellDataState?.totalReplies ?: 0
     val totalImages = originalPostData?.threadImagesTotal ?: prevCellDataState?.totalImages ?: 0
     val totalPosters = originalPostData?.threadPostersTotal ?: prevCellDataState?.totalPosters ?: 0
+    val archived = originalPostData?.archived ?: prevCellDataState?.archived
+    val closed = originalPostData?.closed ?: prevCellDataState?.closed
+    val sticky = originalPostData?.sticky ?: prevCellDataState?.sticky
+    val bumpLimit = originalPostData?.bumpLimit ?: prevCellDataState?.bumpLimit
+    val imageLimit = originalPostData?.imageLimit ?: prevCellDataState?.imageLimit
 
     return ThreadCellData(
       totalReplies = totalReplies,
       totalImages = totalImages,
       totalPosters = totalPosters,
-      lastLoadError = lastLoadError
+      lastLoadError = lastLoadError,
+      archived = archived,
+      closed = closed,
+      sticky = sticky,
+      bumpLimit = bumpLimit,
+      imageLimit = imageLimit,
     )
   }
 
