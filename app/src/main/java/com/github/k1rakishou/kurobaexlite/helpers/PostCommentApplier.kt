@@ -6,7 +6,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import com.github.k1rakishou.kurobaexlite.helpers.filter.BannedWordsHelper
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -59,8 +58,6 @@ class PostCommentApplier {
       )
 
       val textPartBuilder = StringBuilder(textPartText)
-        .apply { processBannedWords(this) }
-
       overflowHappened = overflow
 
       if (textPart.spans.isEmpty()) {
@@ -245,18 +242,6 @@ class PostCommentApplier {
           end = end ?: textPartBuilder.length
         )
       }
-    }
-  }
-
-  private fun processBannedWords(textPartBuilder: StringBuilder) {
-    val matcher = BannedWordsHelper.BANNED_WORDS_PATTERN.matcher(textPartBuilder)
-
-    while (matcher.find()) {
-      val start = matcher.start(1)
-      val end = matcher.end(1)
-      val replacement = (start until end).joinToString(separator = "", transform = { "*" })
-
-      textPartBuilder.replace(start, end, replacement)
     }
   }
 

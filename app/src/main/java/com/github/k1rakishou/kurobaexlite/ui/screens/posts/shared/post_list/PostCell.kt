@@ -136,14 +136,13 @@ private fun PostCellTitle(
           .kurobaClickable(onClick = { onPostImageClicked(chanDescriptor, image) })
       ) {
         SubcomposeAsyncImage(
-          modifier = Modifier.size(60.dp),
+          modifier = Modifier.size(70.dp),
           model = ImageRequest.Builder(context)
             .data(image.thumbnailUrl)
             .crossfade(true)
             .build(),
           contentDescription = null,
           contentScale = ContentScale.Fit,
-          alpha = 0.15f,
           content = {
             val state = painter.state
             if (state is AsyncImagePainter.State.Error) {
