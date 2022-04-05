@@ -48,6 +48,9 @@ class MediaViewerScreenViewModel(
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub by inject(InstallMpvNativeLibrariesFromGithub::class.java)
   private val mpvInitializer = MpvInitializer(appContext, mpvSettings)
 
+  val mpvInitialized: Boolean
+    get() = mpvInitializer.initialized
+
   suspend fun init(mediaViewerParams: MediaViewerParams): InitResult {
     return withContext(Dispatchers.Default) {
       // Trim the cache every time we open the media viewer

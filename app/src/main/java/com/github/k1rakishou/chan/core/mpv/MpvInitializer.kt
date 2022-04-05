@@ -11,10 +11,13 @@ class MpvInitializer(
   private val mpvSettings: MpvSettings
 ) {
   private val TAG = "MpvInitializer"
-  private var initialized = false
+
+  private var _initialized = false
+  val initialized: Boolean
+    get() = _initialized
 
   fun init() {
-    if (initialized) {
+    if (_initialized) {
       logcat(TAG) { "init() already initialized" }
       return
     }
@@ -22,13 +25,13 @@ class MpvInitializer(
     MPVLib.tryLoadLibraries(mpvSettings)
 
     if (!MPVLib.librariesAreLoaded()) {
-      initialized = false
+      _initialized = false
       logcat(TAG) { "init() librariesAreLoaded: false" }
       return
     }
 
     if (MPVLib.isCreated()) {
-      initialized = false
+      _initialized = false
       logcat(TAG) { "init() already created" }
       return
     }
@@ -88,7 +91,7 @@ class MpvInitializer(
     MPVLib.mpvSetOptionString("save-position-on-quit", "no")
     MPVLib.mpvSetOptionString("force-window", "no")
 
-    initialized = true
+    _initialized = true
 
     logcat(TAG) {
       "init() mpv initialized, hwdec: $hwdec, " +
@@ -100,12 +103,12 @@ class MpvInitializer(
   }
 
   fun destroy() {
-    if (!initialized) {
+    if (!_initialized) {
       logcat(TAG) { "destroy() already destroyed" }
       return
     }
 
-    initialized = false
+    _initialized = false
 
     if (!MPVLib.librariesAreLoaded()) {
       logcat(TAG) { "destroy() librariesAreLoaded: false" }

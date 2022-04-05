@@ -175,7 +175,7 @@ class MediaViewerScreen(
         }
       }
 
-      if (videoMediaState != null) {
+      if (videoMediaState != null && mediaViewerScreenViewModel.mpvInitialized) {
         val videoControlsVisible by videoMediaState.videoControlsVisibleState
         val targetAlpha = if (videoControlsVisible) 1f else 0f
         val alphaAnimated by animateFloatAsState(
