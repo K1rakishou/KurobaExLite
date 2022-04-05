@@ -146,8 +146,10 @@ internal fun PostListContent(
 
           if (firstCompletelyVisibleItem != null) {
             val firstVisiblePostData = postDataList.getOrNull(firstCompletelyVisibleItem.index)?.value
+            val lastVisibleItemIsThreadCellData = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
+
             if (firstVisiblePostData != null) {
-              postsScreenViewModel.onFirstVisiblePostScrollChanged(firstVisiblePostData)
+              postsScreenViewModel.onFirstVisiblePostScrollChanged(firstVisiblePostData, lastVisibleItemIsThreadCellData)
             }
           }
         }

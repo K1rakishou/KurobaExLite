@@ -104,7 +104,6 @@ class CatalogScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val postListAsync by catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
     val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
     val kurobaToolbarState = remember(key1 = mainUiLayoutMode) {
@@ -117,7 +116,7 @@ class CatalogScreen(
 
     UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
-      postListAsync = postListAsync,
+      postScreenState = catalogScreenViewModel.postScreenState,
       kurobaToolbarState = kurobaToolbarState
     )
 

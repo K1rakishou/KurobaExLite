@@ -31,8 +31,8 @@ class UpdateChanThreadView(
       }
 
       if (
-        lastViewedPostDescriptorForIndicator == null &&
-        (threadLastPostDescriptor != null || isBottomOnThreadReached)
+        (lastViewedPostDescriptorForIndicator == null && threadLastPostDescriptor != null) ||
+        isBottomOnThreadReached
       ) {
         lastViewedPostDescriptorForIndicator = maxOfPostDescriptors(
           one = lastViewedPostDescriptorForIndicator,

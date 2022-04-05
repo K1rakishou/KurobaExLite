@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import com.github.k1rakishou.kurobaexlite.R
@@ -11,6 +12,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -18,7 +20,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.ThreadScreenPostsState
 
 abstract class PostsScreen(
   componentActivity: ComponentActivity,
@@ -40,9 +43,12 @@ abstract class PostsScreen(
   @Composable
   protected fun UpdateToolbarTitle(
     parsedPostDataCache: ParsedPostDataCache,
-    postListAsync: AsyncData<PostsState>,
+    postScreenState: PostScreenState,
     kurobaToolbarState: KurobaToolbarState
   ) {
+    val postListAsyncMut by postScreenState.postsAsyncDataState.collectAsState()
+    val postListAsync = postListAsyncMut
+
     when (postListAsync) {
       AsyncData.Empty -> {
         if (isCatalogScreen) {
@@ -61,13 +67,14 @@ abstract class PostsScreen(
       is AsyncData.Data -> {
         when (val chanDescriptor = postListAsync.data.chanDescriptor) {
           is CatalogDescriptor -> {
-            kurobaToolbarState.toolbarTitleState.value =
-              parsedPostDataCache.formatCatalogToolbarTitle(chanDescriptor)
+            kurobaToolbarState.toolbarTitleState.value = parsedPostDataCache.formatCatalogToolbarTitle(chanDescriptor)
           }
           is ThreadDescriptor -> {
+            val originalPost by (postScreenState as ThreadScreenPostsState).originalPostState.collectAsState()
+
             UpdateThreadToolbarTitle(
               threadDescriptor = chanDescriptor,
-              postListAsync = postListAsync,
+              originalPost = originalPost,
               parsedPostDataCache = parsedPostDataCache,
               kurobaToolbarState = kurobaToolbarState
             )
@@ -83,18 +90,17 @@ abstract class PostsScreen(
   @Composable
   private fun UpdateThreadToolbarTitle(
     threadDescriptor: ThreadDescriptor,
-    postListAsync: AsyncData.Data<PostsState>,
+    originalPost: PostCellData?,
     parsedPostDataCache: ParsedPostDataCache,
     kurobaToolbarState: KurobaToolbarState
   ) {
     LaunchedEffect(
       key1 = threadDescriptor,
-      key2 = postListAsync,
+      key2 = originalPost,
       block = {
-        val postListState = postListAsync.data.posts.firstOrNull()
-          ?: return@LaunchedEffect
-
-        val originalPost by postListState
+        if (originalPost == null) {
+          return@LaunchedEffect
+        }
 
         parsedPostDataCache.ensurePostDataLoaded(
           isCatalog = false,

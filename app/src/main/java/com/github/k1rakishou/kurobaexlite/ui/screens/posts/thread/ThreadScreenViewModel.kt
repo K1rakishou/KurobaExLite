@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 
 import android.os.SystemClock
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
@@ -23,6 +24,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.ThreadScreenPostsState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -50,7 +52,7 @@ class ThreadScreenViewModel(
     }
   )
 
-  private val threadScreenState = PostScreenState()
+  private val threadScreenState = ThreadScreenPostsState()
   private var loadThreadJob: Job? = null
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
 
@@ -207,7 +209,7 @@ class ThreadScreenViewModel(
           }
 
           try {
-            threadPostsState.insertOrUpdateMany(postDataList)
+            threadScreenState.insertOrUpdateMany(postDataList)
             snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
 
             onPostsParsed(
@@ -338,7 +340,7 @@ class ThreadScreenViewModel(
         isCatalogMode = false
       )
 
-      cachedThreadPostsState.insertOrUpdateMany(initiallyParsedPosts)
+      threadScreenState.insertOrUpdateMany(initiallyParsedPosts)
       cachedThreadPostsState
     } else {
       logcat(tag = "loadThreadInternal") { "No cached posts, using posts from the server." }
@@ -351,9 +353,12 @@ class ThreadScreenViewModel(
       )
 
       val threadPostsState = PostsState(threadDescriptor)
-      threadPostsState.insertOrUpdateMany(initiallyParsedPosts)
 
-      threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
+      Snapshot.withMutableSnapshot {
+        threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
+        threadScreenState.insertOrUpdateMany(initiallyParsedPosts)
+      }
+
       threadPostsState
     }
 
@@ -384,7 +389,7 @@ class ThreadScreenViewModel(
         }
 
         try {
-          threadPostsState.insertOrUpdateMany(postDataList)
+          threadScreenState.insertOrUpdateMany(postDataList)
 
           onPostsParsed(
             threadDescriptor = threadDescriptor,
@@ -415,7 +420,6 @@ class ThreadScreenViewModel(
         boundPostDescriptor = null
       )
     }
-
 
     val originalPost = postLoadResult.firstOrNull { postData -> postData is OriginalPostData }
     if (originalPost != null && (originalPost.archived == true || originalPost.closed == true)) {
@@ -453,12 +457,19 @@ class ThreadScreenViewModel(
     postListTouchingBottom.value = false
   }
 
-  fun onFirstVisiblePostScrollChanged(postCellData: PostCellData) {
+  fun onFirstVisiblePostScrollChanged(
+    postCellData: PostCellData,
+    lastVisibleItemIsThreadCellData: Boolean
+  ) {
     updateLastLoadedAndViewedPosts(
       key = "onFirstVisiblePostScrollChanged",
       threadDescriptor = postCellData.postDescriptor.threadDescriptor,
       boundPostDescriptor = postCellData.postDescriptor
     )
+
+    if (lastVisibleItemIsThreadCellData) {
+      onPostListNotTouchingBottom()
+    }
   }
 
   private fun updateLastLoadedAndViewedPosts(

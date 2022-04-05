@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state
 
+import androidx.annotation.CallSuper
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class PostScreenState {
+abstract class PostScreenState {
   val postsAsyncDataState = MutableStateFlow<AsyncData<PostsState>>(AsyncData.Empty)
   val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
   val searchQueryFlow = MutableStateFlow<String?>(null)
@@ -33,12 +34,18 @@ class PostScreenState {
   val contentLoaded: StateFlow<Boolean>
     get() = _contentLoaded.asStateFlow()
 
-  fun insertOrUpdate(postCellData: PostCellData) {
-    doWithDataState { postsState -> postsState.insertOrUpdate(postCellData) }
+  @CallSuper
+  open fun insertOrUpdate(postCellData: PostCellData) {
+    doWithDataState { postsState ->
+      postsState.insertOrUpdate(postCellData)
+    }
   }
 
-  fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
-    doWithDataState { postsState -> postsState.insertOrUpdateMany(postCellDataCollection) }
+  @CallSuper
+  open fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
+    doWithDataState { postsState ->
+      postsState.insertOrUpdateMany(postCellDataCollection)
+    }
   }
 
   fun onSearchQueryUpdated(searchQuery: String?) {

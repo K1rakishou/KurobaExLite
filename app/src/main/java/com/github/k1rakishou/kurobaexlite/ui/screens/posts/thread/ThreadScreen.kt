@@ -92,7 +92,6 @@ class ThreadScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val postListAsync by threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
     val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
     val kurobaToolbarState = remember(key1 = mainUiLayoutMode) {
@@ -110,7 +109,7 @@ class ThreadScreen(
 
     UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
-      postListAsync = postListAsync,
+      postScreenState = threadScreenViewModel.postScreenState,
       kurobaToolbarState = kurobaToolbarState
     )
 

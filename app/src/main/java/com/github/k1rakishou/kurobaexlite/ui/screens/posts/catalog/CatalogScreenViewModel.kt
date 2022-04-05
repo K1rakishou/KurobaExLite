@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog
 
 import android.os.SystemClock
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
@@ -14,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.CatalogScreenPostsState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +31,7 @@ class CatalogScreenViewModel(
   savedStateHandle: SavedStateHandle
 ) : PostScreenViewModel(application, savedStateHandle) {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
-  private val catalogScreenState = PostScreenState()
+  private val catalogScreenState = CatalogScreenPostsState()
   private var loadCatalogJob: Job? = null
 
   override val postScreenState: PostScreenState = catalogScreenState
@@ -174,9 +176,12 @@ class CatalogScreenViewModel(
     )
 
     val catalogThreadsState = PostsState(catalogDescriptor)
-    catalogThreadsState.insertOrUpdateMany(initialParsedPosts)
 
-    catalogScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
+    Snapshot.withMutableSnapshot {
+      catalogScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
+      catalogScreenState.insertOrUpdateMany(initialParsedPosts)
+    }
+
     postListBuilt?.await()
     restoreScrollPosition(catalogDescriptor)
 
@@ -202,7 +207,7 @@ class CatalogScreenViewModel(
         }
 
         try {
-          catalogThreadsState.insertOrUpdateMany(postCellDataList)
+          catalogScreenState.insertOrUpdateMany(postCellDataList)
           onCatalogLoadingEnd(catalogDescriptor)
         } finally {
           withContext(NonCancellable + Dispatchers.Main) {

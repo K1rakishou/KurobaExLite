@@ -11,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PopupPostsScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostsState
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +21,7 @@ class PopupRepliesScreenViewModel(
   application: KurobaExLiteApplication,
   savedStateHandle: SavedStateHandle
 ) : PostScreenViewModel(application, savedStateHandle) {
-  private val threadScreenState = PostScreenState()
+  private val threadScreenState = PopupPostsScreenState()
   private val postReplyChainStack = mutableListOf<PopupRepliesScreen.ReplyViewMode>()
 
   private val parsedReplyToCache = LruCache<PostDescriptor, List<PostCellData>>(32)

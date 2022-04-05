@@ -195,7 +195,7 @@ class PopupRepliesScreen(
         onClick = { coroutineScope.launch { onBackPressed() } }
       )
 
-      Spacer(modifier = Modifier.width(16.dp))
+      Spacer(modifier = Modifier.width(4.dp))
 
       KurobaComposeTextBarButton(
         modifier = Modifier

@@ -80,6 +80,9 @@ class PostsState(
     searchQueryFlow.value = searchQuery
   }
 
+  /**
+   * Do not call directly! Use PostScreenState.insertOrUpdate() instead!
+   * */
   fun insertOrUpdate(postCellData: PostCellData) {
     Snapshot.withMutableSnapshot {
       val index = postIndexes[postCellData.postDescriptor]
@@ -115,6 +118,9 @@ class PostsState(
     }
   }
 
+  /**
+   * Do not call directly! Use PostScreenState.insertOrUpdateMany() instead!
+   * */
   fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     if (postCellDataCollection.isEmpty()) {
       return
