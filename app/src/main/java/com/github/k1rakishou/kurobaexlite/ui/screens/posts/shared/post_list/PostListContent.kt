@@ -155,16 +155,12 @@ internal fun PostListContent(
 
     LaunchedEffect(
       lazyListState.firstVisibleItemIndex,
-      lazyListState.firstVisibleItemScrollOffset,
+      lazyListState.firstVisibleItemScrollOffset / delta,
       chanDescriptor,
       orientation,
       block = {
-        if (lazyListState.firstVisibleItemIndex <= 0) {
-          return@LaunchedEffect
-        }
-
         // For debouncing purposes
-        delay(50L)
+        delay(16L)
 
         postsScreenViewModel.rememberPosition(
           chanDescriptor = chanDescriptor,

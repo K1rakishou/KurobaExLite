@@ -279,6 +279,7 @@ class ThreadScreenViewModel(
       val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)
         ?.let { chanThreadView -> chanThreadView.lastViewedPostDescriptor ?: chanThreadView.lastLoadedPostDescriptor  }
 
+      resetPosition(threadDescriptor)
       threadScreenState.lastViewedPostDescriptorForScrollRestoration.value = lastViewedPostDescriptor
     }
 

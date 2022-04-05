@@ -8,10 +8,17 @@ import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import java.nio.charset.StandardCharsets
+import java.util.EnumSet
+import logcat.asLog
 import okio.Buffer
+import org.nibor.autolink.LinkExtractor
+import org.nibor.autolink.LinkType
 
 class PostCommentParser {
   private val htmlParser = HtmlParser()
+  private val LINK_EXTRACTOR = LinkExtractor.builder()
+    .linkTypes(EnumSet.of(LinkType.URL))
+    .build()
 
   fun parsePostComment(
     postCommentUnparsed: String,
@@ -22,8 +29,10 @@ class PostCommentParser {
     return Result
       .Try { parsePostCommentInternal(postCommentUnparsed, postDescriptor) }
       .getOrElse { error ->
-        val errorMessage = "Failed to parse post '${postDescriptor}', " +
-          "error: ${error.errorMessageOrClassName()}"
+        logcatError { "Failed to parse post '${postDescriptor.asReadableString()}, error=${error.asLog()}" }
+
+        val errorMessage = "Failed to parse post '${postDescriptor.asReadableString()}', " +
+          "error message: ${error.errorMessageOrClassName()}"
 
         return@getOrElse listOf(TextPart(text = errorMessage))
       }
@@ -36,7 +45,25 @@ class PostCommentParser {
   ): List<TextPart> {
     val htmlNodes = htmlParser.parse(postCommentUnparsed).nodes
     return processNodes(postDescriptor, htmlNodes)
+      .map { textPartMut -> postProcessTextParts(textPartMut) }
       .map { textPartMut -> textPartMut.toTextPart() }
+  }
+
+  private fun postProcessTextParts(textPartMut: TextPartMut): TextPartMut {
+    val text = textPartMut.text
+    val links = LINK_EXTRACTOR.extractLinks(text)
+
+    for (link in links) {
+      val urlSpan = TextPartSpan.Linkable.Url(text.substring(link.beginIndex, link.endIndex))
+
+      textPartMut.spans += TextPartSpan.PartialSpan(
+        start = link.beginIndex,
+        end = link.endIndex,
+        linkSpan = urlSpan
+      )
+    }
+
+    return textPartMut
   }
 
   private fun processNodes(
@@ -47,8 +74,7 @@ class PostCommentParser {
       return mutableListOf()
     }
 
-    val currentTextPartsLazy = lazy(mode = LazyThreadSafetyMode.NONE) { mutableListWithCap<TextPartMut>(16) }
-    val currentTextParts by currentTextPartsLazy
+    val currentTextParts = mutableListWithCap<TextPartMut>(16)
 
     for (htmlNode in htmlNodes) {
       when (htmlNode) {
@@ -65,11 +91,7 @@ class PostCommentParser {
       }
     }
 
-    if (currentTextPartsLazy.isInitialized()) {
-      return currentTextParts
-    }
-
-    return mutableListOf()
+    return currentTextParts
   }
 
   private fun parseHtmlNode(
@@ -131,7 +153,7 @@ class PostCommentParser {
         childTextPart.spans += linkable
       }
       "wbr" -> {
-        // no-op
+        error("<wbr> tags should all be removed during the HTML parsing stage. This is most likely a HTML parser bug.")
       }
       else -> {
         logcatError {
@@ -352,6 +374,12 @@ class PostCommentParser {
 
   @Immutable
   sealed class TextPartSpan {
+    @Immutable
+    class PartialSpan(
+      val start: Int,
+      val end: Int,
+      val linkSpan: TextPartSpan
+    ) : TextPartSpan()
 
     @Immutable class BgColor(val color: Int) : TextPartSpan()
     @Immutable class FgColor(val color: Int) : TextPartSpan()

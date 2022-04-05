@@ -210,11 +210,20 @@ abstract class PostScreenViewModel(
       return
     }
 
-    val rememberedPosition = LazyColumnRememberedPosition(
-      index = index,
-      offset = offset,
-      orientation = orientation
+    val rememberedPosition = lazyColumnRememberedPositionCache.getOrPut(
+      key = chanDescriptor,
+      defaultValue = {
+        LazyColumnRememberedPosition(
+          index = index,
+          offset = offset,
+          orientation = orientation
+        )
+      }
     )
+
+    rememberedPosition.index = index
+    rememberedPosition.offset = offset
+    rememberedPosition.orientation = orientation
 
     lazyColumnRememberedPositionCache[chanDescriptor] = rememberedPosition
   }

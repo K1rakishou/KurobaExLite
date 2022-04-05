@@ -67,7 +67,7 @@ class PostCommentApplier {
         append(textPartBuilder.toString())
       } else {
         processTextPartSpans(
-          textPart = textPart,
+          spans = textPart.spans,
           chanTheme = chanTheme,
           textPartBuilder = textPartBuilder,
           parsedPostDataContext = parsedPostDataContext,
@@ -85,13 +85,13 @@ class PostCommentApplier {
   }
 
   private fun AnnotatedString.Builder.processTextPartSpans(
-    textPart: PostCommentParser.TextPart,
+    spans: List<PostCommentParser.TextPartSpan>,
     chanTheme: ChanTheme,
     textPartBuilder: StringBuilder,
     parsedPostDataContext: ParsedPostDataContext,
     totalLength: Int
   ) {
-    for (span in textPart.spans) {
+    for (span in spans) {
       var bgColor: Color = Color.Unspecified
       var fgColor: Color = Color.Unspecified
       var underline = false
@@ -100,7 +100,38 @@ class PostCommentApplier {
       var annotationValue: String? = null
       var bold = false
 
+      var start: Int? = null
+      var end: Int? = null
+
       when (span) {
+        is PostCommentParser.TextPartSpan.PartialSpan -> {
+          start = span.start
+          end = span.end
+          underline = true
+
+          when (span.linkSpan) {
+            is PostCommentParser.TextPartSpan.Linkable.Url -> {
+              fgColor = chanTheme.postLinkColorCompose
+            }
+            is PostCommentParser.TextPartSpan.BgColor,
+            is PostCommentParser.TextPartSpan.BgColorId,
+            is PostCommentParser.TextPartSpan.FgColor,
+            is PostCommentParser.TextPartSpan.FgColorId,
+            is PostCommentParser.TextPartSpan.Linkable.Board,
+            is PostCommentParser.TextPartSpan.Linkable.Quote,
+            is PostCommentParser.TextPartSpan.Linkable.Search,
+            is PostCommentParser.TextPartSpan.PartialSpan,
+            PostCommentParser.TextPartSpan.Spoiler -> {
+              error("${span.linkSpan::class.java.simpleName} is not supported as a partial span")
+            }
+          }
+
+          if (parsedPostDataContext.isParsingThread) {
+            annotationTag = ANNOTATION_POST_LINKABLE
+          }
+
+          annotationValue = span.linkSpan.createAnnotationItem()
+        }
         is PostCommentParser.TextPartSpan.BgColor -> {
           bgColor = Color(span.color)
         }
@@ -199,15 +230,19 @@ class PostCommentApplier {
       )
 
       if (!spanStyle.isEmpty()) {
-        addStyle(spanStyle, 0, textPartBuilder.length)
+        addStyle(
+          style = spanStyle,
+          start = start ?: 0,
+          end = end ?: textPartBuilder.length
+        )
       }
 
       if (annotationTag != null) {
         addStringAnnotation(
           tag = annotationTag,
           annotation = annotationValue ?: "",
-          start = 0,
-          end = textPartBuilder.length
+          start = start ?: 0,
+          end = end ?: textPartBuilder.length
         )
       }
     }

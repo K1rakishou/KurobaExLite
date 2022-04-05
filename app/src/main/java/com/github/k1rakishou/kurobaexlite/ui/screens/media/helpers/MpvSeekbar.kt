@@ -55,8 +55,7 @@ fun MpvSeekbar(
   val trackHeightPx = with(density) { remember(trackHeightDp) { trackHeightDp.toPx() } }
   val thumbRadiusNormalPx = with(density) { remember(thumbRadiusNormalDp) { thumbRadiusNormalDp.toPx() } }
   val thumbRadiusPressedPx = with(density) { remember(thumbRadiusPressedDp) { thumbRadiusPressedDp.toPx() } }
-
-  val unCachedColor = remember(key1 = trackColor) { trackColor.copy(alpha = 0.6f) }
+  val notLoadedYetPartColor = remember(trackColor) { trackColor.copy(alpha = 0.6f) }
 
   BoxWithConstraints(modifier) {
     val maxWidthPx = constraints.maxWidth.toFloat()
@@ -137,7 +136,7 @@ fun MpvSeekbar(
         val halfRadius = thumbRadiusNormalPx / 2
 
         drawRect(
-          color = unCachedColor,
+          color = notLoadedYetPartColor,
           topLeft = Offset(0f, centerY),
           size = Size(size.width, trackHeightPx)
         )
