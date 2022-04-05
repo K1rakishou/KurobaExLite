@@ -35,7 +35,7 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
 
 @Composable
-fun MpvProgressIndicator(
+fun MpvSeekbar(
   modifier: Modifier = Modifier,
   trackColor: Color,
   thumbColorNormal: Color,

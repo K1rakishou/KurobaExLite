@@ -89,7 +89,7 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
 
       Spacer(modifier = Modifier.width(10.dp))
 
-      MpvProgressIndicator(
+      MpvSeekbar(
         modifier = Modifier
           .height(42.dp)
           .weight(1f)

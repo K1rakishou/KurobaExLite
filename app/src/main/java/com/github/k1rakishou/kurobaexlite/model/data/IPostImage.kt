@@ -7,7 +7,7 @@ import okhttp3.HttpUrl
 
 @Stable
 interface IPostImage {
-  val originalFileName: String
+  val originalFileNameEscaped: String
   val serverFileName: String
   val ext: String
   val width: Int

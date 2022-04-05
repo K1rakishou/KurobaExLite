@@ -10,7 +10,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 data class PostCellImageData(
   val thumbnailUrl: String,
   val fullImageUrl: String,
-  override val originalFileName: String,
+  override val originalFileNameEscaped: String,
   override val serverFileName: String,
   override val ext: String,
   override val width: Int,
@@ -19,10 +19,8 @@ data class PostCellImageData(
   override val ownerPostDescriptor: PostDescriptor
 ) : IPostImage {
 
-  override val thumbnailAsUrl: HttpUrl
-    get() = thumbnailUrl.toHttpUrl()
-  override val fullImageAsUrl: HttpUrl
-    get() = fullImageUrl.toHttpUrl()
+  override val thumbnailAsUrl: HttpUrl by lazy { thumbnailUrl.toHttpUrl() }
+  override val fullImageAsUrl: HttpUrl by lazy { fullImageUrl.toHttpUrl() }
 
   override val thumbnailAsString: String
     get() = thumbnailUrl
@@ -34,7 +32,7 @@ data class PostCellImageData(
       return PostCellImageData(
         thumbnailUrl = postImageData.thumbnailAsString,
         fullImageUrl = postImageData.fullImageAsString,
-        originalFileName = postImageData.originalFileName,
+        originalFileNameEscaped = postImageData.originalFileNameEscaped,
         serverFileName = postImageData.serverFileName,
         ext = postImageData.ext,
         width = postImageData.width,

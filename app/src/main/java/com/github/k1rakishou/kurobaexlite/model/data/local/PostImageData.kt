@@ -7,7 +7,7 @@ import okhttp3.HttpUrl
 data class PostImageData(
   val thumbnailUrl: HttpUrl,
   val fullImageUrl: HttpUrl,
-  override val originalFileName: String,
+  override val originalFileNameEscaped: String,
   override val serverFileName: String,
   override val ext: String,
   override val width: Int,

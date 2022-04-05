@@ -461,7 +461,7 @@ class ParsedPostDataCache(
 
             append(
               AnnotatedString(
-                text = postImage.originalFileName,
+                text = postImage.originalFileNameEscaped,
                 spanStyle = SpanStyle(textDecoration = TextDecoration.Underline)
               )
             )

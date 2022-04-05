@@ -8,6 +8,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.unit.Dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
@@ -159,7 +160,7 @@ private fun UpdateMediaViewerToolbarTitle(
       Snapshot.withMutableSnapshot {
         val imagesCount = mediaViewerScreenState.images?.size
 
-        kurobaToolbarState.toolbarTitleState.value = currentImageData.originalFileName
+        kurobaToolbarState.toolbarTitleState.value = HtmlUnescape.unescape(currentImageData.originalFileNameEscaped)
         kurobaToolbarState.toolbarSubtitleState.value = formatImageInfo(
           currentPagerPage = currentPagerPage,
           imagesCount = imagesCount,
