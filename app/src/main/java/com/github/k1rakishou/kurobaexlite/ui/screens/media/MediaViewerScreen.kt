@@ -249,6 +249,8 @@ class MediaViewerScreen(
       }
     }
 
+    var initialPageLoaded by remember { mutableStateOf(false) }
+
     val pagerState = rememberPagerState(
       key1 = configuration.orientation,
       initialPage = initialPage
@@ -262,6 +264,11 @@ class MediaViewerScreen(
     LaunchedEffect(
       key1 = pagerState.currentPage,
       block = {
+        if (initialPage == pagerState.currentPage && !initialPageLoaded) {
+          initialPageLoaded = true
+          return@LaunchedEffect
+        }
+
         val postImageData = images.getOrNull(pagerState.currentPage)?.postImageData
           ?: return@LaunchedEffect
 
