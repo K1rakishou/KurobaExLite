@@ -122,9 +122,6 @@ class CatalogScreenToolbarActionHandler {
                 return@PositiveDialogButton
               }
 
-              // TODO(KurobaEx): come up with a better solution than doing it manually
-              uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
-
               when (resolvedDescriptor) {
                 is ResolvedDescriptor.CatalogOrThread -> {
                   when (resolvedDescriptor.chanDescriptor) {
@@ -133,12 +130,24 @@ class CatalogScreenToolbarActionHandler {
                     }
                     is ThreadDescriptor -> {
                       threadScreenViewModel.loadThread(resolvedDescriptor.chanDescriptor)
+
+                      // TODO(KurobaEx): come up with a better solution than doing it manually
+                      uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
                     }
                   }
                 }
                 is ResolvedDescriptor.Post -> {
-                  threadScreenViewModel.loadThread(resolvedDescriptor.postDescriptor.threadDescriptor)
-                  // TODO(KurobaEx): do something with the postNo (mark it or something)
+                  val loadOptions = PostScreenViewModel.LoadOptions(
+                    scrollToPost = resolvedDescriptor.postDescriptor
+                  )
+
+                  threadScreenViewModel.loadThread(
+                    threadDescriptor = resolvedDescriptor.postDescriptor.threadDescriptor,
+                    loadOptions = loadOptions
+                  )
+
+                  // TODO(KurobaEx): come up with a better solution than doing it manually
+                  uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
                 }
               }
             }

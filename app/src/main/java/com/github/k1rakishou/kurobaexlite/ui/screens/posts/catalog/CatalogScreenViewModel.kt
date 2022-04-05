@@ -183,7 +183,10 @@ class CatalogScreenViewModel(
     }
 
     postListBuilt?.await()
-    restoreScrollPosition(catalogDescriptor)
+    restoreScrollPosition(
+      chanDescriptor = catalogDescriptor,
+      scrollToPost = null
+    )
 
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,

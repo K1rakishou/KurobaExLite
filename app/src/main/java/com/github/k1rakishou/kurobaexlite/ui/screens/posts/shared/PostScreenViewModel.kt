@@ -507,10 +507,33 @@ abstract class PostScreenViewModel(
     }
   }
 
-  suspend fun restoreScrollPosition(chanDescriptor: ChanDescriptor) {
+  suspend fun restoreScrollPosition(
+    chanDescriptor: ChanDescriptor,
+    scrollToPost: PostDescriptor?
+  ) {
     logcat(tag = TAG) { "restoreScrollPosition($chanDescriptor)" }
 
     withContext(Dispatchers.Main) {
+      if (scrollToPost != null) {
+        val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
+          ?: return@withContext
+
+        val index = posts
+          .indexOfLast { postDataState -> postDataState.value.postDescriptor == scrollToPost }
+
+        uiInfoManager.orientations.forEach { orientation ->
+          val newLastRememberedPosition = LazyColumnRememberedPosition(
+            orientation = orientation,
+            index = index,
+            offset = 0
+          )
+
+          _scrollRestorationEventFlow.emit(newLastRememberedPosition)
+        }
+
+        return@withContext
+      }
+
       val lastRememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
       if (lastRememberedPosition != null) {
         _scrollRestorationEventFlow.emit(lastRememberedPosition)
@@ -621,7 +644,8 @@ abstract class PostScreenViewModel(
     val showLoadingIndicator: Boolean = true,
     val forced: Boolean = false,
     val deleteCached: Boolean = false,
-    val loadFromNetwork: Boolean = true
+    val loadFromNetwork: Boolean = true,
+    val scrollToPost: PostDescriptor? = null
   )
 
   companion object {

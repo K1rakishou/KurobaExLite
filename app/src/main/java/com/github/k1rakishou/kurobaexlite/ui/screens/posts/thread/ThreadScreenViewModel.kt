@@ -330,23 +330,25 @@ class ThreadScreenViewModel(
     val cachedThreadPostsState = (threadScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data
     val allCombinedPosts = postLoadResult.allCombined()
 
-    val threadPostsState = if (cachedThreadPostsState != null && cachedThreadPostsState.chanDescriptor == chanDescriptor) {
+    val startParsePost = loadOptions.scrollToPost
+      ?: threadScreenState.lastViewedPostDescriptorForScrollRestoration.value
+
+    if (cachedThreadPostsState != null && cachedThreadPostsState.chanDescriptor == chanDescriptor) {
       logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${postLoadResult.info()}" }
 
       val initiallyParsedPosts = parseInitialBatchOfPosts(
-        startPostDescriptor = threadScreenState.lastViewedPostDescriptorForScrollRestoration.value,
+        startPostDescriptor = startParsePost,
         chanDescriptor = threadDescriptor,
         postDataList = allCombinedPosts,
         isCatalogMode = false
       )
 
       threadScreenState.insertOrUpdateMany(initiallyParsedPosts)
-      cachedThreadPostsState
     } else {
       logcat(tag = "loadThreadInternal") { "No cached posts, using posts from the server." }
 
       val initiallyParsedPosts = parseInitialBatchOfPosts(
-        startPostDescriptor = threadScreenState.lastViewedPostDescriptorForScrollRestoration.value,
+        startPostDescriptor = startParsePost,
         chanDescriptor = threadDescriptor,
         postDataList = allCombinedPosts,
         isCatalogMode = false
@@ -358,8 +360,6 @@ class ThreadScreenViewModel(
         threadScreenState.postsAsyncDataState.value = AsyncData.Data(threadPostsState)
         threadScreenState.insertOrUpdateMany(initiallyParsedPosts)
       }
-
-      threadPostsState
     }
 
     postScreenState.threadCellDataState.value = formatThreadCellData(
@@ -369,7 +369,10 @@ class ThreadScreenViewModel(
     )
 
     postListBuilt?.await()
-    restoreScrollPosition(threadDescriptor)
+    restoreScrollPosition(
+      chanDescriptor = threadDescriptor,
+      scrollToPost = loadOptions.scrollToPost
+    )
 
     parseRemainingPostsAsync(
       chanDescriptor = threadDescriptor,
