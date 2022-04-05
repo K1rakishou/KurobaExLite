@@ -35,6 +35,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
@@ -60,6 +61,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
+import okhttp3.HttpUrl
 import org.koin.java.KoinJavaComponent.inject
 
 abstract class PostScreenViewModel(
@@ -76,6 +78,7 @@ abstract class PostScreenViewModel(
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
   protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
   protected val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
+  protected val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
 
   private val searchDebouncer = DebouncingCoroutineExecutor(viewModelScope)
 
@@ -94,6 +97,9 @@ abstract class PostScreenViewModel(
   private val _toolbarScrollEventFlow = MutableSharedFlow<Boolean>(extraBufferCapacity = Channel.UNLIMITED)
   val toolbarScrollEventFlow: SharedFlow<Boolean>
     get() = _toolbarScrollEventFlow.asSharedFlow()
+
+  val mediaViewerScrollEvents: SharedFlow<Pair<HttpUrl, PostDescriptor>>
+    get() = mediaViewerPostListScroller.scrollEventFlow
 
   val postListTouchingBottom = MutableStateFlow(false)
 

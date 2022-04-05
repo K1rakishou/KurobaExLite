@@ -196,6 +196,25 @@ internal fun PostListContent(
           lazyListState.scrollToItem(index = positionToScroll, scrollOffset = 0)
         }
       })
+
+    LaunchedEffect(
+      key1 = chanDescriptor,
+      key2 = postListAsync,
+      block = {
+        val postsState = if (postListAsync !is AsyncData.Data) {
+          return@LaunchedEffect
+        } else {
+          (postListAsync as AsyncData.Data).data
+        }
+
+        postsScreenViewModel.mediaViewerScrollEvents.collect { (_, postDescriptor) ->
+          val indexToScroll = postsState.postIndexByPostDescriptor(postDescriptor)
+          if (indexToScroll != null) {
+            lazyListState.scrollToItem(index = indexToScroll, scrollOffset = 0)
+          }
+        }
+      }
+    )
   }
 
   PostListInternal(

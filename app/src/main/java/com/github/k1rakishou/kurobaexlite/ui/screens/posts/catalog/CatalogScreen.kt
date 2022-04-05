@@ -37,7 +37,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListContent
@@ -237,7 +236,7 @@ class CatalogScreen(
         // no-op (for now?)
       },
       onPostRepliesClicked = { postDescriptor ->
-        showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
+        // no-op
       },
       onPostImageClicked = { chanDescriptor, postImageData ->
         val catalogDescriptor = chanDescriptor as CatalogDescriptor

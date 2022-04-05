@@ -60,6 +60,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.progress.ProgressScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.DisplayLoadingProgressIndicator
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerScreenVideoControls
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.DisplayFullImage
@@ -82,6 +83,7 @@ class MediaViewerScreen(
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
+  private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -255,6 +257,19 @@ class MediaViewerScreen(
     LaunchedEffect(
       key1 = Unit,
       block = { onViewPagerInitialized(pagerState) }
+    )
+
+    LaunchedEffect(
+      key1 = pagerState.currentPage,
+      block = {
+        val postImageData = images.getOrNull(pagerState.currentPage)?.postImageData
+          ?: return@LaunchedEffect
+
+        mediaViewerPostListScroller.onSwipedTo(
+          fullImageUrl = postImageData.fullImageAsUrl,
+          postDescriptor = postImageData.ownerPostDescriptor
+        )
+      }
     )
 
     HorizontalPager(

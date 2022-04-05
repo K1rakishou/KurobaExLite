@@ -37,6 +37,10 @@ class PostsState(
 
   val postListAnimationInfoMap = mutableStateMapOf<PostDescriptor, PreviousPostDataInfo>()
 
+  fun postIndexByPostDescriptor(postDescriptor: PostDescriptor): Int? {
+    return postIndexes[postDescriptor]
+  }
+
   fun onSearchQueryUpdated(searchQuery: String?) {
     if (searchQuery == searchQueryFlow.value || searchQuery.isNullOrEmpty()) {
       postsProcessed.clear()
