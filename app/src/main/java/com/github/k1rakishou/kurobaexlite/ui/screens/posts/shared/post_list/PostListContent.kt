@@ -1,5 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list
 
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -43,6 +46,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.os.HandlerCompat
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
@@ -97,7 +101,7 @@ internal fun PostListContent(
     }
 
     val isCatalog = postsScreenViewModel is CatalogScreenViewModel
-    OnChanDescriptorNotSet(isCatalog)
+    DisplayCatalogOrThreadNotSelectedPlaceholder(isCatalog)
     return
   }
 
@@ -111,67 +115,6 @@ internal fun PostListContent(
   )
 
   if (postListAsync is AsyncData.Data) {
-    val delta = 32
-
-    LaunchedEffect(
-      key1 = lazyListState.firstVisibleItemIndex,
-      key2 = lazyListState.firstVisibleItemScrollOffset / delta,
-      key3 = chanDescriptor,
-      block = {
-        // For debouncing purposes
-        delay(16L)
-
-        val firstVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
-        val lastVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
-
-        if (firstVisibleItem != null && lastVisibleItem != null) {
-          val firstVisibleItemIndex = firstVisibleItem.index
-          val firstVisibleItemOffset = firstVisibleItem.offset
-          val lastVisibleItemIndex = lastVisibleItem.index
-
-          val totalCount = lazyListState.layoutInfo.totalItemsCount
-          val touchingTop = firstVisibleItemIndex <= 0 && firstVisibleItemOffset in 0..delta
-          val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
-
-          onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
-        }
-
-        val postDataList = (postListAsync as? AsyncData.Data)?.data?.posts
-
-        if (postsScreenViewModel is ThreadScreenViewModel && postDataList != null) {
-          var firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.offset >= 0 }
-          if (firstCompletelyVisibleItem == null) {
-            firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
-          }
-
-          if (firstCompletelyVisibleItem != null) {
-            val firstVisiblePostData = postDataList.getOrNull(firstCompletelyVisibleItem.index)?.value
-            val lastVisibleItemIsThreadCellData = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
-
-            if (firstVisiblePostData != null) {
-              postsScreenViewModel.onFirstVisiblePostScrollChanged(firstVisiblePostData, lastVisibleItemIsThreadCellData)
-            }
-          }
-        }
-      })
-
-    LaunchedEffect(
-      lazyListState.firstVisibleItemIndex,
-      lazyListState.firstVisibleItemScrollOffset / delta,
-      chanDescriptor,
-      orientation,
-      block = {
-        // For debouncing purposes
-        delay(16L)
-
-        postsScreenViewModel.rememberPosition(
-          chanDescriptor = chanDescriptor,
-          index = lazyListState.firstVisibleItemIndex,
-          offset = lazyListState.firstVisibleItemScrollOffset,
-          orientation = orientation
-        )
-      })
-
     LaunchedEffect(
       key1 = chanDescriptor,
       block = {
@@ -247,7 +190,18 @@ internal fun PostListContent(
         postsScreenViewModel.refresh()
       }
     },
-    onPostListScrolled = onPostListScrolled,
+    onPostListScrolled = { scrollDelta ->
+      processPostListScrollEvent(
+        postsScreenViewModel = postsScreenViewModel,
+        postListAsync = postListAsync,
+        lazyListState = lazyListState,
+        chanDescriptor = chanDescriptor,
+        orientation = orientation,
+        onPostListTouchingTopOrBottomStateChanged = onPostListTouchingTopOrBottomStateChanged
+      )
+
+      onPostListScrolled(scrollDelta)
+    },
     onPostListDragStateChanged = onPostListDragStateChanged,
     onFastScrollerDragStateChanged = onFastScrollerDragStateChanged,
     onPostImageClicked = onPostImageClicked
@@ -265,6 +219,60 @@ internal fun PostListContent(
       postsScreenViewModel = postsScreenViewModel
     )
   }
+}
+
+private fun processPostListScrollEvent(
+  postsScreenViewModel: PostScreenViewModel,
+  postListAsync: AsyncData<PostsState>,
+  lazyListState: LazyListState,
+  chanDescriptor: ChanDescriptor,
+  orientation: Int,
+  onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit
+) {
+  if (postListAsync !is AsyncData.Data) {
+    return
+  }
+
+  val firstVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+  val lastVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
+  val maxAllowedOffset = 64
+
+  if (firstVisibleItem != null && lastVisibleItem != null) {
+    val firstVisibleItemIndex = firstVisibleItem.index
+    val firstVisibleItemOffset = firstVisibleItem.offset
+    val lastVisibleItemIndex = lastVisibleItem.index
+
+    val totalCount = lazyListState.layoutInfo.totalItemsCount
+    val touchingTop = firstVisibleItemIndex <= 0 && firstVisibleItemOffset in 0..maxAllowedOffset
+    val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
+
+    onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
+  }
+
+  val postDataList = (postListAsync as? AsyncData.Data)?.data?.posts
+
+  if (postsScreenViewModel is ThreadScreenViewModel && postDataList != null) {
+    var firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.offset >= 0 }
+    if (firstCompletelyVisibleItem == null) {
+      firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+    }
+
+    if (firstCompletelyVisibleItem != null) {
+      val firstVisiblePostData = postDataList.getOrNull(firstCompletelyVisibleItem.index)?.value
+      val lastVisibleItemIsThreadCellData = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
+
+      if (firstVisiblePostData != null) {
+        postsScreenViewModel.onFirstVisiblePostScrollChanged(firstVisiblePostData, lastVisibleItemIsThreadCellData)
+      }
+    }
+  }
+
+  postsScreenViewModel.rememberPosition(
+    chanDescriptor = chanDescriptor,
+    index = lazyListState.firstVisibleItemIndex,
+    offset = lazyListState.firstVisibleItemScrollOffset,
+    orientation = orientation
+  )
 }
 
 @Composable
@@ -311,8 +319,39 @@ private fun PostListInternal(
 
   val nestedScrollConnection = remember {
     object : NestedScrollConnection {
+      private var lastCallTime = 0L
+      private var accumulatedScrollOffsetY: Float = 0f
+
+      private val token = "onPostListScrolled"
+      private val notifyIntervalMs = 128L
+      private val handler = Handler(Looper.getMainLooper())
+
       override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        onPostListScrolled(available.y)
+        val now = SystemClock.elapsedRealtime()
+        accumulatedScrollOffsetY += available.y
+
+        // Only notify about scroll events every [notifyIntervalMs] ms because otherwise stuff may
+        // get laggy.
+        if (now - lastCallTime > notifyIntervalMs) {
+          lastCallTime = now
+          onPostListScrolled(accumulatedScrollOffsetY)
+          accumulatedScrollOffsetY = 0f
+        }
+
+        handler.removeCallbacksAndMessages(token)
+        HandlerCompat.postDelayed(
+          handler,
+          {
+            val lastScroll = accumulatedScrollOffsetY
+            if (lastScroll != 0f) {
+              onPostListScrolled(lastScroll)
+              accumulatedScrollOffsetY = 0f
+            }
+          },
+          token,
+          notifyIntervalMs
+        )
+
         return Offset.Zero
       }
     }
@@ -719,7 +758,7 @@ private fun NotifyPostListBuiltIfNeeded(
 }
 
 @Composable
-private fun OnChanDescriptorNotSet(isCatalogMode: Boolean) {
+private fun DisplayCatalogOrThreadNotSelectedPlaceholder(isCatalogMode: Boolean) {
   var canRender by remember { mutableStateOf(false) }
 
   LaunchedEffect(

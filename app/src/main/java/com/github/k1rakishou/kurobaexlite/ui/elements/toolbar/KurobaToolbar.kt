@@ -254,7 +254,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
             colorBehindIcon = parentBgColor
           )
 
-          Spacer(modifier = Modifier.width(8.dp))
+          Spacer(modifier = Modifier.width(12.dp))
         }
 
         if (onToolbarSortClicked != null) {
@@ -269,7 +269,7 @@ private fun BoxScope.PostsScreenNormalToolbar(
             colorBehindIcon = parentBgColor
           )
 
-          Spacer(modifier = Modifier.width(8.dp))
+          Spacer(modifier = Modifier.width(12.dp))
         }
 
         if (onToolbarOverflowMenuClicked != null) {
