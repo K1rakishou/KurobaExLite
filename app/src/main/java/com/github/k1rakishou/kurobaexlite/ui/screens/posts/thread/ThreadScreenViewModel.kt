@@ -43,6 +43,7 @@ class ThreadScreenViewModel(
 
   private val loadChanThreadView: LoadChanThreadView by inject(LoadChanThreadView::class.java)
   private val updateChanThreadView: UpdateChanThreadView by inject(UpdateChanThreadView::class.java)
+  private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     executeUpdate = { refresh() },
@@ -523,6 +524,14 @@ class ThreadScreenViewModel(
       bumpLimit = bumpLimit,
       imageLimit = imageLimit,
     )
+  }
+
+  fun onBackPressed(): Boolean {
+    val topThreadDescriptor = crossThreadFollowHistory.pop()
+      ?: return false
+
+    loadThread(topThreadDescriptor)
+    return true
   }
 
   class ThreadDisplayException(message: String) : ClientException(message)

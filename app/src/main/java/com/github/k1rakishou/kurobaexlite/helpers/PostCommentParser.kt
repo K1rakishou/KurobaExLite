@@ -46,7 +46,7 @@ class PostCommentParser {
     val htmlNodes = htmlParser.parse(postCommentUnparsed).nodes
     return processNodes(postDescriptor, htmlNodes)
       .map { textPartMut -> postProcessTextParts(textPartMut) }
-      .map { textPartMut -> textPartMut.toTextPart() }
+      .map { textPartMut -> textPartMut.toTextPartWithSortedSpans() }
   }
 
   private fun postProcessTextParts(textPartMut: TextPartMut): TextPartMut {
@@ -351,7 +351,9 @@ class PostCommentParser {
       return false
     }
 
-    fun toTextPart(): TextPart {
+    fun toTextPartWithSortedSpans(): TextPart {
+      spans.sortBy { textPartSpan -> textPartSpan.priority() }
+
       return TextPart(text, spans)
     }
   }
@@ -374,6 +376,26 @@ class PostCommentParser {
 
   @Immutable
   sealed class TextPartSpan {
+    val PRIORITY_BACKGROUND = 0
+    val PRIORITY_TEXT = 1
+    val PRIORITY_FOREGROUND = 2
+    val PRIORITY_SPOILER = 1000
+
+    fun priority(): Int {
+      return when (this) {
+        is BgColor,
+        is BgColorId -> PRIORITY_BACKGROUND
+        is Linkable.Board,
+        is Linkable.Quote,
+        is Linkable.Search,
+        is Linkable.Url,
+        is PartialSpan -> PRIORITY_TEXT
+        is FgColor,
+        is FgColorId -> PRIORITY_FOREGROUND
+        Spoiler -> PRIORITY_SPOILER
+      }
+    }
+
     @Immutable
     class PartialSpan(
       val start: Int,

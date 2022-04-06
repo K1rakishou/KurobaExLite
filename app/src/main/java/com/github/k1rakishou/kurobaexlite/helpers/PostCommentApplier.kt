@@ -57,16 +57,13 @@ class PostCommentApplier {
         parsedPostDataContext = parsedPostDataContext
       )
 
-      val textPartBuilder = StringBuilder(textPartText)
+      append(textPartText)
       overflowHappened = overflow
 
-      if (textPart.spans.isEmpty()) {
-        append(textPartBuilder.toString())
-      } else {
+      if (textPart.spans.isNotEmpty()) {
         processTextPartSpans(
           spans = textPart.spans,
           chanTheme = chanTheme,
-          textPartBuilder = textPartBuilder,
           parsedPostDataContext = parsedPostDataContext,
           totalLength = totalLength
         )
@@ -84,7 +81,6 @@ class PostCommentApplier {
   private fun AnnotatedString.Builder.processTextPartSpans(
     spans: List<PostCommentParser.TextPartSpan>,
     chanTheme: ChanTheme,
-    textPartBuilder: StringBuilder,
     parsedPostDataContext: ParsedPostDataContext,
     totalLength: Int
   ) {
@@ -146,7 +142,7 @@ class PostCommentApplier {
 
           val shouldRevealSpoiler = matchesOpenedSpoilerPosition(
             startPos = totalLength,
-            endPos = totalLength + textPartBuilder.length,
+            endPos = totalLength + this.length,
             textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet
           )
 
@@ -168,21 +164,18 @@ class PostCommentApplier {
 
               if (span is PostCommentParser.TextPartSpan.Linkable.Quote) {
                 if (span.postDescriptor.isOP && !span.crossThread) {
-                  textPartBuilder
-                    .append(" ")
-                    .append(OP_POSTFIX)
+                  this.append(" ")
+                  this.append(OP_POSTFIX)
                 }
 
                 if (span.crossThread) {
-                  textPartBuilder
-                    .append(" ")
-                    .append(CROSS_THREAD_POSTFIX)
+                  this.append(" ")
+                  this.append(CROSS_THREAD_POSTFIX)
                 }
 
                 if (span.dead) {
-                  textPartBuilder
-                    .append(" ")
-                    .append(DEAD_POSTFIX)
+                  this.append(" ")
+                  this.append(DEAD_POSTFIX)
 
                   linethrough = true
                 }
@@ -211,8 +204,6 @@ class PostCommentApplier {
         }
       }
 
-      append(textPartBuilder.toString())
-
       val fontWeight = if (bold) {
         FontWeight.Bold
       } else {
@@ -230,7 +221,7 @@ class PostCommentApplier {
         addStyle(
           style = spanStyle,
           start = start ?: 0,
-          end = end ?: textPartBuilder.length
+          end = end ?: this.length
         )
       }
 
@@ -239,7 +230,7 @@ class PostCommentApplier {
           tag = annotationTag,
           annotation = annotationValue ?: "",
           start = start ?: 0,
-          end = end ?: textPartBuilder.length
+          end = end ?: this.length
         )
       }
     }

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -30,7 +31,6 @@ import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMaxBy
 import androidx.compose.ui.util.fastSumBy
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -41,8 +41,11 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -52,11 +55,17 @@ class PopupRepliesScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
+  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val popupRepliesScreenViewModel: PopupRepliesScreenViewModel by componentActivity.viewModel()
 
   private val postListLayoutId = "PopupRepliesScreen_PostListContent"
   private val buttonsLayoutId = "PopupRepliesScreen_Buttons"
   private val buttonsHeight = 50.dp
+
+  private val linkableClickHelper by lazy {
+    LinkableClickHelper(componentActivity, navigationRouter)
+  }
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -125,6 +134,7 @@ class PopupRepliesScreen(
     coroutineScope: CoroutineScope
   ) {
     val chanTheme = LocalChanTheme.current
+    val context = LocalContext.current
 
     Box(
       modifier = Modifier
@@ -133,10 +143,26 @@ class PopupRepliesScreen(
       PostListContent(
         postListOptions = postListOptions,
         postsScreenViewModel = popupRepliesScreenViewModel,
-        onPostCellClicked = { postData ->
+        onPostCellClicked = { postCellData ->
         },
-        onLinkableClicked = { postData, linkable ->
-          coroutineScope.launch { processClickedLinkable(linkable) }
+        onLinkableClicked = { postCellData, linkable ->
+          linkableClickHelper.processClickedLinkable(
+            context = context,
+            postCellData = postCellData,
+            linkable = linkable,
+            loadThreadFunc = { threadDescriptor, loadOptions ->
+              threadScreenViewModel.loadThread(threadDescriptor, loadOptions)
+              stopPresenting()
+            },
+            loadCatalogFunc = { catalogDescriptor, loadOptions ->
+              catalogScreenViewModel.loadCatalog(catalogDescriptor, loadOptions)
+            },
+            showRepliesForPostFunc = { replyViewMode ->
+              coroutineScope.launch {
+                popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode)
+              }
+            }
+          )
         },
         onPostRepliesClicked = { postDescriptor ->
           coroutineScope.launch {
@@ -207,26 +233,6 @@ class PopupRepliesScreen(
       )
 
       Spacer(modifier = Modifier.width(8.dp))
-    }
-  }
-
-  private suspend fun processClickedLinkable(
-    linkable: PostCommentParser.TextPartSpan.Linkable
-  ) {
-    when (linkable) {
-      is PostCommentParser.TextPartSpan.Linkable.Quote -> {
-        val replyTo = ReplyViewMode.ReplyTo(linkable.postDescriptor)
-        popupRepliesScreenViewModel.loadRepliesForMode(replyTo)
-      }
-      is PostCommentParser.TextPartSpan.Linkable.Board -> {
-        // TODO()
-      }
-      is PostCommentParser.TextPartSpan.Linkable.Search -> {
-        // TODO()
-      }
-      is PostCommentParser.TextPartSpan.Linkable.Url -> {
-        // TODO()
-      }
     }
   }
 

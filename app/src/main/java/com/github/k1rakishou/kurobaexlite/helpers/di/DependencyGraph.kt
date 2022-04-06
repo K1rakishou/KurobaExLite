@@ -38,6 +38,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreenView
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import com.squareup.moshi.Moshi
 import java.io.File
@@ -66,13 +67,14 @@ object DependencyGraph {
       single { PostCommentParser() }
       single { PostCommentApplier() }
       single { FullScreenHelpers(get()) }
-      single { AndroidHelpers(get()) }
+      single { AndroidHelpers(application = get(), snackbarManager = get()) }
       single { ChanCache(androidHelpers = get()) }
       single { AppSettings(appContext = get(), moshi = get()) }
       single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
       single { PostBindProcessor(get()) }
       single { ThemeEngine() }
       single { MediaViewerPostListScroller() }
+      single { CrossThreadFollowHistory() }
       single {
         ParsedPostDataCache(
           appContext = get(),

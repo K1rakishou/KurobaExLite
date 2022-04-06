@@ -375,7 +375,7 @@ class ParsedPostDataCache(
     }
   }
 
-  suspend fun parseAndProcessPostSubject(
+  fun parseAndProcessPostSubject(
     chanTheme: ChanTheme,
     postIndex: Int,
     postDescriptor: PostDescriptor,

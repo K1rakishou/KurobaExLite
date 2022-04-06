@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread
 
-import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -16,7 +15,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -31,7 +29,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostScreenToolbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
@@ -39,8 +36,9 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListContent
@@ -55,10 +53,15 @@ class ThreadScreen(
 ) : PostsScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
 
   private val threadScreenToolbarActionHandler by lazy {
     ThreadScreenToolbarActionHandler()
+  }
+
+  private val linkableClickHelper by lazy {
+    LinkableClickHelper(componentActivity, navigationRouter)
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -149,7 +152,8 @@ class ThreadScreen(
     RouterHost(
       screenKey = screenKey,
       navigationRouter = navigationRouter,
-      defaultScreen = { ThreadPostListScreenContent() }
+      defaultScreen = { ThreadPostListScreenContent() },
+      onBackPressed = { threadScreenViewModel.onBackPressed() }
     )
   }
 
@@ -196,11 +200,22 @@ class ThreadScreen(
       modifier = Modifier.fillMaxSize(),
       postListOptions = postListOptions,
       postsScreenViewModel = threadScreenViewModel,
-      onPostCellClicked = { postData ->
+      onPostCellClicked = { postCellData ->
         // TODO(KurobaEx):
       },
-      onLinkableClicked = { postData, linkable ->
-        processClickedLinkable(context, linkable)
+      onLinkableClicked = { postCellData, linkable ->
+        linkableClickHelper.processClickedLinkable(
+          context = context,
+          postCellData = postCellData,
+          linkable = linkable,
+          loadThreadFunc = { threadDescriptor, loadOptions ->
+            threadScreenViewModel.loadThread(threadDescriptor, loadOptions)
+          },
+          loadCatalogFunc = { catalogDescriptor, loadOptions ->
+            catalogScreenViewModel.loadCatalog(catalogDescriptor, loadOptions)
+          },
+          showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
+        )
       },
       onPostRepliesClicked = { postDescriptor ->
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
@@ -251,57 +266,6 @@ class ThreadScreen(
       snackbarManager = snackbarManager,
       kurobaSnackbarState = kurobaSnackbarState
     )
-  }
-
-  private fun processClickedLinkable(
-    context: Context,
-    linkable: PostCommentParser.TextPartSpan.Linkable
-  ) {
-    when (linkable) {
-      is PostCommentParser.TextPartSpan.Linkable.Quote -> {
-        if (linkable.crossThread) {
-          val postDescriptorReadable = linkable.postDescriptor.asReadableString()
-
-          navigationRouter.presentScreen(
-            DialogScreen(
-              dialogKey = DialogScreen.OPEN_EXTERNAL_THREAD,
-              componentActivity = componentActivity,
-              navigationRouter = navigationRouter,
-              params = DialogScreen.Params(
-                title = DialogScreen.Text.Id(R.string.thread_screen_open_external_thread_dialog_title),
-                description = DialogScreen.Text.String(
-                  context.resources.getString(
-                    R.string.thread_screen_open_external_thread_dialog_description,
-                    postDescriptorReadable
-                  )
-                ),
-                negativeButton = DialogScreen.cancelButton(),
-                positiveButton = DialogScreen.okButton {
-                  threadScreenViewModel.loadThread(
-                    threadDescriptor = linkable.postDescriptor.threadDescriptor,
-                    loadOptions = PostScreenViewModel.LoadOptions(forced = true)
-                  )
-                }
-              )
-            )
-          )
-
-          return
-        }
-
-        val replyTo = PopupRepliesScreen.ReplyViewMode.ReplyTo(linkable.postDescriptor)
-        showRepliesForPost(replyTo)
-      }
-      is PostCommentParser.TextPartSpan.Linkable.Board -> {
-        // TODO()
-      }
-      is PostCommentParser.TextPartSpan.Linkable.Search -> {
-        // TODO()
-      }
-      is PostCommentParser.TextPartSpan.Linkable.Url -> {
-        // TODO()
-      }
-    }
   }
 
   companion object {

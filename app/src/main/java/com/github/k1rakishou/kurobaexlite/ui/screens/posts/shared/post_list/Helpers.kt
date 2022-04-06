@@ -60,9 +60,9 @@ internal fun processClickedAnnotation(
   val offset = findFirstNonNewLineCharReversed(characterOffset, postComment)
     ?: return
 
-  val clickedAnnotations = postComment.getStringAnnotations(offset, offset)
+  val clickedAnnotations = postComment.getStringAnnotations(offset, offset).asReversed()
 
-  for (clickedAnnotation in clickedAnnotations) {
+  for ((index, clickedAnnotation) in clickedAnnotations.withIndex()) {
     when (clickedAnnotation.tag) {
       PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG -> {
         if (!parsedPostDataContext.revealFullPostComment) {
@@ -94,8 +94,23 @@ internal fun processClickedAnnotation(
 
         val textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet.toMutableSet()
         val spoilerPosition = SpoilerPosition(clickedAnnotation.start, clickedAnnotation.end)
+        val isCurrentSpoilerOpened = textSpoilerOpenedPositionSet.contains(spoilerPosition)
 
-        if (textSpoilerOpenedPositionSet.contains(spoilerPosition)) {
+        if (isCurrentSpoilerOpened) {
+          if (index < clickedAnnotations.size) {
+            // If the current spoiler is opened and there are linkables under the spoiler then
+            // switch to processing those linkables. This will make it impossible to close the spoiler
+            // but this is better than being unable to click spoilered links.
+            val hasLinkablesUnderSpoiler = clickedAnnotations.slice(index until clickedAnnotations.size)
+              .any { annotation -> annotation.tag == PostCommentApplier.ANNOTATION_POST_LINKABLE }
+
+            if (hasLinkablesUnderSpoiler) {
+              continue
+            }
+
+            // fallthrough
+          }
+
           textSpoilerOpenedPositionSet.remove(spoilerPosition)
         } else {
           textSpoilerOpenedPositionSet.add(spoilerPosition)
@@ -106,6 +121,8 @@ internal fun processClickedAnnotation(
           parsedPostDataContext = parsedPostDataContext
             .copy(textSpoilerOpenedPositionSet = textSpoilerOpenedPositionSet)
         )
+
+        break
       }
     }
   }
@@ -139,7 +156,9 @@ internal fun detectClickedAnnotations(
     ?: return null
   val clickedAnnotations = text.getStringAnnotations(offset, offset)
 
-  for (clickedAnnotation in clickedAnnotations) {
+  // Process annotations in reversed order. This way if we have a link inside of a spoiler, when it's
+  // clicked, we will first remove the spoiler and then the link will become clickable.
+  for (clickedAnnotation in clickedAnnotations.asReversed()) {
     if (clickedAnnotation.tag in PostCommentApplier.ALL_TAGS) {
       return clickedAnnotation
     }
