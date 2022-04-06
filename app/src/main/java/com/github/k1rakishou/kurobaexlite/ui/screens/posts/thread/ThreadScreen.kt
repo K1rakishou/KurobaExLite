@@ -201,18 +201,18 @@ class ThreadScreen(
       postListOptions = postListOptions,
       postsScreenViewModel = threadScreenViewModel,
       onPostCellClicked = { postCellData ->
-        // TODO(KurobaEx):
+        // no-op
       },
       onLinkableClicked = { postCellData, linkable ->
         linkableClickHelper.processClickedLinkable(
           context = context,
           postCellData = postCellData,
           linkable = linkable,
-          loadThreadFunc = { threadDescriptor, loadOptions ->
-            threadScreenViewModel.loadThread(threadDescriptor, loadOptions)
+          loadThreadFunc = { threadDescriptor ->
+            threadScreenViewModel.loadThread(threadDescriptor)
           },
-          loadCatalogFunc = { catalogDescriptor, loadOptions ->
-            catalogScreenViewModel.loadCatalog(catalogDescriptor, loadOptions)
+          loadCatalogFunc = { catalogDescriptor ->
+            catalogScreenViewModel.loadCatalog(catalogDescriptor)
           },
           showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
         )

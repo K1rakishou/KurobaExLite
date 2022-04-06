@@ -150,12 +150,13 @@ class PopupRepliesScreen(
             context = context,
             postCellData = postCellData,
             linkable = linkable,
-            loadThreadFunc = { threadDescriptor, loadOptions ->
-              threadScreenViewModel.loadThread(threadDescriptor, loadOptions)
+            loadThreadFunc = { threadDescriptor ->
+              threadScreenViewModel.loadThread(threadDescriptor)
               stopPresenting()
             },
-            loadCatalogFunc = { catalogDescriptor, loadOptions ->
-              catalogScreenViewModel.loadCatalog(catalogDescriptor, loadOptions)
+            loadCatalogFunc = { catalogDescriptor ->
+              catalogScreenViewModel.loadCatalog(catalogDescriptor)
+              stopPresenting()
             },
             showRepliesForPostFunc = { replyViewMode ->
               coroutineScope.launch {

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.drawer
 
+import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -52,7 +54,7 @@ class DrawerScreen(
         .consumeClicks(consume = true)
         .padding(paddings)
     ) {
-      KurobaComposeText(text = "Drawer")
+      KurobaComposeText(text = "App: ${BuildConfig.FLAVOR}-${BuildConfig.BUILD_TYPE}-${BuildConfig.VERSION_NAME}-${Build.SUPPORTED_ABIS.first()}")
     }
   }
 

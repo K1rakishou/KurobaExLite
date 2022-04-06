@@ -25,8 +25,8 @@ class LinkableClickHelper(
     context: Context,
     postCellData: PostCellData,
     linkable: PostCommentParser.TextPartSpan.Linkable,
-    loadThreadFunc: (ThreadDescriptor, PostScreenViewModel.LoadOptions) -> Unit,
-    loadCatalogFunc: (CatalogDescriptor, PostScreenViewModel.LoadOptions) -> Unit,
+    loadThreadFunc: (ThreadDescriptor) -> Unit,
+    loadCatalogFunc: (CatalogDescriptor) -> Unit,
     showRepliesForPostFunc: (PopupRepliesScreen.ReplyViewMode) -> Unit
   ) {
     when (linkable) {
@@ -51,10 +51,7 @@ class LinkableClickHelper(
                 positiveButton = DialogScreen.okButton {
                   crossThreadFollowHistory.push(postCellData.postDescriptor.threadDescriptor)
 
-                  loadThreadFunc(
-                    linkable.postDescriptor.threadDescriptor,
-                    PostScreenViewModel.LoadOptions(forced = true)
-                  )
+                  loadThreadFunc(linkable.postDescriptor.threadDescriptor)
                 }
               )
             )
@@ -72,16 +69,14 @@ class LinkableClickHelper(
           boardCode = linkable.boardCode
         )
 
-        loadCatalogFunc(
-          catalogDescriptor,
-          PostScreenViewModel.LoadOptions(forced = true)
-        )
+        loadCatalogFunc(catalogDescriptor)
       }
       is PostCommentParser.TextPartSpan.Linkable.Search -> {
         // TODO()
       }
       is PostCommentParser.TextPartSpan.Linkable.Url -> {
         // TODO(KurobaEx): show dialog?
+        // TODO(KurobaEx): open in media viewer if the link ends with a recognizable media extension.
         androidHelpers.openLink(context, linkable.url)
       }
     }
