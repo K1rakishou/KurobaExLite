@@ -16,27 +16,28 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ToolbarVisibilityInfo
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import java.util.concurrent.atomic.AtomicReference
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import logcat.logcat
 
 class UiInfoManager(
   private val appContext: Context,
   private val appSettings: AppSettings,
   private val coroutineScope: CoroutineScope
 ) {
-  private val resources by lazy { appContext.resources }
+  private val initialized = AtomicBoolean(false)
 
+  private val resources by lazy { appContext.resources }
   private val toolbarHeight by lazy { resources.getDimension(R.dimen.toolbar_height) }
-  private val currentPageValue = AtomicReference<CurrentPage?>()
   private val toolbarVisibilityInfoMap = mutableMapOf<ScreenKey, ToolbarVisibilityInfo>()
 
   private val _lastTouchPosition = Point(0, 0)
@@ -44,6 +45,8 @@ class UiInfoManager(
     get() = Point(_lastTouchPosition.x, _lastTouchPosition.y)
 
   val isTablet by lazy { resources.getBoolean(R.bool.isTablet) }
+  val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
+  val currentOrientation = MutableStateFlow<Int>(Configuration.ORIENTATION_PORTRAIT)
 
   val orientations = arrayOf(
     Configuration.ORIENTATION_PORTRAIT,
@@ -58,7 +61,7 @@ class UiInfoManager(
     get() = _maxParentHeight
 
   val isPortraitOrientation: Boolean
-    get() = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+    get() = currentOrientation.value == Configuration.ORIENTATION_PORTRAIT
 
   val composeDensity by lazy {
     Density(
@@ -67,17 +70,23 @@ class UiInfoManager(
     )
   }
 
-  private val _drawerVisibilityFlow = MutableStateFlow<DrawerVisibility>(
-    DrawerVisibility.Closed)
+  private val _drawerVisibilityFlow = MutableStateFlow<DrawerVisibility>(DrawerVisibility.Closed)
   val drawerVisibilityFlow: StateFlow<DrawerVisibility>
     get() = _drawerVisibilityFlow.asStateFlow()
 
-  private val _currentPageFlow = MutableSharedFlow<CurrentPage>(extraBufferCapacity = Channel.UNLIMITED)
+  private val _currentPageFlow = mutableMapOf<MainUiLayoutMode, MutableStateFlow<CurrentPage>>()
 
-  val currentPageFlow: SharedFlow<CurrentPage>
-    get() = _currentPageFlow.asSharedFlow()
-  val currentPage: CurrentPage?
-    get() = currentPageValue.get()
+  fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {
+    return _currentPageFlow[uiLayoutMode]!!
+  }
+
+  fun currentPage(): CurrentPage? {
+    return _currentPageFlow[currentUiLayoutModeState.value]?.value
+  }
+
+  fun currentPage(uiLayoutMode: MainUiLayoutMode): CurrentPage? {
+    return _currentPageFlow[uiLayoutMode]?.value
+  }
 
   val defaultHorizPadding by lazy { if (isTablet) 12.dp else 8.dp }
   val defaultVertPadding by lazy { if (isTablet) 10.dp else 6.dp }
@@ -104,12 +113,32 @@ class UiInfoManager(
     get() = _bookmarksScreenOnLeftSide.asStateFlow()
 
   suspend fun init() {
+    if (!initialized.compareAndSet(false, true)) {
+      logcat { "UiInfoManager already initialized" }
+      return
+    }
+
     _textTitleSizeSp.value = appSettings.textTitleSizeSp.read().sp
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
     _homeScreenLayoutType.value = appSettings.layoutType.read()
     _bookmarksScreenOnLeftSide.value = appSettings.bookmarksScreenOnLeftSide.read()
+
+    coroutineScope.launch {
+      combine(
+        flow = homeScreenLayoutType,
+        flow2 = currentOrientation,
+        transform = { homeScreenLayout, orientation ->
+          return@combine LayoutChangingSettings(
+            orientation = orientation,
+            homeScreenLayoutType = homeScreenLayout
+          )
+        }
+      ).collectLatest { (orientation, layoutType) ->
+        updateLayoutModeAndCurrentPage(layoutType, orientation)
+      }
+    }
 
     coroutineScope.launch {
       appSettings.textTitleSizeSp.valueFlow
@@ -140,24 +169,13 @@ class UiInfoManager(
       appSettings.bookmarksScreenOnLeftSide.valueFlow
         .collectLatest { value -> _bookmarksScreenOnLeftSide.value = value }
     }
+
+    logcat { "UiInfoManager initialization finished" }
   }
 
   fun updateMaxParentSize(availableWidth: Int, availableHeight: Int) {
     _maxParentWidth = availableWidth
     _maxParentHeight = availableHeight
-  }
-
-  fun mainUiLayoutMode(configuration: Configuration): MainUiLayoutMode {
-    val orientation = configuration.orientation
-    if (isTablet) {
-      return MainUiLayoutMode.Split
-    }
-
-    if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-      return MainUiLayoutMode.Portrait
-    }
-
-    return MainUiLayoutMode.Split
   }
 
   fun setLastTouchPosition(x: Float, y: Float) {
@@ -171,21 +189,42 @@ class UiInfoManager(
     )
   }
 
+  fun updateCurrentPageForLayoutMode(
+    screenKey: ScreenKey,
+    mainUiLayoutMode: MainUiLayoutMode
+  ) {
+    val currentUiLayoutMode = currentUiLayoutModeState.value!!
+    if (currentUiLayoutMode != mainUiLayoutMode) {
+      return
+    }
+
+    if (screenKey == currentPage(currentUiLayoutMode)?.screenKey) {
+      return
+    }
+
+    val newCurrentPage = CurrentPage(screenKey, false)
+    _currentPageFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
+
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    toolbarVisibilityInfo.update(postListScrollState = 1f)
+  }
+
   fun updateCurrentPage(
     screenKey: ScreenKey,
-    animate: Boolean = true,
-    notifyListeners: Boolean = true
+    animate: Boolean = true
   ) {
-    if (screenKey == currentPage?.screenKey) {
+    val currentUiLayoutMode = currentUiLayoutModeState.value!!
+
+    if (screenKey == currentPage(currentUiLayoutMode)?.screenKey) {
       return
     }
 
     val newCurrentPage = CurrentPage(screenKey, animate)
-    currentPageValue.set(newCurrentPage)
-
-    if (notifyListeners) {
-      _currentPageFlow.tryEmit(newCurrentPage)
-    }
+    _currentPageFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
     val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
       key = screenKey,
@@ -293,6 +332,43 @@ class UiInfoManager(
     _drawerVisibilityFlow.value = DrawerVisibility.Drag(isDragging, progress, velocity)
   }
 
+  private suspend fun updateLayoutModeAndCurrentPage(
+    layoutType: LayoutType,
+    orientation: Int
+  ) {
+    val uiLayoutMode = when (layoutType) {
+      LayoutType.Auto -> {
+        when {
+          isTablet -> MainUiLayoutMode.Split
+          orientation == Configuration.ORIENTATION_PORTRAIT -> MainUiLayoutMode.Portrait
+          else -> MainUiLayoutMode.Split
+        }
+      }
+      LayoutType.Phone -> MainUiLayoutMode.Portrait
+      LayoutType.Split -> MainUiLayoutMode.Split
+    }
+
+    if (!_currentPageFlow.containsKey(uiLayoutMode)) {
+      val screenKey = when (uiLayoutMode) {
+        MainUiLayoutMode.Portrait -> {
+          val lastVisitedThread = appSettings.lastVisitedThread.read()
+          if (lastVisitedThread == null) {
+            CatalogScreen.SCREEN_KEY
+          } else {
+            ThreadScreen.SCREEN_KEY
+          }
+        }
+        MainUiLayoutMode.Split -> {
+          SplitScreenLayout.SCREEN_KEY
+        }
+      }
+
+      _currentPageFlow[uiLayoutMode] = MutableStateFlow(CurrentPage(screenKey, false))
+    }
+
+    currentUiLayoutModeState.value = uiLayoutMode
+  }
+
 }
 
 @Immutable
@@ -300,3 +376,8 @@ enum class MainUiLayoutMode {
   Portrait,
   Split
 }
+
+private data class LayoutChangingSettings(
+  val orientation: Int,
+  val homeScreenLayoutType: LayoutType
+)

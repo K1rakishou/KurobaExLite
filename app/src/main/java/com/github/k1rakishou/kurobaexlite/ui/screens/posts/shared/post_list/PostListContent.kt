@@ -39,7 +39,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -91,10 +90,9 @@ internal fun PostListContent(
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit
 ) {
-  val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
   val chanDescriptorMut by postsScreenViewModel.postScreenState.chanDescriptorFlow.collectAsState()
-
   val chanDescriptor = chanDescriptorMut
+
   if (chanDescriptor == null) {
     if (postListOptions.isInPopup) {
       return
@@ -105,14 +103,8 @@ internal fun PostListContent(
     return
   }
 
-  val orientation = LocalConfiguration.current.orientation
-  val rememberedPosition = remember(key1 = chanDescriptor, key2 = orientation) {
-    postsScreenViewModel.rememberedPosition(chanDescriptor, orientation)
-  }
-  val lazyListState = rememberLazyListState(
-    initialFirstVisibleItemIndex = rememberedPosition.index,
-    initialFirstVisibleItemScrollOffset = rememberedPosition.offset
-  )
+  val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+  val lazyListState = rememberLazyListState()
 
   if (postListAsync is AsyncData.Data) {
     LaunchedEffect(
@@ -136,7 +128,19 @@ internal fun PostListContent(
             0
           }
 
-          lazyListState.scrollToItem(index = positionToScroll, scrollOffset = 0)
+          lazyListState.scrollToItem(
+            index = positionToScroll,
+            scrollOffset = 0
+          )
+
+          processPostListScrollEvent(
+            postsScreenViewModel = postsScreenViewModel,
+            postListAsync = postListAsync,
+            lazyListState = lazyListState,
+            chanDescriptor = chanDescriptor,
+            orientation = postListOptions.orientation,
+            onPostListTouchingTopOrBottomStateChanged = onPostListTouchingTopOrBottomStateChanged
+          )
         }
       })
 
@@ -196,7 +200,7 @@ internal fun PostListContent(
         postListAsync = postListAsync,
         lazyListState = lazyListState,
         chanDescriptor = chanDescriptor,
-        orientation = orientation,
+        orientation = postListOptions.orientation,
         onPostListTouchingTopOrBottomStateChanged = onPostListTouchingTopOrBottomStateChanged
       )
 
@@ -207,15 +211,11 @@ internal fun PostListContent(
     onPostImageClicked = onPostImageClicked
   )
 
-  // This piece of code waits until postListAsync is loaded (basically when it becomes AsyncData.Data)
-  // and then also waits until at least one PostCell is built and drawn in the LazyColumn then sets a
-  // special flag in PostScreenViewModel which then triggers previous scroll position restoration.
-  // We need to do all that because otherwise we won't scroll to the last position since the list
-  // state might not have the necessary info for that.
   if (postListAsync is AsyncData.Data) {
-    NotifyPostListBuiltIfNeeded(
+    RestoreScrollPosition(
       lazyListState = lazyListState,
       chanDescriptor = chanDescriptor,
+      orientation = postListOptions.orientation,
       postsScreenViewModel = postsScreenViewModel
     )
   }
@@ -730,31 +730,35 @@ private fun LazyItemScope.PostCellContainer(
 }
 
 @Composable
-private fun NotifyPostListBuiltIfNeeded(
+private fun RestoreScrollPosition(
   lazyListState: LazyListState,
   chanDescriptor: ChanDescriptor,
+  orientation: Int,
   postsScreenViewModel: PostScreenViewModel
 ) {
-  var postListBuiltNotified by remember { mutableStateOf(false) }
-  if (!postListBuiltNotified) {
-    val firstPostDrawn = remember(key1 = lazyListState.layoutInfo) {
-      val firstVisibleElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
-        ?: return@remember false
+  var scrollPositionRestored by remember(key1 = orientation) { mutableStateOf(false) }
+  if (scrollPositionRestored) {
+    return
+  }
 
-      return@remember (firstVisibleElement.key as? String)
-        ?.startsWith(postCellKeyPrefix)
-        ?: false
-    }
+  val firstPostDrawn = remember(key1 = lazyListState.layoutInfo, key2 = orientation) {
+    val firstVisibleElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+      ?: return@remember false
 
-    if (firstPostDrawn) {
-      LaunchedEffect(
-        key1 = chanDescriptor,
-        block = {
-          postListBuiltNotified = true
-          postsScreenViewModel.onPostListBuilt()
-        }
-      )
-    }
+    return@remember (firstVisibleElement.key as? String)
+      ?.startsWith(postCellKeyPrefix)
+      ?: false
+  }
+
+  if (firstPostDrawn) {
+    LaunchedEffect(
+      key1 = chanDescriptor,
+      key2 = orientation,
+      block = {
+        postsScreenViewModel.restoreScrollPosition()
+        scrollPositionRestored = true
+      }
+    )
   }
 }
 

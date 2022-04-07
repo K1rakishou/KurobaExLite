@@ -1,8 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
-import android.content.res.Configuration
 import androidx.activity.ComponentActivity
-import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -67,17 +65,10 @@ class HomeScreenLayouter(
   }
 
   fun layoutScreens(
-    layoutType: LayoutType,
-    configuration: Configuration,
+    uiLayoutMode: MainUiLayoutMode,
     bookmarksScreenOnLeftSide: Boolean
   ): List<ComposeScreenWithToolbar> {
-    val mainUiLayoutMode = when (layoutType) {
-      LayoutType.Auto -> uiInfoManager.mainUiLayoutMode(configuration = configuration)
-      LayoutType.Phone -> MainUiLayoutMode.Portrait
-      LayoutType.Split -> MainUiLayoutMode.Split
-    }
-
-    when (mainUiLayoutMode) {
+    when (uiLayoutMode) {
       MainUiLayoutMode.Portrait -> {
         if (bookmarksScreenOnLeftSide) {
           return portraitScreens

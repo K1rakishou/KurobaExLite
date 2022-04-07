@@ -28,7 +28,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.ThreadSc
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.asLog
@@ -69,48 +68,15 @@ class ThreadScreenViewModel(
   }
 
   private suspend fun loadPrevVisitedThread() {
-    val prevThreadDescriptor = savedStateHandle.get<ThreadDescriptor>(PREV_THREAD_DESCRIPTOR)
-    if (prevThreadDescriptor != null) {
-      logcat(tag = TAG) { "loadPrevVisitedThread() loading ${prevThreadDescriptor} from savedStateHandle" }
-
-      loadThread(
-        threadDescriptor = prevThreadDescriptor,
-        loadOptions = LoadOptions(forced = true),
-        onReloadFinished = null
-      )
-
-      viewModelScope.launch {
-        delay(250)
-
-        uiInfoManager.updateCurrentPage(
-          screenKey = ThreadScreen.SCREEN_KEY,
-          animate = true,
-          notifyListeners = true
-        )
-      }
-
-      return
-    }
-
     val lastVisitedThread = appSettings.lastVisitedThread.read()?.toThreadDescriptor()
     if (lastVisitedThread != null) {
-      logcat(tag = TAG) { "loadPrevVisitedThread() loading ${prevThreadDescriptor} from appSettings.lastVisitedThread" }
+      logcat(tag = TAG) { "loadPrevVisitedThread() loading ${lastVisitedThread} from appSettings.lastVisitedThread" }
 
       loadThread(
         threadDescriptor = lastVisitedThread,
         loadOptions = LoadOptions(forced = true),
         onReloadFinished = null
       )
-
-      viewModelScope.launch {
-        delay(250)
-
-        uiInfoManager.updateCurrentPage(
-          screenKey = ThreadScreen.SCREEN_KEY,
-          animate = true,
-          notifyListeners = true
-        )
-      }
 
       return
     }
@@ -366,12 +332,6 @@ class ThreadScreenViewModel(
       lastLoadError = null
     )
 
-    postListBuilt?.await()
-    restoreScrollPosition(
-      chanDescriptor = threadDescriptor,
-      scrollToPost = loadOptions.scrollToPost
-    )
-
     parseRemainingPostsAsync(
       chanDescriptor = threadDescriptor,
       postDataList =  allCombinedPosts,
@@ -515,8 +475,6 @@ class ThreadScreenViewModel(
 
   companion object {
     private const val TAG = "ThreadScreenViewModel"
-
-    const val PREV_THREAD_DESCRIPTOR = "prev_thread_descriptor"
   }
 
 }

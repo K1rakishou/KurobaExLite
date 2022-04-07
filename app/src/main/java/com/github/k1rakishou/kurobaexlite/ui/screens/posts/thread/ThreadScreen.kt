@@ -11,7 +11,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
@@ -32,7 +31,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
@@ -95,7 +93,8 @@ class ThreadScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val mainUiLayoutMode = LocalMainUiLayoutMode.current
+    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
     val kurobaToolbarState = remember(key1 = mainUiLayoutMode) {
       val leftIconInfo = when (mainUiLayoutMode) {
@@ -121,7 +120,7 @@ class ThreadScreen(
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage) },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
       onLeftIconClicked = { uiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = { searchQuery ->
@@ -166,10 +165,11 @@ class ThreadScreen(
 
   @Composable
   private fun BoxScope.ThreadPostListScreen() {
-    val configuration = LocalConfiguration.current
     val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
-    val mainUiLayoutMode = LocalMainUiLayoutMode.current
+
+    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
@@ -177,6 +177,7 @@ class ThreadScreen(
     val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+    val orientation by uiInfoManager.currentOrientation.collectAsState()
 
     val postListOptions by remember {
       derivedStateOf {
@@ -188,10 +189,11 @@ class ThreadScreen(
             top = toolbarHeight + windowInsets.top,
             bottom = windowInsets.bottom + fabVertOffset
           ),
-          mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
+          mainUiLayoutMode = mainUiLayoutMode,
           postCellCommentTextSizeSp = postCellCommentTextSizeSp,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-          detectLinkableClicks = true
+          detectLinkableClicks = true,
+          orientation = orientation
         )
       }
     }

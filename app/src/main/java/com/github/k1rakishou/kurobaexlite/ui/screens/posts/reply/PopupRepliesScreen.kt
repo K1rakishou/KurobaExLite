@@ -73,6 +73,7 @@ class PopupRepliesScreen(
   override fun FloatingContent() {
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+    val orientation by uiInfoManager.currentOrientation.collectAsState()
 
     val postListOptions by remember {
       derivedStateOf {
@@ -84,7 +85,8 @@ class PopupRepliesScreen(
           mainUiLayoutMode = MainUiLayoutMode.Portrait,
           postCellCommentTextSizeSp = postCellCommentTextSizeSp,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-          detectLinkableClicks = true
+          detectLinkableClicks = true,
+          orientation = orientation
         )
       }
     }

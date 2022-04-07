@@ -11,7 +11,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
@@ -33,7 +32,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.home.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
@@ -103,7 +101,8 @@ class CatalogScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val mainUiLayoutMode = LocalMainUiLayoutMode.current
+    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
     val kurobaToolbarState = remember(key1 = mainUiLayoutMode) {
       return@remember KurobaToolbarState(
@@ -124,7 +123,7 @@ class CatalogScreen(
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       navigationRouter = navigationRouter,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage) },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
       onLeftIconClicked = { uiInfoManager.openDrawer() },
       onMiddleMenuClicked = {
         val mainScreenRouter = navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)
@@ -187,9 +186,10 @@ class CatalogScreen(
 
   @Composable
   private fun BoxScope.CatalogPostListScreen() {
-    val configuration = LocalConfiguration.current
     val windowInsets = LocalWindowInsets.current
-    val mainUiLayoutMode = LocalMainUiLayoutMode.current
+
+    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val fabSize = dimensionResource(id = R.dimen.fab_size)
@@ -198,6 +198,7 @@ class CatalogScreen(
     val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+    val orientation by uiInfoManager.currentOrientation.collectAsState()
 
     val postListOptions by remember {
       derivedStateOf {
@@ -209,10 +210,11 @@ class CatalogScreen(
             top = toolbarHeight + windowInsets.top,
             bottom = windowInsets.bottom + fabSize + fabVertOffset
           ),
-          mainUiLayoutMode = uiInfoManager.mainUiLayoutMode(configuration),
+          mainUiLayoutMode = mainUiLayoutMode,
           postCellCommentTextSizeSp = postCellCommentTextSizeSp,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-          detectLinkableClicks = true
+          detectLinkableClicks = true,
+          orientation = orientation
         )
       }
     }

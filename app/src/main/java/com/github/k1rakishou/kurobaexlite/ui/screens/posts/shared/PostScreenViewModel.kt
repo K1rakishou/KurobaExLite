@@ -36,11 +36,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPostListScroller
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.state.PostScreenState
-import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -84,7 +80,6 @@ abstract class PostScreenViewModel(
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
-  protected var postListBuilt: CompletableDeferred<Unit>? = null
 
   protected val _postsFullyParsedOnceFlow = MutableStateFlow(false)
   val postsFullyParsedOnceFlow: StateFlow<Boolean>
@@ -128,13 +123,6 @@ abstract class PostScreenViewModel(
     postScreenState.updateChanDescriptor(threadDescriptor)
     postScreenState.onStartLoading()
 
-    if (loadOptions.showLoadingIndicator) {
-      postListBuilt = CompletableDeferred()
-    } else {
-      postListBuilt?.cancel()
-      postListBuilt = null
-    }
-
     updatePostsParsedOnceJob?.cancel()
     updatePostsParsedOnceJob = null
 
@@ -149,13 +137,6 @@ abstract class PostScreenViewModel(
     postScreenState.updateChanDescriptor(catalogDescriptor)
     postScreenState.onStartLoading()
 
-    if (loadOptions.showLoadingIndicator) {
-      postListBuilt = CompletableDeferred()
-    } else {
-      postListBuilt?.complete(Unit)
-      postListBuilt = null
-    }
-
     updatePostsParsedOnceJob?.cancel()
     updatePostsParsedOnceJob = null
 
@@ -163,7 +144,6 @@ abstract class PostScreenViewModel(
   }
 
   suspend fun onThreadLoadingEnd(threadDescriptor: ThreadDescriptor) {
-    savedStateHandle.set(ThreadScreenViewModel.PREV_THREAD_DESCRIPTOR, threadDescriptor)
     appSettings.lastVisitedThread.write(LastVisitedThread.fromThreadDescriptor(threadDescriptor))
 
     chanCache.onCatalogOrThreadAccessed(threadDescriptor)
@@ -176,7 +156,6 @@ abstract class PostScreenViewModel(
   }
 
   suspend fun onCatalogLoadingEnd(catalogDescriptor: CatalogDescriptor) {
-    savedStateHandle.set(CatalogScreenViewModel.PREV_CATALOG_DESCRIPTOR, catalogDescriptor)
     appSettings.lastVisitedCatalog.write(LastVisitedCatalog.fromCatalogDescriptor(catalogDescriptor))
 
     chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
@@ -186,19 +165,6 @@ abstract class PostScreenViewModel(
       delay(250L)
       _postsFullyParsedOnceFlow.emit(true)
     }
-  }
-
-  fun rememberedPosition(chanDescriptor: ChanDescriptor, orientation: Int): LazyColumnRememberedPosition {
-    val rememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
-      ?: DEFAULT_REMEMBERED_POSITION
-
-    val finalRememberedPosition = if (rememberedPosition.orientation != orientation) {
-      rememberedPosition.copy(offset = 0)
-    } else {
-      rememberedPosition
-    }
-
-    return finalRememberedPosition
   }
 
   fun rememberPosition(
@@ -503,20 +469,61 @@ abstract class PostScreenViewModel(
     }
   }
 
-  suspend fun restoreScrollPosition(
+  private suspend fun restoreScrollPosition(
     chanDescriptor: ChanDescriptor,
     scrollToPost: PostDescriptor?
   ) {
-    logcat(tag = TAG) { "restoreScrollPosition($chanDescriptor)" }
+    logcat(tag = TAG) { "restoreScrollPosition($chanDescriptor, $scrollToPost)" }
 
-    withContext(Dispatchers.Main) {
-      if (scrollToPost != null) {
-        val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
-          ?: return@withContext
+    if (scrollToPost != null) {
+      val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
+        ?: return
 
-        val index = posts
-          .indexOfLast { postDataState -> postDataState.value.postDescriptor == scrollToPost }
+      val index = posts
+        .indexOfLast { postDataState -> postDataState.value.postDescriptor == scrollToPost }
 
+      logcat(tag = TAG) {
+        "restoreScrollPosition($chanDescriptor, $scrollToPost) " +
+          "scrollToPost: ${scrollToPost} restoring to index: $index"
+      }
+
+      uiInfoManager.orientations.forEach { orientation ->
+        val newLastRememberedPosition = LazyColumnRememberedPosition(
+          orientation = orientation,
+          index = index,
+          offset = 0
+        )
+
+        _scrollRestorationEventFlow.emit(newLastRememberedPosition)
+      }
+
+      return
+    }
+
+    val lastRememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
+    if (lastRememberedPosition != null) {
+      logcat(tag = TAG) {
+        "restoreScrollPosition($chanDescriptor, $scrollToPost) " +
+          "lastRememberedPosition: ${lastRememberedPosition}"
+      }
+
+      _scrollRestorationEventFlow.emit(lastRememberedPosition)
+      return
+    }
+
+    val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
+    val lastViewedPostDescriptor = postScreenState.lastViewedPostDescriptorForScrollRestoration.value
+
+    if (posts != null && lastViewedPostDescriptor != null) {
+      val index = posts
+        .indexOfLast { postDataState -> postDataState.value.postDescriptor == lastViewedPostDescriptor }
+
+      logcat(tag = TAG) {
+        "restoreScrollPosition($chanDescriptor, $scrollToPost) " +
+          "lastViewedPostDescriptor: ${lastViewedPostDescriptor}, restoring to index: $index"
+      }
+
+      if (index > 0) {
         uiInfoManager.orientations.forEach { orientation ->
           val newLastRememberedPosition = LazyColumnRememberedPosition(
             orientation = orientation,
@@ -526,36 +533,12 @@ abstract class PostScreenViewModel(
 
           _scrollRestorationEventFlow.emit(newLastRememberedPosition)
         }
-
-        return@withContext
       }
 
-      val lastRememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
-      if (lastRememberedPosition != null) {
-        _scrollRestorationEventFlow.emit(lastRememberedPosition)
-        return@withContext
-      }
-
-      val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
-      val lastViewedPostDescriptor = postScreenState.lastViewedPostDescriptorForScrollRestoration.value
-
-      if (posts != null && lastViewedPostDescriptor != null) {
-        val index = posts
-          .indexOfLast { postDataState -> postDataState.value.postDescriptor == lastViewedPostDescriptor }
-
-        if (index > 0) {
-          uiInfoManager.orientations.forEach { orientation ->
-            val newLastRememberedPosition = LazyColumnRememberedPosition(
-              orientation = orientation,
-              index = index,
-              offset = 0
-            )
-
-            _scrollRestorationEventFlow.emit(newLastRememberedPosition)
-          }
-        }
-      }
+      return
     }
+
+    logcat(tag = TAG) { "restoreScrollPosition($chanDescriptor, $scrollToPost) Nothing to restore" }
   }
 
   private suspend fun calculatePostData(
@@ -592,8 +575,14 @@ abstract class PostScreenViewModel(
     }
   }
 
-  fun onPostListBuilt() {
-    postListBuilt?.complete(Unit)
+  suspend fun restoreScrollPosition() {
+    val currentChanDescriptor = chanDescriptor
+      ?: return
+
+    restoreScrollPosition(
+      chanDescriptor = currentChanDescriptor,
+      scrollToPost = null
+    )
   }
 
   fun onPostBind(postCellData: PostCellData) {

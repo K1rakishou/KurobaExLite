@@ -15,4 +15,5 @@ data class PostListOptions(
   val contentPadding: PaddingValues,
   val postCellCommentTextSizeSp: TextUnit,
   val postCellSubjectTextSizeSp: TextUnit,
+  val orientation: Int
 )

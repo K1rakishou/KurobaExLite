@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateListOf
@@ -30,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
@@ -212,7 +212,7 @@ class MediaViewerScreen(
     }
 
     val context = LocalContext.current
-    val configuration = LocalConfiguration.current
+    val orientation by uiInfoManager.currentOrientation.collectAsState()
     val initialPageMut by mediaViewerScreenState.initialPage
     val imagesMut = mediaViewerScreenState.images
 
@@ -252,7 +252,7 @@ class MediaViewerScreen(
     var initialPageLoaded by remember { mutableStateOf(false) }
 
     val pagerState = rememberPagerState(
-      key1 = configuration.orientation,
+      key1 = orientation,
       initialPage = initialPage
     )
 

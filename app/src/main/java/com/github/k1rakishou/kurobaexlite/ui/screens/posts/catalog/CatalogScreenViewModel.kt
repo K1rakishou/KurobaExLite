@@ -44,21 +44,9 @@ class CatalogScreenViewModel(
   }
 
   private suspend fun loadPrevVisitedCatalog() {
-    val prevCatalogDescriptor = savedStateHandle.get<CatalogDescriptor>(PREV_CATALOG_DESCRIPTOR)
-    if (prevCatalogDescriptor != null) {
-      logcat(tag = TAG) { "loadPrevVisitedCatalog() loading ${prevCatalogDescriptor} from savedStateHandle" }
-
-      loadCatalog(
-        catalogDescriptor = prevCatalogDescriptor,
-        loadOptions = LoadOptions(forced = true)
-      )
-
-      return
-    }
-
     val lastVisitedCatalog = appSettings.lastVisitedCatalog.read()?.toCatalogDescriptor()
     if (lastVisitedCatalog != null) {
-      logcat(tag = TAG) { "loadPrevVisitedCatalog() loading ${prevCatalogDescriptor} from appSettings.lastVisitedCatalog" }
+      logcat(tag = TAG) { "loadPrevVisitedCatalog() loading ${lastVisitedCatalog} from appSettings.lastVisitedCatalog" }
 
       loadCatalog(
         catalogDescriptor = lastVisitedCatalog,
@@ -182,12 +170,6 @@ class CatalogScreenViewModel(
       catalogScreenState.insertOrUpdateMany(initialParsedPosts)
     }
 
-    postListBuilt?.await()
-    restoreScrollPosition(
-      chanDescriptor = catalogDescriptor,
-      scrollToPost = null
-    )
-
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,
       postDataList = sortedThreads,
@@ -243,8 +225,6 @@ class CatalogScreenViewModel(
 
   companion object {
     private const val TAG = "CatalogScreenViewModel"
-
-    const val PREV_CATALOG_DESCRIPTOR = "prev_catalog_descriptor"
   }
 
 }

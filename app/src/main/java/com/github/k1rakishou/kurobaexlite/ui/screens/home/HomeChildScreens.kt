@@ -1,8 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
-import android.content.res.Configuration
 import androidx.activity.ComponentActivity
-import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
@@ -21,53 +19,19 @@ class HomeChildScreens(
   private val homeScreenLayouter by lazy { HomeScreenLayouter(componentActivity, navigationRouter, uiInfoManager) }
 
   fun getChildScreens(
-    layoutType: LayoutType,
-    configuration: Configuration,
+    uiLayoutMode: MainUiLayoutMode,
     bookmarksScreenOnLeftSide: Boolean
   ): ChildScreens {
-    val screens = homeScreenLayouter.layoutScreens(
-      layoutType = layoutType,
-      configuration = configuration,
-      bookmarksScreenOnLeftSide = bookmarksScreenOnLeftSide
-    )
-
+    val screens = homeScreenLayouter.layoutScreens(uiLayoutMode, bookmarksScreenOnLeftSide)
     return ChildScreens(screens)
   }
 
-  fun getInitialScreenIndex(
-    layoutType: LayoutType,
-    configuration: Configuration,
-    childScreens: ChildScreens
-  ): Int {
-    return when (layoutTypeToMainUiLayoutMode(layoutType, configuration)) {
-      MainUiLayoutMode.Portrait -> {
-        childScreens.screens
-          .indexOfFirst { it.screenKey == CatalogScreen.SCREEN_KEY }
-      }
-      MainUiLayoutMode.Split -> {
-        childScreens.screens
-          .indexOfFirst { it.screenKey == SplitScreenLayout.SCREEN_KEY }
-      }
-    }
+  fun isMainScreen(currentPage: CurrentPage): Boolean {
+    return mainScreenKey() == currentPage.screenKey
   }
 
-  fun layoutTypeToMainUiLayoutMode(
-    layoutType: LayoutType,
-    configuration: Configuration
-  ): MainUiLayoutMode {
-    return when (layoutType) {
-      LayoutType.Auto -> uiInfoManager.mainUiLayoutMode(configuration = configuration)
-      LayoutType.Phone -> MainUiLayoutMode.Portrait
-      LayoutType.Split -> MainUiLayoutMode.Split
-    }
-  }
-
-  fun isMainScreen(configuration: Configuration, currentPage: CurrentPage): Boolean {
-    return mainScreenKey(configuration) == currentPage.screenKey
-  }
-
-  fun mainScreenKey(configuration: Configuration): ScreenKey {
-    if (uiInfoManager.mainUiLayoutMode(configuration) == MainUiLayoutMode.Split) {
+  fun mainScreenKey(): ScreenKey {
+    if (uiInfoManager.currentUiLayoutModeState.value == MainUiLayoutMode.Split) {
       return SplitScreenLayout.SCREEN_KEY
     }
 

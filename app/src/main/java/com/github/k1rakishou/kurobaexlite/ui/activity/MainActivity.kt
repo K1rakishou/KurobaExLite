@@ -8,7 +8,9 @@ import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
@@ -44,6 +46,17 @@ class MainActivity : ComponentActivity() {
     fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
 
     setContent {
+      val orientation = LocalConfiguration.current.orientation
+
+      LaunchedEffect(
+        key1 = orientation,
+        block = {
+          if (orientation in uiInfoManager.orientations) {
+            uiInfoManager.currentOrientation.value = orientation
+          }
+        }
+      )
+
       ProvideKurobaViewConfiguration {
         ProvideWindowInsets(window = window) {
           ProvideChanTheme(themeEngine = themeEngine) {
@@ -60,10 +73,10 @@ class MainActivity : ComponentActivity() {
   }
 
   override fun onDestroy() {
-    super.onDestroy()
-
     mainActivityViewModel.rootNavigationRouter.onDestroy()
     coroutineScope.cancelChildren()
+
+    super.onDestroy()
   }
 
   override fun onNewIntent(intent: Intent?) {

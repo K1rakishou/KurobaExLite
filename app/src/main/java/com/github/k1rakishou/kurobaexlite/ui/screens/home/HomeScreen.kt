@@ -4,14 +4,12 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
@@ -22,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -44,8 +41,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-val LocalMainUiLayoutMode = staticCompositionLocalOf<MainUiLayoutMode> { error("MainUiLayoutMode not provided") }
-
 class HomeScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
@@ -61,8 +56,7 @@ class HomeScreen(
   override fun Content() {
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
-    val configuration = LocalConfiguration.current
-
+    val orientation by uiInfoManager.currentOrientation.collectAsState()
     var uiInfoManagerInitialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(
@@ -76,18 +70,29 @@ class HomeScreen(
       return
     }
 
-    val layoutType by uiInfoManager.homeScreenLayoutType.collectAsState()
+    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutMode = mainUiLayoutModeMut
+    if (mainUiLayoutMode == null) {
+      return
+    }
+
     val bookmarksScreenOnLeftSide by uiInfoManager.bookmarksScreenOnLeftSide.collectAsState()
+    val initialPage by uiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
 
-    val mainUiLayoutMode = remember(key1 = layoutType, key2 = configuration) {
-      homeChildScreens.layoutTypeToMainUiLayoutMode(layoutType, configuration)
+    val childScreens = remember(
+      key1 = bookmarksScreenOnLeftSide,
+      key2 = mainUiLayoutMode
+    ) { homeChildScreens.getChildScreens(mainUiLayoutMode, bookmarksScreenOnLeftSide) }
+
+    val initialScreenIndexMut = remember(key1 = initialPage) {
+      childScreens.screens
+        .indexOfFirst { screen -> screen.screenKey == initialPage.screenKey }
+        .takeIf { screenIndex -> screenIndex >= 0 }
     }
 
-    val childScreens = remember(layoutType, configuration.orientation, bookmarksScreenOnLeftSide) {
-      homeChildScreens.getChildScreens(layoutType, configuration, bookmarksScreenOnLeftSide)
-    }
-    val initialScreenIndex = remember(layoutType, configuration.orientation, childScreens) {
-      homeChildScreens.getInitialScreenIndex(layoutType, configuration, childScreens)
+    val initialScreenIndex = initialScreenIndexMut
+    if (initialScreenIndex == null) {
+      return
     }
 
     val drawerLongtapGestureZonePx = with(LocalDensity.current) { remember { 24.dp.toPx() } }
@@ -100,17 +105,13 @@ class HomeScreen(
     // being 2 while there are only 2 screens in landscape mode.
     // There is an issue to add support for that on the google's issues tracker but it's almost
     // 2 years old. So for the time being we have to hack around the issue.
-    val pagerState = rememberPagerState(
-      key1 = configuration.orientation,
-      initialPage = initialScreenIndex
-    )
+    val pagerState = rememberPagerState(key1 = orientation, initialPage = initialScreenIndex)
 
     LaunchedEffect(
-      layoutType,
-      configuration.orientation,
-      bookmarksScreenOnLeftSide,
+      key1 = mainUiLayoutMode,
+      key2 = bookmarksScreenOnLeftSide,
       block = {
-        uiInfoManager.currentPageFlow.collect { currentPage ->
+        uiInfoManager.currentPageFlow(mainUiLayoutMode).collect { currentPage ->
           scrollToPageByScreenKey(
             screenKey = currentPage.screenKey,
             childScreens = childScreens,
@@ -120,16 +121,27 @@ class HomeScreen(
         }
       })
 
+    LaunchedEffect(
+      key1 = pagerState.currentPage,
+      key2 = mainUiLayoutMode,
+      block = {
+        val screenKey = childScreens.screens.getOrNull(pagerState.currentPage)?.screenKey
+          ?: return@LaunchedEffect
+
+        uiInfoManager.updateCurrentPageForLayoutMode(
+          screenKey = screenKey,
+          mainUiLayoutMode = mainUiLayoutMode
+        )
+      }
+    )
+
     navigationRouter.HandleBackPresses(
       screenKey = screenKey,
       onBackPressed = {
-        val currentPage = uiInfoManager.currentPage
+        val currentPage = uiInfoManager.currentPage(mainUiLayoutMode)
 
-        if (currentPage != null && !homeChildScreens.isMainScreen(configuration, currentPage)) {
-          uiInfoManager.updateCurrentPage(
-            screenKey = homeChildScreens.mainScreenKey(configuration)
-          )
-
+        if (currentPage != null && !homeChildScreens.isMainScreen(currentPage)) {
+          uiInfoManager.updateCurrentPage(homeChildScreens.mainScreenKey())
           return@HandleBackPresses true
         }
 
@@ -137,18 +149,16 @@ class HomeScreen(
       }
     )
 
-    CompositionLocalProvider(LocalMainUiLayoutMode provides mainUiLayoutMode) {
-      HomeScreenContentActual(
-        maxDrawerWidth = maxDrawerWidth,
-        mainUiLayoutMode = mainUiLayoutMode,
-        drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
-        drawerLongtapGestureZonePx = drawerLongtapGestureZonePx,
-        pagerState = pagerState,
-        childScreens = childScreens,
-        insets = insets,
-        chanTheme = chanTheme
-      )
-    }
+    HomeScreenContentActual(
+      maxDrawerWidth = maxDrawerWidth,
+      mainUiLayoutMode = mainUiLayoutMode,
+      drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
+      drawerLongtapGestureZonePx = drawerLongtapGestureZonePx,
+      pagerState = pagerState,
+      childScreens = childScreens,
+      insets = insets,
+      chanTheme = chanTheme
+    )
   }
 
   @OptIn(ExperimentalPagerApi::class)
@@ -220,22 +230,6 @@ class HomeScreen(
         state = pagerState,
         count = childScreens.screens.size
       ) { page ->
-        LaunchedEffect(
-          key1 = pagerState.currentPage,
-          block = {
-            val screenKey = childScreens.screens.getOrNull(pagerState.currentPage)?.screenKey
-              ?: return@LaunchedEffect
-
-            // When we manually scroll the pager we need to keep track of the current page,
-            // however we don't want to notify the listeners in this case.
-            uiInfoManager.updateCurrentPage(
-              screenKey = screenKey,
-              animate = false,
-              notifyListeners = false
-            )
-          }
-        )
-
         val childScreen = childScreens.screens[page]
         val transitionIsProgress = pagerState.currentPage != pagerState.targetPage
         val currentPageOffset = Math.abs(pagerState.currentPageOffset)
