@@ -31,6 +31,7 @@ import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMaxBy
 import androidx.compose.ui.util.fastSumBy
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -74,6 +75,7 @@ class PopupRepliesScreen(
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
     val orientation by uiInfoManager.currentOrientation.collectAsState()
+    val postsAsyncDataState by popupRepliesScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
     val postListOptions by remember {
       derivedStateOf {
@@ -95,34 +97,41 @@ class PopupRepliesScreen(
     val coroutineScope = rememberCoroutineScope()
     val buttonsHeightPx = with(density) { remember(key1 = buttonsHeight) { buttonsHeight.toPx().toInt() } }
 
-    Layout(
-      content = { BuildPopupRepliesScreenContent(postListOptions, coroutineScope) },
-      measurePolicy = { measurables, constraints ->
-        val placeables = measurables.map { measurable ->
-          when (measurable.layoutId) {
-            postListLayoutId -> {
-              measurable.measure(constraints.offset(vertical = -buttonsHeightPx))
+    if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
+      Layout(
+        content = { BuildPopupRepliesScreenContent(postListOptions, coroutineScope) },
+        measurePolicy = { measurables, constraints ->
+          val placeables = measurables.map { measurable ->
+            when (measurable.layoutId) {
+              postListLayoutId -> {
+                measurable.measure(constraints.offset(vertical = -buttonsHeightPx))
+              }
+              buttonsLayoutId -> {
+                measurable.measure(
+                  constraints.copy(
+                    minHeight = buttonsHeightPx,
+                    maxHeight = buttonsHeightPx
+                  )
+                )
+              }
+              else -> error("Unexpected layoutId: \'${measurable.layoutId}\'")
             }
-            buttonsLayoutId -> {
-              measurable.measure(constraints.copy(minHeight = buttonsHeightPx, maxHeight = buttonsHeightPx))
+          }
+
+          val width = placeables.fastMap { it.width }.fastMaxBy { it } ?: 0
+          val height = placeables.fastSumBy { it.height }
+
+          layout(width, height) {
+            var takenHeight = 0
+
+            placeables.fastForEach {
+              it.placeRelative(0, takenHeight)
+              takenHeight += it.height
             }
-            else -> error("Unexpected layoutId: \'${measurable.layoutId}\'")
           }
         }
-
-        val width = placeables.fastMap { it.width }.fastMaxBy { it } ?: 0
-        val height = placeables.fastSumBy { it.height }
-
-        layout(width, height) {
-          var takenHeight = 0
-
-          placeables.fastForEach {
-            it.placeRelative(0, takenHeight)
-            takenHeight += it.height
-          }
-        }
-      }
-    )
+      )
+    }
 
     LaunchedEffect(
       key1 = replyViewMode,
@@ -197,6 +206,7 @@ class PopupRepliesScreen(
         },
         onFastScrollerDragStateChanged = { dragging ->
         },
+        loadingContent = { isInPopup -> /*no-op*/ },
       )
     }
 

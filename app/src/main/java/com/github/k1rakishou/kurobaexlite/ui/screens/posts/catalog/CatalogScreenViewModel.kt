@@ -133,7 +133,7 @@ class CatalogScreenViewModel(
 
     val postsLoadResult = postsLoadResultMaybe.unwrap()
     if (postsLoadResult == null || catalogDescriptor == null) {
-      catalogScreenState.postsAsyncDataState.value = AsyncData.Empty
+      catalogScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
 

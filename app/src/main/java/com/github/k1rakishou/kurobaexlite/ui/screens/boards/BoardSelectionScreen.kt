@@ -92,7 +92,7 @@ class BoardSelectionScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf<String?>(null) }
-    var loadBoardsForSiteEvent by remember { mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Empty) }
+    var loadBoardsForSiteEvent by remember { mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Uninitialized) }
 
     Box(
       modifier = Modifier
@@ -200,7 +200,7 @@ class BoardSelectionScreen(
       lazyListState = lazyListState,
       content = {
         when (val loadBoardsForSiteAsyncData = filteredBoardsAsyncData) {
-          AsyncData.Empty -> {
+          AsyncData.Uninitialized -> {
             // no-op
           }
           AsyncData.Loading -> {

@@ -88,7 +88,16 @@ internal fun PostListContent(
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit
+  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  emptyContent: @Composable LazyItemScope.(Boolean, Boolean) -> Unit = { isInPopup, isCatalogMode ->
+    PostListEmptyContent(isInPopup, isCatalogMode)
+  },
+  loadingContent: @Composable LazyItemScope.(Boolean) -> Unit = { isInPopup ->
+    PostListLoadingContent(isInPopup)
+  },
+  errorContent: @Composable LazyItemScope.(AsyncData.Error, Boolean) -> Unit = { postListAsyncError, isInPopup ->
+    PostListErrorContent(postListAsyncError, isInPopup, postsScreenViewModel)
+  },
 ) {
   val chanDescriptorMut by postsScreenViewModel.postScreenState.chanDescriptorFlow.collectAsState()
   val chanDescriptor = chanDescriptorMut
@@ -172,27 +181,21 @@ internal fun PostListContent(
     postListAsync = postListAsync,
     postsScreenViewModel = postsScreenViewModel,
     onPostCellClicked = onPostCellClicked,
-    onPostCellCommentClicked = remember {
-      { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
-        processClickedAnnotation(
-          postsScreenViewModel = postsScreenViewModel,
-          postCellData = postCellData,
-          postComment = postComment,
-          characterOffset = offset,
-          onLinkableClicked = onLinkableClicked
-        )
-      }
+    onPostCellCommentClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
+      processClickedAnnotation(
+        postsScreenViewModel = postsScreenViewModel,
+        postCellData = postCellData,
+        postComment = postComment,
+        characterOffset = offset,
+        onLinkableClicked = onLinkableClicked
+      )
     },
-    onPostRepliesClicked = remember {
-      { postCellData: PostCellData ->
-        onPostRepliesClicked(postCellData.postDescriptor)
-      }
+    onPostRepliesClicked = { postCellData: PostCellData ->
+      onPostRepliesClicked(postCellData.postDescriptor)
     },
-    onThreadStatusCellClicked = remember {
-      {
-        postsScreenViewModel.resetTimer()
-        postsScreenViewModel.refresh()
-      }
+    onThreadStatusCellClicked = {
+      postsScreenViewModel.resetTimer()
+      postsScreenViewModel.refresh()
     },
     onPostListScrolled = { scrollDelta ->
       processPostListScrollEvent(
@@ -208,7 +211,10 @@ internal fun PostListContent(
     },
     onPostListDragStateChanged = onPostListDragStateChanged,
     onFastScrollerDragStateChanged = onFastScrollerDragStateChanged,
-    onPostImageClicked = onPostImageClicked
+    onPostImageClicked = onPostImageClicked,
+    emptyContent = emptyContent,
+    loadingContent = loadingContent,
+    errorContent = errorContent,
   )
 
   if (postListAsync is AsyncData.Data) {
@@ -295,6 +301,9 @@ private fun PostListInternal(
   onPostListScrolled: (Float) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
+  emptyContent: @Composable LazyItemScope.(Boolean, Boolean) -> Unit,
+  loadingContent: @Composable LazyItemScope.(Boolean) -> Unit,
+  errorContent: @Composable LazyItemScope.(AsyncData.Error, Boolean) -> Unit,
 ) {
   val isInPopup = postListOptions.isInPopup
   val pullToRefreshEnabled = postListOptions.pullToRefreshEnabled
@@ -415,9 +424,9 @@ private fun PostListInternal(
         content = {
           postListAsyncDataContent(
             postListAsync = postListAsync,
-            emptyContent = { PostListEmptyContent(isInPopup, isCatalogMode) },
-            loadingContent = { PostListLoadingContent(isInPopup) },
-            errorContent = { postListAsyncError -> PostListErrorContent(postListAsyncError, isInPopup, postsScreenViewModel) },
+            emptyContent = { emptyContent(isInPopup, isCatalogMode) },
+            loadingContent = { loadingContent(isInPopup) },
+            errorContent = { postListAsyncError -> errorContent(postListAsyncError, isInPopup) },
             dataContent = { postListAsyncData ->
               val abstractPostsState = postListAsyncData.data
               val previousPostDataInfoMap = abstractPostsState.postListAnimationInfoMap
@@ -559,10 +568,8 @@ private fun LazyListScope.postListAsyncDataContent(
   dataContent: (AsyncData.Data<PostsState>) -> Unit
 ) {
   when (postListAsync) {
-    AsyncData.Empty -> {
-      item(key = "empty_indicator") {
-        emptyContent()
-      }
+    AsyncData.Uninitialized -> {
+      // no-op
     }
     AsyncData.Loading -> {
       item(key = "loading_indicator") {
@@ -575,7 +582,15 @@ private fun LazyListScope.postListAsyncDataContent(
       }
     }
     is AsyncData.Data -> {
-      dataContent(postListAsync)
+      val posts = postListAsync.data.posts
+
+      if (posts.isEmpty()) {
+        item(key = "empty_indicator") {
+          emptyContent()
+        }
+      } else {
+        dataContent(postListAsync)
+      }
     }
   }
 }

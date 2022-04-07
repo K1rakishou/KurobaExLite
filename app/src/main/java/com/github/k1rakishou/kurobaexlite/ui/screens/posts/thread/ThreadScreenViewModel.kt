@@ -268,7 +268,7 @@ class ThreadScreenViewModel(
 
     val postLoadResult = postLoadResultMaybe.unwrap()
     if (postLoadResult == null || threadDescriptor == null) {
-      threadScreenState.postsAsyncDataState.value = AsyncData.Empty
+      threadScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
 

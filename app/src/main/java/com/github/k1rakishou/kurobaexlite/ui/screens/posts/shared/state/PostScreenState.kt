@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 abstract class PostScreenState {
-  val postsAsyncDataState = MutableStateFlow<AsyncData<PostsState>>(AsyncData.Empty)
+  val postsAsyncDataState = MutableStateFlow<AsyncData<PostsState>>(AsyncData.Uninitialized)
   val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
   val searchQueryFlow = MutableStateFlow<String?>(null)
 

@@ -49,7 +49,7 @@ abstract class PostsScreen(
     val postListAsync = postListAsyncMut
 
     when (postListAsync) {
-      AsyncData.Empty -> {
+      AsyncData.Uninitialized -> {
         if (isCatalogScreen) {
           val defaultToolbarTitle = stringResource(id = R.string.toolbar_loading_empty)
           kurobaToolbarState.toolbarTitleState.value = defaultToolbarTitle

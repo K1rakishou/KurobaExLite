@@ -96,27 +96,20 @@ class PopupRepliesScreenViewModel(
   }
 
   fun clearPostReplyChainStack() {
-    postScreenState.postsAsyncDataState.value = AsyncData.Empty
+    postScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
     postReplyChainStack.clear()
   }
 
   private suspend fun loadRepliesFrom(replyViewMode: PopupRepliesScreen.ReplyViewMode.RepliesFrom): Boolean {
     val postDescriptor = replyViewMode.postDescriptor
     postScreenState.updateChanDescriptor(postDescriptor.threadDescriptor)
-
     val repliesFrom = postReplyChainManager.getRepliesFrom(postDescriptor)
-    if (repliesFrom.isEmpty()) {
-      postScreenState.postsAsyncDataState.value = AsyncData.Empty
-      return false
-    }
 
-    val posts = chanCache.getManyForDescriptor(postDescriptor.threadDescriptor, repliesFrom)
-        .let { postDataList -> parsePostDataList(replyViewMode, postDescriptor, postDataList) }
-
-    if (posts.isEmpty()) {
-      postScreenState.postsAsyncDataState.value = AsyncData.Empty
-      return false
-    }
+    val posts = parsePostDataList(
+      replyViewMode = replyViewMode,
+      forPostDescriptor = postDescriptor,
+      postCellDataList = chanCache.getManyForDescriptor(postDescriptor.threadDescriptor, repliesFrom)
+    )
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(postDescriptor.threadDescriptor))
     postScreenState.insertOrUpdateMany(posts)
@@ -130,11 +123,7 @@ class PopupRepliesScreenViewModel(
 
     val threadPosts = chanCache.getPost(postDescriptor)
       ?.let { postData -> parsePostData(replyViewMode, postDescriptor, postData) }
-
-    if (threadPosts == null || threadPosts.isEmpty()) {
-      postScreenState.postsAsyncDataState.value = AsyncData.Empty
-      return false
-    }
+      ?: emptyList()
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(postDescriptor.threadDescriptor))
     postScreenState.insertOrUpdateMany(threadPosts)
