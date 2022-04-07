@@ -47,6 +47,8 @@ class UpdateChanThreadView(
     val callResult = kurobaExLiteDatabase.call {
       val chanThreadViewEntity = ChanThreadViewEntity(
         threadKey = ThreadKey.fromThreadDescriptor(threadDescriptor),
+        lastViewedPostForIndicator = updatedChanThreadView.lastViewedPDForIndicator
+          ?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
         lastViewedPost = updatedChanThreadView.lastViewedPostDescriptor
           ?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
         lastLoadedPost = updatedChanThreadView.lastLoadedPostDescriptor

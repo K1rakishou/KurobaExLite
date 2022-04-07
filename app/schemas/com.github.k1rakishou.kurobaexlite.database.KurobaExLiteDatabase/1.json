@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "52d190dafdcb94abe3cc7d4a60544bb1",
+    "identityHash": "b10bbe248333a83186aacc211ec76616",
     "entities": [
       {
         "tableName": "chan_thread_view",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`thread_site_key` TEXT NOT NULL, `thread_board_code` TEXT NOT NULL, `thread_thread_no` INTEGER NOT NULL, `last_viewed_post_no` INTEGER, `last_viewed_post_sub_no` INTEGER, `last_loaded_post_no` INTEGER, `last_loaded_post_sub_no` INTEGER, PRIMARY KEY(`thread_site_key`, `thread_board_code`, `thread_thread_no`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`thread_site_key` TEXT NOT NULL, `thread_board_code` TEXT NOT NULL, `thread_thread_no` INTEGER NOT NULL, `last_viewed_for_indicator_post_no` INTEGER, `last_viewed_for_indicator_post_sub_no` INTEGER, `last_viewed_post_no` INTEGER, `last_viewed_post_sub_no` INTEGER, `last_loaded_post_no` INTEGER, `last_loaded_post_sub_no` INTEGER, PRIMARY KEY(`thread_site_key`, `thread_board_code`, `thread_thread_no`))",
         "fields": [
           {
             "fieldPath": "threadKey.siteKey",
@@ -25,6 +25,18 @@
             "columnName": "thread_thread_no",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "lastViewedPostForIndicator.postNo",
+            "columnName": "last_viewed_for_indicator_post_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastViewedPostForIndicator.postSubNo",
+            "columnName": "last_viewed_for_indicator_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": false
           },
           {
             "fieldPath": "lastViewedPost.postNo",
@@ -66,7 +78,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '52d190dafdcb94abe3cc7d4a60544bb1')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b10bbe248333a83186aacc211ec76616')"
     ]
   }
 }

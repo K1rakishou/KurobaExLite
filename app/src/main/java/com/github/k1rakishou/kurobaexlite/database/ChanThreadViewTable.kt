@@ -13,6 +13,7 @@ import androidx.room.Query
 )
 data class ChanThreadViewEntity(
   @PrimaryKey @Embedded(prefix = "thread_") val threadKey: ThreadKey,
+  @Embedded(prefix = "last_viewed_for_indicator_") val lastViewedPostForIndicator: ThreadLocalPostKey?,
   @Embedded(prefix = "last_viewed_") val lastViewedPost: ThreadLocalPostKey?,
   @Embedded(prefix = "last_loaded_") val lastLoadedPost: ThreadLocalPostKey?
 ) {
