@@ -5,7 +5,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 
 data class ChanThreadView(
   val threadDescriptor: ThreadDescriptor,
-  var lastViewedPostDescriptorForIndicator: PostDescriptor? = null,
+  var lastViewedPDForIndicator: PostDescriptor? = null,
   var lastViewedPostDescriptor: PostDescriptor? = null,
   var lastLoadedPostDescriptor: PostDescriptor? = null,
   var scrollToPost: PostDescriptor? = null

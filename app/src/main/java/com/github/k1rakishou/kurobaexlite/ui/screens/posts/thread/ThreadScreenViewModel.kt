@@ -146,7 +146,7 @@ class ThreadScreenViewModel(
       val threadDescriptor = chanThreadManager.currentlyOpenedThread
       val prevCellDataState = threadScreenState.threadCellDataState.value
 
-      val threadPostsState = if (threadPostsAsync !is AsyncData.Data) {
+      if (threadPostsAsync !is AsyncData.Data) {
         if (threadDescriptor == null) {
           onRefreshFinished?.invoke()
           return@launch
@@ -160,8 +160,6 @@ class ThreadScreenViewModel(
 
         onRefreshFinished?.invoke()
         return@launch
-      } else {
-        threadPostsAsync.data
       }
 
       val startTime = SystemClock.elapsedRealtime()
@@ -215,8 +213,7 @@ class ThreadScreenViewModel(
 
             onPostsParsed(
               threadDescriptor = threadDescriptor,
-              postLoadResult = postLoadResult,
-              isInitialThreadLoad = false
+              postLoadResult = postLoadResult
             )
           } finally {
             withContext(Dispatchers.Main) { onRefreshFinished?.invoke() }
@@ -397,8 +394,7 @@ class ThreadScreenViewModel(
 
           onPostsParsed(
             threadDescriptor = threadDescriptor,
-            postLoadResult = postLoadResult,
-            isInitialThreadLoad = true
+            postLoadResult = postLoadResult
           )
 
           onThreadLoadingEnd(threadDescriptor)
@@ -414,16 +410,14 @@ class ThreadScreenViewModel(
 
   private suspend fun onPostsParsed(
     threadDescriptor: ThreadDescriptor,
-    postLoadResult: PostsLoadResult,
-    isInitialThreadLoad: Boolean
+    postLoadResult: PostsLoadResult
   ) {
-    if (isInitialThreadLoad) {
-      updateLastLoadedAndViewedPosts(
-        key = "onPostsParsed",
-        threadDescriptor = threadDescriptor,
-        boundPostDescriptor = null
-      )
-    }
+    updateLastLoadedAndViewedPosts(
+      key = "onPostsParsed",
+      threadDescriptor = threadDescriptor,
+      boundPostDescriptor = null,
+      postListTouchingBottom = false
+    )
 
     val originalPost = postLoadResult.firstOrNull { postData -> postData is OriginalPostData }
     if (originalPost != null && (originalPost.archived == true || originalPost.closed == true)) {
@@ -442,57 +436,40 @@ class ThreadScreenViewModel(
     }
   }
 
-  fun onPostListTouchingBottom() {
-    val threadDescriptor = (chanDescriptor as? ThreadDescriptor)
-      ?: return
-
-    postListTouchingBottom.value = true
-
-    updateLastLoadedAndViewedPosts(
-      key = "onPostListTouchingBottom",
-      threadDescriptor = threadDescriptor,
-      boundPostDescriptor = null
-    )
-
-    snackbarManager.popThreadNewPostsSnackbar()
-  }
-
-  fun onPostListNotTouchingBottom() {
-    postListTouchingBottom.value = false
-  }
-
   fun onFirstVisiblePostScrollChanged(
     postCellData: PostCellData,
-    lastVisibleItemIsThreadCellData: Boolean
+    postListTouchingBottom: Boolean
   ) {
+    if (postListTouchingBottom) {
+      snackbarManager.popThreadNewPostsSnackbar()
+    }
+
     updateLastLoadedAndViewedPosts(
       key = "onFirstVisiblePostScrollChanged",
       threadDescriptor = postCellData.postDescriptor.threadDescriptor,
-      boundPostDescriptor = postCellData.postDescriptor
+      boundPostDescriptor = postCellData.postDescriptor,
+      postListTouchingBottom = postListTouchingBottom
     )
-
-    if (lastVisibleItemIsThreadCellData) {
-      onPostListNotTouchingBottom()
-    }
   }
 
   private fun updateLastLoadedAndViewedPosts(
     key: String,
     threadDescriptor: ThreadDescriptor,
-    boundPostDescriptor: PostDescriptor?
+    boundPostDescriptor: PostDescriptor?,
+    postListTouchingBottom: Boolean?
   ) {
     updateChanThreadViewExecutor.post(timeout = 200L, key = key) {
+      val lastThreadPost = chanCache.getLastPost(threadDescriptor)?.postDescriptor
+
       val updatedChanThreadView = updateChanThreadView.execute(
         threadDescriptor = threadDescriptor,
-        threadLastPostDescriptor = chanCache.getLastPost(threadDescriptor)?.postDescriptor,
+        threadLastPostDescriptor = lastThreadPost,
         threadBoundPostDescriptor = boundPostDescriptor,
-        isBottomOnThreadReached = postListTouchingBottom.value
+        postListTouchingBottom = postListTouchingBottom
       )
 
-      if (updatedChanThreadView != null && postListTouchingBottom.value) {
-        threadScreenState.lastViewedPostDescriptorForIndicator.value =
-          updatedChanThreadView.lastViewedPostDescriptorForIndicator
-      }
+      threadScreenState.lastViewedPostDescriptorForIndicator.value =
+        updatedChanThreadView?.lastViewedPDForIndicator
     }
   }
 

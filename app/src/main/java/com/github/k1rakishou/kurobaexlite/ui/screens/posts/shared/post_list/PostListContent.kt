@@ -259,10 +259,14 @@ private fun processPostListScrollEvent(
 
     if (firstCompletelyVisibleItem != null) {
       val firstVisiblePostData = postDataList.getOrNull(firstCompletelyVisibleItem.index)?.value
-      val lastVisibleItemIsThreadCellData = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
+      val postListTouchingBottom = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
+        ?.key == threadStatusCellKey
 
       if (firstVisiblePostData != null) {
-        postsScreenViewModel.onFirstVisiblePostScrollChanged(firstVisiblePostData, lastVisibleItemIsThreadCellData)
+        postsScreenViewModel.onFirstVisiblePostScrollChanged(
+          postCellData = firstVisiblePostData,
+          postListTouchingBottom = postListTouchingBottom
+        )
       }
     }
   }
@@ -342,11 +346,8 @@ private fun PostListInternal(
         HandlerCompat.postDelayed(
           handler,
           {
-            val lastScroll = accumulatedScrollOffsetY
-            if (lastScroll != 0f) {
-              onPostListScrolled(lastScroll)
-              accumulatedScrollOffsetY = 0f
-            }
+            onPostListScrolled(accumulatedScrollOffsetY)
+            accumulatedScrollOffsetY = 0f
           },
           token,
           notifyIntervalMs

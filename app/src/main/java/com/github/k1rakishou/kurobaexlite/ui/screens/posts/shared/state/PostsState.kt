@@ -43,8 +43,11 @@ class PostsState(
 
   fun onSearchQueryUpdated(searchQuery: String?) {
     if (searchQuery == searchQueryFlow.value || searchQuery.isNullOrEmpty()) {
-      postsProcessed.clear()
-      postsProcessed.addAll(allPosts)
+      if (postsProcessed.size != allPosts.size) {
+        postsProcessed.clear()
+        postsProcessed.addAll(allPosts)
+      }
+
       return
     }
 

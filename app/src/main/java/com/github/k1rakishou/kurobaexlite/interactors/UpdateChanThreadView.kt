@@ -20,7 +20,7 @@ class UpdateChanThreadView(
     threadDescriptor: ThreadDescriptor,
     threadLastPostDescriptor: PostDescriptor?,
     threadBoundPostDescriptor: PostDescriptor?,
-    isBottomOnThreadReached: Boolean
+    postListTouchingBottom: Boolean?
   ): ChanThreadView? {
     val updatedChanThreadView = chanThreadViewManager.insertOrUpdate(threadDescriptor) {
       if (threadLastPostDescriptor != null) {
@@ -30,13 +30,12 @@ class UpdateChanThreadView(
         )
       }
 
-      if (
-        (lastViewedPostDescriptorForIndicator == null && threadLastPostDescriptor != null) ||
-        isBottomOnThreadReached
-      ) {
-        lastViewedPostDescriptorForIndicator = maxOfPostDescriptors(
-          one = lastViewedPostDescriptorForIndicator,
-          other = threadLastPostDescriptor
+      if (postListTouchingBottom == true) {
+        lastViewedPDForIndicator = null
+      } else if (lastViewedPDForIndicator == null) {
+        lastViewedPDForIndicator = maxOfPostDescriptors(
+          one = threadLastPostDescriptor,
+          other = lastLoadedPostDescriptor
         )
       }
 

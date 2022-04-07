@@ -13,13 +13,11 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,7 +36,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 internal val threadStatusCellKey = "thread_status_cell"
 
@@ -63,32 +60,6 @@ internal fun LazyItemScope.ThreadStatusCell(
 
   val fabSize = dimensionResource(id = R.dimen.fab_size)
   val fabEndOffset = dimensionResource(id = R.dimen.post_list_fab_end_offset)
-
-  val coroutineScope = rememberCoroutineScope()
-  val lastItemIndex = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-
-  DisposableEffect(
-    key1 = lastItemIndex,
-    effect = {
-      val job = coroutineScope.launch {
-        delay(125L)
-
-        val threadStatusCellItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
-        if (threadStatusCellItem) {
-          threadScreenViewModel.onPostListTouchingBottom()
-        }
-      }
-
-      onDispose {
-        job.cancel()
-
-        val threadStatusCellItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
-        if (!threadStatusCellItem) {
-          threadScreenViewModel.onPostListNotTouchingBottom()
-        }
-      }
-    })
-
   var timeUntilNextUpdateSeconds by remember { mutableStateOf(0L) }
 
   LaunchedEffect(

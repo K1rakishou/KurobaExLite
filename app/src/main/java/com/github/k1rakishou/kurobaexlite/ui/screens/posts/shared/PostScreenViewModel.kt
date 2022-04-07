@@ -101,8 +101,6 @@ abstract class PostScreenViewModel(
   val mediaViewerScrollEvents: SharedFlow<Pair<HttpUrl, PostDescriptor>>
     get() = mediaViewerPostListScroller.scrollEventFlow
 
-  val postListTouchingBottom = MutableStateFlow(false)
-
   val currentlyOpenedCatalogFlow: StateFlow<CatalogDescriptor?>
     get() = chanThreadManager.currentlyOpenedCatalogFlow
   val currentlyOpenedThreadFlow: StateFlow<ThreadDescriptor?>
@@ -141,7 +139,6 @@ abstract class PostScreenViewModel(
     updatePostsParsedOnceJob = null
 
     _postsFullyParsedOnceFlow.emit(false)
-    postListTouchingBottom.value = false
   }
 
   suspend fun onCatalogLoadingStart(catalogDescriptor: CatalogDescriptor?, loadOptions: LoadOptions) {
@@ -163,7 +160,6 @@ abstract class PostScreenViewModel(
     updatePostsParsedOnceJob = null
 
     _postsFullyParsedOnceFlow.emit(false)
-    postListTouchingBottom.value = false
   }
 
   suspend fun onThreadLoadingEnd(threadDescriptor: ThreadDescriptor) {
