@@ -16,7 +16,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
-import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadStatusCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -130,6 +130,7 @@ class ThreadScreenViewModel(
 
       val startTime = SystemClock.elapsedRealtime()
       logcat { "refresh($threadDescriptor)" }
+      threadScreenState.lastLoadErrorState.value = null
 
       val postLoadResultMaybe = chanThreadManager.loadThread(threadDescriptor)
       if (postLoadResultMaybe.isFailure) {
@@ -137,10 +138,11 @@ class ThreadScreenViewModel(
         logcatError { "refresh($threadDescriptor) error=${error.asLog()}" }
 
         threadAutoUpdater.stopAutoUpdaterLoop()
+
+        threadScreenState.lastLoadErrorState.value = error
         threadScreenState.threadCellDataState.value = formatThreadCellData(
           postLoadResult = null,
-          prevCellDataState = prevCellDataState,
-          lastLoadError = error
+          prevThreadStatusCellData = prevCellDataState
         )
 
         onRefreshFinished?.invoke()
@@ -181,16 +183,15 @@ class ThreadScreenViewModel(
               threadDescriptor = threadDescriptor,
               postLoadResult = postLoadResult
             )
+
+            threadScreenState.threadCellDataState.value = formatThreadCellData(
+              postLoadResult = postLoadResult,
+              prevThreadStatusCellData = prevCellDataState
+            )
           } finally {
             withContext(Dispatchers.Main) { onRefreshFinished?.invoke() }
           }
         }
-      )
-
-      threadScreenState.threadCellDataState.value = formatThreadCellData(
-        postLoadResult = postLoadResult,
-        prevCellDataState = prevCellDataState,
-        lastLoadError = null
       )
 
       if (postLoadResult.isNotEmpty()) {
@@ -239,6 +240,7 @@ class ThreadScreenViewModel(
       null
     }
 
+    postScreenState.lastLoadErrorState.value = null
     onThreadLoadingStart(threadDescriptor, loadOptions)
 
     if (threadDescriptor != null) {
@@ -259,7 +261,9 @@ class ThreadScreenViewModel(
       logcatError { "loadCatalog() error=${error.asLog()}" }
 
       threadAutoUpdater.stopAutoUpdaterLoop()
+      threadScreenState.lastLoadErrorState.value = error
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
 
@@ -328,8 +332,7 @@ class ThreadScreenViewModel(
 
     postScreenState.threadCellDataState.value = formatThreadCellData(
       postLoadResult = postLoadResult,
-      prevCellDataState = prevCellDataState,
-      lastLoadError = null
+      prevThreadStatusCellData = prevCellDataState
     )
 
     parseRemainingPostsAsync(
@@ -435,26 +438,24 @@ class ThreadScreenViewModel(
 
   private fun formatThreadCellData(
     postLoadResult: PostsLoadResult?,
-    prevCellDataState: ThreadCellData?,
-    lastLoadError: Throwable?
-  ): ThreadCellData {
+    prevThreadStatusCellData: ThreadStatusCellData?,
+  ): ThreadStatusCellData {
     val originalPostData = postLoadResult
       ?.firstOrNull { postData -> postData is OriginalPostData } as? OriginalPostData
 
-    val totalReplies = originalPostData?.threadRepliesTotal ?: prevCellDataState?.totalReplies ?: 0
-    val totalImages = originalPostData?.threadImagesTotal ?: prevCellDataState?.totalImages ?: 0
-    val totalPosters = originalPostData?.threadPostersTotal ?: prevCellDataState?.totalPosters ?: 0
-    val archived = originalPostData?.archived ?: prevCellDataState?.archived
-    val closed = originalPostData?.closed ?: prevCellDataState?.closed
-    val sticky = originalPostData?.sticky ?: prevCellDataState?.sticky
-    val bumpLimit = originalPostData?.bumpLimit ?: prevCellDataState?.bumpLimit
-    val imageLimit = originalPostData?.imageLimit ?: prevCellDataState?.imageLimit
+    val totalReplies = originalPostData?.threadRepliesTotal ?: prevThreadStatusCellData?.totalReplies ?: 0
+    val totalImages = originalPostData?.threadImagesTotal ?: prevThreadStatusCellData?.totalImages ?: 0
+    val totalPosters = originalPostData?.threadPostersTotal ?: prevThreadStatusCellData?.totalPosters ?: 0
+    val archived = originalPostData?.archived ?: prevThreadStatusCellData?.archived
+    val closed = originalPostData?.closed ?: prevThreadStatusCellData?.closed
+    val sticky = originalPostData?.sticky ?: prevThreadStatusCellData?.sticky
+    val bumpLimit = originalPostData?.bumpLimit ?: prevThreadStatusCellData?.bumpLimit
+    val imageLimit = originalPostData?.imageLimit ?: prevThreadStatusCellData?.imageLimit
 
-    return ThreadCellData(
+    return ThreadStatusCellData(
       totalReplies = totalReplies,
       totalImages = totalImages,
       totalPosters = totalPosters,
-      lastLoadError = lastLoadError,
       archived = archived,
       closed = closed,
       sticky = sticky,

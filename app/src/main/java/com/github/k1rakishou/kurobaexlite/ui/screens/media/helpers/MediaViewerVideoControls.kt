@@ -21,8 +21,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
@@ -169,9 +169,10 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
           .kurobaClickable(bounded = false, onClick = { videoMediaState.toggleHwDec() }),
         contentAlignment = Alignment.Center
       ) {
+        val alpha = if (videoStartedPlaying) 1f else ContentAlpha.disabled
+
         Text(
-          modifier = Modifier
-            .alpha(if (videoStartedPlaying) 1f else ContentAlpha.disabled),
+          modifier = Modifier.graphicsLayer { this.alpha = alpha },
           text = hwDecText,
           color = androidx.compose.ui.graphics.Color.White,
           fontSize = 16.sp,

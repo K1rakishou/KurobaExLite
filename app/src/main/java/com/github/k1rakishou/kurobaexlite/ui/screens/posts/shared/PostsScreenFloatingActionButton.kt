@@ -14,7 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
@@ -43,8 +43,12 @@ fun BoxScope.PostsScreenFloatingActionButton(
     return
   }
 
-  val toolbarVisibilityInfo = uiInfoManager.getOrCreateToolbarVisibilityInfo(screenKey)
   val insets = LocalWindowInsets.current
+
+
+  val toolbarVisibilityInfo = remember(key1 = screenKey) {
+    uiInfoManager.getOrCreateToolbarVisibilityInfo(screenKey)
+  }
 
   var activeSnackbarsCount by remember { mutableStateOf(0) }
   val screensUsingSearch by toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
@@ -92,7 +96,7 @@ fun BoxScope.PostsScreenFloatingActionButton(
   KurobaFloatingActionButton(
     modifier = Modifier
       .align(Alignment.BottomEnd)
-      .alpha(toolbarAlpha),
+      .graphicsLayer { this.alpha = toolbarAlpha },
     iconDrawableId = R.drawable.ic_baseline_create_24,
     horizOffset = -(horizOffset),
     vertOffset = -(insets.bottom + vertOffset),

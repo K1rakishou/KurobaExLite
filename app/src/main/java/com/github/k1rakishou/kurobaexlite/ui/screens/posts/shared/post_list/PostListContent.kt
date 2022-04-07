@@ -33,8 +33,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -115,6 +115,17 @@ internal fun PostListContent(
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
   val lazyListState = rememberLazyListState()
 
+  fun processPostListScrollEventFunc() {
+    processPostListScrollEvent(
+      postsScreenViewModel = postsScreenViewModel,
+      postListAsync = postListAsync,
+      lazyListState = lazyListState,
+      chanDescriptor = chanDescriptor,
+      orientation = postListOptions.orientation,
+      onPostListTouchingTopOrBottomStateChanged = onPostListTouchingTopOrBottomStateChanged
+    )
+  }
+
   if (postListAsync is AsyncData.Data) {
     LaunchedEffect(
       key1 = chanDescriptor,
@@ -142,14 +153,7 @@ internal fun PostListContent(
             scrollOffset = 0
           )
 
-          processPostListScrollEvent(
-            postsScreenViewModel = postsScreenViewModel,
-            postListAsync = postListAsync,
-            lazyListState = lazyListState,
-            chanDescriptor = chanDescriptor,
-            orientation = postListOptions.orientation,
-            onPostListTouchingTopOrBottomStateChanged = onPostListTouchingTopOrBottomStateChanged
-          )
+          processPostListScrollEventFunc()
         }
       })
 
@@ -198,19 +202,17 @@ internal fun PostListContent(
       postsScreenViewModel.refresh()
     },
     onPostListScrolled = { scrollDelta ->
-      processPostListScrollEvent(
-        postsScreenViewModel = postsScreenViewModel,
-        postListAsync = postListAsync,
-        lazyListState = lazyListState,
-        chanDescriptor = chanDescriptor,
-        orientation = postListOptions.orientation,
-        onPostListTouchingTopOrBottomStateChanged = onPostListTouchingTopOrBottomStateChanged
-      )
-
+      processPostListScrollEventFunc()
       onPostListScrolled(scrollDelta)
     },
     onPostListDragStateChanged = onPostListDragStateChanged,
-    onFastScrollerDragStateChanged = onFastScrollerDragStateChanged,
+    onFastScrollerDragStateChanged = { isDraggingFastScroller ->
+      if (!isDraggingFastScroller) {
+        processPostListScrollEventFunc()
+      }
+
+      onFastScrollerDragStateChanged(isDraggingFastScroller)
+    },
     onPostImageClicked = onPostImageClicked,
     emptyContent = emptyContent,
     loadingContent = loadingContent,
@@ -376,7 +378,6 @@ private fun PostListInternal(
       with(lazyItemScope) {
         ThreadStatusCell(
           padding = cellsPadding,
-          lazyListState = lazyListState,
           threadScreenViewModel = postsScreenViewModel,
           onThreadStatusCellClicked = onThreadStatusCellClicked
         )
@@ -808,7 +809,7 @@ private fun DisplayCatalogOrThreadNotSelectedPlaceholder(isCatalogMode: Boolean)
   InsetsAwareBox(
     modifier = Modifier
       .fillMaxSize()
-      .alpha(alphaAnimation),
+      .graphicsLayer { this.alpha = alphaAnimation },
     additionalPaddings = additionalPaddings,
     contentAlignment = Alignment.Center
   ) {

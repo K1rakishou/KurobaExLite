@@ -22,6 +22,10 @@ class ToolbarVisibilityInfo {
   val fastScrollerDragState: StateFlow<Boolean>
     get() = _fastScrollerDragState.asStateFlow()
 
+  private val _hasLoadError = MutableStateFlow(false)
+  val hasLoadError: StateFlow<Boolean>
+    get() = _hasLoadError.asStateFlow()
+
   private val _childScreensUsingSearch = MutableStateFlow(mutableSetOf<ScreenKey>())
   val childScreensUsingSearch: StateFlow<Set<ScreenKey>>
     get() = _childScreensUsingSearch.asStateFlow()
@@ -31,12 +35,14 @@ class ToolbarVisibilityInfo {
     postListTouchingTopOrBottomState: Boolean? = null,
     postListDragState: Boolean? = null,
     fastScrollerDragState: Boolean? = null,
+    hasLoadError: Boolean? = null,
     childScreenSearchInfo: ChildScreenSearchInfo? = null
   ) {
     postListScrollState?.let { _postListScrollState.value = it }
     postListTouchingTopOrBottomState?.let { _postListTouchingTopOrBottomState.value = it }
     postListDragState?.let { _postListDragState.value = it }
     fastScrollerDragState?.let { _fastScrollerDragState.value = it }
+    hasLoadError?.let { _hasLoadError.value = it }
 
     childScreenSearchInfo?.let { screenSearchInfo ->
       val prevValue = _childScreensUsingSearch.value.toMutableSet()

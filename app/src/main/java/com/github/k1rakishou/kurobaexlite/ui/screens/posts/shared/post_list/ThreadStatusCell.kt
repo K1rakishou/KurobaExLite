@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -42,12 +41,12 @@ internal val threadStatusCellKey = "thread_status_cell"
 @Composable
 internal fun LazyItemScope.ThreadStatusCell(
   padding: PaddingValues,
-  lazyListState: LazyListState,
   threadScreenViewModel: ThreadScreenViewModel,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val threadStatusCellDataFromState by threadScreenViewModel.postScreenState.threadCellDataState.collectAsState()
+  val lastLoadError by threadScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
   val chanDescriptor = threadScreenViewModel.postScreenState.chanDescriptor
 
   val threadStatusCellDataUpdatedMut by rememberUpdatedState(newValue = threadStatusCellDataFromState)
@@ -157,8 +156,8 @@ internal fun LazyItemScope.ThreadStatusCell(
           append(threadStatusText)
         }
 
-        if (threadStatusCellDataUpdated.lastLoadError != null) {
-          val lastLoadErrorText = threadStatusCellDataUpdated.errorMessage(context)
+        if (lastLoadError != null) {
+          val lastLoadErrorText = threadStatusCellDataUpdated.errorMessage(context, lastLoadError)
 
           append("\n")
           append(lastLoadErrorText)
@@ -181,8 +180,8 @@ internal fun LazyItemScope.ThreadStatusCell(
       }
     }
 
-    val combinedPaddings = remember(key1 = threadStatusCellDataUpdated.lastLoadError) {
-      val endPadding = if (threadStatusCellDataUpdated.lastLoadError != null) {
+    val combinedPaddings = remember(key1 = lastLoadError) {
+      val endPadding = if (lastLoadError != null) {
         fabSize + fabEndOffset
       } else {
         0.dp

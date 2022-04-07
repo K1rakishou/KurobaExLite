@@ -298,6 +298,16 @@ class UiInfoManager(
     toolbarVisibilityInfo.update(childScreenSearchInfo = childScreenSearchInfo)
   }
 
+  // TODO(KurobaEx): 
+  fun onLoadingErrorUpdatedOrRemoved(screenKey: ScreenKey, hasLoadError: Boolean) {
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    toolbarVisibilityInfo.update(hasLoadError = hasLoadError)
+  }
+
   fun isDrawerOpenedOrOpening(): Boolean {
     return when (_drawerVisibilityFlow.value) {
       is DrawerVisibility.Drag -> true

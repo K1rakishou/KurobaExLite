@@ -5,7 +5,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
-import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadStatusCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -15,11 +15,12 @@ import kotlinx.coroutines.flow.asStateFlow
 
 abstract class PostScreenState {
   val postsAsyncDataState = MutableStateFlow<AsyncData<PostsState>>(AsyncData.Uninitialized)
-  val threadCellDataState = MutableStateFlow<ThreadCellData?>(null)
+  val threadCellDataState = MutableStateFlow<ThreadStatusCellData?>(null)
   val searchQueryFlow = MutableStateFlow<String?>(null)
 
   val lastViewedPostDescriptorForScrollRestoration = MutableStateFlow<PostDescriptor?>(null)
   val lastViewedPostDescriptorForIndicator = MutableStateFlow<PostDescriptor?>(null)
+  val lastLoadErrorState = MutableStateFlow<Throwable?>(null)
 
   private val _chanDescriptorFlow = MutableStateFlow<ChanDescriptor?>(null)
   val chanDescriptorFlow: StateFlow<ChanDescriptor?>

@@ -107,6 +107,7 @@ class CatalogScreenViewModel(
     }
 
     val startTime = SystemClock.elapsedRealtime()
+    postScreenState.lastLoadErrorState.value = null
     onCatalogLoadingStart(catalogDescriptor, loadOptions)
 
     val postsLoadResultMaybe = if (loadOptions.loadFromNetwork || catalogDescriptor == null) {
@@ -124,6 +125,7 @@ class CatalogScreenViewModel(
       val error = postsLoadResultMaybe.exceptionOrThrow()
       logcatError { "loadCatalog() error=${error.asLog()}" }
 
+      catalogScreenState.lastLoadErrorState.value = error
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()

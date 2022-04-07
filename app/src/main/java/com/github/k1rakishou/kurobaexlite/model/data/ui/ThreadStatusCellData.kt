@@ -14,7 +14,7 @@ import java.util.concurrent.CancellationException
 import javax.net.ssl.SSLException
 import org.apache.http.conn.ConnectTimeoutException
 
-data class ThreadCellData(
+data class ThreadStatusCellData(
   val totalReplies: Int = 0,
   val totalImages: Int = 0,
   val totalPosters: Int = 0,
@@ -22,11 +22,10 @@ data class ThreadCellData(
   val closed: Boolean? = null,
   val sticky: Boolean? = null,
   val bumpLimit: Boolean? = null,
-  val imageLimit: Boolean? = null,
-  val lastLoadError: Throwable? = null
+  val imageLimit: Boolean? = null
 ) {
 
-  fun errorMessage(context: Context): String {
+  fun errorMessage(context: Context, lastLoadError: Throwable?): String {
     val error = requireNotNull(lastLoadError) { "lastLoadError is null" }
 
     return when (error) {

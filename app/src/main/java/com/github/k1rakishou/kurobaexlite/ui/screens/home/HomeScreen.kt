@@ -12,11 +12,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -247,7 +247,10 @@ class HomeScreen(
         Box(
           modifier = Modifier
             .fillMaxSize()
-            .scale(scale)
+            .graphicsLayer {
+              this.scaleY = scale
+              this.scaleX = scale
+            }
             .consumeClicks(consume = transitionIsProgress)
         ) {
           childScreen.Content()

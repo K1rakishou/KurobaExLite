@@ -28,8 +28,8 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -187,7 +187,7 @@ class MediaViewerScreen(
           modifier = Modifier
             .fillMaxWidth()
             .align(Alignment.BottomCenter)
-            .alpha(alphaAnimated)
+            .graphicsLayer { this.alpha = alphaAnimated }
             .background(bgColor)
         ) {
           MediaViewerScreenVideoControls(videoMediaState = videoMediaState)

@@ -18,7 +18,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -56,7 +55,10 @@ fun HomeScreenToolbarContainer(
     return
   }
 
-  val toolbarVisibilityInfo = uiInfoManager.getOrCreateToolbarVisibilityInfo(currentScreenKey)
+  val toolbarVisibilityInfo = remember(key1 = currentScreenKey) {
+    uiInfoManager.getOrCreateToolbarVisibilityInfo(currentScreenKey)
+  }
+
   val currentPage = pagerState.currentPage.coerceIn(0, childScreens.lastIndex)
   val targetPage = pagerState.targetPage.coerceIn(0, childScreens.lastIndex)
   val animationProgress = pagerState.currentPageOffset
@@ -116,7 +118,7 @@ fun HomeScreenToolbarContainer(
     modifier = Modifier
       .fillMaxWidth()
       .height(toolbarTotalHeight)
-      .alpha(toolbarAlpha)
+      .graphicsLayer { this.alpha = toolbarAlpha }
       .background(chanTheme.primaryColorCompose)
       .consumeClicks()
   ) {

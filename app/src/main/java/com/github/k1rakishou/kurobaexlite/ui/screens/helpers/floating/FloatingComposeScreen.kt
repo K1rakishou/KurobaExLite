@@ -15,7 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -83,7 +83,6 @@ abstract class FloatingComposeScreen(
       ) {
         val maxWidthDp = maxAvailableWidth()
         val maxHeightDp = maxAvailableHeight()
-
         val alpha by cardAlphaState
 
         KurobaComposeCardView(
@@ -91,7 +90,7 @@ abstract class FloatingComposeScreen(
             .wrapContentSize()
             .widthIn(max = maxWidthDp)
             .heightIn(max = maxHeightDp)
-            .alpha(alpha)
+            .graphicsLayer { this.alpha = alpha }
             .consumeClicks()
         ) {
           FloatingContent()
