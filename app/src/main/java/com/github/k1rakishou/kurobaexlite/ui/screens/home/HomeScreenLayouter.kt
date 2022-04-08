@@ -84,7 +84,7 @@ class HomeScreenLayouter(
           return splitScreens
         }
 
-        val screens = portraitScreens.toMutableList()
+        val screens = splitScreens.toMutableList()
         screens.add(screens.removeAt(0))
 
         return screens

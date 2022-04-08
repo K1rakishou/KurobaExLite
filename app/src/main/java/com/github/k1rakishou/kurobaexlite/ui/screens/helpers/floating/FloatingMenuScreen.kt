@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating
 
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -75,8 +76,14 @@ class FloatingMenuScreen(
 
   @Composable
   override fun FloatingContent() {
+    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientation = orientationMut
+    if (orientation == null) {
+      return
+    }
+
     val availableWidth = with(LocalDensity.current) {
-      if (uiInfoManager.isPortraitOrientation) {
+      if (orientation == Configuration.ORIENTATION_PORTRAIT) {
         (maxAvailableWidthPx() / 1.35f).toDp()
       } else {
         (maxAvailableWidthPx() / 2f).toDp()

@@ -46,7 +46,7 @@ class UiInfoManager(
 
   val isTablet by lazy { resources.getBoolean(R.bool.isTablet) }
   val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
-  val currentOrientation = MutableStateFlow<Int>(Configuration.ORIENTATION_PORTRAIT)
+  val currentOrientation = MutableStateFlow<Int?>(null)
 
   val orientations = arrayOf(
     Configuration.ORIENTATION_PORTRAIT,
@@ -60,9 +60,6 @@ class UiInfoManager(
   val maxParentHeight: Int
     get() = _maxParentHeight
 
-  val isPortraitOrientation: Boolean
-    get() = currentOrientation.value == Configuration.ORIENTATION_PORTRAIT
-
   val composeDensity by lazy {
     Density(
       appContext.resources.displayMetrics.density,
@@ -75,18 +72,6 @@ class UiInfoManager(
     get() = _drawerVisibilityFlow.asStateFlow()
 
   private val _currentPageFlow = mutableMapOf<MainUiLayoutMode, MutableStateFlow<CurrentPage>>()
-
-  fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {
-    return _currentPageFlow[uiLayoutMode]!!
-  }
-
-  fun currentPage(): CurrentPage? {
-    return _currentPageFlow[currentUiLayoutModeState.value]?.value
-  }
-
-  fun currentPage(uiLayoutMode: MainUiLayoutMode): CurrentPage? {
-    return _currentPageFlow[uiLayoutMode]?.value
-  }
 
   val defaultHorizPadding by lazy { if (isTablet) 12.dp else 8.dp }
   val defaultVertPadding by lazy { if (isTablet) 10.dp else 6.dp }
@@ -113,17 +98,16 @@ class UiInfoManager(
     get() = _bookmarksScreenOnLeftSide.asStateFlow()
 
   suspend fun init() {
-    if (!initialized.compareAndSet(false, true)) {
-      logcat { "UiInfoManager already initialized" }
-      return
-    }
-
     _textTitleSizeSp.value = appSettings.textTitleSizeSp.read().sp
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
     _homeScreenLayoutType.value = appSettings.layoutType.read()
     _bookmarksScreenOnLeftSide.value = appSettings.bookmarksScreenOnLeftSide.read()
+
+    if (!initialized.compareAndSet(false, true)) {
+      return
+    }
 
     coroutineScope.launch {
       combine(
@@ -171,6 +155,22 @@ class UiInfoManager(
     }
 
     logcat { "UiInfoManager initialization finished" }
+  }
+
+  fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {
+    return _currentPageFlow[uiLayoutMode]!!
+  }
+
+  fun currentPage(): CurrentPage? {
+    return _currentPageFlow[currentUiLayoutModeState.value]?.value
+  }
+
+  fun currentPage(uiLayoutMode: MainUiLayoutMode): CurrentPage? {
+    return _currentPageFlow[uiLayoutMode]?.value
+  }
+
+  fun clearCurrentPageFlow() {
+    _currentPageFlow.clear()
   }
 
   fun updateMaxParentSize(availableWidth: Int, availableHeight: Int) {
@@ -298,7 +298,7 @@ class UiInfoManager(
     toolbarVisibilityInfo.update(childScreenSearchInfo = childScreenSearchInfo)
   }
 
-  // TODO(KurobaEx): 
+  // TODO(KurobaEx):
   fun onLoadingErrorUpdatedOrRemoved(screenKey: ScreenKey, hasLoadError: Boolean) {
     val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
       key = screenKey,
@@ -344,8 +344,23 @@ class UiInfoManager(
 
   private suspend fun updateLayoutModeAndCurrentPage(
     layoutType: LayoutType,
-    orientation: Int
+    orientation: Int?
   ) {
+    if (orientation == null) {
+      val prevLayoutMode = currentUiLayoutModeState.value
+
+      if (prevLayoutMode == null) {
+        _currentPageFlow.clear()
+      } else {
+        _currentPageFlow.remove(prevLayoutMode)
+      }
+
+      currentUiLayoutModeState.value = null
+      return
+    }
+
+    check(orientation in orientations) { "Unexpected orientation: ${orientation}" }
+
     val uiLayoutMode = when (layoutType) {
       LayoutType.Auto -> {
         when {
@@ -388,6 +403,6 @@ enum class MainUiLayoutMode {
 }
 
 private data class LayoutChangingSettings(
-  val orientation: Int,
+  val orientation: Int?,
   val homeScreenLayoutType: LayoutType
 )

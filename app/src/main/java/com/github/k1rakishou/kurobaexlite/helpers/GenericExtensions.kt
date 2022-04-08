@@ -3,7 +3,12 @@ package com.github.k1rakishou.kurobaexlite.helpers
 import android.app.Activity
 import android.view.MotionEvent
 import android.view.View
+import androidx.activity.ComponentActivity
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.AnnotatedString
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import java.io.InterruptedIOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -542,4 +547,9 @@ fun View.emulateMotionEvent(downTime: Long, eventTime: Long, action: Int, x: Flo
   val motionEvent = MotionEvent.obtain(downTime, eventTime, action, x, y, 0)
   (context as Activity).dispatchTouchEvent(motionEvent)
   motionEvent.recycle()
+}
+
+@Composable
+inline fun <reified T : ViewModel> ComponentActivity.rememberViewModel(): T {
+  return remember { ViewModelProvider(this).get(T::class.java) }
 }

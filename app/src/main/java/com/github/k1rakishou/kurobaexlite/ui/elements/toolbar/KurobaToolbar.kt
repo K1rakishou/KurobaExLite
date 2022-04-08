@@ -21,7 +21,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -33,8 +34,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.AnimateableStackContainer
+import com.github.k1rakishou.kurobaexlite.ui.helpers.AnimateableStackContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -46,7 +49,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 
-private const val searchQuery = "search_query"
+private const val searchQueryKey = "search_query"
 
 enum class PostsScreenToolbarType(val id: Int) {
   Normal(0),
@@ -158,6 +161,7 @@ fun KurobaToolbar(
         PostsScreenToolbarType.Search -> {
           PostsScreenSearchToolbar(
             parentBgColor = parentBgColor,
+            stackContainerState = stackContainerState,
             onSearchQueryUpdated = onSearchQueryUpdated,
             onCloseSearchClicked = { stackContainerState.removeTop(withAnimation = true) }
           )
@@ -318,11 +322,30 @@ private fun leftToolbarPartBuilder(
 @Composable
 private fun BoxScope.PostsScreenSearchToolbar(
   parentBgColor: Color,
+  stackContainerState: AnimateableStackContainerState<PostsScreenToolbarType>,
   onSearchQueryUpdated: ((String?) -> Unit)?,
   onCloseSearchClicked: () -> Unit
 ) {
   val keyboardController = LocalSoftwareKeyboardController.current
-  var searchQuery by rememberSaveable(key = searchQuery) { mutableStateOf<String>("") }
+  val coroutineScope = rememberCoroutineScope()
+  val searchDebouncer = remember { DebouncingCoroutineExecutor(coroutineScope) }
+
+  var searchQuery by remember {
+    val prevSearchQuery = stackContainerState.readData(searchQueryKey) ?: ""
+    return@remember mutableStateOf<String>(prevSearchQuery)
+  }
+
+  DisposableEffect(
+    key1 = Unit,
+    effect = {
+      onSearchQueryUpdated?.invoke(searchQuery)
+
+      onDispose {
+        onSearchQueryUpdated?.invoke(null)
+        keyboardController?.hide()
+      }
+    }
+  )
 
   KurobaToolbarLayout(
     leftPart = {
@@ -332,10 +355,13 @@ private fun BoxScope.PostsScreenSearchToolbar(
           .kurobaClickable(
             bounded = false,
             onClick = {
+              stackContainerState.removeData(searchQueryKey)
+
               if (searchQuery.isNotEmpty()) {
                 searchQuery = ""
                 onSearchQueryUpdated?.invoke("")
               } else {
+                searchDebouncer.stop()
                 onSearchQueryUpdated?.invoke(null)
                 onCloseSearchClicked()
               }
@@ -349,16 +375,6 @@ private fun BoxScope.PostsScreenSearchToolbar(
       )
     },
     middlePart = {
-      LaunchedEffect(
-        key1 = Unit,
-        block = {
-          if (searchQuery.isEmpty()) {
-            return@LaunchedEffect
-          }
-
-          onSearchQueryUpdated?.invoke(searchQuery)
-        })
-
       KurobaComposeCustomTextField(
         modifier = Modifier
           .wrapContentHeight()
@@ -370,21 +386,14 @@ private fun BoxScope.PostsScreenSearchToolbar(
         onValueChange = { updatedQuery ->
           if (searchQuery != updatedQuery) {
             searchQuery = updatedQuery
-            onSearchQueryUpdated?.invoke(updatedQuery)
+            stackContainerState.storeData(searchQueryKey, updatedQuery)
+
+            searchDebouncer.post(timeout = 125L) {
+              onSearchQueryUpdated?.invoke(updatedQuery)
+            }
           }
         }
       )
-
-      DisposableEffect(
-        key1 = Unit,
-        effect = {
-          onSearchQueryUpdated?.invoke("")
-
-          onDispose {
-            onSearchQueryUpdated?.invoke(null)
-            keyboardController?.hide()
-          }
-        })
     },
     rightPart = {
     }

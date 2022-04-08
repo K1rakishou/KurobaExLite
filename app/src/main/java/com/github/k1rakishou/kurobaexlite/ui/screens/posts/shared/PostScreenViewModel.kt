@@ -10,7 +10,6 @@ import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
-import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -75,8 +74,6 @@ abstract class PostScreenViewModel(
   protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
   protected val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   protected val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
-
-  private val searchDebouncer = DebouncingCoroutineExecutor(viewModelScope)
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
@@ -473,28 +470,29 @@ abstract class PostScreenViewModel(
     chanDescriptor: ChanDescriptor,
     scrollToPost: PostDescriptor?
   ) {
-    logcat(tag = TAG) { "restoreScrollPosition($chanDescriptor, $scrollToPost)" }
-
     if (scrollToPost != null) {
       val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
-        ?: return
+        ?: emptyList()
 
       val index = posts
         .indexOfLast { postDataState -> postDataState.value.postDescriptor == scrollToPost }
 
       logcat(tag = TAG) {
         "restoreScrollPosition($chanDescriptor, $scrollToPost) " +
-          "scrollToPost: ${scrollToPost} restoring to index: $index"
+          "scrollToPost: ${scrollToPost}, postsCount: ${posts.size}, " +
+          "index: $index"
       }
 
-      uiInfoManager.orientations.forEach { orientation ->
-        val newLastRememberedPosition = LazyColumnRememberedPosition(
-          orientation = orientation,
-          index = index,
-          offset = 0
-        )
+      if (index >= 0) {
+        uiInfoManager.orientations.forEach { orientation ->
+          val newLastRememberedPosition = LazyColumnRememberedPosition(
+            orientation = orientation,
+            index = index,
+            offset = 0
+          )
 
-        _scrollRestorationEventFlow.emit(newLastRememberedPosition)
+          _scrollRestorationEventFlow.emit(newLastRememberedPosition)
+        }
       }
 
       return
@@ -520,10 +518,11 @@ abstract class PostScreenViewModel(
 
       logcat(tag = TAG) {
         "restoreScrollPosition($chanDescriptor, $scrollToPost) " +
-          "lastViewedPostDescriptor: ${lastViewedPostDescriptor}, restoring to index: $index"
+          "lastViewedPostDescriptor: ${lastViewedPostDescriptor}, " +
+          "postsCount: ${posts.size}, index: $index"
       }
 
-      if (index > 0) {
+      if (index >= 0) {
         uiInfoManager.orientations.forEach { orientation ->
           val newLastRememberedPosition = LazyColumnRememberedPosition(
             orientation = orientation,
@@ -570,9 +569,7 @@ abstract class PostScreenViewModel(
   }
 
   fun updateSearchQuery(searchQuery: String?) {
-    searchDebouncer.post(timeout = 125L) {
-      postScreenState.onSearchQueryUpdated(searchQuery)
-    }
+    postScreenState.onSearchQueryUpdated(searchQuery)
   }
 
   suspend fun restoreScrollPosition() {

@@ -188,6 +188,12 @@ class CatalogScreen(
   private fun BoxScope.CatalogPostListScreen() {
     val windowInsets = LocalWindowInsets.current
 
+    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientation = orientationMut
+    if (orientation == null) {
+      return
+    }
+
     val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
@@ -198,7 +204,6 @@ class CatalogScreen(
     val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val orientation by uiInfoManager.currentOrientation.collectAsState()
 
     val postListOptions by remember {
       derivedStateOf {

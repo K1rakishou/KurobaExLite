@@ -12,8 +12,8 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.rememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.removeIfKt
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
@@ -64,7 +64,7 @@ fun <T> rememberAnimateableStackContainerState(
   componentActivity: ComponentActivity,
   initialValues: List<StackContainerElementWrapper<T>> = emptyList()
 ): AnimateableStackContainerState<T> {
-  val viewModel = remember { ViewModelProvider(componentActivity).get(AnimateableStackContainerViewModel::class.java) }
+  val viewModel = componentActivity.rememberViewModel<AnimateableStackContainerViewModel>()
 
   return viewModel.storage.getOrPut(
     key = screenKey,
@@ -274,7 +274,6 @@ class AnimateableStackContainerState<T>(
   private val _addedElementWrappers: SnapshotStateList<StackContainerAnimation<T>> = mutableStateListOf(),
   private val _animatingElements: SnapshotStateList<StackContainerAnimation<T>> = mutableStateListOf()
 ) {
-
   val addedElementWrappers: List<StackContainerElementWrapper<T>>
     get() = _addedElementWrappers.map { it.elementWrapper }
   val animatingElements: List<StackContainerAnimation<T>>
@@ -282,11 +281,25 @@ class AnimateableStackContainerState<T>(
   val addedElementsCount: Int
     get() = _addedElementWrappers.size
 
+  private val data = mutableMapOf<Any, Any?>()
+
   init {
     initialValues.forEach { initialValue ->
       _addedElementWrappers += StackContainerAnimation.Set(initialValue)
       duplicateChecker.add(initialValue.key)
     }
+  }
+
+  fun storeData(key: Any, value: Any?) {
+    data[key] = value
+  }
+
+  fun removeData(key: Any) {
+    data.remove(key)
+  }
+
+  fun <T : Any?> readData(key: Any): T {
+    return data[key] as T
   }
 
   fun set(elementWrapper: StackContainerElementWrapper<T>) {

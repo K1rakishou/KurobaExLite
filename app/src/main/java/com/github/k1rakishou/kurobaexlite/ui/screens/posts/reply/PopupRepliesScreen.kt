@@ -72,9 +72,14 @@ class PopupRepliesScreen(
 
   @Composable
   override fun FloatingContent() {
+    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientation = orientationMut
+    if (orientation == null) {
+      return
+    }
+
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val orientation by uiInfoManager.currentOrientation.collectAsState()
     val postsAsyncDataState by popupRepliesScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
     val postListOptions by remember {

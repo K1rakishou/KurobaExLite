@@ -168,6 +168,12 @@ class ThreadScreen(
     val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
 
+    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientation = orientationMut
+    if (orientation == null) {
+      return
+    }
+
     val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
@@ -177,7 +183,6 @@ class ThreadScreen(
     val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val orientation by uiInfoManager.currentOrientation.collectAsState()
 
     val postListOptions by remember {
       derivedStateOf {

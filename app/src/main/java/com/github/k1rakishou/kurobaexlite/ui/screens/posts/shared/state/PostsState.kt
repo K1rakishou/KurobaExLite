@@ -42,7 +42,10 @@ class PostsState(
   }
 
   fun onSearchQueryUpdated(searchQuery: String?) {
-    if (searchQuery == searchQueryFlow.value || searchQuery.isNullOrEmpty()) {
+    val prevSearchQuery = searchQueryFlow.value
+    searchQueryFlow.value = searchQuery
+
+    if (searchQuery == prevSearchQuery || searchQuery.isNullOrEmpty()) {
       if (postsProcessed.size != allPosts.size) {
         postsProcessed.clear()
         postsProcessed.addAll(allPosts)
@@ -83,8 +86,6 @@ class PostsState(
 
     postsProcessed.clear()
     postsProcessed.addAll(matchedPostCellDataStates)
-
-    searchQueryFlow.value = searchQuery
   }
 
   /**

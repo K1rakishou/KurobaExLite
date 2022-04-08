@@ -211,8 +211,13 @@ class MediaViewerScreen(
       return
     }
 
+    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientation = orientationMut
+    if (orientation == null) {
+      return
+    }
+
     val context = LocalContext.current
-    val orientation by uiInfoManager.currentOrientation.collectAsState()
     val initialPageMut by mediaViewerScreenState.initialPage
     val imagesMut = mediaViewerScreenState.images
 

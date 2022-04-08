@@ -56,7 +56,13 @@ class HomeScreen(
   override fun Content() {
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
-    val orientation by uiInfoManager.currentOrientation.collectAsState()
+
+    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientation = orientationMut
+    if (orientation == null) {
+      return
+    }
+
     var uiInfoManagerInitialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(

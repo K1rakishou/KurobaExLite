@@ -68,8 +68,6 @@ class DebouncingCoroutineExecutor(
           }
 
           activeJob?.cancel()
-          activeJob = null
-
           activeJob = scope.launch {
             delay(payload.timeout)
 
