@@ -2,14 +2,14 @@
 buildscript {
     ext {
         kotlin_version = "1.6.10"
-        kotlin_coroutines_version = "1.6.0"
-        compose_version = "1.2.0-alpha06"
+        ksp = "1.6.10-1.0.2"
+        kotlin_coroutines_version = "1.6.1"
+        compose_version = "1.2.0-alpha07"
         koin_version = "3.1.5"
         okhttp = "4.9.2"
         moshi = "1.13.0"
         coil = "2.0.0-rc01"
         room = "2.4.2"
-        ksp = "1.6.10-1.0.2"
         joda_time = "2.10.10"
     }
     repositories {

@@ -175,7 +175,6 @@ android {
     }
     composeOptions {
         kotlinCompilerExtensionVersion compose_version
-        kotlinCompilerVersion compose_version
     }
     packagingOptions {
         resources {
