@@ -76,7 +76,7 @@ class BoardSelectionScreen(
       )
     }
 
-    navigationRouter.HandleBackPresses(screenKey = screenKey) {
+    navigationRouter.HandleBackPresses {
       popScreen()
     }
 

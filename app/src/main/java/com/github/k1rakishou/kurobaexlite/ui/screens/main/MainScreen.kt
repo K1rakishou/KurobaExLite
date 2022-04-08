@@ -1,15 +1,18 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.main
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RootRouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
@@ -31,46 +34,45 @@ class MainScreen(
     val insets = LocalWindowInsets.current
     val chanTheme = LocalChanTheme.current
 
+    val contentPadding = remember(
+      key1 = insets.left,
+      key2 = insets.right
+    ) { PaddingValues(start = insets.left, end = insets.right) }
+    var contentSize by remember { mutableStateOf(IntSize.Zero) }
+    val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
+
     Surface(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(contentPadding)
+        .onSizeChanged { size -> contentSize = size },
       color = chanTheme.backColorCompose
     ) {
-      val contentPadding = remember(key1 = insets.left, key2 = insets.right) {
-        PaddingValues(start = insets.left, end = insets.right)
-      }
-      val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
+      if (contentSize.width > 0 && contentSize.height > 0) {
+        val availableWidth = contentSize.width
+        val availableHeight = contentSize.height
 
-      BoxWithConstraints(
-        modifier = Modifier
-          .fillMaxSize()
-          .padding(contentPadding)
-      ) {
-        val availableWidth = with(LocalDensity.current) { maxWidth.toPx().toInt() }
-        val availableHeight = with(LocalDensity.current) { maxHeight.toPx().toInt() }
+        uiInfoManager.updateMaxParentSize(availableWidth, availableHeight)
 
-        if (availableWidth > 0 && availableHeight > 0) {
-          uiInfoManager.updateMaxParentSize(availableWidth, availableHeight)
+        PushScreen(
+          navigationRouter = navigationRouter,
+          composeScreenBuilder = {
+            HomeScreen(
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY.key)
+            )
+          }
+        )
 
-          PushScreen(
-            navigationRouter = navigationRouter,
-            composeScreenBuilder = {
-              HomeScreen(
-                componentActivity = componentActivity,
-                navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY.key)
-              )
-            }
-          )
+        RootRouterHost(navigationRouter)
 
-          RootRouterHost(screenKey, navigationRouter)
-
-          KurobaSnackbarContainer(
-            modifier = Modifier.fillMaxSize(),
-            screenKey = screenKey,
-            uiInfoManager = uiInfoManager,
-            snackbarManager = snackbarManager,
-            kurobaSnackbarState = kurobaSnackbarState
-          )
-        }
+        KurobaSnackbarContainer(
+          modifier = Modifier.fillMaxSize(),
+          screenKey = screenKey,
+          uiInfoManager = uiInfoManager,
+          snackbarManager = snackbarManager,
+          kurobaSnackbarState = kurobaSnackbarState
+        )
       }
     }
   }

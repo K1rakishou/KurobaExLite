@@ -149,7 +149,6 @@ class ThreadScreen(
   @Composable
   override fun Content() {
     RouterHost(
-      screenKey = screenKey,
       navigationRouter = navigationRouter,
       defaultScreen = { ThreadPostListScreenContent() },
       onBackPressed = { threadScreenViewModel.onBackPressed() }

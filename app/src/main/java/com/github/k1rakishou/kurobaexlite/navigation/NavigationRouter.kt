@@ -33,11 +33,11 @@ class NavigationRouter(
     get() = _intentsFlow.asSharedFlow()
 
   @Composable
-  fun HandleBackPresses(screenKey: ScreenKey, onBackPressed: suspend () -> Boolean) {
+  fun HandleBackPresses(onBackPressed: suspend () -> Boolean) {
     DisposableEffect(
       key1 = Unit,
       effect = {
-        val handler = object : OnBackPressHandler(screenKey) {
+        val handler = object : OnBackPressHandler() {
           override suspend fun onBackPressed(): Boolean {
             return onBackPressed()
           }
@@ -332,9 +332,7 @@ class NavigationRouter(
 
   }
 
-  abstract class OnBackPressHandler(
-    val screenKey: ScreenKey
-  ) {
+  abstract class OnBackPressHandler {
     abstract suspend fun onBackPressed(): Boolean
   }
 

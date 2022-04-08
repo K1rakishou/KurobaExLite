@@ -171,7 +171,6 @@ class CatalogScreen(
   @Composable
   override fun Content() {
     RouterHost(
-      screenKey = screenKey,
       navigationRouter = navigationRouter,
       defaultScreen = { CatalogPostListScreenContent() }
     )

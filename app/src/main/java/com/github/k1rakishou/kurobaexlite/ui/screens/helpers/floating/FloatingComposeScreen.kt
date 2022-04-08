@@ -48,11 +48,7 @@ abstract class FloatingComposeScreen(
 
   @Composable
   override fun Content() {
-    navigationRouter.HandleBackPresses(
-      screenKey = screenKey,
-      onBackPressed = { onBackPressed() }
-    )
-
+    navigationRouter.HandleBackPresses { onBackPressed() }
     CardContent()
   }
 
@@ -107,13 +103,14 @@ abstract class FloatingComposeScreen(
   @Composable
   open fun maxAvailableHeight(): Dp {
     val isTablet = uiInfoManager.isTablet
+    val maxParentHeight by uiInfoManager.maxParentHeightState
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {
         val maxHeight = if (isTablet) {
-          uiInfoManager.maxParentHeight - (uiInfoManager.maxParentHeight / 4)
+          maxParentHeight - (maxParentHeight / 4)
         } else {
-          uiInfoManager.maxParentHeight
+          maxParentHeight
         }
 
         return@remember maxHeight.toDp()
@@ -129,13 +126,14 @@ abstract class FloatingComposeScreen(
   @Composable
   open fun maxAvailableWidth(): Dp {
     val isTablet = uiInfoManager.isTablet
+    val maxParentWidth by uiInfoManager.maxParentHeightState
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {
         val maxWidth = if (isTablet) {
-          uiInfoManager.maxParentWidth - (uiInfoManager.maxParentWidth / 4)
+          maxParentWidth - (maxParentWidth / 4)
         } else {
-          uiInfoManager.maxParentWidth
+          maxParentWidth
         }
 
         return@remember maxWidth.toDp()

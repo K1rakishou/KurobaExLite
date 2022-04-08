@@ -5,19 +5,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenTransition
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 @Suppress("UnnecessaryVariable", "FoldInitializerAndIfToElvis")
 @Composable
 fun RootRouterHost(
-  screenKey: ScreenKey,
   rootNavigationRouter: NavigationRouter,
   onBackPressed: () -> Boolean = { false }
 ) {
-  rootNavigationRouter.HandleBackPresses(
-    screenKey = screenKey,
-    onBackPressed = onBackPressed
-  )
+  rootNavigationRouter.HandleBackPresses(onBackPressed)
 
   val screenUpdateTransactionState by rootNavigationRouter.screenUpdatesFlow.collectAsState()
   val screenUpdateTransaction = screenUpdateTransactionState
@@ -51,15 +46,11 @@ fun RootRouterHost(
 
 @Composable
 fun RouterHost(
-  screenKey: ScreenKey,
   navigationRouter: NavigationRouter,
   defaultScreen: @Composable () -> Unit,
   onBackPressed: () -> Boolean = { false }
 ) {
-  navigationRouter.HandleBackPresses(
-    screenKey = screenKey,
-    onBackPressed = onBackPressed
-  )
+  navigationRouter.HandleBackPresses(onBackPressed)
 
   val screenUpdateTransactionState by navigationRouter.screenUpdatesFlow.collectAsState()
   val screenUpdateTransaction = screenUpdateTransactionState

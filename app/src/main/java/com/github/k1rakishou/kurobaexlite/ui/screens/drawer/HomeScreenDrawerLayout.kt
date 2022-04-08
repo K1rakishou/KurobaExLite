@@ -26,7 +26,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import kotlinx.coroutines.delay
 
 
@@ -35,7 +34,6 @@ private val COLOR_VISIBLE = Color(0x80000000)
 
 @Composable
 fun HomeScreenDrawerLayout(
-  screenKey: ScreenKey,
   drawerWidth: Int,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
@@ -173,7 +171,6 @@ fun HomeScreenDrawerLayout(
         .absoluteOffset(offsetAnimated)
     ) {
       RouterHost(
-        screenKey = screenKey,
         navigationRouter = childRouter,
         defaultScreen = { drawerScreen.Content() }
       )

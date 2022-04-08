@@ -141,19 +141,16 @@ class HomeScreen(
       }
     )
 
-    navigationRouter.HandleBackPresses(
-      screenKey = screenKey,
-      onBackPressed = {
-        val currentPage = uiInfoManager.currentPage(mainUiLayoutMode)
+    navigationRouter.HandleBackPresses {
+      val currentPage = uiInfoManager.currentPage(mainUiLayoutMode)
 
-        if (currentPage != null && !homeChildScreens.isMainScreen(currentPage)) {
-          uiInfoManager.updateCurrentPage(homeChildScreens.mainScreenKey())
-          return@HandleBackPresses true
-        }
-
-        return@HandleBackPresses false
+      if (currentPage != null && !homeChildScreens.isMainScreen(currentPage)) {
+        uiInfoManager.updateCurrentPage(homeChildScreens.mainScreenKey())
+        return@HandleBackPresses true
       }
-    )
+
+      return@HandleBackPresses false
+    }
 
     HomeScreenContentActual(
       maxDrawerWidth = maxDrawerWidth,
@@ -284,7 +281,6 @@ class HomeScreen(
 
       if (drawerWidth > 0) {
         HomeScreenDrawerLayout(
-          screenKey = screenKey,
           drawerWidth = drawerWidth,
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,

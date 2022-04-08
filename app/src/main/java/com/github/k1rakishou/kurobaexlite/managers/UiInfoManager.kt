@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Point
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -53,12 +55,13 @@ class UiInfoManager(
     Configuration.ORIENTATION_LANDSCAPE
   )
 
-  private var _maxParentWidth: Int = 0
-  val maxParentWidth: Int
-    get() = _maxParentWidth
-  private var _maxParentHeight: Int = 0
-  val maxParentHeight: Int
-    get() = _maxParentHeight
+  private var _maxParentWidthState = mutableStateOf(0)
+  val maxParentWidthState: State<Int>
+    get() = _maxParentWidthState
+
+  private var _maxParentHeightState = mutableStateOf(0)
+  val maxParentHeightState: State<Int>
+    get() = _maxParentHeightState
 
   val composeDensity by lazy {
     Density(
@@ -169,13 +172,9 @@ class UiInfoManager(
     return _currentPageFlow[uiLayoutMode]?.value
   }
 
-  fun clearCurrentPageFlow() {
-    _currentPageFlow.clear()
-  }
-
   fun updateMaxParentSize(availableWidth: Int, availableHeight: Int) {
-    _maxParentWidth = availableWidth
-    _maxParentHeight = availableHeight
+    _maxParentWidthState.value = availableWidth
+    _maxParentHeightState.value = availableHeight
   }
 
   fun setLastTouchPosition(x: Float, y: Float) {

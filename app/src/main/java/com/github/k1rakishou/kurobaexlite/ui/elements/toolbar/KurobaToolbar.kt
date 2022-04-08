@@ -103,7 +103,7 @@ fun KurobaToolbar(
     )
   )
 
-  navigationRouter.HandleBackPresses(screenKey = screenKey) {
+  navigationRouter.HandleBackPresses {
     if (!canProcessBackEvent()) {
       return@HandleBackPresses false
     }

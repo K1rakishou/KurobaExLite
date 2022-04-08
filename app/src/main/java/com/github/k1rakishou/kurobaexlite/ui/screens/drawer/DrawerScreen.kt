@@ -38,7 +38,7 @@ class DrawerScreen(
       PaddingValues(top = insets.top, bottom = insets.bottom)
     }
 
-    navigationRouter.HandleBackPresses(screenKey = screenKey) {
+    navigationRouter.HandleBackPresses {
       if (uiInfoManager.isDrawerOpenedOrOpening()) {
         uiInfoManager.closeDrawer()
         return@HandleBackPresses true
