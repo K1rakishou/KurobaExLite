@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +44,7 @@ import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
@@ -61,6 +63,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingCo
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.progress.ProgressScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.DisplayLoadingProgressIndicator
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPostListScroller
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPreviewStrip
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerScreenVideoControls
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.DisplayFullImage
@@ -195,9 +198,32 @@ class MediaViewerScreen(
           Spacer(modifier = Modifier.height(insets.bottom))
         }
       }
+
+      val images = mediaViewerScreenState.images
+
+      if (pagerStateHolder != null && images.isNotNullNorEmpty()) {
+        Box(
+          modifier = Modifier
+            .wrapContentSize()
+            .align(Alignment.CenterEnd)
+        ) {
+          MediaViewerPreviewStrip(
+            pagerState = pagerStateHolder!!,
+            images = images,
+            uiInfoManager = uiInfoManager,
+            onPreviewClicked = { postImage ->
+              coroutineScope.launch {
+                images
+                  .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
+                  .takeIf { index -> index >= 0 }
+                  ?.let { scrollIndex -> pagerStateHolder?.scrollToPage(scrollIndex) }
+              }
+            }
+          )
+        }
+      }
     }
   }
-
 
   @OptIn(ExperimentalPagerApi::class)
   @Composable

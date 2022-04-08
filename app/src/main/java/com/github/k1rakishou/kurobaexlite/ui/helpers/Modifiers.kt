@@ -12,17 +12,17 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 
 private val DefaultPaddingValues = PaddingValues(0.dp)
 
 fun Modifier.simpleVerticalScrollbar(
   state: LazyListState,
-  chanTheme: ChanTheme,
+  thumbColor: Color,
   contentPadding: PaddingValues = DefaultPaddingValues,
   scrollbarWidth: Int,
   scrollbarMinHeight: Int,
@@ -31,7 +31,7 @@ fun Modifier.simpleVerticalScrollbar(
   return composed(
     inspectorInfo = debugInspectorInfo {
       name = "simpleVerticalScrollbar"
-      properties["chanTheme"] = chanTheme
+      properties["thumbColor"] = thumbColor
       properties["contentPadding"] = contentPadding
       properties["scrollbarWidth"] = scrollbarWidth
       properties["scrollbarMinHeight"] = scrollbarMinHeight
@@ -85,7 +85,7 @@ fun Modifier.simpleVerticalScrollbar(
           val offsetX = this.size.width - scrollbarWidth
 
           drawRect(
-            color = chanTheme.textColorHintCompose,
+            color = thumbColor,
             topLeft = Offset(offsetX, offsetY),
             size = Size(scrollbarWidth.toFloat(), scrollbarHeightAdjusted),
             alpha = alpha
