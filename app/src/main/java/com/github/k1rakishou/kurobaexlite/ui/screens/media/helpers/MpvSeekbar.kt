@@ -13,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.ContentAlpha
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -37,6 +38,7 @@ import kotlinx.coroutines.CancellationException
 @Composable
 fun MpvSeekbar(
   modifier: Modifier = Modifier,
+  enabled: Boolean = true,
   trackColor: Color,
   thumbColorNormal: Color,
   thumbColorPressed: Color,
@@ -50,12 +52,27 @@ fun MpvSeekbar(
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
   val density = LocalDensity.current
+  val disabledAlpha = ContentAlpha.disabled
   val slideOffset by slideOffsetState
 
   val trackHeightPx = with(density) { remember(trackHeightDp) { trackHeightDp.toPx() } }
   val thumbRadiusNormalPx = with(density) { remember(thumbRadiusNormalDp) { thumbRadiusNormalDp.toPx() } }
   val thumbRadiusPressedPx = with(density) { remember(thumbRadiusPressedDp) { thumbRadiusPressedDp.toPx() } }
-  val notLoadedYetPartColor = remember(trackColor) { trackColor.copy(alpha = 0.6f) }
+
+  val loadedPartColor = remember(trackColor, enabled) {
+    if (enabled) {
+      trackColor
+    } else {
+      trackColor.copy(alpha = disabledAlpha)
+    }
+  }
+  val notLoadedYetPartColor = remember(trackColor, enabled) {
+    if (enabled) {
+      trackColor.copy(alpha = 0.6f)
+    } else {
+      trackColor.copy(alpha = disabledAlpha)
+    }
+  }
 
   BoxWithConstraints(modifier) {
     val maxWidthPx = constraints.maxWidth.toFloat()
@@ -143,20 +160,22 @@ fun MpvSeekbar(
 
         if (demuxerCachePercents != null) {
           drawRect(
-            color = trackColor,
+            color = loadedPartColor,
             topLeft = Offset(0f, centerY),
             size = Size(size.width * demuxerCachePercents, trackHeightPx)
           )
         }
 
-        val positionX = (slideOffset * size.width)
-          .coerceIn(halfRadius, size.width - halfRadius)
+        if (enabled) {
+          val positionX = (slideOffset * size.width)
+            .coerceIn(halfRadius, size.width - halfRadius)
 
-        drawCircle(
-          color = thumbColor,
-          radius = thumbRadius,
-          center = Offset(x = positionX, y = thumbCenterY)
-        )
+          drawCircle(
+            color = thumbColor,
+            radius = thumbRadius,
+            center = Offset(x = positionX, y = thumbCenterY)
+          )
+        }
       }
     )
   }

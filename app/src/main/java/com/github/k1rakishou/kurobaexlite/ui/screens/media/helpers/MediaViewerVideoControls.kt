@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +35,7 @@ import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.chan.core.mpv.MpvUtils
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.VideoMediaState
@@ -40,7 +43,9 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.VideoM
 @Composable
 internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
   val chanTheme = LocalChanTheme.current
+  val disabledAlpha = ContentAlpha.disabled
   val videoStartedPlaying by videoMediaState.videoStartedPlayingState
+  val videoControlsVisible by videoMediaState.videoControlsVisibleState
 
   Column(
     modifier = Modifier
@@ -83,7 +88,7 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
 
       Text(
         text = timePositionText,
-        color = androidx.compose.ui.graphics.Color.White,
+        color = Color.White,
         fontSize = 16.sp
       )
 
@@ -96,33 +101,15 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
           .pointerInput(
             key1 = videoMediaState,
             block = {
-              forEachGesture {
-                awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
-
-                try {
-                  videoMediaState.blockAutoPositionUpdateState.value = true
-
-                  while (true) {
-                    val event =
-                      awaitPointerEventScope { awaitPointerEvent(PointerEventPass.Main) }
-                    if (event.changes.fastAll { !it.pressed }) {
-                      break
-                    }
-                  }
-                } finally {
-                  val videoDuration = videoDurationMut
-                  val lastSlideOffset = lastSlideOffsetMut
-
-                  if (videoDuration != null) {
-                    val newPosition = (videoDuration.toFloat() * lastSlideOffset).toInt()
-                    videoMediaState.seekTo(newPosition)
-                  }
-
-                  videoMediaState.blockAutoPositionUpdateState.value = false
-                }
-              }
+              processTapToSeekGesture(
+                videoStartedPlaying = videoStartedPlaying,
+                videoMediaState = videoMediaState,
+                videoDurationMut = videoDurationMut,
+                lastSlideOffsetMut = lastSlideOffsetMut
+              )
             }
           ),
+        enabled = videoStartedPlaying,
         trackColor = Color.White,
         thumbColorNormal = chanTheme.accentColorCompose,
         thumbColorPressed = Color.White,
@@ -137,7 +124,7 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
 
       Text(
         text = durationText,
-        color = androidx.compose.ui.graphics.Color.White,
+        color = Color.White,
         fontSize = 16.sp
       )
     }
@@ -154,6 +141,20 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
       val isPaused by videoMediaState.isPausedState
       val hwDecEnabled by videoMediaState.hardwareDecodingEnabledState
 
+      Box(
+        modifier = Modifier.size(42.dp),
+        contentAlignment = Alignment.Center
+      ) {
+        if (videoStartedPlaying || !videoControlsVisible) {
+          Spacer(modifier = Modifier.fillMaxSize())
+        } else {
+          KurobaComposeLoadingIndicator(
+            modifier = Modifier.size(24.dp),
+            overrideColor = Color.White
+          )
+        }
+      }
+
       val hwDecTextId = remember(key1 = hwDecEnabled) {
         if (hwDecEnabled) {
           R.string.media_viewer_mpv_hw_decoding
@@ -166,15 +167,19 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
       Box(
         modifier = Modifier
           .size(42.dp)
-          .kurobaClickable(bounded = false, onClick = { videoMediaState.toggleHwDec() }),
+          .kurobaClickable(
+            enabled = videoStartedPlaying,
+            bounded = false,
+            onClick = { videoMediaState.toggleHwDec() }
+          ),
         contentAlignment = Alignment.Center
       ) {
-        val alpha = if (videoStartedPlaying) 1f else ContentAlpha.disabled
+        val alpha = if (videoStartedPlaying) 1f else disabledAlpha
 
         Text(
           modifier = Modifier.graphicsLayer { this.alpha = alpha },
           text = hwDecText,
-          color = androidx.compose.ui.graphics.Color.White,
+          color = Color.White,
           fontSize = 16.sp,
           textAlign = TextAlign.Center
         )
@@ -211,6 +216,42 @@ internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
 
         KurobaComposeIcon(drawableId = drawableId)
       }
+    }
+  }
+}
+
+private suspend fun PointerInputScope.processTapToSeekGesture(
+  videoStartedPlaying: Boolean,
+  videoMediaState: VideoMediaState,
+  videoDurationMut: Long?,
+  lastSlideOffsetMut: Float
+) {
+  forEachGesture {
+    awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
+
+    if (!videoStartedPlaying) {
+      return@forEachGesture
+    }
+
+    try {
+      videoMediaState.blockAutoPositionUpdateState.value = true
+
+      while (true) {
+        val event = awaitPointerEventScope { awaitPointerEvent(PointerEventPass.Main) }
+        if (event.changes.fastAll { !it.pressed }) {
+          break
+        }
+      }
+    } finally {
+      val videoDuration = videoDurationMut
+      val lastSlideOffset = lastSlideOffsetMut
+
+      if (videoDuration != null) {
+        val newPosition = (videoDuration.toFloat() * lastSlideOffset).toInt()
+        videoMediaState.seekTo(newPosition)
+      }
+
+      videoMediaState.blockAutoPositionUpdateState.value = false
     }
   }
 }
