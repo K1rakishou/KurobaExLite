@@ -103,7 +103,7 @@ abstract class FloatingComposeScreen(
   @Composable
   open fun maxAvailableHeight(): Dp {
     val isTablet = uiInfoManager.isTablet
-    val maxParentHeight by uiInfoManager.maxParentHeightState
+    val maxParentHeight by uiInfoManager.totalScreenHeightState
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {
@@ -126,7 +126,7 @@ abstract class FloatingComposeScreen(
   @Composable
   open fun maxAvailableWidth(): Dp {
     val isTablet = uiInfoManager.isTablet
-    val maxParentWidth by uiInfoManager.maxParentHeightState
+    val maxParentWidth by uiInfoManager.totalScreenHeightState
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {

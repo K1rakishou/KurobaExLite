@@ -25,7 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private val SCROLLBAR_WIDTH = 10.dp
-val SCROLLBAR_MIN_HEIGHT = 36.dp
+val SCROLLBAR_MIN_SIZE = 36.dp
 
 @Composable
 fun LazyColumnWithFastScroller(
@@ -40,7 +40,7 @@ fun LazyColumnWithFastScroller(
     remember { SCROLLBAR_WIDTH.toPx().toInt() }
   }
   val scrollbarMinHeightPx = with(LocalDensity.current) {
-    remember { SCROLLBAR_MIN_HEIGHT.toPx().toInt() }
+    remember { SCROLLBAR_MIN_SIZE.toPx().toInt() }
   }
   val paddingTopPx = with(LocalDensity.current) {
     remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
@@ -82,12 +82,14 @@ fun LazyColumnWithFastScroller(
     ) {
       LazyColumn(
         modifier = Modifier
-          .simpleVerticalScrollbar(
+          .scrollbar(
             state = lazyListState,
             thumbColor = thumbColor,
+            scrollbarDimens = ScrollbarDimens.Vertical(
+              width = scrollbarWidth,
+              minHeight = scrollbarMinHeightPx
+            ),
             contentPadding = contentPadding,
-            scrollbarWidth = scrollbarWidth,
-            scrollbarMinHeight = scrollbarMinHeightPx,
             scrollbarDragged = scrollbarDragged
           ),
         state = lazyListState,

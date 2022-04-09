@@ -1,18 +1,24 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -27,9 +33,10 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.SCROLLBAR_MIN_HEIGHT
+import com.github.k1rakishou.kurobaexlite.ui.helpers.SCROLLBAR_MIN_SIZE
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.simpleVerticalScrollbar
+import com.github.k1rakishou.kurobaexlite.ui.helpers.scrollbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.ImageLoadState
 
 private const val TAG = "MediaViewerPreviewStrip"
@@ -39,66 +46,89 @@ private const val TAG = "MediaViewerPreviewStrip"
 fun MediaViewerPreviewStrip(
   pagerState: PagerState,
   images: List<ImageLoadState>,
+  bgColor: Color,
+  toolbarHeightPx: Int?,
   uiInfoManager: UiInfoManager,
   onPreviewClicked: (IPostImage) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+  val density = LocalDensity.current
+
   val currentPage = pagerState.currentPage
   val thumbColor = chanTheme.accentColorCompose
 
-  val maxParentHeight by uiInfoManager.maxParentHeightState
   val lazyListState = rememberLazyListState(initialFirstVisibleItemIndex = currentPage)
-
-  val maxHeightDefaultDp = if (uiInfoManager.isTablet) 360.dp else 270.dp
   val itemSizeDp = if (uiInfoManager.isTablet) 64.dp else 42.dp
   val padding = if (uiInfoManager.isTablet) 4.dp else 2.dp
+  val scrollbarHeight = with(density) { 4.dp.toPx().toInt() }
 
-  val itemSizePx = with(LocalDensity.current) { remember(key1 = itemSizeDp) { itemSizeDp.toPx().toInt() } }
-  val scrollbarWidth = with(LocalDensity.current) { 4.dp.toPx().toInt() }
-  val scrollbarMinHeightPx = with(LocalDensity.current) { remember { SCROLLBAR_MIN_HEIGHT.toPx().toInt() } }
-  val maxHeightDefaultPx = with(LocalDensity.current) { maxHeightDefaultDp.toPx().toInt() }
-  val maxStripHeight = with(LocalDensity.current) {
-    remember(key1 = maxParentHeight) { maxHeightDefaultPx.coerceAtMost(maxParentHeight).toDp() }
+  val itemSizePx = with(density) {
+    remember(key1 = itemSizeDp) { itemSizeDp.toPx().toInt() }
+  }
+  val scrollbarMinWidthPx = with(density) {
+    remember { SCROLLBAR_MIN_SIZE.toPx().toInt() }
   }
 
-  val bgColor = remember(key1 = chanTheme.backColorCompose) { chanTheme.backColorCompose.copy(alpha = 0.6f) }
-  val scrollOffset = remember(key1 = maxHeightDefaultPx, key2 = itemSizePx) { (maxHeightDefaultPx - itemSizePx) / 2 }
+  var stripWidthMut by remember { mutableStateOf<Int?>(null) }
+  val stripWidth = stripWidthMut
+
+  val scrollOffset = remember(key1 = stripWidth, key2 = itemSizePx) {
+    if (stripWidth == null || stripWidth <= 0) {
+      return@remember 0
+    }
+
+    return@remember (stripWidth - itemSizePx) / 2
+  }
+
 
   LaunchedEffect(
     key1 = currentPage,
     block = { lazyListState.animateScrollToItem(currentPage, -scrollOffset) }
   )
 
-  LazyColumn(
+  Column(
     modifier = Modifier
-      .width(itemSizeDp)
-      .heightIn(max = maxStripHeight)
-      .background(bgColor)
-      .simpleVerticalScrollbar(
-        state = lazyListState,
-        thumbColor = thumbColor,
-        scrollbarWidth = scrollbarWidth,
-        scrollbarMinHeight = scrollbarMinHeightPx,
-        scrollbarDragged = false
-      )
-      .padding(end = 4.dp),
-    state = lazyListState
+      .fillMaxWidth()
+      .onSizeChanged { size -> stripWidthMut = size.width }
   ) {
-    items(
-      count = images.size,
-      key = { index -> images[index].fullImageUrlAsString },
-      itemContent = { index ->
-        val postImageData = images[index].postImageData
+    if (toolbarHeightPx != null) {
+      val toolbarHeightDp = with(density) { remember(key1 = toolbarHeightPx) { toolbarHeightPx.toDp() } }
+      Spacer(modifier = Modifier.height(toolbarHeightDp))
+    }
 
-        DisplayImagePreview(
-          itemSize = itemSizeDp,
-          padding = padding,
-          postImageData = postImageData,
-          isCurrentImage = index == currentPage,
-          onPreviewClicked = onPreviewClicked
+    LazyRow(
+      modifier = Modifier
+        .height(itemSizeDp)
+        .fillMaxWidth()
+        .background(bgColor)
+        .scrollbar(
+          state = lazyListState,
+          thumbColor = thumbColor,
+          scrollbarDimens = ScrollbarDimens.Horizontal(
+            height = scrollbarHeight,
+            minWidth = scrollbarMinWidthPx
+          ),
+          scrollbarDragged = false
         )
-      }
-    )
+        .padding(start = 8.dp, end = 8.dp, top = 4.dp),
+      state = lazyListState
+    ) {
+      items(
+        count = images.size,
+        key = { index -> images[index].fullImageUrlAsString },
+        itemContent = { index ->
+          val postImageData = images[index].postImageData
+
+          DisplayImagePreview(
+            itemSize = itemSizeDp,
+            padding = padding,
+            postImageData = postImageData,
+            isCurrentImage = index == currentPage,
+            onPreviewClicked = onPreviewClicked
+          )
+        }
+      )
+    }
   }
 }
 

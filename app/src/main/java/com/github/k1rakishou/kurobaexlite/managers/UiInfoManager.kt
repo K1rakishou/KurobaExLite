@@ -55,13 +55,13 @@ class UiInfoManager(
     Configuration.ORIENTATION_LANDSCAPE
   )
 
-  private var _maxParentWidthState = mutableStateOf(0)
-  val maxParentWidthState: State<Int>
-    get() = _maxParentWidthState
+  private var _totalScreenWidthState = mutableStateOf(0)
+  val totalScreenWidthState: State<Int>
+    get() = _totalScreenWidthState
 
-  private var _maxParentHeightState = mutableStateOf(0)
-  val maxParentHeightState: State<Int>
-    get() = _maxParentHeightState
+  private var _totalScreenHeightState = mutableStateOf(0)
+  val totalScreenHeightState: State<Int>
+    get() = _totalScreenHeightState
 
   val composeDensity by lazy {
     Density(
@@ -173,8 +173,8 @@ class UiInfoManager(
   }
 
   fun updateMaxParentSize(availableWidth: Int, availableHeight: Int) {
-    _maxParentWidthState.value = availableWidth
-    _maxParentHeightState.value = availableHeight
+    _totalScreenWidthState.value = availableWidth
+    _totalScreenHeightState.value = availableHeight
   }
 
   fun setLastTouchPosition(x: Float, y: Float) {

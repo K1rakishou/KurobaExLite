@@ -41,7 +41,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.VideoMediaState
 
 @Composable
-internal fun MediaViewerScreenVideoControls(videoMediaState: VideoMediaState) {
+internal fun MediaViewerScreenVideoControls(
+  videoMediaState: VideoMediaState
+) {
   val chanTheme = LocalChanTheme.current
   val disabledAlpha = ContentAlpha.disabled
   val videoStartedPlaying by videoMediaState.videoStartedPlayingState

@@ -10,10 +10,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
@@ -130,12 +132,15 @@ class MediaViewerScreen(
       }
     )
 
+    val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
+
     Box(
       modifier = Modifier
         .fillMaxSize()
         .background(Color.Black)
     ) {
       var pagerStateHolder by remember { mutableStateOf<PagerState?>(null) }
+      val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
 
       val videoMediaState = remember(key1 = pagerStateHolder?.currentPage) {
         val currentPage = pagerStateHolder?.currentPage
@@ -165,6 +170,7 @@ class MediaViewerScreen(
           modifier = Modifier
             .align(Alignment.TopCenter)
             .background(bgColor)
+            .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
         ) {
           MediaViewerToolbar(
             toolbarHeight = toolbarHeight,
@@ -178,48 +184,69 @@ class MediaViewerScreen(
         }
       }
 
-      if (videoMediaState != null && mediaViewerScreenViewModel.mpvInitialized) {
+      if (videoMediaState != null) {
         val videoControlsVisible by videoMediaState.videoControlsVisibleState
-        val targetAlpha = if (videoControlsVisible) 1f else 0f
-        val alphaAnimated by animateFloatAsState(
-          targetValue = targetAlpha,
-          animationSpec = tween(durationMillis = 250)
-        )
 
-        Column(
-          modifier = Modifier
-            .fillMaxWidth()
-            .align(Alignment.BottomCenter)
-            .graphicsLayer { this.alpha = alphaAnimated }
-            .background(bgColor)
-        ) {
-          MediaViewerScreenVideoControls(videoMediaState = videoMediaState)
-
-          Spacer(modifier = Modifier.height(insets.bottom))
-        }
-      }
-
-      val images = mediaViewerScreenState.images
-
-      if (pagerStateHolder != null && images.isNotNullNorEmpty()) {
-        Box(
-          modifier = Modifier
-            .wrapContentSize()
-            .align(Alignment.CenterEnd)
-        ) {
-          MediaViewerPreviewStrip(
-            pagerState = pagerStateHolder!!,
-            images = images,
-            uiInfoManager = uiInfoManager,
-            onPreviewClicked = { postImage ->
-              coroutineScope.launch {
-                images
-                  .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
-                  .takeIf { index -> index >= 0 }
-                  ?.let { scrollIndex -> pagerStateHolder?.scrollToPage(scrollIndex) }
-              }
-            }
+        if (mediaViewerScreenViewModel.mpvInitialized) {
+          val targetAlpha = if (videoControlsVisible) 1f else 0f
+          val alphaAnimated by animateFloatAsState(
+            targetValue = targetAlpha,
+            animationSpec = tween(durationMillis = 250)
           )
+
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .align(Alignment.BottomCenter)
+              .graphicsLayer { this.alpha = alphaAnimated }
+              .background(bgColor)
+          ) {
+            MediaViewerScreenVideoControls(videoMediaState )
+
+            Spacer(modifier = Modifier.height(insets.bottom))
+          }
+        }
+
+        val images = mediaViewerScreenState.images
+
+        if (pagerStateHolder != null && images.isNotNullNorEmpty()) {
+          val toolbarCalculatedHeight by toolbarTotalHeight
+
+          val actualToolbarCalculatedHeight = remember(
+            key1 = toolbarCalculatedHeight,
+            key2 = globalMediaViewerControlsVisible,
+          ) {
+            if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
+              return@remember null
+            }
+
+            return@remember toolbarCalculatedHeight
+          }
+
+          if (toolbarCalculatedHeight != null) {
+            Box(
+              modifier = Modifier
+                .wrapContentWidth()
+                .fillMaxHeight()
+                .align(Alignment.TopCenter)
+            ) {
+              MediaViewerPreviewStrip(
+                pagerState = pagerStateHolder!!,
+                images = images,
+                bgColor = bgColor,
+                toolbarHeightPx = actualToolbarCalculatedHeight,
+                uiInfoManager = uiInfoManager,
+                onPreviewClicked = { postImage ->
+                  coroutineScope.launch {
+                    images
+                      .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
+                      .takeIf { index -> index >= 0 }
+                      ?.let { scrollIndex -> pagerStateHolder?.scrollToPage(scrollIndex) }
+                  }
+                }
+              )
+            }
+          }
         }
       }
     }
