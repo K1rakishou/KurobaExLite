@@ -484,7 +484,10 @@ fun KurobaComposeIcon(
   val chanTheme = LocalChanTheme.current
   val alpha = LocalContentAlpha.current
 
-  val tintColor = remember(key1 = chanTheme) {
+  val tintColor = remember(
+    key1 = chanTheme.backColor,
+    key2 = colorBehindIcon
+  ) {
     if (colorBehindIcon == null) {
       Color(ThemeEngine.resolveDrawableTintColor(chanTheme))
     } else {

@@ -17,17 +17,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
-import coil.request.ImageRequest
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
@@ -38,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.scrollbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.ImageLoadState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.ImageThumbnail
 
 private const val TAG = "MediaViewerPreviewStrip"
 
@@ -83,6 +77,7 @@ fun MediaViewerPreviewStrip(
 
   LaunchedEffect(
     key1 = currentPage,
+    key2 = scrollOffset,
     block = { lazyListState.animateScrollToItem(currentPage, -scrollOffset) }
   )
 
@@ -117,12 +112,12 @@ fun MediaViewerPreviewStrip(
         count = images.size,
         key = { index -> images[index].fullImageUrlAsString },
         itemContent = { index ->
-          val postImageData = images[index].postImageData
+          val postImage = images[index].postImage
 
           DisplayImagePreview(
             itemSize = itemSizeDp,
             padding = padding,
-            postImageData = postImageData,
+            postImage = postImage,
             isCurrentImage = index == currentPage,
             onPreviewClicked = onPreviewClicked
           )
@@ -136,11 +131,10 @@ fun MediaViewerPreviewStrip(
 private fun DisplayImagePreview(
   itemSize: Dp,
   padding: Dp,
-  postImageData: IPostImage,
+  postImage: IPostImage,
   isCurrentImage: Boolean,
   onPreviewClicked: (IPostImage) -> Unit
 ) {
-  val context = LocalContext.current
   val chanTheme = LocalChanTheme.current
   val bgColor = chanTheme.backColorSecondaryCompose
   val highlightColor = chanTheme.accentColorCompose
@@ -151,30 +145,13 @@ private fun DisplayImagePreview(
     Modifier
   }
 
-  SubcomposeAsyncImage(
+  ImageThumbnail(
     modifier = Modifier
       .size(itemSize)
       .then(highlightModifier)
       .padding(padding)
       .background(bgColor)
-      .kurobaClickable(onClick = { onPreviewClicked(postImageData) }),
-    model = ImageRequest.Builder(context)
-      .data(postImageData.thumbnailAsUrl)
-      .crossfade(false)
-      .build(),
-    contentDescription = null,
-    contentScale = ContentScale.Fit,
-    content = {
-      val state = painter.state
-      if (state is AsyncImagePainter.State.Error) {
-        logcatError(tag = TAG) {
-          "DisplayImagePreview() url=${postImageData}, " +
-            "postDescriptor=${postImageData.ownerPostDescriptor}, " +
-            "error=${state.result.throwable}"
-        }
-      }
-
-      SubcomposeAsyncImageContent()
-    }
+      .kurobaClickable(onClick = { onPreviewClicked(postImage) }),
+    postImage = postImage
   )
 }

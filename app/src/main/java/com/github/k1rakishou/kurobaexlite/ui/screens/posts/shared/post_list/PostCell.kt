@@ -24,18 +24,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
-import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -118,7 +111,6 @@ private fun PostCellTitle(
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val chanTheme = LocalChanTheme.current
-  val context = LocalContext.current
 
   Row(
     modifier = Modifier
@@ -127,34 +119,17 @@ private fun PostCellTitle(
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (postCellData.images.isNotNullNorEmpty()) {
-      val image = postCellData.images.first()
+      val postImage = postCellData.images.first()
 
       Box(
         modifier = Modifier
           .wrapContentSize()
           .background(chanTheme.backColorSecondaryCompose)
-          .kurobaClickable(onClick = { onPostImageClicked(chanDescriptor, image) })
+          .kurobaClickable(onClick = { onPostImageClicked(chanDescriptor, postImage) })
       ) {
-        SubcomposeAsyncImage(
+        ImageThumbnail(
           modifier = Modifier.size(70.dp),
-          model = ImageRequest.Builder(context)
-            .data(image.thumbnailUrl)
-            .crossfade(true)
-            .build(),
-          contentDescription = null,
-          contentScale = ContentScale.Fit,
-          content = {
-            val state = painter.state
-            if (state is AsyncImagePainter.State.Error) {
-              logcatError {
-                "PostCellTitle() url=${image.thumbnailUrl}, " +
-                  "postDescriptor=${postCellData.postDescriptor}, " +
-                  "error=${state.result.throwable}"
-              }
-            }
-
-            SubcomposeAsyncImageContent()
-          }
+          postImage = postImage,
         )
       }
 

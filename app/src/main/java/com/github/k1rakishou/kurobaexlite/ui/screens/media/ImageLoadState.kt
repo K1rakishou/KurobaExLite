@@ -4,27 +4,27 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import java.io.File
 
 sealed class ImageLoadState {
-  abstract val postImageData: IPostImage
+  abstract val postImage: IPostImage
 
-  val fullImageUrl by lazy { postImageData.fullImageAsUrl }
-  val fullImageUrlAsString by lazy { postImageData.fullImageAsString }
+  val fullImageUrl by lazy { postImage.fullImageAsUrl }
+  val fullImageUrlAsString by lazy { postImage.fullImageAsString }
 
   data class PreparingForLoading(
-    override val postImageData: IPostImage
+    override val postImage: IPostImage
   ) : ImageLoadState()
 
   data class Progress(
     val progress: Float,
-    override val postImageData: IPostImage
+    override val postImage: IPostImage
   ) : ImageLoadState()
 
   data class Error(
-    override val postImageData: IPostImage,
+    override val postImage: IPostImage,
     val exception: Throwable
   ) : ImageLoadState()
 
   data class Ready(
-    override val postImageData: IPostImage,
+    override val postImage: IPostImage,
     val imageFile: File?
   ) : ImageLoadState()
 }

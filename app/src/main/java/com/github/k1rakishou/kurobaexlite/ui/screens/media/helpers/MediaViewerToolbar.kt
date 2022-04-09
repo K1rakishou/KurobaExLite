@@ -147,7 +147,7 @@ private fun UpdateMediaViewerToolbarTitle(
     val images = mediaViewerScreenState.images
       ?: return@remember null
 
-    return@remember images.getOrNull(currentPagerPage)?.postImageData
+    return@remember images.getOrNull(currentPagerPage)?.postImage
   }
 
   LaunchedEffect(

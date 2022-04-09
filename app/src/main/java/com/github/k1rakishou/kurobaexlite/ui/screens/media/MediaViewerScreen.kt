@@ -148,7 +148,7 @@ class MediaViewerScreen(
 
         val videoControlsVisible = mediaViewerScreenState.images
           ?.getOrNull(currentPage)
-          ?.postImageData
+          ?.postImage
           ?.imageType() == ImageType.Video
 
         return@remember VideoMediaState(currentPage, videoControlsVisible)
@@ -327,7 +327,7 @@ class MediaViewerScreen(
           return@LaunchedEffect
         }
 
-        val postImageData = images.getOrNull(pagerState.currentPage)?.postImageData
+        val postImageData = images.getOrNull(pagerState.currentPage)?.postImage
           ?: return@LaunchedEffect
 
         mediaViewerPostListScroller.onSwipedTo(
@@ -386,7 +386,7 @@ class MediaViewerScreen(
 
           val indexOfThisImage = currentImages.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }
           if (indexOfThisImage >= 0) {
-            val prevPostImageData = currentImages[indexOfThisImage].postImageData
+            val prevPostImageData = currentImages[indexOfThisImage].postImage
             currentImages.set(indexOfThisImage, ImageLoadState.PreparingForLoading(prevPostImageData))
           }
         }
@@ -432,7 +432,7 @@ class MediaViewerScreen(
           displayImagePreviewMovable()
         }
 
-        when (postImageDataLoadState.postImageData.imageType()) {
+        when (postImageDataLoadState.postImage.imageType()) {
           ImageType.Static -> {
             val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
 
@@ -545,7 +545,7 @@ class MediaViewerScreen(
     val context = LocalContext.current
 
     LaunchedEffect(
-      key1 = postImageDataLoadState.postImageData.fullImageAsUrl,
+      key1 = postImageDataLoadState.postImage.fullImageAsUrl,
       block = {
         val retriesCount = AtomicInteger(0)
 
@@ -569,7 +569,7 @@ class MediaViewerScreen(
     mediaViewerScreenState: MediaViewerScreenState,
     onLoadProgressUpdated: (Int, Float) -> Unit
   ) {
-    val postImageData = postImageDataLoadState.postImageData
+    val postImageData = postImageDataLoadState.postImage
     val fullImageUrl = postImageData.fullImageAsUrl
 
     val index = mediaViewerScreenState.requireImages().indexOfFirst { imageLoadState ->
@@ -577,7 +577,7 @@ class MediaViewerScreen(
     }
 
     // We can just stream videos without having to load the first
-    if (postImageDataLoadState.postImageData.imageType() == ImageType.Video) {
+    if (postImageDataLoadState.postImage.imageType() == ImageType.Video) {
       mediaViewerScreenState.requireImages().set(index, ImageLoadState.Ready(postImageData, null))
       return
     }
@@ -594,7 +594,7 @@ class MediaViewerScreen(
       return
     }
 
-    mediaViewerScreenViewModel.loadFullImageAndGetFile(postImageDataLoadState.postImageData)
+    mediaViewerScreenViewModel.loadFullImageAndGetFile(postImageDataLoadState.postImage)
       .collect { imageLoadState ->
         when (imageLoadState) {
           is ImageLoadState.Progress -> {
@@ -657,7 +657,7 @@ class MediaViewerScreen(
       ?: return
 
     val context = LocalContext.current
-    val postImageData = postImageDataLoadState.postImageData
+    val postImageData = postImageDataLoadState.postImage
 
     SubcomposeAsyncImage(
       modifier = Modifier.fillMaxSize(),
