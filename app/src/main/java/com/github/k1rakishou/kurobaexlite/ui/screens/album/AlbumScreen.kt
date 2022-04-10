@@ -22,7 +22,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -48,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.ImageThumbnail
@@ -67,6 +71,7 @@ class AlbumScreen(
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModels()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModels()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
+  private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
@@ -218,13 +223,27 @@ class AlbumScreen(
           key = { index -> albumItems[index].fullImageAsString },
           itemContent = { index ->
             val postImage = albumItems[index]
+            var boundsInRootMut by remember { mutableStateOf<Rect?>(null) }
 
             ImageThumbnail(
               modifier = Modifier
                 .fillMaxWidth()
                 .height(128.dp)
                 .padding(2.dp)
-                .kurobaClickable(onClick = { onThumbnailClicked(postImage) }),
+                .onGloballyPositioned { layoutCoordinates ->
+                  boundsInRootMut = layoutCoordinates.boundsInRoot()
+                }
+                .kurobaClickable(
+                  onClick = {
+                    val boundsInRoot = boundsInRootMut
+                    if (boundsInRoot == null) {
+                      return@kurobaClickable
+                    }
+
+                    clickedThumbnailBoundsStorage.storeBounds(postImage, boundsInRoot)
+                    onThumbnailClicked(postImage)
+                  }
+                ),
               postImage = postImage,
               contentScale = ContentScale.Crop
             )

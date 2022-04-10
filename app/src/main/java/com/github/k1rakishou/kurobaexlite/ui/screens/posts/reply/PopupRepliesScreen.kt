@@ -42,6 +42,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListContent
@@ -50,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenVi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.java.KoinJavaComponent.inject
 
 class PopupRepliesScreen(
   private val replyViewMode: ReplyViewMode,
@@ -59,6 +61,7 @@ class PopupRepliesScreen(
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val popupRepliesScreenViewModel: PopupRepliesScreenViewModel by componentActivity.viewModel()
+  private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val postListLayoutId = "PopupRepliesScreen_PostListContent"
   private val buttonsLayoutId = "PopupRepliesScreen_Buttons"
@@ -187,11 +190,13 @@ class PopupRepliesScreen(
             popupRepliesScreenViewModel.loadRepliesForMode(ReplyViewMode.RepliesFrom(postDescriptor))
           }
         },
-        onPostImageClicked = { _, postImageData ->
+        onPostImageClicked = { _, postImageData, thumbnailBoundsInRoot ->
           val collectedImages = popupRepliesScreenViewModel.collectCurrentImages()
           if (collectedImages.isEmpty()) {
             return@PostListContent
           }
+
+          clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
           val mediaViewerScreen = MediaViewerScreen(
             mediaViewerParams = MediaViewerParams.Images(

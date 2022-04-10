@@ -1,7 +1,14 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.runtime.State
 import androidx.lifecycle.viewModelScope
+import coil.ImageLoader
+import coil.request.ErrorResult
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.github.k1rakishou.chan.core.mpv.MpvInitializer
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
@@ -10,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.CacheFileType
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -49,6 +57,7 @@ class MediaViewerScreenViewModel(
   private val kurobaLruDiskCache: KurobaLruDiskCache
 ) : BaseAndroidViewModel(application) {
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub by inject(InstallMpvNativeLibrariesFromGithub::class.java)
+  private val imageLoader: ImageLoader by inject(ImageLoader::class.java)
   private val mpvInitializer = MpvInitializer(appContext, mpvSettings)
 
   val mpvInitialized: Boolean
@@ -248,6 +257,24 @@ class MediaViewerScreenViewModel(
       cacheFileType = CacheFileType.PostMediaFull,
       url = postImage.fullImageAsUrl
     )
+  }
+
+  suspend fun loadThumbnailBitmap(context: Context, postImage: IPostImage): Bitmap? {
+    val imageRequest = ImageRequest.Builder(context)
+      .data(postImage.thumbnailAsUrl)
+      .build()
+
+    // Ideally this will only load the bitmap from the memory/disk cache.
+    val imageResult = imageLoader.execute(imageRequest)
+
+    if (imageResult is ErrorResult) {
+      logcatError { "Failed to load thumbnail bitmap, error: ${imageResult.throwable.errorMessageOrClassName()}" }
+      return null
+    }
+
+    imageResult as SuccessResult
+
+    return (imageResult.drawable as BitmapDrawable).bitmap
   }
 
   class InitResult(

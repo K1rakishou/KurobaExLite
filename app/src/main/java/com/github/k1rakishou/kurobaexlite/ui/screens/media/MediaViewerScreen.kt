@@ -2,12 +2,19 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Matrix
+import android.graphics.Paint
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -33,11 +40,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
+import androidx.core.graphics.withTranslation
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
@@ -49,15 +58,18 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -65,6 +77,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.progress.ProgressScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.DisplayLoadingProgressIndicator
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPreviewStrip
@@ -81,6 +94,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -97,6 +111,8 @@ class MediaViewerScreen(
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModels()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
+  private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
+
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -115,12 +131,52 @@ class MediaViewerScreen(
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
     val mediaViewerScreenState = remember { MediaViewerScreenState() }
+    var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getAndConsume()) }
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
-    InitMediaViewerData(
-      mediaViewerScreenState = mediaViewerScreenState,
-      mediaViewerParams = mediaViewerParams
-    )
+    val animatable = remember { Animatable(0f) }
+    val animationProgress by animatable.asState()
+
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .graphicsLayer { alpha = animationProgress }
+        .background(Color.Black)
+    ) {
+      InitMediaViewerData(
+        mediaViewerScreenState = mediaViewerScreenState,
+        mediaViewerParams = mediaViewerParams
+      )
+
+      if (clickedThumbnailBounds != null) {
+        TransitionPreview(
+          animatable = animatable,
+          clickedThumbnailBounds = clickedThumbnailBounds!!,
+          onTransitionFinished = { clickedThumbnailBounds = null }
+        )
+      } else {
+        ContentAfterTransition(
+          mediaViewerScreenState = mediaViewerScreenState,
+          chanTheme = chanTheme,
+          toolbarHeight = toolbarHeight,
+          coroutineScope = coroutineScope,
+          insets = insets
+        )
+      }
+    }
+  }
+
+  @OptIn(ExperimentalPagerApi::class)
+  @Composable
+  private fun BoxScope.ContentAfterTransition(
+    mediaViewerScreenState: MediaViewerScreenState,
+    chanTheme: ChanTheme,
+    toolbarHeight: Dp,
+    coroutineScope: CoroutineScope,
+    insets: Insets
+  ) {
+    var pagerStateHolder by remember { mutableStateOf<PagerState?>(null) }
+    val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
 
     DisposableEffect(
       key1 = Unit,
@@ -131,122 +187,208 @@ class MediaViewerScreen(
 
     val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
 
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Black)
-    ) {
-      var pagerStateHolder by remember { mutableStateOf<PagerState?>(null) }
-      val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
+    val videoMediaState = remember(key1 = pagerStateHolder?.currentPage) {
+      val currentPage = pagerStateHolder?.currentPage
+        ?: return@remember null
 
-      val videoMediaState = remember(key1 = pagerStateHolder?.currentPage) {
-        val currentPage = pagerStateHolder?.currentPage
-          ?: return@remember null
+      val videoControlsVisible = mediaViewerScreenState.images
+        ?.getOrNull(currentPage)
+        ?.postImage
+        ?.imageType() == ImageType.Video
 
-        val videoControlsVisible = mediaViewerScreenState.images
-          ?.getOrNull(currentPage)
-          ?.postImage
-          ?.imageType() == ImageType.Video
+      return@remember VideoMediaState(currentPage, videoControlsVisible)
+    }
 
-        return@remember VideoMediaState(currentPage, videoControlsVisible)
+    val bgColor = remember(chanTheme.primaryColorCompose) {
+      chanTheme.primaryColorCompose.copy(alpha = 0.5f)
+    }
+
+    MediaViewerPager(
+      toolbarHeight = toolbarHeight,
+      mediaViewerScreenState = mediaViewerScreenState,
+      onViewPagerInitialized = { pagerState -> pagerStateHolder = pagerState },
+      videoMediaState = videoMediaState
+    )
+
+    if (pagerStateHolder != null) {
+      Box(
+        modifier = Modifier.Companion
+          .align(Alignment.TopCenter)
+          .background(bgColor)
+          .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
+      ) {
+        MediaViewerToolbar(
+          toolbarHeight = toolbarHeight,
+          screenKey = screenKey,
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          mediaViewerScreenState = mediaViewerScreenState,
+          pagerState = pagerStateHolder,
+          onBackPressed = { coroutineScope.launch { onBackPressed() } }
+        )
       }
+    }
 
-      val bgColor = remember(chanTheme.primaryColorCompose) {
-        chanTheme.primaryColorCompose.copy(alpha = 0.5f)
-      }
+    if (videoMediaState != null) {
+      val videoControlsVisible by videoMediaState.videoControlsVisibleState
 
-      MediaViewerPager(
-        toolbarHeight = toolbarHeight,
-        mediaViewerScreenState = mediaViewerScreenState,
-        onViewPagerInitialized = { pagerState -> pagerStateHolder = pagerState },
-        videoMediaState = videoMediaState
-      )
+      if (mediaViewerScreenViewModel.mpvInitialized) {
+        val targetAlpha = if (videoControlsVisible) 1f else 0f
+        val alphaAnimated by animateFloatAsState(
+          targetValue = targetAlpha,
+          animationSpec = tween(durationMillis = 250)
+        )
 
-      if (pagerStateHolder != null) {
-        Box(
+        Column(
           modifier = Modifier
-            .align(Alignment.TopCenter)
+            .fillMaxWidth()
+            .align(Alignment.BottomCenter)
+            .graphicsLayer { this.alpha = alphaAnimated }
             .background(bgColor)
-            .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
         ) {
-          MediaViewerToolbar(
-            toolbarHeight = toolbarHeight,
-            screenKey = screenKey,
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter,
-            mediaViewerScreenState = mediaViewerScreenState,
-            pagerState = pagerStateHolder,
-            onBackPressed = { coroutineScope.launch { onBackPressed() } }
-          )
+          MediaViewerScreenVideoControls(videoMediaState)
+
+          Spacer(modifier = Modifier.height(insets.bottom))
         }
       }
 
-      if (videoMediaState != null) {
-        val videoControlsVisible by videoMediaState.videoControlsVisibleState
+      val images = mediaViewerScreenState.images
 
-        if (mediaViewerScreenViewModel.mpvInitialized) {
-          val targetAlpha = if (videoControlsVisible) 1f else 0f
-          val alphaAnimated by animateFloatAsState(
-            targetValue = targetAlpha,
-            animationSpec = tween(durationMillis = 250)
-          )
+      if (pagerStateHolder != null && images.isNotNullNorEmpty()) {
+        val toolbarCalculatedHeight by toolbarTotalHeight
 
-          Column(
-            modifier = Modifier
-              .fillMaxWidth()
-              .align(Alignment.BottomCenter)
-              .graphicsLayer { this.alpha = alphaAnimated }
-              .background(bgColor)
-          ) {
-            MediaViewerScreenVideoControls(videoMediaState )
-
-            Spacer(modifier = Modifier.height(insets.bottom))
+        val actualToolbarCalculatedHeight = remember(
+          key1 = toolbarCalculatedHeight,
+          key2 = globalMediaViewerControlsVisible,
+        ) {
+          if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
+            return@remember null
           }
+
+          return@remember toolbarCalculatedHeight
         }
 
-        val images = mediaViewerScreenState.images
-
-        if (pagerStateHolder != null && images.isNotNullNorEmpty()) {
-          val toolbarCalculatedHeight by toolbarTotalHeight
-
-          val actualToolbarCalculatedHeight = remember(
-            key1 = toolbarCalculatedHeight,
-            key2 = globalMediaViewerControlsVisible,
+        if (toolbarCalculatedHeight != null) {
+          Box(
+            modifier = Modifier
+              .wrapContentWidth()
+              .fillMaxHeight()
+              .align(Alignment.TopCenter)
           ) {
-            if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
-              return@remember null
-            }
-
-            return@remember toolbarCalculatedHeight
-          }
-
-          if (toolbarCalculatedHeight != null) {
-            Box(
-              modifier = Modifier
-                .wrapContentWidth()
-                .fillMaxHeight()
-                .align(Alignment.TopCenter)
-            ) {
-              MediaViewerPreviewStrip(
-                pagerState = pagerStateHolder!!,
-                images = images,
-                bgColor = bgColor,
-                toolbarHeightPx = actualToolbarCalculatedHeight,
-                uiInfoManager = uiInfoManager,
-                onPreviewClicked = { postImage ->
-                  coroutineScope.launch {
-                    images
-                      .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
-                      .takeIf { index -> index >= 0 }
-                      ?.let { scrollIndex -> pagerStateHolder?.scrollToPage(scrollIndex) }
-                  }
+            MediaViewerPreviewStrip(
+              pagerState = pagerStateHolder!!,
+              images = images,
+              bgColor = bgColor,
+              toolbarHeightPx = actualToolbarCalculatedHeight,
+              uiInfoManager = uiInfoManager,
+              onPreviewClicked = { postImage ->
+                coroutineScope.launch {
+                  images
+                    .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
+                    .takeIf { index -> index >= 0 }
+                    ?.let { scrollIndex -> pagerStateHolder?.scrollToPage(scrollIndex) }
                 }
-              )
-            }
+              }
+            )
           }
         }
       }
     }
+  }
+
+  @Composable
+  private fun TransitionPreview(
+    animatable: Animatable<Float, AnimationVector1D>,
+    clickedThumbnailBounds: ClickedThumbnailBoundsStorage.ClickedThumbnailBounds,
+    onTransitionFinished: () -> Unit
+  ) {
+    val bitmapMatrix = remember { Matrix() }
+
+    val postImage = clickedThumbnailBounds.postImage
+    val srcBounds = clickedThumbnailBounds.bounds
+
+    val bitmapPaint = remember {
+      Paint().apply {
+        isAntiAlias = true
+        isFilterBitmap = true
+      }
+    }
+
+    var bitmapMut by remember { mutableStateOf<Bitmap?>(null) }
+    val bitmap = bitmapMut
+
+    val context = LocalContext.current.applicationContext
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        var success = false
+
+        try {
+          withTimeout(timeMillis = 1000) {
+            bitmapMut = mediaViewerScreenViewModel.loadThumbnailBitmap(context, postImage)
+          }
+
+          success = true
+        } catch (error: Throwable) {
+          logcatError { "error: ${error.errorMessageOrClassName()}" }
+          success = false
+        } finally {
+          if (!success) {
+            onTransitionFinished()
+          }
+        }
+      }
+    )
+
+    if (bitmap == null) {
+      return
+    }
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        try {
+          animatable.animateTo(1f, animationSpec = tween(250))
+        } finally {
+          onTransitionFinished()
+        }
+      }
+    )
+
+    val animationProgress by animatable.asState()
+
+    Canvas(
+      modifier = Modifier.fillMaxSize(),
+      onDraw = {
+        val nativeCanvas = drawContext.canvas.nativeCanvas
+
+        val scale = Math.min(
+          nativeCanvas.width.toFloat() / bitmap.width,
+          nativeCanvas.height.toFloat() / bitmap.height
+        )
+        val dstHeight = bitmap.height * scale
+
+        bitmapMatrix.reset()
+        bitmapMatrix.setScale(
+          lerpFloat(1f, scale, animationProgress),
+          lerpFloat(1f, scale, animationProgress)
+        )
+
+        val startY = srcBounds.top
+        val endY = (nativeCanvas.height.toFloat() - dstHeight) / 2f
+
+        val startX = srcBounds.left
+        val endX = 0f
+
+        nativeCanvas.withTranslation(
+          x = lerpFloat(startX, endX, animationProgress),
+          y = lerpFloat(startY, endY, animationProgress)
+        ) {
+          nativeCanvas.drawBitmap(bitmap, bitmapMatrix, bitmapPaint)
+        }
+      }
+    )
   }
 
   @Composable

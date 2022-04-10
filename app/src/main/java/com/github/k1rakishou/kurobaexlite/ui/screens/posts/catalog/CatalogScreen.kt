@@ -34,6 +34,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMe
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list.PostListContent
@@ -54,6 +55,7 @@ class CatalogScreen(
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
+  private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val catalogScreenToolbarActionHandler by lazy {
     CatalogScreenToolbarActionHandler()
@@ -249,8 +251,9 @@ class CatalogScreen(
       onPostRepliesClicked = { postDescriptor ->
         // no-op
       },
-      onPostImageClicked = { chanDescriptor, postImageData ->
+      onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
         val catalogDescriptor = chanDescriptor as CatalogDescriptor
+        clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
         val mediaViewerScreen = MediaViewerScreen(
           mediaViewerParams = MediaViewerParams.Catalog(

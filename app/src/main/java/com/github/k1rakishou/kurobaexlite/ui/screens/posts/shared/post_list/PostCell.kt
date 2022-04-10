@@ -24,6 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -52,7 +55,7 @@ internal fun PostCell(
   onPostUnbind: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val postComment = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostComment }
@@ -107,7 +110,7 @@ private fun PostCellTitle(
   postCellData: PostCellData,
   postSubject: AnnotatedString?,
   postCellSubjectTextSizeSp: TextUnit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val chanTheme = LocalChanTheme.current
@@ -120,12 +123,23 @@ private fun PostCellTitle(
   ) {
     if (postCellData.images.isNotNullNorEmpty()) {
       val postImage = postCellData.images.first()
+      var boundsInRootMut by remember { mutableStateOf<Rect?>(null) }
 
       Box(
         modifier = Modifier
           .wrapContentSize()
           .background(chanTheme.backColorSecondaryCompose)
-          .kurobaClickable(onClick = { onPostImageClicked(chanDescriptor, postImage) })
+          .onGloballyPositioned { layoutCoordinates -> boundsInRootMut = layoutCoordinates.boundsInRoot() }
+          .kurobaClickable(
+            onClick = {
+              val boundsInRoot = boundsInRootMut
+              if (boundsInRoot == null) {
+                return@kurobaClickable
+              }
+
+              onPostImageClicked(chanDescriptor, postImage, boundsInRoot)
+            }
+          )
       ) {
         ImageThumbnail(
           modifier = Modifier.size(70.dp),

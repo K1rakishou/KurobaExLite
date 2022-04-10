@@ -33,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMe
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreen
@@ -53,6 +54,7 @@ class ThreadScreen(
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
+  private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val threadScreenToolbarActionHandler by lazy {
     ThreadScreenToolbarActionHandler()
@@ -232,8 +234,9 @@ class ThreadScreen(
       onPostRepliesClicked = { postDescriptor ->
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
       },
-      onPostImageClicked = { chanDescriptor, postImageData ->
+      onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
         val threadDescriptor = chanDescriptor as ThreadDescriptor
+        clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
         val mediaViewerScreen = MediaViewerScreen(
           mediaViewerParams = MediaViewerParams.Thread(

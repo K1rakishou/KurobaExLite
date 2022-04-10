@@ -24,6 +24,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideKurobaViewConfiguration
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.ClickedThumbnailBoundsStorage
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity() {
@@ -32,6 +33,7 @@ class MainActivity : ComponentActivity() {
   private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   private val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
   private val fullScreenHelpers: FullScreenHelpers by inject(FullScreenHelpers::class.java)
+  private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private var backPressedOnce = false
 
@@ -45,6 +47,8 @@ class MainActivity : ComponentActivity() {
     WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
     fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
+
+    clickedThumbnailBoundsStorage.clear()
 
     setContent {
       HandleOrientationChanges()
@@ -90,6 +94,7 @@ class MainActivity : ComponentActivity() {
   override fun onDestroy() {
     mainActivityViewModel.rootNavigationRouter.onDestroy()
     coroutineScope.cancelChildren()
+    clickedThumbnailBoundsStorage.clear()
 
     super.onDestroy()
   }

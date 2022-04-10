@@ -36,6 +36,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.screens.boards.BoardSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.reply.PopupRepliesScreenViewModel
@@ -76,6 +77,7 @@ object DependencyGraph {
       single { ThemeEngine() }
       single { MediaViewerPostListScroller() }
       single { CrossThreadFollowHistory() }
+      single { ClickedThumbnailBoundsStorage() }
       single {
         ParsedPostDataCache(
           appContext = get(),
@@ -220,15 +222,16 @@ object DependencyGraph {
 
   @OptIn(ExperimentalCoilApi::class)
   private fun Module.coilImageLoader() {
-    single {
+    single<ImageLoader> {
       val applicationContext = get<Context>().applicationContext
       val diskCacheInit = { get<DiskCache>() }
 
-      return@single ImageLoader.Builder(applicationContext).apply {
-        components {
-          diskCache(diskCacheInit)
-        }
-      }
+      return@single ImageLoader.Builder(applicationContext)
+        .apply {
+          components {
+            diskCache(diskCacheInit)
+          }
+        }.build()
     }
   }
 

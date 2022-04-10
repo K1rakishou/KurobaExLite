@@ -34,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -88,7 +89,7 @@ internal fun PostListContent(
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   emptyContent: @Composable LazyItemScope.(Boolean, Boolean) -> Unit = { isInPopup, isCatalogMode ->
     PostListEmptyContent(isInPopup, isCatalogMode)
   },
@@ -304,7 +305,7 @@ private fun PostListInternal(
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
@@ -617,7 +618,7 @@ private fun LazyListScope.postList(
   onPostCellClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?,
   buildThreadStatusCell: @Composable (LazyItemScope.() -> Unit)? = null
 ) {
@@ -693,7 +694,7 @@ private fun LazyItemScope.PostCellContainer(
   onPostCellClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData) -> Unit,
+  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val chanTheme = LocalChanTheme.current
