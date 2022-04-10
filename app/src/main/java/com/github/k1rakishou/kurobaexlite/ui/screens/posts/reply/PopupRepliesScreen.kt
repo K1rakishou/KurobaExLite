@@ -87,6 +87,7 @@ class PopupRepliesScreen(
         PostListOptions(
           isCatalogMode = false,
           isInPopup = true,
+          ownerScreenKey = screenKey,
           pullToRefreshEnabled = false,
           contentPadding = PaddingValues(),
           mainUiLayoutMode = MainUiLayoutMode.Portrait,
@@ -197,6 +198,7 @@ class PopupRepliesScreen(
               images = collectedImages,
               initialImageUrl = postImageData.fullImageAsUrl
             ),
+            openedFromScreen = screenKey,
             componentActivity = componentActivity,
             navigationRouter = navigationRouter
           )

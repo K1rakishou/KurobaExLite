@@ -22,11 +22,12 @@ fun RootRouterHost(
   }
 
   if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
-    for (secondaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {
-      key(secondaryScreenUpdate.screen.screenKey) {
+    for (primaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {
+      key(primaryScreenUpdate.screen.screenKey) {
         ScreenTransition(
-          screenUpdate = secondaryScreenUpdate,
-          content = { secondaryScreenUpdate.screen.Content() }
+          screenUpdate = primaryScreenUpdate,
+          onScreenUpdateFinished = { screenUpdate -> rootNavigationRouter.onScreenUpdateFinished(screenUpdate) },
+          content = { primaryScreenUpdate.screen.Content() }
         )
       }
     }
@@ -37,6 +38,7 @@ fun RootRouterHost(
       key(secondaryScreenUpdate.screen.screenKey) {
         ScreenTransition(
           screenUpdate = secondaryScreenUpdate,
+          onScreenUpdateFinished = { screenUpdate -> rootNavigationRouter.onScreenUpdateFinished(screenUpdate) },
           content = { secondaryScreenUpdate.screen.Content() }
         )
       }
@@ -52,20 +54,22 @@ fun RouterHost(
 ) {
   navigationRouter.HandleBackPresses(onBackPressed)
 
+  defaultScreen()
+
   val screenUpdateTransactionState by navigationRouter.screenUpdatesFlow.collectAsState()
   val screenUpdateTransaction = screenUpdateTransactionState
 
   if (screenUpdateTransaction == null) {
-    defaultScreen()
     return
   }
 
   if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
-    for (secondaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {
-      key(secondaryScreenUpdate.screen.screenKey) {
+    for (primaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {
+      key(primaryScreenUpdate.screen.screenKey) {
         ScreenTransition(
-          screenUpdate = secondaryScreenUpdate,
-          content = { secondaryScreenUpdate.screen.Content() }
+          screenUpdate = primaryScreenUpdate,
+          onScreenUpdateFinished = { screenUpdate -> navigationRouter.onScreenUpdateFinished(screenUpdate) },
+          content = { primaryScreenUpdate.screen.Content() }
         )
       }
     }
@@ -76,6 +80,7 @@ fun RouterHost(
       key(secondaryScreenUpdate.screen.screenKey) {
         ScreenTransition(
           screenUpdate = secondaryScreenUpdate,
+          onScreenUpdateFinished = { screenUpdate -> navigationRouter.onScreenUpdateFinished(screenUpdate) },
           content = { secondaryScreenUpdate.screen.Content() }
         )
       }

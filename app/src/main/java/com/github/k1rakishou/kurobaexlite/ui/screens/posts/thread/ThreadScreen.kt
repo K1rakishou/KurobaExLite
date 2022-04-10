@@ -74,7 +74,11 @@ class ThreadScreen(
       ),
       FloatingMenuItem.Text(
         menuItemKey = ThreadScreenToolbarActionHandler.ACTION_COPY_THREAD_URL,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.thread_screen_action_copy_thread_url)
+        text = FloatingMenuItem.MenuItemText.Id(R.string.thread_toolbar_action_copy_thread_url)
+      ),
+      FloatingMenuItem.Text(
+        menuItemKey = ThreadScreenToolbarActionHandler.ACTION_THREAD_ALBUM,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.thread_toolbar_album)
       ),
       FloatingMenuItem.Footer(
         items = listOf(
@@ -137,8 +141,9 @@ class ThreadScreen(
             menuItems = floatingMenuItems,
             onMenuItemClicked = { menuItem ->
               threadScreenToolbarActionHandler.processClickedToolbarMenuItem(
-                menuItem = menuItem,
-                threadScreenViewModelProvider = { threadScreenViewModel }
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter,
+                menuItem = menuItem
               )
             }
           )
@@ -188,6 +193,7 @@ class ThreadScreen(
         PostListOptions(
           isCatalogMode = isCatalogScreen,
           isInPopup = false,
+          ownerScreenKey = screenKey,
           pullToRefreshEnabled = true,
           contentPadding = PaddingValues(
             top = toolbarHeight + windowInsets.top,
@@ -234,6 +240,7 @@ class ThreadScreen(
             threadDescriptor = threadDescriptor,
             initialImageUrl = postImageData.fullImageAsUrl
           ),
+          openedFromScreen = screenKey,
           componentActivity = componentActivity,
           navigationRouter = navigationRouter
         )

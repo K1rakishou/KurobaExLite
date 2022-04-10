@@ -168,11 +168,11 @@ internal fun LazyItemScope.ThreadStatusCell(
 
           val loadingText = if (timeUntilNextUpdateSeconds > 0L) {
             context.resources.getString(
-              R.string.thread_screen_status_cell_loading_in,
+              R.string.thread_toolbar_status_cell_loading_in,
               timeUntilNextUpdateSeconds
             )
           } else {
-            context.resources.getString(R.string.thread_screen_status_cell_loading_right_now)
+            context.resources.getString(R.string.thread_toolbar_status_cell_loading_right_now)
           }
 
           append(loadingText)

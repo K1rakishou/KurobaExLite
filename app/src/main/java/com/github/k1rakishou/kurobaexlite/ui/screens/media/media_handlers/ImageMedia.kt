@@ -14,6 +14,7 @@ import com.github.k1rakishou.cssi_lib.MaxTileSize
 import com.github.k1rakishou.cssi_lib.MinimumScaleType
 import com.github.k1rakishou.cssi_lib.ScrollableContainerDirection
 import com.github.k1rakishou.cssi_lib.rememberComposeSubsamplingScaleImageState
+import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.decoder.TachiyomiImageDecoder
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -27,9 +28,16 @@ fun DisplayFullImage(
   imageFile: File,
   onFullImageLoaded: () -> Unit,
   onFullImageFailedToLoad: () -> Unit,
-  onImageTapped: () -> Unit
+  onImageTapped: () -> Unit,
+  reloadImage: () -> Unit
 ) {
   val eventListener = object : ComposeSubsamplingScaleImageEventListener() {
+    override fun onFailedToProvideSource(error: Throwable) {
+      super.onFailedToProvideSource(error)
+
+      reloadImage()
+    }
+
     override fun onFailedToDecodeImageInfo(error: Throwable) {
       val url = postImageDataLoadState.fullImageUrlAsString
       logcatError { "onFailedToDecodeImageInfo() url=$url, error=${error.errorMessageOrClassName()}" }
@@ -51,23 +59,25 @@ fun DisplayFullImage(
 
   val imageSourceProvider = remember(key1 = imageFile) {
     object : ImageSourceProvider {
-      override suspend fun provide(): ComposeSubsamplingScaleImageSource {
-        val inputStream = try {
-          imageFile.inputStream()
-        } catch (error: Throwable) {
-          throw MediaViewerScreenViewModel.ImageLoadException(
-            postImageDataLoadState.fullImageUrl,
-            "Failed to open input stream of file: ${imageFile.name}, " +
-              "exists: ${imageFile.exists()}, " +
-              "length: ${imageFile.length()}, " +
-              "canRead: ${imageFile.canRead()}"
+      override suspend fun provide(): Result<ComposeSubsamplingScaleImageSource> {
+        return Result.Try {
+          val inputStream = try {
+            imageFile.inputStream()
+          } catch (error: Throwable) {
+            throw MediaViewerScreenViewModel.ImageLoadException(
+              postImageDataLoadState.fullImageUrl,
+              "Failed to open input stream of file: ${imageFile.name}, " +
+                "exists: ${imageFile.exists()}, " +
+                "length: ${imageFile.length()}, " +
+                "canRead: ${imageFile.canRead()}"
+            )
+          }
+
+          return@Try ComposeSubsamplingScaleImageSource(
+            debugKey = postImageDataLoadState.fullImageUrlAsString,
+            inputStream = inputStream
           )
         }
-
-        return ComposeSubsamplingScaleImageSource(
-          debugKey = postImageDataLoadState.fullImageUrlAsString,
-          inputStream = inputStream
-        )
       }
     }
   }

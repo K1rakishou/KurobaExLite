@@ -3,9 +3,10 @@ package com.github.k1rakishou.kurobaexlite.navigation
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateListOf
+import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeBackgroundScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,16 +16,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class NavigationRouter(
-  val routerKey: String,
+open class NavigationRouter(
+  val routerKey: ScreenKey,
   private val parentRouter: NavigationRouter?
 ) {
-  private val navigationScreensStack = mutableListOf<ComposeScreen>()
-  private val floatingScreensStack = mutableListOf<FloatingComposeScreen>()
-  private val childRouters = linkedMapOf<String, NavigationRouter>()
-  private val backPressHandlers = mutableListOf<OnBackPressHandler>()
+  val navigationScreensStack = mutableStateListOf<ComposeScreen>()
+  protected val childRouters = linkedMapOf<ScreenKey, NavigationRouter>()
+  protected val backPressHandlers = mutableListOf<OnBackPressHandler>()
 
-  private val _screenUpdatesFlow = MutableStateFlow<ScreenUpdateTransaction?>(null)
+  protected val _screenUpdatesFlow = MutableStateFlow<ScreenUpdateTransaction?>(null)
   val screenUpdatesFlow: StateFlow<ScreenUpdateTransaction?>
     get() = _screenUpdatesFlow.asStateFlow()
 
@@ -49,7 +49,7 @@ class NavigationRouter(
     )
   }
 
-  fun pushScreen(newComposeScreen: ComposeScreen): Boolean {
+  open fun pushScreen(newComposeScreen: ComposeScreen): Boolean {
     if (newComposeScreen is FloatingComposeScreen) {
       error("FloatingComposeScreens must be added via presentScreen() function!")
     }
@@ -66,21 +66,19 @@ class NavigationRouter(
       oldScreens = navigationScreensStack,
       newScreenUpdate = ScreenUpdate.Push(newComposeScreen)
     )
-    val floatingScreenUpdates = floatingScreensStack
-      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
 
     navigationScreensStack.add(newComposeScreen)
     logcat.logcat(tag = TAG) { "pushScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = floatingScreenUpdates
+      floatingScreenUpdates = emptyList()
     )
 
     return true
   }
 
-  fun popScreen(newComposeScreen: ComposeScreen): Boolean {
+  open fun popScreen(newComposeScreen: ComposeScreen): Boolean {
     val indexOfPrev = navigationScreensStack
       .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
 
@@ -95,154 +93,79 @@ class NavigationRouter(
       oldScreens = navigationScreensStack,
       newScreenUpdate = ScreenUpdate.Pop(newComposeScreen)
     )
-    val floatingScreenUpdates = floatingScreensStack
-      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
 
     logcat.logcat(tag = TAG) { "popScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = floatingScreenUpdates
+      floatingScreenUpdates = emptyList()
     )
 
     return true
   }
 
-  fun presentScreen(floatingComposeScreen: FloatingComposeScreen) {
+  open fun presentScreen(floatingComposeScreen: FloatingComposeScreen) {
     if (parentRouter != null) {
       parentRouter.presentScreen(floatingComposeScreen)
       return
     }
 
-    val indexOfPrev = floatingScreensStack
-      .indexOfFirst { screen -> screen.screenKey == floatingComposeScreen.screenKey }
-
-    if (indexOfPrev >= 0) {
-      // Already added
-      return
-    }
-
-    val navigationScreenUpdates = navigationScreensStack
-      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
-    val floatingScreenUpdates = combineScreenUpdates(
-      oldScreens = floatingScreensStack,
-      newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.In)
-    ).toMutableList()
-
-    if (floatingScreensStack.none { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
-      logcat.logcat(tag = TAG) { "presentScreen(${floatingComposeScreen.screenKey.key}) adding bgScreen" }
-
-      val bgScreen = FloatingComposeBackgroundScreen(
-        componentActivity = floatingComposeScreen.componentActivity,
-        navigationRouter = floatingComposeScreen.navigationRouter
-      )
-
-      floatingScreenUpdates.add(0, ScreenUpdate.Fade(bgScreen, ScreenUpdate.FadeType.In))
-      floatingScreensStack.add(0, bgScreen)
-    }
-
-    floatingScreensStack.add(floatingComposeScreen)
-    logcat.logcat(tag = TAG) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
-
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = floatingScreenUpdates
-    )
+    unreachable("Must never reach here because should be overridden by MainNavigationRouter")
   }
 
-  fun stopPresentingScreen(screenKey: ScreenKey): Boolean {
+  open fun stopPresentingScreen(screenKey: ScreenKey): Boolean {
     if (parentRouter != null) {
       return parentRouter.stopPresentingScreen(screenKey)
     }
 
-    val index = floatingScreensStack.indexOfLast { screen -> screen.screenKey == screenKey }
-    if (index < 0) {
-      return false
-    }
-
-    val floatingComposeScreen = floatingScreensStack.removeAt(index)
-
-    val navigationScreenUpdates = navigationScreensStack
-      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
-    val floatingScreenUpdates = combineScreenUpdates(
-      oldScreens = floatingScreensStack,
-      newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.Out)
-    ).toMutableList()
-
-    if (floatingScreensStack.size <= 1 && floatingScreensStack.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
-      logcat.logcat(tag = TAG) { "unpresentScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
-
-      val indexOfPrevBg = floatingScreenUpdates
-        .indexOfFirst { screenUpdate -> screenUpdate.screen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
-      if (indexOfPrevBg >= 0) {
-        floatingScreenUpdates.removeAt(indexOfPrevBg)
-      }
-
-      val bgScreen = FloatingComposeBackgroundScreen(
-        componentActivity = floatingComposeScreen.componentActivity,
-        navigationRouter = floatingComposeScreen.navigationRouter
-      )
-
-      floatingScreenUpdates.add(0, ScreenUpdate.Fade(bgScreen, ScreenUpdate.FadeType.Out))
-
-      val indexOfBgScreen = floatingScreensStack
-        .indexOfLast { screen -> screen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
-      if (indexOfBgScreen >= 0) {
-        floatingScreensStack.removeAt(indexOfBgScreen)
-      }
-    }
-
-    logcat.logcat(tag = TAG) { "stopPresenting(${floatingComposeScreen.screenKey.key})" }
-
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = floatingScreenUpdates
-    )
-
-    return true
+    unreachable("Must never reach here because should be overridden by MainNavigationRouter")
   }
 
-  private fun combineScreenUpdates(
+  protected fun combineScreenUpdates(
     oldScreens: List<ComposeScreen>,
     newScreenUpdate: ScreenUpdate
   ): List<ScreenUpdate> {
     return oldScreens.map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) } + newScreenUpdate
   }
 
-  fun childRouter(key: String): NavigationRouter {
+  fun childRouter(screenKey: ScreenKey): NavigationRouter {
     return childRouters.getOrPut(
-      key = key,
+      key = screenKey,
       defaultValue = {
         NavigationRouter(
-          routerKey = key,
+          routerKey = screenKey,
           parentRouter = this
         )
       }
     )
   }
 
-  fun getRouterByKey(key: String): NavigationRouter {
-    if (routerKey == key) {
+  fun requireParentRouter(): NavigationRouter {
+    return requireNotNull(parentRouter) { "Parent router is null" }
+  }
+
+  fun getRouterByKey(screenKey: ScreenKey): NavigationRouter {
+    if (routerKey == screenKey) {
       return this
     }
 
     if (parentRouter != null) {
-      val router = parentRouter.getRouterByKeyOrNull(key)
+      val router = parentRouter.getRouterByKeyOrNull(screenKey)
       if (router != null) {
         return router
       }
     }
 
-    error("NavigationRouter with key \'$key\' not found")
+    error("NavigationRouter with key \'${screenKey.key}\' not found")
   }
 
-  private fun getRouterByKeyOrNull(key: String): NavigationRouter? {
-    if (routerKey == key) {
+  private fun getRouterByKeyOrNull(screenKey: ScreenKey): NavigationRouter? {
+    if (routerKey == screenKey) {
       return this
     }
 
     if (parentRouter != null) {
-      return parentRouter.getRouterByKeyOrNull(key)
+      return parentRouter.getRouterByKeyOrNull(screenKey)
     }
 
     return null
@@ -290,12 +213,31 @@ class NavigationRouter(
     return parentRouter.isInsideScreen(lookupScreenKey)
   }
 
+  open fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
+    if (!screenUpdate.isScreenBeingRemoved()) {
+      return
+    }
+
+    if (navigationScreensStack.isEmpty()) {
+      _screenUpdatesFlow.value = null
+    }
+  }
+
   data class ScreenUpdateTransaction(
     val navigationScreenUpdates: List<ScreenUpdate>,
     val floatingScreenUpdates: List<ScreenUpdate>
   )
 
   sealed class ScreenUpdate(val screen: ComposeScreen) {
+
+    fun isScreenBeingRemoved(): Boolean {
+      return when (this) {
+        is Fade -> this.fadeType == FadeType.Out
+        is Pop -> true
+        is Push -> false
+        is Set -> false
+      }
+    }
     
     data class Set(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
       override fun toString(): String = "Set(key=${composeScreen.screenKey.key})"

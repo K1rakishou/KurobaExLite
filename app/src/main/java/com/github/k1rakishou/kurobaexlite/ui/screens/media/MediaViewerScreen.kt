@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.media
 import android.app.Activity
 import android.content.Context
 import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -44,6 +45,7 @@ import coil.request.ImageRequest
 import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
@@ -72,6 +74,8 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.Displa
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.DisplayUnsupportedMedia
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.DisplayVideo
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.media_handlers.VideoMediaState
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreenViewModel
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
@@ -84,10 +88,13 @@ import org.koin.java.KoinJavaComponent.inject
 
 class MediaViewerScreen(
   private val mediaViewerParams: MediaViewerParams,
+  private val openedFromScreen: ScreenKey,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
+  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModels()
+  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModels()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
 
@@ -110,19 +117,9 @@ class MediaViewerScreen(
     val mediaViewerScreenState = remember { MediaViewerScreenState() }
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
-    LaunchedEffect(
-      key1 = mediaViewerParams,
-      block = {
-        val initResult = mediaViewerScreenViewModel.init(mediaViewerParams)
-
-        Snapshot.withMutableSnapshot {
-          val images = mutableStateListOf<ImageLoadState>()
-          images.addAll(initResult.images)
-
-          mediaViewerScreenState.images = images
-          mediaViewerScreenState.initialPage.value = initResult.initialPage
-        }
-      }
+    InitMediaViewerData(
+      mediaViewerScreenState = mediaViewerScreenState,
+      mediaViewerParams = mediaViewerParams
     )
 
     DisposableEffect(
@@ -252,6 +249,70 @@ class MediaViewerScreen(
     }
   }
 
+  @Composable
+  private fun InitMediaViewerData(
+    mediaViewerScreenState: MediaViewerScreenState,
+    mediaViewerParams: MediaViewerParams
+  ) {
+    when (mediaViewerParams) {
+      is MediaViewerParams.Catalog,
+      is MediaViewerParams.Thread -> {
+        val postsAsyncDataState by if (mediaViewerParams is MediaViewerParams.Catalog) {
+          catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+        } else {
+          threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+        }
+
+        val postCellDataStateListMut = (postsAsyncDataState as? AsyncData.Data)?.data?.posts
+        val postCellDataStateList = postCellDataStateListMut
+
+        LaunchedEffect(
+          key1 = postCellDataStateList,
+          block = {
+            if (postCellDataStateList == null) {
+              mediaViewerScreenState.images = null
+              mediaViewerScreenState.initialPage.value = null
+
+              return@LaunchedEffect
+            }
+
+            val initResult = mediaViewerScreenViewModel.initFromPostStateList(
+              postCellDataStateList = postCellDataStateList,
+              initialImageUrl = mediaViewerParams.initialImage
+            )
+
+            Snapshot.withMutableSnapshot {
+              val images = mutableStateListOf<ImageLoadState>()
+              images.addAll(initResult.images)
+
+              mediaViewerScreenState.images = images
+              mediaViewerScreenState.initialPage.value = initResult.initialPage
+            }
+          }
+        )
+      }
+      is MediaViewerParams.Images -> {
+        LaunchedEffect(
+          key1 = Unit,
+          block = {
+            val initResult = mediaViewerScreenViewModel.initFromImageList(
+              images = mediaViewerParams.images,
+              initialImageUrl = mediaViewerParams.initialImageUrl
+            )
+
+            Snapshot.withMutableSnapshot {
+              val images = mutableStateListOf<ImageLoadState>()
+              images.addAll(initResult.images)
+
+              mediaViewerScreenState.images = images
+              mediaViewerScreenState.initialPage.value = initResult.initialPage
+            }
+          }
+        )
+      }
+    }
+  }
+
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun MediaViewerPager(
@@ -331,6 +392,7 @@ class MediaViewerScreen(
           ?: return@LaunchedEffect
 
         mediaViewerPostListScroller.onSwipedTo(
+          screenKey = openedFromScreen,
           fullImageUrl = postImageData.fullImageAsUrl,
           postDescriptor = postImageData.ownerPostDescriptor
         )
@@ -441,7 +503,13 @@ class MediaViewerScreen(
               imageFile = imageFile,
               onFullImageLoaded = { fullMediaLoaded = true },
               onFullImageFailedToLoad = { fullMediaLoaded = false },
-              onImageTapped = { coroutineScope.launch { onBackPressed() } }
+              onImageTapped = { coroutineScope.launch { onBackPressed() } },
+              reloadImage = {
+                coroutineScope.launch {
+                  mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
+                  images[page] = ImageLoadState.PreparingForLoading(postImageDataLoadState.postImage)
+                }
+              }
             )
           }
           ImageType.Video -> {

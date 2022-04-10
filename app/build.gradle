@@ -209,7 +209,7 @@ dependencies {
     implementation 'org.nibor.autolink:autolink:0.10.0'
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
-    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:f6c979b25d'
+    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:96b909f63b'
 
     implementation "com.squareup.moshi:moshi-kotlin:${moshi}"
     ksp "com.squareup.moshi:moshi-kotlin-codegen:${moshi}"

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.media
 
+import androidx.compose.runtime.State
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.chan.core.mpv.MpvInitializer
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
@@ -22,6 +23,8 @@ import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
@@ -51,39 +54,24 @@ class MediaViewerScreenViewModel(
   val mpvInitialized: Boolean
     get() = mpvInitializer.initialized
 
-  suspend fun init(mediaViewerParams: MediaViewerParams): InitResult {
+  suspend fun initFromPostStateList(
+    postCellDataStateList: List<State<PostCellData>>,
+    initialImageUrl: HttpUrl
+  ): InitResult {
     return withContext(Dispatchers.Default) {
       // Trim the cache every time we open the media viewer
       kurobaLruDiskCache.manualTrim(CacheFileType.PostMediaFull)
 
-      val initialImageUrl = mediaViewerParams.initialImage
       val imagesToShow = mutableListOf<IPostImage>()
 
-      when (mediaViewerParams) {
-        is MediaViewerParams.Catalog -> {
-          val catalogThreads = chanCache.getCatalogThreads(mediaViewerParams.catalogDescriptor)
+      postCellDataStateList.forEach { postCellDataState ->
+        val postCellData = postCellDataState.value
 
-          for (catalogThread in catalogThreads) {
-            val threadImages = catalogThread.images ?: continue
-            if (threadImages.isNotEmpty()) {
-              imagesToShow += threadImages
-            }
-          }
-        }
-        is MediaViewerParams.Thread -> {
-          val threadPosts = chanCache.getThreadPosts(mediaViewerParams.threadDescriptor)
+        val threadImages = postCellData.images
+          ?: return@forEach
 
-          for (threadPost in threadPosts) {
-            val threadImages = threadPost.images ?: continue
-            if (threadImages.isNotEmpty()) {
-              imagesToShow += threadImages
-            }
-          }
-        }
-        is MediaViewerParams.Images -> {
-          for (postCellImageData in mediaViewerParams.images) {
-            imagesToShow += postCellImageData
-          }
+        if (threadImages.isNotEmpty()) {
+          imagesToShow += threadImages
         }
       }
 
@@ -100,6 +88,32 @@ class MediaViewerScreenViewModel(
 
       return@withContext InitResult(
         images = imagesToShow.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) },
+        initialPage = initialPage
+      )
+    }
+  }
+
+  suspend fun initFromImageList(
+    images: List<PostCellImageData>,
+    initialImageUrl: HttpUrl
+  ): InitResult {
+    return withContext(Dispatchers.Default) {
+      // Trim the cache every time we open the media viewer
+      kurobaLruDiskCache.manualTrim(CacheFileType.PostMediaFull)
+
+      var initialPage = images.indexOfFirst { it.fullImageAsUrl == initialImageUrl }
+      if (initialPage < 0) {
+        logcatError { "Failed to find post image with url: \'${initialImageUrl}\', resetting it" }
+        initialPage = 0
+      }
+
+      val hasVideos = images.any { postImage -> postImage.imageType() == ImageType.Video }
+      if (hasVideos) {
+        mpvInitializer.init()
+      }
+
+      return@withContext InitResult(
+        images = images.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) },
         initialPage = initialPage
       )
     }
@@ -227,6 +241,13 @@ class MediaViewerScreenViewModel(
         onSuccess()
       }
     }
+  }
+
+  suspend fun removeFileFromDisk(postImage: IPostImage) {
+    kurobaLruDiskCache.deleteCacheFileByUrl(
+      cacheFileType = CacheFileType.PostMediaFull,
+      url = postImage.fullImageAsUrl
+    )
   }
 
   class InitResult(

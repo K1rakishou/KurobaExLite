@@ -136,6 +136,26 @@ fun KurobaComposeErrorWithButton(
   }
 }
 
+@Composable
+fun KurobaComposeError(
+  modifier: Modifier = DefaultFillMaxSizeModifier,
+  errorMessage: String
+) {
+  Column(
+    modifier = modifier,
+    verticalArrangement = Arrangement.Center,
+    horizontalAlignment = Alignment.CenterHorizontally
+  ) {
+    KurobaComposeText(
+      modifier = Modifier
+        .wrapContentHeight()
+        .fillMaxWidth(),
+      text = errorMessage,
+      fontSize = 16.sp,
+      textAlign = TextAlign.Center
+    )
+  }
+}
 
 @Composable
 fun KurobaComposeText(

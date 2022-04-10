@@ -35,7 +35,7 @@ fun MediaViewerScreenToolbarContainer(
 
   val currentToolbarIndex = pagerState.currentPage
   val targetToolbarIndex = pagerState.targetPage
-  val animationProgress = pagerState.currentPageOffset.coerceIn(0f, 1f)
+  val animationProgress = pagerState.currentPageOffset.coerceIn(-1f, 1f)
 
   val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }

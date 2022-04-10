@@ -399,7 +399,7 @@ class ThreadScreenViewModel(
     }
   }
 
-  fun onFirstVisiblePostScrollChanged(
+  override fun onFirstVisiblePostScrollChanged(
     postCellData: PostCellData,
     postListTouchingBottom: Boolean
   ) {

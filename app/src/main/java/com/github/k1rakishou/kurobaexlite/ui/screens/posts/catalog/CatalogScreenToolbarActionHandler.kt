@@ -11,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
+import com.github.k1rakishou.kurobaexlite.ui.screens.album.AlbumScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
@@ -57,6 +58,13 @@ class CatalogScreenToolbarActionHandler {
           componentActivity = componentActivity,
           navigationRouter = navigationRouter
         )
+      }
+      ACTION_CATALOG_ALBUM -> {
+        val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+          ?: return
+
+        val childRouter = navigationRouter.childRouter(AlbumScreen.SCREEN_KEY)
+        navigationRouter.pushScreen(AlbumScreen(catalogDescriptor, componentActivity, childRouter))
       }
       ACTION_SCROLL_TOP -> catalogScreenViewModel.scrollTop()
       ACTION_SCROLL_BOTTOM -> catalogScreenViewModel.scrollBottom()
@@ -105,8 +113,8 @@ class CatalogScreenToolbarActionHandler {
         componentActivity = componentActivity,
         navigationRouter = navigationRouter,
         params = DialogScreen.Params(
-          title = DialogScreen.Text.Id(R.string.catalog_screen_enter_identifier),
-          description = DialogScreen.Text.Id(R.string.catalog_screen_enter_identifier_description),
+          title = DialogScreen.Text.Id(R.string.catalog_toolbar_enter_identifier),
+          description = DialogScreen.Text.Id(R.string.catalog_toolbar_enter_identifier_description),
           input = DialogScreen.Input.String(),
           negativeButton = DialogScreen.DialogButton(buttonText = R.string.cancel),
           positiveButton = DialogScreen.PositiveDialogButton(
@@ -163,7 +171,8 @@ class CatalogScreenToolbarActionHandler {
     const val ACTION_SCROLL_TOP = 2
     const val ACTION_SCROLL_BOTTOM = 3
     const val ACTION_LAYOUT_MODE = 4
-    const val ACTION_BOOKMARKS_SCREEN_POSITION = 5
+    const val ACTION_CATALOG_ALBUM = 5
+    const val ACTION_BOOKMARKS_SCREEN_POSITION = 6
   }
 
 }

@@ -32,7 +32,6 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.ui.screens.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostsScreen
@@ -80,6 +79,10 @@ class CatalogScreen(
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier),
         subText = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier_subtitle)
       ),
+      FloatingMenuItem.Text(
+        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_CATALOG_ALBUM,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_album),
+      ),
       FloatingMenuItem.Footer(
         items = listOf(
           FloatingMenuItem.Icon(
@@ -126,14 +129,15 @@ class CatalogScreen(
       canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
       onLeftIconClicked = { uiInfoManager.openDrawer() },
       onMiddleMenuClicked = {
-        val mainScreenRouter = navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY.key)
+        val childRouter = navigationRouter.childRouter(BoardSelectionScreen.SCREEN_KEY)
+
         val boardSelectionScreen = BoardSelectionScreen(
           componentActivity = componentActivity,
-          navigationRouter = mainScreenRouter,
+          navigationRouter = childRouter,
           catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
         )
 
-        mainScreenRouter.pushScreen(boardSelectionScreen)
+        navigationRouter.pushScreen(boardSelectionScreen)
       },
       onSearchQueryUpdated = { searchQuery ->
         uiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
@@ -210,6 +214,7 @@ class CatalogScreen(
           isCatalogMode = isCatalogScreen,
           isInPopup = false,
           pullToRefreshEnabled = true,
+          ownerScreenKey = screenKey,
           contentPadding = PaddingValues(
             top = toolbarHeight + windowInsets.top,
             bottom = windowInsets.bottom + fabSize + fabVertOffset
@@ -252,6 +257,7 @@ class CatalogScreen(
             catalogDescriptor = catalogDescriptor,
             initialImageUrl = postImageData.fullImageUrl.toHttpUrl()
           ),
+          openedFromScreen = screenKey,
           componentActivity = componentActivity,
           navigationRouter = navigationRouter
         )

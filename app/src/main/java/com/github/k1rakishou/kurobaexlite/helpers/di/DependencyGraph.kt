@@ -20,9 +20,10 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.GetSiteBoardList
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
+import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
-import com.github.k1rakishou.kurobaexlite.managers.ChanThreadViewManager
+import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -102,7 +103,7 @@ object DependencyGraph {
     single { SiteManager() }
     single { ChanThreadManager(siteManager = get(), chanCache = get()) }
     single { PostReplyChainManager() }
-    single { ChanThreadViewManager() }
+    single { ChanViewManager() }
     single { SnackbarManager(appContext = get()) }
     single { UiInfoManager(appContext = get(), appSettings = get(), coroutineScope = get()) }
   }
@@ -152,14 +153,19 @@ object DependencyGraph {
   private fun Module.interactors() {
     single {
       LoadChanThreadView(
-        chanThreadViewManager = get(),
+        chanViewManager = get(),
         kurobaExLiteDatabase = get()
       )
     }
     single {
       UpdateChanThreadView(
-        chanThreadViewManager = get(),
+        chanViewManager = get(),
         kurobaExLiteDatabase = get()
+      )
+    }
+    single {
+      UpdateChanCatalogView(
+        chanViewManager = get()
       )
     }
     single {

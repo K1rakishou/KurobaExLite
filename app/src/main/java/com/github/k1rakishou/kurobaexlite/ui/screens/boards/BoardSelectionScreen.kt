@@ -3,12 +3,11 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.boards
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyListScope
@@ -49,10 +48,12 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreenViewModel
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -60,21 +61,34 @@ class BoardSelectionScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val catalogDescriptor: CatalogDescriptor?
-) : ComposeScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen(componentActivity, navigationRouter) {
   private val boardSelectionScreenViewModel: BoardSelectionScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
 
   override val screenKey: ScreenKey = SCREEN_KEY
+  override val hasFab: Boolean = false
+
+  private val searchQueryState = mutableStateOf<String?>(null)
+
+  private val kurobaToolbarState = KurobaToolbarState(
+    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
+    middlePartInfo = MiddlePartInfo(centerContent = false)
+  )
+
+  @Composable
+  override fun Toolbar(boxScope: BoxScope) {
+    ScreenToolbar(
+      kurobaToolbarState = kurobaToolbarState,
+      onBackArrowClicked = { popScreen() },
+      onSearchQueryUpdated = { updatedSearchQuery -> searchQueryState.value = updatedSearchQuery }
+    )
+  }
+
+  override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
   @Composable
   override fun Content() {
     val chanTheme = LocalChanTheme.current
-    val kurobaToolbarState = remember {
-      KurobaToolbarState(
-        leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
-        middlePartInfo = MiddlePartInfo(centerContent = false)
-      )
-    }
 
     navigationRouter.HandleBackPresses {
       popScreen()
@@ -91,7 +105,7 @@ class BoardSelectionScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
-    var searchQuery by remember { mutableStateOf<String?>(null) }
+    val searchQuery by searchQueryState
     var loadBoardsForSiteEvent by remember { mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Uninitialized) }
 
     Box(
@@ -136,12 +150,6 @@ class BoardSelectionScreen(
           }
         )
       }
-
-      ScreenToolbar(
-        kurobaToolbarState = kurobaToolbarState,
-        onBackArrowClicked = { popScreen() },
-        onSearchQueryUpdated = { updatedSearchQuery -> searchQuery = updatedSearchQuery }
-      )
     }
   }
 
@@ -329,43 +337,24 @@ class BoardSelectionScreen(
     onBackArrowClicked: () -> Unit,
     onSearchQueryUpdated: (String?) -> Unit
   ) {
-    val chanTheme = LocalChanTheme.current
-    val insets = LocalWindowInsets.current
-    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-    val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
     val toolbarTitle = stringResource(id = R.string.board_selection_screen_toolbar_title)
 
     LaunchedEffect(
       key1 = Unit,
       block = { kurobaToolbarState.toolbarTitleState.value = toolbarTitle })
 
-    Column(
-      modifier = Modifier
-        .height(toolbarTotalHeight)
-        .fillMaxWidth()
-        .background(chanTheme.primaryColorCompose)
-    ) {
-      Spacer(modifier = Modifier.height(insets.top))
-
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(toolbarHeight)
-      ) {
-        KurobaToolbar(
-          screenKey = screenKey,
-          componentActivity = componentActivity,
-          kurobaToolbarState = kurobaToolbarState,
-          navigationRouter = navigationRouter,
-          canProcessBackEvent = { true },
-          onLeftIconClicked = onBackArrowClicked,
-          onMiddleMenuClicked = null,
-          onSearchQueryUpdated = onSearchQueryUpdated,
-          onToolbarSortClicked = null,
-          onToolbarOverflowMenuClicked = null
-        )
-      }
-    }
+    KurobaToolbar(
+      screenKey = screenKey,
+      componentActivity = componentActivity,
+      kurobaToolbarState = kurobaToolbarState,
+      navigationRouter = navigationRouter,
+      canProcessBackEvent = { true },
+      onLeftIconClicked = onBackArrowClicked,
+      onMiddleMenuClicked = null,
+      onSearchQueryUpdated = onSearchQueryUpdated,
+      onToolbarSortClicked = null,
+      onToolbarOverflowMenuClicked = null
+    )
   }
 
   companion object {

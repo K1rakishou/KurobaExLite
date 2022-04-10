@@ -42,7 +42,7 @@ abstract class ComposeScreen(
       error("Can't pop FloatingComposeScreen, use stopPresenting()")
     }
 
-    return navigationRouter.popScreen(this)
+    return navigationRouter.requireParentRouter().popScreen(this)
   }
 
 }

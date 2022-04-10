@@ -3,17 +3,17 @@ package com.github.k1rakishou.kurobaexlite.interactors
 import com.github.k1rakishou.kurobaexlite.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.managers.ChanThreadViewManager
+import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanThreadView
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import logcat.asLog
 
 class LoadChanThreadView(
-  private val chanThreadViewManager: ChanThreadViewManager,
+  private val chanViewManager: ChanViewManager,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase
 ) {
   suspend fun execute(threadDescriptor: ThreadDescriptor): ChanThreadView? {
-    val chanThreadViewFromCache = chanThreadViewManager.read(threadDescriptor)
+    val chanThreadViewFromCache = chanViewManager.read(threadDescriptor)
     if (chanThreadViewFromCache != null) {
       return chanThreadViewFromCache
     }
@@ -48,7 +48,7 @@ class LoadChanThreadView(
       chanThreadViewFromDatabaseResult.getOrThrow()
     }
 
-    chanThreadViewManager.insertOrUpdate(
+    chanViewManager.insertOrUpdate(
       threadDescriptor = threadDescriptor,
       updater = {
         lastViewedPDForIndicator = chanThreadViewFromDatabase.lastViewedPDForIndicator

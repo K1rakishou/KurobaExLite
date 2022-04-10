@@ -16,7 +16,7 @@ class HomeChildScreens(
   private val navigationRouter: NavigationRouter
 ) {
   private val uiInfoManager by inject<UiInfoManager>(UiInfoManager::class.java)
-  private val homeScreenLayouter by lazy { HomeScreenLayouter(componentActivity, navigationRouter, uiInfoManager) }
+  private val homeScreenLayouter by lazy { HomeScreenLayouter(componentActivity, navigationRouter) }
 
   fun getChildScreens(
     uiLayoutMode: MainUiLayoutMode,

@@ -59,7 +59,7 @@ class MainScreen(
           composeScreenBuilder = {
             HomeScreen(
               componentActivity = componentActivity,
-              navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY.key)
+              navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY)
             )
           }
         )

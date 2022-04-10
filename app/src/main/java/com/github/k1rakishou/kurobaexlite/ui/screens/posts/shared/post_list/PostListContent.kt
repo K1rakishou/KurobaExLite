@@ -112,6 +112,7 @@ internal fun PostListContent(
     return
   }
 
+  val openedFromScreenKey = postListOptions.ownerScreenKey
   val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
   val lazyListState = rememberLazyListState()
 
@@ -160,6 +161,7 @@ internal fun PostListContent(
     LaunchedEffect(
       key1 = chanDescriptor,
       key2 = postListAsync,
+      key3 = openedFromScreenKey,
       block = {
         val postsState = if (postListAsync !is AsyncData.Data) {
           return@LaunchedEffect
@@ -167,8 +169,12 @@ internal fun PostListContent(
           (postListAsync as AsyncData.Data).data
         }
 
-        postsScreenViewModel.mediaViewerScrollEvents.collect { (_, postDescriptor) ->
-          val indexToScroll = postsState.postIndexByPostDescriptor(postDescriptor)
+        postsScreenViewModel.mediaViewerScrollEvents.collect { scrollInfo ->
+          if (openedFromScreenKey != scrollInfo.screenKey) {
+            return@collect
+          }
+
+          val indexToScroll = postsState.postIndexByPostDescriptor(scrollInfo.postDescriptor)
           if (indexToScroll != null) {
             lazyListState.scrollToItem(index = indexToScroll, scrollOffset = 0)
           }
@@ -258,8 +264,7 @@ private fun processPostListScrollEvent(
   }
 
   val postDataList = (postListAsync as? AsyncData.Data)?.data?.posts
-
-  if (postsScreenViewModel is ThreadScreenViewModel && postDataList != null) {
+  if (postDataList != null) {
     var firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.offset >= 0 }
     if (firstCompletelyVisibleItem == null) {
       firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()

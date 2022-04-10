@@ -25,6 +25,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 @Composable
 fun ImageThumbnail(
   modifier: Modifier = Modifier,
+  contentScale: ContentScale = ContentScale.Fit,
   postImage: IPostImage,
 ) {
   val context = LocalContext.current
@@ -37,7 +38,7 @@ fun ImageThumbnail(
         .crossfade(true)
         .build(),
       contentDescription = null,
-      contentScale = ContentScale.Fit,
+      contentScale = contentScale,
       content = {
         val state = painter.state
         if (state is AsyncImagePainter.State.Error) {

@@ -82,8 +82,7 @@ class KurobaLruDiskCache(
       logcat(TAG) { "getCacheFileOrNull($cacheFileType, $url) start" }
     }
 
-    val innerCache = getInnerCacheByFileType(cacheFileType)
-    val file = innerCache.getCacheFileOrNull(url)
+    val file = getInnerCacheByFileType(cacheFileType).getCacheFileOrNull(url)
 
     if (ENABLE_LOGGING) {
       logcat(TAG) { "getCacheFileOrNull($cacheFileType, $url) end -> ${file?.name}" }
@@ -101,8 +100,7 @@ class KurobaLruDiskCache(
       logcat(TAG) { "getOrCreateCacheFile($cacheFileType, $url) start" }
     }
 
-    val innerCache = getInnerCacheByFileType(cacheFileType)
-    val file = innerCache.getOrCreateCacheFile(url)
+    val file = getInnerCacheByFileType(cacheFileType).getOrCreateCacheFile(url)
 
     if (ENABLE_LOGGING) {
       logcat(TAG) { "getOrCreateCacheFile($cacheFileType, $url) end -> ${file?.name}" }
@@ -121,9 +119,7 @@ class KurobaLruDiskCache(
       logcat(TAG) { "getChunkCacheFileOrNull($cacheFileType, $chunkStart..$chunkEnd, $url)" }
     }
 
-    val innerCache = getInnerCacheByFileType(cacheFileType)
-
-    return innerCache.getChunkCacheFileOrNull(chunkStart, chunkEnd, url)
+    return getInnerCacheByFileType(cacheFileType).getChunkCacheFileOrNull(chunkStart, chunkEnd, url)
   }
 
   suspend fun getOrCreateChunkCacheFile(
@@ -136,9 +132,7 @@ class KurobaLruDiskCache(
       logcat(TAG) { "getOrCreateChunkCacheFile($cacheFileType, $chunkStart..$chunkEnd, $url)" }
     }
 
-    val innerCache = getInnerCacheByFileType(cacheFileType)
-
-    return innerCache.getOrCreateChunkCacheFile(chunkStart, chunkEnd, url)
+    return getInnerCacheByFileType(cacheFileType).getOrCreateChunkCacheFile(chunkStart, chunkEnd, url)
   }
 
   suspend fun cacheFileExistsInMemoryCache(cacheFileType: CacheFileType, url: HttpUrl): Boolean {
@@ -157,8 +151,7 @@ class KurobaLruDiskCache(
       logcat(TAG) { "deleteCacheFileByUrlSuspend($cacheFileType, $url)" }
     }
 
-    val innerCache = getInnerCacheByFileType(cacheFileType)
-    return innerCache.deleteCacheFile(url)
+    return getInnerCacheByFileType(cacheFileType).deleteCacheFile(url)
   }
 
   suspend fun deleteCacheFileByUrl(cacheFileType: CacheFileType, url: HttpUrl): Boolean {
@@ -166,14 +159,14 @@ class KurobaLruDiskCache(
       logcat(TAG) { "deleteCacheFileByUrl($cacheFileType, $url)" }
     }
 
-    val innerCache = getInnerCacheByFileType(cacheFileType)
-
     return getInnerCacheByFileType(cacheFileType).deleteCacheFile(url)
   }
 
   suspend fun cacheFileExistsOnDisk(cacheFileType: CacheFileType, url: HttpUrl): Boolean {
-    val innerCache = getInnerCacheByFileType(cacheFileType)
-    val alreadyDownloaded = cacheFileExistsOnDisk(cacheFileType, innerCache.getCacheFileByUrl(url))
+    val alreadyDownloaded = cacheFileExistsOnDisk(
+      cacheFileType = cacheFileType,
+      cacheFile = getInnerCacheByFileType(cacheFileType).getCacheFileByUrl(url)
+    )
 
     if (ENABLE_LOGGING) {
       logcat(TAG) { "cacheFileExistsInMemoryCache($cacheFileType, $url) -> $alreadyDownloaded" }

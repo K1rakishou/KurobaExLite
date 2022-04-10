@@ -7,11 +7,14 @@ import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.PostScreenViewModel
@@ -25,16 +28,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
+import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreenViewModel(
   application: KurobaExLiteApplication,
   savedStateHandle: SavedStateHandle
 ) : PostScreenViewModel(application, savedStateHandle) {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
+
+  private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
+
   private val catalogScreenState = CatalogScreenPostsState()
   private var loadCatalogJob: Job? = null
 
   override val postScreenState: PostScreenState = catalogScreenState
+
+  private val updateChanCatalogViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
 
   val catalogDescriptor: CatalogDescriptor?
     get() = chanDescriptor as? CatalogDescriptor
@@ -219,6 +228,21 @@ class CatalogScreenViewModel(
           loadFromNetwork = false
         ),
         onReloadFinished = { scrollTop() }
+      )
+    }
+  }
+
+  override fun onFirstVisiblePostScrollChanged(
+    postCellData: PostCellData,
+    postListTouchingBottom: Boolean
+  ) {
+    updateChanCatalogViewExecutor.post(timeout = 200L) {
+      val catalogDescriptor = chanDescriptor as? CatalogDescriptor
+        ?: return@post
+
+      updateChanCatalogView.execute(
+        catalogDescriptor = catalogDescriptor,
+        catalogBoundPostDescriptor = postCellData.postDescriptor
       )
     }
   }

@@ -39,7 +39,7 @@ fun HomeScreenDrawerLayout(
   navigationRouter: NavigationRouter,
   uiInfoManager: UiInfoManager
 ) {
-  val childRouter = remember { navigationRouter.childRouter(DrawerScreen.SCREEN_KEY.key) }
+  val childRouter = remember { navigationRouter.childRouter(DrawerScreen.SCREEN_KEY) }
   val drawerScreen = remember { DrawerScreen(componentActivity, navigationRouter) }
   val drawerVisibility by uiInfoManager.drawerVisibilityFlow.collectAsState()
   val maxOffsetDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { -drawerWidth.toDp() } }

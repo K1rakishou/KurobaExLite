@@ -13,4 +13,14 @@ abstract class ComposeScreenWithToolbar(
   @Composable
   abstract fun Toolbar(boxScope: BoxScope)
 
+  @Composable
+  fun topChildScreen(): ComposeScreenWithToolbar {
+    val navigationScreensStack = navigationRouter.navigationScreensStack
+    if (navigationScreensStack.isEmpty()) {
+      return this
+    }
+
+    return navigationScreensStack.last() as ComposeScreenWithToolbar
+  }
+
 }

@@ -4,4 +4,4 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-inline class ScreenKey(val key: String) : Parcelable
+data class ScreenKey(val key: String) : Parcelable

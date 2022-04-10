@@ -532,7 +532,7 @@ suspend fun <T> Mutex.withLockNonCancellable(owner: Any? = null, action: suspend
   return withContext(NonCancellable) { withLock(owner) { action.invoke() } }
 }
 
-fun unreachable(): Nothing = error("Unreachable!")
+fun unreachable(message: String? = null): Nothing = error(message ?: "Unreachable!")
 
 fun String.removeExtensionFromFileName(): String {
   val index = this.lastIndexOf('.')

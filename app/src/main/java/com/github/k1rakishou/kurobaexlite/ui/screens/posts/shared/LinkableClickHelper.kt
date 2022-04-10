@@ -40,10 +40,10 @@ class LinkableClickHelper(
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
               params = DialogScreen.Params(
-                title = DialogScreen.Text.Id(R.string.thread_screen_open_external_thread_dialog_title),
+                title = DialogScreen.Text.Id(R.string.thread_toolbar_open_external_thread_dialog_title),
                 description = DialogScreen.Text.String(
                   context.resources.getString(
-                    R.string.thread_screen_open_external_thread_dialog_description,
+                    R.string.thread_toolbar_open_external_thread_dialog_description,
                     postDescriptorReadable
                   )
                 ),

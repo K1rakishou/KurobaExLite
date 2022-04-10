@@ -6,7 +6,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class PostBindProcessor(
-  private val chanThreadViewManager: ChanThreadViewManager
+  private val chanViewManager: ChanViewManager
 ) {
   private val coroutineScope = KurobaCoroutineScope()
   private val activeBoundPostJobs = mutableMapOf<PostDescriptor, Job>()

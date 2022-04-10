@@ -6,14 +6,14 @@ import com.github.k1rakishou.kurobaexlite.database.ThreadKey
 import com.github.k1rakishou.kurobaexlite.database.ThreadLocalPostKey
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.managers.ChanThreadViewManager
+import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanThreadView
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import logcat.asLog
 
 class UpdateChanThreadView(
-  private val chanThreadViewManager: ChanThreadViewManager,
+  private val chanViewManager: ChanViewManager,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase
 ) {
   suspend fun execute(
@@ -22,7 +22,7 @@ class UpdateChanThreadView(
     threadBoundPostDescriptor: PostDescriptor?,
     postListTouchingBottom: Boolean?
   ): ChanThreadView? {
-    val updatedChanThreadView = chanThreadViewManager.insertOrUpdate(threadDescriptor) {
+    val updatedChanThreadView = chanViewManager.insertOrUpdate(threadDescriptor) {
       if (threadLastPostDescriptor != null) {
         lastLoadedPostDescriptor = maxOfPostDescriptors(
           one = lastLoadedPostDescriptor,

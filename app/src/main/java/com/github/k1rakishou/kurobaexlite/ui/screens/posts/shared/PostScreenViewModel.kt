@@ -56,7 +56,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
-import okhttp3.HttpUrl
 import org.koin.java.KoinJavaComponent.inject
 
 abstract class PostScreenViewModel(
@@ -90,7 +89,7 @@ abstract class PostScreenViewModel(
   val toolbarScrollEventFlow: SharedFlow<Boolean>
     get() = _toolbarScrollEventFlow.asSharedFlow()
 
-  val mediaViewerScrollEvents: SharedFlow<Pair<HttpUrl, PostDescriptor>>
+  val mediaViewerScrollEvents: SharedFlow<MediaViewerPostListScroller.ScrollInfo>
     get() = mediaViewerPostListScroller.scrollEventFlow
 
   val currentlyOpenedCatalogFlow: StateFlow<CatalogDescriptor?>
@@ -612,6 +611,13 @@ abstract class PostScreenViewModel(
   }
 
   open fun resetTimer() {
+
+  }
+
+  open fun onFirstVisiblePostScrollChanged(
+    postCellData: PostCellData,
+    postListTouchingBottom: Boolean
+  ) {
 
   }
 

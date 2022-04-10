@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.TextUnit
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 @Immutable
 data class PostListOptions(
   val isCatalogMode: Boolean,
   val isInPopup: Boolean,
+  val ownerScreenKey: ScreenKey,
   val pullToRefreshEnabled: Boolean,
   val detectLinkableClicks: Boolean,
   val mainUiLayoutMode: MainUiLayoutMode,

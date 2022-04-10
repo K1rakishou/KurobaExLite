@@ -46,7 +46,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
     return
   }
 
-  val currentScreen = childScreens.getOrNull(pagerState.currentPage) ?: return
+  val currentScreen = childScreens.getOrNull(pagerState.currentPage)?.topChildScreen() ?: return
   val currentScreenKey = currentScreen.screenKey
 
   if (currentScreen !is HomeNavigationScreen) {

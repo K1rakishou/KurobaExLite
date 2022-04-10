@@ -144,7 +144,7 @@ fun HomeScreenToolbarContainer(
       for ((pageIndex, currentScreen) in childScreens.withIndex()) {
         val zOrder = zOrders[pageIndex]
         val screenToolbarMovable = remember(currentScreen.screenKey) {
-          movableContentOf { currentScreen.Toolbar(this) }
+          movableContentOf { currentScreen.topChildScreen().Toolbar(this) }
         }
 
         when (pageIndex) {
