@@ -10,12 +10,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -29,6 +27,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import kotlinx.coroutines.launch
 
 abstract class FloatingComposeScreen(
@@ -38,17 +37,21 @@ abstract class FloatingComposeScreen(
   val horizPaddingDp by lazy { if (uiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
   val vertPaddingDp by lazy { if (uiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
 
-  val horizPaddingPx by lazy { with(uiInfoManager.composeDensity) { horizPaddingDp.toPx() } }
-  val vertPaddingPx by lazy { with(uiInfoManager.composeDensity) { vertPaddingDp.toPx() } }
-
   open val contentAlignment: Alignment = Alignment.Center
 
-  protected var cardAlphaState = mutableStateOf(1f)
   protected val touchPositionDependantAlignment by lazy { TouchPositionDependantAlignment(uiInfoManager) }
 
   @Composable
   override fun Content() {
+    // We need to listen for back event of the current navigation router because they are processed
+    // in the from inside out order
     navigationRouter.HandleBackPresses { onBackPressed() }
+
+    // However when it comes to screen destroy events, we need use the MainScreen's router since that's
+    // where all the floating screens are being added to.
+    val mainRouter = remember { navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY) }
+    mainRouter.HandleScreenDestroyEvents(screenKey = screenKey) { onDestroy() }
+
     CardContent()
   }
 
@@ -79,14 +82,12 @@ abstract class FloatingComposeScreen(
       ) {
         val maxWidthDp = maxAvailableWidth()
         val maxHeightDp = maxAvailableHeight()
-        val alpha by cardAlphaState
 
         KurobaComposeCardView(
           modifier = Modifier
             .wrapContentSize()
             .widthIn(max = maxWidthDp)
             .heightIn(max = maxHeightDp)
-            .graphicsLayer { this.alpha = alpha }
             .consumeClicks()
         ) {
           FloatingContent()
@@ -156,12 +157,7 @@ abstract class FloatingComposeScreen(
   }
 
   protected fun stopPresenting(): Boolean {
-    val success = navigationRouter.stopPresentingScreen(screenKey = screenKey)
-    if (success) {
-      onDestroy()
-    }
-
-    return success
+    return navigationRouter.stopPresentingScreen(screenKey = screenKey)
   }
 
   protected class TouchPositionDependantAlignment(

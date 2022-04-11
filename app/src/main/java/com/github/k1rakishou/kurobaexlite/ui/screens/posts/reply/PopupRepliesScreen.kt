@@ -270,7 +270,6 @@ class PopupRepliesScreen(
   }
 
   override fun onDestroy() {
-    cardAlphaState.value = 0f
     popupRepliesScreenViewModel.clearPostReplyChainStack()
   }
 

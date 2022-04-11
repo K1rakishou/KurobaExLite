@@ -120,11 +120,11 @@ class MainNavigationRouter : NavigationRouter(
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
     val floatingScreenUpdates = combineScreenUpdates(
       oldScreens = floatingScreensStack,
-      newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.Out)
+      newScreenUpdate = ScreenUpdate.Pop(floatingComposeScreen)
     ).toMutableList()
 
     if (floatingScreensStack.size <= 1 && floatingScreensStack.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
-      logcat.logcat(tag = TAG) { "unpresentScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
+      logcat.logcat(tag = TAG) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
 
       val indexOfPrevBg = floatingScreenUpdates
         .indexOfFirst { screenUpdate -> screenUpdate.screen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
@@ -146,7 +146,7 @@ class MainNavigationRouter : NavigationRouter(
       }
     }
 
-    logcat.logcat(tag = TAG) { "stopPresenting(${floatingComposeScreen.screenKey.key})" }
+    logcat.logcat(tag = TAG) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -156,10 +156,12 @@ class MainNavigationRouter : NavigationRouter(
     return true
   }
 
-  override fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
+  override suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
     if (!screenUpdate.isScreenBeingRemoved()) {
       return
     }
+
+    screenDestroyCallbacks.forEach { callback -> callback(screenUpdate.screen.screenKey) }
 
     if (navigationScreensStack.isEmpty() && floatingScreensStack.isEmpty()) {
       _screenUpdatesFlow.value = null

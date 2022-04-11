@@ -19,7 +19,7 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 @Composable
 fun ScreenTransition(
   screenUpdate: NavigationRouter.ScreenUpdate,
-  onScreenUpdateFinished: (NavigationRouter.ScreenUpdate) -> Unit,
+  onScreenUpdateFinished: suspend (NavigationRouter.ScreenUpdate) -> Unit,
   content: @Composable () -> Unit
 ) {
   val scaleInitial = when (screenUpdate) {
@@ -59,95 +59,100 @@ fun ScreenTransition(
 
   val animationDuration = 200
 
-  suspend fun playAnimation() {
-    when (screenUpdate) {
-      is NavigationRouter.ScreenUpdate.Push -> {
-        val scaleStart = .9f
-        val scaleEnd = 1f
-        canRender = true
-
-        animate(
-          initialValue = 0f,
-          targetValue = 1f,
-          initialVelocity = 0f,
-          animationSpec = FloatTweenSpec(
-            duration = animationDuration,
-            delay = 0,
-            easing = FastOutSlowInEasing
-          )
-        ) { animationProgress, _ ->
-          scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
-          alphaAnimated = animationProgress
-        }
-      }
-      is NavigationRouter.ScreenUpdate.Pop -> {
-        val scaleStart = 1f
-        val scaleEnd = .9f
-
-        animate(
-          initialValue = 0f,
-          targetValue = 1f,
-          initialVelocity = 0f,
-          animationSpec = FloatTweenSpec(
-            duration = animationDuration,
-            delay = 0,
-            easing = FastOutSlowInEasing
-          )
-        ) { animationProgress, _ ->
-          scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
-          alphaAnimated = 1f - animationProgress
-        }
-
-        canRender = false
-      }
-      is NavigationRouter.ScreenUpdate.Fade -> {
-        scaleAnimated = 1f
-
-        val initialValue = when (screenUpdate.fadeType) {
-          NavigationRouter.ScreenUpdate.FadeType.In -> 0f
-          NavigationRouter.ScreenUpdate.FadeType.Out -> 1f
-        }
-
-        val targetValue = when (screenUpdate.fadeType) {
-          NavigationRouter.ScreenUpdate.FadeType.In -> 1f
-          NavigationRouter.ScreenUpdate.FadeType.Out -> 0f
-        }
-
-        canRender = true
-
-        animate(
-          initialValue = initialValue,
-          targetValue = targetValue,
-          initialVelocity = 0f,
-          animationSpec = FloatTweenSpec(
-            duration = animationDuration,
-            delay = 0,
-            easing = FastOutSlowInEasing
-          )
-        ) { animationProgress, _ ->
-          alphaAnimated = animationProgress
-        }
-
-        canRender = when (screenUpdate.fadeType) {
-          NavigationRouter.ScreenUpdate.FadeType.In -> true
-          NavigationRouter.ScreenUpdate.FadeType.Out -> false
-        }
-      }
-      is NavigationRouter.ScreenUpdate.Set -> {
-        scaleAnimated = 1f
-        alphaAnimated = 1f
-        canRender = true
-      }
-    }
-  }
-
   LaunchedEffect(
     key1 = screenUpdate,
     block = {
-      try {
-        playAnimation()
-      } finally {
-        onScreenUpdateFinished(screenUpdate)
+      when (screenUpdate) {
+        is NavigationRouter.ScreenUpdate.Push -> {
+          val scaleStart = .9f
+          val scaleEnd = 1f
+          canRender = true
+
+          try {
+            animate(
+              initialValue = 0f,
+              targetValue = 1f,
+              initialVelocity = 0f,
+              animationSpec = FloatTweenSpec(
+                duration = animationDuration,
+                delay = 0,
+                easing = FastOutSlowInEasing
+              )
+            ) { animationProgress, _ ->
+              scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
+              alphaAnimated = animationProgress
+            }
+          } finally {
+            onScreenUpdateFinished(screenUpdate)
+          }
+        }
+        is NavigationRouter.ScreenUpdate.Pop -> {
+          val scaleStart = 1f
+          val scaleEnd = .9f
+
+          try {
+            animate(
+              initialValue = 0f,
+              targetValue = 1f,
+              initialVelocity = 0f,
+              animationSpec = FloatTweenSpec(
+                duration = animationDuration,
+                delay = 0,
+                easing = FastOutSlowInEasing
+              )
+            ) { animationProgress, _ ->
+              scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
+              alphaAnimated = 1f - animationProgress
+            }
+          } finally {
+            onScreenUpdateFinished(screenUpdate)
+          }
+
+          canRender = false
+        }
+        is NavigationRouter.ScreenUpdate.Fade -> {
+          scaleAnimated = 1f
+
+          val initialValue = when (screenUpdate.fadeType) {
+            NavigationRouter.ScreenUpdate.FadeType.In -> 0f
+            NavigationRouter.ScreenUpdate.FadeType.Out -> 1f
+          }
+
+          val targetValue = when (screenUpdate.fadeType) {
+            NavigationRouter.ScreenUpdate.FadeType.In -> 1f
+            NavigationRouter.ScreenUpdate.FadeType.Out -> 0f
+          }
+
+          canRender = true
+
+          try {
+            animate(
+              initialValue = initialValue,
+              targetValue = targetValue,
+              initialVelocity = 0f,
+              animationSpec = FloatTweenSpec(
+                duration = animationDuration,
+                delay = 0,
+                easing = FastOutSlowInEasing
+              )
+            ) { animationProgress, _ ->
+              alphaAnimated = animationProgress
+            }
+          } finally {
+            onScreenUpdateFinished(screenUpdate)
+          }
+
+          canRender = when (screenUpdate.fadeType) {
+            NavigationRouter.ScreenUpdate.FadeType.In -> true
+            NavigationRouter.ScreenUpdate.FadeType.Out -> false
+          }
+        }
+        is NavigationRouter.ScreenUpdate.Set -> {
+          scaleAnimated = 1f
+          alphaAnimated = 1f
+          onScreenUpdateFinished(screenUpdate)
+          canRender = true
+        }
       }
     }
   )

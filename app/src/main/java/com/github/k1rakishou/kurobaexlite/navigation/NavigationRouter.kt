@@ -32,6 +32,8 @@ open class NavigationRouter(
   val intentsFlow: SharedFlow<Intent>
     get() = _intentsFlow.asSharedFlow()
 
+  protected val screenDestroyCallbacks = mutableListOf<suspend (ScreenKey) -> Unit>()
+
   @Composable
   fun HandleBackPresses(onBackPressed: suspend () -> Boolean) {
     DisposableEffect(
@@ -45,6 +47,26 @@ open class NavigationRouter(
 
         backPressHandlers += handler
         onDispose { backPressHandlers -= handler }
+      }
+    )
+  }
+
+  @Composable
+  fun HandleScreenDestroyEvents(screenKey: ScreenKey, onScreenDestroyed: suspend () -> Unit) {
+    DisposableEffect(
+      key1 = screenKey,
+      effect = {
+        var notified = false
+
+        val callback: suspend (ScreenKey) -> Unit = { destroyedScreenKey ->
+          if (destroyedScreenKey == screenKey && !notified) {
+            notified = true
+            onScreenDestroyed()
+          }
+        }
+
+        screenDestroyCallbacks += callback
+        onDispose { screenDestroyCallbacks -= callback }
       }
     )
   }
@@ -213,10 +235,12 @@ open class NavigationRouter(
     return parentRouter.isInsideScreen(lookupScreenKey)
   }
 
-  open fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
+  open suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
     if (!screenUpdate.isScreenBeingRemoved()) {
       return
     }
+
+    screenDestroyCallbacks.forEach { callback -> callback(screenUpdate.screen.screenKey) }
 
     if (navigationScreensStack.isEmpty()) {
       _screenUpdatesFlow.value = null
