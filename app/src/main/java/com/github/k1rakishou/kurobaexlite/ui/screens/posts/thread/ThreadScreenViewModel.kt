@@ -244,8 +244,7 @@ class ThreadScreenViewModel(
     onThreadLoadingStart(threadDescriptor, loadOptions)
 
     if (threadDescriptor != null) {
-      val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)
-        ?.let { chanThreadView -> chanThreadView.lastViewedPostDescriptor ?: chanThreadView.lastLoadedPostDescriptor  }
+      val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)?.lastViewedPostDescriptor
 
       resetPosition(threadDescriptor)
       threadScreenState.lastViewedPostDescriptorForScrollRestoration.value = lastViewedPostDescriptor
