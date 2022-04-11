@@ -91,7 +91,7 @@ class PostsState(
   /**
    * Do not call directly! Use PostScreenState.insertOrUpdate() instead!
    * */
-  fun insertOrUpdate(postCellData: PostCellData) {
+  fun insertOrUpdate(postCellData: PostCellData, checkFirstPostIsOriginal: Boolean) {
     Snapshot.withMutableSnapshot {
       val index = postIndexes[postCellData.postDescriptor]
       if (index == null) {
@@ -106,9 +106,11 @@ class PostsState(
       }
 
       if (androidHelpers.isDevFlavor()) {
-        val originalPost = allPosts.firstOrNull()
-        if (originalPost != null) {
-          check(originalPost.value.isOP) { "First post is not OP" }
+        if (checkFirstPostIsOriginal) {
+          val originalPost = allPosts.firstOrNull()
+          if (originalPost != null) {
+            check(originalPost.value.isOP) { "First post is not OP" }
+          }
         }
 
         check(postIndexes.size == allPosts.size) {
@@ -134,7 +136,7 @@ class PostsState(
   /**
    * Do not call directly! Use PostScreenState.insertOrUpdateMany() instead!
    * */
-  fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
+  fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>, checkFirstPostIsOriginal: Boolean) {
     if (postCellDataCollection.isEmpty()) {
       return
     }
@@ -157,9 +159,11 @@ class PostsState(
       }
 
       if (androidHelpers.isDevFlavor()) {
-        val originalPost = allPosts.firstOrNull()
-        if (originalPost != null) {
-          check(originalPost.value.isOP) { "First post is not OP" }
+        if (checkFirstPostIsOriginal) {
+          val originalPost = allPosts.firstOrNull()
+          if (originalPost != null) {
+            check(originalPost.value.isOP) { "First post is not OP" }
+          }
         }
 
         check(postIndexes.size == allPosts.size) {

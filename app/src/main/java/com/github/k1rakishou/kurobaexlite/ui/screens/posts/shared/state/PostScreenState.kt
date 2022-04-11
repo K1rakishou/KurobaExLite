@@ -13,7 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-abstract class PostScreenState {
+abstract class PostScreenState(
+  private val checkFirstPostIsOriginal: Boolean
+) {
   val postsAsyncDataState = MutableStateFlow<AsyncData<PostsState>>(AsyncData.Uninitialized)
   val threadCellDataState = MutableStateFlow<ThreadStatusCellData?>(null)
   val searchQueryFlow = MutableStateFlow<String?>(null)
@@ -38,14 +40,14 @@ abstract class PostScreenState {
   @CallSuper
   open fun insertOrUpdate(postCellData: PostCellData) {
     doWithDataState { postsState ->
-      postsState.insertOrUpdate(postCellData)
+      postsState.insertOrUpdate(postCellData, checkFirstPostIsOriginal)
     }
   }
 
   @CallSuper
   open fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     doWithDataState { postsState ->
-      postsState.insertOrUpdateMany(postCellDataCollection)
+      postsState.insertOrUpdateMany(postCellDataCollection, checkFirstPostIsOriginal)
     }
   }
 
