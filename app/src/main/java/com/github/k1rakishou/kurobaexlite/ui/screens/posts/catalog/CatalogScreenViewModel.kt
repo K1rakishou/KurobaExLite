@@ -163,7 +163,7 @@ class CatalogScreenViewModel(
 
     val catalogSortSetting = appSettings.catalogSort.read()
     val sortedThreads = CatalogThreadSorter.sortCatalogPostData(
-      catalogThreads = postsLoadResult.allCombined(),
+      catalogThreads = postsLoadResult.allCombinedForCatalog(),
       catalogSortSetting = catalogSortSetting
     )
 

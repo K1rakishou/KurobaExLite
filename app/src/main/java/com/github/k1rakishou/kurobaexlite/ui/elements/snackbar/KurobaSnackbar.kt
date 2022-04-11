@@ -77,7 +77,7 @@ fun KurobaSnackbarContainer(
     key1 = kurobaSnackbarState,
     block = {
       while (isActive) {
-        delay(1000L)
+        delay(100L)
 
         kurobaSnackbarState.removeOldSnackbars()
       }
@@ -289,8 +289,15 @@ class KurobaSnackbarState(
       .indexOfFirst { snackbarInfo -> snackbarInfo.snackbarId == id }
 
     if (indexOfSnackbar >= 0) {
-      _activeSnackbars.removeAt(indexOfSnackbar)
-      updateSnackbarsCount()
+      val now = SystemClock.elapsedRealtime()
+
+      val snackbar = _activeSnackbars.get(indexOfSnackbar)
+      if (snackbar.canBeDeleted(now)) {
+        _activeSnackbars.removeAt(indexOfSnackbar)
+        updateSnackbarsCount()
+      } else {
+        snackbar.markToBeAutoDeleted()
+      }
     }
   }
 
@@ -301,7 +308,7 @@ class KurobaSnackbarState(
     _activeSnackbars.mutableIteration { mutableIterator, activeSnackbar ->
       if (
         activeSnackbar.aliveUntil != null
-        && (currentTime >= activeSnackbar.aliveUntil || _activeSnackbars.size > maxSnackbarsAtTime)
+        && (currentTime >= activeSnackbar.aliveUntil!! || _activeSnackbars.size > maxSnackbarsAtTime)
       ) {
         anythingRemoved = true
         mutableIterator.remove()
@@ -344,7 +351,8 @@ sealed class SnackbarInfoEvent {
 
 class SnackbarInfo(
   val snackbarId: SnackbarId,
-  val aliveUntil: Long?,
+  val createdAt: Long = SystemClock.elapsedRealtime(),
+  var aliveUntil: Long?,
   val screenKey: ScreenKey = MainScreen.SCREEN_KEY,
   val content: List<SnackbarContentItem>,
   val isToast: Boolean = false
@@ -357,6 +365,7 @@ class SnackbarInfo(
     other as SnackbarInfo
 
     if (snackbarId != other.snackbarId) return false
+    if (createdAt != other.createdAt) return false
     if (aliveUntil != other.aliveUntil) return false
     if (screenKey != other.screenKey) return false
     if (isToast != other.isToast) return false
@@ -366,11 +375,29 @@ class SnackbarInfo(
 
   override fun hashCode(): Int {
     var result = snackbarId.hashCode()
+    result = 31 * result + createdAt.hashCode()
     result = 31 * result + (aliveUntil?.hashCode() ?: 0)
     result = 31 * result + screenKey.hashCode()
     result = 31 * result + isToast.hashCode()
     return result
   }
+
+  fun canBeDeleted(currentTime: Long): Boolean {
+    if (currentTime - createdAt > MIN_LIFE_TIME_MS) {
+      return true
+    }
+
+    return false
+  }
+
+  fun markToBeAutoDeleted() {
+    aliveUntil = createdAt + MIN_LIFE_TIME_MS
+  }
+
+  companion object {
+    private const val MIN_LIFE_TIME_MS = 500
+  }
+
 }
 
 sealed class SnackbarContentItem {

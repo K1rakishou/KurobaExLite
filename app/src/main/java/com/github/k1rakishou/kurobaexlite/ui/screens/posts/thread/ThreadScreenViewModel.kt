@@ -193,13 +193,6 @@ class ThreadScreenViewModel(
           }
         }
       )
-
-      if (postLoadResult.isNotEmpty()) {
-        snackbarManager.pushThreadNewPostsSnackbar(
-          newPostsCount = postLoadResult.newPostsCount,
-          screenKey = screenKey
-        )
-      }
     }
   }
 
@@ -295,7 +288,7 @@ class ThreadScreenViewModel(
     }
 
     val cachedThreadPostsState = (threadScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data
-    val allCombinedPosts = postLoadResult.allCombined()
+    val allCombinedPosts = postLoadResult.allCombinedForThread()
 
     val startParsePost = loadOptions.scrollToPost
       ?: threadScreenState.lastViewedPostDescriptorForScrollRestoration.value
@@ -329,6 +322,7 @@ class ThreadScreenViewModel(
       }
     }
 
+    snackbarManager.popThreadNewPostsSnackbar()
     postScreenState.threadCellDataState.value = formatThreadCellData(
       postLoadResult = postLoadResult,
       prevThreadStatusCellData = prevCellDataState
@@ -374,6 +368,25 @@ class ThreadScreenViewModel(
     threadDescriptor: ThreadDescriptor,
     postLoadResult: PostsLoadResult
   ) {
+    if (postLoadResult.isNotEmpty()) {
+      val lastViewedOrLoadedPostDescriptor = loadChanThreadView.execute(threadDescriptor)
+        ?.let { chanThreadView ->
+          return@let chanThreadView.lastViewedPostDescriptor
+            ?: chanThreadView.lastLoadedPostDescriptor
+        }
+
+      if (lastViewedOrLoadedPostDescriptor != null) {
+        snackbarManager.pushThreadNewPostsSnackbar(
+          newPostsCount = postLoadResult.newPostsCountSinceLastViewedOrLoaded(
+            lastViewedOrLoadedPostDescriptor = lastViewedOrLoadedPostDescriptor
+          ),
+          updatedPostsCount = postLoadResult.updatePostsCountExcludingOriginalPost,
+          deletedPostsCount = postLoadResult.deletedPostsCount,
+          screenKey = screenKey
+        )
+      }
+    }
+
     updateLastLoadedAndViewedPosts(
       key = "onPostsParsed",
       threadDescriptor = threadDescriptor,

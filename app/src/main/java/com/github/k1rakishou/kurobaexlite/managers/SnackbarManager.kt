@@ -94,16 +94,59 @@ class SnackbarManager(
     _snackbarEventFlow.tryEmit(SnackbarInfoEvent.Pop(id))
   }
 
-  fun pushThreadNewPostsSnackbar(newPostsCount: Int, screenKey: ScreenKey) {
-    if (newPostsCount <= 0) {
+  fun pushThreadNewPostsSnackbar(
+    newPostsCount: Int,
+    updatedPostsCount: Int,
+    deletedPostsCount: Int,
+    screenKey: ScreenKey
+  ) {
+    if (newPostsCount <= 0 && updatedPostsCount <= 0 && deletedPostsCount <= 0) {
       return
     }
 
-    val newPostsMessage = appContext.resources.getQuantityString(
-      R.plurals.new_posts_with_number,
-      newPostsCount,
-      newPostsCount
-    )
+    val newPostsMessage = buildString {
+      if (newPostsCount > 0) {
+        append(
+          appContext.resources.getQuantityString(
+            R.plurals.new_posts_with_number,
+            newPostsCount,
+            newPostsCount
+          )
+        )
+      }
+
+      if (updatedPostsCount > 0) {
+        if (isNotEmpty()) {
+          append(", ")
+        }
+
+        append(
+          appContext.resources.getQuantityString(
+            R.plurals.updated_posts_with_number,
+            updatedPostsCount,
+            updatedPostsCount
+          )
+        )
+      }
+
+      if (deletedPostsCount > 0) {
+        if (isNotEmpty()) {
+          append(", ")
+        }
+
+        append(
+          appContext.resources.getQuantityString(
+            R.plurals.deleted_posts_with_number,
+            deletedPostsCount,
+            deletedPostsCount
+          )
+        )
+      }
+    }
+
+    if (newPostsMessage.isEmpty()) {
+      return
+    }
 
     pushSnackbar(
       SnackbarInfo(

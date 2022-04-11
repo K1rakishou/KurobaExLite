@@ -105,11 +105,16 @@ class PostsState(
         allPosts[index].value = postCellData
       }
 
-      check(postIndexes.size == allPosts.size) {
-        "postIndexes.size (${postIndexes.size}) != postsMutable.size (${allPosts.size})"
-      }
-
       if (androidHelpers.isDevFlavor()) {
+        val originalPost = allPosts.firstOrNull()
+        if (originalPost != null) {
+          check(originalPost.value.isOP) { "First post is not OP" }
+        }
+
+        check(postIndexes.size == allPosts.size) {
+          "postIndexes.size (${postIndexes.size}) != postsMutable.size (${allPosts.size})"
+        }
+
         val postMutableDeduplicated = allPosts.toHashSetByKey { postCellDataState ->
           postCellDataState.value.postDescriptor
         }
@@ -151,11 +156,16 @@ class PostsState(
         }
       }
 
-      check(postIndexes.size == allPosts.size) {
-        "postIndexes.size (${postIndexes.size}) != postsMutable.size (${allPosts.size})"
-      }
-
       if (androidHelpers.isDevFlavor()) {
+        val originalPost = allPosts.firstOrNull()
+        if (originalPost != null) {
+          check(originalPost.value.isOP) { "First post is not OP" }
+        }
+
+        check(postIndexes.size == allPosts.size) {
+          "postIndexes.size (${postIndexes.size}) != postsMutable.size (${allPosts.size})"
+        }
+
         val postMutableDeduplicated = allPosts.toHashSetByKey { postCellDataState ->
           postCellDataState.value.postDescriptor
         }

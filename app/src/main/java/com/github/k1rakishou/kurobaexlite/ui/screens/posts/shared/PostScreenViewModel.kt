@@ -230,7 +230,6 @@ abstract class PostScreenViewModel(
 
   suspend fun parseInitialBatchOfPosts(
     startPostDescriptor: PostDescriptor?,
-    count: Int = 32,
     chanDescriptor: ChanDescriptor,
     postDataList: List<IPostData>,
     isCatalogMode: Boolean,
@@ -240,6 +239,7 @@ abstract class PostScreenViewModel(
     }
 
     val chanTheme = themeEngine.chanTheme
+    val initialBatchSize = if (uiInfoManager.isTablet) 32 else 16
 
     return withContext(globalConstants.postParserDispatcher) {
       val startIndex = postDataList
@@ -250,7 +250,7 @@ abstract class PostScreenViewModel(
       val indexesOfPostsToParse = postDataList.indices
         .toList()
         .bidirectionalSequence(startPosition = startIndex)
-        .take(count)
+        .take(initialBatchSize)
         .toSet()
 
       logcat {

@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 
 data class PostsLoadResult(
@@ -14,8 +15,15 @@ data class PostsLoadResult(
     get() = newPosts.size
   val updatedPostsCount: Int
     get() = updatedPosts.size
+  val deletedPostsCount: Int
+    get() = deletedPosts.size
   val newOrUpdatedCount: Int
     get() = newPostsCount + updatedPostsCount
+
+  // Original post is going to be updated every time a new post is added/updated in the thread
+  // so we need to skip it here
+  val updatePostsCountExcludingOriginalPost: Int
+    get() = updatedPosts.count { postData -> !postData.isOP }
 
   fun firstOrNull(predicate: (IPostData) -> Boolean): IPostData? {
     iteratePostsWhile { postData ->
@@ -58,7 +66,7 @@ data class PostsLoadResult(
     return resultList
   }
 
-  fun allCombined(): List<IPostData> {
+  fun allCombinedForCatalog(): List<IPostData> {
     val resultList = mutableListWithCap<IPostData>(newPosts.size + updatedPosts.size + unchangedPosts.size)
 
     resultList.addAll(newPosts)
@@ -66,6 +74,21 @@ data class PostsLoadResult(
     resultList.addAll(unchangedPosts)
 
     return resultList
+  }
+
+  fun allCombinedForThread(): List<IPostData> {
+    val resultList = mutableListWithCap<IPostData>(newPosts.size + updatedPosts.size + unchangedPosts.size)
+
+    resultList.addAll(unchangedPosts)
+    resultList.addAll(updatedPosts)
+    resultList.addAll(newPosts)
+    resultList.sortBy { postData -> postData.originalPostOrder }
+
+    return resultList
+  }
+
+  fun newPostsCountSinceLastViewedOrLoaded(lastViewedOrLoadedPostDescriptor: PostDescriptor): Int {
+    return newPosts.count { postData -> postData.postNo > lastViewedOrLoadedPostDescriptor.postNo }
   }
 
   fun isEmpty(): Boolean {

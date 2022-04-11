@@ -25,6 +25,14 @@
         <item quantity="one">%d new post</item>
         <item quantity="other">%d new posts</item>
     </plurals>
+    <plurals name="updated_posts_with_number">
+        <item quantity="one">%d updated post</item>
+        <item quantity="other">%d updated posts</item>
+    </plurals>
+    <plurals name="deleted_posts_with_number">
+        <item quantity="one">%d deleted post</item>
+        <item quantity="other">%d deleted posts</item>
+    </plurals>
     <plurals name="processing_posts_with_number">
         <item quantity="one">Processing %d post…</item>
         <item quantity="other">Processing %d posts…</item>
