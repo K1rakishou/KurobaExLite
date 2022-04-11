@@ -60,6 +60,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -113,16 +114,7 @@ class MediaViewerScreen(
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
-
   override val screenKey: ScreenKey = SCREEN_KEY
-
-  class MediaViewerScreenState {
-    var images: SnapshotStateList<ImageLoadState>? = null
-    val initialPage = mutableStateOf<Int?>(null)
-
-    fun isLoaded(): Boolean = initialPage.value != null && images != null
-    fun requireImages(): SnapshotStateList<ImageLoadState> = requireNotNull(images) { "images not initialized yet!" }
-  }
 
   @OptIn(ExperimentalPagerApi::class)
   @Composable
@@ -131,8 +123,10 @@ class MediaViewerScreen(
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
     val mediaViewerScreenState = remember { MediaViewerScreenState() }
-    var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getAndConsume()) }
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+
+    var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getAndConsume()) }
+    var transitionFinished by remember { mutableStateOf(false) }
 
     val animatable = remember { Animatable(0f) }
     val animationProgress by animatable.asState()
@@ -148,19 +142,26 @@ class MediaViewerScreen(
         mediaViewerParams = mediaViewerParams
       )
 
-      if (clickedThumbnailBounds != null) {
-        TransitionPreview(
-          animatable = animatable,
-          clickedThumbnailBounds = clickedThumbnailBounds!!,
-          onTransitionFinished = { clickedThumbnailBounds = null }
-        )
-      } else {
+      if (transitionFinished) {
         ContentAfterTransition(
           mediaViewerScreenState = mediaViewerScreenState,
           chanTheme = chanTheme,
           toolbarHeight = toolbarHeight,
           coroutineScope = coroutineScope,
-          insets = insets
+          insets = insets,
+          onPreviewLoadingFinished = { postImage ->
+            if (postImage == clickedThumbnailBounds?.postImage) {
+              clickedThumbnailBounds = null
+            }
+          }
+        )
+      }
+
+      if (clickedThumbnailBounds != null || !transitionFinished) {
+        TransitionPreview(
+          animatable = animatable,
+          clickedThumbnailBounds = clickedThumbnailBounds!!,
+          onTransitionFinished = { transitionFinished = true }
         )
       }
     }
@@ -173,7 +174,8 @@ class MediaViewerScreen(
     chanTheme: ChanTheme,
     toolbarHeight: Dp,
     coroutineScope: CoroutineScope,
-    insets: Insets
+    insets: Insets,
+    onPreviewLoadingFinished: (IPostImage) -> Unit
   ) {
     var pagerStateHolder by remember { mutableStateOf<PagerState?>(null) }
     val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
@@ -207,7 +209,8 @@ class MediaViewerScreen(
       toolbarHeight = toolbarHeight,
       mediaViewerScreenState = mediaViewerScreenState,
       onViewPagerInitialized = { pagerState -> pagerStateHolder = pagerState },
-      videoMediaState = videoMediaState
+      videoMediaState = videoMediaState,
+      onPreviewLoadingFinished = onPreviewLoadingFinished
     )
 
     if (pagerStateHolder != null) {
@@ -461,7 +464,8 @@ class MediaViewerScreen(
     toolbarHeight: Dp,
     mediaViewerScreenState: MediaViewerScreenState,
     onViewPagerInitialized: (PagerState) -> Unit,
-    videoMediaState: VideoMediaState?
+    videoMediaState: VideoMediaState?,
+    onPreviewLoadingFinished: (IPostImage) -> Unit
   ) {
     if (!mediaViewerScreenState.isLoaded()) {
       return
@@ -556,7 +560,8 @@ class MediaViewerScreen(
         toolbarHeight = toolbarHeight,
         mpvSettings = mpvSettings,
         mpvLibsInstalledAndLoaded = mpvLibsInstalledAndLoaded,
-        videoMediaState = videoMediaState
+        videoMediaState = videoMediaState,
+        onPreviewLoadingFinished = onPreviewLoadingFinished
       )
     }
   }
@@ -572,7 +577,8 @@ class MediaViewerScreen(
     toolbarHeight: Dp,
     mpvSettings: MpvSettings,
     mpvLibsInstalledAndLoaded: Lazy<Boolean>,
-    videoMediaState: VideoMediaState?
+    videoMediaState: VideoMediaState?,
+    onPreviewLoadingFinished: (IPostImage) -> Unit
   ) {
     val postImageDataLoadState = images[page]
 
@@ -599,7 +605,10 @@ class MediaViewerScreen(
 
     val displayImagePreviewMovable = remember {
       movableContentOf {
-        DisplayImagePreview(postImageDataLoadState)
+        DisplayImagePreview(
+          postImageDataState = postImageDataLoadState,
+          onPreviewLoadingFinished = onPreviewLoadingFinished
+        )
       }
     }
 
@@ -862,12 +871,17 @@ class MediaViewerScreen(
   }
 
   @Composable
-  private fun DisplayImagePreview(postImageDataState: ImageLoadState) {
+  private fun DisplayImagePreview(
+    postImageDataState: ImageLoadState,
+    onPreviewLoadingFinished: (IPostImage) -> Unit
+  ) {
     val postImageDataLoadState = (postImageDataState as? ImageLoadState.PreparingForLoading)
       ?: return
 
     val context = LocalContext.current
     val postImageData = postImageDataLoadState.postImage
+
+    var callbackCalled by remember { mutableStateOf(false) }
 
     SubcomposeAsyncImage(
       modifier = Modifier.fillMaxSize(),
@@ -888,8 +902,23 @@ class MediaViewerScreen(
         }
 
         SubcomposeAsyncImageContent()
+
+        if (state is AsyncImagePainter.State.Success || state is AsyncImagePainter.State.Error) {
+          if (!callbackCalled) {
+            callbackCalled = true
+            onPreviewLoadingFinished(postImageData)
+          }
+        }
       }
     )
+  }
+
+  class MediaViewerScreenState {
+    var images: SnapshotStateList<ImageLoadState>? = null
+    val initialPage = mutableStateOf<Int?>(null)
+
+    fun isLoaded(): Boolean = initialPage.value != null && images != null
+    fun requireImages(): SnapshotStateList<ImageLoadState> = requireNotNull(images) { "images not initialized yet!" }
   }
 
   companion object {
