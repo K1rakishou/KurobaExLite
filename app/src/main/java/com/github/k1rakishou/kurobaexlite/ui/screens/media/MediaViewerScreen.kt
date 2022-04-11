@@ -161,7 +161,10 @@ class MediaViewerScreen(
         TransitionPreview(
           animatable = animatable,
           clickedThumbnailBounds = clickedThumbnailBounds!!,
-          onTransitionFinished = { transitionFinished = true }
+          onTransitionFinished = {
+            transitionFinished = true
+            animatable.snapTo(1f)
+          }
         )
       }
     }
@@ -303,7 +306,7 @@ class MediaViewerScreen(
   private fun TransitionPreview(
     animatable: Animatable<Float, AnimationVector1D>,
     clickedThumbnailBounds: ClickedThumbnailBoundsStorage.ClickedThumbnailBounds,
-    onTransitionFinished: () -> Unit
+    onTransitionFinished: suspend () -> Unit
   ) {
     val bitmapMatrix = remember { Matrix() }
 
@@ -903,12 +906,17 @@ class MediaViewerScreen(
 
         SubcomposeAsyncImageContent()
 
-        if (state is AsyncImagePainter.State.Success || state is AsyncImagePainter.State.Error) {
-          if (!callbackCalled) {
-            callbackCalled = true
-            onPreviewLoadingFinished(postImageData)
+        LaunchedEffect(
+          key1 = state,
+          block = {
+            if (state is AsyncImagePainter.State.Success || state is AsyncImagePainter.State.Error) {
+              if (!callbackCalled) {
+                callbackCalled = true
+                onPreviewLoadingFinished(postImageData)
+              }
+            }
           }
-        }
+        )
       }
     )
   }
