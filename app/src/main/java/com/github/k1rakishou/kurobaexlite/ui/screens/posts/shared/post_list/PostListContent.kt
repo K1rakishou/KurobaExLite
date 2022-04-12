@@ -265,23 +265,29 @@ private fun processPostListScrollEvent(
   }
 
   val postDataList = (postListAsync as? AsyncData.Data)?.data?.posts
+  val visibleItemsInfo = lazyListState.layoutInfo.visibleItemsInfo
+
   if (postDataList != null) {
-    var firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.offset >= 0 }
+    var firstCompletelyVisibleItem = visibleItemsInfo.firstOrNull { it.offset >= 0 }
     if (firstCompletelyVisibleItem == null) {
-      firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+      firstCompletelyVisibleItem = visibleItemsInfo.firstOrNull()
     }
 
-    if (firstCompletelyVisibleItem != null) {
-      val firstVisiblePostData = postDataList.getOrNull(firstCompletelyVisibleItem.index)?.value
-      val postListTouchingBottom = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
-        ?.key == threadStatusCellKey
+    var lastCompletelyVisibleItem = visibleItemsInfo.lastOrNull()
+    if (lastCompletelyVisibleItem?.key == threadStatusCellKey) {
+      lastCompletelyVisibleItem = visibleItemsInfo.getOrNull(visibleItemsInfo.lastIndex - 1)
+    }
 
-      if (firstVisiblePostData != null) {
-        postsScreenViewModel.onFirstVisiblePostScrollChanged(
-          postCellData = firstVisiblePostData,
-          postListTouchingBottom = postListTouchingBottom
-        )
-      }
+    val firstVisiblePostData = firstCompletelyVisibleItem?.let { item -> postDataList.getOrNull(item.index)?.value }
+    val lastVisiblePostData = lastCompletelyVisibleItem?.let { item -> postDataList.getOrNull(item.index)?.value }
+    val postListTouchingBottom = visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
+
+    if (firstVisiblePostData != null && lastVisiblePostData != null) {
+      postsScreenViewModel.onPostScrollChanged(
+        firstVisiblePostData = firstVisiblePostData,
+        lastVisiblePostData = lastVisiblePostData,
+        postListTouchingBottom = postListTouchingBottom
+      )
     }
   }
 

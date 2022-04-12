@@ -19,7 +19,8 @@ class UpdateChanThreadView(
   suspend fun execute(
     threadDescriptor: ThreadDescriptor,
     threadLastPostDescriptor: PostDescriptor?,
-    threadBoundPostDescriptor: PostDescriptor?,
+    firstVisiblePost: PostDescriptor?,
+    lastVisiblePost: PostDescriptor?,
     postListTouchingBottom: Boolean?
   ): ChanThreadView? {
     val updatedChanThreadView = chanViewManager.insertOrUpdate(threadDescriptor) {
@@ -39,8 +40,12 @@ class UpdateChanThreadView(
         )
       }
 
-      if (threadBoundPostDescriptor != null) {
-        lastViewedPostDescriptor = threadBoundPostDescriptor
+      if (firstVisiblePost != null) {
+        lastViewedPDForScroll = firstVisiblePost
+      }
+
+      if (lastVisiblePost != null) {
+        lastViewedPDForNewPosts = lastVisiblePost
       }
     }
 
@@ -49,7 +54,9 @@ class UpdateChanThreadView(
         threadKey = ThreadKey.fromThreadDescriptor(threadDescriptor),
         lastViewedPostForIndicator = updatedChanThreadView.lastViewedPDForIndicator
           ?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
-        lastViewedPost = updatedChanThreadView.lastViewedPostDescriptor
+        lastViewedPostForScroll = updatedChanThreadView.lastViewedPDForScroll
+          ?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
+        lastViewedPostForNewPosts = updatedChanThreadView.lastViewedPDForNewPosts
           ?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
         lastLoadedPost = updatedChanThreadView.lastLoadedPostDescriptor
           ?.let { ThreadLocalPostKey.fromPostDescriptor(it) }

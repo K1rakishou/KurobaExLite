@@ -232,8 +232,9 @@ class CatalogScreenViewModel(
     }
   }
 
-  override fun onFirstVisiblePostScrollChanged(
-    postCellData: PostCellData,
+  override fun onPostScrollChanged(
+    firstVisiblePostData: PostCellData,
+    lastVisiblePostData: PostCellData,
     postListTouchingBottom: Boolean
   ) {
     updateChanCatalogViewExecutor.post(timeout = 200L) {
@@ -242,7 +243,7 @@ class CatalogScreenViewModel(
 
       updateChanCatalogView.execute(
         catalogDescriptor = catalogDescriptor,
-        catalogBoundPostDescriptor = postCellData.postDescriptor
+        catalogBoundPostDescriptor = firstVisiblePostData.postDescriptor
       )
     }
   }

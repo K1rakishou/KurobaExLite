@@ -31,7 +31,8 @@ class LoadChanThreadView(
         ChanThreadView(
           threadDescriptor = threadDescriptor,
           lastViewedPDForIndicator = chanThreadViewFromDatabase.lastViewedPostForIndicator?.postDescriptor(threadDescriptor),
-          lastViewedPostDescriptor = chanThreadViewFromDatabase.lastViewedPost?.postDescriptor(threadDescriptor),
+          lastViewedPDForScroll = chanThreadViewFromDatabase.lastViewedPostForScroll?.postDescriptor(threadDescriptor),
+          lastViewedPDForNewPosts = chanThreadViewFromDatabase.lastViewedPostForNewPosts?.postDescriptor(threadDescriptor),
           lastLoadedPostDescriptor = chanThreadViewFromDatabase.lastLoadedPost?.postDescriptor(threadDescriptor)
         )
       }
@@ -52,7 +53,8 @@ class LoadChanThreadView(
       threadDescriptor = threadDescriptor,
       updater = {
         lastViewedPDForIndicator = chanThreadViewFromDatabase.lastViewedPDForIndicator
-        lastViewedPostDescriptor = chanThreadViewFromDatabase.lastViewedPostDescriptor
+        lastViewedPDForScroll = chanThreadViewFromDatabase.lastViewedPDForScroll
+        lastViewedPDForNewPosts = chanThreadViewFromDatabase.lastViewedPDForNewPosts
         lastLoadedPostDescriptor = chanThreadViewFromDatabase.lastLoadedPostDescriptor
       }
     )

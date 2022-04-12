@@ -237,7 +237,7 @@ class ThreadScreenViewModel(
     onThreadLoadingStart(threadDescriptor, loadOptions)
 
     if (threadDescriptor != null) {
-      val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)?.lastViewedPostDescriptor
+      val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)?.lastViewedPDForScroll
 
       resetPosition(threadDescriptor)
       threadScreenState.lastViewedPostDescriptorForScrollRestoration.value = lastViewedPostDescriptor
@@ -371,7 +371,7 @@ class ThreadScreenViewModel(
     if (postLoadResult.isNotEmpty()) {
       val lastViewedOrLoadedPostDescriptor = loadChanThreadView.execute(threadDescriptor)
         ?.let { chanThreadView ->
-          return@let chanThreadView.lastViewedPostDescriptor
+          return@let chanThreadView.lastViewedPDForNewPosts
             ?: chanThreadView.lastLoadedPostDescriptor
         }
 
@@ -390,7 +390,8 @@ class ThreadScreenViewModel(
     updateLastLoadedAndViewedPosts(
       key = "onPostsParsed",
       threadDescriptor = threadDescriptor,
-      boundPostDescriptor = null,
+      firstVisiblePostDescriptor = null,
+      lastVisiblePostDescriptor = null,
       postListTouchingBottom = false
     )
 
@@ -411,8 +412,9 @@ class ThreadScreenViewModel(
     }
   }
 
-  override fun onFirstVisiblePostScrollChanged(
-    postCellData: PostCellData,
+  override fun onPostScrollChanged(
+    firstVisiblePostData: PostCellData,
+    lastVisiblePostData: PostCellData,
     postListTouchingBottom: Boolean
   ) {
     if (postListTouchingBottom) {
@@ -420,9 +422,10 @@ class ThreadScreenViewModel(
     }
 
     updateLastLoadedAndViewedPosts(
-      key = "onFirstVisiblePostScrollChanged",
-      threadDescriptor = postCellData.postDescriptor.threadDescriptor,
-      boundPostDescriptor = postCellData.postDescriptor,
+      key = "onPostScrollChanged",
+      threadDescriptor = firstVisiblePostData.postDescriptor.threadDescriptor,
+      firstVisiblePostDescriptor = firstVisiblePostData.postDescriptor,
+      lastVisiblePostDescriptor = lastVisiblePostData.postDescriptor,
       postListTouchingBottom = postListTouchingBottom
     )
   }
@@ -430,7 +433,8 @@ class ThreadScreenViewModel(
   private fun updateLastLoadedAndViewedPosts(
     key: String,
     threadDescriptor: ThreadDescriptor,
-    boundPostDescriptor: PostDescriptor?,
+    firstVisiblePostDescriptor: PostDescriptor?,
+    lastVisiblePostDescriptor: PostDescriptor?,
     postListTouchingBottom: Boolean?
   ) {
     updateChanThreadViewExecutor.post(timeout = 200L, key = key) {
@@ -439,7 +443,8 @@ class ThreadScreenViewModel(
       val updatedChanThreadView = updateChanThreadView.execute(
         threadDescriptor = threadDescriptor,
         threadLastPostDescriptor = lastThreadPost,
-        threadBoundPostDescriptor = boundPostDescriptor,
+        firstVisiblePost = firstVisiblePostDescriptor,
+        lastVisiblePost = lastVisiblePostDescriptor,
         postListTouchingBottom = postListTouchingBottom
       )
 

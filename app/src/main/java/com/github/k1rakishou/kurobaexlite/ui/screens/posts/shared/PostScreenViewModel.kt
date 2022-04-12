@@ -614,8 +614,9 @@ abstract class PostScreenViewModel(
 
   }
 
-  open fun onFirstVisiblePostScrollChanged(
-    postCellData: PostCellData,
+  open fun onPostScrollChanged(
+    firstVisiblePostData: PostCellData,
+    lastVisiblePostData: PostCellData,
     postListTouchingBottom: Boolean
   ) {
 

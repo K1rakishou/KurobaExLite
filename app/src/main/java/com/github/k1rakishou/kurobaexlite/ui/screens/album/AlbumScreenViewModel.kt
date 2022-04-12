@@ -30,7 +30,7 @@ class AlbumScreenViewModel : BaseViewModel() {
 
       val lastViewedPostDescriptor = when (chanDescriptor) {
         is CatalogDescriptor -> chanViewManager.read(chanDescriptor)?.lastViewedPostDescriptor
-        is ThreadDescriptor -> chanViewManager.read(chanDescriptor)?.lastViewedPostDescriptor
+        is ThreadDescriptor -> chanViewManager.read(chanDescriptor)?.lastViewedPDForScroll
       }
 
       postStateList.forEachIndexed { index, postState ->
