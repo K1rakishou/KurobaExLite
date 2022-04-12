@@ -38,6 +38,8 @@ abstract class FloatingComposeScreen(
   val vertPaddingDp by lazy { if (uiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
 
   open val contentAlignment: Alignment = Alignment.Center
+  open val presentAnimation: NavigationRouter.ScreenAddAnimation = NavigationRouter.ScreenAddAnimation.FadeIn
+  open val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.FadeOut
 
   protected val touchPositionDependantAlignment by lazy { TouchPositionDependantAlignment(uiInfoManager) }
 
@@ -157,7 +159,10 @@ abstract class FloatingComposeScreen(
   }
 
   protected fun stopPresenting(): Boolean {
-    return navigationRouter.stopPresentingScreen(screenKey = screenKey)
+    return navigationRouter.stopPresentingScreen(
+      screenKey = screenKey,
+      overrideAnimation = unpresentAnimation
+    )
   }
 
   protected class TouchPositionDependantAlignment(

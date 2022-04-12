@@ -72,6 +72,7 @@ class PopupRepliesScreen(
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY
+  override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.Pop
 
   @Composable
   override fun FloatingContent() {

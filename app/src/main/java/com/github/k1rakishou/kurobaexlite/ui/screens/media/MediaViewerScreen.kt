@@ -115,6 +115,7 @@ class MediaViewerScreen(
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
+  override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.Pop
 
   @OptIn(ExperimentalPagerApi::class)
   @Composable

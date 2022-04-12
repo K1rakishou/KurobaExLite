@@ -84,7 +84,7 @@ class MainNavigationRouter : NavigationRouter(
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
     val floatingScreenUpdates = combineScreenUpdates(
       oldScreens = floatingScreensStack,
-      newScreenUpdate = ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.In)
+      newScreenUpdate = chooseAddAnimation(floatingComposeScreen)
     ).toMutableList()
 
     if (floatingScreensStack.none { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
@@ -108,7 +108,10 @@ class MainNavigationRouter : NavigationRouter(
     )
   }
 
-  override fun stopPresentingScreen(screenKey: ScreenKey): Boolean {
+  override fun stopPresentingScreen(
+    screenKey: ScreenKey,
+    overrideAnimation: ScreenRemoveAnimation?
+  ): Boolean {
     val index = floatingScreensStack.indexOfLast { screen -> screen.screenKey == screenKey }
     if (index < 0) {
       return false
@@ -120,7 +123,7 @@ class MainNavigationRouter : NavigationRouter(
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
     val floatingScreenUpdates = combineScreenUpdates(
       oldScreens = floatingScreensStack,
-      newScreenUpdate = ScreenUpdate.Pop(floatingComposeScreen)
+      newScreenUpdate = chooseRemoveAnimation(overrideAnimation, floatingComposeScreen)
     ).toMutableList()
 
     if (floatingScreensStack.size <= 1 && floatingScreensStack.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
@@ -154,6 +157,26 @@ class MainNavigationRouter : NavigationRouter(
     )
 
     return true
+  }
+
+  private fun chooseAddAnimation(
+    floatingComposeScreen: FloatingComposeScreen
+  ): ScreenUpdate {
+    return when (floatingComposeScreen.presentAnimation) {
+      ScreenAddAnimation.FadeIn -> ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.In)
+      ScreenAddAnimation.Push -> ScreenUpdate.Push(floatingComposeScreen)
+    }
+  }
+
+  private fun chooseRemoveAnimation(
+    overrideAnimation: ScreenRemoveAnimation?,
+    floatingComposeScreen: FloatingComposeScreen
+  ): ScreenUpdate {
+    return when (overrideAnimation) {
+      null,
+      ScreenRemoveAnimation.FadeOut -> ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.Out)
+      ScreenRemoveAnimation.Pop -> ScreenUpdate.Pop(floatingComposeScreen)
+    }
   }
 
   override suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {

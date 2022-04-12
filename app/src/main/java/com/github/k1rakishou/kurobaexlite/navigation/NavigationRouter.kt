@@ -135,9 +135,12 @@ open class NavigationRouter(
     unreachable("Must never reach here because should be overridden by MainNavigationRouter")
   }
 
-  open fun stopPresentingScreen(screenKey: ScreenKey): Boolean {
+  open fun stopPresentingScreen(
+    screenKey: ScreenKey,
+    overrideAnimation: ScreenRemoveAnimation? = null
+  ): Boolean {
     if (parentRouter != null) {
-      return parentRouter.stopPresentingScreen(screenKey)
+      return parentRouter.stopPresentingScreen(screenKey, overrideAnimation)
     }
 
     unreachable("Must never reach here because should be overridden by MainNavigationRouter")
@@ -296,6 +299,16 @@ open class NavigationRouter(
       return screen.hashCode()
     }
 
+  }
+
+  enum class ScreenAddAnimation {
+    Push,
+    FadeIn
+  }
+
+  enum class ScreenRemoveAnimation {
+    Pop,
+    FadeOut
   }
 
   abstract class OnBackPressHandler {
