@@ -53,7 +53,7 @@ class SplitScreenLayout(
               .fillMaxHeight()
               .weight(weight = weight)
           ) {
-            childScreen.composeScreen.Toolbar(this)
+            childScreen.composeScreen.topChildScreen().Toolbar(this)
 
             if (index >= 0 && index < childScreens.size) {
               Divider(
