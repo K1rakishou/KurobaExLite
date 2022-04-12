@@ -118,7 +118,6 @@ private fun MediaToolbar(
     screenKey = screenKey,
     componentActivity = componentActivity,
     kurobaToolbarState = kurobaToolbarState,
-    navigationRouter = navigationRouter,
     canProcessBackEvent = { true },
     onLeftIconClicked = { onBackPressed() },
     onMiddleMenuClicked = {

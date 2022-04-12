@@ -24,23 +24,25 @@ import kotlinx.coroutines.flow.StateFlow
 class SplitScreenLayout(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  private val childScreensBuilder: (NavigationRouter) -> List<ChildScreen>
-) : HomeNavigationScreen(componentActivity, navigationRouter), ScreenLayout {
+  childScreensBuilder: (NavigationRouter) -> List<ScreenLayout.ChildScreen<ComposeScreenWithToolbar>>
+) : HomeNavigationScreen(componentActivity, navigationRouter), ScreenLayout<ComposeScreenWithToolbar> {
+  private val _childScreens by lazy { childScreensBuilder.invoke(navigationRouter) }
+  override val childScreens: List<ScreenLayout.ChildScreen<ComposeScreenWithToolbar>> = _childScreens
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
   // TODO(KurobaEx): not implemented
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
+
   override fun hasScreen(screenKey: ScreenKey): Boolean {
-    return childScreensBuilder.invoke(navigationRouter)
+    return childScreens
       .any { childScreen -> childScreen.composeScreen.screenKey == screenKey }
   }
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val chanTheme = LocalChanTheme.current
-    val childScreens = remember { childScreensBuilder.invoke(navigationRouter) }
     val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 
     with(boxScope) {
@@ -72,7 +74,6 @@ class SplitScreenLayout(
   @Composable
   override fun Content() {
     val chanTheme = LocalChanTheme.current
-    val childScreens = remember { childScreensBuilder.invoke(navigationRouter) }
     val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 
     Row(modifier = Modifier.fillMaxSize()) {
@@ -99,7 +100,7 @@ class SplitScreenLayout(
     }
   }
 
-  private fun calculateWeights(childScreens: List<ChildScreen>): FloatArray {
+  private fun calculateWeights(childScreens: List<ScreenLayout.ChildScreen<ComposeScreenWithToolbar>>): FloatArray {
     val allNulls = childScreens.all { it.weight == null }
     if (allNulls) {
       return FloatArray(childScreens.size) { 1f / childScreens.size.toFloat() }
@@ -140,11 +141,6 @@ class SplitScreenLayout(
 
     return weights
   }
-
-  class ChildScreen(
-    val composeScreen: ComposeScreenWithToolbar,
-    val weight: Float? = null
-  )
 
   companion object {
     val SCREEN_KEY = ScreenKey("SplitScreenLayout")

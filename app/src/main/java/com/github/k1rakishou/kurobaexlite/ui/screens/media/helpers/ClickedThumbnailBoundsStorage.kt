@@ -14,11 +14,12 @@ class ClickedThumbnailBoundsStorage {
     clickedThumbnailBounds = ClickedThumbnailBounds(postImage, bounds)
   }
 
-  fun getAndConsume(): ClickedThumbnailBounds? {
-    val copy = clickedThumbnailBounds?.copy()
-    clickedThumbnailBounds = null
+  fun getBounds(): ClickedThumbnailBounds? {
+    return clickedThumbnailBounds
+  }
 
-    return copy
+  fun consumeBounds() {
+    clickedThumbnailBounds = null
   }
 
   data class ClickedThumbnailBounds(

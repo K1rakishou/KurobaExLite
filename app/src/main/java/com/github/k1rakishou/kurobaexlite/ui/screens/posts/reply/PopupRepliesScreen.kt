@@ -262,12 +262,12 @@ class PopupRepliesScreen(
     }
   }
 
-  override suspend fun onBackPressed(): Boolean {
+  override suspend fun onFloatingControllerBackPressed(): Boolean {
     if (popupRepliesScreenViewModel.popReplyChain()) {
       return true
     }
 
-    return super.onBackPressed()
+    return super.onFloatingControllerBackPressed()
   }
 
   override fun onDestroy() {

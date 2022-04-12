@@ -9,11 +9,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenTransition
 @Suppress("UnnecessaryVariable", "FoldInitializerAndIfToElvis")
 @Composable
 fun RootRouterHost(
-  rootNavigationRouter: NavigationRouter,
-  onBackPressed: () -> Boolean = { false }
+  rootNavigationRouter: NavigationRouter
 ) {
-  rootNavigationRouter.HandleBackPresses(onBackPressed)
-
   val screenUpdateTransactionState by rootNavigationRouter.screenUpdatesFlow.collectAsState()
   val screenUpdateTransaction = screenUpdateTransactionState
 
@@ -49,11 +46,8 @@ fun RootRouterHost(
 @Composable
 fun RouterHost(
   navigationRouter: NavigationRouter,
-  defaultScreen: @Composable () -> Unit,
-  onBackPressed: () -> Boolean = { false }
+  defaultScreen: @Composable () -> Unit
 ) {
-  navigationRouter.HandleBackPresses(onBackPressed)
-
   defaultScreen()
 
   val screenUpdateTransactionState by navigationRouter.screenUpdatesFlow.collectAsState()

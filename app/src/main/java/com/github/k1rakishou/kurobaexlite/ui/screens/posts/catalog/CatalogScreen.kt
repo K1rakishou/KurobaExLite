@@ -61,6 +61,12 @@ class CatalogScreen(
     CatalogScreenToolbarActionHandler()
   }
 
+  private val kurobaToolbarState = KurobaToolbarState(
+    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
+    middlePartInfo = MiddlePartInfo(centerContent = true),
+    postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
+  )
+
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
       FloatingMenuItem.Text(
@@ -109,14 +115,6 @@ class CatalogScreen(
     val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
-    val kurobaToolbarState = remember(key1 = mainUiLayoutMode) {
-      return@remember KurobaToolbarState(
-        leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
-        middlePartInfo = MiddlePartInfo(centerContent = true),
-        postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
-      )
-    }
-
     UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
       postScreenState = catalogScreenViewModel.postScreenState,
@@ -127,7 +125,6 @@ class CatalogScreen(
       screenKey = screenKey,
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
-      navigationRouter = navigationRouter,
       canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
       onLeftIconClicked = { uiInfoManager.openDrawer() },
       onMiddleMenuClicked = {
@@ -176,6 +173,20 @@ class CatalogScreen(
 
   @Composable
   override fun Content() {
+    HandleBackPresses {
+      if (kurobaToolbarState.onBackPressed()) {
+        return@HandleBackPresses true
+      }
+
+      for (composeScreen in navigationRouter.navigationScreensStack.asReversed()) {
+        if (composeScreen.onBackPressed()) {
+          return@HandleBackPresses true
+        }
+      }
+
+      return@HandleBackPresses false
+    }
+
     RouterHost(
       navigationRouter = navigationRouter,
       defaultScreen = { CatalogPostListScreenContent() }

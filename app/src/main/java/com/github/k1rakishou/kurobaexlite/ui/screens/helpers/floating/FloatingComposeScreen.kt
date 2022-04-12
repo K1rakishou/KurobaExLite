@@ -45,9 +45,7 @@ abstract class FloatingComposeScreen(
 
   @Composable
   override fun Content() {
-    // We need to listen for back event of the current navigation router because they are processed
-    // in the from inside out order
-    navigationRouter.HandleBackPresses { onBackPressed() }
+    HandleBackPresses { onFloatingControllerBackPressed() }
 
     // However when it comes to screen destroy events, we need use the MainScreen's router since that's
     // where all the floating screens are being added to.
@@ -67,7 +65,7 @@ abstract class FloatingComposeScreen(
         .fillMaxSize()
         .kurobaClickable(
           hasClickIndication = false,
-          onClick = { coroutineScope.launch { onBackPressed() } }
+          onClick = { coroutineScope.launch { onFloatingControllerBackPressed() } }
         )
     ) {
       Box(
@@ -150,7 +148,7 @@ abstract class FloatingComposeScreen(
   }
 
   @CallSuper
-  open suspend fun onBackPressed(): Boolean {
+  open suspend fun onFloatingControllerBackPressed(): Boolean {
     return stopPresenting()
   }
 

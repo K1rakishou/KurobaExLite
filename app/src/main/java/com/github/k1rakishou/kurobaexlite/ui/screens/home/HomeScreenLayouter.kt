@@ -5,6 +5,7 @@ import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.ScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
@@ -42,14 +43,14 @@ class HomeScreenLayouter(
         navigationRouter = navigationRouter.childRouter(SplitScreenLayout.SCREEN_KEY),
         childScreensBuilder = { router ->
           return@SplitScreenLayout listOf(
-            SplitScreenLayout.ChildScreen(
+            ScreenLayout.ChildScreen(
               composeScreen = CatalogScreen(
                 componentActivity = componentActivity,
                 navigationRouter = router.childRouter(CatalogScreen.SCREEN_KEY)
               ),
               weight = 0.4f
             ),
-            SplitScreenLayout.ChildScreen(
+            ScreenLayout.ChildScreen(
               composeScreen = ThreadScreen(
                 componentActivity = componentActivity,
                 navigationRouter = router.childRouter(ThreadScreen.SCREEN_KEY)

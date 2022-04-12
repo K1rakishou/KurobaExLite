@@ -9,6 +9,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -39,6 +40,7 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.HomeScreenDrawerLayo
 import com.github.k1rakishou.kurobaexlite.ui.screens.drawer.detectDrawerDragGestures
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.ScreenLayout
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HomeScreen(
@@ -47,6 +49,9 @@ class HomeScreen(
 ) : ComposeScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val homeChildScreens by lazy { HomeChildScreens(componentActivity, navigationRouter) }
+
+  private val currentChildScreensState = mutableStateOf<HomeChildScreens.ChildScreens?>(null)
+  private val currentChildIndex = mutableStateOf<Int?>(null)
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -83,15 +88,23 @@ class HomeScreen(
     }
 
     val bookmarksScreenOnLeftSide by uiInfoManager.bookmarksScreenOnLeftSide.collectAsState()
-    val initialPage by uiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
+    val currentPage by uiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
 
     val childScreens = remember(
       key1 = bookmarksScreenOnLeftSide,
       key2 = mainUiLayoutMode
-    ) { homeChildScreens.getChildScreens(mainUiLayoutMode, bookmarksScreenOnLeftSide) }
+    ) {
+      val childScreens = homeChildScreens.getChildScreens(mainUiLayoutMode, bookmarksScreenOnLeftSide)
+      currentChildScreensState.value = childScreens
 
-    val initialScreenIndexMut = remember(key1 = initialPage, key2 = childScreens) {
-      homeChildScreens.screenIndexByPage(initialPage, childScreens)
+      return@remember childScreens
+    }
+
+    val initialScreenIndexMut = remember(key1 = currentPage, key2 = childScreens) {
+      val initialChildIndex = homeChildScreens.screenIndexByPage(currentPage, childScreens)
+      currentChildIndex.value = initialChildIndex
+
+      return@remember initialChildIndex
     }
 
     val initialScreenIndex = initialScreenIndexMut
@@ -139,10 +152,38 @@ class HomeScreen(
       }
     )
 
-    navigationRouter.HandleBackPresses {
-      val currentPage = uiInfoManager.currentPage(mainUiLayoutMode)
+    val childScreensUpdated by rememberUpdatedState(newValue = childScreens)
 
-      if (currentPage != null && !homeChildScreens.isMainScreen(currentPage)) {
+    HandleBackPresses {
+      if (uiInfoManager.isDrawerOpenedOrOpening()) {
+        uiInfoManager.closeDrawer()
+        return@HandleBackPresses true
+      }
+
+      val freshCurrentPage = uiInfoManager.currentPage(mainUiLayoutMode)
+        ?: return@HandleBackPresses false
+
+      // First, process all child screens
+      val currentScreenIndex = homeChildScreens.screenIndexByPage(freshCurrentPage, childScreensUpdated)
+      if (currentScreenIndex != null) {
+        val screens = childScreensUpdated.screens
+        val currentScreen = screens.get(currentScreenIndex)
+
+        if (currentScreen is ScreenLayout<*>) {
+          for (childScreen in currentScreen.childScreens.asReversed()) {
+            if (childScreen.composeScreen.onBackPressed()) {
+              return@HandleBackPresses true
+            }
+          }
+        } else {
+          if (currentScreen.onBackPressed()) {
+            return@HandleBackPresses true
+          }
+        }
+      }
+
+      // Then reset the ViewPager's current page
+      if (!homeChildScreens.isMainScreen(freshCurrentPage)) {
         uiInfoManager.updateCurrentPage(homeChildScreens.mainScreenKey())
         return@HandleBackPresses true
       }

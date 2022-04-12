@@ -2,11 +2,13 @@ package com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import org.koin.android.ext.android.inject
@@ -21,7 +23,20 @@ abstract class ComposeScreen(
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
   protected val snackbarManager: SnackbarManager by componentActivity.inject()
 
+  private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
+
   abstract val screenKey: ScreenKey
+
+  @Composable
+  fun HandleBackPresses(backPressHandler: MainNavigationRouter.OnBackPressHandler) {
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        backPressHandlers += backPressHandler
+        onDispose { backPressHandlers -= backPressHandler }
+      }
+    )
+  }
 
   @Composable
   abstract fun Content()
@@ -43,6 +58,16 @@ abstract class ComposeScreen(
     }
 
     return navigationRouter.requireParentRouter().popScreen(this)
+  }
+
+  suspend fun onBackPressed(): Boolean {
+    for (backPressHandler in backPressHandlers) {
+      if (backPressHandler.onBackPressed()) {
+        return true
+      }
+    }
+
+    return false
   }
 
 }

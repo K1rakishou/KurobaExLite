@@ -18,15 +18,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreenViewModel
-import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class DrawerScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
-  private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
-
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable
@@ -36,15 +32,6 @@ class DrawerScreen(
 
     val paddings = remember(key1 = insets.top, key2 = insets.bottom) {
       PaddingValues(top = insets.top, bottom = insets.bottom)
-    }
-
-    navigationRouter.HandleBackPresses {
-      if (uiInfoManager.isDrawerOpenedOrOpening()) {
-        uiInfoManager.closeDrawer()
-        return@HandleBackPresses true
-      }
-
-      return@HandleBackPresses false
     }
 
     Box(

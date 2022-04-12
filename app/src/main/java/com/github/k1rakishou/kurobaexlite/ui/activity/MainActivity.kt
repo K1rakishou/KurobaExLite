@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
 
   override fun onBackPressed() {
     backPressExecutor.post {
-      if (mainActivityViewModel.rootNavigationRouter.onBackPressed()) {
+      if (mainActivityViewModel.rootNavigationRouter.onBackBackPressed()) {
         return@post
       }
 

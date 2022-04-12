@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.AnimateableStackContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.AnimateableStackContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
@@ -67,11 +67,33 @@ class KurobaToolbarState(
 ) {
   val toolbarTitleState = mutableStateOf<String?>(null)
   val toolbarSubtitleState = mutableStateOf<String?>(null)
+  private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
 
   val popChildToolbarsEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
 
   fun popChildToolbars() {
     popChildToolbarsEventFlow.tryEmit(Unit)
+  }
+
+  @Composable
+  fun HandleBackPresses(backPressHandler: MainNavigationRouter.OnBackPressHandler) {
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        backPressHandlers += backPressHandler
+        onDispose { backPressHandlers -= backPressHandler }
+      }
+    )
+  }
+
+  suspend fun onBackPressed(): Boolean {
+    for (backPressHandler in backPressHandlers) {
+      if (backPressHandler.onBackPressed()) {
+        return true
+      }
+    }
+
+    return false
   }
 
 }
@@ -81,7 +103,6 @@ fun KurobaToolbar(
   screenKey: ScreenKey,
   componentActivity: ComponentActivity,
   kurobaToolbarState: KurobaToolbarState,
-  navigationRouter: NavigationRouter,
   canProcessBackEvent: () -> Boolean,
   onLeftIconClicked: () -> Unit,
   onMiddleMenuClicked: (() -> Unit)?,
@@ -103,7 +124,7 @@ fun KurobaToolbar(
     )
   )
 
-  navigationRouter.HandleBackPresses {
+  kurobaToolbarState.HandleBackPresses {
     if (!canProcessBackEvent()) {
       return@HandleBackPresses false
     }

@@ -100,8 +100,12 @@ class AlbumScreen(
       windowInsets.copy(newTop = windowInsets.top + toolbarHeight).asPaddingValues()
     }
 
-    navigationRouter.HandleBackPresses {
-      popScreen()
+    HandleBackPresses {
+      if (kurobaToolbarState.onBackPressed()) {
+        return@HandleBackPresses true
+      }
+
+      return@HandleBackPresses popScreen()
     }
 
     val postsAsyncData by when (chanDescriptor) {
@@ -270,7 +274,6 @@ class AlbumScreen(
       screenKey = screenKey,
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
-      navigationRouter = navigationRouter,
       canProcessBackEvent = { true },
       onLeftIconClicked = onBackArrowClicked,
       onMiddleMenuClicked = null,

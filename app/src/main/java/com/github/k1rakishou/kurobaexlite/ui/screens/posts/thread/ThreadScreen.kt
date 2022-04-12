@@ -64,6 +64,23 @@ class ThreadScreen(
     LinkableClickHelper(componentActivity, navigationRouter)
   }
 
+  private val kurobaToolbarState by lazy {
+    val mainUiLayoutMode = requireNotNull(uiInfoManager.currentUiLayoutModeState.value) {
+      "currentUiLayoutModeState is not initialized yet!"
+    }
+
+    val leftIconInfo = when (mainUiLayoutMode) {
+      MainUiLayoutMode.Portrait -> LeftIconInfo(R.drawable.ic_baseline_arrow_back_24)
+      MainUiLayoutMode.Split -> null
+    }
+
+    return@lazy KurobaToolbarState(
+      leftIconInfo = leftIconInfo,
+      middlePartInfo = MiddlePartInfo(centerContent = false),
+      postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
+    )
+  }
+
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
   override val screenContentLoadedFlow: StateFlow<Boolean> = threadScreenViewModel.postScreenState.contentLoaded
@@ -102,19 +119,6 @@ class ThreadScreen(
     val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
-    val kurobaToolbarState = remember(key1 = mainUiLayoutMode) {
-      val leftIconInfo = when (mainUiLayoutMode) {
-        MainUiLayoutMode.Portrait -> LeftIconInfo(R.drawable.ic_baseline_arrow_back_24)
-        MainUiLayoutMode.Split -> null
-      }
-
-      return@remember KurobaToolbarState(
-        leftIconInfo = leftIconInfo,
-        middlePartInfo = MiddlePartInfo(centerContent = false),
-        postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
-      )
-    }
-
     UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
       postScreenState = threadScreenViewModel.postScreenState,
@@ -125,7 +129,6 @@ class ThreadScreen(
       screenKey = screenKey,
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
-      navigationRouter = navigationRouter,
       canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
       onLeftIconClicked = { uiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
@@ -155,10 +158,27 @@ class ThreadScreen(
 
   @Composable
   override fun Content() {
+    HandleBackPresses {
+      if (kurobaToolbarState.onBackPressed()) {
+        return@HandleBackPresses true
+      }
+
+      for (composeScreen in navigationRouter.navigationScreensStack.asReversed()) {
+        if (composeScreen.onBackPressed()) {
+          return@HandleBackPresses true
+        }
+      }
+
+      if (threadScreenViewModel.onBackPressed()) {
+        return@HandleBackPresses true
+      }
+
+      return@HandleBackPresses false
+    }
+
     RouterHost(
       navigationRouter = navigationRouter,
-      defaultScreen = { ThreadPostListScreenContent() },
-      onBackPressed = { threadScreenViewModel.onBackPressed() }
+      defaultScreen = { ThreadPostListScreenContent() }
     )
   }
 

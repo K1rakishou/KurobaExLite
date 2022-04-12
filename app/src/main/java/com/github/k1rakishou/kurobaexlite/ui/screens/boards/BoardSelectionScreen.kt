@@ -90,8 +90,12 @@ class BoardSelectionScreen(
   override fun Content() {
     val chanTheme = LocalChanTheme.current
 
-    navigationRouter.HandleBackPresses {
-      popScreen()
+    HandleBackPresses {
+      if (kurobaToolbarState.onBackPressed()) {
+        return@HandleBackPresses true
+      }
+
+      return@HandleBackPresses popScreen()
     }
 
     val siteKey = catalogDescriptor?.siteKey
@@ -347,7 +351,6 @@ class BoardSelectionScreen(
       screenKey = screenKey,
       componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
-      navigationRouter = navigationRouter,
       canProcessBackEvent = { true },
       onLeftIconClicked = onBackArrowClicked,
       onMiddleMenuClicked = null,

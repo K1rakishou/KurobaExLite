@@ -13,7 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
-import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RootRouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
@@ -25,8 +25,8 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.home.HomeScreen
 
 class MainScreen(
   componentActivity: ComponentActivity,
-  rootNavigationRouter: NavigationRouter
-) : ComposeScreen(componentActivity, rootNavigationRouter) {
+  private val mainNavigationRouter: MainNavigationRouter
+) : ComposeScreen(componentActivity, mainNavigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable
@@ -54,15 +54,34 @@ class MainScreen(
 
         uiInfoManager.updateMaxParentSize(availableWidth, availableHeight)
 
+        val homeScreen = remember {
+          val prevHomeScreen = navigationRouter.getScreenByKey(HomeScreen.SCREEN_KEY)
+          if (prevHomeScreen != null) {
+            return@remember prevHomeScreen
+          }
+
+          return@remember HomeScreen(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY)
+          )
+        }
+
         PushScreen(
           navigationRouter = navigationRouter,
-          composeScreenBuilder = {
-            HomeScreen(
-              componentActivity = componentActivity,
-              navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY)
-            )
-          }
+          composeScreenBuilder = { homeScreen }
         )
+
+        mainNavigationRouter.HandleBackPresses {
+          // First, process all the floating screens
+          for (floatingComposeScreen in mainNavigationRouter.floatingScreensStack.asReversed()) {
+            if (floatingComposeScreen.onBackPressed()) {
+              return@HandleBackPresses true
+            }
+          }
+
+          // Then process regular screens
+          return@HandleBackPresses homeScreen.onBackPressed()
+        }
 
         RootRouterHost(navigationRouter)
 

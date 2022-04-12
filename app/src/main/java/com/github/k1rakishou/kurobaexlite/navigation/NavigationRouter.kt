@@ -20,9 +20,11 @@ open class NavigationRouter(
   val routerKey: ScreenKey,
   private val parentRouter: NavigationRouter?
 ) {
-  val navigationScreensStack = mutableStateListOf<ComposeScreen>()
+  protected val _navigationScreensStack = mutableStateListOf<ComposeScreen>()
+  val navigationScreensStack: List<ComposeScreen>
+    get() = _navigationScreensStack.toList()
+
   protected val childRouters = linkedMapOf<ScreenKey, NavigationRouter>()
-  protected val backPressHandlers = mutableListOf<OnBackPressHandler>()
 
   protected val _screenUpdatesFlow = MutableStateFlow<ScreenUpdateTransaction?>(null)
   val screenUpdatesFlow: StateFlow<ScreenUpdateTransaction?>
@@ -33,23 +35,6 @@ open class NavigationRouter(
     get() = _intentsFlow.asSharedFlow()
 
   protected val screenDestroyCallbacks = mutableListOf<suspend (ScreenKey) -> Unit>()
-
-  @Composable
-  fun HandleBackPresses(onBackPressed: suspend () -> Boolean) {
-    DisposableEffect(
-      key1 = Unit,
-      effect = {
-        val handler = object : OnBackPressHandler() {
-          override suspend fun onBackPressed(): Boolean {
-            return onBackPressed()
-          }
-        }
-
-        backPressHandlers += handler
-        onDispose { backPressHandlers -= handler }
-      }
-    )
-  }
 
   @Composable
   fun HandleScreenDestroyEvents(screenKey: ScreenKey, onScreenDestroyed: suspend () -> Unit) {
@@ -76,7 +61,7 @@ open class NavigationRouter(
       error("FloatingComposeScreens must be added via presentScreen() function!")
     }
 
-    val indexOfPrev = navigationScreensStack
+    val indexOfPrev = _navigationScreensStack
       .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
@@ -85,11 +70,11 @@ open class NavigationRouter(
     }
 
     val navigationScreenUpdates = combineScreenUpdates(
-      oldScreens = navigationScreensStack,
+      oldScreens = _navigationScreensStack,
       newScreenUpdate = ScreenUpdate.Push(newComposeScreen)
     )
 
-    navigationScreensStack.add(newComposeScreen)
+    _navigationScreensStack.add(newComposeScreen)
     logcat.logcat(tag = TAG) { "pushScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
@@ -101,7 +86,7 @@ open class NavigationRouter(
   }
 
   open fun popScreen(newComposeScreen: ComposeScreen): Boolean {
-    val indexOfPrev = navigationScreensStack
+    val indexOfPrev = _navigationScreensStack
       .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
 
     if (indexOfPrev < 0) {
@@ -109,10 +94,10 @@ open class NavigationRouter(
       return false
     }
 
-    navigationScreensStack.removeAt(indexOfPrev)
+    _navigationScreensStack.removeAt(indexOfPrev)
 
     val navigationScreenUpdates = combineScreenUpdates(
-      oldScreens = navigationScreensStack,
+      oldScreens = _navigationScreensStack,
       newScreenUpdate = ScreenUpdate.Pop(newComposeScreen)
     )
 
@@ -184,7 +169,7 @@ open class NavigationRouter(
     error("NavigationRouter with key \'${screenKey.key}\' not found")
   }
 
-  private fun getRouterByKeyOrNull(screenKey: ScreenKey): NavigationRouter? {
+  fun getRouterByKeyOrNull(screenKey: ScreenKey): NavigationRouter? {
     if (routerKey == screenKey) {
       return this
     }
@@ -196,6 +181,49 @@ open class NavigationRouter(
     return null
   }
 
+  fun getScreenByKey(screenKey: ScreenKey): ComposeScreen? {
+    val rootRouter = getRootRouter()
+    return getScreenByKeyInternal(rootRouter, screenKey)
+  }
+
+  private fun getScreenByKeyInternal(
+    currentRouter: NavigationRouter,
+    screenKey: ScreenKey
+  ): ComposeScreen? {
+    if (currentRouter is MainNavigationRouter) {
+      val screen = currentRouter.floatingScreensStack
+        .firstOrNull { floatingScreen -> floatingScreen.screenKey == screenKey }
+
+      if (screen != null) {
+        return screen
+      }
+    }
+
+    val screen = currentRouter.navigationScreensStack
+      .firstOrNull { floatingScreen -> floatingScreen.screenKey == screenKey }
+
+    if (screen != null) {
+      return screen
+    }
+
+    for ((_, childRouter) in childRouters) {
+      val screen = getScreenByKeyInternal(childRouter, screenKey)
+      if (screen != null) {
+        return screen
+      }
+    }
+
+    return null
+  }
+
+  private fun getRootRouter(): NavigationRouter {
+    if (parentRouter == null) {
+      return this
+    }
+
+    return parentRouter.getRootRouter()
+  }
+
   fun onNewIntent(intent: Intent) {
     _intentsFlow.tryEmit(intent)
 
@@ -204,30 +232,12 @@ open class NavigationRouter(
     }
   }
 
-  suspend fun onBackPressed(): Boolean {
-    if (childRouters.isNotEmpty()) {
-      for ((_, navigationRouter) in childRouters.entries) {
-        if (navigationRouter.onBackPressed()) {
-          return true
-        }
-      }
-    }
-
-    for (backPressHandler in backPressHandlers) {
-      if (backPressHandler.onBackPressed()) {
-        return true
-      }
-    }
-
-    return false
-  }
-
   fun onDestroy() {
     childRouters.values.forEach { childRouter -> childRouter.onDestroy() }
   }
 
   fun isInsideScreen(lookupScreenKey: ScreenKey): Boolean {
-    if (navigationScreensStack.any { composeScreen -> composeScreen.screenKey == lookupScreenKey }) {
+    if (_navigationScreensStack.any { composeScreen -> composeScreen.screenKey == lookupScreenKey }) {
       return true
     }
 
@@ -245,9 +255,53 @@ open class NavigationRouter(
 
     screenDestroyCallbacks.forEach { callback -> callback(screenUpdate.screen.screenKey) }
 
-    if (navigationScreensStack.isEmpty()) {
+    if (_navigationScreensStack.isEmpty()) {
       _screenUpdatesFlow.value = null
+      return
     }
+
+    removeUpdateAfterAnimationFinished(screenUpdate)
+  }
+
+  protected fun removeUpdateAfterAnimationFinished(screenUpdate: ScreenUpdate) {
+    val prevScreenUpdates = _screenUpdatesFlow.value
+      ?: return
+
+    val indexOfOldFloatingScreenUpdate = prevScreenUpdates.floatingScreenUpdates
+      .indexOfFirst { oldScreenUpdate -> oldScreenUpdate === screenUpdate }
+    val indexOfOldNavigationScreenUpdate = prevScreenUpdates.navigationScreenUpdates
+      .indexOfFirst { oldScreenUpdate -> oldScreenUpdate === screenUpdate }
+
+    var needUpdate = false
+
+    val newFloatingScreenUpdates = if (indexOfOldFloatingScreenUpdate >= 0) {
+      needUpdate = true
+
+      val prevList = prevScreenUpdates.floatingScreenUpdates.toMutableList()
+      prevList.removeAt(indexOfOldFloatingScreenUpdate)
+      prevList
+    } else {
+      prevScreenUpdates.floatingScreenUpdates
+    }
+
+    val newNavigationScreenUpdates = if (indexOfOldNavigationScreenUpdate >= 0) {
+      needUpdate = true
+
+      val prevList = prevScreenUpdates.navigationScreenUpdates.toMutableList()
+      prevList.removeAt(indexOfOldNavigationScreenUpdate)
+      prevList
+    } else {
+      prevScreenUpdates.navigationScreenUpdates
+    }
+
+    if (!needUpdate) {
+      return
+    }
+
+    _screenUpdatesFlow.value = ScreenUpdateTransaction(
+      navigationScreenUpdates = newNavigationScreenUpdates,
+      floatingScreenUpdates = newFloatingScreenUpdates
+    )
   }
 
   data class ScreenUpdateTransaction(
@@ -309,10 +363,6 @@ open class NavigationRouter(
   enum class ScreenRemoveAnimation {
     Pop,
     FadeOut
-  }
-
-  abstract class OnBackPressHandler {
-    abstract suspend fun onBackPressed(): Boolean
   }
 
   companion object {

@@ -126,7 +126,7 @@ class MediaViewerScreen(
     val mediaViewerScreenState = remember { MediaViewerScreenState() }
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
-    var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getAndConsume()) }
+    var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getBounds()) }
     var transitionFinished by remember { mutableStateOf(false) }
 
     val animatable = remember { Animatable(0f) }
@@ -143,7 +143,11 @@ class MediaViewerScreen(
         mediaViewerParams = mediaViewerParams
       )
 
-      if (transitionFinished) {
+      Box(
+        modifier = Modifier.graphicsLayer {
+          alpha = if (transitionFinished) 1f else 0f
+        }
+      ) {
         ContentAfterTransition(
           mediaViewerScreenState = mediaViewerScreenState,
           chanTheme = chanTheme,
@@ -151,23 +155,20 @@ class MediaViewerScreen(
           coroutineScope = coroutineScope,
           insets = insets,
           onPreviewLoadingFinished = { postImage ->
-            if (postImage == clickedThumbnailBounds?.postImage) {
+            if (clickedThumbnailBounds == null || postImage == clickedThumbnailBounds?.postImage) {
+              transitionFinished = true
               clickedThumbnailBounds = null
+              clickedThumbnailBoundsStorage.consumeBounds()
             }
           }
         )
       }
 
-      if (clickedThumbnailBounds != null || !transitionFinished) {
-        TransitionPreview(
-          animatable = animatable,
-          clickedThumbnailBounds = clickedThumbnailBounds!!,
-          onTransitionFinished = {
-            transitionFinished = true
-            animatable.snapTo(1f)
-          }
-        )
-      }
+      TransitionPreview(
+        animatable = animatable,
+        clickedThumbnailBounds = clickedThumbnailBounds,
+        onTransitionFinished = { animatable.snapTo(1f) }
+      )
     }
   }
 
@@ -306,11 +307,19 @@ class MediaViewerScreen(
   @Composable
   private fun TransitionPreview(
     animatable: Animatable<Float, AnimationVector1D>,
-    clickedThumbnailBounds: ClickedThumbnailBoundsStorage.ClickedThumbnailBounds,
+    clickedThumbnailBounds: ClickedThumbnailBoundsStorage.ClickedThumbnailBounds?,
     onTransitionFinished: suspend () -> Unit
   ) {
-    val bitmapMatrix = remember { Matrix() }
+    if (clickedThumbnailBounds == null) {
+      LaunchedEffect(
+        key1 = Unit,
+        block = { onTransitionFinished() }
+      )
 
+      return
+    }
+
+    val bitmapMatrix = remember { Matrix() }
     val postImage = clickedThumbnailBounds.postImage
     val srcBounds = clickedThumbnailBounds.bounds
 
@@ -323,7 +332,6 @@ class MediaViewerScreen(
 
     var bitmapMut by remember { mutableStateOf<Bitmap?>(null) }
     val bitmap = bitmapMut
-
     val context = LocalContext.current.applicationContext
 
     LaunchedEffect(
