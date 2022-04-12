@@ -44,8 +44,17 @@ fun rememberShimmerState(
   cornerRadius: Dp = 4.dp,
   bgColor: Color
 ): ShimmerState {
-  val cornerRadiusPx = with(LocalDensity.current) { cornerRadius.toPx() }
-  return ShimmerState(rotation, bgColor, cornerRadiusPx)
+  val cornerRadiusPx = with(LocalDensity.current) {
+    remember(key1 = cornerRadius) { cornerRadius.toPx()  }
+  }
+
+  return remember {
+    ShimmerState(
+      rotation = rotation,
+      bgColor = bgColor,
+      cornerRadiusPx = cornerRadiusPx
+    )
+  }
 }
 
 @Composable

@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.post_list
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -128,7 +127,6 @@ private fun PostCellTitle(
       Box(
         modifier = Modifier
           .wrapContentSize()
-          .background(chanTheme.backColorSecondaryCompose)
           .onGloballyPositioned { layoutCoordinates -> boundsInWindowMut = layoutCoordinates.boundsInWindow() }
           .kurobaClickable(
             onClick = {

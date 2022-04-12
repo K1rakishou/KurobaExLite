@@ -250,6 +250,7 @@ class AlbumScreen(
                     onThumbnailClicked(postImage)
                   }
                 ),
+              showShimmerEffectWhenLoading = true,
               postImage = postImage,
               contentScale = ContentScale.Crop
             )
