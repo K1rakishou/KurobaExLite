@@ -25,12 +25,17 @@ class SplitScreenLayout(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val childScreensBuilder: (NavigationRouter) -> List<ChildScreen>
-) : HomeNavigationScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen(componentActivity, navigationRouter), ScreenLayout {
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
   // TODO(KurobaEx): not implemented
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
+
+  override fun hasScreen(screenKey: ScreenKey): Boolean {
+    return childScreensBuilder.invoke(navigationRouter)
+      .any { childScreen -> childScreen.composeScreen.screenKey == screenKey }
+  }
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {

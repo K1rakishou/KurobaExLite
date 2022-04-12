@@ -39,7 +39,7 @@ class HomeScreenLayouter(
       ),
       SplitScreenLayout(
         componentActivity = componentActivity,
-        navigationRouter= navigationRouter.childRouter(SplitScreenLayout.SCREEN_KEY),
+        navigationRouter = navigationRouter.childRouter(SplitScreenLayout.SCREEN_KEY),
         childScreensBuilder = { router ->
           return@SplitScreenLayout listOf(
             SplitScreenLayout.ChildScreen(

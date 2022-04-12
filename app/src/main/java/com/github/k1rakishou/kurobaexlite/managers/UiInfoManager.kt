@@ -18,7 +18,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ToolbarVisibilityInfo
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.thread.ThreadScreen
 import java.util.concurrent.atomic.AtomicBoolean
@@ -383,7 +382,7 @@ class UiInfoManager(
           }
         }
         MainUiLayoutMode.Split -> {
-          SplitScreenLayout.SCREEN_KEY
+          CatalogScreen.SCREEN_KEY
         }
       }
 

@@ -373,6 +373,7 @@ class MediaViewerScreen(
           nativeCanvas.width.toFloat() / bitmap.width,
           nativeCanvas.height.toFloat() / bitmap.height
         )
+        val dstWidth = bitmap.width * scale
         val dstHeight = bitmap.height * scale
 
         bitmapMatrix.reset()
@@ -385,7 +386,7 @@ class MediaViewerScreen(
         val endY = (nativeCanvas.height.toFloat() - dstHeight) / 2f
 
         val startX = srcBounds.left
-        val endX = 0f
+        val endX = (nativeCanvas.width.toFloat() - dstWidth) / 2f
 
         nativeCanvas.withTranslation(
           x = lerpFloat(startX, endX, animationProgress),

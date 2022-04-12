@@ -7,7 +7,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.SplitScreenLayout
+import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.layout.ScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.catalog.CatalogScreen
 import org.koin.java.KoinJavaComponent.inject
 
@@ -31,11 +31,23 @@ class HomeChildScreens(
   }
 
   fun mainScreenKey(): ScreenKey {
-    if (uiInfoManager.currentUiLayoutModeState.value == MainUiLayoutMode.Split) {
-      return SplitScreenLayout.SCREEN_KEY
-    }
-
     return CatalogScreen.SCREEN_KEY
+  }
+
+  fun screenIndexByPage(initialPage: CurrentPage, childScreens: ChildScreens): Int? {
+    return childScreens.screens
+      .indexOfFirst { screen ->
+        if (screen is ScreenLayout) {
+          if (screen.screenKey == initialPage.screenKey) {
+            return@indexOfFirst true
+          }
+
+          return@indexOfFirst screen.hasScreen(initialPage.screenKey )
+        } else {
+          return@indexOfFirst screen.screenKey == initialPage.screenKey
+        }
+      }
+      .takeIf { screenIndex -> screenIndex >= 0 }
   }
 
   data class ChildScreens(val screens: List<ComposeScreenWithToolbar>)

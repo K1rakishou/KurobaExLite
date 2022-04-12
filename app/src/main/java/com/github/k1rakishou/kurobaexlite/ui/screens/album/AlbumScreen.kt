@@ -24,7 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -210,9 +210,11 @@ class AlbumScreen(
       }
     )
 
+    val thumbnailSize = remember { if (uiInfoManager.isTablet) 192.dp else 144.dp }
+
     LazyVerticalGrid(
       modifier = Modifier.fillMaxSize(),
-      columns = GridCells.Fixed(2),
+      columns = GridCells.Adaptive(thumbnailSize),
       state = lazyGridState,
       contentPadding = paddingValues,
       content = {
@@ -223,24 +225,24 @@ class AlbumScreen(
           key = { index -> albumItems[index].fullImageAsString },
           itemContent = { index ->
             val postImage = albumItems[index]
-            var boundsInRootMut by remember { mutableStateOf<Rect?>(null) }
+            var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
 
             ImageThumbnail(
               modifier = Modifier
                 .fillMaxWidth()
-                .height(128.dp)
+                .height(thumbnailSize)
                 .padding(2.dp)
                 .onGloballyPositioned { layoutCoordinates ->
-                  boundsInRootMut = layoutCoordinates.boundsInRoot()
+                  boundsInWindowMut = layoutCoordinates.boundsInWindow()
                 }
                 .kurobaClickable(
                   onClick = {
-                    val boundsInRoot = boundsInRootMut
-                    if (boundsInRoot == null) {
+                    val boundsInWindow = boundsInWindowMut
+                    if (boundsInWindow == null) {
                       return@kurobaClickable
                     }
 
-                    clickedThumbnailBoundsStorage.storeBounds(postImage, boundsInRoot)
+                    clickedThumbnailBoundsStorage.storeBounds(postImage, boundsInWindow)
                     onThumbnailClicked(postImage)
                   }
                 ),

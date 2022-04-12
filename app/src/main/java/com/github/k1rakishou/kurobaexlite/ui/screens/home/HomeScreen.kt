@@ -90,10 +90,8 @@ class HomeScreen(
       key2 = mainUiLayoutMode
     ) { homeChildScreens.getChildScreens(mainUiLayoutMode, bookmarksScreenOnLeftSide) }
 
-    val initialScreenIndexMut = remember(key1 = initialPage) {
-      childScreens.screens
-        .indexOfFirst { screen -> screen.screenKey == initialPage.screenKey }
-        .takeIf { screenIndex -> screenIndex >= 0 }
+    val initialScreenIndexMut = remember(key1 = initialPage, key2 = childScreens) {
+      homeChildScreens.screenIndexByPage(initialPage, childScreens)
     }
 
     val initialScreenIndex = initialScreenIndexMut

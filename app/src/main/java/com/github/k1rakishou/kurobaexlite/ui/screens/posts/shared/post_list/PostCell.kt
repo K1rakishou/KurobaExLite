@@ -25,7 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.TextUnit
@@ -123,21 +123,21 @@ private fun PostCellTitle(
   ) {
     if (postCellData.images.isNotNullNorEmpty()) {
       val postImage = postCellData.images.first()
-      var boundsInRootMut by remember { mutableStateOf<Rect?>(null) }
+      var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
 
       Box(
         modifier = Modifier
           .wrapContentSize()
           .background(chanTheme.backColorSecondaryCompose)
-          .onGloballyPositioned { layoutCoordinates -> boundsInRootMut = layoutCoordinates.boundsInRoot() }
+          .onGloballyPositioned { layoutCoordinates -> boundsInWindowMut = layoutCoordinates.boundsInWindow() }
           .kurobaClickable(
             onClick = {
-              val boundsInRoot = boundsInRootMut
-              if (boundsInRoot == null) {
+              val boundsInWindow = boundsInWindowMut
+              if (boundsInWindow == null) {
                 return@kurobaClickable
               }
 
-              onPostImageClicked(chanDescriptor, postImage, boundsInRoot)
+              onPostImageClicked(chanDescriptor, postImage, boundsInWindow)
             }
           )
       ) {
