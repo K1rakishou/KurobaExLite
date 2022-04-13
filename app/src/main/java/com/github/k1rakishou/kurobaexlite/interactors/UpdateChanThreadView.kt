@@ -1,16 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.interactors
 
-import com.github.k1rakishou.kurobaexlite.database.ChanThreadViewEntity
-import com.github.k1rakishou.kurobaexlite.database.KurobaExLiteDatabase
-import com.github.k1rakishou.kurobaexlite.database.ThreadKey
-import com.github.k1rakishou.kurobaexlite.database.ThreadLocalPostKey
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanThreadView
+import com.github.k1rakishou.kurobaexlite.model.database.CatalogOrThreadKey
+import com.github.k1rakishou.kurobaexlite.model.database.ChanThreadViewEntity
+import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
+import com.github.k1rakishou.kurobaexlite.model.database.ThreadLocalPostKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import logcat.asLog
+import logcat.logcat
 
 class UpdateChanThreadView(
   private val chanViewManager: ChanViewManager,
@@ -51,7 +50,7 @@ class UpdateChanThreadView(
 
     val callResult = kurobaExLiteDatabase.call {
       val chanThreadViewEntity = ChanThreadViewEntity(
-        threadKey = ThreadKey.fromThreadDescriptor(threadDescriptor),
+        catalogOrThreadKey = CatalogOrThreadKey.fromThreadDescriptor(threadDescriptor),
         lastViewedPostForIndicator = updatedChanThreadView.lastViewedPDForIndicator
           ?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
         lastViewedPostForScroll = updatedChanThreadView.lastViewedPDForScroll
@@ -63,12 +62,9 @@ class UpdateChanThreadView(
       )
 
       chanThreadViewDao.insert(chanThreadViewEntity)
-    }
+    }.onFailure { error -> logcat(TAG) { "chanThreadViewDao.insert() error: ${error.asLog()}" } }
 
     if (callResult.isFailure) {
-      val error = callResult.exceptionOrThrow()
-      logcatError { "chanThreadViewDao.insert() error: ${error.asLog()}" }
-
       return null
     }
 
@@ -107,6 +103,10 @@ class UpdateChanThreadView(
     }
 
     return other
+  }
+
+  companion object {
+    private const val TAG = "UpdateChanThreadView"
   }
 
 }

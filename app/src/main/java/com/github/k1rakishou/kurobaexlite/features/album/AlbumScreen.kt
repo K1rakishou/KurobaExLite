@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.album
 
 import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -60,6 +59,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class AlbumScreen(
@@ -67,9 +67,9 @@ class AlbumScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : HomeNavigationScreen(componentActivity, navigationRouter) {
-  private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModels()
-  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModels()
-  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModels()
+  private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModel()
+  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 

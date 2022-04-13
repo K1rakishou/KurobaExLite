@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreen
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -41,8 +42,8 @@ fun HomeScreenDrawerLayout(
   val componentActivity = LocalComponentActivity.current
   val uiInfoManager = GlobalContext.get().get<UiInfoManager>()
 
-  val childRouter = remember { navigationRouter.childRouter(DrawerScreen.SCREEN_KEY) }
-  val drawerScreen = remember { DrawerScreen(componentActivity, navigationRouter) }
+  val childRouter = remember { navigationRouter.childRouter(NavigationHistoryScreen.SCREEN_KEY) }
+  val drawerScreen = remember { NavigationHistoryScreen(componentActivity, navigationRouter) }
   val drawerVisibility by uiInfoManager.drawerVisibilityFlow.collectAsState()
   val maxOffsetDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { -drawerWidth.toDp() } }
   val drawerWidthDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }

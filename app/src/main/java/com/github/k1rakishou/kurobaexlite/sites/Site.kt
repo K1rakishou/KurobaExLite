@@ -17,8 +17,9 @@ interface Site {
 
   fun catalogInfo(): CatalogInfo?
   fun threadInfo(): ThreadInfo?
-  fun postImageInfo(): PostImageInfo?
   fun boardsInfo(): BoardsInfo?
+  fun postImageInfo(): PostImageInfo?
+  fun icon(): HttpUrl?
 
   fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor?
   fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String?

@@ -8,12 +8,13 @@ import coil.disk.DiskCache
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.database.KurobaExLiteDatabase
+import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.boards.BoardSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
+import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
@@ -31,8 +32,12 @@ import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesF
 import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.PersistNavigationHistory
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
+import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -40,6 +45,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.squareup.moshi.Moshi
@@ -58,38 +64,8 @@ object DependencyGraph {
     val modules = mutableListOf<Module>()
 
     modules += module {
-      single<Context> { application.applicationContext }
-      single<Application> { application }
-      single<KurobaExLiteApplication> { application }
-      single<CoroutineScope> { appCoroutineScope }
-      single { KurobaExLiteDatabase.buildDatabase(application = get()) }
-      single { ProxiedOkHttpClient() }
-      single { GlobalConstants(get()) }
-      single { Moshi.Builder().build() }
-      single { PostCommentParser() }
-      single { PostCommentApplier() }
-      single { FullScreenHelpers(get()) }
-      single { AndroidHelpers(application = get(), snackbarManager = get()) }
-      single { ChanCache(androidHelpers = get()) }
-      single { AppSettings(appContext = get(), moshi = get()) }
-      single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
-      single { PostBindProcessor(get()) }
-      single { ThemeEngine() }
-      single { MediaViewerPostListScroller() }
-      single { CrossThreadFollowHistory() }
-      single { ClickedThumbnailBoundsStorage() }
-      single {
-        ParsedPostDataCache(
-          appContext = get(),
-          coroutineScope = get(),
-          globalConstants = get(),
-          postCommentParser = get(),
-          postCommentApplier = get(),
-          postReplyChainManager = get()
-        )
-      }
-      single { SiteDataPersister(appContext = get(), moshi = get()) }
-
+      system(application, appCoroutineScope)
+      generic()
       kurobaDiskLruCache()
       coilMediaDiskCache()
       coilImageLoader()
@@ -101,6 +77,46 @@ object DependencyGraph {
     return modules
   }
 
+  private fun Module.system(
+    application: KurobaExLiteApplication,
+    appCoroutineScope: CoroutineScope
+  ) {
+    single<Context> { application.applicationContext }
+    single<Application> { application }
+    single<KurobaExLiteApplication> { application }
+    single<CoroutineScope> { appCoroutineScope }
+  }
+
+  private fun Module.generic() {
+    single { KurobaExLiteDatabase.buildDatabase(application = get()) }
+    single { ProxiedOkHttpClient() }
+    single { GlobalConstants(get()) }
+    single { Moshi.Builder().build() }
+    single { PostCommentParser() }
+    single { PostCommentApplier() }
+    single { FullScreenHelpers(get()) }
+    single { AndroidHelpers(application = get(), snackbarManager = get()) }
+    single { ChanCache(androidHelpers = get()) }
+    single { AppSettings(appContext = get(), moshi = get()) }
+    single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
+    single { PostBindProcessor(get()) }
+    single { ThemeEngine() }
+    single { MediaViewerPostListScroller() }
+    single { CrossThreadFollowHistory() }
+    single { ClickedThumbnailBoundsStorage() }
+    single {
+      ParsedPostDataCache(
+        appContext = get(),
+        coroutineScope = get(),
+        globalConstants = get(),
+        postCommentParser = get(),
+        postCommentApplier = get(),
+        postReplyChainManager = get()
+      )
+    }
+    single { SiteDataPersister(appContext = get(), moshi = get()) }
+  }
+
   private fun Module.managers() {
     single { SiteManager() }
     single { ChanThreadManager(siteManager = get(), chanCache = get()) }
@@ -108,6 +124,7 @@ object DependencyGraph {
     single { ChanViewManager() }
     single { SnackbarManager(appContext = get()) }
     single { UiInfoManager(appContext = get(), appSettings = get(), coroutineScope = get()) }
+    single { NavigationHistoryManager() }
   }
 
   private fun Module.viewModels() {
@@ -130,6 +147,9 @@ object DependencyGraph {
       )
     }
     viewModel {
+      AlbumScreenViewModel()
+    }
+    viewModel {
       PopupRepliesScreenViewModel(
         application = get(),
         savedStateHandle = get()
@@ -149,6 +169,9 @@ object DependencyGraph {
         proxiedOkHttpClient = get(),
         kurobaLruDiskCache = get()
       )
+    }
+    viewModel {
+      NavigationHistoryScreenViewModel(application = get())
     }
   }
 
@@ -182,6 +205,16 @@ object DependencyGraph {
         siteManager = get(),
         siteDataPersister = get()
       )
+    }
+
+    single {
+      LoadNavigationHistory(navigationHistoryManager = get(), kurobaExLiteDatabase = get())
+    }
+    single {
+      ModifyNavigationHistory(navigationHistoryManager = get(), chanCache = get(), parsedPostDataCache = get())
+    }
+    single {
+      PersistNavigationHistory(navigationHistoryManager = get(), kurobaExLiteDatabase = get())
     }
   }
 

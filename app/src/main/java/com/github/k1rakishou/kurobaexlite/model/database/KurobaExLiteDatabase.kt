@@ -1,6 +1,7 @@
-package com.github.k1rakishou.kurobaexlite.database
+package com.github.k1rakishou.kurobaexlite.model.database
 
 import android.app.Application
+import androidx.annotation.CheckResult
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -12,20 +13,22 @@ import kotlinx.coroutines.withContext
 
 @Database(
   entities = [
-    ChanThreadViewEntity::class
+    ChanThreadViewEntity::class,
+    NavigationHistoryEntity::class
   ],
   version = 1,
   exportSchema = true
 )
 abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
-  abstract override val chanThreadViewDao: ChanThreadViewDao
 
-  suspend fun <T : Any> transactionCall(func: suspend Daos.() -> T): Result<T> {
+  @CheckResult
+  suspend fun <T : Any> transaction(func: suspend Daos.() -> T): Result<T> {
     return withContext(roomDispatcher) {
       return@withContext Result.Try { withTransaction { func(this@KurobaExLiteDatabase) } }
     }
   }
 
+  @CheckResult
   suspend fun <T : Any> call(func: suspend Daos.() -> T): Result<T> {
     return withContext(roomDispatcher) {
       return@withContext Result.Try { func(this@KurobaExLiteDatabase) }
@@ -61,4 +64,5 @@ abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
 
 interface Daos {
   val chanThreadViewDao: ChanThreadViewDao
+  val navigationHistoryDao: NavigationHistoryDao
 }

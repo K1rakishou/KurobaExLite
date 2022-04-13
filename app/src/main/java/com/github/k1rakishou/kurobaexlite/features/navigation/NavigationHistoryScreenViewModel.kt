@@ -1,0 +1,112 @@
+package com.github.k1rakishou.kurobaexlite.features.navigation
+
+import androidx.compose.runtime.mutableStateListOf
+import androidx.lifecycle.viewModelScope
+import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
+import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.PersistNavigationHistory
+import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
+import com.github.k1rakishou.kurobaexlite.managers.NavigationUpdate
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
+import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import org.koin.java.KoinJavaComponent.inject
+
+class NavigationHistoryScreenViewModel(
+  application: KurobaExLiteApplication
+) : BaseAndroidViewModel(application) {
+  private val siteManager: SiteManager by inject(SiteManager::class.java)
+  private val appSettings: AppSettings by inject(AppSettings::class.java)
+  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
+  private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
+  private val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
+  private val persistNavigationHistory: PersistNavigationHistory by inject(PersistNavigationHistory::class.java)
+  private val navigationHistoryManager: NavigationHistoryManager by inject(NavigationHistoryManager::class.java)
+
+  private val _navigationHistoryList = mutableStateListOf<UiNavigationElement>()
+  val navigationHistoryList: List<UiNavigationElement>
+    get() = _navigationHistoryList
+
+  override suspend fun onViewModelReady() {
+    viewModelScope.launch {
+      navigationHistoryManager.navigationUpdates.collectLatest { navigationUpdate ->
+        processNavigationUpdates(navigationUpdate)
+      }
+    }
+
+    loadNavigationHistory.loadFromDatabase(
+      maxCount = appSettings.navigationHistoryMaxSize.read()
+    )
+  }
+
+  fun removeNavigationElement(uiNavigationElement: UiNavigationElement) {
+    viewModelScope.launch {
+      modifyNavigationHistory.remove(uiNavigationElement.chanDescriptor)
+    }
+  }
+
+  fun reorderNavigationElement(uiNavigationElement: UiNavigationElement) {
+    viewModelScope.launch {
+      modifyNavigationHistory.moveToTop(uiNavigationElement.chanDescriptor)
+    }
+  }
+
+  private fun processNavigationUpdates(navigationUpdate: NavigationUpdate) {
+    if (navigationUpdate !is NavigationUpdate.Loaded) {
+      persistNavigationHistory.persist()
+    }
+
+    when (navigationUpdate) {
+      is NavigationUpdate.Loaded -> {
+        val uiElements = navigationUpdate.navigationElements
+          .map { navigationElement -> navigationElement.toUiElement() }
+
+        if (_navigationHistoryList.isNotEmpty()) {
+          _navigationHistoryList.clear()
+        }
+
+        _navigationHistoryList.addAll(uiElements)
+      }
+      is NavigationUpdate.Added -> {
+        val uiElement = navigationUpdate.navigationElement.toUiElement()
+        _navigationHistoryList.add(0, uiElement)
+      }
+      is NavigationUpdate.Removed -> {
+        val uiElement = navigationUpdate.navigationElement.toUiElement()
+
+        val index = _navigationHistoryList
+          .indexOfFirst { uiNavigationElement -> uiNavigationElement == uiElement }
+        if (index >= 0) {
+          _navigationHistoryList.removeAt(index)
+        }
+      }
+      is NavigationUpdate.Moved -> {
+        val movedElement = navigationUpdate.navigationElement.toUiElement()
+
+        val prevUiElement = _navigationHistoryList.getOrNull(navigationUpdate.prevIndex)
+        if (prevUiElement != null && prevUiElement == movedElement) {
+          _navigationHistoryList.add(0, _navigationHistoryList.removeAt(navigationUpdate.prevIndex))
+        }
+      }
+    }
+  }
+
+  private fun NavigationElement.toUiElement(): UiNavigationElement {
+    return when (this) {
+      is NavigationElement.Catalog -> {
+        val iconUrl = siteManager.bySiteKey(this.chanDescriptor.siteKey)?.icon()?.toString()
+        UiNavigationElement.Catalog(chanDescriptor, iconUrl)
+      }
+      is NavigationElement.Thread -> {
+        UiNavigationElement.Thread(chanDescriptor, title, iconUrl)
+      }
+    }
+  }
+
+}

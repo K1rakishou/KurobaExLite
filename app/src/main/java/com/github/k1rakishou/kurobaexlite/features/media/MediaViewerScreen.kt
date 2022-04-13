@@ -6,7 +6,6 @@ import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.Paint
 import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.animateFloatAsState
@@ -108,8 +107,8 @@ class MediaViewerScreen(
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
-  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModels()
-  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModels()
+  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)

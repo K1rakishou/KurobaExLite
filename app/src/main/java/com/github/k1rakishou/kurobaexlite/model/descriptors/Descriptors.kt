@@ -38,6 +38,15 @@ data class CatalogDescriptor(
     return buffer
   }
 
+  fun asReadableString(): String {
+    return buildString(capacity = 32) {
+      append(siteKeyActual)
+      append("/")
+      append(boardCode)
+    }
+  }
+
+
   override fun toString(): String {
     return buildString(capacity = 32) {
       append("CatalogDescriptor(")
@@ -82,6 +91,16 @@ data class ThreadDescriptor(
     buffer.writeLong(threadNo)
 
     return buffer
+  }
+
+  fun asReadableString(): String {
+    return buildString(capacity = 32) {
+      append(siteKeyActual)
+      append("/")
+      append(boardCode)
+      append("/")
+      append(threadNo)
+    }
   }
 
   override fun toString(): String {

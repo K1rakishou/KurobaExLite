@@ -130,6 +130,10 @@ class ChanCache(
     return threads[postDescriptor.threadDescriptor]?.getPost(postDescriptor)
   }
 
+  suspend fun getOriginalPost(threadDescriptor: ThreadDescriptor): OriginalPostData? {
+    return threads[threadDescriptor]?.getOriginalPost()
+  }
+
   suspend fun getLastPost(threadDescriptor: ThreadDescriptor): IPostData? {
     return threads[threadDescriptor]?.getLastPost()
   }

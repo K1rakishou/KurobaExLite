@@ -1,30 +1,67 @@
-package com.github.k1rakishou.kurobaexlite.database
+package com.github.k1rakishou.kurobaexlite.model.database
 
 import androidx.room.ColumnInfo
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 
-data class ThreadKey(
+data class CatalogOrThreadKey(
   @ColumnInfo(name = SITE_KEY) val siteKey: String,
   @ColumnInfo(name = BOARD_CODE) val boardCode: String,
   @ColumnInfo(name = THREAD_NO) val threadNo: Long
 ) {
 
   val threadDescriptor by lazy(mode = LazyThreadSafetyMode.NONE) {
-    ThreadDescriptor.create(
+    check(threadNo > 0L) { "Bad threadNo: ${threadNo}" }
+
+    return@lazy ThreadDescriptor.create(
       siteKey = SiteKey(siteKey),
       boardCode = boardCode,
       threadNo = threadNo
     )
   }
 
+  val catalogDescriptor by lazy(mode = LazyThreadSafetyMode.NONE) {
+    check(threadNo == -1L) { "Bad threadNo: ${threadNo}" }
+
+    return@lazy CatalogDescriptor(
+      siteKey = SiteKey(siteKey),
+      boardCode = boardCode
+    )
+  }
+
+  val chanDescriptor: ChanDescriptor
+    get() {
+      if (threadNo < 0L) {
+        return catalogDescriptor
+      }
+
+      return threadDescriptor
+    }
+
   companion object {
-    fun fromThreadDescriptor(threadDescriptor: ThreadDescriptor): ThreadKey {
-      return ThreadKey(
+    fun fromChanDescriptor(chanDescriptor: ChanDescriptor): CatalogOrThreadKey {
+      return when (chanDescriptor) {
+        is CatalogDescriptor -> fromCatalogDescriptor(chanDescriptor)
+        is ThreadDescriptor -> fromThreadDescriptor(chanDescriptor)
+      }
+    }
+
+    fun fromThreadDescriptor(threadDescriptor: ThreadDescriptor): CatalogOrThreadKey {
+      return CatalogOrThreadKey(
         siteKey = threadDescriptor.siteKeyActual,
         boardCode = threadDescriptor.boardCode,
         threadNo = threadDescriptor.threadNo
+      )
+    }
+
+    fun fromCatalogDescriptor(catalogDescriptor: CatalogDescriptor): CatalogOrThreadKey {
+      return CatalogOrThreadKey(
+        siteKey = catalogDescriptor.siteKeyActual,
+        boardCode = catalogDescriptor.boardCode,
+        threadNo = -1L
       )
     }
 
@@ -36,9 +73,9 @@ data class ThreadKey(
 }
 
 data class PostKey(
-  @ColumnInfo(name = ThreadKey.SITE_KEY) val siteKey: String,
-  @ColumnInfo(name = ThreadKey.BOARD_CODE) val boardCode: String,
-  @ColumnInfo(name = ThreadKey.THREAD_NO) val threadNo: Long,
+  @ColumnInfo(name = CatalogOrThreadKey.SITE_KEY) val siteKey: String,
+  @ColumnInfo(name = CatalogOrThreadKey.BOARD_CODE) val boardCode: String,
+  @ColumnInfo(name = CatalogOrThreadKey.THREAD_NO) val threadNo: Long,
   @ColumnInfo(name = POST_NO) val postNo: Long,
   @ColumnInfo(name = POST_SUB_NO) val postSubNo: Long = 0
 ) {

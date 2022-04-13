@@ -46,11 +46,13 @@ class AppSettings(
   val catalogSort by lazy {
     JsonSetting(moshi.adapter(CatalogSortSetting::class.java), CatalogSortSetting(), "catalog_sort_setting", dataStore)
   }
+  val navigationHistoryMaxSize by lazy {
+    NumberSetting(256, "navigation_history_max_size", dataStore)
+  }
 
   val lastVisitedCatalog by lazy {
     JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore)
   }
-
   val lastVisitedThread by lazy {
     JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore)
   }

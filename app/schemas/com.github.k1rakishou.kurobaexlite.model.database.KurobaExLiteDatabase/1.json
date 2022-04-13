@@ -1,0 +1,148 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "a00c037b6082b4245f2a60c9b3dc4676",
+    "entities": [
+      {
+        "tableName": "chan_thread_view",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`thread_site_key` TEXT NOT NULL, `thread_board_code` TEXT NOT NULL, `thread_thread_no` INTEGER NOT NULL, `last_viewed_for_indicator_post_no` INTEGER, `last_viewed_for_indicator_post_sub_no` INTEGER, `last_viewed_for_scroll_post_no` INTEGER, `last_viewed_for_scroll_post_sub_no` INTEGER, `last_viewed_for_newPosts_post_no` INTEGER, `last_viewed_for_newPosts_post_sub_no` INTEGER, `last_loaded_post_no` INTEGER, `last_loaded_post_sub_no` INTEGER, PRIMARY KEY(`thread_site_key`, `thread_board_code`, `thread_thread_no`))",
+        "fields": [
+          {
+            "fieldPath": "catalogOrThreadKey.siteKey",
+            "columnName": "thread_site_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogOrThreadKey.boardCode",
+            "columnName": "thread_board_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogOrThreadKey.threadNo",
+            "columnName": "thread_thread_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastViewedPostForIndicator.postNo",
+            "columnName": "last_viewed_for_indicator_post_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastViewedPostForIndicator.postSubNo",
+            "columnName": "last_viewed_for_indicator_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastViewedPostForScroll.postNo",
+            "columnName": "last_viewed_for_scroll_post_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastViewedPostForScroll.postSubNo",
+            "columnName": "last_viewed_for_scroll_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastViewedPostForNewPosts.postNo",
+            "columnName": "last_viewed_for_newPosts_post_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastViewedPostForNewPosts.postSubNo",
+            "columnName": "last_viewed_for_newPosts_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastLoadedPost.postNo",
+            "columnName": "last_loaded_post_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastLoadedPost.postSubNo",
+            "columnName": "last_loaded_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "thread_site_key",
+            "thread_board_code",
+            "thread_thread_no"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "navigation_history",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`title` TEXT, `icon_url` TEXT, `sort_order` INTEGER NOT NULL, `catalog_or_thread_site_key` TEXT NOT NULL, `catalog_or_thread_board_code` TEXT NOT NULL, `catalog_or_thread_thread_no` INTEGER NOT NULL, PRIMARY KEY(`catalog_or_thread_site_key`, `catalog_or_thread_board_code`, `catalog_or_thread_thread_no`))",
+        "fields": [
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "iconUrl",
+            "columnName": "icon_url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogOrThreadKey.siteKey",
+            "columnName": "catalog_or_thread_site_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogOrThreadKey.boardCode",
+            "columnName": "catalog_or_thread_board_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogOrThreadKey.threadNo",
+            "columnName": "catalog_or_thread_thread_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "catalog_or_thread_site_key",
+            "catalog_or_thread_board_code",
+            "catalog_or_thread_thread_no"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a00c037b6082b4245f2a60c9b3dc4676')"
+    ]
+  }
+}

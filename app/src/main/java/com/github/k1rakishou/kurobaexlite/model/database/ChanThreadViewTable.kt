@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.database
+package com.github.k1rakishou.kurobaexlite.model.database
 
 import androidx.room.Dao
 import androidx.room.Embedded
@@ -12,7 +12,7 @@ import androidx.room.Query
   tableName = ChanThreadViewEntity.TABLE_NAME
 )
 data class ChanThreadViewEntity(
-  @PrimaryKey @Embedded(prefix = "thread_") val threadKey: ThreadKey,
+  @PrimaryKey @Embedded(prefix = "thread_") val catalogOrThreadKey: CatalogOrThreadKey,
   @Embedded(prefix = "last_viewed_for_indicator_") val lastViewedPostForIndicator: ThreadLocalPostKey?,
   @Embedded(prefix = "last_viewed_for_scroll_") val lastViewedPostForScroll: ThreadLocalPostKey?,
   @Embedded(prefix = "last_viewed_for_newPosts_") val lastViewedPostForNewPosts: ThreadLocalPostKey?,

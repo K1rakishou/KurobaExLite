@@ -1,12 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.interactors
 
-import com.github.k1rakishou.kurobaexlite.database.KurobaExLiteDatabase
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanThreadView
+import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import logcat.asLog
+import logcat.logcat
 
 class LoadChanThreadView(
   private val chanViewManager: ChanViewManager,
@@ -38,12 +37,9 @@ class LoadChanThreadView(
       }
 
       return@call chanThreadView
-    }
+    }.onFailure { error -> logcat(TAG) { "chanThreadViewDao.select() error: ${error.asLog()}" } }
 
     val chanThreadViewFromDatabase = if (chanThreadViewFromDatabaseResult.isFailure) {
-      val error = chanThreadViewFromDatabaseResult.exceptionOrThrow()
-      logcatError { "chanThreadViewDao.select() error: ${error.asLog()}" }
-
       return null
     } else {
       chanThreadViewFromDatabaseResult.getOrThrow()
@@ -60,6 +56,10 @@ class LoadChanThreadView(
     )
 
     return chanThreadViewFromDatabase
+  }
+
+  companion object {
+    private const val TAG = "LoadChanThreadView"
   }
 
 }

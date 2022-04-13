@@ -17,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedCatalog
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedThread
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -73,6 +74,7 @@ abstract class PostScreenViewModel(
   protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
   protected val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   protected val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
+  protected val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
@@ -144,6 +146,7 @@ abstract class PostScreenViewModel(
 
     chanCache.onCatalogOrThreadAccessed(threadDescriptor)
     postScreenState.onEndLoading()
+    modifyNavigationHistory.threadLoaded(threadDescriptor)
 
     updatePostsParsedOnceJob = viewModelScope.launch {
       delay(250L)
@@ -156,6 +159,7 @@ abstract class PostScreenViewModel(
 
     chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
     postScreenState.onEndLoading()
+    modifyNavigationHistory.catalogLoaded(catalogDescriptor)
 
     updatePostsParsedOnceJob = viewModelScope.launch {
       delay(250L)

@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.koin.java.KoinJavaComponent.inject
 
 class Chan4 : Site {
@@ -22,6 +23,7 @@ class Chan4 : Site {
   private val chan4ThreadInfo by lazy { ThreadInfo(chan4DataSource) }
   private val chan4BoardsInfo by lazy { BoardsInfo(chan4DataSource) }
   private val chan4PostImageInfo by lazy { PostImageInfo() }
+  private val icon by lazy { "https://s.4cdn.org/image/favicon.ico".toHttpUrl() }
 
   override val siteKey: SiteKey = SITE_KEY
   override val readableName: String = "4chan"
@@ -30,6 +32,7 @@ class Chan4 : Site {
   override fun threadInfo(): Site.ThreadInfo = chan4ThreadInfo
   override fun boardsInfo(): Site.BoardsInfo = chan4BoardsInfo
   override fun postImageInfo(): Site.PostImageInfo = chan4PostImageInfo
+  override fun icon(): HttpUrl = icon
 
   override fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor? {
     val parts = url.pathSegments
