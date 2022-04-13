@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.navigation
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -103,15 +105,18 @@ class NavigationHistoryScreen(
     }
   }
 
+  @OptIn(ExperimentalFoundationApi::class)
   @Composable
-  private fun NavigationElement(
+  private fun LazyItemScope.NavigationElement(
     index: Int,
     lastIndex: Int,
     navElementHeight: Dp,
     navigationElement: UiNavigationElement,
     circleCropTransformation: CircleCropTransformation,
   ) {
-    Column {
+    Column(
+      modifier = Modifier.animateItemPlacement()
+    ) {
       when (navigationElement) {
         is UiNavigationElement.Catalog -> {
           CatalogNavigationElement(
@@ -171,7 +176,10 @@ class NavigationHistoryScreen(
     ) {
       KurobaComposeIcon(
         modifier = Modifier
-          .kurobaClickable(onClick = { onRemoveClicked(navigationElement) }),
+          .kurobaClickable(
+            bounded = false,
+            onClick = { onRemoveClicked(navigationElement) }
+          ),
         drawableId = R.drawable.ic_baseline_close_24
       )
 
@@ -216,7 +224,10 @@ class NavigationHistoryScreen(
     ) {
       KurobaComposeIcon(
         modifier = Modifier
-          .kurobaClickable(onClick = { onRemoveClicked(navigationElement) }),
+          .kurobaClickable(
+            bounded = false,
+            onClick = { onRemoveClicked(navigationElement) }
+          ),
         drawableId = R.drawable.ic_baseline_close_24
       )
 
