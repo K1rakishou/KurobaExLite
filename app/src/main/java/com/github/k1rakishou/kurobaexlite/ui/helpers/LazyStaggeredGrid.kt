@@ -106,6 +106,7 @@ fun LazyStaggeredGrid(
             state = state,
             scrollbarDimens = ScrollbarDimens.Vertical(scrollbarWidth, scrollbarMinHeight),
             thumbColor = chanTheme.textColorHintCompose,
+            contentPadding = contentPadding,
             scrollbarDragged = false,
             isScrollInProgress = { lazyListState -> lazyListState.isScrollInProgress || scrollableState.isScrollInProgress }
           )
