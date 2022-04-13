@@ -1,16 +1,16 @@
-package com.github.k1rakishou.kurobaexlite.features.helpers.base
+package com.github.k1rakishou.kurobaexlite.ui.helpers.base
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
-import com.github.k1rakishou.kurobaexlite.features.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import org.koin.android.ext.android.inject
 import org.koin.java.KoinJavaComponent.inject
 

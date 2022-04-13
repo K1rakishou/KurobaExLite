@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.helpers.layout
+package com.github.k1rakishou.kurobaexlite.ui.helpers.layout
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
@@ -13,11 +13,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ComposeScreenWithToolbar
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 

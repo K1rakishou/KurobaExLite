@@ -8,7 +8,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.features.helpers.layout.SplitScreenLayout
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
@@ -22,6 +21,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SplitScreenLayout
 
 abstract class PostsScreen(
   componentActivity: ComponentActivity,

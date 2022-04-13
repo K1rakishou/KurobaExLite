@@ -3,12 +3,12 @@ package com.github.k1rakishou.kurobaexlite.features.posts.thread
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
-import com.github.k1rakishou.kurobaexlite.features.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 

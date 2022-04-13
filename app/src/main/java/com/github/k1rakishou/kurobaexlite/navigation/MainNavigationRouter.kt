@@ -2,11 +2,11 @@ package com.github.k1rakishou.kurobaexlite.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.features.helpers.floating.FloatingComposeBackgroundScreen
-import com.github.k1rakishou.kurobaexlite.features.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeBackgroundScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 
 class MainNavigationRouter : NavigationRouter(
   routerKey = MainScreen.SCREEN_KEY,

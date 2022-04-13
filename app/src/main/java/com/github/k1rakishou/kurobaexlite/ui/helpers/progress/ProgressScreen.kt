@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.helpers.progress
+package com.github.k1rakishou.kurobaexlite.ui.helpers.progress
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
@@ -12,11 +12,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.features.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 
 class ProgressScreen(
   componentActivity: ComponentActivity,

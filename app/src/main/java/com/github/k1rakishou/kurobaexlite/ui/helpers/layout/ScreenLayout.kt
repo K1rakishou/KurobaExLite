@@ -1,7 +1,7 @@
-package com.github.k1rakishou.kurobaexlite.features.helpers.layout
+package com.github.k1rakishou.kurobaexlite.ui.helpers.layout
 
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
 interface ScreenLayout<T : ComposeScreen> {
   val childScreens: List<ChildScreen<T>>

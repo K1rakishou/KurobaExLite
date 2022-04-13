@@ -2,13 +2,13 @@ package com.github.k1rakishou.kurobaexlite.features.home
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Stable
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ComposeScreenWithToolbar
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.features.helpers.layout.ScreenLayout
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
 
 class HomeChildScreens(
   private val componentActivity: ComponentActivity,

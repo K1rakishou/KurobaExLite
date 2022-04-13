@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared
 import android.content.Context
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
@@ -12,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import org.koin.java.KoinJavaComponent.inject
 
 class LinkableClickHelper(

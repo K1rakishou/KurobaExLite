@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.model.data.ui
 
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

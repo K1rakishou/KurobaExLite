@@ -4,9 +4,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
-import com.github.k1rakishou.kurobaexlite.features.helpers.dialog.DialogScreen
-import com.github.k1rakishou.kurobaexlite.features.helpers.floating.FloatingMenuItem
-import com.github.k1rakishou.kurobaexlite.features.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -19,6 +16,9 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.helpers.floating
+package com.github.k1rakishou.kurobaexlite.ui.helpers.floating
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
 class FloatingComposeBackgroundScreen(

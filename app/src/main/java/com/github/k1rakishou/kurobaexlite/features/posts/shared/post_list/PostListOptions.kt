@@ -3,8 +3,8 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.TextUnit
-import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
 @Immutable
 data class PostListOptions(
