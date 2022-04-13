@@ -31,7 +31,8 @@ fun Modifier.scrollbar(
   scrollbarDimens: ScrollbarDimens,
   thumbColor: Color,
   contentPadding: PaddingValues = DefaultPaddingValues,
-  scrollbarDragged: Boolean
+  scrollbarDragged: Boolean,
+  isScrollInProgress: (LazyListState) -> Boolean = { lazyListState -> lazyListState.isScrollInProgress }
 ): Modifier {
   return composed(
     inspectorInfo = debugInspectorInfo {
@@ -72,8 +73,8 @@ fun Modifier.scrollbar(
         }
       }
 
-      val targetAlpha = if (state.isScrollInProgress || scrollbarDragged) 0.8f else 0f
-      val duration = if (state.isScrollInProgress || scrollbarDragged) 10 else 1500
+      val targetAlpha = if (isScrollInProgress(state) || scrollbarDragged) 0.8f else 0f
+      val duration = if (isScrollInProgress(state) || scrollbarDragged) 10 else 1500
 
       val alpha by animateFloatAsState(
         targetValue = targetAlpha,
@@ -87,7 +88,7 @@ fun Modifier.scrollbar(
           val layoutInfo = state.layoutInfo
           val firstVisibleElementIndex = layoutInfo.visibleItemsInfo.firstOrNull()?.index
           val needDrawScrollbar = layoutInfo.totalItemsCount > layoutInfo.visibleItemsInfo.size
-            && (state.isScrollInProgress || alpha > 0.0f)
+            && (isScrollInProgress(state) || alpha > 0.0f)
 
           // Draw scrollbar if total item count is greater than visible item count and either
           // currently scrolling or if the animation is still running and lazy column has content

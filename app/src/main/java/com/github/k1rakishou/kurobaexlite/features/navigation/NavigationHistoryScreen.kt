@@ -13,8 +13,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -42,6 +42,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
@@ -67,6 +68,7 @@ class NavigationHistoryScreen(
     val navigationHistoryList = navigationHistoryScreenViewModel.navigationHistoryList
     val circleCropTransformation = remember { CircleCropTransformation() }
     val navElementHeight = 36.dp
+    val lazyListState = rememberLazyListState()
 
     Box(
       modifier = Modifier
@@ -75,8 +77,9 @@ class NavigationHistoryScreen(
     ) {
       val contentPadding = remember(key1 = windowInsets) { windowInsets.asPaddingValues() }
 
-      LazyColumn(
+      LazyColumnWithFastScroller(
         modifier = Modifier.fillMaxSize(),
+        lazyListState = lazyListState,
         contentPadding = contentPadding,
         content = {
           items(

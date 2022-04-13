@@ -22,6 +22,10 @@ interface IPostImage {
   val fullImageAsString: String
 }
 
+fun IPostImage.aspectRatio(): Float {
+  return width.toFloat() / height.toFloat()
+}
+
 fun IPostImage.imageType(): ImageType {
   val extension = ext.lowercase(Locale.ENGLISH)
 

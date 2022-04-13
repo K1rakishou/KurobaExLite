@@ -32,6 +32,7 @@ fun LazyColumnWithFastScroller(
   modifier: Modifier = Modifier,
   lazyListState: LazyListState,
   contentPadding: PaddingValues,
+  userScrollEnabled: Boolean = true,
   onFastScrollerDragStateChanged: ((Boolean) -> Unit)? = null,
   content: LazyListScope.() -> Unit
 ) {
@@ -92,6 +93,7 @@ fun LazyColumnWithFastScroller(
             contentPadding = contentPadding,
             scrollbarDragged = scrollbarDragged
           ),
+        userScrollEnabled = userScrollEnabled,
         state = lazyListState,
         contentPadding = contentPadding,
         content = content
