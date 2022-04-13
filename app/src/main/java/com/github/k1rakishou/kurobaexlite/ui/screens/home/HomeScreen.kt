@@ -305,7 +305,6 @@ class HomeScreen(
         pagerState = pagerState,
         childScreens = childScreens.screens,
         mainUiLayoutMode = mainUiLayoutMode,
-        uiInfoManager = uiInfoManager
       )
 
       HomeScreenFloatingActionButton(
@@ -313,17 +312,13 @@ class HomeScreen(
         pagerState = pagerState,
         childScreens = childScreens.screens,
         mainUiLayoutMode = mainUiLayoutMode,
-        homeScreenViewModel = homeScreenViewModel,
-        uiInfoManager = uiInfoManager,
-        snackbarManager = snackbarManager
+        homeScreenViewModel = homeScreenViewModel
       )
 
       if (drawerWidth > 0) {
         HomeScreenDrawerLayout(
           drawerWidth = drawerWidth,
-          componentActivity = componentActivity,
           navigationRouter = navigationRouter,
-          uiInfoManager = uiInfoManager
         )
       }
     }

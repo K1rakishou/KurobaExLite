@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.home
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.Stable
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -47,6 +48,7 @@ class HomeChildScreens(
       .takeIf { screenIndex -> screenIndex >= 0 }
   }
 
+  @Stable
   data class ChildScreens(val screens: List<ComposeScreenWithToolbar>)
 
 }

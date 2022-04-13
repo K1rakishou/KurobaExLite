@@ -28,6 +28,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.FAB_TRANSITION_ANIMATION_DURATION_MS
+import org.koin.core.context.GlobalContext
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -36,9 +37,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
   pagerState: PagerState,
   childScreens: List<ComposeScreenWithToolbar>,
   mainUiLayoutMode: MainUiLayoutMode,
-  homeScreenViewModel: HomeScreenViewModel,
-  uiInfoManager: UiInfoManager,
-  snackbarManager: SnackbarManager
+  homeScreenViewModel: HomeScreenViewModel
 ) {
   require(childScreens.isNotEmpty()) { "childScreens is empty!" }
 
@@ -52,6 +51,10 @@ fun BoxScope.HomeScreenFloatingActionButton(
   if (currentScreen !is HomeNavigationScreen) {
     return
   }
+
+
+  val uiInfoManager = GlobalContext.get().get<UiInfoManager>()
+  val snackbarManager = GlobalContext.get().get<SnackbarManager>()
 
   val toolbarVisibilityInfo = remember(key1 = currentScreenKey) {
     uiInfoManager.getOrCreateToolbarVisibilityInfo(currentScreenKey)

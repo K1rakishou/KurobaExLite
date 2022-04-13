@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
-import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FloatTweenSpec
 import androidx.compose.animation.core.animate
@@ -61,9 +60,9 @@ fun <T> AnimateableStackContainer(
 @Composable
 fun <T> rememberAnimateableStackContainerState(
   screenKey: ScreenKey,
-  componentActivity: ComponentActivity,
   initialValues: List<StackContainerElementWrapper<T>> = emptyList()
 ): AnimateableStackContainerState<T> {
+  val componentActivity = LocalComponentActivity.current
   val viewModel = componentActivity.rememberViewModel<AnimateableStackContainerViewModel>()
 
   return viewModel.storage.getOrPut(
@@ -268,6 +267,7 @@ class SimpleStackContainerElement<T>(
   override val key: Any = _key
 }
 
+@Stable
 class AnimateableStackContainerState<T>(
   initialValues: List<StackContainerElementWrapper<T>>,
   private val duplicateChecker: MutableSet<Any> = mutableSetOf(),

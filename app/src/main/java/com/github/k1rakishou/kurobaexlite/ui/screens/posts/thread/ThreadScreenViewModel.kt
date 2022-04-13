@@ -177,8 +177,6 @@ class ThreadScreenViewModel(
 
           try {
             threadScreenState.insertOrUpdateMany(postDataList)
-            snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
-
             onPostsParsed(
               threadDescriptor = threadDescriptor,
               postLoadResult = postLoadResult
@@ -189,7 +187,10 @@ class ThreadScreenViewModel(
               prevThreadStatusCellData = prevCellDataState
             )
           } finally {
-            withContext(Dispatchers.Main) { onRefreshFinished?.invoke() }
+            withContext(Dispatchers.Main) {
+              snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
+              onRefreshFinished?.invoke()
+            }
           }
         }
       )

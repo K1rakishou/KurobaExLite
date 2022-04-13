@@ -5,7 +5,7 @@ buildscript {
         ksp = "1.6.10-1.0.2"
         kotlin_coroutines_version = "1.6.1"
         compose_version = "1.2.0-alpha07"
-        koin_version = "3.1.5"
+        koin_version = "3.2.0-beta-1"
         okhttp = "4.9.2"
         moshi = "1.13.0"
         coil = "2.0.0-rc01"
@@ -23,6 +23,25 @@ buildscript {
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
+    }
+}
+
+subprojects {
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            if (project.findProperty("kuroba_ex_lite.enableComposeCompilerReports") == "true") {
+                freeCompilerArgs += [
+                        "-P",
+                        "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
+                                project.buildDir.absolutePath + "/compose_metrics"
+                ]
+                freeCompilerArgs += [
+                        "-P",
+                        "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
+                                project.buildDir.absolutePath + "/compose_metrics"
+                ]
+            }
+        }
     }
 }
 

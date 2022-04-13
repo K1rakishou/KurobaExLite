@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.navigation
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
@@ -309,6 +310,7 @@ open class NavigationRouter(
     val floatingScreenUpdates: List<ScreenUpdate>
   )
 
+  @Stable
   sealed class ScreenUpdate(val screen: ComposeScreen) {
 
     fun isScreenBeingRemoved(): Boolean {

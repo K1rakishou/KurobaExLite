@@ -128,6 +128,7 @@ class MediaViewerScreen(
 
     var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getBounds()) }
     var transitionFinished by remember { mutableStateOf(false) }
+    var previewLoadingFinished by remember { mutableStateOf(false) }
 
     val animatable = remember { Animatable(0f) }
     val animationProgress by animatable.asState()
@@ -145,7 +146,7 @@ class MediaViewerScreen(
 
       Box(
         modifier = Modifier.graphicsLayer {
-          alpha = if (transitionFinished) 1f else 0f
+          alpha = if (transitionFinished && previewLoadingFinished) 1f else 0f
         }
       ) {
         ContentAfterTransition(
@@ -156,9 +157,7 @@ class MediaViewerScreen(
           insets = insets,
           onPreviewLoadingFinished = { postImage ->
             if (clickedThumbnailBounds == null || postImage == clickedThumbnailBounds?.postImage) {
-              transitionFinished = true
-              clickedThumbnailBounds = null
-              clickedThumbnailBoundsStorage.consumeBounds()
+              previewLoadingFinished = true
             }
           }
         )
@@ -167,7 +166,23 @@ class MediaViewerScreen(
       TransitionPreview(
         animatable = animatable,
         clickedThumbnailBounds = clickedThumbnailBounds,
-        onTransitionFinished = { animatable.snapTo(1f) }
+        onTransitionFinished = {
+          if (!transitionFinished) {
+            animatable.snapTo(1f)
+            transitionFinished = true
+          }
+        }
+      )
+
+      LaunchedEffect(
+        key1 = transitionFinished,
+        key2 = previewLoadingFinished,
+        block = {
+          if (transitionFinished && previewLoadingFinished && clickedThumbnailBounds != null) {
+            clickedThumbnailBounds = null
+            clickedThumbnailBoundsStorage.consumeBounds()
+          }
+        }
       )
     }
   }
@@ -565,14 +580,13 @@ class MediaViewerScreen(
       key = { page -> images[page].fullImageUrlAsString }
     ) { page ->
       PagerContent(
-        context = context,
         page = page,
         images = images,
         mediaViewerScreenState = mediaViewerScreenState,
         pagerState = pagerState,
         toolbarHeight = toolbarHeight,
         mpvSettings = mpvSettings,
-        mpvLibsInstalledAndLoaded = mpvLibsInstalledAndLoaded,
+        checkLibrariesInstalledAndLoaded = { mpvLibsInstalledAndLoaded.value },
         videoMediaState = videoMediaState,
         onPreviewLoadingFinished = onPreviewLoadingFinished
       )
@@ -582,17 +596,17 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun PagerContent(
-    context: Context,
     page: Int,
-    images: SnapshotStateList<ImageLoadState>,
+    images: MutableList<ImageLoadState>,
     mediaViewerScreenState: MediaViewerScreenState,
     pagerState: PagerState,
     toolbarHeight: Dp,
     mpvSettings: MpvSettings,
-    mpvLibsInstalledAndLoaded: Lazy<Boolean>,
+    checkLibrariesInstalledAndLoaded: () -> Boolean,
     videoMediaState: VideoMediaState?,
     onPreviewLoadingFinished: (IPostImage) -> Unit
   ) {
+    val context = LocalContext.current
     val postImageDataLoadState = images[page]
 
     DisposableEffect(
@@ -604,13 +618,10 @@ class MediaViewerScreen(
         // it might it set to ImageLoadState.Ready in reality the file on disk may long be
         // removed so it will cause a crash.
         onDispose {
-          val currentImages = mediaViewerScreenState.images
-            ?: return@onDispose
-
-          val indexOfThisImage = currentImages.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }
+          val indexOfThisImage = images.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }
           if (indexOfThisImage >= 0) {
-            val prevPostImageData = currentImages[indexOfThisImage].postImage
-            currentImages.set(indexOfThisImage, ImageLoadState.PreparingForLoading(prevPostImageData))
+            val prevPostImageData = images[indexOfThisImage].postImage
+            images.set(indexOfThisImage, ImageLoadState.PreparingForLoading(prevPostImageData))
           }
         }
       }
@@ -684,7 +695,7 @@ class MediaViewerScreen(
               mpvSettings = mpvSettings,
               postImageDataLoadState = postImageDataLoadState,
               snackbarManager = snackbarManager,
-              checkLibrariesInstalledAndLoaded = { mpvLibsInstalledAndLoaded.value },
+              checkLibrariesInstalledAndLoaded = checkLibrariesInstalledAndLoaded,
               onPlayerLoaded = { fullMediaLoaded = true },
               onPlayerUnloaded = { fullMediaLoaded = false },
               videoMediaState = videoMediaState,

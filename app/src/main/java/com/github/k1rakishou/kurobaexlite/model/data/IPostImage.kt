@@ -1,11 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.model.data
 
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import java.util.Locale
 import okhttp3.HttpUrl
 
-@Stable
+@Immutable
 interface IPostImage {
   val originalFileNameEscaped: String
   val serverFileName: String

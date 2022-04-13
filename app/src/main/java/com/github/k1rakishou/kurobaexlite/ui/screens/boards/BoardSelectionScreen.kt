@@ -349,7 +349,6 @@ class BoardSelectionScreen(
 
     KurobaToolbar(
       screenKey = screenKey,
-      componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       canProcessBackEvent = { true },
       onLeftIconClicked = onBackArrowClicked,

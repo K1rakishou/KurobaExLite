@@ -1,9 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.model.data.local
 
+import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import okhttp3.HttpUrl
 
+@Immutable
 data class PostImageData(
   val thumbnailUrl: HttpUrl,
   val fullImageUrl: HttpUrl,

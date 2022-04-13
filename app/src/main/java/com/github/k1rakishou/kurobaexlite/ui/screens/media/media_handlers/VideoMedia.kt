@@ -17,6 +17,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -554,6 +555,7 @@ private class VideoMediaStateSaveable(
 
 }
 
+@Stable
 class VideoMediaState(
   val pageIndex: Int,
   videoControlsVisible: Boolean

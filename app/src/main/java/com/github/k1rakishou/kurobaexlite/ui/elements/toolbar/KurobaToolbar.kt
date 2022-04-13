@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +18,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +60,7 @@ class LeftIconInfo(val drawableId: Int)
 class MiddlePartInfo(val centerContent: Boolean = false)
 class PostScreenToolbarInfo(val isCatalogScreen: Boolean)
 
+@Stable
 class KurobaToolbarState(
   val leftIconInfo: LeftIconInfo?,
   val middlePartInfo: MiddlePartInfo,
@@ -101,7 +102,6 @@ class KurobaToolbarState(
 @Composable
 fun KurobaToolbar(
   screenKey: ScreenKey,
-  componentActivity: ComponentActivity,
   kurobaToolbarState: KurobaToolbarState,
   canProcessBackEvent: () -> Boolean,
   onLeftIconClicked: () -> Unit,
@@ -115,7 +115,6 @@ fun KurobaToolbar(
 
   val stackContainerState = rememberAnimateableStackContainerState<PostsScreenToolbarType>(
     screenKey = screenKey,
-    componentActivity = componentActivity,
     initialValues = listOf(
       SimpleStackContainerElement(
         element = PostsScreenToolbarType.Normal,

@@ -127,7 +127,6 @@ class ThreadScreen(
 
     KurobaToolbar(
       screenKey = screenKey,
-      componentActivity = componentActivity,
       kurobaToolbarState = kurobaToolbarState,
       canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
       onLeftIconClicked = { uiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
@@ -206,7 +205,7 @@ class ThreadScreen(
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
 
-    val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
+    val kurobaSnackbarState = rememberKurobaSnackbarState()
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
 
@@ -298,8 +297,6 @@ class ThreadScreen(
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),
       screenKey = screenKey,
-      uiInfoManager = uiInfoManager,
-      snackbarManager = snackbarManager,
       kurobaSnackbarState = kurobaSnackbarState
     )
   }

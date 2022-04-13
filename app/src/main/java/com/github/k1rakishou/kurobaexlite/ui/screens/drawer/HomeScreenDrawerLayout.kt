@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.screens.drawer
 
-import androidx.activity.ComponentActivity
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.snap
@@ -25,8 +24,10 @@ import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
+import org.koin.core.context.GlobalContext
 
 
 private val COLOR_INVISIBLE = Color(0x00000000)
@@ -35,10 +36,11 @@ private val COLOR_VISIBLE = Color(0x80000000)
 @Composable
 fun HomeScreenDrawerLayout(
   drawerWidth: Int,
-  componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  uiInfoManager: UiInfoManager
 ) {
+  val componentActivity = LocalComponentActivity.current
+  val uiInfoManager = GlobalContext.get().get<UiInfoManager>()
+
   val childRouter = remember { navigationRouter.childRouter(DrawerScreen.SCREEN_KEY) }
   val drawerScreen = remember { DrawerScreen(componentActivity, navigationRouter) }
   val drawerVisibility by uiInfoManager.drawerVisibilityFlow.collectAsState()

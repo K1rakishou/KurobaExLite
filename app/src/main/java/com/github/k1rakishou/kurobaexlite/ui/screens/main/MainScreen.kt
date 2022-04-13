@@ -39,7 +39,7 @@ class MainScreen(
       key2 = insets.right
     ) { PaddingValues(start = insets.left, end = insets.right) }
     var contentSize by remember { mutableStateOf(IntSize.Zero) }
-    val kurobaSnackbarState = rememberKurobaSnackbarState(snackbarManager = snackbarManager)
+    val kurobaSnackbarState = rememberKurobaSnackbarState()
 
     Surface(
       modifier = Modifier
@@ -88,8 +88,6 @@ class MainScreen(
         KurobaSnackbarContainer(
           modifier = Modifier.fillMaxSize(),
           screenKey = screenKey,
-          uiInfoManager = uiInfoManager,
-          snackbarManager = snackbarManager,
           kurobaSnackbarState = kurobaSnackbarState
         )
       }

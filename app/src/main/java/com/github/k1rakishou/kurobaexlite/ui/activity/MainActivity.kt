@@ -21,6 +21,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideKurobaViewConfiguration
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
@@ -53,11 +54,13 @@ class MainActivity : ComponentActivity() {
     setContent {
       HandleOrientationChanges()
 
-      ProvideKurobaViewConfiguration {
-        ProvideWindowInsets(window = window) {
-          ProvideChanTheme(themeEngine = themeEngine) {
-            val mainScreen = remember { MainScreen(this, mainActivityViewModel.rootNavigationRouter) }
-            mainScreen.Content()
+      ProvideComponentActivity(this) {
+        ProvideKurobaViewConfiguration {
+          ProvideWindowInsets(window = window) {
+            ProvideChanTheme(themeEngine = themeEngine) {
+              val mainScreen = remember { MainScreen(this, mainActivityViewModel.rootNavigationRouter) }
+              mainScreen.Content()
+            }
           }
         }
       }

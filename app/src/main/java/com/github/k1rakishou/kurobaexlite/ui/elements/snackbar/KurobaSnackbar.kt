@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -40,15 +41,17 @@ import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import org.koin.core.context.GlobalContext
 
 @Composable
 fun KurobaSnackbarContainer(
   modifier: Modifier = Modifier,
   screenKey: ScreenKey,
-  uiInfoManager: UiInfoManager,
-  snackbarManager: SnackbarManager,
   kurobaSnackbarState: KurobaSnackbarState
 ) {
+  val uiInfoManager = GlobalContext.get().get<UiInfoManager>()
+  val snackbarManager = GlobalContext.get().get<SnackbarManager>()
+
   val insets = LocalWindowInsets.current
   val chanTheme = LocalChanTheme.current
 
@@ -250,24 +253,23 @@ private fun RowScope.KurobaSnackbarContent(
 
 @Composable
 fun rememberKurobaSnackbarState(
-  snackbarManager: SnackbarManager,
   keyTag: String? = null,
   maxSnackbarsAtTime: Int = 5
 ): KurobaSnackbarState {
   return remember {
     KurobaSnackbarState(
       tag = keyTag,
-      maxSnackbarsAtTime = maxSnackbarsAtTime,
-      snackbarManager = snackbarManager
+      maxSnackbarsAtTime = maxSnackbarsAtTime
     )
   }
 }
 
 class KurobaSnackbarState(
   private val tag: String?,
-  private val maxSnackbarsAtTime: Int,
-  private val snackbarManager: SnackbarManager
+  private val maxSnackbarsAtTime: Int
 ) {
+  private val snackbarManager: SnackbarManager by lazy { GlobalContext.get().get() }
+
   private val _activeSnackbars = mutableStateListOf<SnackbarInfo>()
   val activeSnackbars: List<SnackbarInfo>
     get() = _activeSnackbars
@@ -289,15 +291,8 @@ class KurobaSnackbarState(
       .indexOfFirst { snackbarInfo -> snackbarInfo.snackbarId == id }
 
     if (indexOfSnackbar >= 0) {
-      val now = SystemClock.elapsedRealtime()
-
-      val snackbar = _activeSnackbars.get(indexOfSnackbar)
-      if (snackbar.canBeDeleted(now)) {
-        _activeSnackbars.removeAt(indexOfSnackbar)
-        updateSnackbarsCount()
-      } else {
-        snackbar.markToBeAutoDeleted()
-      }
+      _activeSnackbars.removeAt(indexOfSnackbar)
+      updateSnackbarsCount()
     }
   }
 
@@ -308,7 +303,7 @@ class KurobaSnackbarState(
     _activeSnackbars.mutableIteration { mutableIterator, activeSnackbar ->
       if (
         activeSnackbar.aliveUntil != null
-        && (currentTime >= activeSnackbar.aliveUntil!! || _activeSnackbars.size > maxSnackbarsAtTime)
+        && (currentTime >= activeSnackbar.aliveUntil || _activeSnackbars.size > maxSnackbarsAtTime)
       ) {
         anythingRemoved = true
         mutableIterator.remove()
@@ -349,10 +344,11 @@ sealed class SnackbarInfoEvent {
   data class Pop(val id: SnackbarId) : SnackbarInfoEvent()
 }
 
+@Stable
 class SnackbarInfo(
   val snackbarId: SnackbarId,
   val createdAt: Long = SystemClock.elapsedRealtime(),
-  var aliveUntil: Long?,
+  val aliveUntil: Long?,
   val screenKey: ScreenKey = MainScreen.SCREEN_KEY,
   val content: List<SnackbarContentItem>,
   val isToast: Boolean = false
@@ -382,24 +378,9 @@ class SnackbarInfo(
     return result
   }
 
-  fun canBeDeleted(currentTime: Long): Boolean {
-    if (currentTime - createdAt > MIN_LIFE_TIME_MS) {
-      return true
-    }
-
-    return false
-  }
-
-  fun markToBeAutoDeleted() {
-    aliveUntil = createdAt + MIN_LIFE_TIME_MS
-  }
-
-  companion object {
-    private const val MIN_LIFE_TIME_MS = 500
-  }
-
 }
 
+@Stable
 sealed class SnackbarContentItem {
   object LoadingIndicator : SnackbarContentItem()
   data class Text(

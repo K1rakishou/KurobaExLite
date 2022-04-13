@@ -34,6 +34,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.screens.posts.shared.FAB_TRANSITION_ANIMATION_DURATION_MS
+import org.koin.core.context.GlobalContext
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -43,7 +44,6 @@ fun HomeScreenToolbarContainer(
   pagerState: PagerState,
   childScreens: List<ComposeScreenWithToolbar>,
   mainUiLayoutMode: MainUiLayoutMode,
-  uiInfoManager: UiInfoManager,
   maxZOrder: Int = 1000
 ) {
   require(childScreens.isNotEmpty()) { "childScreens is empty!" }
@@ -54,6 +54,8 @@ fun HomeScreenToolbarContainer(
   if (currentScreen !is HomeNavigationScreen) {
     return
   }
+
+  val uiInfoManager = GlobalContext.get().get<UiInfoManager>()
 
   val toolbarVisibilityInfo = remember(key1 = currentScreenKey) {
     uiInfoManager.getOrCreateToolbarVisibilityInfo(currentScreenKey)
