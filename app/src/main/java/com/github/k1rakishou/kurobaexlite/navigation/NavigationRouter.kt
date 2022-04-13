@@ -5,10 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
+import com.github.k1rakishou.kurobaexlite.features.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.features.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.floating.FloatingComposeScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

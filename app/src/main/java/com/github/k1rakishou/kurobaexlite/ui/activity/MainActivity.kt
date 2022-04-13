@@ -14,6 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
@@ -24,8 +26,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideKurobaViewConfiguration
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.screens.main.MainScreen
-import com.github.k1rakishou.kurobaexlite.ui.screens.media.helpers.ClickedThumbnailBoundsStorage
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity() {

@@ -11,10 +11,10 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.lifecycle.ViewModel
+import com.github.k1rakishou.kurobaexlite.features.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.rememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.removeIfKt
-import com.github.k1rakishou.kurobaexlite.ui.screens.helpers.base.ScreenKey
 
 @Composable
 fun <T> AnimateableStackContainer(
