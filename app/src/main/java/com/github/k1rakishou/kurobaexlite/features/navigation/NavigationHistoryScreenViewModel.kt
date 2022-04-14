@@ -4,7 +4,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
@@ -14,6 +13,10 @@ import com.github.k1rakishou.kurobaexlite.managers.NavigationUpdate
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
@@ -23,7 +26,6 @@ class NavigationHistoryScreenViewModel(
 ) : BaseAndroidViewModel(application) {
   private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val appSettings: AppSettings by inject(AppSettings::class.java)
-  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
   private val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
   private val persistNavigationHistory: PersistNavigationHistory by inject(PersistNavigationHistory::class.java)
@@ -32,6 +34,13 @@ class NavigationHistoryScreenViewModel(
   private val _navigationHistoryList = mutableStateListOf<UiNavigationElement>()
   val navigationHistoryList: List<UiNavigationElement>
     get() = _navigationHistoryList
+
+  private val _scrollNavigationHistoryToTopEvents = MutableSharedFlow<Unit>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_LATEST
+  )
+  val scrollNavigationHistoryToTopEvents: SharedFlow<Unit>
+    get() = _scrollNavigationHistoryToTopEvents.asSharedFlow()
 
   override suspend fun onViewModelReady() {
     viewModelScope.launch {
@@ -93,6 +102,17 @@ class NavigationHistoryScreenViewModel(
         if (prevUiElement != null && prevUiElement == movedElement) {
           _navigationHistoryList.add(0, _navigationHistoryList.removeAt(navigationUpdate.prevIndex))
         }
+      }
+    }
+
+    when (navigationUpdate) {
+      is NavigationUpdate.Removed -> {
+        // no-op
+      }
+      is NavigationUpdate.Loaded,
+      is NavigationUpdate.Moved,
+      is NavigationUpdate.Added -> {
+        _scrollNavigationHistoryToTopEvents.tryEmit(Unit)
       }
     }
   }

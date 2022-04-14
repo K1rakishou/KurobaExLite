@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +50,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class NavigationHistoryScreen(
@@ -69,6 +71,20 @@ class NavigationHistoryScreen(
     val circleCropTransformation = remember { CircleCropTransformation() }
     val navElementHeight = 36.dp
     val lazyListState = rememberLazyListState()
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        navigationHistoryScreenViewModel.scrollNavigationHistoryToTopEvents.collectLatest {
+          val firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo
+            .firstOrNull { lazyListItemInfo -> lazyListItemInfo.offset >= 0 }
+            ?: return@collectLatest
+
+          if (firstCompletelyVisibleItem.index <= 1) {
+            lazyListState.scrollToItem(0)
+          }
+        }
+      })
 
     Box(
       modifier = Modifier
