@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.FAB_TRANSITION_ANIMATION_DURATION_MS
+import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
@@ -28,7 +29,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import org.koin.core.context.GlobalContext
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -52,9 +52,8 @@ fun BoxScope.HomeScreenFloatingActionButton(
     return
   }
 
-
-  val uiInfoManager = GlobalContext.get().get<UiInfoManager>()
-  val snackbarManager = GlobalContext.get().get<SnackbarManager>()
+  val uiInfoManager = koinRemember<UiInfoManager>()
+  val snackbarManager = koinRemember<SnackbarManager>()
 
   val toolbarVisibilityInfo = remember(key1 = currentScreenKey) {
     uiInfoManager.getOrCreateToolbarVisibilityInfo(currentScreenKey)

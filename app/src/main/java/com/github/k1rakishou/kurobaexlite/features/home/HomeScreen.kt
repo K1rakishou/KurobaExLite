@@ -17,7 +17,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -26,7 +25,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenDrawerLayout
 import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestures
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -274,25 +272,10 @@ class HomeScreen(
       ) { page ->
         val childScreen = childScreens.screens[page]
         val transitionIsProgress = pagerState.currentPage != pagerState.targetPage
-        val currentPageOffset = Math.abs(pagerState.currentPageOffset)
-
-        val scale = if (transitionIsProgress) {
-          if (currentPageOffset <= 0.5f) {
-            lerpFloat(transitionScaleMax, transitionScaleMin, currentPageOffset)
-          } else {
-            lerpFloat(transitionScaleMin, transitionScaleMax, currentPageOffset)
-          }
-        } else {
-          transitionScaleMax
-        }
 
         Box(
           modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer {
-              this.scaleY = scale
-              this.scaleX = scale
-            }
             .consumeClicks(consume = transitionIsProgress)
         ) {
           childScreen.Content()

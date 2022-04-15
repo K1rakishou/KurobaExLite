@@ -28,6 +28,7 @@ import logcat.LogPriority
 import logcat.logcat
 import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
+import org.koin.core.context.GlobalContext
 
 
 fun <T> CancellableContinuation<T>.resumeValueSafe(value: T) {
@@ -552,4 +553,9 @@ fun View.emulateMotionEvent(downTime: Long, eventTime: Long, action: Int, x: Flo
 @Composable
 inline fun <reified T : ViewModel> ComponentActivity.rememberViewModel(): T {
   return remember { ViewModelProvider(this).get(T::class.java) }
+}
+
+@Composable
+inline fun <reified T : Any> koinRemember(): T {
+  return remember { GlobalContext.get().get<T>() }
 }

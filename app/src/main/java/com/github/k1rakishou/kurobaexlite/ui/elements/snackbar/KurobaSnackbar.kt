@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.helpers.ensureSingleElement
+import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
@@ -49,8 +50,8 @@ fun KurobaSnackbarContainer(
   screenKey: ScreenKey,
   kurobaSnackbarState: KurobaSnackbarState
 ) {
-  val uiInfoManager = GlobalContext.get().get<UiInfoManager>()
-  val snackbarManager = GlobalContext.get().get<SnackbarManager>()
+  val uiInfoManager = koinRemember<UiInfoManager>()
+  val snackbarManager = koinRemember<SnackbarManager>()
 
   val insets = LocalWindowInsets.current
   val chanTheme = LocalChanTheme.current

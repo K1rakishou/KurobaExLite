@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreen
+import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -28,7 +29,6 @@ import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
-import org.koin.core.context.GlobalContext
 
 
 private val COLOR_INVISIBLE = Color(0x00000000)
@@ -40,7 +40,7 @@ fun HomeScreenDrawerLayout(
   navigationRouter: NavigationRouter,
 ) {
   val componentActivity = LocalComponentActivity.current
-  val uiInfoManager = GlobalContext.get().get<UiInfoManager>()
+  val uiInfoManager = koinRemember<UiInfoManager>()
 
   val childRouter = remember { navigationRouter.childRouter(NavigationHistoryScreen.SCREEN_KEY) }
   val drawerScreen = remember { NavigationHistoryScreen(componentActivity, navigationRouter) }
