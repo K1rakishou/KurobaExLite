@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.features.media.helpers
 
-import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -13,7 +12,6 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenToolba
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
-import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
@@ -28,8 +26,6 @@ import java.util.Locale
 internal fun MediaViewerToolbar(
   toolbarHeight: Dp,
   screenKey: ScreenKey,
-  componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
   mediaViewerScreenState: MediaViewerScreen.MediaViewerScreenState,
   pagerState: PagerState?,
   onBackPressed: () -> Unit
@@ -58,8 +54,6 @@ internal fun MediaViewerToolbar(
       content = {
         MediaToolbar(
           screenKey = screenKey,
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
           mediaViewerScreenState = mediaViewerScreenState,
           currentPagerPage = currentImageIndex,
           onBackPressed = onBackPressed
@@ -73,8 +67,6 @@ internal fun MediaViewerToolbar(
       content = {
         MediaToolbar(
           screenKey = screenKey,
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
           mediaViewerScreenState = mediaViewerScreenState,
           currentPagerPage = targetImageIndex,
           onBackPressed = onBackPressed
@@ -95,8 +87,6 @@ internal fun MediaViewerToolbar(
 @Composable
 private fun MediaToolbar(
   screenKey: ScreenKey,
-  componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
   mediaViewerScreenState: MediaViewerScreen.MediaViewerScreenState,
   currentPagerPage: Int,
   onBackPressed: () -> Unit

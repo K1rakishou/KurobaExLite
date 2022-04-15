@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
@@ -17,11 +18,9 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,6 +42,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import androidx.core.graphics.withTranslation
@@ -56,6 +56,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.DisplayLoadingProgressIndicator
+import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerActionStrip
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPreviewStrip
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerScreenVideoControls
@@ -67,13 +68,16 @@ import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.VideoMed
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
+import com.github.k1rakishou.kurobaexlite.model.data.originalFileNameWithExtension
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
@@ -84,6 +88,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
@@ -196,17 +201,16 @@ class MediaViewerScreen(
     insets: Insets,
     onPreviewLoadingFinished: (IPostImage) -> Unit
   ) {
-    var pagerStateHolder by remember { mutableStateOf<PagerState?>(null) }
+    var pagerStateHolderMut by remember { mutableStateOf<PagerState?>(null) }
+    val pagerStateHolder = pagerStateHolderMut
+
     val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
-
-    DisposableEffect(
-      key1 = Unit,
-      effect = {
-        onDispose { mediaViewerScreenViewModel.destroy() }
-      }
-    )
-
     val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
+    val images = mediaViewerScreenState.images
+
+    val bgColor = remember(chanTheme.primaryColorCompose) {
+      chanTheme.primaryColorCompose.copy(alpha = 0.5f)
+    }
 
     val videoMediaState = remember(key1 = pagerStateHolder?.currentPage) {
       val currentPage = pagerStateHolder?.currentPage
@@ -220,102 +224,190 @@ class MediaViewerScreen(
       return@remember VideoMediaState(currentPage, videoControlsVisible)
     }
 
-    val bgColor = remember(chanTheme.primaryColorCompose) {
-      chanTheme.primaryColorCompose.copy(alpha = 0.5f)
-    }
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        onDispose { mediaViewerScreenViewModel.destroy() }
+      }
+    )
 
     MediaViewerPager(
       toolbarHeight = toolbarHeight,
       mediaViewerScreenState = mediaViewerScreenState,
-      onViewPagerInitialized = { pagerState -> pagerStateHolder = pagerState },
+      onViewPagerInitialized = { pagerState -> pagerStateHolderMut = pagerState },
       videoMediaState = videoMediaState,
       onPreviewLoadingFinished = onPreviewLoadingFinished
     )
 
-    if (pagerStateHolder != null) {
-      Box(
-        modifier = Modifier.Companion
-          .align(Alignment.TopCenter)
+    if (pagerStateHolder == null || videoMediaState == null) {
+      return
+    }
+
+    Box(
+      modifier = Modifier.Companion
+        .align(Alignment.TopCenter)
+        .background(bgColor)
+        .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
+    ) {
+      MediaViewerToolbar(
+        toolbarHeight = toolbarHeight,
+        screenKey = screenKey,
+        mediaViewerScreenState = mediaViewerScreenState,
+        pagerState = pagerStateHolder,
+        onBackPressed = { coroutineScope.launch { onBackPressed() } }
+      )
+    }
+
+    var videoControlsHeight by remember { mutableStateOf(0) }
+    val videoControlsVisible by videoMediaState.videoControlsVisibleState
+
+    if (mediaViewerScreenViewModel.mpvInitialized) {
+      val targetAlpha = if (videoControlsVisible) 1f else 0f
+      val alphaAnimated by animateFloatAsState(
+        targetValue = targetAlpha,
+        animationSpec = tween(durationMillis = 250)
+      )
+
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .align(Alignment.BottomCenter)
+          .graphicsLayer { this.alpha = alphaAnimated }
+          .onSizeChanged { size -> videoControlsHeight = size.height }
           .background(bgColor)
-          .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
       ) {
-        MediaViewerToolbar(
-          toolbarHeight = toolbarHeight,
-          screenKey = screenKey,
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          mediaViewerScreenState = mediaViewerScreenState,
-          pagerState = pagerStateHolder,
-          onBackPressed = { coroutineScope.launch { onBackPressed() } }
-        )
+        MediaViewerScreenVideoControls(videoMediaState)
+
+        Spacer(modifier = Modifier.height(insets.bottom))
       }
     }
 
-    if (videoMediaState != null) {
-      val videoControlsVisible by videoMediaState.videoControlsVisibleState
+    if (images.isNotNullNorEmpty()) {
+      val toolbarCalculatedHeight by toolbarTotalHeight
 
-      if (mediaViewerScreenViewModel.mpvInitialized) {
-        val targetAlpha = if (videoControlsVisible) 1f else 0f
-        val alphaAnimated by animateFloatAsState(
-          targetValue = targetAlpha,
-          animationSpec = tween(durationMillis = 250)
-        )
+      val actualToolbarCalculatedHeight = remember(
+        key1 = toolbarCalculatedHeight,
+        key2 = globalMediaViewerControlsVisible,
+      ) {
+        if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
+          return@remember null
+        }
+
+        return@remember toolbarCalculatedHeight
+      }
+
+      if (toolbarCalculatedHeight != null) {
+        Box(
+          modifier = Modifier
+            .align(Alignment.TopCenter)
+        ) {
+          MediaViewerPreviewStrip(
+            pagerState = pagerStateHolder,
+            images = images,
+            bgColor = bgColor,
+            toolbarHeightPx = actualToolbarCalculatedHeight,
+            uiInfoManager = uiInfoManager,
+            onPreviewClicked = { postImage ->
+              coroutineScope.launch {
+                images
+                  .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
+                  .takeIf { index -> index >= 0 }
+                  ?.let { scrollIndex -> pagerStateHolder.scrollToPage(scrollIndex) }
+              }
+            }
+          )
+        }
+      }
+
+      val imageLoadState = images.getOrNull(pagerStateHolder.currentPage)
+      if (imageLoadState != null) {
+        val context = LocalContext.current
 
         Column(
           modifier = Modifier
-            .fillMaxWidth()
             .align(Alignment.BottomCenter)
-            .graphicsLayer { this.alpha = alphaAnimated }
-            .background(bgColor)
         ) {
-          MediaViewerScreenVideoControls(videoMediaState)
+          val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
 
-          Spacer(modifier = Modifier.height(insets.bottom))
-        }
-      }
+          MediaViewerActionStrip(
+            imageLoadState = imageLoadState,
+            bgColor = bgColor,
+            onDownloadButtonClicked = { postImage ->
+              onDownloadButtonClicked(
+                context = context,
+                runtimePermissionsHelper = runtimePermissionsHelper,
+                postImage = postImage
+              )
+            }
+          )
 
-      val images = mediaViewerScreenState.images
-
-      if (pagerStateHolder != null && images.isNotNullNorEmpty()) {
-        val toolbarCalculatedHeight by toolbarTotalHeight
-
-        val actualToolbarCalculatedHeight = remember(
-          key1 = toolbarCalculatedHeight,
-          key2 = globalMediaViewerControlsVisible,
-        ) {
-          if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
-            return@remember null
+          val spacerHeight = with(LocalDensity.current) {
+            if (videoControlsVisible) {
+              videoControlsHeight.toDp()
+            } else {
+              insets.bottom
+            }
           }
 
-          return@remember toolbarCalculatedHeight
-        }
-
-        if (toolbarCalculatedHeight != null) {
-          Box(
-            modifier = Modifier
-              .wrapContentWidth()
-              .fillMaxHeight()
-              .align(Alignment.TopCenter)
-          ) {
-            MediaViewerPreviewStrip(
-              pagerState = pagerStateHolder!!,
-              images = images,
-              bgColor = bgColor,
-              toolbarHeightPx = actualToolbarCalculatedHeight,
-              uiInfoManager = uiInfoManager,
-              onPreviewClicked = { postImage ->
-                coroutineScope.launch {
-                  images
-                    .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
-                    .takeIf { index -> index >= 0 }
-                    ?.let { scrollIndex -> pagerStateHolder?.scrollToPage(scrollIndex) }
-                }
-              }
-            )
-          }
+          Spacer(modifier = Modifier.height(spacerHeight))
         }
       }
     }
+  }
+
+  private fun onDownloadButtonClicked(
+    context: Context,
+    runtimePermissionsHelper: RuntimePermissionsHelper,
+    postImage: IPostImage
+  ) {
+    // On Q and above we use MediaStore which does not require us requesting the permission
+    if (
+      androidHelpers.isAndroidQ() ||
+      runtimePermissionsHelper.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    ) {
+      downloadMediaActual(context, postImage)
+      return
+    }
+
+    runtimePermissionsHelper.requestPermission(
+      permission = Manifest.permission.WRITE_EXTERNAL_STORAGE,
+      callback = object : RuntimePermissionsHelper.Callback {
+        override fun onRuntimePermissionResult(granted: Boolean) {
+          if (granted) {
+            downloadMediaActual(context, postImage)
+            return
+          }
+
+          val message = context.resources.getString(R.string.media_viewer_download_failed_no_permission)
+          snackbarManager.toast(message)
+        }
+      }
+    )
+  }
+
+  private fun downloadMediaActual(context: Context, postImage: IPostImage) {
+    mediaViewerScreenViewModel.downloadMedia(
+      postImage = postImage,
+      onResult = { mediaDownloadResult ->
+        if (mediaDownloadResult.isSuccess) {
+          val message = context.resources.getString(
+            R.string.media_viewer_download_success,
+            postImage.originalFileNameWithExtension()
+          )
+
+          snackbarManager.toast(message)
+        } else {
+          val error = mediaDownloadResult.exceptionOrThrow()
+          val message = context.resources.getString(
+            R.string.media_viewer_download_failed,
+            postImage.originalFileNameWithExtension(),
+            error.errorMessageOrClassName()
+          )
+
+          snackbarManager.toast(message)
+        }
+      }
+    )
   }
 
   @Composable

@@ -21,6 +21,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollo
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
@@ -115,6 +116,7 @@ object DependencyGraph {
       )
     }
     single { SiteDataPersister(appContext = get(), moshi = get()) }
+    single { MediaSaver(applicationContext = get(), androidHelpers = get(), proxiedOkHttpClient = get()) }
   }
 
   private fun Module.managers() {
@@ -165,9 +167,12 @@ object DependencyGraph {
           appContext = get(),
           androidHelpers = get()
         ),
-        chanCache = get(),
         proxiedOkHttpClient = get(),
-        kurobaLruDiskCache = get()
+        kurobaLruDiskCache = get(),
+        installMpvNativeLibrariesFromGithub = get(),
+        imageLoader = get(),
+        mediaSaver = get(),
+        snackbarManager = get()
       )
     }
     viewModel {

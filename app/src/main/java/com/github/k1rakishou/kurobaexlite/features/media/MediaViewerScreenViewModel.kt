@@ -14,6 +14,7 @@ import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
+import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.CacheFileType
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
@@ -24,10 +25,10 @@ import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
 import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
@@ -47,17 +48,19 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.internal.closeQuietly
 import okio.sink
-import org.koin.java.KoinJavaComponent.inject
+
 
 class MediaViewerScreenViewModel(
   private val application: KurobaExLiteApplication,
   val mpvSettings: MpvSettings,
-  private val chanCache: ChanCache,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
-  private val kurobaLruDiskCache: KurobaLruDiskCache
+  private val kurobaLruDiskCache: KurobaLruDiskCache,
+  private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub,
+  private val imageLoader: ImageLoader,
+  private val mediaSaver: MediaSaver,
+  private val snackbarManager: SnackbarManager
 ) : BaseAndroidViewModel(application) {
-  private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub by inject(InstallMpvNativeLibrariesFromGithub::class.java)
-  private val imageLoader: ImageLoader by inject(ImageLoader::class.java)
+
   private val mpvInitializer = MpvInitializer(appContext, mpvSettings)
 
   val mpvInitialized: Boolean
@@ -275,6 +278,16 @@ class MediaViewerScreenViewModel(
     imageResult as SuccessResult
 
     return (imageResult.drawable as BitmapDrawable).bitmap
+  }
+
+  fun downloadMedia(
+    postImage: IPostImage,
+    onResult: (Result<Unit>) -> Unit
+  ) {
+    viewModelScope.launch {
+      val result = mediaSaver.savePostImage(postImage)
+      onResult(result)
+    }
   }
 
   class InitResult(

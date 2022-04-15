@@ -74,7 +74,6 @@ fun MediaViewerPreviewStrip(
     return@remember (stripWidth - itemSizePx) / 2
   }
 
-
   LaunchedEffect(
     key1 = currentPage,
     key2 = scrollOffset,

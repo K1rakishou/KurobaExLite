@@ -1,6 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.model.data
 
+import android.webkit.MimeTypeMap
 import androidx.compose.runtime.Immutable
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import java.util.Locale
 import okhttp3.HttpUrl
@@ -20,6 +22,20 @@ interface IPostImage {
 
   val thumbnailAsString: String
   val fullImageAsString: String
+}
+
+fun IPostImage.originalFileNameWithExtension(): String {
+  return "${originalFileNameEscaped}.${ext}"
+}
+
+fun IPostImage.imageNameForDiskStore(duplicateIndex: Int? = null): String {
+  val duplicateIndexString = duplicateIndex?.let { index -> "_(${index})" } ?: ""
+
+  if (originalFileNameEscaped.isNotNullNorBlank()) {
+    return "${originalFileNameEscaped}${duplicateIndexString}.${ext}"
+  }
+
+  return "${serverFileName}${duplicateIndexString}.${ext}"
 }
 
 fun IPostImage.aspectRatio(): Float {
@@ -51,6 +67,11 @@ fun IPostImage.imageType(): ImageType {
   }
 
   return ImageType.Unsupported
+}
+
+fun IPostImage.mimeType(): String {
+  val extension = ext.lowercase(Locale.ENGLISH)
+  return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: "application/octet-stream"
 }
 
 enum class ImageType(val value: Int) {

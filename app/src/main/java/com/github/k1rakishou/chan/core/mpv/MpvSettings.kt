@@ -33,11 +33,11 @@ class MpvSettings(
         return 32 * ONE_MEGABYTE
       }
 
-      if (androidHelpers.isAndroid11()) {
+      if (androidHelpers.isAndroidR()) {
         return 128 * ONE_MEGABYTE
       }
 
-      if (androidHelpers.isAndroid10()) {
+      if (androidHelpers.isAndroidQ()) {
         return 96 * ONE_MEGABYTE
       }
 

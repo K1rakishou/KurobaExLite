@@ -12,23 +12,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideComponentActivity
-import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideKurobaViewConfiguration
-import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
 import org.koin.java.KoinJavaComponent.inject
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
   private val mainActivityViewModel by viewModels<MainActivityViewModel>()
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
@@ -42,6 +41,8 @@ class MainActivity : ComponentActivity() {
   private val coroutineScope = KurobaCoroutineScope()
   private val backPressExecutor = RendezvousCoroutineExecutor(coroutineScope)
 
+  private val runtimePermissionsHelper by lazy { RuntimePermissionsHelper(applicationContext, this) }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
@@ -54,15 +55,14 @@ class MainActivity : ComponentActivity() {
     setContent {
       HandleOrientationChanges()
 
-      ProvideComponentActivity(this) {
-        ProvideKurobaViewConfiguration {
-          ProvideWindowInsets(window = window) {
-            ProvideChanTheme(themeEngine = themeEngine) {
-              val mainScreen = remember { MainScreen(this, mainActivityViewModel.rootNavigationRouter) }
-              mainScreen.Content()
-            }
-          }
-        }
+      ProvideAllTheStuff(
+        componentActivity = this,
+        window = window,
+        themeEngine = themeEngine,
+        runtimePermissionsHelper = runtimePermissionsHelper
+      ) {
+        val mainScreen = remember { MainScreen(this, mainActivityViewModel.rootNavigationRouter) }
+        mainScreen.Content()
       }
     }
 
@@ -137,6 +137,15 @@ class MainActivity : ComponentActivity() {
     }
 
     return super.dispatchTouchEvent(ev)
+  }
+
+  override fun onRequestPermissionsResult(
+    requestCode: Int,
+    permissions: Array<String>,
+    grantResults: IntArray
+  ) {
+    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    runtimePermissionsHelper.onRequestPermissionsResult(requestCode, permissions, grantResults)
   }
 
   companion object {

@@ -47,13 +47,18 @@ class AndroidHelpers(
   }
 
   // Api 29
-  fun isAndroid10(): Boolean {
+  fun isAndroidQ(): Boolean {
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
   }
 
   // Api 30
-  fun isAndroid11(): Boolean {
+  fun isAndroidR(): Boolean {
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+  }
+
+  // Api 31
+  fun isAndroidS(): Boolean {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
   }
 
   fun setClipboardContent(label: String, content: String) {

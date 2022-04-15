@@ -4,16 +4,24 @@ import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonReader
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import logcat.logcat
-import okhttp3.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
+import okio.BufferedSink
 import okio.BufferedSource
 import okio.buffer
+import okio.sink
 import okio.source
-import java.io.IOException
-import java.io.InputStream
 
 suspend fun OkHttpClient.suspendCall(request: Request): Response {
   return suspendCancellableCoroutine { continuation ->
@@ -66,6 +74,13 @@ inline fun <T : Any?> ResponseBody.useBufferedSource(useFunc: (BufferedSource) -
     return@use inputStream.useBufferedSource(useFunc)
   }
 }
+
+inline fun <T : Any?> OutputStream.useBufferedSink(useFunc: (BufferedSink) -> T): T {
+  return sink().buffer().use { bufferedSink ->
+    return@use useFunc(bufferedSink)
+  }
+}
+
 
 inline fun <T : Any?> InputStream.useBufferedSource(useFunc: (BufferedSource) -> T): T {
   return source().use { source ->
