@@ -42,7 +42,6 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import androidx.core.graphics.withTranslation
@@ -56,7 +55,6 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.DisplayLoadingProgressIndicator
-import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerActionStrip
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPreviewStrip
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerScreenVideoControls
@@ -249,16 +247,25 @@ class MediaViewerScreen(
         .background(bgColor)
         .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
     ) {
+      val context = LocalContext.current
+      val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
+
       MediaViewerToolbar(
         toolbarHeight = toolbarHeight,
         screenKey = screenKey,
         mediaViewerScreenState = mediaViewerScreenState,
         pagerState = pagerStateHolder,
+        onDownloadMediaClicked = { postImage ->
+          onDownloadButtonClicked(
+            context = context,
+            runtimePermissionsHelper = runtimePermissionsHelper,
+            postImage = postImage
+          )
+        },
         onBackPressed = { coroutineScope.launch { onBackPressed() } }
       )
     }
 
-    var videoControlsHeight by remember { mutableStateOf(0) }
     val videoControlsVisible by videoMediaState.videoControlsVisibleState
 
     if (mediaViewerScreenViewModel.mpvInitialized) {
@@ -273,7 +280,6 @@ class MediaViewerScreen(
           .fillMaxWidth()
           .align(Alignment.BottomCenter)
           .graphicsLayer { this.alpha = alphaAnimated }
-          .onSizeChanged { size -> videoControlsHeight = size.height }
           .background(bgColor)
       ) {
         MediaViewerScreenVideoControls(videoMediaState)
@@ -316,40 +322,6 @@ class MediaViewerScreen(
               }
             }
           )
-        }
-      }
-
-      val imageLoadState = images.getOrNull(pagerStateHolder.currentPage)
-      if (imageLoadState != null) {
-        val context = LocalContext.current
-
-        Column(
-          modifier = Modifier
-            .align(Alignment.BottomCenter)
-        ) {
-          val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
-
-          MediaViewerActionStrip(
-            imageLoadState = imageLoadState,
-            bgColor = bgColor,
-            onDownloadButtonClicked = { postImage ->
-              onDownloadButtonClicked(
-                context = context,
-                runtimePermissionsHelper = runtimePermissionsHelper,
-                postImage = postImage
-              )
-            }
-          )
-
-          val spacerHeight = with(LocalDensity.current) {
-            if (videoControlsVisible) {
-              videoControlsHeight.toDp()
-            } else {
-              insets.bottom
-            }
-          }
-
-          Spacer(modifier = Modifier.height(spacerHeight))
         }
       }
     }

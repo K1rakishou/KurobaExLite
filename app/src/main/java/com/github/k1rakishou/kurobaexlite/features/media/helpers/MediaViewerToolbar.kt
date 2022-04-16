@@ -18,8 +18,14 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.util.Locale
+
+private enum class ToolbarIcons {
+  DownloadMedia
+}
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -28,6 +34,7 @@ internal fun MediaViewerToolbar(
   screenKey: ScreenKey,
   mediaViewerScreenState: MediaViewerScreen.MediaViewerScreenState,
   pagerState: PagerState?,
+  onDownloadMediaClicked: (IPostImage) -> Unit,
   onBackPressed: () -> Unit
 ) {
   if (!mediaViewerScreenState.isLoaded() || pagerState == null) {
@@ -56,6 +63,7 @@ internal fun MediaViewerToolbar(
           screenKey = screenKey,
           mediaViewerScreenState = mediaViewerScreenState,
           currentPagerPage = currentImageIndex,
+          onDownloadMediaClicked = onDownloadMediaClicked,
           onBackPressed = onBackPressed
         )
       }
@@ -69,6 +77,7 @@ internal fun MediaViewerToolbar(
           screenKey = screenKey,
           mediaViewerScreenState = mediaViewerScreenState,
           currentPagerPage = targetImageIndex,
+          onDownloadMediaClicked = onDownloadMediaClicked,
           onBackPressed = onBackPressed
         )
       }
@@ -89,14 +98,36 @@ private fun MediaToolbar(
   screenKey: ScreenKey,
   mediaViewerScreenState: MediaViewerScreen.MediaViewerScreenState,
   currentPagerPage: Int,
+  onDownloadMediaClicked: (IPostImage) -> Unit,
   onBackPressed: () -> Unit
 ) {
   val kurobaToolbarState = remember {
     return@remember KurobaToolbarState(
       leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
       middlePartInfo = MiddlePartInfo(centerContent = false),
+      rightPartInfo = RightPartInfo(
+        ToolbarIcon(ToolbarIcons.DownloadMedia, R.drawable.ic_baseline_download_24)
+      )
     )
   }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      kurobaToolbarState.toolbarIconClickEventFlow.collect { key ->
+        when (key as ToolbarIcons) {
+          ToolbarIcons.DownloadMedia -> {
+            mediaViewerScreenState.images?.let { images ->
+              val postImageToDownload = images.getOrNull(currentPagerPage)?.postImage
+                ?: return@let
+
+              onDownloadMediaClicked(postImageToDownload)
+            }
+          }
+        }
+      }
+    }
+  )
 
   UpdateMediaViewerToolbarTitle(
     mediaViewerScreenState = mediaViewerScreenState,
@@ -113,10 +144,6 @@ private fun MediaToolbar(
       // no-op
     },
     onSearchQueryUpdated = null,
-    onToolbarSortClicked = null,
-    onToolbarOverflowMenuClicked = {
-      // no-op
-    }
   )
 }
 

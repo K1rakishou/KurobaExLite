@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -38,6 +39,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostScreenToolbarInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
@@ -77,6 +80,10 @@ class ThreadScreen(
     return@lazy KurobaToolbarState(
       leftIconInfo = leftIconInfo,
       middlePartInfo = MiddlePartInfo(centerContent = false),
+      rightPartInfo = RightPartInfo(
+        ToolbarIcon(ToolbarIcons.Search, R.drawable.ic_baseline_search_24),
+        ToolbarIcon(ToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
+      ),
       postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
     )
   }
@@ -125,6 +132,34 @@ class ThreadScreen(
       kurobaToolbarState = kurobaToolbarState
     )
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        kurobaToolbarState.toolbarIconClickEventFlow.collect { key ->
+          when (key as ToolbarIcons) {
+            ToolbarIcons.Search -> kurobaToolbarState.openSearch()
+            ToolbarIcons.Overflow -> {
+              navigationRouter.presentScreen(
+                FloatingMenuScreen(
+                  floatingMenuKey = FloatingMenuScreen.THREAD_OVERFLOW,
+                  componentActivity = componentActivity,
+                  navigationRouter = navigationRouter,
+                  menuItems = floatingMenuItems,
+                  onMenuItemClicked = { menuItem ->
+                    threadScreenToolbarActionHandler.processClickedToolbarMenuItem(
+                      componentActivity = componentActivity,
+                      navigationRouter = navigationRouter,
+                      menuItem = menuItem
+                    )
+                  }
+                )
+              )
+            }
+          }
+        }
+      }
+    )
+
     KurobaToolbar(
       screenKey = screenKey,
       kurobaToolbarState = kurobaToolbarState,
@@ -134,25 +169,8 @@ class ThreadScreen(
       onSearchQueryUpdated = { searchQuery ->
         uiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
         threadScreenViewModel.updateSearchQuery(searchQuery)
-      },
-      onToolbarSortClicked = null,
-      onToolbarOverflowMenuClicked = {
-        navigationRouter.presentScreen(
-          FloatingMenuScreen(
-            floatingMenuKey = FloatingMenuScreen.THREAD_OVERFLOW,
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter,
-            menuItems = floatingMenuItems,
-            onMenuItemClicked = { menuItem ->
-              threadScreenToolbarActionHandler.processClickedToolbarMenuItem(
-                componentActivity = componentActivity,
-                navigationRouter = navigationRouter,
-                menuItem = menuItem
-              )
-            }
-          )
-        )
-      })
+      }
+    )
   }
 
   @Composable
@@ -299,6 +317,11 @@ class ThreadScreen(
       screenKey = screenKey,
       kurobaSnackbarState = kurobaSnackbarState
     )
+  }
+
+  private enum class ToolbarIcons {
+    Search,
+    Overflow
   }
 
   companion object {

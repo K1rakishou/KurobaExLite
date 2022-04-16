@@ -279,9 +279,7 @@ class AlbumScreen(
       canProcessBackEvent = { true },
       onLeftIconClicked = onBackArrowClicked,
       onMiddleMenuClicked = null,
-      onSearchQueryUpdated = null,
-      onToolbarSortClicked = null,
-      onToolbarOverflowMenuClicked = null
+      onSearchQueryUpdated = null
     )
   }
 

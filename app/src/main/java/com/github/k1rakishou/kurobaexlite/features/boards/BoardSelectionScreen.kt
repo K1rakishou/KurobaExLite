@@ -41,6 +41,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -72,13 +74,15 @@ class BoardSelectionScreen(
 
   private val kurobaToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
-    middlePartInfo = MiddlePartInfo(centerContent = false)
+    middlePartInfo = MiddlePartInfo(centerContent = false),
+    rightPartInfo = RightPartInfo(
+      ToolbarIcon(ToolbarIcons.Search, R.drawable.ic_baseline_search_24)
+    )
   )
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     ScreenToolbar(
-      kurobaToolbarState = kurobaToolbarState,
       onBackArrowClicked = { popScreen() },
       onSearchQueryUpdated = { updatedSearchQuery -> searchQueryState.value = updatedSearchQuery }
     )
@@ -337,7 +341,6 @@ class BoardSelectionScreen(
 
   @Composable
   private fun ScreenToolbar(
-    kurobaToolbarState: KurobaToolbarState,
     onBackArrowClicked: () -> Unit,
     onSearchQueryUpdated: (String?) -> Unit
   ) {
@@ -345,7 +348,19 @@ class BoardSelectionScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarState.toolbarTitleState.value = toolbarTitle })
+      block = { kurobaToolbarState.toolbarTitleState.value = toolbarTitle }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        kurobaToolbarState.toolbarIconClickEventFlow.collect { key ->
+          when (key as ToolbarIcons) {
+            ToolbarIcons.Search -> kurobaToolbarState.openSearch()
+          }
+        }
+      }
+    )
 
     KurobaToolbar(
       screenKey = screenKey,
@@ -353,10 +368,12 @@ class BoardSelectionScreen(
       canProcessBackEvent = { true },
       onLeftIconClicked = onBackArrowClicked,
       onMiddleMenuClicked = null,
-      onSearchQueryUpdated = onSearchQueryUpdated,
-      onToolbarSortClicked = null,
-      onToolbarOverflowMenuClicked = null
+      onSearchQueryUpdated = onSearchQueryUpdated
     )
+  }
+
+  enum class ToolbarIcons {
+    Search
   }
 
   companion object {

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,32 +49,59 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberAnimateableStackContainerState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 private const val searchQueryKey = "search_query"
 
-enum class PostsScreenToolbarType(val id: Int) {
+enum class ToolbarType(val id: Int) {
   Normal(0),
   Search(1)
 }
 
 class LeftIconInfo(val drawableId: Int)
 class MiddlePartInfo(val centerContent: Boolean = false)
+class RightPartInfo(vararg val toolbarIcons: ToolbarIcon)
 class PostScreenToolbarInfo(val isCatalogScreen: Boolean)
+
+class ToolbarIcon(
+  val key: Any,
+  @DrawableRes val drawableId: Int
+)
 
 @Stable
 class KurobaToolbarState(
   val leftIconInfo: LeftIconInfo?,
   val middlePartInfo: MiddlePartInfo,
+  val rightPartInfo: RightPartInfo? = null,
   val postScreenToolbarInfo: PostScreenToolbarInfo? = null
 ) {
   val toolbarTitleState = mutableStateOf<String?>(null)
   val toolbarSubtitleState = mutableStateOf<String?>(null)
   private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
 
-  val popChildToolbarsEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
+  private val _popChildToolbarsEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
+  val popChildToolbarsEventFlow: SharedFlow<Unit>
+    get() = _popChildToolbarsEventFlow.asSharedFlow()
+
+  private val _childToolbarsEventFlow = MutableSharedFlow<ToolbarType>(extraBufferCapacity = Channel.UNLIMITED)
+  val childToolbarsEventFlow: SharedFlow<ToolbarType>
+    get() = _childToolbarsEventFlow.asSharedFlow()
+
+  private val _toolbarIconClickEventFlow = MutableSharedFlow<Any>(extraBufferCapacity = Channel.UNLIMITED)
+  val toolbarIconClickEventFlow: SharedFlow<Any>
+    get() = _toolbarIconClickEventFlow.asSharedFlow()
+
+  fun onToolbarIconClicked(key: Any) {
+    _toolbarIconClickEventFlow.tryEmit(key)
+  }
+
+  fun openSearch() {
+    _childToolbarsEventFlow.tryEmit(ToolbarType.Search)
+  }
 
   fun popChildToolbars() {
-    popChildToolbarsEventFlow.tryEmit(Unit)
+    _popChildToolbarsEventFlow.tryEmit(Unit)
   }
 
   @Composable
@@ -106,17 +135,15 @@ fun KurobaToolbar(
   onLeftIconClicked: () -> Unit,
   onMiddleMenuClicked: (() -> Unit)?,
   onSearchQueryUpdated: ((String?) -> Unit)?,
-  onToolbarSortClicked: (() -> Unit)?,
-  onToolbarOverflowMenuClicked: (() -> Unit)?
 ) {
   val chanTheme = LocalChanTheme.current
   val parentBgColor = chanTheme.primaryColorCompose
 
-  val stackContainerState = rememberAnimateableStackContainerState<PostsScreenToolbarType>(
+  val stackContainerState = rememberAnimateableStackContainerState<ToolbarType>(
     screenKey = screenKey,
     initialValues = listOf(
       SimpleStackContainerElement(
-        element = PostsScreenToolbarType.Normal,
+        element = ToolbarType.Normal,
         keyExtractor = { it.id }
       )
     )
@@ -141,7 +168,22 @@ fun KurobaToolbar(
       kurobaToolbarState.popChildToolbarsEventFlow.collect {
         stackContainerState.popTillRoot()
       }
-    })
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      kurobaToolbarState.childToolbarsEventFlow.collect {
+        stackContainerState.fadeIn(
+          SimpleStackContainerElement(
+            element = ToolbarType.Search,
+            keyExtractor = { it.id }
+          )
+        )
+      }
+    }
+  )
 
   val bgColor = if (stackContainerState.addedElementsCount <= 1) {
     Color.Unspecified
@@ -149,7 +191,7 @@ fun KurobaToolbar(
     chanTheme.primaryColorCompose
   }
 
-  AnimateableStackContainer<PostsScreenToolbarType>(stackContainerState) { postsScreenToolbarType ->
+  AnimateableStackContainer<ToolbarType>(stackContainerState) { postsScreenToolbarType ->
     Box(
       modifier = Modifier
         .fillMaxSize()
@@ -157,26 +199,14 @@ fun KurobaToolbar(
       contentAlignment = Alignment.Center
     ) {
       when (postsScreenToolbarType) {
-        PostsScreenToolbarType.Normal -> {
+        ToolbarType.Normal -> {
           PostsScreenNormalToolbar(
             kurobaToolbarState = kurobaToolbarState,
-            parentBgColor = parentBgColor,
-            hasSearchIcon = onSearchQueryUpdated != null,
             onLeftIconClicked = onLeftIconClicked,
-            onMiddleMenuClicked = onMiddleMenuClicked,
-            onToolbarSearchClicked = {
-              stackContainerState.fadeIn(
-                SimpleStackContainerElement(
-                  element = PostsScreenToolbarType.Search,
-                  keyExtractor = { it.id }
-                )
-              )
-            },
-            onToolbarSortClicked = onToolbarSortClicked,
-            onToolbarOverflowMenuClicked = onToolbarOverflowMenuClicked
+            onMiddleMenuClicked = onMiddleMenuClicked
           )
         }
-        PostsScreenToolbarType.Search -> {
+        ToolbarType.Search -> {
           PostsScreenSearchToolbar(
             parentBgColor = parentBgColor,
             stackContainerState = stackContainerState,
@@ -192,21 +222,14 @@ fun KurobaToolbar(
 @Composable
 private fun BoxScope.PostsScreenNormalToolbar(
   kurobaToolbarState: KurobaToolbarState,
-  parentBgColor: Color,
-  hasSearchIcon: Boolean,
   onLeftIconClicked: () -> Unit,
-  onMiddleMenuClicked: (() -> Unit)? = null,
-  onToolbarSearchClicked: (() -> Unit)? = null,
-  onToolbarSortClicked: (() -> Unit)? = null,
-  onToolbarOverflowMenuClicked: (() -> Unit)? = null
+  onMiddleMenuClicked: (() -> Unit)? = null
 ) {
-  val leftToolbarPart = leftToolbarPartBuilder(
-    kurobaToolbarState = kurobaToolbarState,
-    onLeftIconClicked = onLeftIconClicked
-  )
-
   KurobaToolbarLayout(
-    leftPart = leftToolbarPart,
+    leftPart = leftToolbarPartBuilder(
+      kurobaToolbarState = kurobaToolbarState,
+      onLeftIconClicked = onLeftIconClicked
+    ),
     middlePart = {
       val toolbarTitle by kurobaToolbarState.toolbarTitleState
       val toolbarSubtitle by kurobaToolbarState.toolbarSubtitleState
@@ -262,53 +285,42 @@ private fun BoxScope.PostsScreenNormalToolbar(
         }
       }
     },
-    rightPart = {
-      Row {
-        if (hasSearchIcon) {
+    rightPart = rightPartBuilder(kurobaToolbarState)
+  )
+}
+
+fun rightPartBuilder(
+  kurobaToolbarState: KurobaToolbarState
+): @Composable (BoxScope.() -> Unit)? {
+  if (kurobaToolbarState.rightPartInfo?.toolbarIcons?.isEmpty() != false) {
+    return null
+  }
+
+  val func: @Composable (BoxScope.() -> Unit) = {
+    val toolbarIcons = kurobaToolbarState.rightPartInfo.toolbarIcons
+
+    Row {
+      for ((index, toolbarIcon) in toolbarIcons.withIndex()) {
+        key(toolbarIcon.key) {
           KurobaComposeIcon(
             modifier = Modifier
               .size(24.dp)
               .kurobaClickable(
                 bounded = false,
-                onClick = onToolbarSearchClicked
+                onClick = { kurobaToolbarState.onToolbarIconClicked(toolbarIcon.key) }
               ),
-            drawableId = R.drawable.ic_baseline_search_24,
-            colorBehindIcon = parentBgColor
+            drawableId = toolbarIcon.drawableId
           )
 
-          Spacer(modifier = Modifier.width(12.dp))
-        }
-
-        if (onToolbarSortClicked != null) {
-          KurobaComposeIcon(
-            modifier = Modifier
-              .size(24.dp)
-              .kurobaClickable(
-                bounded = false,
-                onClick = onToolbarSortClicked
-              ),
-            drawableId = R.drawable.ic_baseline_sort_24,
-            colorBehindIcon = parentBgColor
-          )
-
-          Spacer(modifier = Modifier.width(12.dp))
-        }
-
-        if (onToolbarOverflowMenuClicked != null) {
-          KurobaComposeIcon(
-            modifier = Modifier
-              .size(24.dp)
-              .kurobaClickable(
-                bounded = false,
-                onClick = onToolbarOverflowMenuClicked
-              ),
-            drawableId = R.drawable.ic_baseline_more_vert_24,
-            colorBehindIcon = parentBgColor
-          )
+          if (index != toolbarIcons.lastIndex) {
+            Spacer(modifier = Modifier.width(8.dp))
+          }
         }
       }
     }
-  )
+  }
+
+  return func
 }
 
 private fun leftToolbarPartBuilder(
@@ -340,7 +352,7 @@ private fun leftToolbarPartBuilder(
 @Composable
 private fun BoxScope.PostsScreenSearchToolbar(
   parentBgColor: Color,
-  stackContainerState: AnimateableStackContainerState<PostsScreenToolbarType>,
+  stackContainerState: AnimateableStackContainerState<ToolbarType>,
   onSearchQueryUpdated: ((String?) -> Unit)?,
   onCloseSearchClicked: () -> Unit
 ) {
@@ -413,7 +425,6 @@ private fun BoxScope.PostsScreenSearchToolbar(
         }
       )
     },
-    rightPart = {
-    }
+    rightPart = null
   )
 }

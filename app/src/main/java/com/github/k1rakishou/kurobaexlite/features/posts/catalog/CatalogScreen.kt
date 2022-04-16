@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -38,6 +39,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostScreenToolbarInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
@@ -64,6 +67,11 @@ class CatalogScreen(
   private val kurobaToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
     middlePartInfo = MiddlePartInfo(centerContent = true),
+    rightPartInfo = RightPartInfo(
+      ToolbarIcon(ToolbarIcons.Search, R.drawable.ic_baseline_search_24),
+      ToolbarIcon(ToolbarIcons.Sort, R.drawable.ic_baseline_sort_24),
+      ToolbarIcon(ToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
+    ),
     postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
   )
 
@@ -121,6 +129,43 @@ class CatalogScreen(
       kurobaToolbarState = kurobaToolbarState
     )
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        kurobaToolbarState.toolbarIconClickEventFlow.collect { key ->
+          when (key as ToolbarIcons) {
+            ToolbarIcons.Search -> kurobaToolbarState.openSearch()
+            ToolbarIcons.Sort -> {
+              val sortCatalogThreadsScreen = SortCatalogThreadsScreen(
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter,
+                onApplied = { catalogScreenViewModel.onCatalogSortChanged() }
+              )
+
+              navigationRouter.presentScreen(sortCatalogThreadsScreen)
+            }
+            ToolbarIcons.Overflow -> {
+              navigationRouter.presentScreen(
+                FloatingMenuScreen(
+                  floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
+                  componentActivity = componentActivity,
+                  navigationRouter = navigationRouter,
+                  menuItems = floatingMenuItems,
+                  onMenuItemClicked = { menuItem ->
+                    catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(
+                      componentActivity = componentActivity,
+                      navigationRouter = navigationRouter,
+                      menuItem = menuItem
+                    )
+                  }
+                )
+              )
+            }
+          }
+        }
+      }
+    )
+
     KurobaToolbar(
       screenKey = screenKey,
       kurobaToolbarState = kurobaToolbarState,
@@ -140,32 +185,6 @@ class CatalogScreen(
       onSearchQueryUpdated = { searchQuery ->
         uiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
         catalogScreenViewModel.updateSearchQuery(searchQuery)
-      },
-      onToolbarSortClicked = {
-        val sortCatalogThreadsScreen = SortCatalogThreadsScreen(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          onApplied = { catalogScreenViewModel.onCatalogSortChanged() }
-        )
-
-        navigationRouter.presentScreen(sortCatalogThreadsScreen)
-      },
-      onToolbarOverflowMenuClicked = {
-        navigationRouter.presentScreen(
-          FloatingMenuScreen(
-            floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter,
-            menuItems = floatingMenuItems,
-            onMenuItemClicked = { menuItem ->
-              catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(
-                componentActivity = componentActivity,
-                navigationRouter = navigationRouter,
-                menuItem = menuItem
-              )
-            }
-          )
-        )
       }
     )
   }
@@ -307,6 +326,12 @@ class CatalogScreen(
       screenKey = screenKey,
       kurobaSnackbarState = kurobaSnackbarState
     )
+  }
+
+  private enum class ToolbarIcons {
+    Search,
+    Sort,
+    Overflow
   }
 
   companion object {
