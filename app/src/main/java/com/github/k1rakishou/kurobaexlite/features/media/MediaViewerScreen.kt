@@ -706,7 +706,7 @@ class MediaViewerScreen(
         // When a page with media is being disposed we need to replace the current ImageLoadState
         // with ImageLoadState.PreparingForLoading so that when we go back to this page we reload
         // it again from cache/network. Otherwise we may use the cached ImageLoadState and while
-        // it might it set to ImageLoadState.Ready in reality the file on disk may long be
+        // it might be set to "ImageLoadState.Ready" in reality the file on disk may long be
         // removed so it will cause a crash.
         onDispose {
           val indexOfThisImage = images.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }

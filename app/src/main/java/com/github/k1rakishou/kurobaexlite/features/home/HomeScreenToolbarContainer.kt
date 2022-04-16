@@ -35,6 +35,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
+import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -95,8 +96,8 @@ fun HomeScreenToolbarContainer(
     label = "toolbar transition"
   )
 
-  val toolbarAlpha by transition.animateFloat(
-    label = "toolbar alpha animation",
+  val toolbarContainerAlpha by transition.animateFloat(
+    label = "toolbar container alpha animation",
     transitionSpec = {
       if (targetState.isDraggingFastScroller || targetState.touchingTopOrBottomOfList) {
         snap()
@@ -120,9 +121,10 @@ fun HomeScreenToolbarContainer(
     modifier = Modifier
       .fillMaxWidth()
       .height(toolbarTotalHeight)
-      .graphicsLayer { this.alpha = toolbarAlpha }
+      .graphicsLayer { this.alpha = toolbarContainerAlpha }
       .background(chanTheme.primaryColorCompose)
-      .consumeClicks()
+      .passClicksThrough(enabled = toolbarContainerAlpha < 0.99f)
+      .consumeClicks(enabled = toolbarContainerAlpha > 0.99f)
   ) {
     Spacer(modifier = Modifier.height(insets.top))
 
@@ -161,6 +163,7 @@ fun HomeScreenToolbarContainer(
             BuildChildToolbar(
               composeScreenWithToolbar = currentScreen,
               zOrder = zOrder,
+              toolbarContainerAlpha = toolbarContainerAlpha,
               targetToolbarAlpha = currentToolbarAlpha,
               targetToolbarTranslation = currentToolbarTranslation,
               transitionIsProgress = transitionIsProgress,
@@ -178,6 +181,7 @@ fun HomeScreenToolbarContainer(
             BuildChildToolbar(
               composeScreenWithToolbar = currentScreen,
               zOrder = zOrder,
+              toolbarContainerAlpha = toolbarContainerAlpha,
               targetToolbarAlpha = targetToolbarAlpha,
               targetToolbarTranslation = targetToolbarTranslation,
               transitionIsProgress = transitionIsProgress,
@@ -188,6 +192,7 @@ fun HomeScreenToolbarContainer(
             BuildChildToolbar(
               composeScreenWithToolbar = currentScreen,
               zOrder = zOrder,
+              toolbarContainerAlpha = toolbarContainerAlpha,
               targetToolbarAlpha = 0f,
               targetToolbarTranslation = 0f,
               transitionIsProgress = transitionIsProgress,
@@ -204,6 +209,7 @@ fun HomeScreenToolbarContainer(
 private fun BuildChildToolbar(
   composeScreenWithToolbar: ComposeScreenWithToolbar,
   zOrder: Int,
+  toolbarContainerAlpha: Float,
   targetToolbarAlpha: Float,
   targetToolbarTranslation: Float,
   transitionIsProgress: Boolean,
@@ -217,7 +223,7 @@ private fun BuildChildToolbar(
           alpha = targetToolbarAlpha
           translationY = targetToolbarTranslation
         }
-        .consumeClicks(consume = transitionIsProgress)
+        .consumeClicks(enabled = transitionIsProgress && toolbarContainerAlpha > 0.99f)
     ) {
       toolbarContent()
     }

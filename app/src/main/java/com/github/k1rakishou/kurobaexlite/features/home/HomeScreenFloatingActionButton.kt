@@ -29,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
@@ -127,15 +128,12 @@ fun BoxScope.HomeScreenFloatingActionButton(
   KurobaFloatingActionButton(
     modifier = Modifier
       .align(Alignment.BottomEnd)
-      .graphicsLayer { this.alpha = toolbarAlpha },
+      .graphicsLayer { this.alpha = toolbarAlpha }
+      .passClicksThrough(enabled = toolbarAlpha < 0.99f),
     iconDrawableId = R.drawable.ic_baseline_create_24,
     horizOffset = -(horizOffset),
     vertOffset = -(insets.bottom + vertOffset),
     onClick = {
-      if (toolbarAlpha <= 0.99f) {
-        return@KurobaFloatingActionButton
-      }
-
       homeScreenViewModel.onFabClicked(currentScreenKey)
     }
   )

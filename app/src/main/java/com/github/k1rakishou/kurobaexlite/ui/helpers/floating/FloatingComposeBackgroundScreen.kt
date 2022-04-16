@@ -31,7 +31,7 @@ class FloatingComposeBackgroundScreen(
       modifier = Modifier
         .fillMaxSize()
         .background(backgroundColor)
-        .consumeClicks(consume = true)
+        .consumeClicks(enabled = true)
     )
   }
 

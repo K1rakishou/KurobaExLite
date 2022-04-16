@@ -25,6 +25,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 import kotlinx.coroutines.flow.StateFlow
 
 const val FAB_TRANSITION_ANIMATION_DURATION_MS = 200
@@ -44,7 +45,6 @@ fun BoxScope.PostsScreenFloatingActionButton(
   }
 
   val insets = LocalWindowInsets.current
-
 
   val toolbarVisibilityInfo = remember(key1 = screenKey) {
     uiInfoManager.getOrCreateToolbarVisibilityInfo(screenKey)
@@ -96,17 +96,12 @@ fun BoxScope.PostsScreenFloatingActionButton(
   KurobaFloatingActionButton(
     modifier = Modifier
       .align(Alignment.BottomEnd)
-      .graphicsLayer { this.alpha = toolbarAlpha },
+      .graphicsLayer { this.alpha = toolbarAlpha }
+      .passClicksThrough(enabled = toolbarAlpha < 0.99f),
     iconDrawableId = R.drawable.ic_baseline_create_24,
     horizOffset = -(horizOffset),
     vertOffset = -(insets.bottom + vertOffset),
-    onClick = {
-      if (toolbarAlpha <= 0.99f) {
-        return@KurobaFloatingActionButton
-      }
-
-      homeScreenViewModel.onFabClicked(screenKey)
-    }
+    onClick = { homeScreenViewModel.onFabClicked(screenKey) }
   )
 }
 

@@ -276,7 +276,7 @@ class HomeScreen(
         Box(
           modifier = Modifier
             .fillMaxSize()
-            .consumeClicks(consume = transitionIsProgress)
+            .consumeClicks(enabled = transitionIsProgress)
         ) {
           childScreen.Content()
         }

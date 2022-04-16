@@ -133,7 +133,8 @@ object DependencyGraph {
     viewModel {
       HomeScreenViewModel(
         application = get(),
-        siteManager = get()
+        siteManager = get(),
+        snackbarManager = get()
       )
     }
     viewModel {

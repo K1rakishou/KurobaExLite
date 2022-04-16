@@ -143,7 +143,7 @@ private fun BuildChildToolbar(
           alpha = targetToolbarAlpha
           translationY = targetToolbarTranslation
         }
-        .consumeClicks(consume = transitionIsProgress)
+        .consumeClicks(enabled = transitionIsProgress)
     ) {
       toolbarContent()
     }

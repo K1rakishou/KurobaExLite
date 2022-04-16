@@ -49,6 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
@@ -60,6 +61,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
@@ -523,8 +525,8 @@ fun KurobaComposeIcon(
   )
 }
 
-fun Modifier.consumeClicks(consume: Boolean = true): Modifier {
-  if (!consume) {
+fun Modifier.consumeClicks(enabled: Boolean = true): Modifier {
+  if (!enabled) {
     return this
   }
 
@@ -537,6 +539,17 @@ fun Modifier.consumeClicks(consume: Boolean = true): Modifier {
   }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
+fun Modifier.passClicksThrough(enabled: Boolean = true): Modifier {
+  if (!enabled) {
+    return this
+  }
+
+  return composed {
+    pointerInteropFilter(onTouchEvent = { true })
+      .pointerInput(key1 = Unit, block = { })
+  }
+}
 
 @Composable
 fun KurobaComposeTextField(

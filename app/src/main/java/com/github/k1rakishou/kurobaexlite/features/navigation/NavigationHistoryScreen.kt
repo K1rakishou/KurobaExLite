@@ -89,7 +89,7 @@ class NavigationHistoryScreen(
     Box(
       modifier = Modifier
         .background(chanTheme.backColorCompose)
-        .consumeClicks(consume = true)
+        .consumeClicks(enabled = true)
     ) {
       val contentPadding = remember(key1 = windowInsets) { windowInsets.asPaddingValues() }
 

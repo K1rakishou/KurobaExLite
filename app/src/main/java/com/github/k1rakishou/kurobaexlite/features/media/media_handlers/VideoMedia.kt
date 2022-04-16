@@ -151,9 +151,9 @@ fun DisplayVideo(
       videoMediaState.hwDecEventFlow.collect {
         mpvViewMut?.let { mpvView ->
           if (mpvView.hwdecActive) {
-            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Switching to software decoding")
+            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Switched to software decoding")
           } else {
-            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Switching to hardware decoding")
+            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Switched to hardware decoding")
           }
 
           mpvView.cycleHwdec()

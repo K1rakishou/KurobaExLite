@@ -43,7 +43,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.SimpleStackContainerElement
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberAnimateableStackContainerState
 import kotlinx.coroutines.channels.Channel
@@ -154,7 +153,6 @@ fun KurobaToolbar(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .consumeClicks()
         .background(bgColor),
       contentAlignment = Alignment.Center
     ) {
