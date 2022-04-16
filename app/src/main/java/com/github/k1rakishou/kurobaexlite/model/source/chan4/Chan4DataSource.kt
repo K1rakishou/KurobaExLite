@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.model.source.chan4
 import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertIntoJsonObjectWithAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
@@ -270,7 +271,9 @@ class Chan4DataSource(
       return emptyList()
     }
 
-    val extension = postImageDataJson.ext!!.removePrefix(".")
+    val extension = postImageDataJson.ext
+      ?.removePrefix(".")
+      ?: "jpg"
 
     val thumbnailUrl = postImageInfo.thumbnailUrl(
       boardCode = boardCode,
@@ -288,6 +291,7 @@ class Chan4DataSource(
 
     val serverFileName = postImageDataJson.tim.toString()
     val originalFileName = postImageDataJson.filename
+      ?.takeIf { filename -> filename.isNotNullNorBlank() }
       ?: serverFileName
 
     val postImageData = PostImageData(

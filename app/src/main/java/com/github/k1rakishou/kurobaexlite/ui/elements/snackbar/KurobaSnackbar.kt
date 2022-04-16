@@ -241,6 +241,48 @@ private fun RowScope.KurobaSnackbarContent(
   val chanTheme = LocalChanTheme.current
   val textSize = if (isTablet) 18.sp else 16.sp
 
+  if (!isToast && hasClickableItems && aliveUntil != null) {
+    val startTime = remember { SystemClock.elapsedRealtime() }
+    var progress by remember { mutableStateOf(1f) }
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        val timeDelta = aliveUntil - startTime
+
+        while (true) {
+          val currentTimeDelta = aliveUntil - SystemClock.elapsedRealtime()
+          if (currentTimeDelta < 0) {
+            break
+          }
+
+          progress = currentTimeDelta.toFloat() / timeDelta.toFloat()
+          delay(16 * 5)
+        }
+
+        progress = 0f
+      }
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+      KurobaComposeLoadingIndicator(
+        progress = progress,
+        modifier = Modifier.wrapContentSize(),
+        indicatorSize = 24.dp
+      )
+
+      val secondsDigit = remember(key1 = progress) {
+        (((aliveUntil - SystemClock.elapsedRealtime()) / 1000) + 1).toString()
+      }
+      KurobaComposeText(
+        text = secondsDigit,
+        fontSize = 12.sp
+      )
+    }
+
+    Spacer(modifier = Modifier.width(8.dp))
+  }
+
   for (snackbarContentItem in content) {
     when (snackbarContentItem) {
       SnackbarContentItem.LoadingIndicator -> {
@@ -282,46 +324,6 @@ private fun RowScope.KurobaSnackbarContent(
           onClick = { onSnackbarClicked(snackbarContentItem, snackbarId) }
         )
       }
-    }
-  }
-
-  if (!isToast && hasClickableItems && aliveUntil != null) {
-    val startTime = remember { SystemClock.elapsedRealtime() }
-    var progress by remember { mutableStateOf(1f) }
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        val timeDelta = aliveUntil - startTime
-
-        while (true) {
-          val currentTimeDelta = aliveUntil - SystemClock.elapsedRealtime()
-          if (currentTimeDelta < 0) {
-            break
-          }
-
-          progress = currentTimeDelta.toFloat() / timeDelta.toFloat()
-          delay(16 * 5)
-        }
-
-        progress = 0f
-      }
-    )
-
-    Box(contentAlignment = Alignment.Center) {
-      KurobaComposeLoadingIndicator(
-        progress = progress,
-        modifier = Modifier.wrapContentSize(),
-        indicatorSize = 24.dp
-      )
-
-      val secondsDigit = remember(key1 = progress) {
-        (((aliveUntil - SystemClock.elapsedRealtime()) / 1000) + 1).toString()
-      }
-      KurobaComposeText(
-        text = secondsDigit,
-        fontSize = 12.sp
-      )
     }
   }
 }

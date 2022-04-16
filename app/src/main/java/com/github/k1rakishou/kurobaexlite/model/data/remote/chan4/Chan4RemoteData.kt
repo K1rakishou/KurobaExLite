@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.model.data.remote.chan4
 
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
@@ -24,9 +23,7 @@ interface PostImageDataJson {
   val fsize: Int?
 
   fun hasImage(): Boolean {
-    return filename.isNotNullNorEmpty()
-      && ext.isNotNullNorEmpty()
-      && tim != null
+    return tim != null
       && w != null
       && h != null
       && fsize != null
