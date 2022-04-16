@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,10 +39,13 @@ import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import java.util.Locale
+import kotlin.time.Duration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import org.koin.core.context.GlobalContext
@@ -117,7 +123,8 @@ fun KurobaSnackbarContainer(
                 isTablet = isTablet,
                 chanTheme = chanTheme,
                 snackbarInfo = snackbarInfo,
-                onSnackbarClicked = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
+                snackbarManager = snackbarManager,
+                dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
               )
             }
           ).ensureSingleElement()
@@ -156,7 +163,8 @@ private fun KurobaSnackbarLayout(
   isTablet: Boolean,
   chanTheme: ChanTheme,
   snackbarInfo: SnackbarInfo,
-  onSnackbarClicked: (SnackbarId) -> Unit
+  snackbarManager: SnackbarManager,
+  dismissSnackbar: (SnackbarId) -> Unit
 ) {
   val isToast = snackbarInfo.isToast
 
@@ -185,7 +193,13 @@ private fun KurobaSnackbarLayout(
       )
       .wrapContentWidth()
       .kurobaClickable(
-        onClick = { onSnackbarClicked(snackbarInfo.snackbarId) }
+        onClick = {
+          if (snackbarInfo.hasClickableItems) {
+            return@kurobaClickable
+          }
+
+          dismissSnackbar(snackbarInfo.snackbarId)
+        }
       ),
     backgroundColor = backgroundColor
   ) {
@@ -201,7 +215,14 @@ private fun KurobaSnackbarLayout(
       KurobaSnackbarContent(
         isTablet = isTablet,
         isToast = isToast,
-        content = snackbarInfo.content
+        hasClickableItems = snackbarInfo.hasClickableItems,
+        aliveUntil = snackbarInfo.aliveUntil,
+        snackbarId = snackbarInfo.snackbarId,
+        content = snackbarInfo.content,
+        onSnackbarClicked = { snackbarClickable, snackbarId ->
+          snackbarManager.onSnackbarElementClicked(snackbarClickable)
+          dismissSnackbar(snackbarId)
+        }
       )
     }
   }
@@ -211,8 +232,13 @@ private fun KurobaSnackbarLayout(
 private fun RowScope.KurobaSnackbarContent(
   isTablet: Boolean,
   isToast: Boolean,
-  content: List<SnackbarContentItem>
+  hasClickableItems: Boolean,
+  aliveUntil: Long?,
+  content: List<SnackbarContentItem>,
+  snackbarId: SnackbarId,
+  onSnackbarClicked: (SnackbarClickable, SnackbarId) -> Unit
 ) {
+  val chanTheme = LocalChanTheme.current
   val textSize = if (isTablet) 18.sp else 16.sp
 
   for (snackbarContentItem in content) {
@@ -245,9 +271,54 @@ private fun RowScope.KurobaSnackbarContent(
           color = textColor,
           maxLines = 3,
           overflow = TextOverflow.Ellipsis,
-          text = snackbarContentItem.text
+          text = snackbarContentItem.formattedText
         )
       }
+      is SnackbarContentItem.Button -> {
+        KurobaComposeTextBarButton(
+          modifier = Modifier.wrapContentSize(),
+          text = snackbarContentItem.formattedText,
+          customTextColor = snackbarContentItem.textColor ?: chanTheme.accentColorCompose,
+          onClick = { onSnackbarClicked(snackbarContentItem, snackbarId) }
+        )
+      }
+    }
+  }
+
+  if (!isToast && hasClickableItems && aliveUntil != null) {
+    val startTime = remember { SystemClock.elapsedRealtime() }
+    var progress by remember { mutableStateOf(1f) }
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        val timeDelta = aliveUntil - startTime
+
+        while (true) {
+          val currentTimeDelta = aliveUntil - SystemClock.elapsedRealtime()
+          if (currentTimeDelta < 0) {
+            break
+          }
+
+          progress = currentTimeDelta.toFloat() / timeDelta.toFloat()
+          delay(16 * 5)
+        }
+
+        progress = 0f
+      }
+    )
+
+    Box(contentAlignment = Alignment.Center) {
+      KurobaComposeLoadingIndicator(
+        progress = progress,
+        modifier = Modifier.wrapContentSize(),
+        indicatorSize = 24.dp
+      )
+
+      val secondsDigit = remember(key1 = progress) {
+        (((aliveUntil - SystemClock.elapsedRealtime()) / 1000) + 1).toString()
+      }
+      KurobaComposeText(text = secondsDigit, fontSize = 12.sp)
     }
   }
 }
@@ -355,6 +426,9 @@ class SnackbarInfo(
   val isToast: Boolean = false
 ) {
 
+  val hasClickableItems: Boolean
+    get() = content.any { contentItem -> contentItem is SnackbarClickable }
+
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
@@ -379,16 +453,40 @@ class SnackbarInfo(
     return result
   }
 
+  companion object {
+    fun snackbarDuration(duration: Duration): Long {
+      return SystemClock.elapsedRealtime() + duration.inWholeMilliseconds
+    }
+  }
+
+}
+
+interface SnackbarClickable {
+  val key: Any
+  val data: Any?
 }
 
 @Stable
 sealed class SnackbarContentItem {
   object LoadingIndicator : SnackbarContentItem()
+
   data class Text(
-    val text: String,
+    private val text: String,
     val textColor: Color? = null,
     val takeWholeWidth: Boolean = true
-  ) : SnackbarContentItem()
+  ) : SnackbarContentItem() {
+    val formattedText by lazy { text.filter { ch -> ch != '\n' } }
+  }
+
+  data class Button(
+    override val key: Any,
+    override val data: Any? = null,
+    private val text: String,
+    val textColor: Color? = null,
+  ) : SnackbarContentItem(), SnackbarClickable {
+    val formattedText by lazy { text.uppercase(Locale.ENGLISH) }
+  }
+
   data class Spacer(val space: Dp) : SnackbarContentItem()
 }
 
@@ -397,6 +495,7 @@ sealed class SnackbarId(
 ) {
   object CatalogOrThreadPostsLoading : SnackbarId("catalog_or_thread_posts_loading")
   object NewPosts : SnackbarId("new_posts")
+  object NavHistoryElementRemoved : SnackbarId("nav_history_element_removed")
 
   class Toast(toastId: String) : SnackbarId(toastId)
 

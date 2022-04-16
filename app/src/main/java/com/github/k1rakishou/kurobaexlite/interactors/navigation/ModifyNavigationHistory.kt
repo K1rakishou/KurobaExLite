@@ -39,4 +39,8 @@ class ModifyNavigationHistory(
     navigationHistoryManager.moveToTop(chanDescriptor)
   }
 
+  suspend fun undoDeletion(prevIndex: Int, navigationElement: NavigationElement) {
+    navigationHistoryManager.insert(prevIndex, navigationElement)
+  }
+
 }

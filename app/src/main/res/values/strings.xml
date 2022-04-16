@@ -58,6 +58,7 @@
     <string name="back">Back</string>
     <string name="close">Close</string>
     <string name="apply">Apply</string>
+    <string name="undo">Undo</string>
 
     <string name="main_activity_press_back_again_to_exit">Press back again to exit the app</string>
 
@@ -138,5 +139,7 @@
     <string name="media_viewer_mpv_unknown_time">--:--</string>
     <string name="media_viewer_mpv_hw_decoding">HW</string>
     <string name="media_viewer_mpv_sw_decoding">SW</string>
+
+    <string name="navigation_history_screen_removed_navigation_item_text">Removed \'%1$s\'</string>
 
 </resources>

@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -99,6 +100,31 @@ fun KurobaComposeLoadingIndicator(
     }
 
     CircularProgressIndicator(
+      color = color,
+      modifier = Modifier
+        .align(Alignment.Center)
+        .size(indicatorSize, indicatorSize)
+    )
+  }
+}
+
+@Composable
+fun KurobaComposeLoadingIndicator(
+  modifier: Modifier = DefaultFillMaxSizeModifier,
+  @FloatRange(from = 0.0, to = 1.0) progress: Float,
+  overrideColor: Color? = null,
+  indicatorSize: Dp = 42.dp
+) {
+  Box(modifier = modifier) {
+    val color = if (overrideColor == null) {
+      val chanTheme = LocalChanTheme.current
+      remember(key1 = chanTheme.accentColor) { Color(chanTheme.accentColor) }
+    } else {
+      overrideColor
+    }
+
+    CircularProgressIndicator(
+      progress = progress,
       color = color,
       modifier = Modifier
         .align(Alignment.Center)

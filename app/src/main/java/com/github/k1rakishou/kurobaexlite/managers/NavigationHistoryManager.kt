@@ -46,7 +46,7 @@ class NavigationHistoryManager {
       when {
         indexOfExisting < 0 -> {
           navigationHistory.add(0, navigationElement)
-          _navigationUpdates.emit(NavigationUpdate.Added(navigationElement))
+          _navigationUpdates.emit(NavigationUpdate.Added(0, navigationElement))
         }
         indexOfExisting > 0 -> {
           navigationHistory.add(0, navigationHistory.removeAt(indexOfExisting))
@@ -55,6 +55,22 @@ class NavigationHistoryManager {
         else -> {
           // Already at 0th index, nothing to do
         }
+      }
+    }
+  }
+
+  suspend fun insert(index: Int, navigationElement: NavigationElement) {
+    mutex.withLock {
+      if (navigationHistory.getOrNull(index) == navigationElement) {
+        return@withLock
+      }
+
+      if (index < 0 || index > navigationHistory.lastIndex) {
+        navigationHistory.add(0, navigationElement)
+        _navigationUpdates.emit(NavigationUpdate.Added(0, navigationElement))
+      } else {
+        navigationHistory.add(index, navigationElement)
+        _navigationUpdates.emit(NavigationUpdate.Added(index, navigationElement))
       }
     }
   }
@@ -90,7 +106,7 @@ class NavigationHistoryManager {
 sealed class NavigationUpdate {
   data class Loaded(val navigationElements: List<NavigationElement>) : NavigationUpdate()
 
-  data class Added(val navigationElement: NavigationElement) : NavigationUpdate()
+  data class Added(val index: Int, val navigationElement: NavigationElement) : NavigationUpdate()
   data class Removed(val navigationElement: NavigationElement) : NavigationUpdate()
   data class Moved(val prevIndex: Int, val navigationElement: NavigationElement) : NavigationUpdate()
 }

@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -34,6 +35,12 @@ class NavigationHistoryScreenViewModel(
   private val _navigationHistoryList = mutableStateListOf<UiNavigationElement>()
   val navigationHistoryList: List<UiNavigationElement>
     get() = _navigationHistoryList
+
+  private val _removedElementsFlow = MutableSharedFlow<Pair<Int, UiNavigationElement>>(
+    extraBufferCapacity = Channel.UNLIMITED
+  )
+  val removedElementsFlow: SharedFlow<Pair<Int, UiNavigationElement>>
+    get() = _removedElementsFlow.asSharedFlow()
 
   private val _scrollNavigationHistoryToTopEvents = MutableSharedFlow<Unit>(
     extraBufferCapacity = 1,
@@ -60,6 +67,12 @@ class NavigationHistoryScreenViewModel(
     }
   }
 
+  fun undoNavElementDeletion(prevIndex: Int, uiNavigationElement: UiNavigationElement) {
+    viewModelScope.launch {
+      modifyNavigationHistory.undoDeletion(prevIndex, uiNavigationElement.toNavigationElement())
+    }
+  }
+
   fun reorderNavigationElement(uiNavigationElement: UiNavigationElement) {
     viewModelScope.launch {
       modifyNavigationHistory.moveToTop(uiNavigationElement.chanDescriptor)
@@ -83,8 +96,14 @@ class NavigationHistoryScreenViewModel(
         _navigationHistoryList.addAll(uiElements)
       }
       is NavigationUpdate.Added -> {
+        val index = navigationUpdate.index
         val uiElement = navigationUpdate.navigationElement.toUiElement()
-        _navigationHistoryList.add(0, uiElement)
+
+        if (index < 0 || index > _navigationHistoryList.lastIndex) {
+          _navigationHistoryList.add(0, uiElement)
+        } else {
+          _navigationHistoryList.add(index, uiElement)
+        }
       }
       is NavigationUpdate.Removed -> {
         val uiElement = navigationUpdate.navigationElement.toUiElement()
@@ -93,6 +112,7 @@ class NavigationHistoryScreenViewModel(
           .indexOfFirst { uiNavigationElement -> uiNavigationElement == uiElement }
         if (index >= 0) {
           _navigationHistoryList.removeAt(index)
+          _removedElementsFlow.tryEmit(Pair(index, uiElement))
         }
       }
       is NavigationUpdate.Moved -> {
@@ -126,6 +146,13 @@ class NavigationHistoryScreenViewModel(
       is NavigationElement.Thread -> {
         UiNavigationElement.Thread(chanDescriptor, title, iconUrl)
       }
+    }
+  }
+
+  private fun UiNavigationElement.toNavigationElement(): NavigationElement {
+    return when (this) {
+      is UiNavigationElement.Catalog -> NavigationElement.Catalog(chanDescriptor)
+      is UiNavigationElement.Thread -> NavigationElement.Thread(chanDescriptor, title, iconUrl)
     }
   }
 

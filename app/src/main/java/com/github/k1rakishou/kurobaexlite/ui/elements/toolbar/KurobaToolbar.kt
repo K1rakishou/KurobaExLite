@@ -313,7 +313,7 @@ fun rightPartBuilder(
           )
 
           if (index != toolbarIcons.lastIndex) {
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
           }
         }
       }

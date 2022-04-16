@@ -41,6 +41,9 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -50,6 +53,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -67,6 +71,7 @@ class NavigationHistoryScreen(
   override fun Content() {
     val chanTheme = LocalChanTheme.current
     val windowInsets = LocalWindowInsets.current
+    val context = LocalContext.current
     val navigationHistoryList = navigationHistoryScreenViewModel.navigationHistoryList
     val circleCropTransformation = remember { CircleCropTransformation() }
     val navElementHeight = 36.dp
@@ -82,6 +87,62 @@ class NavigationHistoryScreen(
 
           if (firstCompletelyVisibleItem.index <= 1) {
             lazyListState.scrollToItem(0)
+          }
+        }
+      })
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        navigationHistoryScreenViewModel.removedElementsFlow.collectLatest { (index, uiNavElement) ->
+          val title = when (uiNavElement) {
+            is UiNavigationElement.Catalog -> {
+              uiNavElement.chanDescriptor.asReadableString()
+            }
+            is UiNavigationElement.Thread -> {
+              uiNavElement.title ?: uiNavElement.chanDescriptor.asReadableString()
+            }
+          }
+
+          snackbarManager.pushSnackbar(
+            SnackbarInfo(
+              snackbarId = SnackbarId.NavHistoryElementRemoved,
+              aliveUntil = SnackbarInfo.snackbarDuration(5.seconds),
+              content = listOf(
+                SnackbarContentItem.Text(
+                  context.getString(R.string.navigation_history_screen_removed_navigation_item_text, title)
+                ),
+                SnackbarContentItem.Spacer(space = 8.dp),
+                SnackbarContentItem.Button(
+                  key = SnackbarButton.UndoNavHistoryDeletion,
+                  text = context.getString(R.string.undo),
+                  data = Pair(index, uiNavElement)
+                ),
+                SnackbarContentItem.Spacer(space = 8.dp),
+              )
+            )
+          )
+        }
+      })
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        snackbarManager.snackbarElementsClickFlow.collectLatest { snackbarClickable ->
+          if (snackbarClickable.key !is SnackbarButton) {
+            return@collectLatest
+          }
+
+          when (snackbarClickable.key as SnackbarButton) {
+            SnackbarButton.UndoNavHistoryDeletion -> {
+              val pair = snackbarClickable.data as? Pair<Int, UiNavigationElement>
+                ?: return@collectLatest
+
+              val prevIndex = pair.first
+              val uiNavigationElement = pair.second
+
+              navigationHistoryScreenViewModel.undoNavElementDeletion(prevIndex, uiNavigationElement)
+            }
           }
         }
       })
@@ -134,7 +195,8 @@ class NavigationHistoryScreen(
     circleCropTransformation: CircleCropTransformation,
   ) {
     Column(
-      modifier = Modifier.animateItemPlacement()
+      modifier = Modifier
+        .animateItemPlacement()
     ) {
       when (navigationElement) {
         is UiNavigationElement.Catalog -> {
@@ -339,6 +401,10 @@ class NavigationHistoryScreen(
   enum class ContentType {
     Catalog,
     Thread
+  }
+
+  enum class SnackbarButton {
+    UndoNavHistoryDeletion
   }
 
   companion object {

@@ -25,6 +25,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
+import kotlin.time.Duration.Companion.seconds
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
@@ -120,10 +121,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         snackbarManager.toast(
           messageId = R.string.main_activity_press_back_again_to_exit,
           toastId = pressBackMessageToastId,
-          duration = pressBackFlagResetTimeMs
+          duration = pressBackFlagResetDuration
         )
 
-        handler.postDelayed({ backPressedOnce = false }, pressBackFlagResetTimeMs.toLong())
+        handler.postDelayed(
+          { backPressedOnce = false },
+          pressBackFlagResetDuration.inWholeMilliseconds
+        )
+
         return@post
       }
 
@@ -149,7 +154,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   }
 
   companion object {
-    private const val pressBackFlagResetTimeMs = 1000
+    private val pressBackFlagResetDuration = 1.seconds
 
     private const val pressBackMessageToastId = "press_back_to_exit_message_toast"
   }

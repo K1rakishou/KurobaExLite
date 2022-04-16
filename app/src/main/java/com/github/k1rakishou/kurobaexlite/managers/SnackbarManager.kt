@@ -6,12 +6,15 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarClickable
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfoEvent
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,6 +30,14 @@ class SnackbarManager(
     get() = _snackbarEventFlow.asSharedFlow()
 
   private val activeSnackbarsFlow = MutableSharedFlow<Map<ScreenKey, List<SnackbarInfo>>>(extraBufferCapacity = Channel.UNLIMITED)
+
+  private val _snackbarElementsClickFlow = MutableSharedFlow<SnackbarClickable>(extraBufferCapacity = Channel.UNLIMITED)
+  val snackbarElementsClickFlow: SharedFlow<SnackbarClickable>
+    get() = _snackbarElementsClickFlow.asSharedFlow()
+
+  fun onSnackbarElementClicked(snackbarClickable: SnackbarClickable) {
+    _snackbarElementsClickFlow.tryEmit(snackbarClickable)
+  }
 
   fun onSnackbarsUpdated(snackbarsByScreenKey: Map<ScreenKey, List<SnackbarInfo>>) {
     activeSnackbarsFlow.tryEmit(snackbarsByScreenKey)
@@ -46,12 +57,12 @@ class SnackbarManager(
     @StringRes messageId: Int,
     toastId: String = nextToastId(),
     screenKey: ScreenKey = MainScreen.SCREEN_KEY,
-    duration: Int = STANDARD_DELAY
+    duration: Duration = STANDARD_DELAY.milliseconds
   ) {
     pushSnackbar(
       SnackbarInfo(
         snackbarId = SnackbarId.Toast(toastId),
-        aliveUntil = SystemClock.elapsedRealtime() + duration,
+        aliveUntil = SnackbarInfo.snackbarDuration(duration),
         screenKey = screenKey,
         content = listOf(
           SnackbarContentItem.Text(
@@ -68,12 +79,12 @@ class SnackbarManager(
     message: String,
     toastId: String = nextToastId(),
     screenKey: ScreenKey = MainScreen.SCREEN_KEY,
-    duration: Int = STANDARD_DELAY
+    duration: Duration = STANDARD_DELAY.milliseconds
   ) {
     pushSnackbar(
       SnackbarInfo(
         snackbarId = SnackbarId.Toast(toastId),
-        aliveUntil = SystemClock.elapsedRealtime() + duration,
+        aliveUntil =SnackbarInfo.snackbarDuration(duration),
         screenKey = screenKey,
         content = listOf(
           SnackbarContentItem.Text(

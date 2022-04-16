@@ -18,6 +18,7 @@ inline class SiteKey(val key: String) : Parcelable {
 @Immutable
 sealed class ChanDescriptor {
   abstract val siteKey: SiteKey
+  abstract fun asReadableString(): String
 }
 
 @Immutable
@@ -38,7 +39,7 @@ data class CatalogDescriptor(
     return buffer
   }
 
-  fun asReadableString(): String {
+  override fun asReadableString(): String {
     return buildString(capacity = 32) {
       append(siteKeyActual)
       append("/")
@@ -93,7 +94,7 @@ data class ThreadDescriptor(
     return buffer
   }
 
-  fun asReadableString(): String {
+  override fun asReadableString(): String {
     return buildString(capacity = 32) {
       append(siteKeyActual)
       append("/")
