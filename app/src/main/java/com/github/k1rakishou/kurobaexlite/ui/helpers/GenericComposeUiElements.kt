@@ -546,8 +546,7 @@ fun Modifier.passClicksThrough(enabled: Boolean = true): Modifier {
   }
 
   return composed {
-    pointerInteropFilter(onTouchEvent = { true })
-      .pointerInput(key1 = Unit, block = { })
+    pointerInteropFilter(onTouchEvent = { false })
   }
 }
 
