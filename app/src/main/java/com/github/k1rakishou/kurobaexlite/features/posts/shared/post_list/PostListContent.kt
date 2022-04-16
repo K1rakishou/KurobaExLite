@@ -83,6 +83,7 @@ internal fun PostListContent(
   postListOptions: PostListOptions,
   postsScreenViewModel: PostScreenViewModel,
   onPostCellClicked: (PostCellData) -> Unit,
+  onPostCellLongClicked: (PostCellData) -> Unit,
   onLinkableClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
   onPostRepliesClicked: (PostDescriptor) -> Unit,
   onPostListScrolled: (Float) -> Unit,
@@ -192,6 +193,7 @@ internal fun PostListContent(
     postListAsync = postListAsync,
     postsScreenViewModel = postsScreenViewModel,
     onPostCellClicked = onPostCellClicked,
+    onPostCellLongClicked = onPostCellLongClicked,
     onPostCellCommentClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
       processClickedAnnotation(
         postsScreenViewModel = postsScreenViewModel,
@@ -308,6 +310,7 @@ private fun PostListInternal(
   postListAsync: AsyncData<PostsState>,
   postsScreenViewModel: PostScreenViewModel,
   onPostCellClicked: (PostCellData) -> Unit,
+  onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
@@ -476,6 +479,7 @@ private fun PostListInternal(
                   )
                 },
                 onPostCellClicked = onPostCellClicked,
+                onPostCellLongClicked = onPostCellLongClicked,
                 onPostCellCommentClicked = onPostCellCommentClicked,
                 onPostRepliesClicked = onPostRepliesClicked,
                 onPostImageClicked = onPostImageClicked,
@@ -622,6 +626,7 @@ private fun LazyListScope.postList(
   canAnimateInsertion: (PostCellData) -> Boolean,
   canAnimateUpdate: (PostCellData, Murmur3Hash?) -> Boolean,
   onPostCellClicked: (PostCellData) -> Unit,
+  onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
@@ -664,6 +669,7 @@ private fun LazyListScope.postList(
         onPostBind = onPostBind,
         onPostUnbind = onPostUnbind,
         onPostCellClicked = onPostCellClicked,
+        onPostCellLongClicked = onPostCellLongClicked,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked,
         onPostImageClicked = onPostImageClicked,
@@ -698,6 +704,7 @@ private fun LazyItemScope.PostCellContainer(
   onPostBind: (PostCellData) -> Unit,
   onPostUnbind: (PostCellData) -> Unit,
   onPostCellClicked: (PostCellData) -> Unit,
+  onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
@@ -709,6 +716,8 @@ private fun LazyItemScope.PostCellContainer(
   val postCellSubjectTextSizeSp = remember(postListOptions) { postListOptions.postCellSubjectTextSizeSp }
   val detectLinkableClicks = remember(postListOptions) { postListOptions.detectLinkableClicks }
 
+  var isInSelectionMode by remember { mutableStateOf(false) }
+
   PostCellContainerAnimated(
     animateInsertion = animateInsertion,
     animateUpdate = animateUpdate,
@@ -718,7 +727,22 @@ private fun LazyItemScope.PostCellContainer(
   ) {
     Column(
       modifier = Modifier
-        .kurobaClickable(onClick = { onPostCellClicked(postCellData) })
+        .kurobaClickable(
+          onClick = {
+            if (isInSelectionMode) {
+              return@kurobaClickable
+            }
+
+            onPostCellClicked(postCellData)
+          },
+          onLongClick = {
+            if (isInSelectionMode) {
+              return@kurobaClickable
+            }
+
+            onPostCellLongClicked(postCellData)
+          }
+        )
         .padding(cellsPadding)
     ) {
       PostCell(
@@ -728,6 +752,7 @@ private fun LazyItemScope.PostCellContainer(
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         postCellData = postCellData,
+        onSelectionModeChanged = { inSelectionModeNow -> isInSelectionMode = inSelectionModeNow },
         onPostBind = onPostBind,
         onPostUnbind = onPostUnbind,
         onPostCellCommentClicked = onPostCellCommentClicked,

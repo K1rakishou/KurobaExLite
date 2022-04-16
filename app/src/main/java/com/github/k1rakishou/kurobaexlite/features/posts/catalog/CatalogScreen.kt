@@ -11,6 +11,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
@@ -19,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
@@ -46,6 +48,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -62,6 +65,10 @@ class CatalogScreen(
 
   private val catalogScreenToolbarActionHandler by lazy {
     CatalogScreenToolbarActionHandler()
+  }
+
+  private val postLongtapContentMenu by lazy {
+    PostLongtapContentMenu(componentActivity, navigationRouter)
   }
 
   private val kurobaToolbarState = KurobaToolbarState(
@@ -259,22 +266,27 @@ class CatalogScreen(
       }
     }
 
+    val coroutineScope = rememberCoroutineScope()
+
     PostListContent(
       modifier = Modifier.fillMaxSize(),
       postListOptions = postListOptions,
       postsScreenViewModel = catalogScreenViewModel,
-      onPostCellClicked = { postData ->
+      onPostCellClicked = { postCellData ->
         // TODO(KurobaEx): come up with a better solution than doing it manually
         uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
 
         val threadDescriptor = ThreadDescriptor(
-          catalogDescriptor = postData.postDescriptor.catalogDescriptor,
-          threadNo = postData.postNo
+          catalogDescriptor = postCellData.postDescriptor.catalogDescriptor,
+          threadNo = postCellData.postNo
         )
 
         threadScreenViewModel.loadThread(threadDescriptor)
       },
-      onLinkableClicked = { postData, linkable ->
+      onPostCellLongClicked = { postCellData ->
+        coroutineScope.launch { postLongtapContentMenu.showMenu(postListOptions, postCellData) }
+      },
+      onLinkableClicked = { postCellData, linkable ->
         // no-op (for now?)
       },
       onPostRepliesClicked = { postDescriptor ->

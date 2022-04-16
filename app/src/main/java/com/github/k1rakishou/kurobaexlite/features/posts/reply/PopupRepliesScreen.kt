@@ -37,6 +37,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
@@ -48,7 +49,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -69,6 +69,10 @@ class PopupRepliesScreen(
 
   private val linkableClickHelper by lazy {
     LinkableClickHelper(componentActivity, navigationRouter)
+  }
+
+  private val postLongtapContentMenu by lazy {
+    PostLongtapContentMenu(componentActivity, navigationRouter)
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -104,12 +108,11 @@ class PopupRepliesScreen(
     }
 
     val density = LocalDensity.current
-    val coroutineScope = rememberCoroutineScope()
     val buttonsHeightPx = with(density) { remember(key1 = buttonsHeight) { buttonsHeight.toPx().toInt() } }
 
     if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
       Layout(
-        content = { BuildPopupRepliesScreenContent(postListOptions, coroutineScope) },
+        content = { BuildPopupRepliesScreenContent(postListOptions) },
         measurePolicy = { measurables, constraints ->
           val placeables = measurables.map { measurable ->
             when (measurable.layoutId) {
@@ -151,11 +154,11 @@ class PopupRepliesScreen(
 
   @Composable
   private fun BuildPopupRepliesScreenContent(
-    postListOptions: PostListOptions,
-    coroutineScope: CoroutineScope
+    postListOptions: PostListOptions
   ) {
     val chanTheme = LocalChanTheme.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
       modifier = Modifier
@@ -165,6 +168,9 @@ class PopupRepliesScreen(
         postListOptions = postListOptions,
         postsScreenViewModel = popupRepliesScreenViewModel,
         onPostCellClicked = { postCellData ->
+        },
+        onPostCellLongClicked = { postCellData ->
+          coroutineScope.launch { postLongtapContentMenu.showMenu(postListOptions, postCellData) }
         },
         onLinkableClicked = { postCellData, linkable ->
           linkableClickHelper.processClickedLinkable(

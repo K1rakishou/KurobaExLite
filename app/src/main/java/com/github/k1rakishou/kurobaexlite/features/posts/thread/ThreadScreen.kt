@@ -11,6 +11,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -23,6 +24,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
@@ -46,6 +48,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -65,6 +68,10 @@ class ThreadScreen(
 
   private val linkableClickHelper by lazy {
     LinkableClickHelper(componentActivity, navigationRouter)
+  }
+
+  private val postLongtapContentMenu by lazy {
+    PostLongtapContentMenu(componentActivity, navigationRouter)
   }
 
   private val kurobaToolbarState by lazy {
@@ -247,12 +254,16 @@ class ThreadScreen(
       }
     }
 
+    val coroutineScope = rememberCoroutineScope()
+
     PostListContent(
       modifier = Modifier.fillMaxSize(),
       postListOptions = postListOptions,
       postsScreenViewModel = threadScreenViewModel,
       onPostCellClicked = { postCellData ->
-        // no-op
+      },
+      onPostCellLongClicked = { postCellData ->
+        coroutineScope.launch { postLongtapContentMenu.showMenu(postListOptions, postCellData) }
       },
       onLinkableClicked = { postCellData, linkable ->
         linkableClickHelper.processClickedLinkable(

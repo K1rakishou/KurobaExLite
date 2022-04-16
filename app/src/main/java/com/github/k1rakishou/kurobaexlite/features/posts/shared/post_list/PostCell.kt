@@ -1,5 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
+import android.os.SystemClock
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,13 +21,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.consumeAllChanges
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.AnnotatedString
@@ -50,6 +55,7 @@ internal fun PostCell(
   postCellCommentTextSizeSp: TextUnit,
   postCellSubjectTextSizeSp: TextUnit,
   postCellData: PostCellData,
+  onSelectionModeChanged: (Boolean) -> Unit,
   onPostBind: (PostCellData) -> Unit,
   onPostUnbind: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
@@ -91,6 +97,7 @@ internal fun PostCell(
       isCatalogMode = isCatalogMode,
       detectLinkableClicks = detectLinkableClicks,
       postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+      onSelectionModeChanged = onSelectionModeChanged,
       onPostCellCommentClicked = onPostCellCommentClicked
     )
 
@@ -127,7 +134,9 @@ private fun PostCellTitle(
       Box(
         modifier = Modifier
           .wrapContentSize()
-          .onGloballyPositioned { layoutCoordinates -> boundsInWindowMut = layoutCoordinates.boundsInWindow() }
+          .onGloballyPositioned { layoutCoordinates ->
+            boundsInWindowMut = layoutCoordinates.boundsInWindow()
+          }
           .kurobaClickable(
             onClick = {
               val boundsInWindow = boundsInWindowMut
@@ -193,13 +202,17 @@ private fun PostCellComment(
   isCatalogMode: Boolean,
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
+  onSelectionModeChanged: (Boolean) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val clickedTextBackgroundColorMap = remember(key1 = chanTheme) { createClickableTextColorMap(chanTheme) }
 
   if (postComment.isNotNullNorBlank()) {
-    PostCellCommentSelectionWrapper(isCatalogMode = isCatalogMode) {
+    PostCellCommentSelectionWrapper(
+      isCatalogMode = isCatalogMode,
+      onSelectionModeChanged = onSelectionModeChanged
+    ) {
       KurobaComposeClickableText(
         modifier = Modifier
           .fillMaxWidth()
@@ -224,15 +237,69 @@ private fun PostCellComment(
   }
 }
 
+/**
+ * This wrapper changes the default long tap to start text selection gesture to tap + long tap one.
+ * This is needed because the regular long tap is used to show the content menu.
+ * */
 @Composable
-private fun PostCellCommentSelectionWrapper(isCatalogMode: Boolean, content: @Composable () -> Unit) {
-  val contentMovable = remember { movableContentOf(content) }
+private fun PostCellCommentSelectionWrapper(
+  isCatalogMode: Boolean,
+  onSelectionModeChanged: (Boolean) -> Unit,
+  content: @Composable () -> Unit
+) {
+  var inSelectionMode by remember { mutableStateOf<Boolean?>(null) }
+  var tapUpEventTime by remember { mutableStateOf<Long>(0) }
 
-  if (isCatalogMode) {
-    contentMovable()
+  val gestureDetectorModifier = if (!isCatalogMode) {
+    Modifier
+      .pointerInput(
+        key1 = Unit,
+        block = {
+          forEachGesture {
+            val down = awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
+
+            val downTime = SystemClock.elapsedRealtime()
+            if (downTime - tapUpEventTime < 500L) {
+              return@forEachGesture
+            }
+
+            val up = awaitPointerEventScope { waitForUpOrCancellation() }
+            val upTime = SystemClock.elapsedRealtime()
+
+            if (inSelectionMode == true) {
+              onSelectionModeChanged(false)
+              inSelectionMode = false
+              tapUpEventTime = 0
+              return@forEachGesture
+            }
+
+            if (up == null || (upTime - downTime) > 150) {
+              return@forEachGesture
+            }
+
+            down.consumeAllChanges()
+            up.consumeAllChanges()
+
+            onSelectionModeChanged(true)
+            inSelectionMode = true
+
+            tapUpEventTime = SystemClock.elapsedRealtime()
+          }
+        }
+      )
   } else {
-    SelectionContainer {
-      contentMovable()
+    Modifier
+  }
+
+  Box(
+    modifier = gestureDetectorModifier
+  ) {
+    if (!isCatalogMode && inSelectionMode == true) {
+      SelectionContainer {
+        content()
+      }
+    } else {
+      content()
     }
   }
 }

@@ -142,4 +142,7 @@
 
     <string name="navigation_history_screen_removed_navigation_item_text">Removed \'%1$s\'</string>
 
+    <string name="post_longtap_menu_mark_post_as_own">Mark post as mine</string>
+    <string name="post_longtap_menu_unmark_post_as_own">Unmark post as mine</string>
+
 </resources>
