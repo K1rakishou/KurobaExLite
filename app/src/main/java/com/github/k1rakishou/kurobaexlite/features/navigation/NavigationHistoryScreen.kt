@@ -107,7 +107,7 @@ class NavigationHistoryScreen(
           snackbarManager.pushSnackbar(
             SnackbarInfo(
               snackbarId = SnackbarId.NavHistoryElementRemoved,
-              aliveUntil = SnackbarInfo.snackbarDuration(5.seconds),
+              aliveUntil = SnackbarInfo.snackbarDuration(3.seconds),
               content = listOf(
                 SnackbarContentItem.Text(
                   context.getString(R.string.navigation_history_screen_removed_navigation_item_text, title)

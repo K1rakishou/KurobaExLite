@@ -318,7 +318,10 @@ private fun RowScope.KurobaSnackbarContent(
       val secondsDigit = remember(key1 = progress) {
         (((aliveUntil - SystemClock.elapsedRealtime()) / 1000) + 1).toString()
       }
-      KurobaComposeText(text = secondsDigit, fontSize = 12.sp)
+      KurobaComposeText(
+        text = secondsDigit,
+        fontSize = 12.sp
+      )
     }
   }
 }
