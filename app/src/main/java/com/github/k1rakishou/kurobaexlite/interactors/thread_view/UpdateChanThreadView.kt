@@ -1,11 +1,11 @@
-package com.github.k1rakishou.kurobaexlite.interactors
+package com.github.k1rakishou.kurobaexlite.interactors.thread_view
 
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
+import com.github.k1rakishou.kurobaexlite.model.data.entity.CatalogOrThreadKey
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadLocalPostKey
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanThreadView
-import com.github.k1rakishou.kurobaexlite.model.database.CatalogOrThreadKey
-import com.github.k1rakishou.kurobaexlite.model.database.ChanThreadViewEntity
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
-import com.github.k1rakishou.kurobaexlite.model.database.ThreadLocalPostKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import logcat.asLog

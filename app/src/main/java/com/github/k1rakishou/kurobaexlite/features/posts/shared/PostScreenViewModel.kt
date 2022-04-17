@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared
 
 import android.os.SystemClock
 import androidx.compose.ui.text.AnnotatedString
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -17,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedCatalog
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedThread
+import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
@@ -61,7 +61,6 @@ import org.koin.java.KoinJavaComponent.inject
 
 abstract class PostScreenViewModel(
   private val application: KurobaExLiteApplication,
-  protected val savedStateHandle: SavedStateHandle
 ) : BaseAndroidViewModel(application) {
   protected val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
   protected val chanCache: ChanCache by inject(ChanCache::class.java)
@@ -75,6 +74,7 @@ abstract class PostScreenViewModel(
   protected val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   protected val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   protected val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
+  protected val loadMarkedPosts: LoadMarkedPosts by inject(LoadMarkedPosts::class.java)
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
@@ -119,7 +119,11 @@ abstract class PostScreenViewModel(
     }
 
     postScreenState.updateChanDescriptor(threadDescriptor)
-    postScreenState.onStartLoading()
+    postScreenState.onStartLoading(threadDescriptor)
+
+    if (threadDescriptor != null) {
+      loadMarkedPosts.load(threadDescriptor)
+    }
 
     updatePostsParsedOnceJob?.cancel()
     updatePostsParsedOnceJob = null
@@ -133,7 +137,7 @@ abstract class PostScreenViewModel(
     }
 
     postScreenState.updateChanDescriptor(catalogDescriptor)
-    postScreenState.onStartLoading()
+    postScreenState.onStartLoading(catalogDescriptor)
 
     updatePostsParsedOnceJob?.cancel()
     updatePostsParsedOnceJob = null
@@ -141,30 +145,36 @@ abstract class PostScreenViewModel(
     _postsFullyParsedOnceFlow.emit(false)
   }
 
-  suspend fun onThreadLoadingEnd(threadDescriptor: ThreadDescriptor) {
-    appSettings.lastVisitedThread.write(LastVisitedThread.fromThreadDescriptor(threadDescriptor))
+  suspend fun onThreadLoadingEnd(threadDescriptor: ThreadDescriptor?) {
+    if (threadDescriptor != null) {
+      appSettings.lastVisitedThread.write(LastVisitedThread.fromThreadDescriptor(threadDescriptor))
 
-    chanCache.onCatalogOrThreadAccessed(threadDescriptor)
-    postScreenState.onEndLoading()
-    modifyNavigationHistory.threadLoaded(threadDescriptor)
+      chanCache.onCatalogOrThreadAccessed(threadDescriptor)
+      modifyNavigationHistory.threadLoaded(threadDescriptor)
 
-    updatePostsParsedOnceJob = viewModelScope.launch {
-      delay(250L)
-      _postsFullyParsedOnceFlow.emit(true)
+      updatePostsParsedOnceJob = viewModelScope.launch {
+        delay(250L)
+        _postsFullyParsedOnceFlow.emit(true)
+      }
     }
+
+    postScreenState.onEndLoading(threadDescriptor)
   }
 
-  suspend fun onCatalogLoadingEnd(catalogDescriptor: CatalogDescriptor) {
-    appSettings.lastVisitedCatalog.write(LastVisitedCatalog.fromCatalogDescriptor(catalogDescriptor))
+  suspend fun onCatalogLoadingEnd(catalogDescriptor: CatalogDescriptor?) {
+    if (catalogDescriptor != null) {
+      appSettings.lastVisitedCatalog.write(LastVisitedCatalog.fromCatalogDescriptor(catalogDescriptor))
 
-    chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
-    postScreenState.onEndLoading()
-    modifyNavigationHistory.catalogLoaded(catalogDescriptor)
+      chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
+      modifyNavigationHistory.catalogLoaded(catalogDescriptor)
 
-    updatePostsParsedOnceJob = viewModelScope.launch {
-      delay(250L)
-      _postsFullyParsedOnceFlow.emit(true)
+      updatePostsParsedOnceJob = viewModelScope.launch {
+        delay(250L)
+        _postsFullyParsedOnceFlow.emit(true)
+      }
     }
+
+    postScreenState.onEndLoading(catalogDescriptor)
   }
 
   fun rememberPosition(
@@ -201,13 +211,66 @@ abstract class PostScreenViewModel(
   }
 
   fun reparsePost(postCellData: PostCellData, parsedPostDataContext: ParsedPostDataContext) {
-    viewModelScope.launch(globalConstants.postParserDispatcher) {
-      val chanTheme = themeEngine.chanTheme
+    reparsePosts(listOf(Pair(postCellData, parsedPostDataContext)))
+  }
 
+  fun reparsePosts(postCellDataList: List<Pair<PostCellData, ParsedPostDataContext>>) {
+    if (postCellDataList.isEmpty()) {
+      return
+    }
+
+    viewModelScope.launch(globalConstants.postParserDispatcher) {
+      reparsePostsSuspend(postCellDataList)
+    }
+  }
+
+  suspend fun reparsePostsSuspend(postCellDataList: List<Pair<PostCellData, ParsedPostDataContext>>) {
+    if (postCellDataList.isEmpty()) {
+      return
+    }
+
+    val chanTheme = themeEngine.chanTheme
+
+    postCellDataList.forEach { (postCellData, parsedPostDataContext) ->
       val parsedPostData = parsedPostDataCache.calculateParsedPostData(
         postCellData = postCellData,
         chanTheme = chanTheme,
         parsedPostDataContext = parsedPostDataContext
+      )
+
+      postScreenState.insertOrUpdate(postCellData.copy(parsedPostData = parsedPostData))
+    }
+  }
+
+  fun reparsePostsByDescriptors(postDescriptors: Collection<PostDescriptor>) {
+    if (postDescriptors.isEmpty()) {
+      return
+    }
+
+    viewModelScope.launch(globalConstants.postParserDispatcher) {
+      reparsePostsByDescriptorsSuspend(postDescriptors)
+    }
+  }
+
+  suspend fun reparsePostsByDescriptorsSuspend(postDescriptors: Collection<PostDescriptor>) {
+    if (postDescriptors.isEmpty()) {
+      return
+    }
+
+    val chanTheme = themeEngine.chanTheme
+
+    val postCellDataList = postScreenState.getPosts(postDescriptors)
+      .filter { postCellData -> postCellData.parsedPostDataContext != null }
+
+    if (postCellDataList.isEmpty()) {
+      return
+    }
+
+    postCellDataList.forEach { postCellData ->
+      val parsedPostData = parsedPostDataCache.calculateParsedPostData(
+        postCellData = postCellData,
+        chanTheme = chanTheme,
+        parsedPostDataContext = postCellData.parsedPostDataContext!!
       )
 
       postScreenState.insertOrUpdate(postCellData.copy(parsedPostData = parsedPostData))
@@ -302,9 +365,12 @@ abstract class PostScreenViewModel(
         .takeIf { index -> index >= 0 }
         ?: 0
 
-      for (index in startIndex until (startIndex + count)) {
-        val postData = postCellDataList.getOrNull(index) ?: break
+      val postDataListSlice = postCellDataList.slice(startIndex until (startIndex + count))
+      if (postDataListSlice.isEmpty()) {
+        return@withContext
+      }
 
+      for (postData in postDataListSlice) {
         calculatePostData(
           chanDescriptor = chanDescriptor,
           postData = postData,

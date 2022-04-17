@@ -7,7 +7,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
@@ -19,9 +18,12 @@ import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
+import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
+import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -46,10 +48,10 @@ import logcat.asLog
 class ParsedPostDataCache(
   private val appContext: Context,
   private val coroutineScope: CoroutineScope,
-  private val globalConstants: GlobalConstants,
   private val postCommentParser: PostCommentParser,
   private val postCommentApplier: PostCommentApplier,
-  private val postReplyChainManager: PostReplyChainManager
+  private val postReplyChainManager: PostReplyChainManager,
+  private val markedPostManager: MarkedPostManager
 ) {
   private val mutex = Mutex()
 
@@ -235,7 +237,7 @@ class ParsedPostDataCache(
   suspend fun calculateParsedPostData(
     postData: IPostData,
     parsedPostDataContext: ParsedPostDataContext,
-    chanTheme: ChanTheme
+    chanTheme: ChanTheme,
   ): ParsedPostData {
     return calculateParsedPostData(
       originalPostOrder = postData.originalPostOrder,
@@ -248,14 +250,14 @@ class ParsedPostDataCache(
       images = postData.images,
       postDescriptor = postData.postDescriptor,
       parsedPostDataContext = parsedPostDataContext,
-      chanTheme = chanTheme
+      chanTheme = chanTheme,
     )
   }
 
   suspend fun calculateParsedPostData(
     postCellData: PostCellData,
     parsedPostDataContext: ParsedPostDataContext,
-    chanTheme: ChanTheme
+    chanTheme: ChanTheme,
   ): ParsedPostData {
     return calculateParsedPostData(
       originalPostOrder = postCellData.originalPostOrder,
@@ -268,7 +270,7 @@ class ParsedPostDataCache(
       images = postCellData.images,
       postDescriptor = postCellData.postDescriptor,
       parsedPostDataContext = parsedPostDataContext,
-      chanTheme = chanTheme
+      chanTheme = chanTheme,
     )
   }
 
@@ -283,7 +285,7 @@ class ParsedPostDataCache(
     images: List<IPostImage>?,
     postDescriptor: PostDescriptor,
     parsedPostDataContext: ParsedPostDataContext,
-    chanTheme: ChanTheme
+    chanTheme: ChanTheme,
   ): ParsedPostData {
     BackgroundUtils.ensureBackgroundThread()
 
@@ -298,11 +300,29 @@ class ParsedPostDataCache(
       }
 
       val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
+        markedPosts = getMarkedPostInfoSetForQuoteSpans(textParts),
         chanTheme = chanTheme,
         textParts = textParts,
         parsedPostDataContext = parsedPostDataContext
       )
+
       val postSubjectParsed = HtmlUnescape.unescape(postSubjectUnparsed)
+
+      val isPostMarkedAsMine = markedPostManager.getMarkedPosts(postDescriptor)
+        .any { markedPost -> markedPost.markedPostType == MarkedPostType.MyPost }
+
+      val isReplyToPostMarkedAsMine = kotlin.run {
+        val repliesTo = postReplyChainManager.getRepliesTo(postDescriptor)
+
+        return@run markedPostManager.getManyMarkedPosts(repliesTo)
+          .takeIf { map -> map.isNotEmpty() }
+          ?.any { (_, markedPosts) ->
+            markedPosts.takeIf { posts -> posts.isNotEmpty() }
+              ?.any { markedPost -> markedPost.markedPostType == MarkedPostType.MyPost }
+              ?: false
+          }
+          ?: false
+      }
 
       return ParsedPostData(
         parsedPostParts = textParts,
@@ -325,6 +345,8 @@ class ParsedPostDataCache(
           threadPostersTotal = threadPostersTotal,
           parsedPostDataContext = parsedPostDataContext
         ),
+        isPostMarkedAsMine = isPostMarkedAsMine,
+        isReplyToPostMarkedAsMine = isReplyToPostMarkedAsMine,
         parsedPostDataContext = parsedPostDataContext,
       )
     } catch (error: Throwable) {
@@ -338,9 +360,31 @@ class ParsedPostDataCache(
         parsedPostSubject = "",
         processedPostSubject = AnnotatedString(""),
         postFooterText = AnnotatedString(""),
+        isPostMarkedAsMine = false,
+        isReplyToPostMarkedAsMine = false,
         parsedPostDataContext = parsedPostDataContext,
       )
     }
+  }
+
+  private suspend fun getMarkedPostInfoSetForQuoteSpans(
+    textParts: List<PostCommentParser.TextPart>
+  ): Map<PostDescriptor, Set<MarkedPost>> {
+    val foundQuotes = mutableSetOf<PostDescriptor>()
+
+    for (textPart in textParts) {
+      for (span in textPart.spans) {
+        if (span is PostCommentParser.TextPartSpan.Linkable.Quote && !span.crossThread) {
+          foundQuotes += span.postDescriptor
+        }
+      }
+    }
+
+    if (foundQuotes.isEmpty()) {
+      return emptyMap()
+    }
+
+    return markedPostManager.getManyMarkedPosts(foundQuotes)
   }
 
   private suspend fun processReplyChains(

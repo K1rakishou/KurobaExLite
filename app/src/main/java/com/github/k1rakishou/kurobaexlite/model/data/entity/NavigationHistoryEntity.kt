@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.model.database
+package com.github.k1rakishou.kurobaexlite.model.data.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao

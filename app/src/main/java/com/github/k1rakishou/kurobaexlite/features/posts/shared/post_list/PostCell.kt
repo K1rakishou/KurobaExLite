@@ -1,12 +1,14 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
 import android.os.SystemClock
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,16 +28,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -74,40 +82,100 @@ internal fun PostCell(
       onDispose { onPostUnbind(postCellData) }
     })
 
-  Column(
+  Row(
     modifier = Modifier
-      .fillMaxWidth()
       .wrapContentHeight()
       .padding(vertical = 8.dp)
   ) {
-    PostCellTitle(
-      chanDescriptor = chanDescriptor,
-      postCellData = postCellData,
-      postSubject = postSubject,
-      postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-      onPostImageClicked = onPostImageClicked,
-      reparsePostSubject = reparsePostSubject
-    )
+    var columnSizeMut by remember { mutableStateOf<IntSize?>(null) }
+    val columnSize = columnSizeMut
 
-    Spacer(modifier = Modifier.height(4.dp))
+    Column(
+      modifier = Modifier
+        .weight(1f)
+        .onSizeChanged { size -> columnSizeMut = size }
+    ) {
+      PostCellTitle(
+        chanDescriptor = chanDescriptor,
+        postCellData = postCellData,
+        postSubject = postSubject,
+        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+        onPostImageClicked = onPostImageClicked,
+        reparsePostSubject = reparsePostSubject
+      )
 
-    PostCellComment(
-      postCellData = postCellData,
-      postComment = postComment,
-      isCatalogMode = isCatalogMode,
-      detectLinkableClicks = detectLinkableClicks,
-      postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-      onSelectionModeChanged = onSelectionModeChanged,
-      onPostCellCommentClicked = onPostCellCommentClicked
-    )
+      Spacer(modifier = Modifier.height(4.dp))
 
-    PostCellFooter(
-      postCellData = postCellData,
-      postFooterText = postFooterText,
-      postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-      onPostRepliesClicked = onPostRepliesClicked
-    )
+      PostCellComment(
+        postCellData = postCellData,
+        postComment = postComment,
+        isCatalogMode = isCatalogMode,
+        detectLinkableClicks = detectLinkableClicks,
+        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+        onSelectionModeChanged = onSelectionModeChanged,
+        onPostCellCommentClicked = onPostCellCommentClicked
+      )
+
+      PostCellFooter(
+        postCellData = postCellData,
+        postFooterText = postFooterText,
+        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+        onPostRepliesClicked = onPostRepliesClicked
+      )
+    }
+
+    if (columnSize != null) {
+      PostCellMarks(columnSize, postCellData)
+    }
   }
+}
+
+@Composable
+private fun RowScope.PostCellMarks(columnSize: IntSize, postCellData: PostCellData) {
+  val parsedPostData = postCellData.parsedPostData
+    ?: return
+
+  if (!parsedPostData.isPostMarkedAsMine && !parsedPostData.isReplyToPostMarkedAsMine) {
+    return
+  }
+
+  val chanTheme = LocalChanTheme.current
+  val heightDp = with(LocalDensity.current) { columnSize.height.toDp() }
+  val totalCanvasWidth = 3.dp
+  val lineWidthPx = with(LocalDensity.current) { remember { totalCanvasWidth.toPx() } }
+  val pathEffect = remember { PathEffect.dashPathEffect(floatArrayOf(20f, 10f), 0f) }
+
+  Spacer(modifier = Modifier.width(4.dp))
+
+  Canvas(
+    modifier = Modifier
+      .width(totalCanvasWidth)
+      .height(heightDp),
+    onDraw = {
+      when {
+        parsedPostData.isPostMarkedAsMine -> {
+          drawLine(
+            color = chanTheme.postSavedReplyColorCompose,
+            strokeWidth = lineWidthPx,
+            start = Offset.Zero,
+            end = Offset(0f, size.height)
+          )
+        }
+        parsedPostData.isReplyToPostMarkedAsMine -> {
+          drawLine(
+            color = chanTheme.postSavedReplyColorCompose,
+            strokeWidth = lineWidthPx,
+            start = Offset.Zero,
+            end = Offset(0f, size.height),
+            pathEffect = pathEffect
+          )
+        }
+        else -> {
+          unreachable()
+        }
+      }
+    }
+  )
 }
 
 @Composable

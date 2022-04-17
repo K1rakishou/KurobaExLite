@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.thread
 
 import android.os.SystemClock
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -15,8 +14,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
-import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
-import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
+import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
+import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
@@ -36,8 +35,7 @@ import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreenViewModel(
   application: KurobaExLiteApplication,
-  savedStateHandle: SavedStateHandle
-) : PostScreenViewModel(application, savedStateHandle) {
+) : PostScreenViewModel(application) {
   private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
 
   private val loadChanThreadView: LoadChanThreadView by inject(LoadChanThreadView::class.java)
@@ -256,6 +254,7 @@ class ThreadScreenViewModel(
       threadAutoUpdater.stopAutoUpdaterLoop()
       threadScreenState.lastLoadErrorState.value = error
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      onThreadLoadingEnd(threadDescriptor)
 
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
@@ -266,6 +265,7 @@ class ThreadScreenViewModel(
     val postLoadResult = postLoadResultMaybe.unwrap()
     if (postLoadResult == null || threadDescriptor == null) {
       threadScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
+      onThreadLoadingEnd(threadDescriptor)
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
 
@@ -274,6 +274,7 @@ class ThreadScreenViewModel(
 
     if (postLoadResult.isEmpty()) {
       val postsAsyncData = threadScreenState.postsAsyncDataState.value
+      onThreadLoadingEnd(threadDescriptor)
       _postsFullyParsedOnceFlow.emit(true)
 
       if (loadOptions.showLoadingIndicator || postsAsyncData !is AsyncData.Data) {

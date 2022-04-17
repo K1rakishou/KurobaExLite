@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.state
 
 import android.os.SystemClock
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -17,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.java.KoinJavaComponent.inject
 
+@Stable
 class PostsState(
   val chanDescriptor: ChanDescriptor
 ) {
@@ -39,6 +41,21 @@ class PostsState(
 
   fun postIndexByPostDescriptor(postDescriptor: PostDescriptor): Int? {
     return postIndexes[postDescriptor]
+  }
+
+  fun getPosts(postDescriptors: Collection<PostDescriptor>): List<PostCellData> {
+    val resultList = mutableListWithCap<PostCellData>(postDescriptors.size)
+
+    postDescriptors.forEach { postDescriptor ->
+      val postIndex = postIndexes[postDescriptor]
+        ?: return@forEach
+      val postCellData = allPosts.getOrNull(postIndex)?.value
+        ?: return@forEach
+
+      resultList += postCellData
+    }
+
+    return resultList
   }
 
   fun onSearchQueryUpdated(searchQuery: String?) {

@@ -76,6 +76,12 @@ class FloatingMenuScreen(
 
   @Composable
   override fun FloatingContent() {
+    // Make sure menuItems is never empty
+    LaunchedEffect(
+      key1 = menuItems,
+      block = { check(menuItems.isNotEmpty()) { "menuItems is empty!" } }
+    )
+
     val orientationMut by uiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
     if (orientation == null) {
@@ -441,8 +447,18 @@ class FloatingMenuScreen(
 sealed class FloatingMenuItem {
   abstract val menuItemKey: Any
 
+  val data: Any?
+    get() {
+      if (this is Text) {
+        return menuItemData
+      }
+
+      return null
+    }
+
   data class Text(
     override val menuItemKey: Any,
+    val menuItemData: Any? = null,
     val text: MenuItemText,
     val subText: MenuItemText? = null
   ) : FloatingMenuItem()

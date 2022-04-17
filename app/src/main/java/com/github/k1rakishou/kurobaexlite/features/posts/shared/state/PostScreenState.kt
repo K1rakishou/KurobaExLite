@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+@Stable
 abstract class PostScreenState(
   private val checkFirstPostIsOriginal: Boolean
 ) {
@@ -36,6 +37,15 @@ abstract class PostScreenState(
   private val _contentLoaded = MutableStateFlow(false)
   val contentLoaded: StateFlow<Boolean>
     get() = _contentLoaded.asStateFlow()
+
+  fun getPosts(postDescriptors: Collection<PostDescriptor>): List<PostCellData> {
+    val postAsyncData = postsAsyncDataState.value
+    if (postAsyncData !is AsyncData.Data) {
+      return emptyList()
+    }
+
+    return postAsyncData.data.getPosts(postDescriptors)
+  }
 
   @CallSuper
   open fun insertOrUpdate(postCellData: PostCellData) {
@@ -64,11 +74,11 @@ abstract class PostScreenState(
     _chanDescriptorFlow.value = chanDescriptor
   }
 
-  fun onStartLoading() {
+  suspend fun onStartLoading(chanDescriptor: ChanDescriptor?) {
     _contentLoaded.value = false
   }
 
-  fun onEndLoading() {
+  suspend fun onEndLoading(chanDescriptor: ChanDescriptor?) {
     _contentLoaded.value = true
   }
 

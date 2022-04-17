@@ -6,15 +6,19 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
+import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 
 class PostCommentApplier {
 
-  fun applyTextPartsToAnnotatedString(
+  suspend fun applyTextPartsToAnnotatedString(
     chanTheme: ChanTheme,
+    markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     textParts: List<PostCommentParser.TextPart>,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
@@ -25,6 +29,7 @@ class PostCommentApplier {
 
       for (textPart in textParts) {
         val (text, overflowHappened) = processTextPart(
+          markedPosts = markedPosts,
           chanTheme = chanTheme,
           textPart = textPart,
           parsedPostDataContext = parsedPostDataContext,
@@ -42,7 +47,8 @@ class PostCommentApplier {
   }
 
   @Suppress("UnnecessaryVariable")
-  private fun processTextPart(
+  private suspend fun processTextPart(
+    markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     chanTheme: ChanTheme,
     textPart: PostCommentParser.TextPart,
     parsedPostDataContext: ParsedPostDataContext,
@@ -62,6 +68,7 @@ class PostCommentApplier {
 
       if (textPart.spans.isNotEmpty()) {
         processTextPartSpans(
+          markedPosts = markedPosts,
           spans = textPart.spans,
           chanTheme = chanTheme,
           parsedPostDataContext = parsedPostDataContext,
@@ -79,6 +86,7 @@ class PostCommentApplier {
   }
 
   private fun AnnotatedString.Builder.processTextPartSpans(
+    markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     spans: List<PostCommentParser.TextPartSpan>,
     chanTheme: ChanTheme,
     parsedPostDataContext: ParsedPostDataContext,
@@ -180,14 +188,26 @@ class PostCommentApplier {
                   linethrough = true
                 }
 
-                bold = parsedPostDataContext.markedPostDescriptor == span.postDescriptor
+                val markedPostInfoSet = markedPosts[span.postDescriptor]
+                if (markedPostInfoSet != null && markedPostInfoSet.isNotEmpty()) {
+                  markedPostInfoSet.forEach { markedPost ->
+                    when (markedPost.markedPostType) {
+                      MarkedPostType.MyPost -> {
+                        this.append(" ")
+                        this.append(YOU_POSTFIX)
+                      }
+                    }
+                  }
+                }
+
+                bold = parsedPostDataContext.highlightedPostDescriptor == span.postDescriptor
               }
 
               fgColor = if (span is PostCommentParser.TextPartSpan.Linkable.Url) {
                 chanTheme.postLinkColorCompose
               } else if (
                 span is PostCommentParser.TextPartSpan.Linkable.Quote
-                && parsedPostDataContext.markedPostDescriptor == span.postDescriptor
+                && parsedPostDataContext.highlightedPostDescriptor == span.postDescriptor
               ) {
                 ThemeEngine.manipulateColor(chanTheme.postQuoteColorCompose, 0.7f)
               } else {
@@ -337,6 +357,7 @@ class PostCommentApplier {
     private const val CROSS_THREAD_POSTFIX = '\u2192'
     private const val OP_POSTFIX = "(OP)"
     private const val DEAD_POSTFIX = "(DEAD)"
+    private const val YOU_POSTFIX = "(You)"
 
     val ALL_TAGS = mutableSetOf(
       ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG,

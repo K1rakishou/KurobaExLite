@@ -2,9 +2,9 @@ package com.github.k1rakishou.kurobaexlite.interactors.navigation
 
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
-import com.github.k1rakishou.kurobaexlite.model.database.CatalogOrThreadKey
+import com.github.k1rakishou.kurobaexlite.model.data.entity.CatalogOrThreadKey
+import com.github.k1rakishou.kurobaexlite.model.data.entity.NavigationHistoryEntity
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
-import com.github.k1rakishou.kurobaexlite.model.database.NavigationHistoryEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

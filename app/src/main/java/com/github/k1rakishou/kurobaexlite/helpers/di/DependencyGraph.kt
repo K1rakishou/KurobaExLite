@@ -6,6 +6,7 @@ import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import coil.disk.DiskCache
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
+import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
@@ -30,14 +31,17 @@ import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClien
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.GetSiteBoardList
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
-import com.github.k1rakishou.kurobaexlite.interactors.LoadChanThreadView
-import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanCatalogView
-import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanThreadView
+import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
+import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.PersistNavigationHistory
+import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
+import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
+import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
+import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -64,7 +68,10 @@ object DependencyGraph {
   ): List<Module> {
     val modules = mutableListOf<Module>()
 
-    modules += module {
+    // Create everything eagerly to check for cycle dependencies when using dev builds
+    val createAtStart = BuildConfig.FLAVOR_TYPE == 2
+
+    modules += module(createdAtStart = createAtStart) {
       system(application, appCoroutineScope)
       generic()
       kurobaDiskLruCache()
@@ -109,10 +116,10 @@ object DependencyGraph {
       ParsedPostDataCache(
         appContext = get(),
         coroutineScope = get(),
-        globalConstants = get(),
         postCommentParser = get(),
         postCommentApplier = get(),
-        postReplyChainManager = get()
+        postReplyChainManager = get(),
+        markedPostManager = get()
       )
     }
     single { SiteDataPersister(appContext = get(), moshi = get()) }
@@ -127,6 +134,7 @@ object DependencyGraph {
     single { SnackbarManager(appContext = get()) }
     single { UiInfoManager(appContext = get(), appSettings = get(), coroutineScope = get()) }
     single { NavigationHistoryManager() }
+    single { MarkedPostManager() }
   }
 
   private fun Module.viewModels() {
@@ -140,13 +148,11 @@ object DependencyGraph {
     viewModel {
       CatalogScreenViewModel(
         application = get(),
-        savedStateHandle = get()
       )
     }
     viewModel {
       ThreadScreenViewModel(
-        application = get<KurobaExLiteApplication>(),
-        savedStateHandle = get()
+        application = get(),
       )
     }
     viewModel {
@@ -155,7 +161,6 @@ object DependencyGraph {
     viewModel {
       PopupRepliesScreenViewModel(
         application = get(),
-        savedStateHandle = get()
       )
     }
     viewModel {
@@ -221,6 +226,13 @@ object DependencyGraph {
     }
     single {
       PersistNavigationHistory(navigationHistoryManager = get(), kurobaExLiteDatabase = get())
+    }
+
+    single {
+      LoadMarkedPosts(markedPostManager = get(), kurobaExLiteDatabase = get())
+    }
+    single {
+      ModifyMarkedPosts(markedPostManager = get(), kurobaExLiteDatabase = get())
     }
   }
 

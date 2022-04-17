@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.reply
 
 import android.util.LruCache
-import androidx.lifecycle.SavedStateHandle
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
@@ -19,8 +18,7 @@ import kotlinx.coroutines.withContext
 
 class PopupRepliesScreenViewModel(
   application: KurobaExLiteApplication,
-  savedStateHandle: SavedStateHandle
-) : PostScreenViewModel(application, savedStateHandle) {
+) : PostScreenViewModel(application) {
   private val threadScreenState = PopupPostsScreenState()
   private val postReplyChainStack = mutableListOf<PopupRepliesScreen.ReplyViewMode>()
 
@@ -98,6 +96,8 @@ class PopupRepliesScreenViewModel(
   fun clearPostReplyChainStack() {
     postScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
     postReplyChainStack.clear()
+    parsedReplyToCache.evictAll()
+    parsedReplyFromCache.evictAll()
   }
 
   private suspend fun loadRepliesFrom(replyViewMode: PopupRepliesScreen.ReplyViewMode.RepliesFrom): Boolean {
@@ -171,8 +171,11 @@ class PopupRepliesScreenViewModel(
         )?.parsedPostDataContext
 
         val newParsedPostDataContext = oldParsedPostDataContext
-          ?.copy(markedPostDescriptor = forPostDescriptor)
-          ?: ParsedPostDataContext(isParsingCatalog = false, markedPostDescriptor = forPostDescriptor)
+          ?.copy(highlightedPostDescriptor = forPostDescriptor)
+          ?: ParsedPostDataContext(
+            isParsingCatalog = false,
+            highlightedPostDescriptor = forPostDescriptor
+          )
 
         val parsedPostData = parsedPostDataCache.getOrCalculateParsedPostData(
           chanDescriptor = oldPostData.postDescriptor.threadDescriptor,

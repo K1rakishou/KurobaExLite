@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.interactors
+package com.github.k1rakishou.kurobaexlite.interactors.thread_view
 
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanThreadView

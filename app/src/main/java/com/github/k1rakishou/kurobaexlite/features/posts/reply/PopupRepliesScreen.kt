@@ -167,10 +167,21 @@ class PopupRepliesScreen(
       PostListContent(
         postListOptions = postListOptions,
         postsScreenViewModel = popupRepliesScreenViewModel,
-        onPostCellClicked = { postCellData ->
-        },
+        onPostCellClicked = { postCellData -> /*no-op*/ },
         onPostCellLongClicked = { postCellData ->
-          coroutineScope.launch { postLongtapContentMenu.showMenu(postListOptions, postCellData) }
+          coroutineScope.launch {
+            postLongtapContentMenu.showMenu(
+              coroutineScope = coroutineScope,
+              postListOptions = postListOptions,
+              postCellData = postCellData,
+              reparsePostsFunc = { postDescriptors ->
+                popupRepliesScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+
+                // Reparse the threadScreenViewModel posts too
+                threadScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+              }
+            )
+          }
         },
         onLinkableClicked = { postCellData, linkable ->
           linkableClickHelper.processClickedLinkable(
@@ -217,14 +228,10 @@ class PopupRepliesScreen(
 
           navigationRouter.presentScreen(mediaViewerScreen)
         },
-        onPostListScrolled = { delta ->
-        },
-        onPostListTouchingTopOrBottomStateChanged = { touching ->
-        },
-        onPostListDragStateChanged = { dragging ->
-        },
-        onFastScrollerDragStateChanged = { dragging ->
-        },
+        onPostListScrolled = { delta -> /*no-op*/ },
+        onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
+        onPostListDragStateChanged = { dragging -> /*no-op*/ },
+        onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
         loadingContent = { isInPopup -> /*no-op*/ },
       )
     }

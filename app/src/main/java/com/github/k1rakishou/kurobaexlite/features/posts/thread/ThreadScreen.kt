@@ -263,7 +263,16 @@ class ThreadScreen(
       onPostCellClicked = { postCellData ->
       },
       onPostCellLongClicked = { postCellData ->
-        coroutineScope.launch { postLongtapContentMenu.showMenu(postListOptions, postCellData) }
+        coroutineScope.launch {
+          postLongtapContentMenu.showMenu(
+            coroutineScope = coroutineScope,
+            postListOptions = postListOptions,
+            postCellData = postCellData,
+            reparsePostsFunc = { postDescriptors ->
+              threadScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+            }
+          )
+        }
       },
       onLinkableClicked = { postCellData, linkable ->
         linkableClickHelper.processClickedLinkable(

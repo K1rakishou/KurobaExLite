@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.catalog
 
 import android.os.SystemClock
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -15,7 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
-import com.github.k1rakishou.kurobaexlite.interactors.UpdateChanCatalogView
+import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -32,21 +31,18 @@ import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreenViewModel(
   application: KurobaExLiteApplication,
-  savedStateHandle: SavedStateHandle
-) : PostScreenViewModel(application, savedStateHandle) {
+) : PostScreenViewModel(application) {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
-
   private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
-
   private val catalogScreenState = CatalogScreenPostsState()
-  private var loadCatalogJob: Job? = null
-
-  override val postScreenState: PostScreenState = catalogScreenState
-
   private val updateChanCatalogViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
+
+  private var loadCatalogJob: Job? = null
 
   val catalogDescriptor: CatalogDescriptor?
     get() = chanDescriptor as? CatalogDescriptor
+
+  override val postScreenState: PostScreenState = catalogScreenState
 
   override suspend fun onViewModelReady() {
     loadPrevVisitedCatalog()
@@ -136,6 +132,7 @@ class CatalogScreenViewModel(
 
       catalogScreenState.lastLoadErrorState.value = error
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      onCatalogLoadingEnd(catalogDescriptor)
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
 
@@ -145,6 +142,7 @@ class CatalogScreenViewModel(
     val postsLoadResult = postsLoadResultMaybe.unwrap()
     if (postsLoadResult == null || catalogDescriptor == null) {
       catalogScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
+      onCatalogLoadingEnd(catalogDescriptor)
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
 
@@ -155,6 +153,7 @@ class CatalogScreenViewModel(
       val error = CatalogDisplayException("Catalog /${catalogDescriptor}/ has no posts")
 
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      onCatalogLoadingEnd(catalogDescriptor)
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
 

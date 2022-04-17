@@ -7,6 +7,12 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.withTransaction
 import com.github.k1rakishou.kurobaexlite.helpers.Try
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewDao
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.MarkedPostDao
+import com.github.k1rakishou.kurobaexlite.model.data.entity.MarkedPostEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.NavigationHistoryDao
+import com.github.k1rakishou.kurobaexlite.model.data.entity.NavigationHistoryEntity
 import java.util.concurrent.Executors
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -14,7 +20,8 @@ import kotlinx.coroutines.withContext
 @Database(
   entities = [
     ChanThreadViewEntity::class,
-    NavigationHistoryEntity::class
+    NavigationHistoryEntity::class,
+    MarkedPostEntity::class
   ],
   version = 1,
   exportSchema = true
@@ -65,4 +72,5 @@ abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
 interface Daos {
   val chanThreadViewDao: ChanThreadViewDao
   val navigationHistoryDao: NavigationHistoryDao
+  val markedPostDao: MarkedPostDao
 }

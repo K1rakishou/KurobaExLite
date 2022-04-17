@@ -284,7 +284,16 @@ class CatalogScreen(
         threadScreenViewModel.loadThread(threadDescriptor)
       },
       onPostCellLongClicked = { postCellData ->
-        coroutineScope.launch { postLongtapContentMenu.showMenu(postListOptions, postCellData) }
+        coroutineScope.launch {
+          postLongtapContentMenu.showMenu(
+            coroutineScope = coroutineScope,
+            postListOptions = postListOptions,
+            postCellData = postCellData,
+            reparsePostsFunc = { postDescriptors ->
+              catalogScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+            }
+          )
+        }
       },
       onLinkableClicked = { postCellData, linkable ->
         // no-op (for now?)

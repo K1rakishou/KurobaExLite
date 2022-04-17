@@ -15,6 +15,8 @@ data class ParsedPostData(
   val processedPostComment: AnnotatedString,
   val processedPostSubject: AnnotatedString,
   val postFooterText: AnnotatedString?,
+  val isPostMarkedAsMine: Boolean,
+  val isReplyToPostMarkedAsMine: Boolean,
   val parsedPostDataContext: ParsedPostDataContext
 ) {
 
@@ -25,6 +27,8 @@ data class ParsedPostData(
       .combine(MurmurHashUtils.murmurhash3_x64_128(parsedPostSubject))
       .combine(MurmurHashUtils.murmurhash3_x64_128(processedPostSubject))
       .combine(MurmurHashUtils.murmurhash3_x64_128(postFooterText))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(isPostMarkedAsMine))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(isReplyToPostMarkedAsMine))
       .combine(parsedPostDataContext.murmurhash())
   }
 
@@ -36,7 +40,7 @@ data class ParsedPostDataContext(
   val isParsingCatalog: Boolean,
   val revealFullPostComment: Boolean = false,
   val textSpoilerOpenedPositionSet: Set<SpoilerPosition> = emptySet(),
-  val markedPostDescriptor: PostDescriptor? = null
+  val highlightedPostDescriptor: PostDescriptor? = null
 ) {
   val isParsingThread: Boolean = !isParsingCatalog
 
@@ -56,7 +60,7 @@ data class ParsedPostDataContext(
     return MurmurHashUtils.murmurhash3_x64_128(isParsingCatalog)
       .combine(MurmurHashUtils.murmurhash3_x64_128(revealFullPostComment))
       .combine(MurmurHashUtils.murmurhash3_x64_128(textSpoilerOpenedPositionSet))
-      .combine(MurmurHashUtils.murmurhash3_x64_128(markedPostDescriptor))
+      .combine(MurmurHashUtils.murmurhash3_x64_128(highlightedPostDescriptor))
   }
 
 }

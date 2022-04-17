@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "a00c037b6082b4245f2a60c9b3dc4676",
+    "identityHash": "6d24521182a9f242c9de50b7b3c94e2e",
     "entities": [
       {
         "tableName": "chan_thread_view",
@@ -137,12 +137,66 @@
         },
         "indices": [],
         "foreignKeys": []
+      },
+      {
+        "tableName": "mark_post",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`type` INTEGER NOT NULL, `marked_post_site_key` TEXT NOT NULL, `marked_post_board_code` TEXT NOT NULL, `marked_post_thread_no` INTEGER NOT NULL, `marked_post_post_no` INTEGER NOT NULL, `marked_post_post_sub_no` INTEGER NOT NULL, PRIMARY KEY(`marked_post_site_key`, `marked_post_board_code`, `marked_post_thread_no`, `marked_post_post_no`, `marked_post_post_sub_no`))",
+        "fields": [
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postKey.siteKey",
+            "columnName": "marked_post_site_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postKey.boardCode",
+            "columnName": "marked_post_board_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postKey.threadNo",
+            "columnName": "marked_post_thread_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postKey.postNo",
+            "columnName": "marked_post_post_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "postKey.postSubNo",
+            "columnName": "marked_post_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "marked_post_site_key",
+            "marked_post_board_code",
+            "marked_post_thread_no",
+            "marked_post_post_no",
+            "marked_post_post_sub_no"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a00c037b6082b4245f2a60c9b3dc4676')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6d24521182a9f242c9de50b7b3c94e2e')"
     ]
   }
 }
