@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.helpers.di
 
 import android.app.Application
 import android.content.Context
+import coil.Coil
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import coil.disk.DiskCache
@@ -277,12 +278,15 @@ object DependencyGraph {
       val applicationContext = get<Context>().applicationContext
       val diskCacheInit = { get<DiskCache>() }
 
-      return@single ImageLoader.Builder(applicationContext)
+      val imageLoader = ImageLoader.Builder(applicationContext)
         .apply {
           components {
             diskCache(diskCacheInit)
           }
         }.build()
+
+      Coil.setImageLoader(imageLoader)
+      return@single imageLoader
     }
   }
 
