@@ -264,21 +264,11 @@ private fun RowScope.KurobaSnackbarContent(
       }
     )
 
-    Box(contentAlignment = Alignment.Center) {
-      KurobaComposeLoadingIndicator(
-        progress = progress,
-        modifier = Modifier.wrapContentSize(),
-        indicatorSize = 24.dp
-      )
-
-      val secondsDigit = remember(key1 = progress) {
-        (((aliveUntil - SystemClock.elapsedRealtime()) / 1000) + 1).toString()
-      }
-      KurobaComposeText(
-        text = secondsDigit,
-        fontSize = 12.sp
-      )
-    }
+    KurobaComposeLoadingIndicator(
+      progress = progress,
+      modifier = Modifier.wrapContentSize(),
+      indicatorSize = 24.dp
+    )
 
     Spacer(modifier = Modifier.width(8.dp))
   }
