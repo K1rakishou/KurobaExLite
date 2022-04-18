@@ -76,6 +76,7 @@ fun HomeScreenToolbarContainer(
   val isDraggingPostList by toolbarVisibilityInfo.postListDragState.collectAsState()
   val isDraggingFastScroller by toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
   val screensUsingSearch by toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
+  val replyLayoutOpened by toolbarVisibilityInfo.replyLayoutOpened.collectAsState()
 
   val combinedToolbarState by remember(key1 = currentScreenKey) {
     derivedStateOf {
@@ -85,6 +86,7 @@ fun HomeScreenToolbarContainer(
         touchingTopOrBottomOfList = touchingTopOrBottomOfList,
         isDraggingPostList = isDraggingPostList,
         isDraggingFastScroller = isDraggingFastScroller,
+        replyLayoutOpened = replyLayoutOpened,
         mainUiLayoutMode = mainUiLayoutMode,
         screensUsingSearch = screensUsingSearch
       )
@@ -108,6 +110,7 @@ fun HomeScreenToolbarContainer(
     targetValueByState = { state ->
       when {
         state.currentScreenKey in state.screensUsingSearch -> 1f
+        state.replyLayoutOpened -> 1f
         state.mainUiLayoutMode == MainUiLayoutMode.Split -> 1f
         state.isDraggingFastScroller -> 0f
         state.touchingTopOrBottomOfList -> 1f
@@ -236,6 +239,7 @@ private data class CombinedToolbarState(
   val touchingTopOrBottomOfList: Boolean,
   val isDraggingPostList: Boolean,
   val isDraggingFastScroller: Boolean,
+  val replyLayoutOpened: Boolean,
   val mainUiLayoutMode: MainUiLayoutMode,
   val screensUsingSearch: Set<ScreenKey>
 )

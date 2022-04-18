@@ -30,12 +30,17 @@ class ToolbarVisibilityInfo {
   val childScreensUsingSearch: StateFlow<Set<ScreenKey>>
     get() = _childScreensUsingSearch.asStateFlow()
 
+  private val _replyLayoutOpened = MutableStateFlow(false)
+  val replyLayoutOpened: StateFlow<Boolean>
+    get() = _replyLayoutOpened.asStateFlow()
+
   fun update(
     postListScrollState: Float? = null,
     postListTouchingTopOrBottomState: Boolean? = null,
     postListDragState: Boolean? = null,
     fastScrollerDragState: Boolean? = null,
     hasLoadError: Boolean? = null,
+    replyLayoutOpened: Boolean? = null,
     childScreenSearchInfo: ChildScreenSearchInfo? = null
   ) {
     postListScrollState?.let { _postListScrollState.value = it }
@@ -43,6 +48,7 @@ class ToolbarVisibilityInfo {
     postListDragState?.let { _postListDragState.value = it }
     fastScrollerDragState?.let { _fastScrollerDragState.value = it }
     hasLoadError?.let { _hasLoadError.value = it }
+    replyLayoutOpened?.let { _replyLayoutOpened.value = it }
 
     childScreenSearchInfo?.let { screenSearchInfo ->
       val prevValue = _childScreensUsingSearch.value.toMutableSet()

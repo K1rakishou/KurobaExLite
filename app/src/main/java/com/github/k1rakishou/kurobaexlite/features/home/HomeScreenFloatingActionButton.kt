@@ -38,7 +38,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
   pagerState: PagerState,
   childScreens: List<ComposeScreenWithToolbar>,
   mainUiLayoutMode: MainUiLayoutMode,
-  homeScreenViewModel: HomeScreenViewModel
+  onFabClicked: (ScreenKey) -> Unit
 ) {
   require(childScreens.isNotEmpty()) { "childScreens is empty!" }
 
@@ -67,6 +67,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
   val isDraggingFastScroller by toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
   val screensUsingSearch by toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
   val hasLoadError by toolbarVisibilityInfo.hasLoadError.collectAsState()
+  val replyLayoutOpened by toolbarVisibilityInfo.replyLayoutOpened.collectAsState()
   val screenContentLoaded by currentScreen.screenContentLoadedFlow.collectAsState()
 
   LaunchedEffect(
@@ -88,6 +89,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
         screenHasFab = currentScreen.hasFab,
         screenContentLoaded = screenContentLoaded,
         hasLoadError = hasLoadError,
+        replyLayoutOpened = replyLayoutOpened,
         screensUsingSearch = screensUsingSearch
       )
     }
@@ -114,6 +116,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
         state.activeSnackbarsCount > 0 -> 0f
         state.screensUsingSearch.isNotEmpty() -> 0f
         state.hasLoadError -> 0f
+        state.replyLayoutOpened -> 0f
         state.isDraggingFastScroller -> 0f
         state.touchingTopOrBottomOfList -> 1f
         state.isDraggingPostList -> state.postListScrollPosition
@@ -133,9 +136,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
     iconDrawableId = R.drawable.ic_baseline_create_24,
     horizOffset = -(horizOffset),
     vertOffset = -(insets.bottom + vertOffset),
-    onClick = {
-      homeScreenViewModel.onFabClicked(currentScreenKey)
-    }
+    onClick = { onFabClicked(currentScreenKey) }
   )
 }
 
@@ -148,5 +149,6 @@ private data class CombinedFabState(
   val screenHasFab: Boolean,
   val screenContentLoaded: Boolean,
   val hasLoadError: Boolean,
+  val replyLayoutOpened: Boolean,
   val screensUsingSearch: Set<ScreenKey>
 )

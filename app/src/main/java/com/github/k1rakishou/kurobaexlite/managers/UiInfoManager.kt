@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Point
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.unit.Density
@@ -13,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ChildScreenSearchInfo
@@ -40,6 +42,7 @@ class UiInfoManager(
   private val resources by lazy { appContext.resources }
   private val toolbarHeight by lazy { resources.getDimension(R.dimen.toolbar_height) }
   private val toolbarVisibilityInfoMap = mutableMapOf<ScreenKey, ToolbarVisibilityInfo>()
+  private val replyLayoutVisibilityInfoMap = mutableMapOf<ScreenKey, MutableState<ReplyLayoutVisibility>>()
 
   private val _lastTouchPosition = Point(0, 0)
   val lastTouchPosition: Point
@@ -294,6 +297,31 @@ class UiInfoManager(
     )
 
     toolbarVisibilityInfo.update(childScreenSearchInfo = childScreenSearchInfo)
+  }
+
+  fun replyLayoutVisibilityInfoStateForScreen(screenKey: ScreenKey): State<ReplyLayoutVisibility> {
+    return replyLayoutVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { mutableStateOf(ReplyLayoutVisibility.Closed) }
+    )
+  }
+
+  fun replyLayoutVisibilityStateChanged(
+    screenKey: ScreenKey,
+    replyLayoutVisibility: ReplyLayoutVisibility
+  ) {
+    val replyLayoutVisibilityState = replyLayoutVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { mutableStateOf(replyLayoutVisibility) }
+    )
+    replyLayoutVisibilityState.value = replyLayoutVisibility
+
+    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { ToolbarVisibilityInfo() }
+    )
+
+    toolbarVisibilityInfo.update(replyLayoutOpened = replyLayoutVisibility != ReplyLayoutVisibility.Closed)
   }
 
   // TODO(KurobaEx):

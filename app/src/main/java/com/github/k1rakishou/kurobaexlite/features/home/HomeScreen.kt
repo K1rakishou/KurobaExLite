@@ -295,7 +295,7 @@ class HomeScreen(
         pagerState = pagerState,
         childScreens = childScreens.screens,
         mainUiLayoutMode = mainUiLayoutMode,
-        homeScreenViewModel = homeScreenViewModel
+        onFabClicked = { screenKey -> homeScreenViewModel.onHomeScreenFabClicked(screenKey) }
       )
 
       if (drawerWidth > 0) {

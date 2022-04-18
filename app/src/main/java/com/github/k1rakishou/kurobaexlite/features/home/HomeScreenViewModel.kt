@@ -6,7 +6,10 @@ import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import logcat.logcat
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class HomeScreenViewModel(
   application: KurobaExLiteApplication,
@@ -14,13 +17,16 @@ class HomeScreenViewModel(
   private val snackbarManager: SnackbarManager
 ) : BaseAndroidViewModel(application) {
 
+  private val _homeScreenFabClickEventFlow = MutableSharedFlow<ScreenKey>(extraBufferCapacity = Channel.UNLIMITED)
+  val homeScreenFabClickEventFlow: SharedFlow<ScreenKey>
+    get() = _homeScreenFabClickEventFlow.asSharedFlow()
+
   fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor? {
     return siteManager.resolveDescriptorFromRawIdentifier(rawIdentifier)
   }
 
-  fun onFabClicked(screenKey: ScreenKey) {
-    logcat { "onFabClicked($screenKey)" }
-    snackbarManager.toast("FAB clicked ${screenKey}")
+  fun onHomeScreenFabClicked(screenKey: ScreenKey) {
+    _homeScreenFabClickEventFlow.tryEmit(screenKey)
   }
 
 }

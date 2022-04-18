@@ -28,6 +28,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostLi
 import com.github.k1rakishou.kurobaexlite.features.posts.sort.SortCatalogThreadsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -48,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -70,6 +74,8 @@ class CatalogScreen(
   private val postLongtapContentMenu by lazy {
     PostLongtapContentMenu(componentActivity, navigationRouter)
   }
+
+  private val replyLayoutState = ReplyLayoutState(SCREEN_KEY)
 
   private val kurobaToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
@@ -199,6 +205,10 @@ class CatalogScreen(
   @Composable
   override fun Content() {
     HandleBackPresses {
+      if (replyLayoutState.onBackPressed()) {
+        return@HandleBackPresses true
+      }
+
       if (kurobaToolbarState.onBackPressed()) {
         return@HandleBackPresses true
       }
@@ -241,13 +251,21 @@ class CatalogScreen(
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val fabSize = dimensionResource(id = R.dimen.fab_size)
     val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
+    val replyLayoutOpenedHeight = dimensionResource(id = R.dimen.reply_layout_opened_height)
 
     val kurobaSnackbarState = rememberKurobaSnackbarState()
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+    val replyLayoutVisibilityInfoStateForScreen by uiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
 
-    val postListOptions by remember {
+    val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
       derivedStateOf {
+        val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
+          ReplyLayoutVisibility.Closed -> windowInsets.bottom
+          ReplyLayoutVisibility.Opened,
+          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutOpenedHeight
+        }
+
         PostListOptions(
           isCatalogMode = isCatalogScreen,
           isInPopup = false,
@@ -255,7 +273,7 @@ class CatalogScreen(
           ownerScreenKey = screenKey,
           contentPadding = PaddingValues(
             top = toolbarHeight + windowInsets.top,
-            bottom = windowInsets.bottom + fabSize + fabVertOffset
+            bottom = bottomPadding + fabSize + fabVertOffset
           ),
           mainUiLayoutMode = mainUiLayoutMode,
           postCellCommentTextSizeSp = postCellCommentTextSizeSp,
@@ -336,11 +354,34 @@ class CatalogScreen(
         screenKey = screenKey,
         screenContentLoadedFlow = screenContentLoadedFlow,
         mainUiLayoutMode = mainUiLayoutMode,
-        homeScreenViewModel = homeScreenViewModel,
         uiInfoManager = uiInfoManager,
-        snackbarManager = snackbarManager
+        snackbarManager = snackbarManager,
+        onFabClicked = { clickedFabScreenKey ->
+          if (screenKey != clickedFabScreenKey) {
+            return@PostsScreenFloatingActionButton
+          }
+
+          replyLayoutState.openReplyLayout()
+        }
+      )
+    } else {
+      LaunchedEffect(
+        key1 = Unit,
+        block = {
+          homeScreenViewModel.homeScreenFabClickEventFlow.collectLatest { clickedFabScreenKey ->
+            if (screenKey != clickedFabScreenKey) {
+              return@collectLatest
+            }
+
+            replyLayoutState.openReplyLayout()
+          }
+        }
       )
     }
+
+    ReplyLayoutContainer(
+      replyLayoutState = replyLayoutState
+    )
 
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),

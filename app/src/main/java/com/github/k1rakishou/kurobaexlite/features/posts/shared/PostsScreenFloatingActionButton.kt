@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
@@ -36,9 +35,9 @@ fun BoxScope.PostsScreenFloatingActionButton(
   screenKey: ScreenKey,
   screenContentLoadedFlow: StateFlow<Boolean>,
   mainUiLayoutMode: MainUiLayoutMode,
-  homeScreenViewModel: HomeScreenViewModel,
   uiInfoManager: UiInfoManager,
-  snackbarManager: SnackbarManager
+  snackbarManager: SnackbarManager,
+  onFabClicked: (ScreenKey) -> Unit
 ) {
   if (mainUiLayoutMode != MainUiLayoutMode.Split) {
     return
@@ -52,6 +51,7 @@ fun BoxScope.PostsScreenFloatingActionButton(
 
   var activeSnackbarsCount by remember { mutableStateOf(0) }
   val screensUsingSearch by toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
+  val replyLayoutOpened by toolbarVisibilityInfo.replyLayoutOpened.collectAsState()
   val screenContentLoaded by screenContentLoadedFlow.collectAsState()
 
   LaunchedEffect(
@@ -67,6 +67,7 @@ fun BoxScope.PostsScreenFloatingActionButton(
       CombinedFabState(
         activeSnackbarsCount = activeSnackbarsCount,
         screenContentLoaded = screenContentLoaded,
+        replyLayoutOpened = replyLayoutOpened,
         screensUsingSearch = screensUsingSearch
       )
     }
@@ -84,6 +85,7 @@ fun BoxScope.PostsScreenFloatingActionButton(
       when {
         !state.screenContentLoaded -> 0f
         state.activeSnackbarsCount > 0 -> 0f
+        state.replyLayoutOpened -> 0f
         state.screensUsingSearch.isNotEmpty() -> 0f
         else -> 1f
       }
@@ -101,12 +103,13 @@ fun BoxScope.PostsScreenFloatingActionButton(
     iconDrawableId = R.drawable.ic_baseline_create_24,
     horizOffset = -(horizOffset),
     vertOffset = -(insets.bottom + vertOffset),
-    onClick = { homeScreenViewModel.onFabClicked(screenKey) }
+    onClick = { onFabClicked(screenKey) }
   )
 }
 
 private data class CombinedFabState(
   val activeSnackbarsCount: Int,
   val screenContentLoaded: Boolean,
+  val replyLayoutOpened: Boolean,
   val screensUsingSearch: Set<ScreenKey>
 )

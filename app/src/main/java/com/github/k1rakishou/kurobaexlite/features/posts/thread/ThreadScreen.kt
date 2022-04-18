@@ -29,6 +29,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -48,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -73,6 +77,8 @@ class ThreadScreen(
   private val postLongtapContentMenu by lazy {
     PostLongtapContentMenu(componentActivity, navigationRouter)
   }
+
+  private val replyLayoutState = ReplyLayoutState(SCREEN_KEY)
 
   private val kurobaToolbarState by lazy {
     val mainUiLayoutMode = requireNotNull(uiInfoManager.currentUiLayoutModeState.value) {
@@ -183,6 +189,10 @@ class ThreadScreen(
   @Composable
   override fun Content() {
     HandleBackPresses {
+      if (replyLayoutState.onBackPressed()) {
+        return@HandleBackPresses true
+      }
+
       if (kurobaToolbarState.onBackPressed()) {
         return@HandleBackPresses true
       }
@@ -229,13 +239,21 @@ class ThreadScreen(
 
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
+    val replyLayoutOpenedHeight = dimensionResource(id = R.dimen.reply_layout_opened_height)
 
     val kurobaSnackbarState = rememberKurobaSnackbarState()
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+    val replyLayoutVisibilityInfoStateForScreen by uiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
 
-    val postListOptions by remember {
+    val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
       derivedStateOf {
+        val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
+          ReplyLayoutVisibility.Closed -> windowInsets.bottom
+          ReplyLayoutVisibility.Opened,
+          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutOpenedHeight
+        }
+
         PostListOptions(
           isCatalogMode = isCatalogScreen,
           isInPopup = false,
@@ -243,7 +261,7 @@ class ThreadScreen(
           pullToRefreshEnabled = true,
           contentPadding = PaddingValues(
             top = toolbarHeight + windowInsets.top,
-            bottom = windowInsets.bottom + fabVertOffset
+            bottom = bottomPadding + fabVertOffset
           ),
           mainUiLayoutMode = mainUiLayoutMode,
           postCellCommentTextSizeSp = postCellCommentTextSizeSp,
@@ -326,11 +344,34 @@ class ThreadScreen(
         screenKey = screenKey,
         screenContentLoadedFlow = screenContentLoadedFlow,
         mainUiLayoutMode = mainUiLayoutMode,
-        homeScreenViewModel = homeScreenViewModel,
         uiInfoManager = uiInfoManager,
-        snackbarManager = snackbarManager
+        snackbarManager = snackbarManager,
+        onFabClicked = { clickedFabScreenKey ->
+          if (screenKey != clickedFabScreenKey) {
+            return@PostsScreenFloatingActionButton
+          }
+
+          replyLayoutState.openReplyLayout()
+        }
+      )
+    } else {
+      LaunchedEffect(
+        key1 = Unit,
+        block = {
+          homeScreenViewModel.homeScreenFabClickEventFlow.collectLatest { clickedFabScreenKey ->
+            if (screenKey != clickedFabScreenKey) {
+              return@collectLatest
+            }
+
+            replyLayoutState.openReplyLayout()
+          }
+        }
       )
     }
+
+    ReplyLayoutContainer(
+      replyLayoutState = replyLayoutState
+    )
 
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),
