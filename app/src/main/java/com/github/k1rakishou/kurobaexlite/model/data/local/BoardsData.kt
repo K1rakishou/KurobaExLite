@@ -13,7 +13,8 @@ data class BoardsData(
 data class SiteBoard(
   val catalogDescriptor: CatalogDescriptor,
   val boardTitle: String?,
-  val boardDescription: String?
+  val boardDescription: String?,
+  val workSafe: Boolean
 )
 
 @JsonClass(generateAdapter = true)
@@ -35,14 +36,16 @@ data class PersistableSiteBoard(
   @Json(name = "site_key") val siteKey: String,
   @Json(name = "board_code") val boardCode: String,
   @Json(name = "board_title") val boardTitle: String?,
-  @Json(name = "board_description") val boardDescription: String?
+  @Json(name = "board_description") val boardDescription: String?,
+  @Json(name = "work_safe") val workSafe: Boolean?
 ) {
 
   fun toSiteBoard(): SiteBoard {
     return SiteBoard(
       catalogDescriptor = CatalogDescriptor(SiteKey(siteKey), boardCode),
       boardTitle = boardTitle,
-      boardDescription = boardDescription
+      boardDescription = boardDescription,
+      workSafe = workSafe == true
     )
   }
 
@@ -53,7 +56,8 @@ data class PersistableSiteBoard(
         siteKey = siteBoard.catalogDescriptor.siteKeyActual,
         boardCode = siteBoard.catalogDescriptor.boardCode,
         boardTitle = siteBoard.boardTitle,
-        boardDescription = siteBoard.boardDescription
+        boardDescription = siteBoard.boardDescription,
+        workSafe = siteBoard.workSafe
       )
     }
   }

@@ -252,7 +252,8 @@ class Chan4DataSource(
           return@mapNotNull SiteBoard(
             catalogDescriptor = CatalogDescriptor(input, boardCode),
             boardTitle = boardTitle,
-            boardDescription = boardDescription
+            boardDescription = boardDescription,
+            workSafe = boardDataJson.workSafe == 1
           )
         }
 

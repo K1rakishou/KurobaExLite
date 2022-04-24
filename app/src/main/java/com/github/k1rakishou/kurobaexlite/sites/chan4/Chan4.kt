@@ -1,6 +1,11 @@
-package com.github.k1rakishou.kurobaexlite.sites
+package com.github.k1rakishou.kurobaexlite.sites.chan4
 
+import android.content.Context
+import com.github.k1rakishou.kurobaexlite.helpers.appendCookieHeader
+import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
+import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
@@ -12,27 +17,50 @@ import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.sites.RequestModifier
+import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
+import com.github.k1rakishou.kurobaexlite.sites.Site
+import com.github.k1rakishou.kurobaexlite.sites.SiteCaptcha
+import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
+import com.github.k1rakishou.kurobaexlite.sites.settings.SiteSettings
+import com.squareup.moshi.Moshi
+import logcat.logcat
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.Request
 import org.koin.java.KoinJavaComponent.inject
 
-class Chan4 : Site {
+class Chan4(
+  private val appContext: Context
+) : Site {
   private val chan4DataSource by inject<Chan4DataSource>(Chan4DataSource::class.java)
+  private val appSettings by inject<AppSettings>(AppSettings::class.java)
+  private val moshi by inject<Moshi>(Moshi::class.java)
+  private val proxiedOkHttpClient by inject<ProxiedOkHttpClient>(ProxiedOkHttpClient::class.java)
 
   private val chan4CatalogInfo by lazy { CatalogInfo(chan4DataSource) }
   private val chan4ThreadInfo by lazy { ThreadInfo(chan4DataSource) }
   private val chan4BoardsInfo by lazy { BoardsInfo(chan4DataSource) }
   private val chan4PostImageInfo by lazy { PostImageInfo() }
+  private val chan4RequestModifier by lazy { Chan4RequestModifier(this, appSettings) }
+  private val chan4SiteSettings by lazy { Chan4SiteSettings(appContext, moshi) }
+  private val chan4ReplyInfo by lazy { Chan4ReplyInfo(this, proxiedOkHttpClient) }
+
   private val icon by lazy { "https://s.4cdn.org/image/favicon.ico".toHttpUrl() }
 
   override val siteKey: SiteKey = SITE_KEY
   override val readableName: String = "4chan"
+  override val siteCaptcha: SiteCaptcha = SiteCaptcha.Chan4Captcha
+  override val siteSettings: SiteSettings = chan4SiteSettings
 
   override fun catalogInfo(): Site.CatalogInfo = chan4CatalogInfo
   override fun threadInfo(): Site.ThreadInfo = chan4ThreadInfo
   override fun boardsInfo(): Site.BoardsInfo = chan4BoardsInfo
   override fun postImageInfo(): Site.PostImageInfo = chan4PostImageInfo
+  override fun replyInfo(): Site.ReplyInfo = chan4ReplyInfo
+
   override fun icon(): HttpUrl = icon
+  override fun requestModifier(): RequestModifier<Site> = chan4RequestModifier as RequestModifier<Site>
 
   override fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor? {
     val parts = url.pathSegments
@@ -142,7 +170,55 @@ class Chan4 : Site {
     }
   }
 
+  class Chan4RequestModifier(site: Chan4, appSettings: AppSettings) : RequestModifier<Chan4>(site, appSettings) {
+
+    override suspend fun modifyReplyRequest(site: Chan4, requestBuilder: Request.Builder) {
+      super.modifyReplyRequest(site, requestBuilder)
+
+      addChan4CookieHeader(site, requestBuilder)
+    }
+
+    override suspend fun modifyCaptchaGetRequest(site: Chan4, requestBuilder: Request.Builder) {
+      super.modifyCaptchaGetRequest(site, requestBuilder)
+
+      addChan4CookieHeader(site, requestBuilder)
+    }
+
+    suspend fun addChan4CookieHeader(site: Chan4, requestBuilder: Request.Builder) {
+      val chan4SiteSettings = site.siteSettings as Chan4SiteSettings
+
+      val rememberCaptchaCookies = chan4SiteSettings.rememberCaptchaCookies.read()
+      if (!rememberCaptchaCookies) {
+        logcat(TAG) { "addChan4CookieHeader(), rememberCaptchaCookies is false" }
+        return
+      }
+
+      val host = requestBuilder.build().url.host
+
+      val captchaCookie = when {
+        host.contains("4channel") -> chan4SiteSettings.channel4CaptchaCookie.read()
+        host.contains("4chan") -> chan4SiteSettings.chan4CaptchaCookie.read()
+        else -> {
+          logcatError(TAG) { "Unexpected host: '$host'" }
+          return
+        }
+      }
+
+      if (captchaCookie.isEmpty()) {
+        return
+      }
+
+      logcat(TAG) { "addChan4CookieHeader(), host=${host}, captchaCookie=${captchaCookie.asFormattedToken()}" }
+      requestBuilder.appendCookieHeader("$CAPTCHA_COOKIE_KEY=${captchaCookie}")
+    }
+
+    companion object {
+      private const val CAPTCHA_COOKIE_KEY = "4chan_pass"
+    }
+  }
+
   companion object {
+    private const val TAG = "Chan4"
     val SITE_KEY = SiteKey("4chan")
   }
 

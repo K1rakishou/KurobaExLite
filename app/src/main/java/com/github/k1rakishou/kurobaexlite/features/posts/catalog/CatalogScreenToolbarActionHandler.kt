@@ -126,7 +126,7 @@ class CatalogScreenToolbarActionHandler {
 
               val resolvedDescriptor = homeScreenViewModel.resolveDescriptorFromRawIdentifier(value)
               if (resolvedDescriptor == null) {
-                snackbarManager.toast("Failed to parse \'$value'\"")
+                snackbarManager.toast(screenKey = CatalogScreen.SCREEN_KEY, message = "Failed to parse \'$value'\"")
                 return@PositiveDialogButton
               }
 

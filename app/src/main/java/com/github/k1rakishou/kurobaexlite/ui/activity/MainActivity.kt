@@ -119,6 +119,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         backPressedOnce = true
 
         snackbarManager.toast(
+          screenKey = MainScreen.SCREEN_KEY,
           messageId = R.string.main_activity_press_back_again_to_exit,
           toastId = pressBackMessageToastId,
           duration = pressBackFlagResetDuration

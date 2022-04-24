@@ -9,6 +9,7 @@ class ProxiedOkHttpClient : KurobaOkHttpClient {
       .readTimeout(20, TimeUnit.SECONDS)
       .writeTimeout(20, TimeUnit.SECONDS)
       .connectTimeout(20, TimeUnit.SECONDS)
+      .addNetworkInterceptor(GzipInterceptor())
       .build()
   }
 

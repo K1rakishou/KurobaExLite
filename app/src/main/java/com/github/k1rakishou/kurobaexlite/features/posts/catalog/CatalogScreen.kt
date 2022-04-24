@@ -260,6 +260,11 @@ class CatalogScreen(
       return@HandleBackPresses false
     }
 
+    ProcessCaptchaRequestEvents(
+      homeScreenViewModel = homeScreenViewModel,
+      currentChanDescriptor = { catalogScreenViewModel.catalogDescriptor }
+    )
+
     RouterHost(
       navigationRouter = navigationRouter,
       defaultScreen = { CatalogPostListScreenContent() }

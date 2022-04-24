@@ -39,6 +39,7 @@ import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MPVView
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -119,9 +120,19 @@ fun DisplayVideo(
           mpvView.muteUnmute(!videoMediaState.isMutedState.value)
 
           if (mpvView.isMuted) {
-            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Muted")
+            // TODO(KurobaEx): strings
+            snackbarManager.toast(
+              screenKey = MainScreen.SCREEN_KEY,
+              toastId = MPV_OPTION_CHANGE_TOAST,
+              message = "Muted"
+            )
           } else {
-            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Unmuted")
+            // TODO(KurobaEx): strings
+            snackbarManager.toast(
+              screenKey = MainScreen.SCREEN_KEY,
+              toastId = MPV_OPTION_CHANGE_TOAST,
+              message = "Unmuted"
+            )
           }
         }
       }
@@ -136,9 +147,19 @@ fun DisplayVideo(
           mpvView.cyclePause()
 
           if (mpvView.paused == true) {
-            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Paused")
+            // TODO(KurobaEx): strings
+            snackbarManager.toast(
+              screenKey = MainScreen.SCREEN_KEY,
+              toastId = MPV_OPTION_CHANGE_TOAST,
+              message = "Paused"
+            )
           } else {
-            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Resumed")
+            // TODO(KurobaEx): strings
+            snackbarManager.toast(
+              screenKey = MainScreen.SCREEN_KEY,
+              toastId = MPV_OPTION_CHANGE_TOAST,
+              message = "Resumed"
+            )
           }
         }
       }
@@ -151,9 +172,19 @@ fun DisplayVideo(
       videoMediaState.hwDecEventFlow.collect {
         mpvViewMut?.let { mpvView ->
           if (mpvView.hwdecActive) {
-            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Switched to software decoding")
+            // TODO(KurobaEx): strings
+            snackbarManager.toast(
+              screenKey = MainScreen.SCREEN_KEY,
+              toastId = MPV_OPTION_CHANGE_TOAST,
+              message = "Switched to software decoding"
+            )
           } else {
-            snackbarManager.toast(toastId = MPV_OPTION_CHANGE_TOAST, message = "Switched to hardware decoding")
+            // TODO(KurobaEx): strings
+            snackbarManager.toast(
+              screenKey = MainScreen.SCREEN_KEY,
+              toastId = MPV_OPTION_CHANGE_TOAST,
+              message = "Switched to hardware decoding"
+            )
           }
 
           mpvView.cycleHwdec()
@@ -243,7 +274,10 @@ private fun rememberLogObserver(
       when (level) {
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_FATAL -> {
           logcatError(MPV_TAG) { "[FATAL] ${prefix} ${text}" }
-          snackbarManager.toast("Mpv fatal error. ${prefix} ${text}")
+          snackbarManager.toast(
+            screenKey = MainScreen.SCREEN_KEY,
+            message = "Mpv fatal error. ${prefix} ${text}"
+          )
         }
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_ERROR -> {
           logcatError(MPV_TAG) { "[ERROR] ${prefix} ${text}" }

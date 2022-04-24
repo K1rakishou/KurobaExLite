@@ -253,6 +253,11 @@ class ThreadScreen(
       return@HandleBackPresses false
     }
 
+    ProcessCaptchaRequestEvents(
+      homeScreenViewModel = homeScreenViewModel,
+      currentChanDescriptor = { threadScreenViewModel.threadDescriptor }
+    )
+
     RouterHost(
       navigationRouter = navigationRouter,
       defaultScreen = { ThreadPostListScreenContent() }

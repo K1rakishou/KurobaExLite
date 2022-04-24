@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.StatFs
 import android.text.TextUtils
 import com.github.k1rakishou.kurobaexlite.BuildConfig
+import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import java.io.File
 import kotlin.system.exitProcess
@@ -93,7 +94,11 @@ class AndroidHelpers(
   fun openLink(context: Context, link: String): Boolean {
     if (TextUtils.isEmpty(link)) {
       logcat(TAG) { "openLink() link is empty" }
-      snackbarManager.toast("Failed to open link because the link is empty")
+
+      snackbarManager.toast(
+        screenKey = MainScreen.SCREEN_KEY,
+        message = "Failed to open link because the link is empty"
+      )
       return false
     }
 
@@ -116,7 +121,10 @@ class AndroidHelpers(
             "error: ${e.errorMessageOrClassName()}, intent: $intent"
         }
 
-        snackbarManager.toast("Failed to open link because startActivity crashed with '${e.errorMessageOrClassName()}' error")
+        snackbarManager.toast(
+          screenKey = MainScreen.SCREEN_KEY,
+          message = "Failed to open link because startActivity crashed with '${e.errorMessageOrClassName()}' error"
+        )
       }
 
       return false
@@ -142,7 +150,11 @@ class AndroidHelpers(
 
     if (filteredIntents.size <= 0) {
       logcat(TAG) { "openLink() filteredIntents.size() <= 0" }
-      snackbarManager.toast("Failed to open link because no apps were found to open it with")
+
+      snackbarManager.toast(
+        screenKey = MainScreen.SCREEN_KEY,
+        message = "Failed to open link because no apps were found to open it with"
+      )
       return false
     }
 
@@ -178,7 +190,11 @@ class AndroidHelpers(
           "error:${e.errorMessageOrClassName()}, intent: $intent"
       }
 
-      snackbarManager.toast("Failed to open intent because startActivity crashed with '${e.errorMessageOrClassName()}' error")
+      snackbarManager.toast(
+        screenKey = MainScreen.SCREEN_KEY,
+        message = "Failed to open intent because startActivity crashed with '${e.errorMessageOrClassName()}' error"
+      )
+
       return false
     }
   }

@@ -207,6 +207,7 @@ dependencies {
     implementation "io.coil-kt:coil-compose:${coil}"
     implementation "joda-time:joda-time:${joda_time}"
     implementation 'org.nibor.autolink:autolink:0.10.0'
+    implementation "org.jsoup:jsoup:${jsoup}"
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
     implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:96b909f63b'

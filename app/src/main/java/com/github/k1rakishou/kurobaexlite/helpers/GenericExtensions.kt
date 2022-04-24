@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModelProvider
 import java.io.InterruptedIOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.regex.Matcher
 import javax.net.ssl.SSLException
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -25,7 +26,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
+import logcat.asLog
 import logcat.logcat
+import okhttp3.Request
 import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
 import org.koin.core.context.GlobalContext
@@ -192,6 +195,14 @@ fun Throwable.errorMessageOrClassName(): String {
   }
 
   return this::class.java.name
+}
+
+fun Throwable.asLogIfImportantOrShort(): String {
+  if (isExceptionImportant()) {
+    return asLog()
+  }
+
+  return errorMessageOrClassName()
 }
 
 fun Throwable.isExceptionImportant(): Boolean {
@@ -558,4 +569,53 @@ inline fun <reified T : ViewModel> ComponentActivity.rememberViewModel(): T {
 @Composable
 inline fun <reified T : Any> koinRemember(): T {
   return remember { GlobalContext.get().get<T>() }
+}
+
+private const val COOKIE_HEADER_NAME = "Cookie"
+
+fun Request.Builder.appendCookieHeader(value: String): Request.Builder {
+  val request = build()
+
+  val cookies = request.header(COOKIE_HEADER_NAME)
+  if (cookies == null) {
+    return addHeader(COOKIE_HEADER_NAME, value)
+  }
+
+  // Absolute retardiation but OkHttp doesn't allow doing it differently (or maybe I just don't know?)
+  val fullCookieValue = request.newBuilder()
+    .removeHeader(COOKIE_HEADER_NAME)
+    .addHeader(COOKIE_HEADER_NAME, "${cookies}; ${value}")
+    .build()
+    .header(COOKIE_HEADER_NAME)!!
+
+  return header(COOKIE_HEADER_NAME, fullCookieValue)
+}
+
+fun String?.asFormattedToken(): String {
+  if (this == null) {
+    return "<null>"
+  }
+
+  if (this.isEmpty()) {
+    return "<empty>"
+  }
+
+  val tokenPartLength = (this.length.toFloat() * 0.2f).toInt() / 2
+
+  val startTokenPart = this.substring(0, tokenPartLength)
+  val endTokenPart = this.substring(this.length - tokenPartLength)
+
+  return "${startTokenPart}<cut>${endTokenPart}"
+}
+
+fun Matcher.groupOrNull(group: Int): String? {
+  return try {
+    if (group < 0 || group > groupCount()) {
+      return null
+    }
+
+    this.group(group)
+  } catch (error: Throwable) {
+    null
+  }
 }

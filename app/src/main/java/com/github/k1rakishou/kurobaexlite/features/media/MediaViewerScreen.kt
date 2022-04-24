@@ -53,6 +53,7 @@ import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.DisplayLoadingProgressIndicator
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
@@ -351,7 +352,7 @@ class MediaViewerScreen(
           }
 
           val message = context.resources.getString(R.string.media_viewer_download_failed_no_permission)
-          snackbarManager.toast(message)
+          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
         }
       }
     )
@@ -367,7 +368,7 @@ class MediaViewerScreen(
             postImage.originalFileNameWithExtension()
           )
 
-          snackbarManager.toast(message)
+          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
         } else {
           val error = mediaDownloadResult.exceptionOrThrow()
           val message = context.resources.getString(
@@ -376,7 +377,7 @@ class MediaViewerScreen(
             error.errorMessageOrClassName()
           )
 
-          snackbarManager.toast(message)
+          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
         }
       }
     )

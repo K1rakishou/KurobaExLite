@@ -1,17 +1,20 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
+import android.content.Context
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
-import com.github.k1rakishou.kurobaexlite.sites.Chan4
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Site
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import java.util.concurrent.ConcurrentHashMap
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
-class SiteManager {
+class SiteManager(
+  private val appContext: Context
+) {
   private val sites = ConcurrentHashMap<SiteKey, Site>()
 
   init {
-    sites[Chan4.SITE_KEY] = Chan4()
+    sites[Chan4.SITE_KEY] = Chan4(appContext)
   }
 
   fun bySiteKey(siteKey: SiteKey): Site? {

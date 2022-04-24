@@ -45,8 +45,9 @@ class ProgressResponseBody constructor(
       }
     }
   }
-}
 
-fun interface ProgressListener {
-  fun update(bytesRead: Long, contentLength: Long, done: Boolean)
+  fun interface ProgressListener {
+    fun update(bytesRead: Long, contentLength: Long, done: Boolean)
+  }
+
 }

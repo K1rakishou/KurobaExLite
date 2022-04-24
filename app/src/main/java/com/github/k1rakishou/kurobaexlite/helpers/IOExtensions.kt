@@ -45,6 +45,29 @@ suspend fun OkHttpClient.suspendCall(request: Request): Response {
   }
 }
 
+suspend fun OkHttpClient.suspendCallConvertToString(
+  request: Request,
+): Result<String> {
+  return withContext(Dispatchers.IO) {
+    return@withContext Result.Try {
+      logcat { "suspendCallConvertToString() url='${request.url}' start" }
+      val response = suspendCall(request)
+      logcat { "suspendCallConvertToString() url='${request.url}' end" }
+
+      if (!response.isSuccessful) {
+        throw BadStatusResponseException(response.code)
+      }
+
+      val body = response.body
+      if (body == null) {
+        throw EmptyBodyResponseException()
+      }
+
+      return@Try body.string()
+    }
+  }
+}
+
 suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertIntoJsonObjectWithAdapter(
   request: Request,
   adapter: JsonAdapter<T>

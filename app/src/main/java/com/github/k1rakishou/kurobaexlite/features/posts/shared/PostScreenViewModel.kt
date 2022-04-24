@@ -676,10 +676,6 @@ abstract class PostScreenViewModel(
     )
   }
 
-  fun toast(message: String) {
-    snackbarManager.toast(message)
-  }
-
   open fun resetTimer() {
 
   }

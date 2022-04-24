@@ -6,10 +6,16 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.SavedStateHandle
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.io.File
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import logcat.logcat
 import org.koin.core.context.GlobalContext
 
@@ -36,9 +42,16 @@ class ReplyLayoutState(
   val sendReplyState: State<SendReplyState>
     get() = _sendReplyState
 
-  private val _lastErrorMessageState = mutableStateOf<String?>(null)
-  val lastErrorMessageState: State<String?>
-    get() = _lastErrorMessageState
+  private val _replySendProgressState = mutableStateOf<Float?>(null)
+  val replySendProgressState: State<Float?>
+    get() = _replySendProgressState
+
+  private val _lastErrorMessageFlow = MutableSharedFlow<String>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_LATEST
+  )
+  val lastErrorMessageFlow: SharedFlow<String>
+    get() = _lastErrorMessageFlow.asSharedFlow()
 
   init {
     restoreFromSavedState()
@@ -47,7 +60,6 @@ class ReplyLayoutState(
   private fun restoreFromSavedState() {
     Snapshot.withMutableSnapshot {
       _replyText.value = savedStateHandle.get<String>(replyTextKey) ?: ""
-      _lastErrorMessageState.value = savedStateHandle.get<String>(lastErrorMessageKey)
       _replyLayoutVisibilityState.value = savedStateHandle.get<Int>(replyLayoutVisibilityKey)
         .let { ReplyLayoutVisibility.fromRawValue(it) }
 
@@ -64,15 +76,23 @@ class ReplyLayoutState(
 
       logcat(TAG) {
         "restoreFromSavedState() " +
+          "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, "
           "replyText=\'${_replyText.value.take(32)}\', " +
-          "lastErrorMessage=\'${lastErrorMessageState.value?.take(32)}\', " +
           "attachedImages=\'${_attachedImages.joinToString(transform = { it.path })}\'"
       }
     }
   }
 
+  fun replyError(errorMessage: String) {
+    _lastErrorMessageFlow.tryEmit(errorMessage)
+  }
+
   fun onReplySendStarted() {
     _sendReplyState.value = SendReplyState.Started
+  }
+
+  fun onReplyProgressChanged(progress: Float?) {
+    _replySendProgressState.value = progress
   }
 
   fun onReplySendEndedSuccessfully() {
@@ -80,12 +100,9 @@ class ReplyLayoutState(
       _attachedImages.clear()
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Closed
       _replyText.value = ""
-      _lastErrorMessageState.value = null
 
-      onReplySendStarted()
       onAttachedImagesUpdated()
       onReplyLayoutVisibilityStateChanged()
-      onLastErrorMessageUpdated()
 
       _sendReplyState.value = SendReplyState.Finished(error = null)
     }
@@ -93,20 +110,14 @@ class ReplyLayoutState(
 
   fun onReplySendCanceled() {
     Snapshot.withMutableSnapshot {
-      onReplySendStarted()
-
       _sendReplyState.value = SendReplyState.Finished(error = null)
     }
   }
 
   fun onReplySendEndedWithError(error: Throwable) {
     Snapshot.withMutableSnapshot {
-      _lastErrorMessageState.value = error.errorMessageOrClassName()
-
-      onReplySendStarted()
       onAttachedImagesUpdated()
       onReplyLayoutVisibilityStateChanged()
-      onLastErrorMessageUpdated()
 
       _sendReplyState.value = SendReplyState.Finished(error = error)
     }
@@ -172,8 +183,13 @@ class ReplyLayoutState(
     savedStateHandle.set<Int>(replyLayoutVisibilityKey, replyLayoutVisibilityStateValue.value)
   }
 
-  private fun onLastErrorMessageUpdated() {
-    savedStateHandle.set(lastErrorMessageKey, _lastErrorMessageState.value)
+  fun getReplyData(chanDescriptor: ChanDescriptor, captchaSolution: CaptchaSolution): ReplyData {
+    return ReplyData(
+      chanDescriptor = chanDescriptor,
+      message = replyText.value,
+      attachedImages = attachedImages,
+      captchaSolution = captchaSolution
+    )
   }
 
   companion object {
@@ -181,7 +197,6 @@ class ReplyLayoutState(
 
     private const val replyTextKey = "replyText"
     private const val attachedImagesKey = "attachedImages"
-    private const val lastErrorMessageKey = "lastErrorMessage"
     private const val replyLayoutVisibilityKey = "replyLayoutVisibility"
   }
 

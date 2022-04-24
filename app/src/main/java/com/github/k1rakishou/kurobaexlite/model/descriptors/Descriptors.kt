@@ -18,6 +18,7 @@ inline class SiteKey(val key: String) : Parcelable {
 @Immutable
 sealed class ChanDescriptor {
   abstract val siteKey: SiteKey
+  abstract val boardCode: String
   abstract fun asReadableString(): String
 }
 
@@ -25,7 +26,7 @@ sealed class ChanDescriptor {
 @Parcelize
 data class CatalogDescriptor(
   override val siteKey: SiteKey,
-  val boardCode: String
+  override val boardCode: String
 ) : Parcelable, ChanDescriptor() {
   val siteKeyActual: String
     get() = siteKey.key
@@ -78,7 +79,7 @@ data class ThreadDescriptor(
     get() = catalogDescriptor.siteKey
   val siteKeyActual: String
     get() = siteKey.key
-  val boardCode: String
+  override val boardCode: String
     get() = catalogDescriptor.boardCode
 
   fun toOriginalPostDescriptor(): PostDescriptor {

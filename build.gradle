@@ -11,6 +11,7 @@ buildscript {
         coil = "2.0.0-rc01"
         room = "2.4.2"
         joda_time = "2.10.10"
+        jsoup = "1.14.2"
     }
     repositories {
         google()

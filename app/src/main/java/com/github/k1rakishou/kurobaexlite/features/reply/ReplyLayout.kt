@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
@@ -55,6 +57,19 @@ fun ReplyLayoutContainer(
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
   var maxAvailableHeight by remember { mutableStateOf<Int>(0) }
+
+  LaunchedEffect(
+    key1 = chanDescriptor,
+    block = {
+      replyLayoutState.lastErrorMessageFlow.collect { errorMessage ->
+        if (chanDescriptor == null) {
+          return@collect
+        }
+
+        replyLayoutViewModel.showErrorToast(chanDescriptor, errorMessage)
+      }
+    }
+  )
 
   val replyLayoutEnabled = remember(key1 = sendReplyState, key2 = chanDescriptor) {
     if (chanDescriptor == null) {
@@ -144,7 +159,13 @@ fun ReplyLayoutContainer(
         onExpandReplyLayoutClicked = { replyLayoutState.expandReplyLayout() },
         onCollapseReplyLayoutClicked = { replyLayoutState.collapseReplyLayout() },
         onCancelReplySendClicked = { replyLayoutViewModel.cancelSendReply(replyLayoutState) },
-        onSendReplyClicked = { replyLayoutViewModel.sendReply(replyLayoutState) }
+        onSendReplyClicked = {
+          if (chanDescriptor == null) {
+            return@ReplyLayout
+          }
+
+          replyLayoutViewModel.sendReply(chanDescriptor, replyLayoutState)
+        }
       )
 
       if (replyLayoutVisibility != ReplyLayoutVisibility.Closed) {
@@ -235,6 +256,9 @@ private fun ReplyInputWithButtons(
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit
 ) {
+  val replySendProgressMut by replyLayoutState.replySendProgressState
+  val replySendProgress = replySendProgressMut
+
   Row {
     KurobaComposeCustomTextField(
       modifier = Modifier
@@ -288,22 +312,33 @@ private fun ReplyInputWithButtons(
           }
         }
 
-        KurobaComposeIcon(
-          modifier = Modifier
-            .size(32.dp)
-            .padding(4.dp)
-            .kurobaClickable(
-              bounded = false,
-              onClick = {
-                if (sendReplyState.canCancel) {
-                  onCancelReplySendClicked()
-                } else {
-                  onSendReplyClicked()
+        Box(modifier = Modifier.size(32.dp)) {
+          KurobaComposeIcon(
+            modifier = Modifier
+              .fillMaxSize()
+              .padding(4.dp)
+              .kurobaClickable(
+                bounded = false,
+                onClick = {
+                  if (sendReplyState.canCancel) {
+                    onCancelReplySendClicked()
+                  } else {
+                    onSendReplyClicked()
+                  }
                 }
-              }
-            ),
-          drawableId = buttonDrawableId
-        )
+              ),
+            drawableId = buttonDrawableId
+          )
+
+          if (replySendProgress != null && replySendProgress > 0f) {
+            KurobaComposeLoadingIndicator(
+              modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+              progress = replySendProgress
+            )
+          }
+        }
       }
     }
   }

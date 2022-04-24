@@ -8,7 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
+import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
@@ -18,10 +20,13 @@ import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.sites.SiteCaptcha
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SplitScreenLayout
+import kotlinx.coroutines.CancellationException
 
 abstract class PostsScreen(
   componentActivity: ComponentActivity,
@@ -122,6 +127,45 @@ abstract class PostsScreen(
       MainUiLayoutMode.Portrait -> currentPage?.screenKey == screenKey
       MainUiLayoutMode.Split -> currentPage?.screenKey == SplitScreenLayout.SCREEN_KEY
     }
+  }
+
+  @Composable
+  protected fun ProcessCaptchaRequestEvents(
+    homeScreenViewModel: HomeScreenViewModel,
+    currentChanDescriptor: () -> ChanDescriptor?
+  ) {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        homeScreenViewModel.captchaRequestsFlow.collect { (captchaRequest, siteCaptcha) ->
+          if (captchaRequest.chanDescriptor != currentChanDescriptor()) {
+            return@collect
+          }
+
+          val captchaScreen = when (siteCaptcha) {
+            SiteCaptcha.Chan4Captcha -> {
+              Chan4CaptchaScreen(
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter,
+                chanDescriptor = captchaRequest.chanDescriptor,
+                onCaptchaSolved = { captcha ->
+                  if (captchaRequest.completableDeferred.isActive) {
+                    captchaRequest.completableDeferred.complete(captcha)
+                  }
+                },
+                onScreenDismissed = {
+                  if (captchaRequest.completableDeferred.isActive) {
+                    captchaRequest.completableDeferred.completeExceptionally(CancellationException())
+                  }
+                }
+              )
+            }
+          }
+
+          navigationRouter.presentScreen(captchaScreen)
+        }
+      }
+    )
   }
 
 }

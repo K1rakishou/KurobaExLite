@@ -36,7 +36,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.sort.WeightedSorter
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.sites.Chan4
+import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo

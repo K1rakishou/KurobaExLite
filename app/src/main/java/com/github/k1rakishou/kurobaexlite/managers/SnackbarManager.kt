@@ -6,11 +6,17 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarClickable
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfoEvent
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarType
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
@@ -52,11 +58,18 @@ class SnackbarManager(
     }
   }
 
+  fun screenKeyFromDescriptor(chanDescriptor: ChanDescriptor): ScreenKey {
+    return when (chanDescriptor) {
+      is CatalogDescriptor -> CatalogScreen.SCREEN_KEY
+      is ThreadDescriptor -> ThreadScreen.SCREEN_KEY
+    }
+  }
+
   // A toast is a snack too
   fun toast(
     @StringRes messageId: Int,
     toastId: String = nextToastId(),
-    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
+    screenKey: ScreenKey,
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {
     pushSnackbar(
@@ -70,15 +83,37 @@ class SnackbarManager(
             takeWholeWidth = false
           )
         ),
-        isToast = true
+        snackbarType = SnackbarType.Toast
       )
     )
   }
 
   fun toast(
     message: String,
+    screenKey: ScreenKey,
     toastId: String = nextToastId(),
-    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
+    duration: Duration = STANDARD_DELAY.milliseconds
+  ) {
+    pushSnackbar(
+      SnackbarInfo(
+        snackbarId = SnackbarId.Toast(toastId),
+        aliveUntil = SnackbarInfo.snackbarDuration(duration),
+        screenKey = screenKey,
+        content = listOf(
+          SnackbarContentItem.Text(
+            text = message,
+            takeWholeWidth = false
+          )
+        ),
+        snackbarType = SnackbarType.Toast
+      )
+    )
+  }
+
+  fun errorToast(
+    message: String,
+    toastId: String = nextToastId(),
+    screenKey: ScreenKey,
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {
     pushSnackbar(
@@ -92,7 +127,7 @@ class SnackbarManager(
             takeWholeWidth = false
           )
         ),
-        isToast = true
+        snackbarType = SnackbarType.ErrorToast
       )
     )
   }

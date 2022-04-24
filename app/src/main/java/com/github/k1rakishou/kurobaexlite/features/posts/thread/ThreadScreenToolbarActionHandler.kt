@@ -43,7 +43,10 @@ class ThreadScreenToolbarActionHandler {
         ) ?: return
 
         androidHelpers.setClipboardContent(label = "thread url", content = threadUrl)
-        snackbarManager.toast("Thread url copied to clipboard")
+        snackbarManager.toast(
+          screenKey = ThreadScreen.SCREEN_KEY,
+          message = "Thread url copied to clipboard"
+        )
       }
       ACTION_THREAD_ALBUM -> {
         val threadDescriptor = threadScreenViewModel.threadDescriptor

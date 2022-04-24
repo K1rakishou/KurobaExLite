@@ -12,6 +12,7 @@ import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.boards.BoardSelectionScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
@@ -41,6 +42,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.navigation.PersistNavigati
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
+import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
@@ -129,13 +131,14 @@ object DependencyGraph {
   }
 
   private fun Module.managers() {
-    single { SiteManager() }
+    single { SiteManager(appContext = get()) }
     single { ChanThreadManager(siteManager = get(), chanCache = get()) }
     single { PostReplyChainManager() }
     single { ChanViewManager() }
     single { SnackbarManager(appContext = get()) }
     single { NavigationHistoryManager() }
     single { MarkedPostManager() }
+    single { CaptchaManager() }
 
     single {
       UiInfoManager(
@@ -151,7 +154,7 @@ object DependencyGraph {
       HomeScreenViewModel(
         application = get(),
         siteManager = get(),
-        snackbarManager = get()
+        captchaManager = get()
       )
     }
     viewModel {
@@ -196,7 +199,19 @@ object DependencyGraph {
       NavigationHistoryScreenViewModel(application = get())
     }
     viewModel {
-      ReplyLayoutViewModel()
+      ReplyLayoutViewModel(
+        captchaManager = get(),
+        siteManager = get(),
+        snackbarManager = get(),
+        modifyMarkedPosts = get()
+      )
+    }
+    viewModel {
+      Chan4CaptchaViewModel(
+        proxiedOkHttpClient = get(),
+        siteManager = get(),
+        moshi = get()
+      )
     }
   }
 

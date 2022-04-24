@@ -145,4 +145,9 @@
     <string name="post_longtap_menu_mark_post_as_own">Mark post as mine</string>
     <string name="post_longtap_menu_unmark_post_as_own">Unmark post as mine</string>
 
+    <string name="chan4_captcha_layout_reload">Reload</string>
+    <string name="chan4_captcha_layout_verify">Verify</string>
+    <string name="chan4_captcha_layout_verification_not_required">Verification is not required! Just click \"Verify\", it\'s free!</string>
+    <string name="chan4_captcha_layout_captcha_already_expired">The captcha has already expired</string>
+
 </resources>

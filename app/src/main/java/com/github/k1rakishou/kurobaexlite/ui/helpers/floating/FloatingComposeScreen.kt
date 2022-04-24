@@ -9,12 +9,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalTextInputService
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -45,12 +48,26 @@ abstract class FloatingComposeScreen(
 
   @Composable
   override fun Content() {
+    val localFocusManager = LocalFocusManager.current
+    val localTextInputService = LocalTextInputService.current
+
     HandleBackPresses { onFloatingControllerBackPressed() }
 
     // However when it comes to screen destroy events, we need use the MainScreen's router since that's
     // where all the floating screens are being added to.
     val mainRouter = remember { navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY) }
     mainRouter.HandleScreenDestroyEvents(screenKey = screenKey) { onDestroy() }
+
+    // Make sure the keyboard is getting closed when a floating screen is destroyed
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        onDispose {
+          localFocusManager.clearFocus(force = true)
+          localTextInputService?.hideSoftwareKeyboard()
+        }
+      }
+    )
 
     CardContent()
   }

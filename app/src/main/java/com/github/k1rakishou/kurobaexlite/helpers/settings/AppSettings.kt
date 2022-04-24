@@ -1,16 +1,21 @@
 package com.github.k1rakishou.kurobaexlite.helpers.settings
 
 import android.content.Context
+import android.os.Build
+import android.webkit.WebSettings
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
+import logcat.asLog
 
 class AppSettings(
   private val appContext: Context,
@@ -19,6 +24,16 @@ class AppSettings(
   private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
   private val dataStore by lazy { appContext.dataStore }
   private val isTablet by lazy { appContext.resources.getBoolean(R.bool.isTablet) }
+
+  val specialUserAgentFor4chanPosting by lazy {
+    buildString {
+      val applicationLabel = appContext.packageManager.getApplicationLabel(appContext.applicationInfo)
+
+      append(applicationLabel)
+      append(" ")
+      append(BuildConfig.VERSION_NAME)
+    }
+  }
 
   val layoutType by lazy {
     EnumSetting<LayoutType>(LayoutType.Auto, "layout_type", LayoutType::class.java, dataStore)
@@ -50,11 +65,31 @@ class AppSettings(
     NumberSetting(256, "navigation_history_max_size", dataStore)
   }
 
+  val userAgent by lazy {
+    val userAgent = try {
+      WebSettings.getDefaultUserAgent(appContext)
+    } catch (error: Throwable) {
+      // Who knows what may happen if the user deletes webview from the system so just in case
+      // switch to a default user agent in case of a crash
+      logcatError(TAG) { "WebSettings.getDefaultUserAgent() error: ${error.asLog()}" }
+      String.format(USER_AGENT_FORMAT, Build.VERSION.RELEASE, Build.MODEL)
+    }
+
+    StringSetting(userAgent, "user_agent", dataStore)
+  }
+
   val lastVisitedCatalog by lazy {
     JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore)
   }
   val lastVisitedThread by lazy {
     JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore)
+  }
+
+  companion object {
+    private const val TAG = "AppSettings"
+
+    private const val USER_AGENT_FORMAT =
+      "Mozilla/5.0 (Linux; Android %s; %s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.127 Mobile Safari/537.36"
   }
 
 }

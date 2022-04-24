@@ -166,7 +166,7 @@ private fun KurobaSnackbarLayout(
   snackbarManager: SnackbarManager,
   dismissSnackbar: (SnackbarId) -> Unit
 ) {
-  val isToast = snackbarInfo.isToast
+  val snackbarType = snackbarInfo.snackbarType
 
   val containerHorizPadding = if (isTablet) 14.dp else 10.dp
   val containerVertPadding = if (isTablet) 10.dp else 6.dp
@@ -174,15 +174,15 @@ private fun KurobaSnackbarLayout(
   var contentHorizPadding = if (isTablet) 10.dp else 6.dp
   var contentVertPadding = if (isTablet) 14.dp else 8.dp
 
-  if (isToast) {
+  if (snackbarType.isToast) {
     contentHorizPadding *= 1.5f
     contentVertPadding *= 1.25f
   }
 
-  val backgroundColor = if (isToast) {
-    Color.White
-  } else {
-    chanTheme.backColorSecondaryCompose
+  val backgroundColor = when (snackbarInfo.snackbarType) {
+    SnackbarType.Default -> chanTheme.backColorSecondaryCompose
+    SnackbarType.Toast -> Color.White
+    SnackbarType.ErrorToast -> chanTheme.errorColorCompose
   }
 
   KurobaComposeCardView(
@@ -214,7 +214,7 @@ private fun KurobaSnackbarLayout(
     ) {
       KurobaSnackbarContent(
         isTablet = isTablet,
-        isToast = isToast,
+        snackbarType = snackbarType,
         hasClickableItems = snackbarInfo.hasClickableItems,
         aliveUntil = snackbarInfo.aliveUntil,
         snackbarId = snackbarInfo.snackbarId,
@@ -231,7 +231,7 @@ private fun KurobaSnackbarLayout(
 @Composable
 private fun RowScope.KurobaSnackbarContent(
   isTablet: Boolean,
-  isToast: Boolean,
+  snackbarType: SnackbarType,
   hasClickableItems: Boolean,
   aliveUntil: Long?,
   content: List<SnackbarContentItem>,
@@ -241,7 +241,7 @@ private fun RowScope.KurobaSnackbarContent(
   val chanTheme = LocalChanTheme.current
   val textSize = if (isTablet) 18.sp else 16.sp
 
-  if (!isToast && hasClickableItems && aliveUntil != null) {
+  if (!snackbarType.isToast && hasClickableItems && aliveUntil != null) {
     val startTime = remember { SystemClock.elapsedRealtime() }
     var progress by remember { mutableStateOf(1f) }
 
@@ -285,16 +285,20 @@ private fun RowScope.KurobaSnackbarContent(
         Spacer(modifier = Modifier.width(snackbarContentItem.space))
       }
       is SnackbarContentItem.Text -> {
-        val widthModifier = if (isToast || !snackbarContentItem.takeWholeWidth) {
+        val widthModifier = if (snackbarType.isToast || !snackbarContentItem.takeWholeWidth) {
           Modifier.wrapContentWidth()
         } else {
           Modifier.weight(1f)
         }
 
-        val textColor = when {
-          snackbarContentItem.textColor != null -> snackbarContentItem.textColor
-          isToast -> Color.Black
-          else -> null
+        val textColor = if (snackbarContentItem.textColor != null) {
+          snackbarContentItem.textColor
+        } else {
+          when (snackbarType) {
+            SnackbarType.Default -> null
+            SnackbarType.ErrorToast -> Color.White
+            SnackbarType.Toast -> Color.Black
+          }
         }
 
         KurobaComposeText(
@@ -418,7 +422,7 @@ class SnackbarInfo(
   val aliveUntil: Long?,
   val screenKey: ScreenKey = MainScreen.SCREEN_KEY,
   val content: List<SnackbarContentItem>,
-  val isToast: Boolean = false
+  val snackbarType: SnackbarType = SnackbarType.Default
 ) {
 
   val hasClickableItems: Boolean
@@ -434,7 +438,7 @@ class SnackbarInfo(
     if (createdAt != other.createdAt) return false
     if (aliveUntil != other.aliveUntil) return false
     if (screenKey != other.screenKey) return false
-    if (isToast != other.isToast) return false
+    if (snackbarType != other.snackbarType) return false
 
     return true
   }
@@ -444,7 +448,7 @@ class SnackbarInfo(
     result = 31 * result + createdAt.hashCode()
     result = 31 * result + (aliveUntil?.hashCode() ?: 0)
     result = 31 * result + screenKey.hashCode()
-    result = 31 * result + isToast.hashCode()
+    result = 31 * result + snackbarType.hashCode()
     return result
   }
 
@@ -454,6 +458,15 @@ class SnackbarInfo(
     }
   }
 
+}
+
+sealed class SnackbarType {
+  val isToast: Boolean
+    get() = this is Toast || this is ErrorToast
+
+  object Default : SnackbarType()
+  object Toast : SnackbarType()
+  object ErrorToast : SnackbarType()
 }
 
 interface SnackbarClickable {
