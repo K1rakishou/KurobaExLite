@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.posts.catalog
 
 import android.os.SystemClock
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -9,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewMo
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.CatalogScreenPostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -31,11 +33,17 @@ import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreenViewModel(
   application: KurobaExLiteApplication,
+  private val savedStateHandle: SavedStateHandle
 ) : PostScreenViewModel(application) {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
   private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
   private val catalogScreenState = CatalogScreenPostsState()
   private val updateChanCatalogViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
+
+  val replyLayoutState = ReplyLayoutState(
+    screenKey = CatalogScreen.SCREEN_KEY,
+    savedStateHandle = savedStateHandle
+  )
 
   private var loadCatalogJob: Job? = null
 

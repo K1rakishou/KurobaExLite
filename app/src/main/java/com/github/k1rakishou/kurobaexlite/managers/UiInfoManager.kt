@@ -183,6 +183,11 @@ class UiInfoManager(
     _lastTouchPosition.set(x.toInt(), y.toInt())
   }
 
+  fun isAnyReplyLayoutOpened(): Boolean {
+    return replyLayoutVisibilityInfoMap.entries
+      .any { (_, replyLayoutVisibilityState) -> replyLayoutVisibilityState.value != ReplyLayoutVisibility.Closed  }
+  }
+
   fun getOrCreateToolbarVisibilityInfo(screenKey: ScreenKey): ToolbarVisibilityInfo {
     return toolbarVisibilityInfoMap.getOrPut(
       key = screenKey,

@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.posts.thread
 
 import android.os.SystemClock
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -9,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewMo
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -35,6 +37,7 @@ import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreenViewModel(
   application: KurobaExLiteApplication,
+  private val savedStateHandle: SavedStateHandle
 ) : PostScreenViewModel(application) {
   private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
 
@@ -53,6 +56,11 @@ class ThreadScreenViewModel(
   private val threadScreenState = ThreadScreenPostsState()
   private var loadThreadJob: Job? = null
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
+
+  val replyLayoutState = ReplyLayoutState(
+    screenKey = ThreadScreen.SCREEN_KEY,
+    savedStateHandle = savedStateHandle
+  )
 
   override val postScreenState: PostScreenState = threadScreenState
 

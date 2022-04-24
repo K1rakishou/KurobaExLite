@@ -15,7 +15,12 @@ import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -28,7 +33,12 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
+import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -55,6 +65,7 @@ fun KurobaComposeCustomTextField(
   val cursorBrush = remember(key1 = chanTheme) { SolidColor(chanTheme.accentColorCompose) }
   val lineTotalHeight = if (drawBottomIndicator) 4.dp else 0.dp
   val labelTextBottomOffset = if (drawBottomIndicator) 2.dp else 0.dp
+  val disabledContentAlpha = ContentAlpha.disabled
 
   val actualTextColor = if (!textColor.isUnspecified) {
     textColor
@@ -66,8 +77,14 @@ fun KurobaComposeCustomTextField(
     }
   }
 
-  val textStyle = remember(key1 = actualTextColor, key2 = fontSize) {
-    TextStyle.Default.copy(color = actualTextColor, fontSize = fontSize)
+  val textStyle = remember(key1 = actualTextColor, key2 = fontSize, key3 = enabled) {
+    val textColorWithAlpha = if (enabled) {
+      actualTextColor
+    } else {
+      actualTextColor.copy(alpha = disabledContentAlpha)
+    }
+
+    return@remember TextStyle.Default.copy(color = textColorWithAlpha, fontSize = fontSize)
   }
 
   val indicatorLineModifier = if (drawBottomIndicator) {

@@ -37,7 +37,6 @@ import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -527,10 +526,11 @@ fun KurobaComposeCardView(
 fun KurobaComposeIcon(
   modifier: Modifier = Modifier,
   @DrawableRes drawableId: Int,
-  colorBehindIcon: Color? = null
+  colorBehindIcon: Color? = null,
+  enabled: Boolean = true
 ) {
   val chanTheme = LocalChanTheme.current
-  val alpha = LocalContentAlpha.current
+  val alpha = if (enabled) 1f else ContentAlpha.disabled
 
   val tintColor = remember(
     key1 = chanTheme.backColor,

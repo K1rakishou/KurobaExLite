@@ -231,10 +231,12 @@ class HomeScreen(
       HomePagerNestedScrollConnection(
         drawerWidth = drawerWidth.toFloat(),
         currentPagerPage = { pagerState.currentPage },
+        isReplyLayoutOpened = { uiInfoManager.isAnyReplyLayoutOpened() },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
         onDragging = { dragging, progress, velocity ->
           uiInfoManager.dragDrawer(dragging, progress, velocity)
-        })
+        }
+      )
     }
 
     Box(
@@ -257,6 +259,10 @@ class HomeScreen(
               isDrawerOpened = { uiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               onDraggingDrawer = { dragging, progress, velocity ->
+                if (uiInfoManager.isAnyReplyLayoutOpened()) {
+                  return@detectDrawerDragGestures
+                }
+
                 uiInfoManager.dragDrawer(dragging, progress, velocity)
               }
             )

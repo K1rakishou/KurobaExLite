@@ -29,7 +29,7 @@ buildscript {
 subprojects {
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
-            if (project.findProperty("kuroba_ex_lite.enableComposeCompilerReports") == "true") {
+            if (project.findProperty("kuroba_ex_lite.enableComposeCompilerReports").equals("true")) {
                 freeCompilerArgs += [
                         "-P",
                         "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +

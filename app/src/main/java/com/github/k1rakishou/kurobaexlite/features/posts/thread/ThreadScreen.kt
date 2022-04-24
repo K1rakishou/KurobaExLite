@@ -31,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostLi
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
@@ -63,6 +64,7 @@ class ThreadScreen(
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
+  private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
@@ -78,9 +80,15 @@ class ThreadScreen(
     PostLongtapContentMenu(componentActivity, navigationRouter)
   }
 
-  private val replyLayoutState = ReplyLayoutState(SCREEN_KEY)
+  private val replyLayoutState: ReplyLayoutState
+    get() = threadScreenViewModel.replyLayoutState
 
-  private val kurobaToolbarState by lazy {
+  private val replyLayoutToolbarState = KurobaToolbarState(
+    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_close_24),
+    middlePartInfo = MiddlePartInfo(centerContent = false)
+  )
+
+  private val threadToolbarState by lazy {
     val mainUiLayoutMode = requireNotNull(uiInfoManager.currentUiLayoutModeState.value) {
       "currentUiLayoutModeState is not initialized yet!"
     }
@@ -139,18 +147,48 @@ class ThreadScreen(
     val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
+    val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
+    if (replyLayoutVisibility != ReplyLayoutVisibility.Closed) {
+      ReplyLayoutToolbar(mainUiLayoutMode)
+    } else {
+      ThreadScreenToolbar(mainUiLayoutMode)
+    }
+  }
+
+  @Composable
+  private fun ReplyLayoutToolbar(mainUiLayoutMode: MainUiLayoutMode) {
+    LaunchedEffect(
+      key1 = Unit,
+      // TODO(KurobaEx): strings
+      block = { replyLayoutToolbarState.toolbarTitleState.value = "Reply" }
+    )
+
+    KurobaToolbar(
+      screenKey = screenKey,
+      kurobaToolbarState = replyLayoutToolbarState,
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
+      onLeftIconClicked = { replyLayoutState.onBackPressed() },
+      onMiddleMenuClicked = null,
+      onSearchQueryUpdated = null
+    )
+  }
+
+  @Composable
+  private fun ThreadScreenToolbar(
+    mainUiLayoutMode: MainUiLayoutMode
+  ) {
     UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
       postScreenState = threadScreenViewModel.postScreenState,
-      kurobaToolbarState = kurobaToolbarState
+      kurobaToolbarState = threadToolbarState
     )
 
     LaunchedEffect(
       key1 = Unit,
       block = {
-        kurobaToolbarState.toolbarIconClickEventFlow.collect { key ->
+        threadToolbarState.toolbarIconClickEventFlow.collect { key ->
           when (key as ToolbarIcons) {
-            ToolbarIcons.Search -> kurobaToolbarState.openSearch()
+            ToolbarIcons.Search -> threadToolbarState.openSearch()
             ToolbarIcons.Overflow -> {
               navigationRouter.presentScreen(
                 FloatingMenuScreen(
@@ -175,8 +213,13 @@ class ThreadScreen(
 
     KurobaToolbar(
       screenKey = screenKey,
-      kurobaToolbarState = kurobaToolbarState,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
+      kurobaToolbarState = threadToolbarState,
+      canProcessBackEvent = {
+        canProcessBackEvent(
+          mainUiLayoutMode,
+          uiInfoManager.currentPage()
+        )
+      },
       onLeftIconClicked = { uiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = { searchQuery ->
@@ -193,7 +236,7 @@ class ThreadScreen(
         return@HandleBackPresses true
       }
 
-      if (kurobaToolbarState.onBackPressed()) {
+      if (threadToolbarState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
@@ -239,7 +282,7 @@ class ThreadScreen(
 
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
-    val replyLayoutOpenedHeight = dimensionResource(id = R.dimen.reply_layout_opened_height)
+    val replyLayoutContainerOpenedHeight = dimensionResource(id = R.dimen.reply_layout_container_opened_height)
 
     val kurobaSnackbarState = rememberKurobaSnackbarState()
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
@@ -251,7 +294,7 @@ class ThreadScreen(
         val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
           ReplyLayoutVisibility.Closed -> windowInsets.bottom
           ReplyLayoutVisibility.Opened,
-          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutOpenedHeight
+          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerOpenedHeight
         }
 
         PostListOptions(
@@ -370,7 +413,9 @@ class ThreadScreen(
     }
 
     ReplyLayoutContainer(
-      replyLayoutState = replyLayoutState
+      chanDescriptor = threadScreenViewModel.chanDescriptor,
+      replyLayoutState = replyLayoutState,
+      replyLayoutViewModel = replyLayoutViewModel
     )
 
     KurobaSnackbarContainer(

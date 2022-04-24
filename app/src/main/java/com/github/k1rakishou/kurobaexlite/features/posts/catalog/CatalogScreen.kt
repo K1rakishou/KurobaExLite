@@ -30,6 +30,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
@@ -64,6 +65,7 @@ class CatalogScreen(
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+  private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
@@ -75,9 +77,15 @@ class CatalogScreen(
     PostLongtapContentMenu(componentActivity, navigationRouter)
   }
 
-  private val replyLayoutState = ReplyLayoutState(SCREEN_KEY)
+  private val replyLayoutState: ReplyLayoutState
+    get() = catalogScreenViewModel.replyLayoutState
 
-  private val kurobaToolbarState = KurobaToolbarState(
+  private val replyLayoutToolbarState = KurobaToolbarState(
+    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_close_24),
+    middlePartInfo = MiddlePartInfo(centerContent = false),
+  )
+
+  private val catalogToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
     middlePartInfo = MiddlePartInfo(centerContent = true),
     rightPartInfo = RightPartInfo(
@@ -136,18 +144,48 @@ class CatalogScreen(
     val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
+    val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
+    if (replyLayoutVisibility != ReplyLayoutVisibility.Closed) {
+      ReplyLayoutToolbar(mainUiLayoutMode)
+    } else {
+      CatalogScreenToolbar(mainUiLayoutMode)
+    }
+  }
+
+  @Composable
+  private fun ReplyLayoutToolbar(mainUiLayoutMode: MainUiLayoutMode) {
+    LaunchedEffect(
+      key1 = Unit,
+      // TODO(KurobaEx): strings
+      block = { replyLayoutToolbarState.toolbarTitleState.value = "Reply" }
+    )
+
+    KurobaToolbar(
+      screenKey = screenKey,
+      kurobaToolbarState = replyLayoutToolbarState,
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
+      onLeftIconClicked = { replyLayoutState.onBackPressed() },
+      onMiddleMenuClicked = null,
+      onSearchQueryUpdated = null
+    )
+  }
+
+  @Composable
+  private fun CatalogScreenToolbar(
+    mainUiLayoutMode: MainUiLayoutMode
+  ) {
     UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
       postScreenState = catalogScreenViewModel.postScreenState,
-      kurobaToolbarState = kurobaToolbarState
+      kurobaToolbarState = catalogToolbarState
     )
 
     LaunchedEffect(
       key1 = Unit,
       block = {
-        kurobaToolbarState.toolbarIconClickEventFlow.collect { key ->
+        catalogToolbarState.toolbarIconClickEventFlow.collect { key ->
           when (key as ToolbarIcons) {
-            ToolbarIcons.Search -> kurobaToolbarState.openSearch()
+            ToolbarIcons.Search -> catalogToolbarState.openSearch()
             ToolbarIcons.Sort -> {
               val sortCatalogThreadsScreen = SortCatalogThreadsScreen(
                 componentActivity = componentActivity,
@@ -181,7 +219,7 @@ class CatalogScreen(
 
     KurobaToolbar(
       screenKey = screenKey,
-      kurobaToolbarState = kurobaToolbarState,
+      kurobaToolbarState = catalogToolbarState,
       canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
       onLeftIconClicked = { uiInfoManager.openDrawer() },
       onMiddleMenuClicked = {
@@ -209,7 +247,7 @@ class CatalogScreen(
         return@HandleBackPresses true
       }
 
-      if (kurobaToolbarState.onBackPressed()) {
+      if (catalogToolbarState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
@@ -251,7 +289,7 @@ class CatalogScreen(
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val fabSize = dimensionResource(id = R.dimen.fab_size)
     val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
-    val replyLayoutOpenedHeight = dimensionResource(id = R.dimen.reply_layout_opened_height)
+    val replyLayoutContainerOpenedHeight = dimensionResource(id = R.dimen.reply_layout_container_opened_height)
 
     val kurobaSnackbarState = rememberKurobaSnackbarState()
     val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
@@ -263,7 +301,7 @@ class CatalogScreen(
         val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
           ReplyLayoutVisibility.Closed -> windowInsets.bottom
           ReplyLayoutVisibility.Opened,
-          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutOpenedHeight
+          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerOpenedHeight
         }
 
         PostListOptions(
@@ -380,7 +418,9 @@ class CatalogScreen(
     }
 
     ReplyLayoutContainer(
-      replyLayoutState = replyLayoutState
+      chanDescriptor = catalogScreenViewModel.catalogDescriptor,
+      replyLayoutState = replyLayoutState,
+      replyLayoutViewModel = replyLayoutViewModel
     )
 
     KurobaSnackbarContainer(

@@ -44,8 +44,8 @@ class InstallMpvNativeLibrariesFromGithub(
 
     if (abi == null) {
       throw MpvInstallLibsFromGithubException("No suitable ABI found: " +
-        "expected one of: \'${LIB_ABIS.joinToString()}, " +
-        "\'got: \'${Build.SUPPORTED_ABIS.joinToString()}\'")
+        "expected one of: \'${LIB_ABIS.joinToString()}\', " +
+        "got: \'${Build.SUPPORTED_ABIS.joinToString()}\'")
     }
 
     val request = Request.Builder()

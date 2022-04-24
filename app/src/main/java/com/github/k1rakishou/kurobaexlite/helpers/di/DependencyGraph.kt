@@ -21,6 +21,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
@@ -133,9 +134,16 @@ object DependencyGraph {
     single { PostReplyChainManager() }
     single { ChanViewManager() }
     single { SnackbarManager(appContext = get()) }
-    single { UiInfoManager(appContext = get(), appSettings = get(), coroutineScope = get()) }
     single { NavigationHistoryManager() }
     single { MarkedPostManager() }
+
+    single {
+      UiInfoManager(
+        appContext = get(),
+        appSettings = get(),
+        coroutineScope = get()
+      )
+    }
   }
 
   private fun Module.viewModels() {
@@ -149,11 +157,13 @@ object DependencyGraph {
     viewModel {
       CatalogScreenViewModel(
         application = get(),
+        savedStateHandle = get()
       )
     }
     viewModel {
       ThreadScreenViewModel(
         application = get(),
+        savedStateHandle = get()
       )
     }
     viewModel {
@@ -184,6 +194,9 @@ object DependencyGraph {
     }
     viewModel {
       NavigationHistoryScreenViewModel(application = get())
+    }
+    viewModel {
+      ReplyLayoutViewModel()
     }
   }
 
