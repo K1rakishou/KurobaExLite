@@ -152,6 +152,7 @@
 
     <string name="reply_view_model_site_not_found">Site for key \'%1$s\' not found</string>
     <string name="reply_view_model_site_does_not_support_posting">Site \'%1$s\' does not support posting</string>
+    <string name="reply_view_model_empty_reply_error">Empty reply (no message and no images)</string>
     <string name="reply_view_model_reply_send_canceled_by_user">Reply send canceled by user</string>
     <string name="reply_view_model_reply_send_error">Reply send error: \'%1$s\'</string>
     <string name="reply_view_model_you_forgot_captcha_error">You forgot to solve the CAPTCHA</string>

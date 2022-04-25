@@ -76,8 +76,8 @@ sealed class ReplyResponse {
   data class RateLimited(val timeToWaitMs: Long) : ReplyResponse()
 
   data class AuthenticationRequired(
-    val forgotCaptcha: Boolean?,
-    val mistypedCaptcha: Boolean?
+    val forgotCaptcha: Boolean,
+    val mistypedCaptcha: Boolean
   ) : ReplyResponse()
 
   data class Success(
