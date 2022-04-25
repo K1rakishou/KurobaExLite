@@ -30,6 +30,10 @@
             </intent-filter>
         </activity>
 
+        <receiver
+            android:name=".helpers.picker.SelectedFilePickerBroadcastReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>

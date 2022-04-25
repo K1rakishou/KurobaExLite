@@ -83,15 +83,18 @@ class CatalogScreen(
   private val replyLayoutToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_close_24),
     middlePartInfo = MiddlePartInfo(centerContent = false),
+    rightPartInfo = RightPartInfo(
+      ToolbarIcon(ReplyToolbarIcons.PickLocalFile, R.drawable.ic_baseline_attach_file_24)
+    )
   )
 
   private val catalogToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
     middlePartInfo = MiddlePartInfo(centerContent = true),
     rightPartInfo = RightPartInfo(
-      ToolbarIcon(ToolbarIcons.Search, R.drawable.ic_baseline_search_24),
-      ToolbarIcon(ToolbarIcons.Sort, R.drawable.ic_baseline_sort_24),
-      ToolbarIcon(ToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
+      ToolbarIcon(CatalogToolbarIcons.Search, R.drawable.ic_baseline_search_24),
+      ToolbarIcon(CatalogToolbarIcons.Sort, R.drawable.ic_baseline_sort_24),
+      ToolbarIcon(CatalogToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
     ),
     postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
   )
@@ -160,6 +163,22 @@ class CatalogScreen(
       block = { replyLayoutToolbarState.toolbarTitleState.value = "Reply" }
     )
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        replyLayoutToolbarState.toolbarIconClickEventFlow.collect { key ->
+          when (key as ReplyToolbarIcons) {
+            ReplyToolbarIcons.PickLocalFile -> {
+              val threadDescriptor = threadScreenViewModel.threadDescriptor
+                ?: return@collect
+
+              replyLayoutViewModel.onPickFileRequested(threadDescriptor)
+            }
+          }
+        }
+      }
+    )
+
     KurobaToolbar(
       screenKey = screenKey,
       kurobaToolbarState = replyLayoutToolbarState,
@@ -184,9 +203,9 @@ class CatalogScreen(
       key1 = Unit,
       block = {
         catalogToolbarState.toolbarIconClickEventFlow.collect { key ->
-          when (key as ToolbarIcons) {
-            ToolbarIcons.Search -> catalogToolbarState.openSearch()
-            ToolbarIcons.Sort -> {
+          when (key as CatalogToolbarIcons) {
+            CatalogToolbarIcons.Search -> catalogToolbarState.openSearch()
+            CatalogToolbarIcons.Sort -> {
               val sortCatalogThreadsScreen = SortCatalogThreadsScreen(
                 componentActivity = componentActivity,
                 navigationRouter = navigationRouter,
@@ -195,7 +214,7 @@ class CatalogScreen(
 
               navigationRouter.presentScreen(sortCatalogThreadsScreen)
             }
-            ToolbarIcons.Overflow -> {
+            CatalogToolbarIcons.Overflow -> {
               navigationRouter.presentScreen(
                 FloatingMenuScreen(
                   floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
@@ -435,7 +454,11 @@ class CatalogScreen(
     )
   }
 
-  private enum class ToolbarIcons {
+  private enum class ReplyToolbarIcons {
+    PickLocalFile
+  }
+
+  private enum class CatalogToolbarIcons {
     Search,
     Sort,
     Overflow

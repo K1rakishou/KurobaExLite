@@ -5,9 +5,10 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrShort
+import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
@@ -21,6 +22,10 @@ import com.github.k1rakishou.kurobaexlite.sites.ReplyResponse
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import logcat.logcat
 
@@ -29,10 +34,15 @@ class ReplyLayoutViewModel(
   private val siteManager: SiteManager,
   private val snackbarManager: SnackbarManager,
   private val modifyMarkedPosts: ModifyMarkedPosts,
+  private val localFilePicker: LocalFilePicker,
   private val appResources: AppResources
 ) : BaseViewModel() {
   private val sendReplyJobMap = mutableMapOf<ScreenKey, Job>()
   private val manuallyCanceled = mutableSetOf<ScreenKey>()
+
+  private val _pickFileResultFlow = MutableSharedFlow<PickFileResult>(extraBufferCapacity = Channel.UNLIMITED)
+  val pickFileResultFlow: SharedFlow<PickFileResult>
+    get() = _pickFileResultFlow.asSharedFlow()
 
   fun showErrorToast(chanDescriptor: ChanDescriptor, errorMessage: String) {
     val screenKey = when (chanDescriptor) {
@@ -127,7 +137,7 @@ class ReplyLayoutViewModel(
           showToast(chanDescriptor, message)
           replyLayoutState.onReplySendCanceled()
         } else {
-          logcatError(TAG) { "sendReply($screenKey) error: ${error.asLogIfImportantOrShort()}" }
+          logcatError(TAG) { "sendReply($screenKey) error: ${error.asLogIfImportantOrErrorMessage()}" }
 
           val message = appResources.string(R.string.reply_view_model_reply_send_error, error.errorMessageOrClassName())
           showErrorToast(chanDescriptor, message)
@@ -217,6 +227,27 @@ class ReplyLayoutViewModel(
 
     logcat(TAG) { "cancelSendReply($screenKey) canceled" }
   }
+
+  fun onPickFileRequested(chanDescriptor: ChanDescriptor) {
+    viewModelScope.launch {
+      val pickResult = localFilePicker.pickFile(
+        chanDescriptor = chanDescriptor,
+        allowMultiSelection = false
+      )
+
+      val pickFileResult = PickFileResult(
+        chanDescriptor = chanDescriptor,
+        pickResult = pickResult
+      )
+
+      _pickFileResultFlow.emit(pickFileResult)
+    }
+  }
+
+  data class PickFileResult(
+    val chanDescriptor: ChanDescriptor,
+    val pickResult: Result<List<AttachedMedia>>
+  )
 
   companion object {
     private const val TAG = "ReplyLayoutViewModel"

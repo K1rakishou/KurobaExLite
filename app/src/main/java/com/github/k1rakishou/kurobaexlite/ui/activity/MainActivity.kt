@@ -21,6 +21,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
   private val fullScreenHelpers: FullScreenHelpers by inject(FullScreenHelpers::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
+  private val localFilePicker: LocalFilePicker by inject(LocalFilePicker::class.java)
 
   private var backPressedOnce = false
 
@@ -46,6 +48,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    localFilePicker.attachActivity(this)
 
     WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
@@ -72,33 +76,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     }
   }
 
-  @Composable
-  private fun HandleOrientationChanges() {
-    val orientation = LocalConfiguration.current.orientation
-
-    DisposableEffect(
-      key1 = orientation,
-      effect = {
-        if (orientation in uiInfoManager.orientations) {
-          uiInfoManager.currentOrientation.value = orientation
-        }
-
-        // We need to reset the currentOrientation upon configuration change (screen rotation) so
-        // that the layout is set into the default null state and nothing is drawn. We do that
-        // to avoid situations when a layout mode is built for incorrect orientation for split
-        // second after the orientation changes. This leads to nasty bugs like the search toolbar
-        // query not being restored upon configuration change and other stuff.
-        onDispose {
-          uiInfoManager.currentOrientation.value = null
-        }
-      }
-    )
-  }
-
   override fun onDestroy() {
     mainActivityViewModel.rootNavigationRouter.onDestroy()
     coroutineScope.cancelChildren()
     clickedThumbnailBoundsStorage.clear()
+    localFilePicker.detachActivity()
 
     super.onDestroy()
   }
@@ -152,6 +134,35 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   ) {
     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     runtimePermissionsHelper.onRequestPermissionsResult(requestCode, permissions, grantResults)
+  }
+
+  override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    super.onActivityResult(requestCode, resultCode, data)
+
+    localFilePicker.onActivityResult(requestCode, resultCode, data)
+  }
+
+  @Composable
+  private fun HandleOrientationChanges() {
+    val orientation = LocalConfiguration.current.orientation
+
+    DisposableEffect(
+      key1 = orientation,
+      effect = {
+        if (orientation in uiInfoManager.orientations) {
+          uiInfoManager.currentOrientation.value = orientation
+        }
+
+        // We need to reset the currentOrientation upon configuration change (screen rotation) so
+        // that the layout is set into the default null state and nothing is drawn. We do that
+        // to avoid situations when a layout mode is built for incorrect orientation for split
+        // second after the orientation changes. This leads to nasty bugs like the search toolbar
+        // query not being restored upon configuration change and other stuff.
+        onDispose {
+          uiInfoManager.currentOrientation.value = null
+        }
+      }
+    )
   }
 
   companion object {

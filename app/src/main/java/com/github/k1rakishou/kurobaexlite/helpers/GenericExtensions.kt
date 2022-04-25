@@ -197,7 +197,7 @@ fun Throwable.errorMessageOrClassName(): String {
   return this::class.java.name
 }
 
-fun Throwable.asLogIfImportantOrShort(): String {
+fun Throwable.asLogIfImportantOrErrorMessage(): String {
   if (isExceptionImportant()) {
     return asLog()
   }

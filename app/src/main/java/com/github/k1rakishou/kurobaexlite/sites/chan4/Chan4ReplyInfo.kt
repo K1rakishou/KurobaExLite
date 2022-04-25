@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.sites.chan4
 
+import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
 import com.github.k1rakishou.kurobaexlite.helpers.groupOrNull
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
@@ -16,7 +17,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.ReplyEvent
 import com.github.k1rakishou.kurobaexlite.sites.ReplyResponse
 import com.github.k1rakishou.kurobaexlite.sites.Site
-import java.io.File
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlinx.coroutines.flow.Flow
@@ -208,11 +208,11 @@ class Chan4ReplyInfo(
       //          }
     }
 
-    val replyFile = replyData.attachedImages.firstOrNull()
-    if (replyFile != null) {
+    val attachedMedia = replyData.attachedMediaList.firstOrNull()
+    if (attachedMedia != null) {
       attachFile(
         formBuilder = formBuilder,
-        replyFile = replyFile,
+        attachedMedia = attachedMedia,
         progressListener = { progress -> onProgress(progress) }
       )
 
@@ -226,19 +226,23 @@ class Chan4ReplyInfo(
 
   private fun attachFile(
     formBuilder: MultipartBody.Builder,
-    replyFile: File,
+    attachedMedia: AttachedMedia,
     progressListener: ProgressRequestBody.ProgressRequestListener,
   ) {
     val mediaType = "application/octet-stream".toMediaType()
+    val attachedMediaFile = attachedMedia.asFile
 
     val progressRequestBody = ProgressRequestBody(
       fileIndex = 1,
       totalFiles = 1,
-      delegate = replyFile.asRequestBody(mediaType),
+      delegate = attachedMediaFile.asRequestBody(mediaType),
       progressListener
     )
 
-    formBuilder.addFormDataPart("upfile", replyFile.name, progressRequestBody)
+    val fileName = attachedMedia.fileName
+      ?: attachedMediaFile.name
+
+    formBuilder.addFormDataPart("upfile", fileName, progressRequestBody)
   }
 
   private fun extractTimeToWait(rateLimitMatcher: Matcher): Long {

@@ -64,6 +64,9 @@ class AppSettings(
   val navigationHistoryMaxSize by lazy {
     NumberSetting(256, "navigation_history_max_size", dataStore)
   }
+  val lastRememberedFilePicker by lazy {
+    StringSetting("", "last_remembered_file_picker", dataStore)
+  }
 
   val userAgent by lazy {
     val userAgent = try {

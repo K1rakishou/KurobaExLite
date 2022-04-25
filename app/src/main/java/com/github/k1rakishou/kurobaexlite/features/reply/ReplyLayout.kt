@@ -7,17 +7,11 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -33,15 +27,12 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
-import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
 @Composable
 fun ReplyLayoutContainer(
@@ -67,6 +58,27 @@ fun ReplyLayoutContainer(
         }
 
         replyLayoutViewModel.showErrorToast(chanDescriptor, errorMessage)
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = chanDescriptor,
+    block = {
+      replyLayoutViewModel.pickFileResultFlow.collect { pickFileResult ->
+        if (chanDescriptor == null || pickFileResult.chanDescriptor != chanDescriptor) {
+          return@collect
+        }
+
+        pickFileResult.pickResult
+          .onFailure { error ->
+            replyLayoutViewModel.showErrorToast(chanDescriptor, error.errorMessageOrClassName())
+          }
+          .onSuccess { attachedMediaList ->
+            attachedMediaList.forEach { attachedMedia ->
+              replyLayoutState.attachMedia(attachedMedia)
+            }
+          }
       }
     }
   )
@@ -192,6 +204,7 @@ private fun ReplyLayout(
 
   val replyText by replyLayoutState.replyText
   val sendReplyState by replyLayoutState.sendReplyState
+  val attachedMediaList = replyLayoutState.attachedMediaList
 
   Column(
     modifier = Modifier
@@ -200,17 +213,17 @@ private fun ReplyLayout(
   ) {
     val density = LocalDensity.current
     val spacerHeight = 8.dp
-    val replyInputHeightPercentage = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
-      75f
-    } else {
-      65f
+
+    val replyInputHeightPercentage = when {
+      attachedMediaList.isEmpty() -> 100f
+      replyLayoutVisibility == ReplyLayoutVisibility.Expanded -> 75f
+      else -> 65f
     }
 
     val replyLayoutHeightExcludingSpacer = replyLayoutHeight - spacerHeight
     val replyInputHeight = with(density) {
       ((replyLayoutHeightExcludingSpacer.toPx() / 100f) * replyInputHeightPercentage).toDp()
     }
-    val replyAttachmentsHeight = replyLayoutHeightExcludingSpacer - replyInputHeight
 
     ReplyInputWithButtons(
       height = replyInputHeight,
@@ -225,121 +238,15 @@ private fun ReplyLayout(
       onSendReplyClicked = onSendReplyClicked
     )
 
-    Spacer(modifier = Modifier.height(spacerHeight))
+    if (attachedMediaList.isNotEmpty()) {
+      val replyAttachmentsHeight = replyLayoutHeightExcludingSpacer - replyInputHeight
+      Spacer(modifier = Modifier.height(spacerHeight))
 
-    ReplyAttachments(height = replyAttachmentsHeight)
-  }
-}
-
-@Composable
-fun ReplyAttachments(height: Dp) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(height)
-  ) {
-    // TODO(KurobaEx):
-    Text(text = "Attachments go here")
-  }
-}
-
-@Composable
-private fun ReplyInputWithButtons(
-  height: Dp,
-  replyLayoutEnabled: Boolean,
-  replyText: String,
-  replyLayoutState: ReplyLayoutState,
-  replyLayoutVisibility: ReplyLayoutVisibility,
-  onExpandReplyLayoutClicked: () -> Unit,
-  onCollapseReplyLayoutClicked: () -> Unit,
-  sendReplyState: SendReplyState,
-  onCancelReplySendClicked: () -> Unit,
-  onSendReplyClicked: () -> Unit
-) {
-  val replySendProgressMut by replyLayoutState.replySendProgressState
-  val replySendProgress = replySendProgressMut
-
-  Row {
-    KurobaComposeCustomTextField(
-      modifier = Modifier
-        .weight(1f)
-        .height(height)
-        .padding(top = 4.dp, start = 4.dp, end = 4.dp),
-      enabled = replyLayoutEnabled,
-      value = replyText,
-      singleLine = false,
-      maxLines = Int.MAX_VALUE,
-      onValueChange = { newTextFieldValue -> replyLayoutState.onReplyTextChanged(newTextFieldValue) }
-    )
-
-    Column(
-      modifier = Modifier
-        .width(32.dp)
-        .wrapContentHeight()
-    ) {
-      val drawableId = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
-        R.drawable.ic_baseline_arrow_drop_down_24
-      } else {
-        R.drawable.ic_baseline_arrow_drop_up_24
-      }
-
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(32.dp)
-          .kurobaClickable(
-            enabled = replyLayoutEnabled,
-            bounded = false,
-            onClick = {
-              when (replyLayoutVisibility) {
-                ReplyLayoutVisibility.Closed -> {
-                  // no-op
-                }
-                ReplyLayoutVisibility.Opened -> onExpandReplyLayoutClicked()
-                ReplyLayoutVisibility.Expanded -> onCollapseReplyLayoutClicked()
-              }
-            }
-          ),
-        drawableId = drawableId,
-        enabled = replyLayoutEnabled
+      ReplyAttachments(
+        height = replyAttachmentsHeight,
+        attachedMediaList = attachedMediaList,
+        replyLayoutVisibility = replyLayoutVisibility
       )
-
-      run {
-        val buttonDrawableId = remember(key1 = sendReplyState) {
-          if (sendReplyState.canCancel) {
-            R.drawable.ic_baseline_close_24
-          } else {
-            R.drawable.ic_baseline_send_24
-          }
-        }
-
-        Box(modifier = Modifier.size(32.dp)) {
-          KurobaComposeIcon(
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(4.dp)
-              .kurobaClickable(
-                bounded = false,
-                onClick = {
-                  if (sendReplyState.canCancel) {
-                    onCancelReplySendClicked()
-                  } else {
-                    onSendReplyClicked()
-                  }
-                }
-              ),
-            drawableId = buttonDrawableId
-          )
-
-          if (replySendProgress != null && replySendProgress > 0f) {
-            KurobaComposeLoadingIndicator(
-              modifier = Modifier
-                .fillMaxSize()
-                .padding(4.dp),
-              progress = replySendProgress
-            )
-          }
-        }
-      }
     }
   }
 }

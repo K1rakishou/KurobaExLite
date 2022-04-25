@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import android.os.Parcelable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
@@ -16,6 +17,8 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 import logcat.logcat
 import org.koin.core.context.GlobalContext
 
@@ -34,9 +37,9 @@ class ReplyLayoutState(
   val replyText: State<String>
     get() = _replyText
 
-  private val _attachedImages = mutableStateListOf<File>()
-  val attachedImages: List<File>
-    get() = _attachedImages
+  private val _attachedMediaList = mutableStateListOf<AttachedMedia>()
+  val attachedMediaList: List<AttachedMedia>
+    get() = _attachedMediaList
 
   private val _sendReplyState = mutableStateOf<SendReplyState>(SendReplyState.Finished(null))
   val sendReplyState: State<SendReplyState>
@@ -63,13 +66,12 @@ class ReplyLayoutState(
       _replyLayoutVisibilityState.value = savedStateHandle.get<Int>(replyLayoutVisibilityKey)
         .let { ReplyLayoutVisibility.fromRawValue(it) }
 
-      savedStateHandle.get<List<String>>(attachedImagesKey)?.let { prevAttachedImagePathList ->
+      savedStateHandle.get<List<AttachedMedia>>(attachedMediaListKey)?.let { prevAttachedImagePathList ->
         val prevAttachedImages = prevAttachedImagePathList
-          .map { attachedImagePath -> File(attachedImagePath) }
-          .filter { attachedImageFile -> attachedImageFile.exists() }
+          .filter { attachedMedia -> attachedMedia.exists() }
 
-        _attachedImages.clear()
-        _attachedImages.addAll(prevAttachedImages)
+        _attachedMediaList.clear()
+        _attachedMediaList.addAll(prevAttachedImages)
       }
 
       onReplyLayoutVisibilityStateChanged()
@@ -78,7 +80,7 @@ class ReplyLayoutState(
         "restoreFromSavedState() " +
           "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, "
           "replyText=\'${_replyText.value.take(32)}\', " +
-          "attachedImages=\'${_attachedImages.joinToString(transform = { it.path })}\'"
+          "attachedImages=\'${_attachedMediaList.joinToString(transform = { it.path })}\'"
       }
     }
   }
@@ -97,7 +99,7 @@ class ReplyLayoutState(
 
   fun onReplySendEndedSuccessfully() {
     Snapshot.withMutableSnapshot {
-      _attachedImages.clear()
+      _attachedMediaList.clear()
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Closed
       _replyText.value = ""
 
@@ -123,13 +125,8 @@ class ReplyLayoutState(
     }
   }
 
-  fun attachImage(image: File) {
-    _attachedImages += image
-    onAttachedImagesUpdated()
-  }
-
-  fun detachImage(image: File) {
-    _attachedImages -= image
+  fun attachMedia(attachedMedia: AttachedMedia) {
+    _attachedMediaList += attachedMedia
     onAttachedImagesUpdated()
   }
 
@@ -171,10 +168,7 @@ class ReplyLayoutState(
   }
 
   private fun onAttachedImagesUpdated() {
-    val attachedImagePathList = _attachedImages
-      .map { attachedImageFile -> attachedImageFile.absolutePath }
-
-    savedStateHandle.set(attachedImagesKey, attachedImagePathList)
+    savedStateHandle.set(attachedMediaListKey, _attachedMediaList.toList())
   }
 
   private fun onReplyLayoutVisibilityStateChanged() {
@@ -187,7 +181,7 @@ class ReplyLayoutState(
     return ReplyData(
       chanDescriptor = chanDescriptor,
       message = replyText.value,
-      attachedImages = attachedImages,
+      attachedMediaList = attachedMediaList,
       captchaSolution = captchaSolution
     )
   }
@@ -196,10 +190,22 @@ class ReplyLayoutState(
     private const val TAG = "ReplyLayoutState"
 
     private const val replyTextKey = "replyText"
-    private const val attachedImagesKey = "attachedImages"
+    private const val attachedMediaListKey = "attachedMediaList"
     private const val replyLayoutVisibilityKey = "replyLayoutVisibility"
   }
 
+}
+
+@Parcelize
+data class AttachedMedia(
+  val path: String,
+  val fileName: String? = null
+): Parcelable {
+
+  @IgnoredOnParcel
+  val asFile by lazy { File(path) }
+
+  fun exists(): Boolean = asFile.exists()
 }
 
 sealed class SendReplyState {

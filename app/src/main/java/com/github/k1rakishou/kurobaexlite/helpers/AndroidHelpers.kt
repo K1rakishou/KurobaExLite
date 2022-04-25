@@ -27,6 +27,11 @@ class AndroidHelpers(
     return Build.VERSION.SDK_INT
   }
 
+  // Api 22
+  fun isAndroidL_MR1(): Boolean {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1
+  }
+
   // Api 23
   fun isAndroidM(): Boolean {
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M

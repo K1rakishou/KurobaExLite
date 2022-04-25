@@ -32,6 +32,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.cache.site_data.SiteDataPersister
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -132,6 +133,15 @@ object DependencyGraph {
     single { SiteDataPersister(appContext = get(), moshi = get()) }
     single { MediaSaver(applicationContext = get(), androidHelpers = get(), proxiedOkHttpClient = get()) }
     single<AppResources> { AppResourcesImpl(appContext = get()) }
+    single {
+      LocalFilePicker(
+        appContext = get(),
+        appScope = get(),
+        appSettings = get(),
+        androidHelpers = get(),
+        appResources = get(),
+      )
+    }
   }
 
   private fun Module.managers() {
@@ -201,6 +211,7 @@ object DependencyGraph {
         siteManager = get(),
         snackbarManager = get(),
         modifyMarkedPosts = get(),
+        localFilePicker = get(),
         appResources = get()
       )
     }

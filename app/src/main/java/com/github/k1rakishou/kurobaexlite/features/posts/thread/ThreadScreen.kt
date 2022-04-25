@@ -85,7 +85,10 @@ class ThreadScreen(
 
   private val replyLayoutToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_close_24),
-    middlePartInfo = MiddlePartInfo(centerContent = false)
+    middlePartInfo = MiddlePartInfo(centerContent = false),
+    rightPartInfo = RightPartInfo(
+      ToolbarIcon(ReplyToolbarIcons.PickLocalFile, R.drawable.ic_baseline_attach_file_24)
+    )
   )
 
   private val threadToolbarState by lazy {
@@ -102,8 +105,8 @@ class ThreadScreen(
       leftIconInfo = leftIconInfo,
       middlePartInfo = MiddlePartInfo(centerContent = false),
       rightPartInfo = RightPartInfo(
-        ToolbarIcon(ToolbarIcons.Search, R.drawable.ic_baseline_search_24),
-        ToolbarIcon(ToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
+        ToolbarIcon(ThreadToolbarIcons.Search, R.drawable.ic_baseline_search_24),
+        ToolbarIcon(ThreadToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
       ),
       postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
     )
@@ -163,6 +166,22 @@ class ThreadScreen(
       block = { replyLayoutToolbarState.toolbarTitleState.value = "Reply" }
     )
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        replyLayoutToolbarState.toolbarIconClickEventFlow.collect { key ->
+          when (key as ReplyToolbarIcons) {
+            ReplyToolbarIcons.PickLocalFile -> {
+              val threadDescriptor = threadScreenViewModel.threadDescriptor
+                ?: return@collect
+
+              replyLayoutViewModel.onPickFileRequested(threadDescriptor)
+            }
+          }
+        }
+      }
+    )
+
     KurobaToolbar(
       screenKey = screenKey,
       kurobaToolbarState = replyLayoutToolbarState,
@@ -187,9 +206,9 @@ class ThreadScreen(
       key1 = Unit,
       block = {
         threadToolbarState.toolbarIconClickEventFlow.collect { key ->
-          when (key as ToolbarIcons) {
-            ToolbarIcons.Search -> threadToolbarState.openSearch()
-            ToolbarIcons.Overflow -> {
+          when (key as ThreadToolbarIcons) {
+            ThreadToolbarIcons.Search -> threadToolbarState.openSearch()
+            ThreadToolbarIcons.Overflow -> {
               navigationRouter.presentScreen(
                 FloatingMenuScreen(
                   floatingMenuKey = FloatingMenuScreen.THREAD_OVERFLOW,
@@ -430,7 +449,11 @@ class ThreadScreen(
     )
   }
 
-  private enum class ToolbarIcons {
+  private enum class ReplyToolbarIcons {
+    PickLocalFile
+  }
+
+  private enum class ThreadToolbarIcons {
     Search,
     Overflow
   }

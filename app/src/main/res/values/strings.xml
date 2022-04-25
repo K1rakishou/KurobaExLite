@@ -163,4 +163,6 @@
     <string name="reply_view_model_posting_rate_limit_error">You have to wait \'%1$s\' seconds before you can post again</string>
     <string name="reply_view_model_reply_sent_successfully">Reply sent successfully</string>
 
+    <string name="image_pick_delegate_select_file_picker">Select a file picker to open a file…</string>
+
 </resources>
