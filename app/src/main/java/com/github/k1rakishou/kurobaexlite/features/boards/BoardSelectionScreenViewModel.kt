@@ -1,8 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.boards
 
-import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
+import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
@@ -19,9 +18,7 @@ import kotlinx.coroutines.launch
 import logcat.asLog
 import org.koin.java.KoinJavaComponent.inject
 
-class BoardSelectionScreenViewModel(
-  application: KurobaExLiteApplication
-) : BaseAndroidViewModel(application) {
+class BoardSelectionScreenViewModel : BaseViewModel() {
   private val getSiteBoardList: GetSiteBoardList by inject(GetSiteBoardList::class.java)
 
   private val boardsCache = mutableMapOf<CatalogDescriptor, SiteBoard>()

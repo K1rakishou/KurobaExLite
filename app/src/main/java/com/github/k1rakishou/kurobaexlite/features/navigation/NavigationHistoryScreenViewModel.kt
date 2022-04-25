@@ -2,8 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.navigation
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.viewModelScope
-import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
-import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
+import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
@@ -22,9 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 
-class NavigationHistoryScreenViewModel(
-  application: KurobaExLiteApplication
-) : BaseAndroidViewModel(application) {
+class NavigationHistoryScreenViewModel : BaseViewModel() {
   private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)

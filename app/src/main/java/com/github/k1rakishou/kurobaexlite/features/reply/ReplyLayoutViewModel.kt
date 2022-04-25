@@ -1,12 +1,14 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
 import androidx.lifecycle.viewModelScope
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrShort
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -26,7 +28,8 @@ class ReplyLayoutViewModel(
   private val captchaManager: CaptchaManager,
   private val siteManager: SiteManager,
   private val snackbarManager: SnackbarManager,
-  private val modifyMarkedPosts: ModifyMarkedPosts
+  private val modifyMarkedPosts: ModifyMarkedPosts,
+  private val appResources: AppResources
 ) : BaseViewModel() {
   private val sendReplyJobMap = mutableMapOf<ScreenKey, Job>()
   private val manuallyCanceled = mutableSetOf<ScreenKey>()
@@ -64,13 +67,15 @@ class ReplyLayoutViewModel(
     sendReplyJobMap[screenKey] = viewModelScope.launch {
       val site = siteManager.bySiteKey(chanDescriptor.siteKey)
       if (site == null) {
-        replyLayoutState.replyError("Site for key \'${chanDescriptor.siteKey.key}\' not found")
+        val message = appResources.string(R.string.reply_view_model_site_not_found, chanDescriptor.siteKey.key)
+        replyLayoutState.replyError(message)
         return@launch
       }
 
       val replyInfo = site.replyInfo()
       if (replyInfo == null) {
-        replyLayoutState.replyError("Site \'${chanDescriptor.siteKey.key}\' does not support posting")
+        val message = appResources.string(R.string.reply_view_model_site_does_not_support_posting, chanDescriptor.siteKey.key)
+        replyLayoutState.replyError(message)
         return@launch
       }
 
@@ -109,12 +114,14 @@ class ReplyLayoutViewModel(
         if (manuallyCanceled.contains(screenKey) || error is CancellationException) {
           logcatError(TAG) { "sendReply($screenKey) canceled" }
 
-          showToast(chanDescriptor, "Reply send canceled by user")
+          val message = appResources.string(R.string.reply_view_model_reply_send_canceled_by_user)
+          showToast(chanDescriptor, message)
           replyLayoutState.onReplySendCanceled()
         } else {
           logcatError(TAG) { "sendReply($screenKey) error: ${error.asLogIfImportantOrShort()}" }
 
-          showErrorToast(chanDescriptor, "Reply send error: \'${error.errorMessageOrClassName()}\'")
+          val message = appResources.string(R.string.reply_view_model_reply_send_error, error.errorMessageOrClassName())
+          showErrorToast(chanDescriptor, message)
           replyLayoutState.onReplySendEndedWithError(error)
         }
       } finally {
@@ -145,30 +152,34 @@ class ReplyLayoutViewModel(
           is ReplyResponse.AuthenticationRequired -> {
             when {
               response.forgotCaptcha == true -> {
-                replyLayoutState.replyError("You forgot to solve the CAPTCHA")
+                replyLayoutState.replyError(appResources.string(R.string.reply_view_model_you_forgot_captcha_error))
               }
               response.mistypedCaptcha == true -> {
-                replyLayoutState.replyError("You seem to have mistyped the CAPTCHA")
+                replyLayoutState.replyError(appResources.string(R.string.reply_view_model_you_mistyped_captcha_error))
               }
               else -> {
-                replyLayoutState.replyError("Authentication required")
+                replyLayoutState.replyError(appResources.string(R.string.reply_view_model_generic_authentication_error))
               }
             }
           }
           is ReplyResponse.Banned -> {
-            replyLayoutState.replyError("You are banned. Ban message: \'${response.banMessage}\'")
+            val message = appResources.string(R.string.reply_view_model_you_are_banned_error, response.banMessage)
+            replyLayoutState.replyError(message)
           }
           is ReplyResponse.Error -> {
-            replyLayoutState.replyError("Posting error: ${response.errorMessage}")
+            val message = appResources.string(R.string.reply_view_model_unknown_posting_error, response.errorMessage)
+            replyLayoutState.replyError(message)
           }
           is ReplyResponse.RateLimited -> {
-            replyLayoutState.replyError(
-              "You have to wait \'${response.timeToWaitMs / 1000L}\' seconds before you can post again"
+            val message = appResources.string(
+              R.string.reply_view_model_posting_rate_limit_error,
+              (response.timeToWaitMs / 1000L).toString()
             )
+
+            replyLayoutState.replyError(message)
           }
           is ReplyResponse.Success -> {
             val postDescriptor = response.postDescriptor
-            logcat(TAG) { "sendReply($screenKey) success postDescriptor: ${postDescriptor}" }
 
             if (chanDescriptor is CatalogDescriptor) {
               // TODO(KurobaEx): switch to thread screen and load this thread
@@ -176,9 +187,11 @@ class ReplyLayoutViewModel(
 
             modifyMarkedPosts.markPostAsMine(postDescriptor)
 
-            showToast(chanDescriptor, "Reply sent successfully")
+            showToast(chanDescriptor, appResources.string(R.string.reply_view_model_reply_sent_successfully))
             replyLayoutState.onReplySendEndedSuccessfully()
             replyLayoutState.onReplyProgressChanged(null)
+
+            logcat(TAG) { "sendReply($screenKey) success postDescriptor: ${postDescriptor}" }
           }
         }
       }

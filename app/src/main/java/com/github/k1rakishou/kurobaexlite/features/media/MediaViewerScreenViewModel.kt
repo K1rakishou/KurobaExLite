@@ -11,8 +11,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.github.k1rakishou.chan.core.mpv.MpvInitializer
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
-import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
-import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
+import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.Try
@@ -25,7 +24,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
 import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
-import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
@@ -51,17 +49,14 @@ import okio.sink
 
 
 class MediaViewerScreenViewModel(
-  private val application: KurobaExLiteApplication,
   val mpvSettings: MpvSettings,
+  private val mpvInitializer: MpvInitializer,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val kurobaLruDiskCache: KurobaLruDiskCache,
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub,
   private val imageLoader: ImageLoader,
   private val mediaSaver: MediaSaver,
-  private val snackbarManager: SnackbarManager
-) : BaseAndroidViewModel(application) {
-
-  private val mpvInitializer = MpvInitializer(appContext, mpvSettings)
+) : BaseViewModel() {
 
   val mpvInitialized: Boolean
     get() = mpvInitializer.initialized

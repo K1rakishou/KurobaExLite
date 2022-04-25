@@ -3,9 +3,8 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared
 import android.os.SystemClock
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.viewModelScope
-import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
+import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
@@ -59,9 +58,7 @@ import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
-abstract class PostScreenViewModel(
-  private val application: KurobaExLiteApplication,
-) : BaseAndroidViewModel(application) {
+abstract class PostScreenViewModel : BaseViewModel() {
   protected val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
   protected val chanCache: ChanCache by inject(ChanCache::class.java)
   protected val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)

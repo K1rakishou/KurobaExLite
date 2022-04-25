@@ -1,8 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.home
 
 import androidx.lifecycle.viewModelScope
-import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
-import com.github.k1rakishou.kurobaexlite.base.BaseAndroidViewModel
+import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaRequest
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -18,10 +17,9 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.shareIn
 
 class HomeScreenViewModel(
-  application: KurobaExLiteApplication,
   private val siteManager: SiteManager,
   private val captchaManager: CaptchaManager
-) : BaseAndroidViewModel(application) {
+) : BaseViewModel() {
 
   private val _homeScreenFabClickEventFlow = MutableSharedFlow<ScreenKey>(extraBufferCapacity = Channel.UNLIMITED)
   val homeScreenFabClickEventFlow: SharedFlow<ScreenKey>

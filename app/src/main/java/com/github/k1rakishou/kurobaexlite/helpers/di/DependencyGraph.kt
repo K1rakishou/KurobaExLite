@@ -6,6 +6,7 @@ import coil.Coil
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import coil.disk.DiskCache
+import com.github.k1rakishou.chan.core.mpv.MpvInitializer
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
@@ -31,6 +32,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.cache.site_data.SiteDataPersister
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.GetSiteBoardList
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
@@ -128,6 +131,7 @@ object DependencyGraph {
     }
     single { SiteDataPersister(appContext = get(), moshi = get()) }
     single { MediaSaver(applicationContext = get(), androidHelpers = get(), proxiedOkHttpClient = get()) }
+    single<AppResources> { AppResourcesImpl(appContext = get()) }
   }
 
   private fun Module.managers() {
@@ -152,58 +156,52 @@ object DependencyGraph {
   private fun Module.viewModels() {
     viewModel {
       HomeScreenViewModel(
-        application = get(),
         siteManager = get(),
         captchaManager = get()
       )
     }
     viewModel {
       CatalogScreenViewModel(
-        application = get(),
         savedStateHandle = get()
       )
     }
     viewModel {
       ThreadScreenViewModel(
-        application = get(),
         savedStateHandle = get()
       )
     }
+    viewModel { AlbumScreenViewModel() }
+    viewModel { PopupRepliesScreenViewModel() }
+    viewModel { BoardSelectionScreenViewModel() }
     viewModel {
-      AlbumScreenViewModel()
-    }
-    viewModel {
-      PopupRepliesScreenViewModel(
-        application = get(),
+      val mpvSettings = MpvSettings(
+        appContext = get(),
+        androidHelpers = get()
       )
-    }
-    viewModel {
-      BoardSelectionScreenViewModel(application = get())
-    }
-    viewModel {
+
+      val mpvInitializer = MpvInitializer(
+        applicationContext = get(),
+        mpvSettings = mpvSettings
+      )
+
       MediaViewerScreenViewModel(
-        application = get(),
-        mpvSettings = MpvSettings(
-          appContext = get(),
-          androidHelpers = get()
-        ),
+        mpvSettings = mpvSettings,
+        mpvInitializer = mpvInitializer,
         proxiedOkHttpClient = get(),
         kurobaLruDiskCache = get(),
         installMpvNativeLibrariesFromGithub = get(),
         imageLoader = get(),
         mediaSaver = get(),
-        snackbarManager = get()
       )
     }
-    viewModel {
-      NavigationHistoryScreenViewModel(application = get())
-    }
+    viewModel { NavigationHistoryScreenViewModel() }
     viewModel {
       ReplyLayoutViewModel(
         captchaManager = get(),
         siteManager = get(),
         snackbarManager = get(),
-        modifyMarkedPosts = get()
+        modifyMarkedPosts = get(),
+        appResources = get()
       )
     }
     viewModel {

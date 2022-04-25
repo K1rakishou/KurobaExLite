@@ -4,7 +4,6 @@ import android.os.SystemClock
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
@@ -36,9 +35,8 @@ import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreenViewModel(
-  application: KurobaExLiteApplication,
   private val savedStateHandle: SavedStateHandle
-) : PostScreenViewModel(application) {
+) : PostScreenViewModel() {
   private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
 
   private val loadChanThreadView: LoadChanThreadView by inject(LoadChanThreadView::class.java)
