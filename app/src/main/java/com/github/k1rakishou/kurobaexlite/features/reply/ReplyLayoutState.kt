@@ -116,7 +116,7 @@ class ReplyLayoutState(
 
       val textFieldValue = TextFieldValue(
         text = replyTextFromBundle,
-        selection = TextRange(replyTextFromBundle.lastIndex.coerceAtLeast(0))
+        selection = TextRange(replyTextFromBundle.length)
       )
 
       onReplyTextChanged(textFieldValue)
@@ -206,7 +206,7 @@ class ReplyLayoutState(
   fun onReplyTextChanged(text: String) {
     val textFieldValue = TextFieldValue(
       text = text,
-      selection = TextRange(index = text.lastIndex.coerceAtLeast(0))
+      selection = TextRange(index = text.length)
     )
 
     onReplyTextChanged(textFieldValue)
@@ -278,11 +278,12 @@ class ReplyLayoutState(
     val newReplyText = buildString {
       if (_replyText.value.text.isNotBlank()) {
         append(_replyText.value.text)
-        append("\n")
+        appendLine()
       }
 
       append(">>")
       append(postDescriptor.postNo)
+      appendLine()
     }
 
     onReplyTextChanged(newReplyText)
@@ -293,7 +294,7 @@ class ReplyLayoutState(
     val newReplyText = buildString {
       if (_replyText.value.text.isNotBlank()) {
         append(_replyText.value.text)
-        append("\n")
+        appendLine()
       }
 
       append(">>")
