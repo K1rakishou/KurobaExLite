@@ -208,6 +208,8 @@ class PopupRepliesScreen(
             popupRepliesScreenViewModel.loadRepliesForMode(ReplyViewMode.RepliesFrom(postDescriptor))
           }
         },
+        onQuotePostClicked = { postCellData -> },
+        onQuotePostWithCommentClicked = { postCellData -> },
         onPostImageClicked = { _, postImageData, thumbnailBoundsInRoot ->
           val collectedImages = popupRepliesScreenViewModel.collectCurrentImages()
           if (collectedImages.isEmpty()) {

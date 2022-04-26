@@ -17,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPo
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -163,7 +164,7 @@ class ReplyLayoutViewModel(
           chanDescriptor.siteKey.key
         )
 
-        replyLayoutState.replyError(message)
+        replyLayoutState.replyShowErrorToast(message)
         return@launch
       }
 
@@ -174,7 +175,7 @@ class ReplyLayoutViewModel(
           chanDescriptor.siteKey.key
         )
 
-        replyLayoutState.replyError(message)
+        replyLayoutState.replyShowErrorToast(message)
         return@launch
       }
 
@@ -194,7 +195,7 @@ class ReplyLayoutViewModel(
         val replyData = replyLayoutState.getReplyData(chanDescriptor, captcha.solution)
         if (!replyData.isValid()) {
           val message = appResources.string(R.string.reply_view_model_empty_reply_error)
-          replyLayoutState.replyError(message)
+          replyLayoutState.replyShowErrorToast(message)
           return@launch
         }
 
@@ -256,6 +257,33 @@ class ReplyLayoutViewModel(
     }
   }
 
+  fun quotePost(threadDescriptor: ThreadDescriptor, postCellData: PostCellData) {
+    val replyLayoutState = getOrCreateReplyLayoutState(threadDescriptor)
+    if (replyLayoutState !is ReplyLayoutState) {
+      return
+    }
+
+    replyLayoutState.appendPostQuote(postCellData.postDescriptor)
+  }
+
+  fun quotePostWithComment(threadDescriptor: ThreadDescriptor, postCellData: PostCellData) {
+    val parsedPostComment = postCellData.parsedPostData?.parsedPostComment
+    if (parsedPostComment.isNullOrEmpty()) {
+      quotePost(threadDescriptor, postCellData)
+      return
+    }
+
+    val replyLayoutState = getOrCreateReplyLayoutState(threadDescriptor)
+    if (replyLayoutState !is ReplyLayoutState) {
+      return
+    }
+
+    replyLayoutState.appendPostQuoteWithComment(
+      postDescriptor = postCellData.postDescriptor,
+      comment = parsedPostComment
+    )
+  }
+
   private suspend fun processReplyEvents(
     replyEvent: ReplyEvent,
     replyLayoutState: ReplyLayoutState,
@@ -281,23 +309,23 @@ class ReplyLayoutViewModel(
       is ReplyResponse.AuthenticationRequired -> {
         when {
           replyResponse.forgotCaptcha -> {
-            replyLayoutState.replyError(appResources.string(R.string.reply_view_model_you_forgot_captcha_error))
+            replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_you_forgot_captcha_error))
           }
           replyResponse.mistypedCaptcha -> {
-            replyLayoutState.replyError(appResources.string(R.string.reply_view_model_you_mistyped_captcha_error))
+            replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_you_mistyped_captcha_error))
           }
           else -> {
-            replyLayoutState.replyError(appResources.string(R.string.reply_view_model_generic_authentication_error))
+            replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_generic_authentication_error))
           }
         }
       }
       is ReplyResponse.Banned -> {
         val message = appResources.string(R.string.reply_view_model_you_are_banned_error, replyResponse.banMessage)
-        replyLayoutState.replyError(message)
+        replyLayoutState.replyShowErrorToast(message)
       }
       is ReplyResponse.Error -> {
         val message = appResources.string(R.string.reply_view_model_unknown_posting_error, replyResponse.errorMessage)
-        replyLayoutState.replyError(message)
+        replyLayoutState.replyShowErrorToast(message)
       }
       is ReplyResponse.RateLimited -> {
         val message = appResources.string(
@@ -305,7 +333,7 @@ class ReplyLayoutViewModel(
           (replyResponse.timeToWaitMs / 1000L).toString()
         )
 
-        replyLayoutState.replyError(message)
+        replyLayoutState.replyShowErrorToast(message)
       }
       is ReplyResponse.Success -> {
         val postDescriptor = replyResponse.postDescriptor

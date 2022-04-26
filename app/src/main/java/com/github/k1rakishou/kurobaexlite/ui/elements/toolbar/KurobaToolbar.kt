@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -362,13 +363,13 @@ private fun BoxScope.PostsScreenSearchToolbar(
 
   var searchQuery by remember {
     val prevSearchQuery = stackContainerState.readData(searchQueryKey) ?: ""
-    return@remember mutableStateOf<String>(prevSearchQuery)
+    return@remember mutableStateOf(TextFieldValue(text = prevSearchQuery))
   }
 
   DisposableEffect(
     key1 = Unit,
     effect = {
-      onSearchQueryUpdated?.invoke(searchQuery)
+      onSearchQueryUpdated?.invoke(searchQuery.text)
 
       onDispose {
         onSearchQueryUpdated?.invoke(null)
@@ -387,8 +388,8 @@ private fun BoxScope.PostsScreenSearchToolbar(
             onClick = {
               stackContainerState.removeData(searchQueryKey)
 
-              if (searchQuery.isNotEmpty()) {
-                searchQuery = ""
+              if (searchQuery.text.isNotEmpty()) {
+                searchQuery = TextFieldValue(text = "")
                 onSearchQueryUpdated?.invoke("")
               } else {
                 searchDebouncer.stop()
@@ -397,7 +398,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
               }
             }
           ),
-        drawableId = if (searchQuery.isNotEmpty()) {
+        drawableId = if (searchQuery.text.isNotEmpty()) {
           R.drawable.ic_baseline_clear_24
         } else {
           R.drawable.ic_baseline_arrow_back_24
@@ -419,7 +420,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
             stackContainerState.storeData(searchQueryKey, updatedQuery)
 
             searchDebouncer.post(timeout = 125L) {
-              onSearchQueryUpdated?.invoke(updatedQuery)
+              onSearchQueryUpdated?.invoke(updatedQuery.text)
             }
           }
         }

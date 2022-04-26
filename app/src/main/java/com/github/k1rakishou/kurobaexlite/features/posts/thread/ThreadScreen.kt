@@ -379,6 +379,18 @@ class ThreadScreen(
       onPostRepliesClicked = { postDescriptor ->
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
       },
+      onQuotePostClicked = { postCellData ->
+        val threadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@PostListContent
+
+        replyLayoutViewModel.quotePost(threadDescriptor, postCellData)
+      },
+      onQuotePostWithCommentClicked = { postCellData ->
+        val threadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@PostListContent
+
+        replyLayoutViewModel.quotePostWithComment(threadDescriptor, postCellData)
+      },
       onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
         val threadDescriptor = chanDescriptor as ThreadDescriptor
         clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)

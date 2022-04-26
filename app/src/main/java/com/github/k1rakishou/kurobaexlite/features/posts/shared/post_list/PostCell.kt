@@ -1,10 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
-import android.os.SystemClock
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.forEachGesture
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,8 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -41,6 +34,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
@@ -48,6 +42,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -63,11 +58,14 @@ internal fun PostCell(
   postCellCommentTextSizeSp: TextUnit,
   postCellSubjectTextSizeSp: TextUnit,
   postCellData: PostCellData,
+  postCellControlsShown: Boolean,
   onSelectionModeChanged: (Boolean) -> Unit,
   onPostBind: (PostCellData) -> Unit,
   onPostUnbind: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
+  onQuotePostClicked: (PostCellData) -> Unit,
+  onQuotePostWithCommentClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
@@ -117,10 +115,14 @@ internal fun PostCell(
       )
 
       PostCellFooter(
+        isCatalogMode = isCatalogMode,
+        postCellControlsShown = postCellControlsShown,
         postCellData = postCellData,
         postFooterText = postFooterText,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        onPostRepliesClicked = onPostRepliesClicked
+        onPostRepliesClicked = onPostRepliesClicked,
+        onQuotePostClicked = onQuotePostClicked,
+        onQuotePostWithCommentClicked = onQuotePostWithCommentClicked
       )
     }
 
@@ -315,82 +317,68 @@ private fun PostCellCommentSelectionWrapper(
   onSelectionModeChanged: (Boolean) -> Unit,
   content: @Composable () -> Unit
 ) {
-  var inSelectionMode by remember { mutableStateOf<Boolean?>(null) }
-  var tapUpEventTime by remember { mutableStateOf<Long>(0) }
-
-  val gestureDetectorModifier = if (!isCatalogMode) {
-    Modifier
-      .pointerInput(
-        key1 = Unit,
-        block = {
-          forEachGesture {
-            val down = awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
-
-            val downTime = SystemClock.elapsedRealtime()
-            if (downTime - tapUpEventTime < 500L) {
-              return@forEachGesture
-            }
-
-            val up = awaitPointerEventScope { waitForUpOrCancellation() }
-            val upTime = SystemClock.elapsedRealtime()
-
-            if (inSelectionMode == true) {
-              onSelectionModeChanged(false)
-              inSelectionMode = false
-              tapUpEventTime = 0
-              return@forEachGesture
-            }
-
-            if (up == null || (upTime - downTime) > 150) {
-              return@forEachGesture
-            }
-
-            down.consumeAllChanges()
-            up.consumeAllChanges()
-
-            onSelectionModeChanged(true)
-            inSelectionMode = true
-
-            tapUpEventTime = SystemClock.elapsedRealtime()
-          }
-        }
-      )
-  } else {
-    Modifier
-  }
-
-  Box(
-    modifier = gestureDetectorModifier
-  ) {
-    if (!isCatalogMode && inSelectionMode == true) {
-      SelectionContainer {
-        content()
-      }
-    } else {
-      content()
-    }
-  }
+  // TODO(KurobaEx): text selection doesn't work for now because the current Jetpack Compose's
+  //  text selection API is not advanced enough to implement it how I want it to be
+  content()
 }
 
 @Composable
 private fun PostCellFooter(
+  isCatalogMode: Boolean,
+  postCellControlsShown: Boolean,
   postCellData: PostCellData,
   postFooterText: AnnotatedString?,
   postCellCommentTextSizeSp: TextUnit,
-  onPostRepliesClicked: (PostCellData) -> Unit
+  onPostRepliesClicked: (PostCellData) -> Unit,
+  onQuotePostClicked: (PostCellData) -> Unit,
+  onQuotePostWithCommentClicked: (PostCellData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
 
-  if (postFooterText.isNotNullNorEmpty()) {
-    Text(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-        .kurobaClickable(onClick = { onPostRepliesClicked(postCellData) })
-        .padding(vertical = 4.dp),
-      color = chanTheme.textColorSecondaryCompose,
-      fontSize = postCellCommentTextSizeSp,
-      text = postFooterText
-    )
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight(),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    if (postFooterText.isNotNullNorEmpty()) {
+      Text(
+        modifier = Modifier
+          .weight(1f)
+          .wrapContentHeight()
+          .kurobaClickable(onClick = { onPostRepliesClicked(postCellData) })
+          .padding(vertical = 4.dp),
+        color = chanTheme.textColorSecondaryCompose,
+        fontSize = postCellCommentTextSizeSp,
+        text = postFooterText
+      )
+    } else {
+      Spacer(modifier = Modifier.weight(1f))
+    }
+
+    if (!isCatalogMode && postCellControlsShown) {
+      KurobaComposeIcon(
+        modifier = Modifier.kurobaClickable(
+          bounded = false,
+          onClick = { onQuotePostClicked(postCellData) }
+        ),
+        drawableId = R.drawable.ic_baseline_reply_24
+      )
+
+      Spacer(modifier = Modifier.width(8.dp))
+
+      if (postCellData.parsedPostData?.parsedPostComment?.isNotNullNorEmpty() == true) {
+        KurobaComposeIcon(
+          modifier = Modifier.kurobaClickable(
+            bounded = false,
+            onClick = { onQuotePostWithCommentClicked(postCellData) }
+          ),
+          drawableId = R.drawable.ic_baseline_format_quote_24
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+      }
+    }
   }
+
 }

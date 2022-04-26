@@ -73,6 +73,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 
 private const val postCellKeyPrefix = "post_cell"
@@ -86,6 +87,8 @@ internal fun PostListContent(
   onPostCellLongClicked: (PostCellData) -> Unit,
   onLinkableClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
   onPostRepliesClicked: (PostDescriptor) -> Unit,
+  onQuotePostClicked: (PostCellData) -> Unit,
+  onQuotePostWithCommentClicked: (PostCellData) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
   onPostListDragStateChanged: (Boolean) -> Unit,
@@ -206,6 +209,8 @@ internal fun PostListContent(
     onPostRepliesClicked = { postCellData: PostCellData ->
       onPostRepliesClicked(postCellData.postDescriptor)
     },
+    onQuotePostClicked = onQuotePostClicked,
+    onQuotePostWithCommentClicked = onQuotePostWithCommentClicked,
     onThreadStatusCellClicked = {
       postsScreenViewModel.resetTimer()
       postsScreenViewModel.refresh()
@@ -313,6 +318,8 @@ private fun PostListInternal(
   onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
+  onQuotePostClicked: (PostCellData) -> Unit,
+  onQuotePostWithCommentClicked: (PostCellData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   onPostListScrolled: (Float) -> Unit,
@@ -482,6 +489,8 @@ private fun PostListInternal(
                 onPostCellLongClicked = onPostCellLongClicked,
                 onPostCellCommentClicked = onPostCellCommentClicked,
                 onPostRepliesClicked = onPostRepliesClicked,
+                onQuotePostClicked = onQuotePostClicked,
+                onQuotePostWithCommentClicked = onQuotePostWithCommentClicked,
                 onPostImageClicked = onPostImageClicked,
                 reparsePostSubject = { postCellData -> postsScreenViewModel.reparsePostSubject(postCellData) },
                 buildThreadStatusCell = buildThreadStatusCellFunc
@@ -629,6 +638,8 @@ private fun LazyListScope.postList(
   onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
+  onQuotePostClicked: (PostCellData) -> Unit,
+  onQuotePostWithCommentClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?,
   buildThreadStatusCell: @Composable (LazyItemScope.() -> Unit)? = null
@@ -672,6 +683,8 @@ private fun LazyListScope.postList(
         onPostCellLongClicked = onPostCellLongClicked,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked,
+        onQuotePostClicked = onQuotePostClicked,
+        onQuotePostWithCommentClicked = onQuotePostWithCommentClicked,
         onPostImageClicked = onPostImageClicked,
         reparsePostSubject = reparsePostSubject
       )
@@ -707,6 +720,8 @@ private fun LazyItemScope.PostCellContainer(
   onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
+  onQuotePostClicked: (PostCellData) -> Unit,
+  onQuotePostWithCommentClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
@@ -717,6 +732,18 @@ private fun LazyItemScope.PostCellContainer(
   val detectLinkableClicks = remember(postListOptions) { postListOptions.detectLinkableClicks }
 
   var isInSelectionMode by remember { mutableStateOf(false) }
+  var postCellControlsShownUntil by remember { mutableStateOf<Long>(0) }
+  var postCellControlsShown by remember { mutableStateOf(false) }
+
+  LaunchedEffect(
+    key1 = postCellControlsShownUntil,
+    block = {
+      do {
+        delay(250L)
+        postCellControlsShown = SystemClock.elapsedRealtime() < postCellControlsShownUntil
+      } while (isActive && postCellControlsShown)
+    }
+  )
 
   PostCellContainerAnimated(
     animateInsertion = animateInsertion,
@@ -733,7 +760,11 @@ private fun LazyItemScope.PostCellContainer(
               return@kurobaClickable
             }
 
-            onPostCellClicked(postCellData)
+            if (isCatalogMode) {
+              onPostCellClicked(postCellData)
+            } else {
+              postCellControlsShownUntil = SystemClock.elapsedRealtime() + 5000L
+            }
           },
           onLongClick = {
             if (isInSelectionMode) {
@@ -752,11 +783,17 @@ private fun LazyItemScope.PostCellContainer(
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         postCellData = postCellData,
-        onSelectionModeChanged = { inSelectionModeNow -> isInSelectionMode = inSelectionModeNow },
+        postCellControlsShown = postCellControlsShown,
+        onSelectionModeChanged = { inSelectionModeNow ->
+          postCellControlsShownUntil = 0L
+          isInSelectionMode = inSelectionModeNow
+        },
         onPostBind = onPostBind,
         onPostUnbind = onPostUnbind,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostRepliesClicked = onPostRepliesClicked,
+        onQuotePostClicked = onQuotePostClicked,
+        onQuotePostWithCommentClicked = onQuotePostWithCommentClicked,
         onPostImageClicked = onPostImageClicked,
         reparsePostSubject = reparsePostSubject
       )

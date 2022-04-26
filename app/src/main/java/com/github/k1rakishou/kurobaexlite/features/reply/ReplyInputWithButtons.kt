@@ -13,19 +13,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
 @Composable
 fun ReplyInputWithButtons(
   height: Dp,
   replyLayoutEnabled: Boolean,
-  replyText: String,
+  replyText: TextFieldValue,
   replyLayoutState: ReplyLayoutState,
   replyLayoutVisibility: ReplyLayoutVisibility,
   onExpandReplyLayoutClicked: () -> Unit,
@@ -34,8 +41,28 @@ fun ReplyInputWithButtons(
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit
 ) {
+  val chanTheme = LocalChanTheme.current
+
   val replySendProgressMut by replyLayoutState.replySendProgressState
   val replySendProgress = replySendProgressMut
+
+  val replyInputVisualTransformation = remember {
+    VisualTransformation { text ->
+      val spannedText = buildAnnotatedString {
+        append(text)
+
+        if (text.text.isNotEmpty()) {
+          addStyle(
+            SpanStyle(color = chanTheme.textColorPrimaryCompose),
+            start = 0,
+            end = text.length
+          )
+        }
+      }
+
+      return@VisualTransformation TransformedText(spannedText, OffsetMapping.Identity)
+    }
+  }
 
   Row {
     KurobaComposeCustomTextField(
@@ -47,7 +74,10 @@ fun ReplyInputWithButtons(
       value = replyText,
       singleLine = false,
       maxLines = Int.MAX_VALUE,
-      onValueChange = { newTextFieldValue -> replyLayoutState.onReplyTextChanged(newTextFieldValue) }
+      visualTransformation = replyInputVisualTransformation,
+      onValueChange = { newTextFieldValue ->
+        replyLayoutState.onReplyTextChanged(newTextFieldValue)
+      }
     )
 
     Column(

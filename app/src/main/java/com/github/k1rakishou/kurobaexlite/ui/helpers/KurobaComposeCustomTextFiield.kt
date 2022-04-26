@@ -33,6 +33,8 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -44,8 +46,8 @@ import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun KurobaComposeCustomTextField(
-  value: String,
-  onValueChange: (String) -> Unit,
+  value: TextFieldValue,
+  onValueChange: (TextFieldValue) -> Unit,
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   textColor: Color = Color.Unspecified,
@@ -56,6 +58,7 @@ fun KurobaComposeCustomTextField(
   singleLine: Boolean = false,
   labelText: String? = null,
   maxTextLength: Int = Int.MAX_VALUE,
+  visualTransformation: VisualTransformation = VisualTransformation.None,
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
   keyboardActions: KeyboardActions = KeyboardActions(),
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
@@ -121,7 +124,7 @@ fun KurobaComposeCustomTextField(
       val isFocused by interactionSource.collectIsFocusedAsState()
 
       AnimatedVisibility(
-        visible = !enabled || (!isFocused && localInput.isEmpty()),
+        visible = !enabled || (!isFocused && localInput.text.isEmpty()),
         enter = fadeIn(),
         exit = fadeOut()
       ) {
@@ -163,6 +166,7 @@ fun KurobaComposeCustomTextField(
           value = value,
           keyboardOptions = keyboardOptions,
           keyboardActions = keyboardActions,
+          visualTransformation = visualTransformation,
           interactionSource = interactionSource,
           onValueChange = { text ->
             localInput = text
@@ -172,7 +176,7 @@ fun KurobaComposeCustomTextField(
       }
     },
     textCounterContent = {
-      val currentCounter = localInput.length
+      val currentCounter = localInput.text.length
       val maxCounter = maxTextLength
       val counterText = remember(key1 = currentCounter, key2 = maxCounter) { "$currentCounter / $maxCounter" }
       val counterTextColor = if (currentCounter > maxCounter) {

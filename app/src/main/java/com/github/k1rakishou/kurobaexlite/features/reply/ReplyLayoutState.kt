@@ -7,6 +7,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
@@ -14,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.io.File
@@ -68,8 +71,8 @@ class ReplyLayoutState(
   override val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
     get() = _replyLayoutVisibilityState
 
-  private val _replyText = mutableStateOf("")
-  val replyText: State<String>
+  private val _replyText = mutableStateOf(TextFieldValue())
+  val replyText: State<TextFieldValue>
     get() = _replyText
 
   private val _attachedMediaList = mutableStateListOf<AttachedMedia>()
@@ -109,7 +112,15 @@ class ReplyLayoutState(
 
   private fun restoreFromBundle() {
     Snapshot.withMutableSnapshot {
-      _replyText.value = bundle.getString(replyTextKey) ?: ""
+      val replyTextFromBundle = bundle.getString(replyTextKey) ?: ""
+
+      val textFieldValue = TextFieldValue(
+        text = replyTextFromBundle,
+        selection = TextRange(replyTextFromBundle.lastIndex.coerceAtLeast(0))
+      )
+
+      onReplyTextChanged(textFieldValue)
+
       _replyLayoutVisibilityState.value = bundle.getInt(replyLayoutVisibilityKey)
         .let { ReplyLayoutVisibility.fromRawValue(it) }
 
@@ -126,17 +137,17 @@ class ReplyLayoutState(
       logcat(TAG) {
         "restoreFromBundle() " +
           "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, "
-          "replyText=\'${_replyText.value.take(32)}\', " +
+          "replyText=\'${replyTextFromBundle.take(32)}\', " +
           "attachedImages=\'${_attachedMediaList.joinToString(transform = { it.path })}\'"
       }
     }
   }
 
-  fun replyError(errorMessage: String) {
+  fun replyShowErrorToast(errorMessage: String) {
     _replyErrorMessageFlow.tryEmit(errorMessage)
   }
 
-  fun replyMessage(message: String) {
+  fun replyShowInfoToast(message: String) {
     _replyMessageFlow.tryEmit(message)
   }
 
@@ -154,7 +165,7 @@ class ReplyLayoutState(
 
       _attachedMediaList.clear()
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Closed
-      _replyText.value = ""
+      _replyText.value = TextFieldValue()
 
       onAttachedImagesUpdated()
       onReplyLayoutVisibilityStateChanged()
@@ -189,27 +200,42 @@ class ReplyLayoutState(
     onAttachedImagesUpdated()
 
     val message = appResources.string(R.string.reply_attached_media_removed, attachedMedia.actualFileName)
-    replyMessage(message)
+    replyShowInfoToast(message)
   }
 
-  fun onReplyTextChanged(newTextFieldValue: String) {
+  fun onReplyTextChanged(text: String) {
+    val textFieldValue = TextFieldValue(
+      text = text,
+      selection = TextRange(index = text.lastIndex.coerceAtLeast(0))
+    )
+
+    onReplyTextChanged(textFieldValue)
+  }
+
+  fun onReplyTextChanged(newTextFieldValue: TextFieldValue) {
     _replyText.value = newTextFieldValue
-    bundle.putString(replyTextKey, newTextFieldValue)
+    bundle.putString(replyTextKey, newTextFieldValue.text)
   }
 
   override fun openReplyLayout() {
-    _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
-    onReplyLayoutVisibilityStateChanged()
+    if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Closed) {
+      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
+      onReplyLayoutVisibilityStateChanged()
+    }
   }
 
   fun expandReplyLayout() {
-    _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Expanded
-    onReplyLayoutVisibilityStateChanged()
+    if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Opened) {
+      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Expanded
+      onReplyLayoutVisibilityStateChanged()
+    }
   }
 
   fun collapseReplyLayout() {
-    _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
-    onReplyLayoutVisibilityStateChanged()
+    if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Expanded) {
+      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
+      onReplyLayoutVisibilityStateChanged()
+    }
   }
 
   override fun onBackPressed(): Boolean {
@@ -242,10 +268,50 @@ class ReplyLayoutState(
   fun getReplyData(chanDescriptor: ChanDescriptor, captchaSolution: CaptchaSolution): ReplyData {
     return ReplyData(
       chanDescriptor = chanDescriptor,
-      message = replyText.value,
+      message = replyText.value.text,
       attachedMediaList = attachedMediaList,
       captchaSolution = captchaSolution
     )
+  }
+
+  fun appendPostQuote(postDescriptor: PostDescriptor) {
+    val newReplyText = buildString {
+      if (_replyText.value.text.isNotBlank()) {
+        append(_replyText.value.text)
+        append("\n")
+      }
+
+      append(">>")
+      append(postDescriptor.postNo)
+    }
+
+    onReplyTextChanged(newReplyText)
+    openReplyLayout()
+  }
+
+  fun appendPostQuoteWithComment(postDescriptor: PostDescriptor, comment: String) {
+    val newReplyText = buildString {
+      if (_replyText.value.text.isNotBlank()) {
+        append(_replyText.value.text)
+        append("\n")
+      }
+
+      append(">>")
+      append(postDescriptor.postNo)
+      append("\n")
+
+      comment.lines().forEach { commentLine ->
+        if (commentLine.isEmpty()) {
+          appendLine()
+          return@forEach
+        }
+
+        appendLine(">${commentLine}")
+      }
+    }
+
+    onReplyTextChanged(newReplyText)
+    openReplyLayout()
   }
 
   companion object {

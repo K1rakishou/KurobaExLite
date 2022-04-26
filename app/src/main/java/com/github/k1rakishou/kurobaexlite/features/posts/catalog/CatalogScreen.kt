@@ -384,6 +384,12 @@ class CatalogScreen(
       onPostRepliesClicked = { postDescriptor ->
         // no-op
       },
+      onQuotePostClicked = { postCellData ->
+        // no-op
+      },
+      onQuotePostWithCommentClicked = { postCellData ->
+        // no-op
+      },
       onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
         val catalogDescriptor = chanDescriptor as CatalogDescriptor
         clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
