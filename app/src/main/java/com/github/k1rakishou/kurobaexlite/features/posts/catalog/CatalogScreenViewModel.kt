@@ -9,7 +9,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewMo
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.CatalogScreenPostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
-import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -37,11 +36,6 @@ class CatalogScreenViewModel(
   private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
   private val catalogScreenState = CatalogScreenPostsState()
   private val updateChanCatalogViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
-
-  val replyLayoutState = ReplyLayoutState(
-    screenKey = CatalogScreen.SCREEN_KEY,
-    savedStateHandle = savedStateHandle
-  )
 
   private var loadCatalogJob: Job? = null
 

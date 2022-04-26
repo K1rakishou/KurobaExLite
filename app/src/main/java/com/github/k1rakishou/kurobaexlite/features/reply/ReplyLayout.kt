@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
-import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.updateTransition
@@ -14,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,9 +35,14 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 @Composable
 fun ReplyLayoutContainer(
   chanDescriptor: ChanDescriptor?,
-  replyLayoutState: ReplyLayoutState,
-  replyLayoutViewModel: ReplyLayoutViewModel
+  replyLayoutState: IReplyLayoutState,
+  replyLayoutViewModel: ReplyLayoutViewModel,
+  onAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
+  if (chanDescriptor == null || replyLayoutState !is ReplyLayoutState) {
+    return
+  }
+
   val chanTheme = LocalChanTheme.current
   val density = LocalDensity.current
   val windowInsets = LocalWindowInsets.current
@@ -52,11 +55,7 @@ fun ReplyLayoutContainer(
   LaunchedEffect(
     key1 = chanDescriptor,
     block = {
-      replyLayoutState.lastErrorMessageFlow.collect { errorMessage ->
-        if (chanDescriptor == null) {
-          return@collect
-        }
-
+      replyLayoutState.replyErrorMessageFlow.collect { errorMessage ->
         replyLayoutViewModel.showErrorToast(chanDescriptor, errorMessage)
       }
     }
@@ -65,8 +64,17 @@ fun ReplyLayoutContainer(
   LaunchedEffect(
     key1 = chanDescriptor,
     block = {
+      replyLayoutState.replyMessageFlow.collect { errorMessage ->
+        replyLayoutViewModel.showToast(chanDescriptor, errorMessage)
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = chanDescriptor,
+    block = {
       replyLayoutViewModel.pickFileResultFlow.collect { pickFileResult ->
-        if (chanDescriptor == null || pickFileResult.chanDescriptor != chanDescriptor) {
+        if (pickFileResult.chanDescriptor != chanDescriptor) {
           return@collect
         }
 
@@ -84,10 +92,6 @@ fun ReplyLayoutContainer(
   )
 
   val replyLayoutEnabled = remember(key1 = sendReplyState, key2 = chanDescriptor) {
-    if (chanDescriptor == null) {
-      return@remember false
-    }
-
     return@remember when (sendReplyState) {
       SendReplyState.Started -> false
       is SendReplyState.Finished -> true
@@ -101,25 +105,18 @@ fun ReplyLayoutContainer(
     contentAlignment = Alignment.BottomCenter
   ) {
     val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
-
-    val replyLayoutTransitionState = remember {
-      derivedStateOf {
-        ReplyLayoutTransitionState(replyLayoutVisibility = replyLayoutVisibility)
-      }
-    }
+    val attachedMediaList = replyLayoutState.attachedMediaList
 
     val replyLayoutContainerTransition = updateTransition(
-      targetState = replyLayoutTransitionState,
+      targetState = replyLayoutVisibility,
       label = "Reply layout container transition animation"
     )
 
     val heightAnimated by replyLayoutContainerTransition.animateDp(
       label = "Reply layout container height animation",
-      transitionSpec = {
-         spring(visibilityThreshold = Dp.VisibilityThreshold)
-      }
-    ) { state ->
-      when (state.value.replyLayoutVisibility) {
+      transitionSpec = { spring() }
+    ) { rlv ->
+      when (rlv) {
         ReplyLayoutVisibility.Closed,
         ReplyLayoutVisibility.Opened -> replyLayoutContainerOpenedHeightDefault
         ReplyLayoutVisibility.Expanded -> with(density) { maxAvailableHeight.toDp() }
@@ -128,11 +125,9 @@ fun ReplyLayoutContainer(
 
     val offsetYAnimated by replyLayoutContainerTransition.animateDp(
       label = "Reply layout container offset Y animation",
-      transitionSpec = {
-        spring(visibilityThreshold = Dp.VisibilityThreshold)
-      }
-    ) { state ->
-      when (state.value.replyLayoutVisibility) {
+      transitionSpec = { spring() }
+    ) { rlv ->
+      when (rlv) {
         ReplyLayoutVisibility.Closed -> replyLayoutContainerOpenedHeightDefault
         ReplyLayoutVisibility.Opened,
         ReplyLayoutVisibility.Expanded -> 0.dp
@@ -145,7 +140,6 @@ fun ReplyLayoutContainer(
         .consumeClicks(enabled = true)
         .background(chanTheme.backColorCompose)
     ) {
-
       if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
         Spacer(modifier = Modifier.height(windowInsets.top + toolbarHeight))
       } else {
@@ -168,15 +162,14 @@ fun ReplyLayoutContainer(
         replyLayoutState = replyLayoutState,
         replyLayoutHeight = replyLayoutHeightClampedDp,
         replyLayoutVisibility = replyLayoutVisibility,
+        attachedMediaList = attachedMediaList,
         onExpandReplyLayoutClicked = { replyLayoutState.expandReplyLayout() },
         onCollapseReplyLayoutClicked = { replyLayoutState.collapseReplyLayout() },
         onCancelReplySendClicked = { replyLayoutViewModel.cancelSendReply(replyLayoutState) },
-        onSendReplyClicked = {
-          if (chanDescriptor == null) {
-            return@ReplyLayout
-          }
-
-          replyLayoutViewModel.sendReply(chanDescriptor, replyLayoutState)
+        onSendReplyClicked = { replyLayoutViewModel.sendReply(chanDescriptor, replyLayoutState) },
+        onAttachedMediaClicked = onAttachedMediaClicked,
+        onRemoveAttachedMediaClicked = { attachedMedia ->
+          replyLayoutState.detachMedia(attachedMedia)
         }
       )
 
@@ -193,10 +186,13 @@ private fun ReplyLayout(
   replyLayoutState: ReplyLayoutState,
   replyLayoutHeight: Dp,
   replyLayoutVisibility: ReplyLayoutVisibility,
+  attachedMediaList: List<AttachedMedia>,
   onExpandReplyLayoutClicked: () -> Unit,
   onCollapseReplyLayoutClicked: () -> Unit,
   onCancelReplySendClicked: () -> Unit,
-  onSendReplyClicked: () -> Unit
+  onSendReplyClicked: () -> Unit,
+  onAttachedMediaClicked: (AttachedMedia) -> Unit,
+  onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
   if (replyLayoutHeight < 0.dp) {
     return
@@ -204,7 +200,6 @@ private fun ReplyLayout(
 
   val replyText by replyLayoutState.replyText
   val sendReplyState by replyLayoutState.sendReplyState
-  val attachedMediaList = replyLayoutState.attachedMediaList
 
   Column(
     modifier = Modifier
@@ -214,10 +209,10 @@ private fun ReplyLayout(
     val density = LocalDensity.current
     val spacerHeight = 8.dp
 
-    val replyInputHeightPercentage = when {
-      attachedMediaList.isEmpty() -> 100f
-      replyLayoutVisibility == ReplyLayoutVisibility.Expanded -> 75f
-      else -> 65f
+    val replyInputHeightPercentage = if (attachedMediaList.isEmpty()) {
+      100f
+    } else {
+      70f
     }
 
     val replyLayoutHeightExcludingSpacer = replyLayoutHeight - spacerHeight
@@ -238,19 +233,17 @@ private fun ReplyLayout(
       onSendReplyClicked = onSendReplyClicked
     )
 
+    val replyAttachmentsHeight = replyLayoutHeightExcludingSpacer - replyInputHeight
     if (attachedMediaList.isNotEmpty()) {
-      val replyAttachmentsHeight = replyLayoutHeightExcludingSpacer - replyInputHeight
       Spacer(modifier = Modifier.height(spacerHeight))
 
       ReplyAttachments(
         height = replyAttachmentsHeight,
+        replyLayoutVisibility = replyLayoutVisibility,
         attachedMediaList = attachedMediaList,
-        replyLayoutVisibility = replyLayoutVisibility
+        onAttachedMediaClicked = onAttachedMediaClicked,
+        onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked,
       )
     }
   }
 }
-
-private class ReplyLayoutTransitionState(
-  val replyLayoutVisibility: ReplyLayoutVisibility
-)

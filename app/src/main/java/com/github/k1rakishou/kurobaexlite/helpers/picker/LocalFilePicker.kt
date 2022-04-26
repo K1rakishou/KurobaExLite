@@ -27,6 +27,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import logcat.logcat
 
 class LocalFilePicker(
@@ -52,10 +53,6 @@ class LocalFilePicker(
 
   fun detachActivity() {
     this.componentActivity = null
-  }
-
-  suspend fun loadPickedFiles(chanDescriptor: ChanDescriptor) {
-
   }
 
   override suspend fun pickFile(
@@ -305,6 +302,24 @@ class LocalFilePicker(
 
     chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, intents.toTypedArray())
     activity.startActivityForResult(chooser, requestCode)
+  }
+
+  suspend fun cleanup() {
+    withContext(coroutineDispatcher) {
+      val filesInDirectory = attachedMediaDir.listFiles() ?: emptyArray()
+
+      filesInDirectory.forEach { file ->
+        if (file.isFile) {
+          logcatError(TAG) { "Found a file (${file.path}) where only directories are supposed to be" }
+          file.delete()
+          return@forEach
+        }
+
+        file.deleteRecursively()
+      }
+
+      logcat(TAG) { "cleanup() removed ${filesInDirectory.size} directories with files" }
+    }
   }
 
   private data class EnqueuedRequest(

@@ -9,7 +9,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewMo
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
-import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -54,11 +53,6 @@ class ThreadScreenViewModel(
   private val threadScreenState = ThreadScreenPostsState()
   private var loadThreadJob: Job? = null
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
-
-  val replyLayoutState = ReplyLayoutState(
-    screenKey = ThreadScreen.SCREEN_KEY,
-    savedStateHandle = savedStateHandle
-  )
 
   override val postScreenState: PostScreenState = threadScreenState
 

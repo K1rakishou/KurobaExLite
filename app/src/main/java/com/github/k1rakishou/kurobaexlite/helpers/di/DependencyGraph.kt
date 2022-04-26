@@ -212,7 +212,8 @@ object DependencyGraph {
         snackbarManager = get(),
         modifyMarkedPosts = get(),
         localFilePicker = get(),
-        appResources = get()
+        appResources = get(),
+        savedStateHandle = get()
       )
     }
     viewModel {

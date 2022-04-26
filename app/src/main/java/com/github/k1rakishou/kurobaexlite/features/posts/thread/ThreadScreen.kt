@@ -29,12 +29,13 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
-import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
@@ -80,8 +81,8 @@ class ThreadScreen(
     PostLongtapContentMenu(componentActivity, navigationRouter)
   }
 
-  private val replyLayoutState: ReplyLayoutState
-    get() = threadScreenViewModel.replyLayoutState
+  private val replyLayoutState: IReplyLayoutState
+    get() = replyLayoutViewModel.getOrCreateReplyLayoutState(threadScreenViewModel.chanDescriptor)
 
   private val replyLayoutToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_close_24),
@@ -150,7 +151,9 @@ class ThreadScreen(
     val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
-    val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
+    val threadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
+    val replyLayoutVisibility by replyLayoutStateByDescriptor(threadDescriptor).replyLayoutVisibilityState
+
     if (replyLayoutVisibility != ReplyLayoutVisibility.Closed) {
       ReplyLayoutToolbar(mainUiLayoutMode)
     } else {
@@ -439,7 +442,10 @@ class ThreadScreen(
     ReplyLayoutContainer(
       chanDescriptor = threadScreenViewModel.chanDescriptor,
       replyLayoutState = replyLayoutState,
-      replyLayoutViewModel = replyLayoutViewModel
+      replyLayoutViewModel = replyLayoutViewModel,
+      onAttachedMediaClicked = { attachedMedia ->
+        // TODO(KurobaEx): show options
+      }
     )
 
     KurobaSnackbarContainer(
@@ -447,6 +453,13 @@ class ThreadScreen(
       screenKey = screenKey,
       kurobaSnackbarState = kurobaSnackbarState
     )
+  }
+
+  @Composable
+  private fun replyLayoutStateByDescriptor(chanDescriptor: ChanDescriptor?): IReplyLayoutState {
+    return remember(key1 = chanDescriptor) {
+      replyLayoutViewModel.getOrCreateReplyLayoutState(chanDescriptor)
+    }
   }
 
   private enum class ReplyToolbarIcons {

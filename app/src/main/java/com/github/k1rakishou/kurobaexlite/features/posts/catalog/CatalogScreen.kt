@@ -28,13 +28,14 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostLi
 import com.github.k1rakishou.kurobaexlite.features.posts.sort.SortCatalogThreadsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
-import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
@@ -77,8 +78,8 @@ class CatalogScreen(
     PostLongtapContentMenu(componentActivity, navigationRouter)
   }
 
-  private val replyLayoutState: ReplyLayoutState
-    get() = catalogScreenViewModel.replyLayoutState
+  private val replyLayoutState: IReplyLayoutState
+    get() = replyLayoutViewModel.getOrCreateReplyLayoutState(catalogScreenViewModel.chanDescriptor)
 
   private val replyLayoutToolbarState = KurobaToolbarState(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_close_24),
@@ -147,7 +148,9 @@ class CatalogScreen(
     val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
-    val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
+    val catalogDescriptor by catalogScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
+    val replyLayoutVisibility by replyLayoutStateByDescriptor(catalogDescriptor).replyLayoutVisibilityState
+
     if (replyLayoutVisibility != ReplyLayoutVisibility.Closed) {
       ReplyLayoutToolbar(mainUiLayoutMode)
     } else {
@@ -444,7 +447,10 @@ class CatalogScreen(
     ReplyLayoutContainer(
       chanDescriptor = catalogScreenViewModel.catalogDescriptor,
       replyLayoutState = replyLayoutState,
-      replyLayoutViewModel = replyLayoutViewModel
+      replyLayoutViewModel = replyLayoutViewModel,
+      onAttachedMediaClicked = { attachedMedia ->
+        // TODO(KurobaEx): show options
+      }
     )
 
     KurobaSnackbarContainer(
@@ -452,6 +458,13 @@ class CatalogScreen(
       screenKey = screenKey,
       kurobaSnackbarState = kurobaSnackbarState
     )
+  }
+
+  @Composable
+  private fun replyLayoutStateByDescriptor(chanDescriptor: ChanDescriptor?): IReplyLayoutState {
+    return remember(key1 = chanDescriptor) {
+      replyLayoutViewModel.getOrCreateReplyLayoutState(chanDescriptor)
+    }
   }
 
   private enum class ReplyToolbarIcons {

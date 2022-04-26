@@ -1,5 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import android.os.Bundle
+import android.os.Parcelable
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -35,14 +38,92 @@ class ReplyLayoutViewModel(
   private val snackbarManager: SnackbarManager,
   private val modifyMarkedPosts: ModifyMarkedPosts,
   private val localFilePicker: LocalFilePicker,
-  private val appResources: AppResources
+  private val appResources: AppResources,
+  private val savedStateHandle: SavedStateHandle
 ) : BaseViewModel() {
   private val sendReplyJobMap = mutableMapOf<ScreenKey, Job>()
   private val manuallyCanceled = mutableSetOf<ScreenKey>()
+  private val replyLayoutStateMap = mutableMapOf<ChanDescriptor, ReplyLayoutState>()
 
   private val _pickFileResultFlow = MutableSharedFlow<PickFileResult>(extraBufferCapacity = Channel.UNLIMITED)
   val pickFileResultFlow: SharedFlow<PickFileResult>
     get() = _pickFileResultFlow.asSharedFlow()
+
+  override suspend fun onViewModelReady() {
+    super.onViewModelReady()
+
+    processReplyLayoutStates()
+  }
+
+  private suspend fun processReplyLayoutStates() {
+    val replyLayoutStateKeys = savedStateHandle.keys()
+      .filter { key -> key.startsWith("reply_layout_state_") }
+
+    if (replyLayoutStateKeys.isEmpty()) {
+      logcat(TAG) { "processReplyLayoutStates() replyLayoutStateKeys is empty, doing cleanup()" }
+      localFilePicker.cleanup()
+      return
+    }
+
+    logcat(TAG) { "processReplyLayoutStates() found ${replyLayoutStateKeys.size} keys in savedStateHandle" }
+
+    val restoredReplyLayoutStates = replyLayoutStateKeys
+      .mapNotNull { replyLayoutStateKey -> savedStateHandle.get<Bundle>(replyLayoutStateKey) }
+      .mapNotNull { bundle ->
+        val chanDescriptor = bundle.getParcelable<Parcelable>(ReplyLayoutState.chanDescriptorKey) as? ChanDescriptor
+            ?: return@mapNotNull null
+
+        val screenKey = when (chanDescriptor) {
+          is CatalogDescriptor -> CatalogScreen.SCREEN_KEY
+          is ThreadDescriptor -> ThreadScreen.SCREEN_KEY
+        }
+
+        return@mapNotNull ReplyLayoutState(
+          screenKey = screenKey,
+          chanDescriptor = chanDescriptor,
+          bundle = bundle
+        )
+      }
+
+    restoredReplyLayoutStates.forEach { replyLayoutState ->
+      replyLayoutStateMap[replyLayoutState.chanDescriptor] = replyLayoutState
+    }
+
+    logcat(TAG) { "processReplyLayoutStates() restored ${restoredReplyLayoutStates.size} replyLayoutStates" }
+  }
+
+  fun getOrCreateReplyLayoutState(chanDescriptor: ChanDescriptor?): IReplyLayoutState {
+    if (chanDescriptor == null) {
+      return FakeReplyLayoutState()
+    }
+
+    val savedStateHandleKey = "reply_layout_state_${chanDescriptor.asKey()}"
+
+    val replyLayoutState = replyLayoutStateMap.getOrPut(
+      key = chanDescriptor,
+      defaultValue = {
+        return@getOrPut when (chanDescriptor) {
+          is CatalogDescriptor -> {
+            ReplyLayoutState(
+              screenKey = CatalogScreen.SCREEN_KEY,
+              chanDescriptor = chanDescriptor,
+              bundle = savedStateHandle.get<Bundle>(savedStateHandleKey) ?: Bundle()
+            )
+          }
+          is ThreadDescriptor -> {
+            ReplyLayoutState(
+              screenKey = ThreadScreen.SCREEN_KEY,
+              chanDescriptor = chanDescriptor,
+              bundle = savedStateHandle.get<Bundle>(savedStateHandleKey) ?: Bundle()
+            )
+          }
+        }
+      }
+    )
+    savedStateHandle.set(savedStateHandleKey, replyLayoutState.bundle)
+
+    return replyLayoutState
+  }
 
   fun showErrorToast(chanDescriptor: ChanDescriptor, errorMessage: String) {
     val screenKey = when (chanDescriptor) {
@@ -150,6 +231,31 @@ class ReplyLayoutViewModel(
     }
   }
 
+  fun cancelSendReply(replyLayoutState: ReplyLayoutState) {
+    val screenKey = replyLayoutState.screenKey
+
+    manuallyCanceled += screenKey
+    sendReplyJobMap.remove(screenKey)?.cancel()
+
+    logcat(TAG) { "cancelSendReply($screenKey) canceled" }
+  }
+
+  fun onPickFileRequested(chanDescriptor: ChanDescriptor) {
+    viewModelScope.launch {
+      val pickResult = localFilePicker.pickFile(
+        chanDescriptor = chanDescriptor,
+        allowMultiSelection = false
+      )
+
+      val pickFileResult = PickFileResult(
+        chanDescriptor = chanDescriptor,
+        pickResult = pickResult
+      )
+
+      _pickFileResultFlow.emit(pickFileResult)
+    }
+  }
+
   private suspend fun processReplyEvents(
     replyEvent: ReplyEvent,
     replyLayoutState: ReplyLayoutState,
@@ -216,31 +322,6 @@ class ReplyLayoutViewModel(
 
         logcat(TAG) { "sendReply($screenKey) success postDescriptor: ${postDescriptor}" }
       }
-    }
-  }
-
-  fun cancelSendReply(replyLayoutState: ReplyLayoutState) {
-    val screenKey = replyLayoutState.screenKey
-
-    manuallyCanceled += screenKey
-    sendReplyJobMap.remove(screenKey)?.cancel()
-
-    logcat(TAG) { "cancelSendReply($screenKey) canceled" }
-  }
-
-  fun onPickFileRequested(chanDescriptor: ChanDescriptor) {
-    viewModelScope.launch {
-      val pickResult = localFilePicker.pickFile(
-        chanDescriptor = chanDescriptor,
-        allowMultiSelection = false
-      )
-
-      val pickFileResult = PickFileResult(
-        chanDescriptor = chanDescriptor,
-        pickResult = pickResult
-      )
-
-      _pickFileResultFlow.emit(pickFileResult)
     }
   }
 

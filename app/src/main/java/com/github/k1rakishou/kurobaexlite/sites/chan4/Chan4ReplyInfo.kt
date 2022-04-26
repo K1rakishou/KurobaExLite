@@ -239,10 +239,11 @@ class Chan4ReplyInfo(
       progressListener
     )
 
-    val fileName = attachedMedia.fileName
-      ?: attachedMediaFile.name
-
-    formBuilder.addFormDataPart("upfile", fileName, progressRequestBody)
+    formBuilder.addFormDataPart(
+      "upfile",
+      attachedMedia.actualFileName,
+      progressRequestBody
+    )
   }
 
   private fun extractTimeToWait(rateLimitMatcher: Matcher): Long {

@@ -10,7 +10,7 @@ class AppResourcesImpl(
     return if (args.isEmpty()) {
       appContext.resources.getString(stringId)
     } else {
-      appContext.resources.getString(stringId, args)
+      appContext.resources.getString(stringId, *args)
     }
   }
 

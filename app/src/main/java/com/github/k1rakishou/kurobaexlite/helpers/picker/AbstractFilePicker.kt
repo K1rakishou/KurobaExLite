@@ -17,6 +17,8 @@ import java.io.IOException
 abstract class AbstractFilePicker(
   private val appContext: Context
 ) {
+  protected val attachedMediaDir = File(appContext.cacheDir, "attached_media")
+
   abstract suspend fun pickFile(
     chanDescriptor: ChanDescriptor,
     allowMultiSelection: Boolean
@@ -29,7 +31,6 @@ abstract class AbstractFilePicker(
     BackgroundUtils.ensureBackgroundThread()
 
     return runCatching {
-      val attachedMediaDir = File(appContext.cacheDir, "attached_media")
       if (!attachedMediaDir.exists()) {
         check(attachedMediaDir.mkdirs()) { "Failed to create \'${attachedMediaDir.path}\' directory" }
       }

@@ -1,16 +1,21 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
@@ -23,67 +28,42 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
 @Composable
 fun ReplyAttachments(
   height: Dp,
-  attachedMediaList: List<AttachedMedia>,
   replyLayoutVisibility: ReplyLayoutVisibility,
+  attachedMediaList: List<AttachedMedia>,
+  onAttachedMediaClicked: (AttachedMedia) -> Unit,
+  onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
-  when (replyLayoutVisibility) {
+  val paddings = 8.dp
+  val mediaHeight = when (replyLayoutVisibility) {
     ReplyLayoutVisibility.Closed,
-    ReplyLayoutVisibility.Opened -> {
-      ReplyAttachmentsOpened(
-        height = height,
-        attachedMediaList = attachedMediaList,
-      )
-    }
-    ReplyLayoutVisibility.Expanded -> {
-      ReplyAttachmentsExpanded(
-        height = height,
-        attachedMediaList = attachedMediaList,
-      )
-    }
+    ReplyLayoutVisibility.Opened -> height
+    ReplyLayoutVisibility.Expanded -> height / 2
   }
-}
 
-@Composable
-fun ReplyAttachmentsExpanded(
-  height: Dp,
-  attachedMediaList: List<AttachedMedia>
-) {
-  val mediaSize = remember { height - 8.dp } // TODO(KurobaEx): percent calculation
-
-  LazyHorizontalGrid(
+  LazyVerticalGrid(
     modifier = Modifier
       .fillMaxWidth()
       .height(height),
-    rows = GridCells.Adaptive(mediaSize),
+    columns = GridCells.Fixed(3),
     content = {
       attachedMediaList.forEach { attachedMedia ->
         item(
           key = attachedMedia.path,
-          content = { AttachedMediaThumbnail(attachedMedia) }
-        )
-      }
-    }
-  )
-}
-
-@Composable
-fun ReplyAttachmentsOpened(
-  height: Dp,
-  attachedMediaList: List<AttachedMedia>
-) {
-  LazyRow(
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(height),
-    content = {
-      attachedMediaList.forEach { attachedMedia ->
-        item(
-          key = attachedMedia.path,
-          content = { AttachedMediaThumbnail(attachedMedia) }
+          content = {
+            AttachedMediaThumbnail(
+              mediaHeight = mediaHeight,
+              paddings = paddings,
+              attachedMedia = attachedMedia,
+              replyLayoutVisibility = replyLayoutVisibility,
+              onAttachedMediaClicked = onAttachedMediaClicked,
+              onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked
+            )
+          }
         )
       }
     }
@@ -92,39 +72,76 @@ fun ReplyAttachmentsOpened(
 
 @Composable
 private fun AttachedMediaThumbnail(
-  attachedMedia: AttachedMedia
+  mediaHeight: Dp,
+  paddings: Dp,
+  attachedMedia: AttachedMedia,
+  replyLayoutVisibility: ReplyLayoutVisibility,
+  onAttachedMediaClicked: (AttachedMedia) -> Unit,
+  onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
   val context = LocalContext.current
   val attachedMediaFile = attachedMedia.asFile
 
-  SubcomposeAsyncImage(
-    modifier = Modifier.fillMaxSize(),
-    model = ImageRequest.Builder(context)
-      .data(attachedMediaFile)
-      .crossfade(true)
-      .build(),
-    contentDescription = null,
-    contentScale = ContentScale.Fit,
-    content = {
-      val state = painter.state
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(mediaHeight)
+  ) {
+    SubcomposeAsyncImage(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(horizontal = paddings / 2, vertical = paddings / 2)
+        .kurobaClickable(onClick = { onAttachedMediaClicked(attachedMedia) }),
+      model = ImageRequest.Builder(context)
+        .data(attachedMediaFile)
+        .crossfade(true)
+        .build(),
+      contentDescription = null,
+      contentScale = ContentScale.Crop,
+      content = {
+        val state = painter.state
 
-      if (state is AsyncImagePainter.State.Error) {
-        logcatError {
-          "PostCellTitle() attachedMediaFilePath=${attachedMediaFile.path}, " +
-            "error=${state.result.throwable.errorMessageOrClassName()}"
+        if (state is AsyncImagePainter.State.Error) {
+          logcatError {
+            "AttachedMediaThumbnail() attachedMediaFilePath=${attachedMediaFile.path}, " +
+              "error=${state.result.throwable.errorMessageOrClassName()}"
+          }
+
+          KurobaComposeIcon(
+            modifier = Modifier
+              .size(24.dp)
+              .align(Alignment.Center),
+            drawableId = R.drawable.ic_baseline_warning_24
+          )
+
+          return@SubcomposeAsyncImage
         }
 
+        SubcomposeAsyncImageContent()
+      }
+    )
+
+    if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
+      val iconBgColor = remember { Color.Black.copy(alpha = 0.5f) }
+
+      Row(
+        modifier = Modifier
+          .align(Alignment.TopEnd)
+          .padding(end = 4.dp, top = 4.dp)
+      ) {
         KurobaComposeIcon(
           modifier = Modifier
-            .size(24.dp)
-            .align(Alignment.Center),
-          drawableId = R.drawable.ic_baseline_warning_24
+            .background(
+              color = iconBgColor,
+              shape = CircleShape
+            )
+            .kurobaClickable(
+              bounded = false,
+              onClick = { onRemoveAttachedMediaClicked(attachedMedia) }
+            ),
+          drawableId = R.drawable.ic_baseline_close_24
         )
-
-        return@SubcomposeAsyncImage
       }
-
-      SubcomposeAsyncImageContent()
     }
-  )
+  }
 }

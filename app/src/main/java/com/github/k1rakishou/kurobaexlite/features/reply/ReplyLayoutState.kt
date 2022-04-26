@@ -1,16 +1,20 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import android.os.Bundle
 import android.os.Parcelable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.lifecycle.SavedStateHandle
+import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.io.File
 import kotlinx.coroutines.channels.BufferOverflow
@@ -23,14 +27,45 @@ import logcat.logcat
 import org.koin.core.context.GlobalContext
 
 @Stable
+interface IReplyLayoutState {
+  val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
+
+  fun onBackPressed(): Boolean
+  fun openReplyLayout()
+  fun detachMedia(attachedMedia: AttachedMedia)
+}
+
+@Stable
+class FakeReplyLayoutState : IReplyLayoutState {
+  private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Closed)
+  override val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
+    get() = _replyLayoutVisibilityState
+
+  override fun onBackPressed(): Boolean {
+    return false
+  }
+
+  override fun openReplyLayout() {
+
+  }
+
+  override fun detachMedia(attachedMedia: AttachedMedia) {
+
+  }
+
+}
+
+@Stable
 class ReplyLayoutState(
   val screenKey: ScreenKey,
-  private val savedStateHandle: SavedStateHandle
-) {
+  val chanDescriptor: ChanDescriptor,
+  val bundle: Bundle = Bundle()
+) : IReplyLayoutState {
   private val uiInfoManager: UiInfoManager by lazy { GlobalContext.get().get() }
+  private val appResources: AppResources by lazy { GlobalContext.get().get() }
 
   private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Closed)
-  val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
+  override val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
     get() = _replyLayoutVisibilityState
 
   private val _replyText = mutableStateOf("")
@@ -49,24 +84,36 @@ class ReplyLayoutState(
   val replySendProgressState: State<Float?>
     get() = _replySendProgressState
 
-  private val _lastErrorMessageFlow = MutableSharedFlow<String>(
+  private val _replyErrorMessageFlow = MutableSharedFlow<String>(
     extraBufferCapacity = 1,
     onBufferOverflow = BufferOverflow.DROP_LATEST
   )
-  val lastErrorMessageFlow: SharedFlow<String>
-    get() = _lastErrorMessageFlow.asSharedFlow()
+  val replyErrorMessageFlow: SharedFlow<String>
+    get() = _replyErrorMessageFlow.asSharedFlow()
+
+  private val _replyMessageFlow = MutableSharedFlow<String>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_LATEST
+  )
+  val replyMessageFlow: SharedFlow<String>
+    get() = _replyMessageFlow.asSharedFlow()
 
   init {
-    restoreFromSavedState()
+    when (chanDescriptor) {
+      is CatalogDescriptor -> bundle.putParcelable(chanDescriptorKey, chanDescriptor)
+      is ThreadDescriptor -> bundle.putParcelable(chanDescriptorKey, chanDescriptor)
+    }
+
+    restoreFromBundle()
   }
 
-  private fun restoreFromSavedState() {
+  private fun restoreFromBundle() {
     Snapshot.withMutableSnapshot {
-      _replyText.value = savedStateHandle.get<String>(replyTextKey) ?: ""
-      _replyLayoutVisibilityState.value = savedStateHandle.get<Int>(replyLayoutVisibilityKey)
+      _replyText.value = bundle.getString(replyTextKey) ?: ""
+      _replyLayoutVisibilityState.value = bundle.getInt(replyLayoutVisibilityKey)
         .let { ReplyLayoutVisibility.fromRawValue(it) }
 
-      savedStateHandle.get<List<AttachedMedia>>(attachedMediaListKey)?.let { prevAttachedImagePathList ->
+      bundle.getParcelableArrayList<AttachedMedia>(attachedMediaListKey)?.let { prevAttachedImagePathList ->
         val prevAttachedImages = prevAttachedImagePathList
           .filter { attachedMedia -> attachedMedia.exists() }
 
@@ -77,7 +124,7 @@ class ReplyLayoutState(
       onReplyLayoutVisibilityStateChanged()
 
       logcat(TAG) {
-        "restoreFromSavedState() " +
+        "restoreFromBundle() " +
           "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, "
           "replyText=\'${_replyText.value.take(32)}\', " +
           "attachedImages=\'${_attachedMediaList.joinToString(transform = { it.path })}\'"
@@ -86,7 +133,11 @@ class ReplyLayoutState(
   }
 
   fun replyError(errorMessage: String) {
-    _lastErrorMessageFlow.tryEmit(errorMessage)
+    _replyErrorMessageFlow.tryEmit(errorMessage)
+  }
+
+  fun replyMessage(message: String) {
+    _replyMessageFlow.tryEmit(message)
   }
 
   fun onReplySendStarted() {
@@ -99,6 +150,8 @@ class ReplyLayoutState(
 
   fun onReplySendEndedSuccessfully() {
     Snapshot.withMutableSnapshot {
+      _attachedMediaList.forEach { attachedMedia -> attachedMedia.deleteFile() }
+
       _attachedMediaList.clear()
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Closed
       _replyText.value = ""
@@ -130,12 +183,21 @@ class ReplyLayoutState(
     onAttachedImagesUpdated()
   }
 
-  fun onReplyTextChanged(newTextFieldValue: String) {
-    _replyText.value = newTextFieldValue
-    savedStateHandle.set(replyTextKey, newTextFieldValue)
+  override fun detachMedia(attachedMedia: AttachedMedia) {
+    _attachedMediaList -= attachedMedia
+    attachedMedia.deleteFile()
+    onAttachedImagesUpdated()
+
+    val message = appResources.string(R.string.reply_attached_media_removed, attachedMedia.actualFileName)
+    replyMessage(message)
   }
 
-  fun openReplyLayout() {
+  fun onReplyTextChanged(newTextFieldValue: String) {
+    _replyText.value = newTextFieldValue
+    bundle.putString(replyTextKey, newTextFieldValue)
+  }
+
+  override fun openReplyLayout() {
     _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
     onReplyLayoutVisibilityStateChanged()
   }
@@ -150,7 +212,7 @@ class ReplyLayoutState(
     onReplyLayoutVisibilityStateChanged()
   }
 
-  fun onBackPressed(): Boolean {
+  override fun onBackPressed(): Boolean {
     val currentState = replyLayoutVisibilityState.value
     if (currentState == ReplyLayoutVisibility.Closed) {
       return false
@@ -168,13 +230,13 @@ class ReplyLayoutState(
   }
 
   private fun onAttachedImagesUpdated() {
-    savedStateHandle.set(attachedMediaListKey, _attachedMediaList.toList())
+    bundle.putParcelableArrayList(attachedMediaListKey, ArrayList(_attachedMediaList))
   }
 
   private fun onReplyLayoutVisibilityStateChanged() {
     val replyLayoutVisibilityStateValue = _replyLayoutVisibilityState.value
     uiInfoManager.replyLayoutVisibilityStateChanged(screenKey, replyLayoutVisibilityStateValue)
-    savedStateHandle.set<Int>(replyLayoutVisibilityKey, replyLayoutVisibilityStateValue.value)
+    bundle.putInt(replyLayoutVisibilityKey, replyLayoutVisibilityStateValue.value)
   }
 
   fun getReplyData(chanDescriptor: ChanDescriptor, captchaSolution: CaptchaSolution): ReplyData {
@@ -192,6 +254,7 @@ class ReplyLayoutState(
     private const val replyTextKey = "replyText"
     private const val attachedMediaListKey = "attachedMediaList"
     private const val replyLayoutVisibilityKey = "replyLayoutVisibility"
+    const val chanDescriptorKey = "chanDescriptor"
   }
 
 }
@@ -205,7 +268,19 @@ data class AttachedMedia(
   @IgnoredOnParcel
   val asFile by lazy { File(path) }
 
+  val actualFileName: String
+    get() {
+      return fileName ?: asFile.name
+    }
+
   fun exists(): Boolean = asFile.exists()
+
+  fun deleteFile() {
+    val file = asFile
+    if (file.exists()) {
+      file.delete()
+    }
+  }
 }
 
 sealed class SendReplyState {
