@@ -134,7 +134,8 @@ class HomeScreen(
             animate = currentPage.animate
           )
         }
-      })
+      }
+    )
 
     LaunchedEffect(
       key1 = pagerState.currentPage,
@@ -353,9 +354,6 @@ class HomeScreen(
 
   companion object {
     val SCREEN_KEY = ScreenKey("HomeScreen")
-
-    private const val transitionScaleMax = 1f
-    private const val transitionScaleMin = 0.95f
 
     private const val DRAW_PAGER_SWIPE_EXCLUSION_ZONE = false
   }

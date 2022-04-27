@@ -163,7 +163,7 @@ class UiInfoManager(
   }
 
   fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {
-    return _currentPageFlow[uiLayoutMode]!!
+    return _currentPageFlow[uiLayoutMode]?.asStateFlow()!!
   }
 
   fun currentPage(): CurrentPage? {

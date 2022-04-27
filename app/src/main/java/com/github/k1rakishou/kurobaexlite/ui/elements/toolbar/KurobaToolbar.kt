@@ -417,7 +417,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
         onValueChange = { updatedQuery ->
           if (searchQuery != updatedQuery) {
             searchQuery = updatedQuery
-            stackContainerState.storeData(searchQueryKey, updatedQuery)
+            stackContainerState.storeData(searchQueryKey, updatedQuery.text)
 
             searchDebouncer.post(timeout = 125L) {
               onSearchQueryUpdated?.invoke(updatedQuery.text)
