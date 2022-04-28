@@ -4,14 +4,23 @@ import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerId
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.consumeAllChanges
+import androidx.compose.ui.input.pointer.isOutOfBounds
+import androidx.compose.ui.input.pointer.positionChangeConsumed
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.input.pointer.util.addPointerInputChange
-import com.github.k1rakishou.kurobaexlite.helpers.kurobaAwaitLongPressOrCancellation
+import androidx.compose.ui.util.fastAll
+import androidx.compose.ui.util.fastAny
+import androidx.compose.ui.util.fastFirstOrNull
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
@@ -23,56 +32,61 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   pagerSwipeExclusionZone: Rect,
   isDrawerOpened: () -> Boolean,
   onStopConsumingScrollEvents: () -> Unit,
+  isGestureCurrentlyAllowed: () -> Boolean,
   onDraggingDrawer: (Boolean, Float, Float) -> Unit
 ) {
   val velocityTracker = VelocityTracker()
 
   coroutineScope {
     forEachGesture {
-      val firstEvent = awaitPointerEventScope { awaitPointerEvent(pass = PointerEventPass.Initial) }
-      if (firstEvent.type != PointerEventType.Press) {
-        return@forEachGesture
-      }
-
-      if (drawerWidth <= 0 || pagerSwipeExclusionZone.size.isEmpty()) {
-        return@forEachGesture
-      }
-
-      val downEvent = firstEvent.changes.firstOrNull()
-        ?: return@forEachGesture
-
       var prevDragProgress = 0f
+      var dragDownEvent: PointerInputChange? = null
 
-      if (isDrawerOpened()) {
-        var overSlop = Offset.Zero
-        onStopConsumingScrollEvents()
+      val firstEvent = awaitPointerEventScope {
+        val firstEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+        if (firstEvent.type != PointerEventType.Press) {
+          return@awaitPointerEventScope null
+        }
 
-        val touchSlopChange = awaitPointerEventScope {
-          awaitTouchSlopOrCancellation(downEvent.id) { change, slop ->
+        if (drawerWidth <= 0 || pagerSwipeExclusionZone.size.isEmpty()) {
+          return@awaitPointerEventScope null
+        }
+
+        if (!isGestureCurrentlyAllowed()) {
+          return@awaitPointerEventScope null
+        }
+
+        val downEvent = firstEvent.changes.firstOrNull()
+          ?: return@awaitPointerEventScope null
+        dragDownEvent = downEvent
+
+        if (isDrawerOpened()) {
+          var overSlop = Offset.Zero
+          onStopConsumingScrollEvents()
+
+          val touchSlopChange = awaitTouchSlopOrCancellation(downEvent.id) { change, slop ->
             change.consumeAllChanges()
             overSlop = slop
           }
-        }
 
-        if (touchSlopChange == null || overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
-          return@forEachGesture
-        }
-
-        if (downEvent.position.x > (drawerWidth - drawerPhoneVisibleWindowWidthPx)) {
-          return@forEachGesture
-        }
-      } else {
-        if (pagerSwipeExclusionZone.contains(downEvent.position)) {
-          for (change in firstEvent.changes) {
-            change.consumeAllChanges()
+          if (touchSlopChange == null || overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
+            return@awaitPointerEventScope null
           }
 
-          var isDrawerDragEvent = false
+          if (downEvent.position.x > (drawerWidth - drawerPhoneVisibleWindowWidthPx)) {
+            return@awaitPointerEventScope null
+          }
+        } else {
+          if (pagerSwipeExclusionZone.contains(downEvent.position)) {
+            for (change in firstEvent.changes) {
+              change.consumeAllChanges()
+            }
 
-          val firstEventTotalTravelDistance = firstEvent.changes
-            .fold(Offset.Zero) { acc, change -> acc + change.position }
+            var isDrawerDragEvent = false
 
-          awaitPointerEventScope {
+            val firstEventTotalTravelDistance = firstEvent.changes
+              .fold(Offset.Zero) { acc, change -> acc + change.position }
+
             while (isActive) {
               val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
               if (nextEvent.type != PointerEventType.Move) {
@@ -97,34 +111,48 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
                 change.consumeAllChanges()
               }
             }
-          }
 
-          if (!isDrawerDragEvent) {
-            onStopConsumingScrollEvents()
-            return@forEachGesture
-          }
+            if (!isDrawerDragEvent) {
+              onStopConsumingScrollEvents()
+              return@awaitPointerEventScope null
+            }
 
-          val dragProgress = (downEvent.position.x / drawerWidth).coerceIn(0f, 1f)
-          prevDragProgress = dragProgress
-
-          onDraggingDrawer(true, dragProgress, 0f)
-        } else {
-          onStopConsumingScrollEvents()
-
-          if (downEvent.position.x > drawerLongtapGestureZonePx) {
-            return@forEachGesture
-          }
-
-          val longPress = kurobaAwaitLongPressOrCancellation(downEvent)
-          if (longPress == null || longPress.position.x > drawerLongtapGestureZonePx) {
-            return@forEachGesture
-          } else {
-            val dragProgress = (longPress.position.x / drawerWidth).coerceIn(0f, 1f)
+            val dragProgress = (downEvent.position.x / drawerWidth).coerceIn(0f, 1f)
             prevDragProgress = dragProgress
 
             onDraggingDrawer(true, dragProgress, 0f)
+          } else {
+            onStopConsumingScrollEvents()
+
+            if (downEvent.position.x > drawerLongtapGestureZonePx) {
+              return@awaitPointerEventScope null
+            }
+
+            for (change in firstEvent.changes) {
+              change.consumeAllChanges()
+            }
+
+            val longPress = kurobaAwaitLongPressOrCancellation(
+              initialDown = downEvent,
+              isActive = { isActive }
+            )
+
+            if (longPress == null || longPress.position.x > drawerLongtapGestureZonePx) {
+              return@awaitPointerEventScope null
+            } else {
+              val dragProgress = (longPress.position.x / drawerWidth).coerceIn(0f, 1f)
+              prevDragProgress = dragProgress
+
+              onDraggingDrawer(true, dragProgress, 0f)
+            }
           }
         }
+
+        return@awaitPointerEventScope firstEvent
+      }
+
+      if (firstEvent == null || dragDownEvent == null) {
+        return@forEachGesture
       }
 
       try {
@@ -140,7 +168,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
               change.consumeAllChanges()
             }
 
-            val drag = moveEvent.changes.firstOrNull { it.id == downEvent.id }
+            val drag = moveEvent.changes.firstOrNull { it.id == dragDownEvent!!.id }
               ?: break
 
             if (drag.changedToUpIgnoreConsumed()) {
@@ -164,3 +192,61 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
     }
   }
 }
+
+private suspend fun AwaitPointerEventScope.kurobaAwaitLongPressOrCancellation(
+  initialDown: PointerInputChange,
+  isActive: () -> Boolean
+): PointerInputChange? {
+  var longPress: PointerInputChange? = null
+  var currentDown = initialDown
+  val longPressTimeout = viewConfiguration.longPressTimeoutMillis
+
+  try {
+    // wait for first tap up or long press
+    withTimeout(longPressTimeout) {
+      var finished = false
+      while (!finished && isActive()) {
+        val event = awaitPointerEvent(PointerEventPass.Initial)
+        if (event.changes.fastAll { it.changedToUpIgnoreConsumed() }) {
+          // All pointers are up
+          finished = true
+        }
+
+        if (
+          event.changes.fastAny {
+            it.consumed.downChange || it.isOutOfBounds(size, extendedTouchPadding)
+          }
+        ) {
+          finished = true // Canceled
+        }
+
+        // Check for cancel by position consumption. We can look on the Final pass of
+        // the existing pointer event because it comes after the Main pass we checked
+        // above.
+        val consumeCheck = awaitPointerEvent(PointerEventPass.Final)
+        if (consumeCheck.changes.fastAny { it.positionChangeConsumed() }) {
+          finished = true
+        }
+        if (!event.isPointerUp(currentDown.id)) {
+          longPress = event.changes.fastFirstOrNull { it.id == currentDown.id }
+        } else {
+          val newPressed = event.changes.fastFirstOrNull { it.pressed }
+          if (newPressed != null) {
+            currentDown = newPressed
+            longPress = currentDown
+          } else {
+            // should technically never happen as we checked it above
+            finished = true
+          }
+        }
+      }
+    }
+
+    return null
+  } catch (_: PointerEventTimeoutCancellationException) {
+    return longPress ?: initialDown
+  }
+}
+
+private fun PointerEvent.isPointerUp(pointerId: PointerId): Boolean =
+  changes.fastFirstOrNull { it.id == pointerId }?.pressed != true

@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.Velocity
 class HomePagerNestedScrollConnection(
   private val drawerWidth: Float,
   private val currentPagerPage: () -> Int,
-  private val isReplyLayoutOpened: () -> Boolean,
+  private val isGestureCurrentlyAllowed: () -> Boolean,
   private val shouldConsumeAllScrollEvents: () -> Boolean,
   private val onDragging: (Boolean, Float, Float) -> Unit
 ) : NestedScrollConnection {
@@ -22,7 +22,7 @@ class HomePagerNestedScrollConnection(
       return available
     }
 
-    if (isReplyLayoutOpened()) {
+    if (!isGestureCurrentlyAllowed()) {
       return available.copy(y = 0f)
     }
 
@@ -60,7 +60,7 @@ class HomePagerNestedScrollConnection(
   }
 
   private fun dragDrawerLayout(available: Offset) {
-    if (isReplyLayoutOpened()) {
+    if (isGestureCurrentlyAllowed()) {
       return
     }
 

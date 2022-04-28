@@ -36,6 +36,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
@@ -214,25 +215,36 @@ class HomeScreen(
     insets: Insets,
     chanTheme: ChanTheme
   ) {
+    val windowInsets = LocalWindowInsets.current
+    val density = LocalDensity.current
+    val draggableAreaSize = 350f
+
     var drawerWidth by remember { mutableStateOf(0) }
     var homeScreenSize by remember { mutableStateOf(IntSize.Zero) }
     var consumeAllScrollEvents by remember { mutableStateOf(false) }
 
-    // TODO(KurobaEx): right now this is hardcoded and I need to implement an interface that will
-    //  allow the users building zones like this one.
     val pagerSwipeExclusionZone = remember(key1 = homeScreenSize) {
       if (homeScreenSize.width > 0 && homeScreenSize.height > 0) {
-        Rect(Offset(0f, homeScreenSize.height - 600f), Size(350f, 600f))
+        val bottomInsetPx = with(density) { windowInsets.bottom.roundToPx() }
+
+        Rect(
+          offset = Offset(0f, homeScreenSize.height - draggableAreaSize - bottomInsetPx),
+          size = Size(draggableAreaSize, draggableAreaSize)
+        )
       } else {
         Rect.Zero
       }
+    }
+
+    val currentScreen = remember(key1 = pagerState.currentPage) {
+      childScreens.screens.getOrNull(pagerState.currentPage)
     }
 
     val nestedScrollConnection = remember(key1 = drawerWidth) {
       HomePagerNestedScrollConnection(
         drawerWidth = drawerWidth.toFloat(),
         currentPagerPage = { pagerState.currentPage },
-        isReplyLayoutOpened = { uiInfoManager.isAnyReplyLayoutOpened() },
+        isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen) },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
         onDragging = { dragging, progress, velocity ->
           uiInfoManager.dragDrawer(dragging, progress, velocity)
@@ -259,11 +271,8 @@ class HomeScreen(
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
               isDrawerOpened = { uiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
+              isGestureCurrentlyAllowed = {isDrawerDragGestureCurrentlyAllowed(currentScreen) },
               onDraggingDrawer = { dragging, progress, velocity ->
-                if (uiInfoManager.isAnyReplyLayoutOpened()) {
-                  return@detectDrawerDragGestures
-                }
-
                 uiInfoManager.dragDrawer(dragging, progress, velocity)
               }
             )
@@ -312,6 +321,18 @@ class HomeScreen(
         )
       }
     }
+  }
+
+  private fun isDrawerDragGestureCurrentlyAllowed(currentScreen: ComposeScreenWithToolbar?): Boolean {
+    if (currentScreen == null || currentScreen.hasChildScreens()) {
+      return false
+    }
+
+    if (uiInfoManager.isAnyReplyLayoutOpened()) {
+      return false
+    }
+
+    return true
   }
 
   private fun Modifier.drawDebugPagerSwipeExclusionZone(pagerSwipeExclusionZone: Rect): Modifier {
