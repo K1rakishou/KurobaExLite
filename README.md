@@ -26,12 +26,12 @@ Right now you can:
 - Use search.
 - Thread scroll position is stored/restored.
 - View media. ComposeSubsamplingScaleImage for static images, mpv (downloadable) for gifs/videos.
+- Reply to posts.
+- View albums.
+- Track navigation history (for now it's always enabled and always in the drawer).
 
 What you can't do which will be implemented in the future:
-- Reply to posts.
 - Navigate other sites (maybe?).
-- Albums.
 - Bookmarks.
-- Navigation history.
 
 The Main work is currently being done on the general UI/UX which is going to be different from KurobaEx.
