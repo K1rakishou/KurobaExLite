@@ -360,7 +360,7 @@ private fun PostListInternal(
       private var accumulatedScrollOffsetY: Float = 0f
 
       private val token = "onPostListScrolled"
-      private val notifyIntervalMs = 128L
+      private val notifyIntervalMs = 32L
       private val handler = Handler(Looper.getMainLooper())
 
       override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {

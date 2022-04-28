@@ -7,8 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -46,6 +45,8 @@ fun ReplyInputWithButtons(
   val replySendProgressMut by replyLayoutState.replySendProgressState
   val replySendProgress = replySendProgressMut
 
+  val iconSize = 40.dp
+
   val replyInputVisualTransformation = remember {
     VisualTransformation { text ->
       val spannedText = buildAnnotatedString {
@@ -82,8 +83,7 @@ fun ReplyInputWithButtons(
 
     Column(
       modifier = Modifier
-        .width(32.dp)
-        .wrapContentHeight()
+        .wrapContentSize()
     ) {
       val drawableId = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
         R.drawable.ic_baseline_arrow_drop_down_24
@@ -93,7 +93,7 @@ fun ReplyInputWithButtons(
 
       KurobaComposeIcon(
         modifier = Modifier
-          .size(32.dp)
+          .size(iconSize)
           .kurobaClickable(
             enabled = replyLayoutEnabled,
             bounded = false,
@@ -120,7 +120,7 @@ fun ReplyInputWithButtons(
           }
         }
 
-        Box(modifier = Modifier.size(32.dp)) {
+        Box(modifier = Modifier.size(iconSize)) {
           KurobaComposeIcon(
             modifier = Modifier
               .fillMaxSize()

@@ -16,6 +16,11 @@ class MpvInitializer(
   val initialized: Boolean
     get() = _initialized
 
+  protected fun finalize() {
+    check(!_initialized) { "MpvInitializer() is still initialized" }
+    check(!MPVLib.isCreated()) { "MPVLib() is still created!" }
+  }
+
   fun init() {
     if (_initialized) {
       logcat(TAG) { "init() already initialized" }
@@ -76,13 +81,10 @@ class MpvInitializer(
 
     val demuxerCacheSize = mpvSettings.demuxerCacheSizeBytes
     val demuxerBackCacheSize = (demuxerCacheSize / 3)
-    val mpvDiskCacheDir = mpvSettings.mpvDiskCacheDir
 
     // TODO(KurobaEx): this shit doesn't work for some reason.
     //  There is nothing being cached on the disk.
     MPVLib.mpvSetOptionString("cache", "yes")
-    MPVLib.mpvSetOptionString("cache-on-disk", "yes")
-    MPVLib.mpvSetOptionString("cache-dir", mpvDiskCacheDir.path)
     MPVLib.mpvSetOptionString("demuxer-seekable-cache", "yes")
     MPVLib.mpvSetOptionString("demuxer-max-bytes", "${demuxerCacheSize}")
     MPVLib.mpvSetOptionString("demuxer-max-back-bytes", "${demuxerBackCacheSize}")
@@ -97,7 +99,6 @@ class MpvInitializer(
       "init() mpv initialized, hwdec: $hwdec, " +
         "mpvDemuxerCacheMaxSize: ${demuxerCacheSize.asReadableFileSize()}, " +
         "mpvDemuxerBackCacheMaxSize: ${demuxerBackCacheSize.asReadableFileSize()}, " +
-        "mpvDiskCacheDir: ${mpvDiskCacheDir.path}, " +
         "videoFastCode: ${mpvSettings.videoFastCode}"
     }
   }

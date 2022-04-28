@@ -18,14 +18,6 @@ class MpvSettings(
   }
 
   val mpvNativeLibsDir = File(appContext.filesDir, MPV_NATIVE_LIBS_DIR_NAME)
-  val mpvDiskCacheDir = File(appContext.filesDir, MPV_DISK_CACHE_DIR_NAME)
-    get() {
-      if (!field.exists()) {
-        field.mkdirs()
-      }
-
-      return field
-    }
 
   val demuxerCacheSizeBytes: Long
     get() {
@@ -48,6 +40,5 @@ class MpvSettings(
     private const val ONE_MEGABYTE = 1024L * 1024L
 
     private const val MPV_NATIVE_LIBS_DIR_NAME = "mpv/libs"
-    private const val MPV_DISK_CACHE_DIR_NAME = "mpv/cache"
   }
 }

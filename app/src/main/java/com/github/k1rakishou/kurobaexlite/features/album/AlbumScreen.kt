@@ -5,10 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,7 +42,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
-import com.github.k1rakishou.kurobaexlite.model.data.aspectRatio
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -51,12 +53,10 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyStaggeredGrid
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberLazyStaggeredGridState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -197,9 +197,8 @@ class AlbumScreen(
       return
     }
 
-    val lazyStaggeredGridState = rememberLazyStaggeredGridState(
-      columnCount = 3,
-      initialIndex = album.scrollIndex
+    val lazyStaggeredGridState = rememberLazyGridState(
+      initialFirstVisibleItemIndex = album.scrollIndex
     )
 
     LaunchedEffect(
@@ -218,9 +217,10 @@ class AlbumScreen(
       }
     )
 
-    LazyStaggeredGrid(
+    LazyVerticalGrid(
       modifier = Modifier.fillMaxSize(),
-      lazyStaggeredGridState = lazyStaggeredGridState,
+      columns = GridCells.Fixed(3),
+      state = lazyStaggeredGridState,
       contentPadding = paddingValues,
       content = {
         val albumItems = album.images
@@ -235,8 +235,8 @@ class AlbumScreen(
               ImageThumbnail(
                 modifier = Modifier
                   .fillMaxWidth()
-                  .aspectRatio(postImage.aspectRatio())
-                  .padding(2.dp)
+                  .height(160.dp)
+                  .padding(1.dp)
                   .onGloballyPositioned { layoutCoordinates ->
                     boundsInWindowMut = layoutCoordinates.boundsInWindow()
                   }

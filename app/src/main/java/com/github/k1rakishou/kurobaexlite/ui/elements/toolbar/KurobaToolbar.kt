@@ -70,6 +70,8 @@ class ToolbarIcon(
   @DrawableRes val drawableId: Int
 )
 
+private val toolbarIconSize = 30.dp
+
 @Stable
 class KurobaToolbarState(
   val leftIconInfo: LeftIconInfo?,
@@ -305,7 +307,7 @@ fun rightPartBuilder(
         key(toolbarIcon.key) {
           KurobaComposeIcon(
             modifier = Modifier
-              .size(24.dp)
+              .size(toolbarIconSize)
               .kurobaClickable(
                 bounded = false,
                 onClick = { kurobaToolbarState.onToolbarIconClicked(toolbarIcon.key) }
@@ -336,7 +338,7 @@ private fun leftToolbarPartBuilder(
     Box {
       KurobaComposeIcon(
         modifier = Modifier
-          .size(24.dp)
+          .size(toolbarIconSize)
           .kurobaClickable(
             bounded = false,
             onClick = { onLeftIconClicked() }
@@ -382,7 +384,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
     leftPart = {
       KurobaComposeIcon(
         modifier = Modifier
-          .size(24.dp)
+          .size(toolbarIconSize)
           .kurobaClickable(
             bounded = false,
             onClick = {

@@ -39,6 +39,7 @@ class MPVView(
         observeProperties()
 
         _initialized = true
+        logcat(TAG) { "attach()" }
     }
 
     fun detach() {
@@ -48,6 +49,7 @@ class MPVView(
         surfaceTextureListener = null
 
         _initialized = false
+        logcat(TAG) { "detach()" }
     }
 
     fun playFile(filePath: String) {

@@ -27,7 +27,7 @@ fun BoxScope.KurobaToolbarLayout(
 
     if (leftPart != null) {
       Box(
-        modifier = Modifier.fillMaxHeight().width(24.dp),
+        modifier = Modifier.fillMaxHeight().wrapContentWidth(),
         contentAlignment = Alignment.CenterStart
       ) {
         leftPart()

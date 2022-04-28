@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyItemScope
@@ -64,6 +65,7 @@ class NavigationHistoryScreen(
   private val navigationHistoryScreenViewModel: NavigationHistoryScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+  private val deleteNavElementIconWidth = 40.dp
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -74,7 +76,7 @@ class NavigationHistoryScreen(
     val context = LocalContext.current
     val navigationHistoryList = navigationHistoryScreenViewModel.navigationHistoryList
     val circleCropTransformation = remember { CircleCropTransformation() }
-    val navElementHeight = 36.dp
+    val navElementHeight = 42.dp
     val lazyListState = rememberLazyListState()
 
     LaunchedEffect(
@@ -257,6 +259,8 @@ class NavigationHistoryScreen(
     ) {
       KurobaComposeIcon(
         modifier = Modifier
+          .size(deleteNavElementIconWidth)
+          .padding(2.dp)
           .kurobaClickable(
             bounded = false,
             onClick = { onRemoveClicked(navigationElement) }
@@ -305,6 +309,8 @@ class NavigationHistoryScreen(
     ) {
       KurobaComposeIcon(
         modifier = Modifier
+          .size(deleteNavElementIconWidth)
+          .padding(2.dp)
           .kurobaClickable(
             bounded = false,
             onClick = { onRemoveClicked(navigationElement) }
