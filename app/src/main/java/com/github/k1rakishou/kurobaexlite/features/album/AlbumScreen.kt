@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +24,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -53,10 +53,15 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.SCROLLBAR_MIN_SIZE
+import com.github.k1rakishou.kurobaexlite.ui.helpers.SCROLLBAR_WIDTH
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.scrollbar
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -197,9 +202,7 @@ class AlbumScreen(
       return
     }
 
-    val lazyStaggeredGridState = rememberLazyGridState(
-      initialFirstVisibleItemIndex = album.scrollIndex
-    )
+    val lazyGridState = rememberLazyGridState(initialFirstVisibleItemIndex = album.scrollIndex)
 
     LaunchedEffect(
       key1 = chanDescriptor,
@@ -211,16 +214,31 @@ class AlbumScreen(
 
           val indexToScroll = album.imageIndexByPostDescriptor(scrollInfo.postDescriptor)
           if (indexToScroll != null) {
-            lazyStaggeredGridState.scrollToItem(index = indexToScroll)
+            lazyGridState.scrollToItem(index = indexToScroll)
           }
         }
       }
     )
 
-    LazyVerticalGrid(
-      modifier = Modifier.fillMaxSize(),
+    val scrollbarWidth = with(LocalDensity.current) {
+      remember { SCROLLBAR_WIDTH.toPx().toInt() }
+    }
+    val scrollbarMinHeightPx = with(LocalDensity.current) {
+      remember { SCROLLBAR_MIN_SIZE.toPx().toInt() }
+    }
+
+    LazyVerticalGridWithFastScroller(
+      modifier = Modifier
+        .fillMaxSize()
+        .scrollbar(
+          state = lazyGridState,
+          scrollbarDimens = ScrollbarDimens.Vertical(
+            width = scrollbarWidth,
+            minHeight = scrollbarMinHeightPx
+          )
+        ),
       columns = GridCells.Fixed(3),
-      state = lazyStaggeredGridState,
+      lazyGridState = lazyGridState,
       contentPadding = paddingValues,
       content = {
         val albumItems = album.images

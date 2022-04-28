@@ -101,8 +101,7 @@ fun MediaViewerPreviewStrip(
           scrollbarDimens = ScrollbarDimens.Horizontal(
             height = scrollbarHeight,
             minWidth = scrollbarMinWidthPx
-          ),
-          scrollbarDragged = false
+          )
         )
         .padding(start = 8.dp, end = 8.dp, top = 4.dp),
       state = lazyListState

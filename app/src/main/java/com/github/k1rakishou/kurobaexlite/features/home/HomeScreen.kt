@@ -111,7 +111,7 @@ class HomeScreen(
       return
     }
 
-    val drawerLongtapGestureZonePx = with(LocalDensity.current) { remember { 24.dp.toPx() } }
+    val drawerLongtapGestureZonePx = with(LocalDensity.current) { remember { 16.dp.toPx() } }
     val maxDrawerWidth = with(LocalDensity.current) { remember { 600.dp.toPx().toInt() } }
     val drawerPhoneVisibleWindowWidth = with(LocalDensity.current) { remember { 40.dp.toPx().toInt() } }
 
