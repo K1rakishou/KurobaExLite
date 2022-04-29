@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -37,14 +37,14 @@ abstract class FloatingComposeScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
-  val horizPaddingDp by lazy { if (uiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
-  val vertPaddingDp by lazy { if (uiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
+  val horizPaddingDp by lazy { if (globalUiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
+  val vertPaddingDp by lazy { if (globalUiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
 
   open val contentAlignment: Alignment = Alignment.Center
   open val presentAnimation: NavigationRouter.ScreenAddAnimation = NavigationRouter.ScreenAddAnimation.FadeIn
   open val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.FadeOut
 
-  protected val touchPositionDependantAlignment by lazy { TouchPositionDependantAlignment(uiInfoManager) }
+  protected val touchPositionDependantAlignment by lazy { TouchPositionDependantAlignment(globalUiInfoManager) }
 
   @Composable
   override fun Content() {
@@ -120,8 +120,8 @@ abstract class FloatingComposeScreen(
 
   @Composable
   open fun maxAvailableHeight(): Dp {
-    val isTablet = uiInfoManager.isTablet
-    val maxParentHeight by uiInfoManager.totalScreenHeightState
+    val isTablet = globalUiInfoManager.isTablet
+    val maxParentHeight by globalUiInfoManager.totalScreenHeightState
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {
@@ -143,8 +143,8 @@ abstract class FloatingComposeScreen(
 
   @Composable
   open fun maxAvailableWidth(): Dp {
-    val isTablet = uiInfoManager.isTablet
-    val maxParentWidth by uiInfoManager.totalScreenHeightState
+    val isTablet = globalUiInfoManager.isTablet
+    val maxParentWidth by globalUiInfoManager.totalScreenHeightState
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {
@@ -181,7 +181,7 @@ abstract class FloatingComposeScreen(
   }
 
   protected class TouchPositionDependantAlignment(
-    private val uiInfoManager: UiInfoManager
+    private val globalUiInfoManager: GlobalUiInfoManager
   ) : Alignment {
     override fun align(size: IntSize, space: IntSize, layoutDirection: LayoutDirection): IntOffset {
       val availableWidth = space.width
@@ -191,8 +191,8 @@ abstract class FloatingComposeScreen(
         return IntOffset.Zero
       }
 
-      val biasX = (uiInfoManager.lastTouchPosition.x.toFloat() / availableWidth.toFloat()).coerceIn(0f, 1f)
-      val biasY = (uiInfoManager.lastTouchPosition.y.toFloat() / availableHeight.toFloat()).coerceIn(0f, 1f)
+      val biasX = (globalUiInfoManager.lastTouchPosition.x.toFloat() / availableWidth.toFloat()).coerceIn(0f, 1f)
+      val biasY = (globalUiInfoManager.lastTouchPosition.y.toFloat() / availableHeight.toFloat()).coerceIn(0f, 1f)
 
       val offsetX = ((availableWidth - (size.width)).toFloat() * biasX).toInt()
       val offsetY = ((availableHeight - (size.height)).toFloat() * biasY).toInt()

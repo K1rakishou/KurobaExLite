@@ -22,7 +22,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreen
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
@@ -37,14 +37,14 @@ private val COLOR_VISIBLE = Color(0x80000000)
 @Composable
 fun HomeScreenDrawerLayout(
   drawerWidth: Int,
-  navigationRouter: NavigationRouter,
+  navigationRouter: NavigationRouter
 ) {
   val componentActivity = LocalComponentActivity.current
-  val uiInfoManager = koinRemember<UiInfoManager>()
+  val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
   val childRouter = remember { navigationRouter.childRouter(NavigationHistoryScreen.SCREEN_KEY) }
   val drawerScreen = remember { NavigationHistoryScreen(componentActivity, navigationRouter) }
-  val drawerVisibility by uiInfoManager.drawerVisibilityFlow.collectAsState()
+  val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow.collectAsState()
   val maxOffsetDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { -drawerWidth.toDp() } }
   val drawerWidthDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
 
@@ -113,7 +113,7 @@ fun HomeScreenDrawerLayout(
 
   val clickableModifier = remember(key1 = clickable) {
     if (clickable) {
-      Modifier.kurobaClickable(hasClickIndication = false) { uiInfoManager.closeDrawer() }
+      Modifier.kurobaClickable(hasClickIndication = false) { globalUiInfoManager.closeDrawer() }
     } else {
       Modifier
     }
@@ -136,20 +136,20 @@ fun HomeScreenDrawerLayout(
 
         when (val dv = drawerVisibility) {
           DrawerVisibility.Closing -> {
-            uiInfoManager.closeDrawer(withAnimation = false)
+            globalUiInfoManager.closeDrawer(withAnimation = false)
           }
           DrawerVisibility.Opening -> {
-            uiInfoManager.openDrawer(withAnimation = false)
+            globalUiInfoManager.openDrawer(withAnimation = false)
           }
           is DrawerVisibility.Drag -> {
             when {
-              dv.velocity > velocityEnoughToAnimate -> uiInfoManager.openDrawer()
-              dv.velocity < -velocityEnoughToAnimate -> uiInfoManager.closeDrawer()
+              dv.velocity > velocityEnoughToAnimate -> globalUiInfoManager.openDrawer()
+              dv.velocity < -velocityEnoughToAnimate -> globalUiInfoManager.closeDrawer()
               else -> {
                 if (dv.progress > 0.5f) {
-                  uiInfoManager.openDrawer()
+                  globalUiInfoManager.openDrawer()
                 } else {
-                  uiInfoManager.closeDrawer()
+                  globalUiInfoManager.closeDrawer()
                 }
               }
             }

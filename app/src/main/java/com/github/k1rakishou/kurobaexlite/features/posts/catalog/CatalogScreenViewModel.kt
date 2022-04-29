@@ -30,8 +30,8 @@ import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreenViewModel(
-  private val savedStateHandle: SavedStateHandle
-) : PostScreenViewModel() {
+  savedStateHandle: SavedStateHandle
+) : PostScreenViewModel(savedStateHandle) {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
   private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
   private val catalogScreenState = CatalogScreenPostsState()
@@ -49,7 +49,7 @@ class CatalogScreenViewModel(
   }
 
   private suspend fun loadPrevVisitedCatalog() {
-    val lastVisitedCatalog = appSettings.lastVisitedCatalog.read()?.toCatalogDescriptor()
+    val lastVisitedCatalog = savedStateHandle.get<CatalogDescriptor>(LAST_VISITED_CATALOG_KEY)
     if (lastVisitedCatalog != null) {
       logcat(tag = TAG) { "loadPrevVisitedCatalog() loading ${lastVisitedCatalog} from appSettings.lastVisitedCatalog" }
 

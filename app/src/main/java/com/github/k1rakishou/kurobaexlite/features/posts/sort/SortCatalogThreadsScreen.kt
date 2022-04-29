@@ -65,7 +65,7 @@ class SortCatalogThreadsScreen(
       currentCatalogSortSettingState!!
     }
 
-    val width = if (uiInfoManager.isTablet) 360.dp else 280.dp
+    val width = if (globalUiInfoManager.isTablet) 360.dp else 280.dp
 
     Column(
       modifier = Modifier

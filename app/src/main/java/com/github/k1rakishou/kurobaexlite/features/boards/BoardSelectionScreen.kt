@@ -168,10 +168,10 @@ class BoardSelectionScreen(
     paddingValues: PaddingValues,
     onBoardClicked: (CatalogDescriptor) -> Unit
   ) {
-    val titleTextSize by uiInfoManager.textTitleSizeSp.collectAsState()
-    val subtitleTextSize by uiInfoManager.textSubTitleSizeSp.collectAsState()
-    val defaultHorizPadding = uiInfoManager.defaultHorizPadding
-    val defaultVertPadding = uiInfoManager.defaultVertPadding
+    val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
+    val subtitleTextSize by globalUiInfoManager.textSubTitleSizeSp.collectAsState()
+    val defaultHorizPadding = globalUiInfoManager.defaultHorizPadding
+    val defaultVertPadding = globalUiInfoManager.defaultVertPadding
 
     val filteredBoardsAsyncData by produceState(
       initialValue = loadBoardsForSiteEvent,

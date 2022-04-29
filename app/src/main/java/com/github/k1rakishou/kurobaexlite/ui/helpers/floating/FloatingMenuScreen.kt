@@ -82,7 +82,7 @@ class FloatingMenuScreen(
       block = { check(menuItems.isNotEmpty()) { "menuItems is empty!" } }
     )
 
-    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
     if (orientation == null) {
       return
@@ -370,10 +370,10 @@ class FloatingMenuScreen(
     onItemClicked: (() -> Unit)?
   ) {
     val chanTheme = LocalChanTheme.current
-    val titleTextSize by uiInfoManager.textTitleSizeSp.collectAsState()
-    val subtitleTextSize by uiInfoManager.textSubTitleSizeSp.collectAsState()
-    val defaultHorizPadding = uiInfoManager.defaultHorizPadding
-    val defaultVertPadding = uiInfoManager.defaultVertPadding
+    val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
+    val subtitleTextSize by globalUiInfoManager.textSubTitleSizeSp.collectAsState()
+    val defaultHorizPadding = globalUiInfoManager.defaultHorizPadding
+    val defaultVertPadding = globalUiInfoManager.defaultVertPadding
 
     val title = when (text) {
       is FloatingMenuItem.MenuItemText.Id -> stringResource(id = text.id)

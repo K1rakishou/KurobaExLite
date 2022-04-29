@@ -1,29 +1,35 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
-import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Point
+import android.os.Bundle
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.helpers.SaveableComponent
+import com.github.k1rakishou.kurobaexlite.helpers.getParcelableMap
+import com.github.k1rakishou.kurobaexlite.helpers.getSerializableMap
+import com.github.k1rakishou.kurobaexlite.helpers.putParcelableMap
+import com.github.k1rakishou.kurobaexlite.helpers.putSerializableMap
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ChildScreenSearchInfo
 import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
-import com.github.k1rakishou.kurobaexlite.model.data.ui.ToolbarVisibilityInfo
+import com.github.k1rakishou.kurobaexlite.model.data.ui.HideableUiVisibilityInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,30 +38,39 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import logcat.logcat
 
-class UiInfoManager(
-  private val appContext: Context,
-  private val appSettings: AppSettings,
-  private val coroutineScope: CoroutineScope
-) {
-  private val initialized = AtomicBoolean(false)
+class GlobalUiInfoManager(
+  appScope: CoroutineScope,
+  private val appResources: AppResources,
+  private val appSettings: AppSettings
+) : SaveableComponent {
+  private val _initialized = mutableStateOf(false)
+  val initialized: State<Boolean>
+    get() = _initialized
 
-  private val resources by lazy { appContext.resources }
-  private val toolbarHeight by lazy { resources.getDimension(R.dimen.toolbar_height) }
-  private val toolbarVisibilityInfoMap = mutableMapOf<ScreenKey, ToolbarVisibilityInfo>()
-  private val replyLayoutVisibilityInfoMap = mutableMapOf<ScreenKey, MutableState<ReplyLayoutVisibility>>()
+  private val job = SupervisorJob()
+  private val coroutineScope = CoroutineScope(Dispatchers.Main + job + appScope.coroutineContext)
+
+  private val toolbarHeight by lazy { appResources.dimension(R.dimen.toolbar_height) }
 
   private val _lastTouchPosition = Point(0, 0)
   val lastTouchPosition: Point
     get() = Point(_lastTouchPosition.x, _lastTouchPosition.y)
 
-  val isTablet by lazy { resources.getBoolean(R.bool.isTablet) }
-  val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
-  val currentOrientation = MutableStateFlow<Int?>(null)
+  val isTablet by lazy { appResources.boolean(R.bool.isTablet) }
 
   val orientations = arrayOf(
     Configuration.ORIENTATION_PORTRAIT,
     Configuration.ORIENTATION_LANDSCAPE
   )
+
+  val defaultHorizPadding by lazy { if (isTablet) 12.dp else 8.dp }
+  val defaultVertPadding by lazy { if (isTablet) 10.dp else 6.dp }
+
+  private val hideableUiVisibilityInfoMap = mutableMapOf<ScreenKey, HideableUiVisibilityInfo>()
+  private val replyLayoutVisibilityInfoMap = mutableMapOf<ScreenKey, MutableState<ReplyLayoutVisibility>>()
+
+  val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
+  val currentOrientation = MutableStateFlow<Int?>(null)
 
   private var _totalScreenWidthState = mutableStateOf(0)
   val totalScreenWidthState: State<Int>
@@ -65,22 +80,13 @@ class UiInfoManager(
   val totalScreenHeightState: State<Int>
     get() = _totalScreenHeightState
 
-  val composeDensity by lazy {
-    Density(
-      appContext.resources.displayMetrics.density,
-      appContext.resources.configuration.fontScale
-    )
-  }
-
   private val _drawerVisibilityFlow = MutableStateFlow<DrawerVisibility>(DrawerVisibility.Closed)
   val drawerVisibilityFlow: StateFlow<DrawerVisibility>
     get() = _drawerVisibilityFlow.asStateFlow()
 
-  private val _currentPageFlow = mutableMapOf<MainUiLayoutMode, MutableStateFlow<CurrentPage>>()
+  private val _currentPageMapFlow = mutableMapOf<MainUiLayoutMode, MutableStateFlow<CurrentPage>>()
 
-  val defaultHorizPadding by lazy { if (isTablet) 12.dp else 8.dp }
-  val defaultVertPadding by lazy { if (isTablet) 10.dp else 6.dp }
-
+  // vvv Settings
   private val _textTitleSizeSp = MutableStateFlow(0.sp)
   val textTitleSizeSp: StateFlow<TextUnit>
     get() = _textTitleSizeSp.asStateFlow()
@@ -101,8 +107,72 @@ class UiInfoManager(
   private val _bookmarksScreenOnLeftSide = MutableStateFlow(false)
   val bookmarksScreenOnLeftSide: StateFlow<Boolean>
     get() = _bookmarksScreenOnLeftSide.asStateFlow()
+  // ^^^ Settings
+
+  override val key: String = SAVE_STATE_KEY
+
+  override fun saveState(): Bundle {
+    return Bundle().apply {
+      putParcelableMap(TOOLBAR_VISIBILITY_INFO_MAP, hideableUiVisibilityInfoMap)
+
+      putSerializableMap(
+        key = CURRENT_PAGE_MAP,
+        map = _currentPageMapFlow,
+        mapper = { mainUiLayoutMode, currentPageStateFlow ->
+          return@putSerializableMap Bundle().apply {
+            putInt(MAIN_UI_LAYOUT_MODE, mainUiLayoutMode.value)
+            putParcelable(CURRENT_PAGE, currentPageStateFlow.value)
+          }
+        }
+      )
+
+      putBoolean(IS_DRAWER_OPENED, drawerVisibilityFlow.value.isOpened)
+    }
+  }
+
+  override fun restoreFromState(bundle: Bundle?) {
+    if (bundle == null) {
+      return
+    }
+
+    bundle.getParcelableMap<ScreenKey, HideableUiVisibilityInfo>(TOOLBAR_VISIBILITY_INFO_MAP)
+      .let { restoredToolbarVisibilityMap ->
+        hideableUiVisibilityInfoMap.clear()
+        hideableUiVisibilityInfoMap.putAll(restoredToolbarVisibilityMap)
+      }
+
+    bundle.getSerializableMap(
+      key = CURRENT_PAGE_MAP,
+      mapper = { bundle ->
+        val mainUiLayoutMode = MainUiLayoutMode.fromRawValue(bundle.getInt(MAIN_UI_LAYOUT_MODE, 0))
+        val currentPage = bundle.getParcelable<CurrentPage>(CURRENT_PAGE)
+
+        return@getSerializableMap Pair(mainUiLayoutMode, currentPage)
+      }
+    ).let { resultMap ->
+      _currentPageMapFlow.clear()
+
+      resultMap.entries.forEach { (mainUiLayoutMode, currentPage) ->
+        if (currentPage == null) {
+          return@forEach
+        }
+
+        _currentPageMapFlow[mainUiLayoutMode] = MutableStateFlow(currentPage)
+      }
+    }
+
+    bundle.getBoolean(IS_DRAWER_OPENED, false).let { isDrawerOpened ->
+      if (isDrawerOpened) {
+        _drawerVisibilityFlow.value = DrawerVisibility.Opened
+      } else {
+        _drawerVisibilityFlow.value = DrawerVisibility.Closed
+      }
+    }
+  }
 
   suspend fun init() {
+    job.cancelChildren()
+
     _textTitleSizeSp.value = appSettings.textTitleSizeSp.read().sp
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
@@ -110,13 +180,9 @@ class UiInfoManager(
     _homeScreenLayoutType.value = appSettings.layoutType.read()
     _bookmarksScreenOnLeftSide.value = appSettings.bookmarksScreenOnLeftSide.read()
 
-    if (!initialized.compareAndSet(false, true)) {
-      return
-    }
-
     coroutineScope.launch {
       combine(
-        flow = homeScreenLayoutType,
+        flow = appSettings.layoutType.valueFlow,
         flow2 = currentOrientation,
         transform = { homeScreenLayout, orientation ->
           return@combine LayoutChangingSettings(
@@ -160,18 +226,19 @@ class UiInfoManager(
     }
 
     logcat { "UiInfoManager initialization finished" }
+    _initialized.value = true
   }
 
   fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {
-    return _currentPageFlow[uiLayoutMode]?.asStateFlow()!!
+    return _currentPageMapFlow[uiLayoutMode]?.asStateFlow()!!
   }
 
   fun currentPage(): CurrentPage? {
-    return _currentPageFlow[currentUiLayoutModeState.value]?.value
+    return _currentPageMapFlow[currentUiLayoutModeState.value]?.value
   }
 
   fun currentPage(uiLayoutMode: MainUiLayoutMode): CurrentPage? {
-    return _currentPageFlow[uiLayoutMode]?.value
+    return _currentPageMapFlow[uiLayoutMode]?.value
   }
 
   fun updateMaxParentSize(availableWidth: Int, availableHeight: Int) {
@@ -188,10 +255,17 @@ class UiInfoManager(
       .any { (_, replyLayoutVisibilityState) -> replyLayoutVisibilityState.value != ReplyLayoutVisibility.Closed  }
   }
 
-  fun getOrCreateToolbarVisibilityInfo(screenKey: ScreenKey): ToolbarVisibilityInfo {
-    return toolbarVisibilityInfoMap.getOrPut(
+  fun getOrCreateHideableUiVisibilityInfo(screenKey: ScreenKey): HideableUiVisibilityInfo {
+    return hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
+    )
+  }
+
+  fun replyLayoutVisibilityInfoStateForScreen(screenKey: ScreenKey): State<ReplyLayoutVisibility> {
+    return replyLayoutVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { mutableStateOf(ReplyLayoutVisibility.Closed) }
     )
   }
 
@@ -209,14 +283,14 @@ class UiInfoManager(
     }
 
     val newCurrentPage = CurrentPage(screenKey, false)
-    _currentPageFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
+    _currentPageMapFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    toolbarVisibilityInfo.update(postListScrollState = 1f)
+    hideableUiVisibilityInfo.update(postListScrollState = 1f)
   }
 
   fun updateCurrentPage(
@@ -230,26 +304,26 @@ class UiInfoManager(
     }
 
     val newCurrentPage = CurrentPage(screenKey, animate)
-    _currentPageFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
+    _currentPageMapFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    toolbarVisibilityInfo.update(postListScrollState = 1f)
+    hideableUiVisibilityInfo.update(postListScrollState = 1f)
   }
 
   fun onChildContentScrolling(
     screenKey: ScreenKey,
     delta: Float
   ) {
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    var currentTransparency = toolbarVisibilityInfo.postListScrollState.value
+    var currentTransparency = hideableUiVisibilityInfo.postListScrollState.value
     currentTransparency += (delta / toolbarHeight)
 
     if (currentTransparency < 0f) {
@@ -260,40 +334,40 @@ class UiInfoManager(
       currentTransparency = 1f
     }
 
-    toolbarVisibilityInfo.update(postListScrollState = currentTransparency)
+    hideableUiVisibilityInfo.update(postListScrollState = currentTransparency)
   }
 
   fun onPostListDragStateChanged(screenKey: ScreenKey, dragging: Boolean) {
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    toolbarVisibilityInfo.update(postListDragState = dragging)
+    hideableUiVisibilityInfo.update(postListDragState = dragging)
   }
 
   fun onFastScrollerDragStateChanged(screenKey: ScreenKey, dragging: Boolean) {
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    toolbarVisibilityInfo.update(fastScrollerDragState = dragging)
+    hideableUiVisibilityInfo.update(fastScrollerDragState = dragging)
   }
 
   fun onPostListTouchingTopOrBottomStateChanged(screenKey: ScreenKey,touching: Boolean) {
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    toolbarVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
+    hideableUiVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
   }
 
   fun onChildScreenSearchStateChanged(screenKey: ScreenKey, searchQuery: String?) {
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
     val childScreenSearchInfo = ChildScreenSearchInfo(
@@ -301,14 +375,7 @@ class UiInfoManager(
       usingSearch = searchQuery != null
     )
 
-    toolbarVisibilityInfo.update(childScreenSearchInfo = childScreenSearchInfo)
-  }
-
-  fun replyLayoutVisibilityInfoStateForScreen(screenKey: ScreenKey): State<ReplyLayoutVisibility> {
-    return replyLayoutVisibilityInfoMap.getOrPut(
-      key = screenKey,
-      defaultValue = { mutableStateOf(ReplyLayoutVisibility.Closed) }
-    )
+    hideableUiVisibilityInfo.update(childScreenSearchInfo = childScreenSearchInfo)
   }
 
   fun replyLayoutVisibilityStateChanged(
@@ -321,22 +388,22 @@ class UiInfoManager(
     )
     replyLayoutVisibilityState.value = replyLayoutVisibility
 
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    toolbarVisibilityInfo.update(replyLayoutOpened = replyLayoutVisibility != ReplyLayoutVisibility.Closed)
+    hideableUiVisibilityInfo.update(replyLayoutOpened = replyLayoutVisibility != ReplyLayoutVisibility.Closed)
   }
 
   // TODO(KurobaEx):
   fun onLoadingErrorUpdatedOrRemoved(screenKey: ScreenKey, hasLoadError: Boolean) {
-    val toolbarVisibilityInfo = toolbarVisibilityInfoMap.getOrPut(
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { ToolbarVisibilityInfo() }
+      defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    toolbarVisibilityInfo.update(hasLoadError = hasLoadError)
+    hideableUiVisibilityInfo.update(hasLoadError = hasLoadError)
   }
 
   fun isDrawerOpenedOrOpening(): Boolean {
@@ -381,9 +448,9 @@ class UiInfoManager(
       val prevLayoutMode = currentUiLayoutModeState.value
 
       if (prevLayoutMode == null) {
-        _currentPageFlow.clear()
+        _currentPageMapFlow.clear()
       } else {
-        _currentPageFlow.remove(prevLayoutMode)
+        _currentPageMapFlow.remove(prevLayoutMode)
       }
 
       currentUiLayoutModeState.value = null
@@ -404,33 +471,40 @@ class UiInfoManager(
       LayoutType.Split -> MainUiLayoutMode.Split
     }
 
-    if (!_currentPageFlow.containsKey(uiLayoutMode)) {
+    if (!_currentPageMapFlow.containsKey(uiLayoutMode)) {
       val screenKey = when (uiLayoutMode) {
-        MainUiLayoutMode.Portrait -> {
-          val lastVisitedThread = appSettings.lastVisitedThread.read()
-          if (lastVisitedThread == null) {
-            CatalogScreen.SCREEN_KEY
-          } else {
-            ThreadScreen.SCREEN_KEY
-          }
-        }
-        MainUiLayoutMode.Split -> {
-          CatalogScreen.SCREEN_KEY
-        }
+        MainUiLayoutMode.Portrait -> CatalogScreen.SCREEN_KEY
+        MainUiLayoutMode.Split -> CatalogScreen.SCREEN_KEY
       }
 
-      _currentPageFlow[uiLayoutMode] = MutableStateFlow(CurrentPage(screenKey, false))
+      _currentPageMapFlow[uiLayoutMode] = MutableStateFlow(CurrentPage(screenKey, false))
     }
 
     currentUiLayoutModeState.value = uiLayoutMode
   }
 
+  companion object {
+    const val SAVE_STATE_KEY = "com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager"
+
+    private const val TOOLBAR_VISIBILITY_INFO_MAP = "toolbar_visibility_info_map"
+    private const val CURRENT_PAGE_MAP = "current_page_map"
+    private const val MAIN_UI_LAYOUT_MODE = "main_ui_layout_mode"
+    private const val CURRENT_PAGE = "current_page"
+    private const val IS_DRAWER_OPENED = "is_drawer_opened"
+  }
+
 }
 
 @Immutable
-enum class MainUiLayoutMode {
-  Portrait,
-  Split
+enum class MainUiLayoutMode(val value: Int) {
+  Portrait(0),
+  Split(1);
+
+  companion object {
+    fun fromRawValue(rawValue: Int): MainUiLayoutMode {
+      return values().firstOrNull { it.value == rawValue } ?: Portrait
+    }
+  }
 }
 
 private data class LayoutChangingSettings(

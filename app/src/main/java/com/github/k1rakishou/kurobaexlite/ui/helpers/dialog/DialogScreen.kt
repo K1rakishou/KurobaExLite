@@ -76,7 +76,7 @@ class DialogScreen(
       }
     }
 
-    val dialogWidth = if (uiInfoManager.isTablet) {
+    val dialogWidth = if (globalUiInfoManager.isTablet) {
       val availableWidth = maxAvailableWidth()
       availableWidth - (availableWidth / 2)
     } else {

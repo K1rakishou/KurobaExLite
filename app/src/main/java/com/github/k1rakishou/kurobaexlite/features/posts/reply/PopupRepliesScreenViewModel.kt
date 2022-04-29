@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.reply
 
 import android.util.LruCache
+import androidx.lifecycle.SavedStateHandle
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PopupPostsScreenState
@@ -15,7 +16,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class PopupRepliesScreenViewModel : PostScreenViewModel() {
+class PopupRepliesScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreenViewModel(savedStateHandle) {
   private val threadScreenState = PopupPostsScreenState()
   private val postReplyChainStack = mutableListOf<PopupRepliesScreen.ReplyViewMode>()
 

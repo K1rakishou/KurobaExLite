@@ -1,6 +1,17 @@
 package com.github.k1rakishou.kurobaexlite.model.data.ui
 
 sealed class DrawerVisibility {
+  val isOpened: Boolean
+    get() {
+      return when (this) {
+        Closed,
+        Closing -> false
+        is Drag -> progress > 0.5f
+        Opened,
+        Opening -> true
+      }
+    }
+
   data class Drag(
     val isDragging: Boolean,
     val progress: Float,

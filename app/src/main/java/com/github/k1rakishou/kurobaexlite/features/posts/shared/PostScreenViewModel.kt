@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared
 
 import android.os.SystemClock
 import androidx.compose.ui.text.AnnotatedString
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -13,15 +14,13 @@ import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedCatalog
-import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedThread
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
@@ -58,14 +57,16 @@ import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
-abstract class PostScreenViewModel : BaseViewModel() {
+abstract class PostScreenViewModel(
+  protected val savedStateHandle: SavedStateHandle
+) : BaseViewModel() {
   protected val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
   protected val chanCache: ChanCache by inject(ChanCache::class.java)
   protected val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
   protected val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   protected val postBindProcessor: PostBindProcessor by inject(PostBindProcessor::class.java)
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
-  protected val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
+  protected val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
   protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
   protected val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
@@ -144,8 +145,12 @@ abstract class PostScreenViewModel : BaseViewModel() {
 
   suspend fun onThreadLoadingEnd(threadDescriptor: ThreadDescriptor?) {
     if (threadDescriptor != null) {
-      appSettings.lastVisitedThread.write(LastVisitedThread.fromThreadDescriptor(threadDescriptor))
+      savedStateHandle.set(LAST_VISITED_THREAD_KEY, threadDescriptor)
+    } else {
+      savedStateHandle.remove(LAST_VISITED_THREAD_KEY)
+    }
 
+    if (threadDescriptor != null) {
       chanCache.onCatalogOrThreadAccessed(threadDescriptor)
       modifyNavigationHistory.threadLoaded(threadDescriptor)
 
@@ -160,8 +165,12 @@ abstract class PostScreenViewModel : BaseViewModel() {
 
   suspend fun onCatalogLoadingEnd(catalogDescriptor: CatalogDescriptor?) {
     if (catalogDescriptor != null) {
-      appSettings.lastVisitedCatalog.write(LastVisitedCatalog.fromCatalogDescriptor(catalogDescriptor))
+      savedStateHandle.set(LAST_VISITED_CATALOG_KEY, catalogDescriptor)
+    } else {
+      savedStateHandle.remove(LAST_VISITED_CATALOG_KEY)
+    }
 
+    if (catalogDescriptor != null) {
       chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
       modifyNavigationHistory.catalogLoaded(catalogDescriptor)
 
@@ -303,7 +312,7 @@ abstract class PostScreenViewModel : BaseViewModel() {
     }
 
     val chanTheme = themeEngine.chanTheme
-    val initialBatchSize = if (uiInfoManager.isTablet) 32 else 16
+    val initialBatchSize = if (globalUiInfoManager.isTablet) 32 else 16
 
     return withContext(globalConstants.postParserDispatcher) {
       val startIndex = postDataList
@@ -550,7 +559,7 @@ abstract class PostScreenViewModel : BaseViewModel() {
       }
 
       if (index >= 0) {
-        uiInfoManager.orientations.forEach { orientation ->
+        globalUiInfoManager.orientations.forEach { orientation ->
           val newLastRememberedPosition = LazyColumnRememberedPosition(
             orientation = orientation,
             index = index,
@@ -589,7 +598,7 @@ abstract class PostScreenViewModel : BaseViewModel() {
       }
 
       if (index >= 0) {
-        uiInfoManager.orientations.forEach { orientation ->
+        globalUiInfoManager.orientations.forEach { orientation ->
           val newLastRememberedPosition = LazyColumnRememberedPosition(
             orientation = orientation,
             index = index,
@@ -702,11 +711,9 @@ abstract class PostScreenViewModel : BaseViewModel() {
 
   companion object {
     private const val TAG = "PostScreenViewModel"
-    private val DEFAULT_REMEMBERED_POSITION = LazyColumnRememberedPosition(
-      orientation = 0,
-      index = 0,
-      offset = 0
-    )
+
+    const val LAST_VISITED_CATALOG_KEY = "last_visited_catalog"
+    const val LAST_VISITED_THREAD_KEY = "last_visited_thread"
   }
 
 }

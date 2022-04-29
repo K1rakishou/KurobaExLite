@@ -20,9 +20,9 @@ import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.FAB_TRANSITION_ANIMATION_DURATION_MS
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
@@ -53,21 +53,21 @@ fun BoxScope.HomeScreenFloatingActionButton(
     return
   }
 
-  val uiInfoManager = koinRemember<UiInfoManager>()
+  val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val snackbarManager = koinRemember<SnackbarManager>()
 
-  val toolbarVisibilityInfo = remember(key1 = currentScreenKey) {
-    uiInfoManager.getOrCreateToolbarVisibilityInfo(currentScreenKey)
+  val hideableUiVisibilityInfo = remember(key1 = currentScreenKey) {
+    globalUiInfoManager.getOrCreateHideableUiVisibilityInfo(currentScreenKey)
   }
 
   var activeSnackbarsCount by remember { mutableStateOf(0) }
-  val postListScrollPosition by toolbarVisibilityInfo.postListScrollState.collectAsState()
-  val touchingTopOrBottomOfList by toolbarVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
-  val isDraggingPostList by toolbarVisibilityInfo.postListDragState.collectAsState()
-  val isDraggingFastScroller by toolbarVisibilityInfo.fastScrollerDragState.collectAsState()
-  val screensUsingSearch by toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
-  val hasLoadError by toolbarVisibilityInfo.hasLoadError.collectAsState()
-  val replyLayoutOpened by toolbarVisibilityInfo.replyLayoutOpened.collectAsState()
+  val postListScrollPosition by hideableUiVisibilityInfo.postListScrollState.collectAsState()
+  val touchingTopOrBottomOfList by hideableUiVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
+  val isDraggingPostList by hideableUiVisibilityInfo.postListDragState.collectAsState()
+  val isDraggingFastScroller by hideableUiVisibilityInfo.fastScrollerDragState.collectAsState()
+  val screensUsingSearch by hideableUiVisibilityInfo.childScreensUsingSearch.collectAsState()
+  val hasLoadError by hideableUiVisibilityInfo.hasLoadError.collectAsState()
+  val replyLayoutOpened by hideableUiVisibilityInfo.replyLayoutOpened.collectAsState()
   val screenContentLoaded by currentScreen.screenContentLoadedFlow.collectAsState()
 
   LaunchedEffect(

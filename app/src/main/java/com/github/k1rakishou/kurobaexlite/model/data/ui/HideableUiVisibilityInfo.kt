@@ -1,11 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.model.data.ui
 
+import android.os.Parcel
+import android.os.Parcelable
+import com.github.k1rakishou.kurobaexlite.helpers.readBooleanKt
+import com.github.k1rakishou.kurobaexlite.helpers.writeBooleanKt
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class ToolbarVisibilityInfo {
+class HideableUiVisibilityInfo() : Parcelable {
   private val _postListScrollState = MutableStateFlow<Float>(1f)
   val postListScrollState: StateFlow<Float>
     get() = _postListScrollState.asStateFlow()
@@ -34,6 +38,13 @@ class ToolbarVisibilityInfo {
   val replyLayoutOpened: StateFlow<Boolean>
     get() = _replyLayoutOpened.asStateFlow()
 
+  constructor(parcel: Parcel) : this() {
+    _postListScrollState.value = parcel.readFloat()
+    _postListTouchingTopOrBottomState.value = parcel.readBooleanKt()
+    _hasLoadError.value = parcel.readBooleanKt()
+    _replyLayoutOpened.value = parcel.readBooleanKt()
+  }
+
   fun update(
     postListScrollState: Float? = null,
     postListTouchingTopOrBottomState: Boolean? = null,
@@ -60,6 +71,27 @@ class ToolbarVisibilityInfo {
       }
 
       _childScreensUsingSearch.value = prevValue
+    }
+  }
+
+  override fun writeToParcel(parcel: Parcel, flags: Int) {
+    parcel.writeFloat(postListScrollState.value)
+    parcel.writeBooleanKt(_postListTouchingTopOrBottomState.value)
+    parcel.writeBooleanKt(_hasLoadError.value)
+    parcel.writeBooleanKt(_replyLayoutOpened.value)
+  }
+
+  override fun describeContents(): Int {
+    return 0
+  }
+
+  companion object CREATOR : Parcelable.Creator<HideableUiVisibilityInfo> {
+    override fun createFromParcel(parcel: Parcel): HideableUiVisibilityInfo {
+      return HideableUiVisibilityInfo(parcel)
+    }
+
+    override fun newArray(size: Int): Array<HideableUiVisibilityInfo?> {
+      return arrayOfNulls(size)
     }
   }
 

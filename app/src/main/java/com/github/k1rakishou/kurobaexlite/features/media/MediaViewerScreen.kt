@@ -313,7 +313,6 @@ class MediaViewerScreen(
             images = images,
             bgColor = bgColor,
             toolbarHeightPx = actualToolbarCalculatedHeight,
-            uiInfoManager = uiInfoManager,
             onPreviewClicked = { postImage ->
               coroutineScope.launch {
                 images
@@ -563,7 +562,7 @@ class MediaViewerScreen(
       return
     }
 
-    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
     if (orientation == null) {
       return

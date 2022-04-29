@@ -7,7 +7,6 @@ import android.os.Looper
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
@@ -22,18 +21,20 @@ import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
 import kotlin.time.Duration.Companion.seconds
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
-  private val mainActivityViewModel by viewModels<MainActivityViewModel>()
+  private val mainActivityViewModel: MainActivityViewModel by viewModel()
+
+  private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
-  private val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
   private val fullScreenHelpers: FullScreenHelpers by inject(FullScreenHelpers::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
   private val localFilePicker: LocalFilePicker by inject(LocalFilePicker::class.java)
@@ -45,6 +46,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val backPressExecutor = RendezvousCoroutineExecutor(coroutineScope)
 
   private val runtimePermissionsHelper by lazy { RuntimePermissionsHelper(applicationContext, this) }
+
+  init {
+    savedStateRegistry.registerSavedStateProvider(globalUiInfoManager.key) {
+      globalUiInfoManager.saveState()
+    }
+    addOnContextAvailableListener {
+      globalUiInfoManager.restoreFromState(
+        savedStateRegistry.consumeRestoredStateForKey(globalUiInfoManager.key)
+      )
+    }
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -121,7 +133,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
   override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
     if (ev != null) {
-      uiInfoManager.setLastTouchPosition(ev.x, ev.y)
+      globalUiInfoManager.setLastTouchPosition(ev.x, ev.y)
     }
 
     return super.dispatchTouchEvent(ev)
@@ -149,9 +161,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     DisposableEffect(
       key1 = orientation,
       effect = {
-        if (orientation in uiInfoManager.orientations) {
-          uiInfoManager.currentOrientation.value = orientation
-        }
+        globalUiInfoManager.currentOrientation.value = orientation
 
         // We need to reset the currentOrientation upon configuration change (screen rotation) so
         // that the layout is set into the default null state and nothing is drawn. We do that
@@ -159,7 +169,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         // second after the orientation changes. This leads to nasty bugs like the search toolbar
         // query not being restored upon configuration change and other stuff.
         onDispose {
-          uiInfoManager.currentOrientation.value = null
+          globalUiInfoManager.currentOrientation.value = null
         }
       }
     )

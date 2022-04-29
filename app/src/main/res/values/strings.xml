@@ -70,6 +70,9 @@
     <string name="post_list_no_catalog_selected">No catalog selected</string>
     <string name="post_list_no_thread_selected">No thread selected</string>
 
+    <string name="catalog_new_thread_on_board">New thread on /%1$s/</string>
+    <string name="thread_new_reply">New reply in thread %1$d</string>
+
     <string name="catalog_toolbar_open_thread_by_identifier">Open thread by any identifier</string>
     <string name="catalog_toolbar_open_thread_by_identifier_subtitle">Allows opening threads by url/threadId/etc.</string>
     <string name="catalog_toolbar_layout_mode">Layout mode</string>

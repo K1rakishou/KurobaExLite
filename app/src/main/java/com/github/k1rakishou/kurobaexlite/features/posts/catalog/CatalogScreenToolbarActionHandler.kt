@@ -10,8 +10,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -22,17 +22,18 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
-class CatalogScreenToolbarActionHandler {
+class CatalogScreenToolbarActionHandler(
+  private val componentActivity: ComponentActivity
+) {
+  private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
-  private val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
 
   private lateinit var catalogScreenViewModel: CatalogScreenViewModel
   private lateinit var threadScreenViewModel: ThreadScreenViewModel
   private lateinit var homeScreenViewModel: HomeScreenViewModel
 
   suspend fun processClickedToolbarMenuItem(
-    componentActivity: ComponentActivity,
     navigationRouter: NavigationRouter,
     menuItem: FloatingMenuItem
   ) {
@@ -140,7 +141,7 @@ class CatalogScreenToolbarActionHandler {
                       threadScreenViewModel.loadThread(resolvedDescriptor.chanDescriptor)
 
                       // TODO(KurobaEx): come up with a better solution than doing it manually
-                      uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
+                      globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
                     }
                   }
                 }
@@ -155,7 +156,7 @@ class CatalogScreenToolbarActionHandler {
                   )
 
                   // TODO(KurobaEx): come up with a better solution than doing it manually
-                  uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
+                  globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
                 }
               }
             }

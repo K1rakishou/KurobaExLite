@@ -208,8 +208,8 @@ class NavigationHistoryScreen(
             circleCropTransformation = circleCropTransformation,
             onItemClicked = { element ->
               catalogScreenViewModel.loadCatalog(element.chanDescriptor)
-              uiInfoManager.closeDrawer(withAnimation = true)
-              uiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
+              globalUiInfoManager.closeDrawer(withAnimation = true)
+              globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
               navigationHistoryScreenViewModel.reorderNavigationElement(element)
             },
             onRemoveClicked = { element ->
@@ -224,8 +224,8 @@ class NavigationHistoryScreen(
             circleCropTransformation = circleCropTransformation,
             onItemClicked = { element ->
               threadScreenViewModel.loadThread(element.chanDescriptor)
-              uiInfoManager.closeDrawer(withAnimation = true)
-              uiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
+              globalUiInfoManager.closeDrawer(withAnimation = true)
+              globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
               navigationHistoryScreenViewModel.reorderNavigationElement(element)
             },
             onRemoveClicked = { element ->

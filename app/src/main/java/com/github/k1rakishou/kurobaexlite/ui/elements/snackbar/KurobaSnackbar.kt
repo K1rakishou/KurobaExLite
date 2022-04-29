@@ -34,7 +34,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.ensureSingleElement
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -54,15 +53,12 @@ import org.koin.core.context.GlobalContext
 fun KurobaSnackbarContainer(
   modifier: Modifier = Modifier,
   screenKey: ScreenKey,
+  isTablet: Boolean,
   kurobaSnackbarState: KurobaSnackbarState
 ) {
-  val uiInfoManager = koinRemember<UiInfoManager>()
   val snackbarManager = koinRemember<SnackbarManager>()
-
   val insets = LocalWindowInsets.current
   val chanTheme = LocalChanTheme.current
-
-  val isTablet = uiInfoManager.isTablet
   val maxSnackbarWidth = if (isTablet) 600.dp else 400.dp
 
   LaunchedEffect(

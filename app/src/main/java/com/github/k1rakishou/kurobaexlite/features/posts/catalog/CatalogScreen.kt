@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.boards.BoardSelectionScreen
@@ -71,7 +72,7 @@ class CatalogScreen(
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val catalogScreenToolbarActionHandler by lazy {
-    CatalogScreenToolbarActionHandler()
+    CatalogScreenToolbarActionHandler(componentActivity)
   }
 
   private val postLongtapContentMenu by lazy {
@@ -145,7 +146,7 @@ class CatalogScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
     val catalogDescriptor by catalogScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
@@ -160,10 +161,23 @@ class CatalogScreen(
 
   @Composable
   private fun ReplyLayoutToolbar(mainUiLayoutMode: MainUiLayoutMode) {
+    val context = LocalContext.current
+
+    val currentCatalogDescriptorMut by threadScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
+    val currentCatalogDescriptor = currentCatalogDescriptorMut
+
     LaunchedEffect(
-      key1 = Unit,
-      // TODO(KurobaEx): strings
-      block = { replyLayoutToolbarState.toolbarTitleState.value = "Reply" }
+      key1 = currentCatalogDescriptor,
+      block = {
+        if (currentCatalogDescriptor == null) {
+          return@LaunchedEffect
+        }
+
+        replyLayoutToolbarState.toolbarTitleState.value = context.resources.getString(
+          R.string.catalog_new_thread_on_board,
+          currentCatalogDescriptor.boardCode
+        )
+      }
     )
 
     LaunchedEffect(
@@ -172,10 +186,10 @@ class CatalogScreen(
         replyLayoutToolbarState.toolbarIconClickEventFlow.collect { key ->
           when (key as ReplyToolbarIcons) {
             ReplyToolbarIcons.PickLocalFile -> {
-              val threadDescriptor = threadScreenViewModel.threadDescriptor
+              val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
                 ?: return@collect
 
-              replyLayoutViewModel.onPickFileRequested(threadDescriptor)
+              replyLayoutViewModel.onPickFileRequested(catalogDescriptor)
             }
           }
         }
@@ -185,7 +199,7 @@ class CatalogScreen(
     KurobaToolbar(
       screenKey = screenKey,
       kurobaToolbarState = replyLayoutToolbarState,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, globalUiInfoManager.currentPage()) },
       onLeftIconClicked = { replyLayoutState.onBackPressed() },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = null
@@ -226,7 +240,6 @@ class CatalogScreen(
                   menuItems = floatingMenuItems,
                   onMenuItemClicked = { menuItem ->
                     catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(
-                      componentActivity = componentActivity,
                       navigationRouter = navigationRouter,
                       menuItem = menuItem
                     )
@@ -242,8 +255,8 @@ class CatalogScreen(
     KurobaToolbar(
       screenKey = screenKey,
       kurobaToolbarState = catalogToolbarState,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
-      onLeftIconClicked = { uiInfoManager.openDrawer() },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, globalUiInfoManager.currentPage()) },
+      onLeftIconClicked = { globalUiInfoManager.openDrawer() },
       onMiddleMenuClicked = {
         val childRouter = navigationRouter.childRouter(BoardSelectionScreen.SCREEN_KEY)
 
@@ -256,7 +269,7 @@ class CatalogScreen(
         navigationRouter.pushScreen(boardSelectionScreen)
       },
       onSearchQueryUpdated = { searchQuery ->
-        uiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
+        globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
         catalogScreenViewModel.updateSearchQuery(searchQuery)
       }
     )
@@ -304,13 +317,13 @@ class CatalogScreen(
   private fun BoxScope.CatalogPostListScreen() {
     val windowInsets = LocalWindowInsets.current
 
-    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
     if (orientation == null) {
       return
     }
 
-    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
@@ -319,9 +332,9 @@ class CatalogScreen(
     val replyLayoutContainerOpenedHeight = dimensionResource(id = R.dimen.reply_layout_container_opened_height)
 
     val kurobaSnackbarState = rememberKurobaSnackbarState()
-    val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
-    val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val replyLayoutVisibilityInfoStateForScreen by uiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
+    val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
+    val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+    val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
 
     val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
       derivedStateOf {
@@ -357,7 +370,7 @@ class CatalogScreen(
       postsScreenViewModel = catalogScreenViewModel,
       onPostCellClicked = { postCellData ->
         // TODO(KurobaEx): come up with a better solution than doing it manually
-        uiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
+        globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
 
         val threadDescriptor = ThreadDescriptor(
           catalogDescriptor = postCellData.postDescriptor.catalogDescriptor,
@@ -407,16 +420,16 @@ class CatalogScreen(
         navigationRouter.presentScreen(mediaViewerScreen)
       },
       onPostListScrolled = { delta ->
-        uiInfoManager.onChildContentScrolling(screenKey, delta)
+        globalUiInfoManager.onChildContentScrolling(screenKey, delta)
       },
       onPostListTouchingTopOrBottomStateChanged = { touching ->
-        uiInfoManager.onPostListTouchingTopOrBottomStateChanged(screenKey, touching)
+        globalUiInfoManager.onPostListTouchingTopOrBottomStateChanged(screenKey, touching)
       },
       onPostListDragStateChanged = { dragging ->
-        uiInfoManager.onPostListDragStateChanged(screenKey, dragging)
+        globalUiInfoManager.onPostListDragStateChanged(screenKey, dragging)
       },
       onFastScrollerDragStateChanged = { dragging ->
-        uiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
+        globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
       }
     )
 
@@ -425,8 +438,6 @@ class CatalogScreen(
         screenKey = screenKey,
         screenContentLoadedFlow = screenContentLoadedFlow,
         mainUiLayoutMode = mainUiLayoutMode,
-        uiInfoManager = uiInfoManager,
-        snackbarManager = snackbarManager,
         onFabClicked = { clickedFabScreenKey ->
           if (screenKey != clickedFabScreenKey) {
             return@PostsScreenFloatingActionButton
@@ -462,6 +473,7 @@ class CatalogScreen(
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),
       screenKey = screenKey,
+      isTablet = globalUiInfoManager.isTablet,
       kurobaSnackbarState = kurobaSnackbarState
     )
   }

@@ -61,33 +61,31 @@ class HomeScreen(
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
 
-    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
     if (orientation == null) {
       return
     }
 
-    var uiInfoManagerInitialized by remember { mutableStateOf(false) }
+    val globalUiInfoViewModelInitialized by globalUiInfoManager.initialized
 
     LaunchedEffect(
       key1 = Unit,
-      block = {
-        uiInfoManager.init()
-        uiInfoManagerInitialized = true
-      })
+      block = { globalUiInfoManager.init() }
+    )
 
-    if (!uiInfoManagerInitialized) {
+    if (!globalUiInfoViewModelInitialized) {
       return
     }
 
-    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut
     if (mainUiLayoutMode == null) {
       return
     }
 
-    val bookmarksScreenOnLeftSide by uiInfoManager.bookmarksScreenOnLeftSide.collectAsState()
-    val currentPage by uiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
+    val bookmarksScreenOnLeftSide by globalUiInfoManager.bookmarksScreenOnLeftSide.collectAsState()
+    val currentPage by globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
 
     val childScreens = remember(
       key1 = bookmarksScreenOnLeftSide,
@@ -127,7 +125,7 @@ class HomeScreen(
       key1 = mainUiLayoutMode,
       key2 = bookmarksScreenOnLeftSide,
       block = {
-        uiInfoManager.currentPageFlow(mainUiLayoutMode).collect { currentPage ->
+        globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collect { currentPage ->
           scrollToPageByScreenKey(
             screenKey = currentPage.screenKey,
             childScreens = childScreens,
@@ -145,7 +143,7 @@ class HomeScreen(
         val screenKey = childScreens.screens.getOrNull(pagerState.currentPage)?.screenKey
           ?: return@LaunchedEffect
 
-        uiInfoManager.updateCurrentPageForLayoutMode(
+        globalUiInfoManager.updateCurrentPageForLayoutMode(
           screenKey = screenKey,
           mainUiLayoutMode = mainUiLayoutMode
         )
@@ -155,12 +153,12 @@ class HomeScreen(
     val childScreensUpdated by rememberUpdatedState(newValue = childScreens)
 
     HandleBackPresses {
-      if (uiInfoManager.isDrawerOpenedOrOpening()) {
-        uiInfoManager.closeDrawer()
+      if (globalUiInfoManager.isDrawerOpenedOrOpening()) {
+        globalUiInfoManager.closeDrawer()
         return@HandleBackPresses true
       }
 
-      val freshCurrentPage = uiInfoManager.currentPage(mainUiLayoutMode)
+      val freshCurrentPage = globalUiInfoManager.currentPage(mainUiLayoutMode)
         ?: return@HandleBackPresses false
 
       // First, process all child screens
@@ -184,7 +182,7 @@ class HomeScreen(
 
       // Then reset the ViewPager's current page
       if (!homeChildScreens.isMainScreen(freshCurrentPage)) {
-        uiInfoManager.updateCurrentPage(homeChildScreens.mainScreenKey())
+        globalUiInfoManager.updateCurrentPage(homeChildScreens.mainScreenKey())
         return@HandleBackPresses true
       }
 
@@ -247,7 +245,7 @@ class HomeScreen(
         isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen) },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
         onDragging = { dragging, progress, velocity ->
-          uiInfoManager.dragDrawer(dragging, progress, velocity)
+          globalUiInfoManager.dragDrawer(dragging, progress, velocity)
         }
       )
     }
@@ -269,11 +267,11 @@ class HomeScreen(
               drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
-              isDrawerOpened = { uiInfoManager.isDrawerFullyOpened() },
+              isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = {isDrawerDragGestureCurrentlyAllowed(currentScreen) },
               onDraggingDrawer = { dragging, progress, velocity ->
-                uiInfoManager.dragDrawer(dragging, progress, velocity)
+                globalUiInfoManager.dragDrawer(dragging, progress, velocity)
               }
             )
           }
@@ -303,7 +301,7 @@ class HomeScreen(
         chanTheme = chanTheme,
         pagerState = pagerState,
         childScreens = childScreens.screens,
-        mainUiLayoutMode = mainUiLayoutMode,
+        mainUiLayoutMode = mainUiLayoutMode
       )
 
       HomeScreenFloatingActionButton(
@@ -328,7 +326,7 @@ class HomeScreen(
       return false
     }
 
-    if (uiInfoManager.isAnyReplyLayoutOpened()) {
+    if (globalUiInfoManager.isAnyReplyLayoutOpened()) {
       return false
     }
 

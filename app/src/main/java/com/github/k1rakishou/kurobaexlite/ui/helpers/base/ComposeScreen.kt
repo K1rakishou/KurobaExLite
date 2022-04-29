@@ -6,22 +6,21 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
-import org.koin.android.ext.android.inject
 import org.koin.java.KoinJavaComponent.inject
 
 abstract class ComposeScreen(
   val componentActivity: ComponentActivity,
   val navigationRouter: NavigationRouter
 ) {
+  protected val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
-  protected val uiInfoManager: UiInfoManager by inject(UiInfoManager::class.java)
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
-  protected val snackbarManager: SnackbarManager by componentActivity.inject()
+  protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
   private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
 

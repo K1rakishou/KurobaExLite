@@ -14,4 +14,12 @@ class AppResourcesImpl(
     }
   }
 
+  override fun dimension(dimenId: Int): Float {
+    return appContext.resources.getDimension(dimenId)
+  }
+
+  override fun boolean(boolRes: Int): Boolean {
+    return appContext.resources.getBoolean(boolRes)
+  }
+
 }

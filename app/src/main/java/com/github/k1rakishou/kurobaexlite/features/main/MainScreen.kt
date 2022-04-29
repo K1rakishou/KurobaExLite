@@ -52,7 +52,7 @@ class MainScreen(
         val availableWidth = contentSize.width
         val availableHeight = contentSize.height
 
-        uiInfoManager.updateMaxParentSize(availableWidth, availableHeight)
+        globalUiInfoManager.updateMaxParentSize(availableWidth, availableHeight)
 
         val homeScreen = remember {
           val prevHomeScreen = navigationRouter.getScreenByKey(HomeScreen.SCREEN_KEY)
@@ -88,6 +88,7 @@ class MainScreen(
         KurobaSnackbarContainer(
           modifier = Modifier.fillMaxSize(),
           screenKey = screenKey,
+          isTablet = globalUiInfoManager.isTablet,
           kurobaSnackbarState = kurobaSnackbarState
         )
       }

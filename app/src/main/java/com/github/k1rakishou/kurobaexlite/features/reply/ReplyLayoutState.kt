@@ -12,7 +12,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -64,7 +64,7 @@ class ReplyLayoutState(
   val chanDescriptor: ChanDescriptor,
   val bundle: Bundle = Bundle()
 ) : IReplyLayoutState {
-  private val uiInfoManager: UiInfoManager by lazy { GlobalContext.get().get() }
+  private val globalUiInfoManager: GlobalUiInfoManager by lazy { GlobalContext.get().get() }
   private val appResources: AppResources by lazy { GlobalContext.get().get() }
 
   private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Closed)
@@ -261,7 +261,7 @@ class ReplyLayoutState(
 
   private fun onReplyLayoutVisibilityStateChanged() {
     val replyLayoutVisibilityStateValue = _replyLayoutVisibilityState.value
-    uiInfoManager.replyLayoutVisibilityStateChanged(screenKey, replyLayoutVisibilityStateValue)
+    globalUiInfoManager.replyLayoutVisibilityStateChanged(screenKey, replyLayoutVisibilityStateValue)
     bundle.putInt(replyLayoutVisibilityKey, replyLayoutVisibilityStateValue.value)
   }
 

@@ -34,8 +34,8 @@ import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreenViewModel(
-  private val savedStateHandle: SavedStateHandle
-) : PostScreenViewModel() {
+  savedStateHandle: SavedStateHandle
+) : PostScreenViewModel(savedStateHandle) {
   private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
 
   private val loadChanThreadView: LoadChanThreadView by inject(LoadChanThreadView::class.java)
@@ -66,7 +66,7 @@ class ThreadScreenViewModel(
   }
 
   private suspend fun loadPrevVisitedThread() {
-    val lastVisitedThread = appSettings.lastVisitedThread.read()?.toThreadDescriptor()
+    val lastVisitedThread = savedStateHandle.get<ThreadDescriptor>(LAST_VISITED_THREAD_KEY)
     if (lastVisitedThread != null) {
       logcat(tag = TAG) { "loadPrevVisitedThread() loading ${lastVisitedThread} from appSettings.lastVisitedThread" }
 

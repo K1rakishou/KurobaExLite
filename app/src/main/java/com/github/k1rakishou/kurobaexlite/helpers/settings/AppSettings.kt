@@ -81,13 +81,6 @@ class AppSettings(
     StringSetting(userAgent, "user_agent", dataStore)
   }
 
-  val lastVisitedCatalog by lazy {
-    JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore)
-  }
-  val lastVisitedThread by lazy {
-    JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore)
-  }
-
   companion object {
     private const val TAG = "AppSettings"
 

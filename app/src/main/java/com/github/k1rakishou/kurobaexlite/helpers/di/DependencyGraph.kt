@@ -49,18 +49,19 @@ import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThre
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
 import com.squareup.moshi.Moshi
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -155,15 +156,18 @@ object DependencyGraph {
     single { CaptchaManager() }
 
     single {
-      UiInfoManager(
-        appContext = get(),
-        appSettings = get(),
-        coroutineScope = get()
+      GlobalUiInfoManager(
+        appScope = get(),
+        appResources = get(),
+        appSettings = get()
       )
     }
   }
 
   private fun Module.viewModels() {
+    viewModel {
+      MainActivityViewModel()
+    }
     viewModel {
       HomeScreenViewModel(
         siteManager = get(),
@@ -181,7 +185,7 @@ object DependencyGraph {
       )
     }
     viewModel { AlbumScreenViewModel() }
-    viewModel { PopupRepliesScreenViewModel() }
+    viewModel { PopupRepliesScreenViewModel(savedStateHandle = get()) }
     viewModel { BoardSelectionScreenViewModel() }
     viewModel {
       val mpvSettings = MpvSettings(

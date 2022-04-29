@@ -93,7 +93,7 @@ class ThreadScreen(
   )
 
   private val threadToolbarState by lazy {
-    val mainUiLayoutMode = requireNotNull(uiInfoManager.currentUiLayoutModeState.value) {
+    val mainUiLayoutMode = requireNotNull(globalUiInfoManager.currentUiLayoutModeState.value) {
       "currentUiLayoutModeState is not initialized yet!"
     }
 
@@ -148,7 +148,7 @@ class ThreadScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
     val threadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
@@ -163,10 +163,23 @@ class ThreadScreen(
 
   @Composable
   private fun ReplyLayoutToolbar(mainUiLayoutMode: MainUiLayoutMode) {
+    val context = LocalContext.current
+
+    val currentThreadDescriptorMut by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
+    val currentThreadDescriptor = currentThreadDescriptorMut
+
     LaunchedEffect(
-      key1 = Unit,
-      // TODO(KurobaEx): strings
-      block = { replyLayoutToolbarState.toolbarTitleState.value = "Reply" }
+      key1 = currentThreadDescriptor,
+      block = {
+        if (currentThreadDescriptor == null) {
+          return@LaunchedEffect
+        }
+
+        replyLayoutToolbarState.toolbarTitleState.value = context.resources.getString(
+          R.string.thread_new_reply,
+          currentThreadDescriptor.threadNo
+        )
+      }
     )
 
     LaunchedEffect(
@@ -188,7 +201,7 @@ class ThreadScreen(
     KurobaToolbar(
       screenKey = screenKey,
       kurobaToolbarState = replyLayoutToolbarState,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, uiInfoManager.currentPage()) },
+      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, globalUiInfoManager.currentPage()) },
       onLeftIconClicked = { replyLayoutState.onBackPressed() },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = null
@@ -239,13 +252,13 @@ class ThreadScreen(
       canProcessBackEvent = {
         canProcessBackEvent(
           mainUiLayoutMode,
-          uiInfoManager.currentPage()
+          globalUiInfoManager.currentPage()
         )
       },
-      onLeftIconClicked = { uiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
+      onLeftIconClicked = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
       onMiddleMenuClicked = null,
       onSearchQueryUpdated = { searchQuery ->
-        uiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
+        globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
         threadScreenViewModel.updateSearchQuery(searchQuery)
       }
     )
@@ -298,13 +311,13 @@ class ThreadScreen(
     val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
 
-    val orientationMut by uiInfoManager.currentOrientation.collectAsState()
+    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
     if (orientation == null) {
       return
     }
 
-    val mainUiLayoutModeMut by uiInfoManager.currentUiLayoutModeState.collectAsState()
+    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
@@ -312,9 +325,9 @@ class ThreadScreen(
     val replyLayoutContainerOpenedHeight = dimensionResource(id = R.dimen.reply_layout_container_opened_height)
 
     val kurobaSnackbarState = rememberKurobaSnackbarState()
-    val postCellCommentTextSizeSp by uiInfoManager.postCellCommentTextSizeSp.collectAsState()
-    val postCellSubjectTextSizeSp by uiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val replyLayoutVisibilityInfoStateForScreen by uiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
+    val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
+    val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+    val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
 
     val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
       derivedStateOf {
@@ -408,16 +421,16 @@ class ThreadScreen(
         navigationRouter.presentScreen(mediaViewerScreen)
       },
       onPostListScrolled = { delta ->
-        uiInfoManager.onChildContentScrolling(screenKey, delta)
+        globalUiInfoManager.onChildContentScrolling(screenKey, delta)
       },
       onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
-        uiInfoManager.onPostListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
+        globalUiInfoManager.onPostListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
       },
       onPostListDragStateChanged = { dragging ->
-        uiInfoManager.onPostListDragStateChanged(screenKey, dragging)
+        globalUiInfoManager.onPostListDragStateChanged(screenKey, dragging)
       },
       onFastScrollerDragStateChanged = { dragging ->
-        uiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
+        globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
       }
     )
 
@@ -426,8 +439,6 @@ class ThreadScreen(
         screenKey = screenKey,
         screenContentLoadedFlow = screenContentLoadedFlow,
         mainUiLayoutMode = mainUiLayoutMode,
-        uiInfoManager = uiInfoManager,
-        snackbarManager = snackbarManager,
         onFabClicked = { clickedFabScreenKey ->
           if (screenKey != clickedFabScreenKey) {
             return@PostsScreenFloatingActionButton
@@ -463,6 +474,7 @@ class ThreadScreen(
     KurobaSnackbarContainer(
       modifier = Modifier.fillMaxSize(),
       screenKey = screenKey,
+      isTablet = globalUiInfoManager.isTablet,
       kurobaSnackbarState = kurobaSnackbarState
     )
   }

@@ -17,9 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -35,8 +36,6 @@ fun BoxScope.PostsScreenFloatingActionButton(
   screenKey: ScreenKey,
   screenContentLoadedFlow: StateFlow<Boolean>,
   mainUiLayoutMode: MainUiLayoutMode,
-  uiInfoManager: UiInfoManager,
-  snackbarManager: SnackbarManager,
   onFabClicked: (ScreenKey) -> Unit
 ) {
   if (mainUiLayoutMode != MainUiLayoutMode.Split) {
@@ -44,14 +43,16 @@ fun BoxScope.PostsScreenFloatingActionButton(
   }
 
   val insets = LocalWindowInsets.current
+  val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
+  val snackbarManager = koinRemember<SnackbarManager>()
 
-  val toolbarVisibilityInfo = remember(key1 = screenKey) {
-    uiInfoManager.getOrCreateToolbarVisibilityInfo(screenKey)
+  val hideableUiVisibilityInfo = remember(key1 = screenKey) {
+    globalUiInfoManager.getOrCreateHideableUiVisibilityInfo(screenKey)
   }
 
   var activeSnackbarsCount by remember { mutableStateOf(0) }
-  val screensUsingSearch by toolbarVisibilityInfo.childScreensUsingSearch.collectAsState()
-  val replyLayoutOpened by toolbarVisibilityInfo.replyLayoutOpened.collectAsState()
+  val screensUsingSearch by hideableUiVisibilityInfo.childScreensUsingSearch.collectAsState()
+  val replyLayoutOpened by hideableUiVisibilityInfo.replyLayoutOpened.collectAsState()
   val screenContentLoaded by screenContentLoadedFlow.collectAsState()
 
   LaunchedEffect(

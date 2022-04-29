@@ -23,7 +23,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.ImageThumbnail
-import com.github.k1rakishou.kurobaexlite.managers.UiInfoManager
+import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
@@ -42,7 +43,6 @@ fun MediaViewerPreviewStrip(
   images: List<ImageLoadState>,
   bgColor: Color,
   toolbarHeightPx: Int?,
-  uiInfoManager: UiInfoManager,
   onPreviewClicked: (IPostImage) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -51,9 +51,11 @@ fun MediaViewerPreviewStrip(
   val currentPage = pagerState.currentPage
   val thumbColor = chanTheme.accentColorCompose
 
+  val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val lazyListState = rememberLazyListState(initialFirstVisibleItemIndex = currentPage)
-  val itemSizeDp = if (uiInfoManager.isTablet) 64.dp else 42.dp
-  val padding = if (uiInfoManager.isTablet) 4.dp else 2.dp
+
+  val itemSizeDp = if (globalUiInfoManager.isTablet) 64.dp else 42.dp
+  val padding = if (globalUiInfoManager.isTablet) 4.dp else 2.dp
   val scrollbarHeight = with(density) { 4.dp.toPx().toInt() }
 
   val itemSizePx = with(density) {
