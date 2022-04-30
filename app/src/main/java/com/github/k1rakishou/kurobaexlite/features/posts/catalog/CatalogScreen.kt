@@ -94,9 +94,9 @@ class CatalogScreen(
     leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
     middlePartInfo = MiddlePartInfo(centerContent = true),
     rightPartInfo = RightPartInfo(
-      ToolbarIcon(CatalogToolbarIcons.Search, R.drawable.ic_baseline_search_24),
-      ToolbarIcon(CatalogToolbarIcons.Sort, R.drawable.ic_baseline_sort_24),
-      ToolbarIcon(CatalogToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
+      ToolbarIcon(CatalogToolbarIcons.Search, R.drawable.ic_baseline_search_24, false),
+      ToolbarIcon(CatalogToolbarIcons.Sort, R.drawable.ic_baseline_sort_24, false),
+      ToolbarIcon(CatalogToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24, false),
     ),
     postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
   )
@@ -210,6 +210,19 @@ class CatalogScreen(
   private fun CatalogScreenToolbar(
     mainUiLayoutMode: MainUiLayoutMode
   ) {
+    val screenContentLoaded by screenContentLoadedFlow.collectAsState()
+
+    LaunchedEffect(
+      key1 = screenContentLoaded,
+      block = {
+        catalogToolbarState.rightPartInfo?.let { rightPartInfo ->
+          rightPartInfo.toolbarIcons.forEach { toolbarIcon ->
+            toolbarIcon.iconVisible.value = screenContentLoaded
+          }
+        }
+      }
+    )
+
     UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
       postScreenState = catalogScreenViewModel.postScreenState,

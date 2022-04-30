@@ -106,8 +106,8 @@ class ThreadScreen(
       leftIconInfo = leftIconInfo,
       middlePartInfo = MiddlePartInfo(centerContent = false),
       rightPartInfo = RightPartInfo(
-        ToolbarIcon(ThreadToolbarIcons.Search, R.drawable.ic_baseline_search_24),
-        ToolbarIcon(ThreadToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
+        ToolbarIcon(ThreadToolbarIcons.Search, R.drawable.ic_baseline_search_24, false),
+        ToolbarIcon(ThreadToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24, false),
       ),
       postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
     )
@@ -212,6 +212,19 @@ class ThreadScreen(
   private fun ThreadScreenToolbar(
     mainUiLayoutMode: MainUiLayoutMode
   ) {
+    val screenContentLoaded by screenContentLoadedFlow.collectAsState()
+
+    LaunchedEffect(
+      key1 = screenContentLoaded,
+      block = {
+        threadToolbarState.rightPartInfo?.let { rightPartInfo ->
+          rightPartInfo.toolbarIcons.forEach { toolbarIcon ->
+            toolbarIcon.iconVisible.value = screenContentLoaded
+          }
+        }
+      }
+    )
+
     UpdateToolbarTitle(
       parsedPostDataCache = parsedPostDataCache,
       postScreenState = threadScreenViewModel.postScreenState,

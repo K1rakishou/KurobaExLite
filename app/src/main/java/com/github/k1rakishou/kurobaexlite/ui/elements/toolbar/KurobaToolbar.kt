@@ -67,8 +67,11 @@ class PostScreenToolbarInfo(val isCatalogScreen: Boolean)
 
 class ToolbarIcon(
   val key: Any,
-  @DrawableRes val drawableId: Int
-)
+  @DrawableRes val drawableId: Int,
+  visible: Boolean = true
+) {
+  val iconVisible = mutableStateOf(visible)
+}
 
 private val toolbarIconSize = 30.dp
 
@@ -304,19 +307,22 @@ fun rightPartBuilder(
 
     Row {
       for ((index, toolbarIcon) in toolbarIcons.withIndex()) {
-        key(toolbarIcon.key) {
-          KurobaComposeIcon(
-            modifier = Modifier
-              .size(toolbarIconSize)
-              .kurobaClickable(
-                bounded = false,
-                onClick = { kurobaToolbarState.onToolbarIconClicked(toolbarIcon.key) }
-              ),
-            drawableId = toolbarIcon.drawableId
-          )
+        val iconVisible by toolbarIcon.iconVisible
+        if (iconVisible) {
+          key(toolbarIcon.key) {
+            KurobaComposeIcon(
+              modifier = Modifier
+                .size(toolbarIconSize)
+                .kurobaClickable(
+                  bounded = false,
+                  onClick = { kurobaToolbarState.onToolbarIconClicked(toolbarIcon.key) }
+                ),
+              drawableId = toolbarIcon.drawableId
+            )
 
-          if (index != toolbarIcons.lastIndex) {
-            Spacer(modifier = Modifier.width(10.dp))
+            if (index != toolbarIcons.lastIndex) {
+              Spacer(modifier = Modifier.width(10.dp))
+            }
           }
         }
       }
