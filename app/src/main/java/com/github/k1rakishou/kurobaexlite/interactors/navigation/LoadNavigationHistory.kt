@@ -23,6 +23,7 @@ class LoadNavigationHistory(
     kurobaExLiteDatabase.transaction {
       val navigationHistoryEntityList = navigationHistoryDao.selectAllOrdered(maxCount)
       if (navigationHistoryEntityList.isEmpty()) {
+        logcat(TAG) { "navigationHistoryDao.selectAllOrdered(maxCount) returned empty list" }
         return@transaction
       }
 

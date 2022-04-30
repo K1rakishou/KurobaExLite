@@ -124,8 +124,12 @@ abstract class PostsScreen(
     currentPage: CurrentPage?
   ): Boolean {
     return when (uiLayoutMode) {
-      MainUiLayoutMode.Portrait -> currentPage?.screenKey == screenKey
-      MainUiLayoutMode.Split -> currentPage?.screenKey == SplitScreenLayout.SCREEN_KEY
+      MainUiLayoutMode.Portrait -> {
+        currentPage?.screenKey == screenKey
+      }
+      MainUiLayoutMode.Split -> {
+        currentPage?.screenKey == screenKey || currentPage?.screenKey == SplitScreenLayout.SCREEN_KEY
+      }
     }
   }
 

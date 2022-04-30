@@ -24,6 +24,7 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -40,8 +41,8 @@ fun LazyColumnWithFastScroller(
   val scrollbarWidth = with(LocalDensity.current) {
     remember { SCROLLBAR_WIDTH.toPx().toInt() }
   }
-  val scrollbarMinHeightPx = with(LocalDensity.current) {
-    remember { SCROLLBAR_MIN_SIZE.toPx().toInt() }
+  val scrollbarHeightPx = with(LocalDensity.current) {
+    remember { 64.dp.toPx().toInt() }
   }
   val paddingTopPx = with(LocalDensity.current) {
     remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
@@ -49,7 +50,6 @@ fun LazyColumnWithFastScroller(
   val paddingBottomPx = with(LocalDensity.current) {
     remember(contentPadding) { contentPadding.calculateBottomPadding().toPx().toInt() }
   }
-  val thumbColor = chanTheme.textColorHintCompose
   val lazyListStateWrapper = remember { LazyListStateWrapper(lazyListState) }
 
   val coroutineScope = rememberCoroutineScope()
@@ -86,11 +86,13 @@ fun LazyColumnWithFastScroller(
         modifier = Modifier
           .scrollbar(
             lazyStateWrapper = lazyListStateWrapper,
-            thumbColor = thumbColor,
-            scrollbarDimens = ScrollbarDimens.Vertical(
+            scrollbarDimens = ScrollbarDimens.Vertical.Static(
               width = scrollbarWidth,
-              minHeight = scrollbarMinHeightPx
+              height = scrollbarHeightPx
             ),
+            scrollbarTrackColor = chanTheme.scrollbarTrackColorCompose,
+            scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormalCompose,
+            scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDraggedCompose,
             contentPadding = contentPadding,
             isScrollbarDragged = scrollbarDragged
           ),
@@ -118,8 +120,8 @@ fun LazyVerticalGridWithFastScroller(
   val scrollbarWidth = with(LocalDensity.current) {
     remember { SCROLLBAR_WIDTH.toPx().toInt() }
   }
-  val scrollbarMinHeightPx = with(LocalDensity.current) {
-    remember { SCROLLBAR_MIN_SIZE.toPx().toInt() }
+  val scrollbarHeightPx = with(LocalDensity.current) {
+    remember { 64.dp.toPx().toInt() }
   }
   val paddingTopPx = with(LocalDensity.current) {
     remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
@@ -164,11 +166,13 @@ fun LazyVerticalGridWithFastScroller(
         modifier = Modifier
           .scrollbar(
             lazyStateWrapper = lazyGridStateWrapper,
-            thumbColor = thumbColor,
-            scrollbarDimens = ScrollbarDimens.Vertical(
+            scrollbarDimens = ScrollbarDimens.Vertical.Static(
               width = scrollbarWidth,
-              minHeight = scrollbarMinHeightPx
+              height = scrollbarHeightPx
             ),
+            scrollbarTrackColor = chanTheme.scrollbarTrackColorCompose,
+            scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormalCompose,
+            scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDraggedCompose,
             contentPadding = contentPadding,
             isScrollbarDragged = scrollbarDragged
           ),

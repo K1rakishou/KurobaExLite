@@ -566,8 +566,8 @@ fun Modifier.consumeClicks(enabled: Boolean = true): Modifier {
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
-fun Modifier.passClicksThrough(enabled: Boolean = true): Modifier {
-  if (!enabled) {
+fun Modifier.passClicksThrough(passClicks: Boolean = true): Modifier {
+  if (!passClicks) {
     return this
   }
 

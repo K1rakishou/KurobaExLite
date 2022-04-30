@@ -24,7 +24,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -56,12 +55,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.helpers.SCROLLBAR_MIN_SIZE
-import com.github.k1rakishou.kurobaexlite.ui.helpers.SCROLLBAR_WIDTH
-import com.github.k1rakishou.kurobaexlite.ui.helpers.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.scrollbar
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -220,23 +215,8 @@ class AlbumScreen(
       }
     )
 
-    val scrollbarWidth = with(LocalDensity.current) {
-      remember { SCROLLBAR_WIDTH.toPx().toInt() }
-    }
-    val scrollbarMinHeightPx = with(LocalDensity.current) {
-      remember { SCROLLBAR_MIN_SIZE.toPx().toInt() }
-    }
-
     LazyVerticalGridWithFastScroller(
-      modifier = Modifier
-        .fillMaxSize()
-        .scrollbar(
-          state = lazyGridState,
-          scrollbarDimens = ScrollbarDimens.Vertical(
-            width = scrollbarWidth,
-            minHeight = scrollbarMinHeightPx
-          )
-        ),
+      modifier = Modifier.fillMaxSize(),
       columns = GridCells.Fixed(3),
       lazyGridState = lazyGridState,
       contentPadding = paddingValues,

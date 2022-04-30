@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -30,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 @Composable
 fun ImageThumbnail(
   modifier: Modifier = Modifier,
+  bgColor: Color = LocalChanTheme.current.backColorSecondaryCompose,
   showShimmerEffectWhenLoading: Boolean = false,
   contentScale: ContentScale = ContentScale.Fit,
   postImage: IPostImage,
@@ -39,7 +41,7 @@ fun ImageThumbnail(
 
   BoxWithConstraints(
     modifier = Modifier
-      .background(chanTheme.backColorSecondaryCompose)
+      .background(bgColor)
       .then(modifier)
   ) {
     val density = LocalDensity.current

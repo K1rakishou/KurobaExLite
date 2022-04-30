@@ -54,6 +54,9 @@ abstract class ChanTheme {
   abstract val postSpoilerRevealTextColor: Int
   abstract val postUnseenLabelColor: Int
   abstract val dividerColor: Int
+  abstract val scrollbarTrackColor: Int
+  abstract val scrollbarThumbColorNormal: Int
+  abstract val scrollbarThumbColorDragged: Int
 
   abstract fun fullCopy(): ChanTheme
 
@@ -76,6 +79,10 @@ abstract class ChanTheme {
   val textColorPrimaryCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorPrimary) }
   val textColorSecondaryCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorSecondary) }
   val textColorHintCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorHint) }
+
+  val scrollbarTrackColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(scrollbarTrackColor) }
+  val scrollbarThumbColorNormalCompose by lazy(LazyThreadSafetyMode.NONE) { Color(scrollbarThumbColorNormal) }
+  val scrollbarThumbColorDraggedCompose by lazy(LazyThreadSafetyMode.NONE) { Color(scrollbarThumbColorDragged) }
 
   val dividerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(dividerColor) }
   val postSubjectColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSubjectColor) }

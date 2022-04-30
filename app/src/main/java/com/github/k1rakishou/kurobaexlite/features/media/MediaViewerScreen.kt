@@ -28,6 +28,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,6 +37,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
@@ -63,7 +65,6 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerTool
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayFullImage
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayUnsupportedMedia
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayVideo
-import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.VideoMediaState
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
@@ -73,6 +74,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
@@ -92,6 +94,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
@@ -126,7 +129,7 @@ class MediaViewerScreen(
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
-    val mediaViewerScreenState = remember { MediaViewerScreenState() }
+    val mediaViewerScreenState = remember { MediaViewerScreenState(appSettings) }
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
     var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getBounds()) }
@@ -211,18 +214,6 @@ class MediaViewerScreen(
       chanTheme.primaryColorCompose.copy(alpha = 0.5f)
     }
 
-    val videoMediaState = remember(key1 = pagerStateHolder?.currentPage) {
-      val currentPage = pagerStateHolder?.currentPage
-        ?: return@remember null
-
-      val videoControlsVisible = mediaViewerScreenState.images
-        ?.getOrNull(currentPage)
-        ?.postImage
-        ?.imageType() == ImageType.Video
-
-      return@remember VideoMediaState(currentPage, videoControlsVisible)
-    }
-
     DisposableEffect(
       key1 = Unit,
       effect = {
@@ -234,19 +225,26 @@ class MediaViewerScreen(
       toolbarHeight = toolbarHeight,
       mediaViewerScreenState = mediaViewerScreenState,
       onViewPagerInitialized = { pagerState -> pagerStateHolderMut = pagerState },
-      videoMediaState = videoMediaState,
       onPreviewLoadingFinished = onPreviewLoadingFinished
     )
 
-    if (pagerStateHolder == null || videoMediaState == null) {
+    if (pagerStateHolder == null || images == null) {
       return
     }
+
+    val mediaViewerUiVisible by mediaViewerScreenState.mediaViewerUiVisible
+    val mediaViewerUiAlpha by animateFloatAsState(
+      targetValue = if (mediaViewerUiVisible) 1f else 0f,
+      animationSpec = tween(durationMillis = 300)
+    )
 
     Box(
       modifier = Modifier.Companion
         .align(Alignment.TopCenter)
-        .background(bgColor)
+        .alpha(mediaViewerUiAlpha)
+        .passClicksThrough(passClicks = !mediaViewerUiVisible)
         .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
+        .background(bgColor)
     ) {
       val context = LocalContext.current
       val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
@@ -267,26 +265,38 @@ class MediaViewerScreen(
       )
     }
 
-    val videoControlsVisible by videoMediaState.videoControlsVisibleState
+    val currentPage = pagerStateHolder.currentPage
+    val currentlyLoadedMediaMap = mediaViewerScreenState.currentlyLoadedMediaMap
+    val currentLoadedMedia = currentlyLoadedMediaMap[currentPage]
 
-    if (mediaViewerScreenViewModel.mpvInitialized) {
-      val targetAlpha = if (videoControlsVisible) 1f else 0f
-      val alphaAnimated by animateFloatAsState(
-        targetValue = targetAlpha,
-        animationSpec = tween(durationMillis = 250)
-      )
+    val targetAlpha = if (
+      mediaViewerScreenViewModel.mpvInitialized &&
+      currentLoadedMedia is MediaState.Video &&
+      mediaViewerUiVisible
+    ) {
+      1f
+    } else {
+      0f
+    }
 
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .align(Alignment.BottomCenter)
-          .graphicsLayer { this.alpha = alphaAnimated }
-          .background(bgColor)
-      ) {
-        MediaViewerScreenVideoControls(videoMediaState)
+    val alphaAnimated by animateFloatAsState(
+      targetValue = targetAlpha,
+      animationSpec = tween(durationMillis = 300)
+    )
 
-        Spacer(modifier = Modifier.height(insets.bottom))
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.BottomCenter)
+        .passClicksThrough(passClicks = !mediaViewerUiVisible)
+        .graphicsLayer { this.alpha = alphaAnimated }
+        .background(bgColor)
+    ) {
+      if (currentLoadedMedia is MediaState.Video) {
+        MediaViewerScreenVideoControls(currentLoadedMedia)
       }
+
+      Spacer(modifier = Modifier.height(insets.bottom))
     }
 
     if (images.isNotNullNorEmpty()) {
@@ -307,6 +317,8 @@ class MediaViewerScreen(
         Box(
           modifier = Modifier
             .align(Alignment.TopCenter)
+            .alpha(mediaViewerUiAlpha)
+            .passClicksThrough(passClicks = !mediaViewerUiVisible)
         ) {
           MediaViewerPreviewStrip(
             pagerState = pagerStateHolder,
@@ -506,8 +518,11 @@ class MediaViewerScreen(
           key1 = postCellDataStateList,
           block = {
             if (postCellDataStateList == null) {
-              mediaViewerScreenState.images = null
-              mediaViewerScreenState.initialPage.value = null
+              Snapshot.withMutableSnapshot {
+                mediaViewerScreenState.images = null
+                mediaViewerScreenState.initialPage.value = null
+                mediaViewerScreenState.mediaViewerUiVisible.value = appSettings.mediaViewerUiVisible.read()
+              }
 
               return@LaunchedEffect
             }
@@ -523,6 +538,7 @@ class MediaViewerScreen(
 
               mediaViewerScreenState.images = images
               mediaViewerScreenState.initialPage.value = initResult.initialPage
+              mediaViewerScreenState.mediaViewerUiVisible.value = appSettings.mediaViewerUiVisible.read()
             }
           }
         )
@@ -542,6 +558,7 @@ class MediaViewerScreen(
 
               mediaViewerScreenState.images = images
               mediaViewerScreenState.initialPage.value = initResult.initialPage
+              mediaViewerScreenState.mediaViewerUiVisible.value = appSettings.mediaViewerUiVisible.read()
             }
           }
         )
@@ -555,7 +572,6 @@ class MediaViewerScreen(
     toolbarHeight: Dp,
     mediaViewerScreenState: MediaViewerScreenState,
     onViewPagerInitialized: (PagerState) -> Unit,
-    videoMediaState: VideoMediaState?,
     onPreviewLoadingFinished: (IPostImage) -> Unit
   ) {
     if (!mediaViewerScreenState.isLoaded()) {
@@ -586,6 +602,7 @@ class MediaViewerScreen(
         modifier = Modifier.fillMaxSize(),
         additionalPaddings = additionalPaddings
       ) {
+        // TODO(KurobaEx): strings
         KurobaComposeText(text = "No images to show")
       }
 
@@ -636,12 +653,39 @@ class MediaViewerScreen(
       }
     )
 
+    val coroutineScope = rememberCoroutineScope()
+
     HorizontalPager(
       modifier = Modifier.fillMaxSize(),
       count = images.size,
       state = pagerState,
       key = { page -> images[page].fullImageUrlAsString }
     ) { page ->
+      val mediaState = remember(key1 = page) {
+        val postImage = mediaViewerScreenState.images
+          ?.getOrNull(page)
+          ?.postImage
+          ?: return@remember null
+
+        return@remember when (postImage.imageType()) {
+          ImageType.Static -> MediaState.Static(page)
+          ImageType.Video -> MediaState.Video(page)
+          ImageType.Unsupported -> MediaState.Unsupported(page)
+        }
+      }
+
+      if (mediaState == null) {
+        return@HorizontalPager
+      }
+
+      DisposableEffect(
+        key1 = Unit,
+        effect = {
+          mediaViewerScreenState.currentlyLoadedMediaMap.put(page, mediaState)
+          onDispose { mediaViewerScreenState.currentlyLoadedMediaMap.remove(page) }
+        }
+      )
+
       PagerContent(
         page = page,
         images = images,
@@ -649,9 +693,10 @@ class MediaViewerScreen(
         pagerState = pagerState,
         toolbarHeight = toolbarHeight,
         mpvSettings = mpvSettings,
+        mediaState = mediaState,
         checkLibrariesInstalledAndLoaded = { mpvLibsInstalledAndLoaded.value },
-        videoMediaState = videoMediaState,
-        onPreviewLoadingFinished = onPreviewLoadingFinished
+        onPreviewLoadingFinished = onPreviewLoadingFinished,
+        onMediaTapped = { coroutineScope.launch { mediaViewerScreenState.toggleMediaViewerUiVisibility() } }
       )
     }
   }
@@ -665,9 +710,10 @@ class MediaViewerScreen(
     pagerState: PagerState,
     toolbarHeight: Dp,
     mpvSettings: MpvSettings,
+    mediaState: MediaState,
     checkLibrariesInstalledAndLoaded: () -> Boolean,
-    videoMediaState: VideoMediaState?,
-    onPreviewLoadingFinished: (IPostImage) -> Unit
+    onPreviewLoadingFinished: (IPostImage) -> Unit,
+    onMediaTapped: () -> Unit
   ) {
     val context = LocalContext.current
     val postImageDataLoadState = images[page]
@@ -732,8 +778,8 @@ class MediaViewerScreen(
           displayImagePreviewMovable()
         }
 
-        when (postImageDataLoadState.postImage.imageType()) {
-          ImageType.Static -> {
+        when (mediaState) {
+          is MediaState.Static -> {
             val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
 
             DisplayFullImage(
@@ -741,7 +787,7 @@ class MediaViewerScreen(
               imageFile = imageFile,
               onFullImageLoaded = { fullMediaLoaded = true },
               onFullImageFailedToLoad = { fullMediaLoaded = false },
-              onImageTapped = { coroutineScope.launch { onBackPressed() } },
+              onImageTapped = { onMediaTapped() },
               reloadImage = {
                 coroutineScope.launch {
                   mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
@@ -750,7 +796,7 @@ class MediaViewerScreen(
               }
             )
           }
-          ImageType.Video -> {
+          is MediaState.Video -> {
             DisplayVideo(
               pageIndex = page,
               pagerState = pagerState,
@@ -761,8 +807,8 @@ class MediaViewerScreen(
               checkLibrariesInstalledAndLoaded = checkLibrariesInstalledAndLoaded,
               onPlayerLoaded = { fullMediaLoaded = true },
               onPlayerUnloaded = { fullMediaLoaded = false },
-              videoMediaState = videoMediaState,
-              onVideoTapped = { coroutineScope.launch { onBackPressed() } },
+              videoMediaState = mediaState,
+              onVideoTapped = { onMediaTapped() },
               installMpvLibsFromGithubButtonClicked = {
                 onInstallMpvLibsFromGithubButtonClicked(
                   mpvSettings = mpvSettings,
@@ -771,13 +817,13 @@ class MediaViewerScreen(
               }
             )
           }
-          ImageType.Unsupported -> {
+          is MediaState.Unsupported -> {
             DisplayUnsupportedMedia(
               toolbarHeight = toolbarHeight,
               postImageDataLoadState = postImageDataLoadState,
               onFullImageLoaded = { fullMediaLoaded = true },
               onFullImageFailedToLoad = { fullMediaLoaded = false },
-              onImageTapped = { coroutineScope.launch { onBackPressed() } }
+              onImageTapped = { onMediaTapped() }
             )
           }
         }
@@ -1005,12 +1051,24 @@ class MediaViewerScreen(
     )
   }
 
-  class MediaViewerScreenState {
+  class MediaViewerScreenState(
+    private val appSettings: AppSettings
+  ) {
     var images: SnapshotStateList<ImageLoadState>? = null
     val initialPage = mutableStateOf<Int?>(null)
 
+    val currentlyLoadedMediaMap = mutableStateMapOf<Int, MediaState>()
+    val mediaViewerUiVisible = mutableStateOf(false)
+
     fun isLoaded(): Boolean = initialPage.value != null && images != null
     fun requireImages(): SnapshotStateList<ImageLoadState> = requireNotNull(images) { "images not initialized yet!" }
+
+    suspend fun toggleMediaViewerUiVisibility() {
+      val newValue = !mediaViewerUiVisible.value
+
+      mediaViewerUiVisible.value = newValue
+      appSettings.mediaViewerUiVisible.write(newValue)
+    }
   }
 
   companion object {

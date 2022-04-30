@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.chan.core.mpv.MpvUtils
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.VideoMediaState
+import com.github.k1rakishou.kurobaexlite.features.media.MediaState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -42,7 +42,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
 @Composable
 internal fun MediaViewerScreenVideoControls(
-  videoMediaState: VideoMediaState
+  videoMediaState: MediaState.Video
 ) {
   val chanTheme = LocalChanTheme.current
   val disabledAlpha = ContentAlpha.disabled
@@ -224,7 +224,7 @@ internal fun MediaViewerScreenVideoControls(
 
 private suspend fun PointerInputScope.processTapToSeekGesture(
   videoStartedPlaying: Boolean,
-  videoMediaState: VideoMediaState,
+  videoMediaState: MediaState.Video,
   videoDurationMut: Long?,
   lastSlideOffsetMut: Float
 ) {

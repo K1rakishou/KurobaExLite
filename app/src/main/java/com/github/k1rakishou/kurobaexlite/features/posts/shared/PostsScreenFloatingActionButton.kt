@@ -100,7 +100,7 @@ fun BoxScope.PostsScreenFloatingActionButton(
     modifier = Modifier
       .align(Alignment.BottomEnd)
       .graphicsLayer { this.alpha = toolbarAlpha }
-      .passClicksThrough(enabled = toolbarAlpha < 0.99f),
+      .passClicksThrough(passClicks = toolbarAlpha < 0.99f),
     iconDrawableId = R.drawable.ic_baseline_create_24,
     horizOffset = -(horizOffset),
     vertOffset = -(insets.bottom + vertOffset),

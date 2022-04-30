@@ -29,7 +29,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.SCROLLBAR_MIN_SIZE
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.scrollbar
@@ -45,12 +44,8 @@ fun MediaViewerPreviewStrip(
   toolbarHeightPx: Int?,
   onPreviewClicked: (IPostImage) -> Unit
 ) {
-  val chanTheme = LocalChanTheme.current
   val density = LocalDensity.current
-
   val currentPage = pagerState.currentPage
-  val thumbColor = chanTheme.accentColorCompose
-
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val lazyListState = rememberLazyListState(initialFirstVisibleItemIndex = currentPage)
 
@@ -61,8 +56,8 @@ fun MediaViewerPreviewStrip(
   val itemSizePx = with(density) {
     remember(key1 = itemSizeDp) { itemSizeDp.toPx().toInt() }
   }
-  val scrollbarMinWidthPx = with(density) {
-    remember { SCROLLBAR_MIN_SIZE.toPx().toInt() }
+  val scrollbarWidthPx = with(density) {
+    remember { 42.dp.toPx().toInt() }
   }
 
   var stripWidthMut by remember { mutableStateOf<Int?>(null) }
@@ -99,10 +94,9 @@ fun MediaViewerPreviewStrip(
         .background(bgColor)
         .scrollbar(
           state = lazyListState,
-          thumbColor = thumbColor,
-          scrollbarDimens = ScrollbarDimens.Horizontal(
+          scrollbarDimens = ScrollbarDimens.Horizontal.Static(
             height = scrollbarHeight,
-            minWidth = scrollbarMinWidthPx
+            width = scrollbarWidthPx
           )
         )
         .padding(start = 8.dp, end = 8.dp, top = 4.dp),
@@ -136,7 +130,6 @@ private fun DisplayImagePreview(
   onPreviewClicked: (IPostImage) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val bgColor = chanTheme.backColorSecondaryCompose
   val highlightColor = chanTheme.accentColorCompose
 
   val highlightModifier = if (isCurrentImage) {
@@ -150,8 +143,8 @@ private fun DisplayImagePreview(
       .size(itemSize)
       .then(highlightModifier)
       .padding(padding)
-      .background(bgColor)
       .kurobaClickable(onClick = { onPreviewClicked(postImage) }),
+    bgColor = Color.Unspecified,
     postImage = postImage
   )
 }

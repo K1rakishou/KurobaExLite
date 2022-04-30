@@ -125,8 +125,8 @@ fun HomeScreenToolbarContainer(
       .fillMaxWidth()
       .height(toolbarTotalHeight)
       .graphicsLayer { this.alpha = toolbarContainerAlpha }
-      .background(chanTheme.primaryColorCompose)
-      .passClicksThrough(enabled = toolbarContainerAlpha < 0.99f)
+      .background(chanTheme.primaryColorCompose.copy(alpha = 0.3f))
+      .passClicksThrough(passClicks = toolbarContainerAlpha < 0.99f)
       .consumeClicks(enabled = toolbarContainerAlpha > 0.99f)
   ) {
     Spacer(modifier = Modifier.height(insets.top))

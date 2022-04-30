@@ -35,12 +35,8 @@ class AppSettings(
     }
   }
 
-  val layoutType by lazy {
-    EnumSetting<LayoutType>(LayoutType.Auto, "layout_type", LayoutType::class.java, dataStore)
-  }
-  val bookmarksScreenOnLeftSide by lazy {
-    BooleanSetting(true, "bookmarks_screen_on_left_side", dataStore)
-  }
+  val layoutType by lazy { EnumSetting<LayoutType>(LayoutType.Auto, "layout_type", LayoutType::class.java, dataStore) }
+  val bookmarksScreenOnLeftSide by lazy { BooleanSetting(true, "bookmarks_screen_on_left_side", dataStore) }
 
   val textTitleSizeSp by lazy {
     val defaultValue = if (isTablet) 16 else 14
@@ -61,19 +57,12 @@ class AppSettings(
   val catalogSort by lazy {
     JsonSetting(moshi.adapter(CatalogSortSetting::class.java), CatalogSortSetting(), "catalog_sort_setting", dataStore)
   }
-  val navigationHistoryMaxSize by lazy {
-    NumberSetting(256, "navigation_history_max_size", dataStore)
-  }
-  val lastRememberedFilePicker by lazy {
-    StringSetting("", "last_remembered_file_picker", dataStore)
-  }
+  val navigationHistoryMaxSize by lazy { NumberSetting(256, "navigation_history_max_size", dataStore) }
+  val lastRememberedFilePicker by lazy { StringSetting("", "last_remembered_file_picker", dataStore) }
+  val mediaViewerUiVisible by lazy { BooleanSetting(true, "media_viewer_ui_visible", dataStore) }
 
-  val lastVisitedCatalog by lazy {
-    JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore)
-  }
-  val lastVisitedThread by lazy {
-    JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore)
-  }
+  val lastVisitedCatalog by lazy { JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore) }
+  val lastVisitedThread by lazy { JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore) }
 
   val userAgent by lazy {
     val userAgent = try {
