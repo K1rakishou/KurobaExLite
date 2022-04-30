@@ -95,6 +95,8 @@ class HomeScreen(
       return
     }
 
+    ShowAndProcessSnackbars()
+
     val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut
     if (mainUiLayoutMode == null) {
@@ -166,8 +168,6 @@ class HomeScreen(
         )
       }
     )
-
-    ShowAndProcessSnackbars()
 
     val childScreensUpdated by rememberUpdatedState(newValue = childScreens)
 

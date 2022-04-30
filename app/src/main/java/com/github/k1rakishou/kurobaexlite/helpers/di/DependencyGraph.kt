@@ -155,7 +155,7 @@ object DependencyGraph {
     single { NavigationHistoryManager() }
     single { MarkedPostManager() }
     single { CaptchaManager() }
-    single { LastVisitedEndpointManager() }
+    single { LastVisitedEndpointManager(appScope = get()) }
 
     single {
       GlobalUiInfoManager(
