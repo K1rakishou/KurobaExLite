@@ -25,7 +25,10 @@ import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @Composable
@@ -51,9 +54,9 @@ fun LazyColumnWithFastScroller(
     remember(contentPadding) { contentPadding.calculateBottomPadding().toPx().toInt() }
   }
   val lazyListStateWrapper = remember { LazyListStateWrapper(lazyListState) }
-
   val coroutineScope = rememberCoroutineScope()
-  var scrollbarDragged by remember { mutableStateOf(false) }
+
+  var scrollbarDragProgress by remember { mutableStateOf<Float?>(null) }
 
   BoxWithConstraints(modifier = modifier) {
     val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
@@ -74,9 +77,9 @@ fun LazyColumnWithFastScroller(
               paddingTop = paddingTopPx,
               paddingBottom = paddingBottomPx,
               scrollbarWidth = scrollbarWidth,
-              onScrollbarDragStateUpdated = { dragging ->
-                scrollbarDragged = dragging
-                onFastScrollerDragStateChanged?.invoke(dragging)
+              onScrollbarDragStateUpdated = { dragProgress ->
+                scrollbarDragProgress = dragProgress
+                onFastScrollerDragStateChanged?.invoke(dragProgress != null)
               }
             )
           }
@@ -94,7 +97,7 @@ fun LazyColumnWithFastScroller(
             scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormalCompose,
             scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDraggedCompose,
             contentPadding = contentPadding,
-            isScrollbarDragged = scrollbarDragged
+            scrollbarManualDragProgress = scrollbarDragProgress
           ),
         userScrollEnabled = userScrollEnabled,
         state = lazyListState,
@@ -129,11 +132,10 @@ fun LazyVerticalGridWithFastScroller(
   val paddingBottomPx = with(LocalDensity.current) {
     remember(contentPadding) { contentPadding.calculateBottomPadding().toPx().toInt() }
   }
-  val thumbColor = chanTheme.textColorHintCompose
   val lazyGridStateWrapper = remember { LazyGridStateWrapper(lazyGridState) }
-
   val coroutineScope = rememberCoroutineScope()
-  var scrollbarDragged by remember { mutableStateOf(false) }
+
+  var scrollbarManualDragProgress by remember { mutableStateOf<Float?>(null) }
 
   BoxWithConstraints(modifier = modifier) {
     val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
@@ -154,9 +156,9 @@ fun LazyVerticalGridWithFastScroller(
               paddingTop = paddingTopPx,
               paddingBottom = paddingBottomPx,
               scrollbarWidth = scrollbarWidth,
-              onScrollbarDragStateUpdated = { dragging ->
-                scrollbarDragged = dragging
-                onFastScrollerDragStateChanged?.invoke(dragging)
+              onScrollbarDragStateUpdated = { dragProgress ->
+                scrollbarManualDragProgress = dragProgress
+                onFastScrollerDragStateChanged?.invoke(dragProgress != null)
               }
             )
           }
@@ -174,7 +176,7 @@ fun LazyVerticalGridWithFastScroller(
             scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormalCompose,
             scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDraggedCompose,
             contentPadding = contentPadding,
-            isScrollbarDragged = scrollbarDragged
+            scrollbarManualDragProgress = scrollbarManualDragProgress
           ),
         columns = columns,
         userScrollEnabled = userScrollEnabled,
@@ -196,7 +198,7 @@ suspend fun PointerInputScope.processFastScrollerInputs(
   paddingTop: Int,
   paddingBottom: Int,
   scrollbarWidth: Int,
-  onScrollbarDragStateUpdated: (Boolean) -> Unit
+  onScrollbarDragStateUpdated: (Float?) -> Unit
 ) {
   forEachGesture {
     awaitPointerEventScope {
@@ -214,9 +216,9 @@ suspend fun PointerInputScope.processFastScrollerInputs(
 
       down.consumeAllChanges()
 
-      try {
-        onScrollbarDragStateUpdated(true)
+      var job: Job? = null
 
+      try {
         while (true) {
           val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
           if (nextEvent.type != PointerEventType.Move) {
@@ -228,17 +230,33 @@ suspend fun PointerInputScope.processFastScrollerInputs(
           }
 
           nextEvent.changes.lastOrNull()?.let { lastChange ->
-            coroutineScope.launch {
-              val heightWithoutPaddings = height - paddingTop - paddingBottom
-              val touchFraction = ((lastChange.position.y - paddingTop) / heightWithoutPaddings).coerceIn(0f, 1f)
-              val scrollToIndex = (lazyStateWrapper.totalItemsCount.toFloat() * touchFraction).toInt()
+            job = coroutineScope.launch {
+              val touchY = lastChange.position.y - paddingTop
+              val scrollbarTrackHeight = (lazyStateWrapper as LazyListStateWrapper).viewportHeight - paddingBottom - paddingTop
+
+              val touchFraction = (touchY / scrollbarTrackHeight).coerceIn(0f, 1f)
+              val itemsCount = (lazyStateWrapper.totalItemsCount - lazyStateWrapper.fullyVisibleItemsCount)
+
+              var scrollToIndex = (itemsCount.toFloat() * touchFraction).roundToInt()
+              if (touchFraction == 0f) {
+                scrollToIndex = 0
+              } else if (touchFraction == 1f) {
+                scrollToIndex = lazyStateWrapper.totalItemsCount
+              }
 
               lazyStateWrapper.scrollToItem(scrollToIndex)
+
+              if (isActive) {
+                onScrollbarDragStateUpdated(touchFraction)
+              }
             }
           }
         }
       } finally {
-        onScrollbarDragStateUpdated(false)
+        job?.cancel()
+        job = null
+
+        onScrollbarDragStateUpdated(null)
       }
     }
   }

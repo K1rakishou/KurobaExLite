@@ -47,6 +47,10 @@ class PostLongtapContentMenu(
       }
     }
 
+    if (floatingMenuItems.isEmpty()) {
+      return
+    }
+
     navigationRouter.presentScreen(
       FloatingMenuScreen(
         floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
