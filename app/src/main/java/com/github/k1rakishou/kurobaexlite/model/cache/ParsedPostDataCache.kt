@@ -26,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
+import com.github.k1rakishou.kurobaexlite.model.data.originalFileNameForPostCell
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -505,7 +506,7 @@ class ParsedPostDataCache(
 
             append(
               AnnotatedString(
-                text = postImage.originalFileNameEscaped,
+                text = postImage.originalFileNameForPostCell(),
                 spanStyle = SpanStyle(textDecoration = TextDecoration.Underline)
               )
             )

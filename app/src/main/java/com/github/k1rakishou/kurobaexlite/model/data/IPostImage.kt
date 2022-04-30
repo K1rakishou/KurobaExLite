@@ -24,6 +24,20 @@ interface IPostImage {
   val fullImageAsString: String
 }
 
+fun IPostImage.originalFileNameForPostCell(maxLength: Int = 80): String {
+  val cutMarker = "[...]"
+
+  if (originalFileNameEscaped.length <= (maxLength + cutMarker.length)) {
+    return originalFileNameEscaped
+  }
+
+  return buildString {
+    append(originalFileNameEscaped.take(maxLength / 2))
+    append(cutMarker)
+    append(originalFileNameEscaped.takeLast(maxLength / 2))
+  }
+}
+
 fun IPostImage.originalFileNameWithExtension(): String {
   return "${originalFileNameEscaped}.${ext}"
 }

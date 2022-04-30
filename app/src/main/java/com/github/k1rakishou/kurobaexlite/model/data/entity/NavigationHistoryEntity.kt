@@ -34,8 +34,16 @@ abstract class NavigationHistoryDao {
   """)
   abstract suspend fun selectAllOrdered(maxCount: Int): List<NavigationHistoryEntity>
 
-  @Query("DELETE FROM navigation_history")
-  abstract suspend fun deleteAll()
+  @Query("""
+    DELETE FROM navigation_history 
+    WHERE navigation_history.sort_order NOT IN 
+    (
+      SELECT navigation_history.sort_order FROM navigation_history
+      ORDER BY sort_order
+      LIMIT :maxCount
+    )
+  """)
+  abstract suspend fun deleteEntriesExceedingLimit(maxCount: Int)
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   abstract suspend fun insertOrUpdateMany(navigationHistoryEntityList: List<NavigationHistoryEntity>)

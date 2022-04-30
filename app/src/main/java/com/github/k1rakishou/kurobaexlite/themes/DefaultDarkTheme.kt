@@ -10,7 +10,7 @@ data class DefaultDarkTheme(
   override val lightStatusBar: Boolean = true,
   override val lightNavBar: Boolean = true,
   override val accentColor: Int = Color.parseColor("#e0224e"),
-  override val primaryColor: Int = Color.parseColor("#090909"),
+  override val primaryColor: Int = Color.parseColor("#171717"),
   override val backColor: Int = Color.parseColor("#212121"),
   override val backColorSecondary: Int = Color.parseColor("#171717"),
   override val selectedOnBackColor: Int = Color.parseColor("#474747"),

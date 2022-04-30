@@ -30,6 +30,7 @@ import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestur
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -299,6 +300,14 @@ class HomeScreen(
       key1 = Unit,
       block = {
         lastVisitedEndpointManager.lastVisitedThreadFlow.collect { lastVisitedThread ->
+          val threadDescriptor = lastVisitedThread.toThreadDescriptor()
+
+          val lastVisitedThreadTitle = if (lastVisitedThread.title.isNotNullNorBlank()) {
+            "${threadDescriptor.siteKeyActual}/${threadDescriptor.boardCode}/${lastVisitedThread.title}"
+          } else {
+            threadDescriptor.asReadableString()
+          }
+
           snackbarManager.pushSnackbar(
             SnackbarInfo(
               screenKey = MainScreen.SCREEN_KEY,
@@ -308,14 +317,14 @@ class HomeScreen(
                 SnackbarContentItem.Text(
                   context.getString(
                     R.string.reload_last_visited_thread,
-                    lastVisitedThread.title ?: lastVisitedThread.toThreadDescriptor().asReadableString()
+                    lastVisitedThreadTitle
                   )
                 ),
                 SnackbarContentItem.Spacer(space = 8.dp),
                 SnackbarContentItem.Button(
                   key = SnackbarButton.ReloadLastVisitedThread,
                   text = context.getString(R.string.reload),
-                  data = lastVisitedThread.toThreadDescriptor()
+                  data = threadDescriptor
                 ),
                 SnackbarContentItem.Spacer(space = 8.dp),
               )

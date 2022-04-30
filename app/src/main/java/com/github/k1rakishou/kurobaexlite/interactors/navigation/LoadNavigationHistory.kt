@@ -21,6 +21,9 @@ class LoadNavigationHistory(
     }
 
     kurobaExLiteDatabase.transaction {
+      // This is how we limit the max amount of navigation history elements in the database
+      navigationHistoryDao.deleteEntriesExceedingLimit(maxCount)
+
       val navigationHistoryEntityList = navigationHistoryDao.selectAllOrdered(maxCount)
       if (navigationHistoryEntityList.isEmpty()) {
         logcat(TAG) { "navigationHistoryDao.selectAllOrdered(maxCount) returned empty list" }
@@ -43,10 +46,6 @@ class LoadNavigationHistory(
       }
 
       navigationHistoryManager.load(navigationElementList)
-
-      // This is how we limit the max amount of navigation history elements in the database
-      navigationHistoryDao.deleteAll()
-
       logcat(TAG) { "loaded ${navigationElementList.size} navigation elements" }
     }.onFailure { error -> logcat(TAG) { "loadFromDatabase() error: ${error.asLog()}" } }
   }
