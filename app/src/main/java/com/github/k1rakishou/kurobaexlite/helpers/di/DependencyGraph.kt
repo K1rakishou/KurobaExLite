@@ -50,6 +50,7 @@ import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
@@ -154,6 +155,7 @@ object DependencyGraph {
     single { NavigationHistoryManager() }
     single { MarkedPostManager() }
     single { CaptchaManager() }
+    single { LastVisitedEndpointManager() }
 
     single {
       GlobalUiInfoManager(

@@ -16,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
+import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
@@ -41,6 +42,7 @@ class ThreadScreenViewModel(
   private val loadChanThreadView: LoadChanThreadView by inject(LoadChanThreadView::class.java)
   private val updateChanThreadView: UpdateChanThreadView by inject(UpdateChanThreadView::class.java)
   private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
+  private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     executeUpdate = { refresh() },
@@ -66,16 +68,24 @@ class ThreadScreenViewModel(
   }
 
   private suspend fun loadPrevVisitedThread() {
-    val lastVisitedThread = savedStateHandle.get<ThreadDescriptor>(LAST_VISITED_THREAD_KEY)
-    if (lastVisitedThread != null) {
-      logcat(tag = TAG) { "loadPrevVisitedThread() loading ${lastVisitedThread} from appSettings.lastVisitedThread" }
+    val lastVisitedThreadDescriptor = savedStateHandle.get<ThreadDescriptor>(LAST_VISITED_THREAD_KEY)
+    if (lastVisitedThreadDescriptor != null) {
+      logcat(tag = TAG) { "loadPrevVisitedThread() found ${lastVisitedThreadDescriptor} from savedStateHandle" }
 
       loadThread(
-        threadDescriptor = lastVisitedThread,
+        threadDescriptor = lastVisitedThreadDescriptor,
         loadOptions = LoadOptions(forced = true),
         onReloadFinished = null
       )
 
+      return
+    }
+
+    val lastVisitedThread = appSettings.lastVisitedThread.read()
+    if (lastVisitedThread != null) {
+      logcat(tag = TAG) { "loadPrevVisitedThread() found ${lastVisitedThread} from lastVisitedThread" }
+
+      lastVisitedEndpointManager.notifyRestoreLastVisitedThread(lastVisitedThread)
       return
     }
 

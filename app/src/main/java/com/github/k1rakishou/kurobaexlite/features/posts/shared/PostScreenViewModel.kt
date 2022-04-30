@@ -14,6 +14,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedCatalog
+import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedThread
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
@@ -146,6 +148,16 @@ abstract class PostScreenViewModel(
   suspend fun onThreadLoadingEnd(threadDescriptor: ThreadDescriptor?) {
     if (threadDescriptor != null) {
       savedStateHandle.set(LAST_VISITED_THREAD_KEY, threadDescriptor)
+
+      parsedPostDataCache.formatThreadToolbarTitle(threadDescriptor.toOriginalPostDescriptor())
+        ?.let { threadToolbarTitle ->
+          val lastVisitedThread = LastVisitedThread.fromThreadDescriptor(
+            threadDescriptor = threadDescriptor,
+            title = threadToolbarTitle
+          )
+
+          appSettings.lastVisitedThread.write(lastVisitedThread)
+        }
     } else {
       savedStateHandle.remove(LAST_VISITED_THREAD_KEY)
     }
@@ -166,6 +178,7 @@ abstract class PostScreenViewModel(
   suspend fun onCatalogLoadingEnd(catalogDescriptor: CatalogDescriptor?) {
     if (catalogDescriptor != null) {
       savedStateHandle.set(LAST_VISITED_CATALOG_KEY, catalogDescriptor)
+      appSettings.lastVisitedCatalog.write(LastVisitedCatalog.fromCatalogDescriptor(catalogDescriptor))
     } else {
       savedStateHandle.remove(LAST_VISITED_CATALOG_KEY)
     }

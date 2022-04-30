@@ -37,6 +37,10 @@ class SnackbarManager(
 
   private val activeSnackbarsFlow = MutableSharedFlow<Map<ScreenKey, List<SnackbarInfo>>>(extraBufferCapacity = Channel.UNLIMITED)
 
+  private val _removedSnackbarsFlow = MutableSharedFlow<Set<RemovedSnackbarInfo>>(extraBufferCapacity = Channel.UNLIMITED)
+  val removedSnackbarsFlow: SharedFlow<Set<RemovedSnackbarInfo>>
+    get() = _removedSnackbarsFlow.asSharedFlow()
+
   private val _snackbarElementsClickFlow = MutableSharedFlow<SnackbarClickable>(extraBufferCapacity = Channel.UNLIMITED)
   val snackbarElementsClickFlow: SharedFlow<SnackbarClickable>
     get() = _snackbarElementsClickFlow.asSharedFlow()
@@ -47,6 +51,10 @@ class SnackbarManager(
 
   fun onSnackbarsUpdated(snackbarsByScreenKey: Map<ScreenKey, List<SnackbarInfo>>) {
     activeSnackbarsFlow.tryEmit(snackbarsByScreenKey)
+  }
+
+  fun onSnackbarsRemoved(removedSnackbars: Set<RemovedSnackbarInfo>) {
+    _removedSnackbarsFlow.tryEmit(removedSnackbars)
   }
 
   fun listenForActiveSnackbarsFlow(forScreenKey: ScreenKey): Flow<List<SnackbarInfo>> {
@@ -238,6 +246,11 @@ class SnackbarManager(
   }
 
   private fun standardAliveUntil() = SystemClock.elapsedRealtime() + STANDARD_DELAY
+
+  class RemovedSnackbarInfo(
+    val snackbarId: SnackbarId,
+    val timedOut: Boolean
+    )
 
   companion object {
     private val TOAST_ID_COUNTER = AtomicLong(0L)

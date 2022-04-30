@@ -59,6 +59,11 @@ class JsonSetting<T : Any?>(
     }
   }
 
+  override suspend fun remove() {
+    cachedValue = null
+    dataStore.edit { prefs -> prefs.remove(prefsKey) }
+  }
+
   override fun listen(): Flow<T> {
     return dataStore.data
       .map { prefs ->

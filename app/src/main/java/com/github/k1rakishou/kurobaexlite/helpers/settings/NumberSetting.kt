@@ -60,6 +60,11 @@ class NumberSetting<T : Number>(
     }
   }
 
+  override suspend fun remove() {
+    cachedValue = null
+    dataStore.edit { prefs -> prefs.remove(prefsKey) }
+  }
+
   override fun listen(): Flow<T> {
     return dataStore.data
       .map { prefs -> (prefs.get(prefsKey)?.deserializeToNumber() as T?) ?: read() }

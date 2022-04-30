@@ -68,6 +68,13 @@ class AppSettings(
     StringSetting("", "last_remembered_file_picker", dataStore)
   }
 
+  val lastVisitedCatalog by lazy {
+    JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore)
+  }
+  val lastVisitedThread by lazy {
+    JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore)
+  }
+
   val userAgent by lazy {
     val userAgent = try {
       WebSettings.getDefaultUserAgent(appContext)
@@ -130,6 +137,7 @@ data class LastVisitedThread(
   @Json (name = "site_key") val siteKey: String,
   @Json (name = "board_code") val boardCode: String,
   @Json (name = "thread_no") val threadNo: Long,
+  @Json (name = "title") val title: String?,
 ) {
 
   fun toThreadDescriptor(): ThreadDescriptor {
@@ -141,11 +149,12 @@ data class LastVisitedThread(
   }
 
   companion object {
-    fun fromThreadDescriptor(threadDescriptor: ThreadDescriptor): LastVisitedThread {
+    fun fromThreadDescriptor(threadDescriptor: ThreadDescriptor, title: String?): LastVisitedThread {
       return LastVisitedThread(
         siteKey = threadDescriptor.siteKeyActual,
         boardCode = threadDescriptor.boardCode,
-        threadNo = threadDescriptor.threadNo
+        threadNo = threadDescriptor.threadNo,
+        title = title
       )
     }
   }

@@ -21,6 +21,7 @@ abstract class AbstractSetting<T>(
 
   abstract suspend fun read(): T
   abstract suspend fun write(value: T)
+  abstract suspend fun remove()
   abstract fun listen(): Flow<T>
 
 }

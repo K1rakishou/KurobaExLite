@@ -358,28 +358,32 @@ class KurobaSnackbarState(
       .indexOfFirst { snackbarInfo -> snackbarInfo.snackbarId == id }
 
     if (indexOfSnackbar >= 0) {
-      _activeSnackbars.removeAt(indexOfSnackbar)
+      val removedSnackbar = _activeSnackbars.removeAt(indexOfSnackbar)
+
+      val removedSnackbarInfo = SnackbarManager.RemovedSnackbarInfo(removedSnackbar.snackbarId, false)
+      onSnackbarsRemoved(setOf(removedSnackbarInfo))
       updateSnackbarsCount()
     }
   }
 
   fun removeOldSnackbars() {
     val currentTime = SystemClock.elapsedRealtime()
-    var anythingRemoved = false
+    val removedSnackbars = mutableSetOf<SnackbarManager.RemovedSnackbarInfo>()
 
     _activeSnackbars.mutableIteration { mutableIterator, activeSnackbar ->
       if (
         activeSnackbar.aliveUntil != null
         && (currentTime >= activeSnackbar.aliveUntil || _activeSnackbars.size > maxSnackbarsAtTime)
       ) {
-        anythingRemoved = true
+        removedSnackbars += SnackbarManager.RemovedSnackbarInfo(activeSnackbar.snackbarId, true)
         mutableIterator.remove()
       }
 
       return@mutableIteration true
     }
 
-    if (anythingRemoved) {
+    if (removedSnackbars.isNotEmpty()) {
+      onSnackbarsRemoved(removedSnackbars)
       updateSnackbarsCount()
     }
   }
@@ -387,6 +391,10 @@ class KurobaSnackbarState(
   private fun updateSnackbarsCount() {
     val snackbarsByScreenKey = _activeSnackbars.groupBy { it.screenKey }
     snackbarManager.onSnackbarsUpdated(snackbarsByScreenKey)
+  }
+
+  private fun onSnackbarsRemoved(removedSnackbars: Set<SnackbarManager.RemovedSnackbarInfo>) {
+    snackbarManager.onSnackbarsRemoved(removedSnackbars)
   }
 
   override fun equals(other: Any?): Boolean {
@@ -500,6 +508,8 @@ sealed class SnackbarId(
   object CatalogOrThreadPostsLoading : SnackbarId("catalog_or_thread_posts_loading")
   object NewPosts : SnackbarId("new_posts")
   object NavHistoryElementRemoved : SnackbarId("nav_history_element_removed")
+  object ReloadLastVisitedCatalog : SnackbarId("reload_last_visited_catalog")
+  object ReloadLastVisitedThread : SnackbarId("reload_last_visited_thread")
 
   class Toast(toastId: String) : SnackbarId(toastId)
 

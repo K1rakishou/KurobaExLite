@@ -60,6 +60,11 @@ class EnumSetting<T : Enum<T>>(
     }
   }
 
+  override suspend fun remove() {
+    cachedValue = null
+    dataStore.edit { prefs -> prefs.remove(prefsKey) }
+  }
+
   override fun listen(): Flow<T> {
     return dataStore.data.map { prefs ->
       val enumName = prefs.get(prefsKey)

@@ -20,18 +20,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenDrawerLayout
 import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestures
+import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -40,14 +51,20 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.java.KoinJavaComponent.inject
 
 class HomeScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
+  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
+  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val homeChildScreens by lazy { HomeChildScreens(componentActivity, navigationRouter) }
+  private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
 
   private val currentChildScreensState = mutableStateOf<HomeChildScreens.ChildScreens?>(null)
   private val currentChildIndex = mutableStateOf<Int?>(null)
@@ -150,6 +167,8 @@ class HomeScreen(
       }
     )
 
+    ShowAndProcessSnackbars()
+
     val childScreensUpdated by rememberUpdatedState(newValue = childScreens)
 
     HandleBackPresses {
@@ -198,6 +217,112 @@ class HomeScreen(
       childScreens = childScreens,
       insets = insets,
       chanTheme = chanTheme
+    )
+  }
+
+  @Composable
+  private fun ShowAndProcessSnackbars() {
+    val context = LocalContext.current
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        snackbarManager.removedSnackbarsFlow.collect { removedSnackbarInfoSet ->
+          val removedSnackbarIds = removedSnackbarInfoSet.map { it.snackbarId }.toSet()
+
+          if (SnackbarId.ReloadLastVisitedCatalog in removedSnackbarIds) {
+            appSettings.lastVisitedCatalog.remove()
+          }
+          if (SnackbarId.ReloadLastVisitedThread in removedSnackbarIds) {
+            appSettings.lastVisitedThread.remove()
+          }
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        snackbarManager.snackbarElementsClickFlow.collectLatest { snackbarClickable ->
+          if (snackbarClickable.key !is SnackbarButton) {
+            return@collectLatest
+          }
+
+          when (snackbarClickable.key as SnackbarButton) {
+            SnackbarButton.ReloadLastVisitedCatalog -> {
+              val catalogDescriptor = snackbarClickable.data as? CatalogDescriptor
+                ?: return@collectLatest
+
+              catalogScreenViewModel.loadCatalog(catalogDescriptor)
+            }
+            SnackbarButton.ReloadLastVisitedThread -> {
+              val threadDescriptor = snackbarClickable.data as? ThreadDescriptor
+                ?: return@collectLatest
+
+              threadScreenViewModel.loadThread(threadDescriptor)
+            }
+          }
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        lastVisitedEndpointManager.lastVisitedCatalogFlow.collect { lastVisitedCatalog ->
+          snackbarManager.pushSnackbar(
+            SnackbarInfo(
+              snackbarId = SnackbarId.ReloadLastVisitedCatalog,
+              aliveUntil = SnackbarInfo.snackbarDuration(10.seconds),
+              content = listOf(
+                SnackbarContentItem.Text(
+                  context.getString(
+                    R.string.reload_last_visited_catalog,
+                    lastVisitedCatalog.toCatalogDescriptor().asReadableString()
+                  )
+                ),
+                SnackbarContentItem.Spacer(space = 8.dp),
+                SnackbarContentItem.Button(
+                  key = SnackbarButton.ReloadLastVisitedCatalog,
+                  text = context.getString(R.string.reload),
+                  data = lastVisitedCatalog.toCatalogDescriptor()
+                ),
+                SnackbarContentItem.Spacer(space = 8.dp),
+              )
+            )
+          )
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        lastVisitedEndpointManager.lastVisitedThreadFlow.collect { lastVisitedThread ->
+          snackbarManager.pushSnackbar(
+            SnackbarInfo(
+              screenKey = MainScreen.SCREEN_KEY,
+              snackbarId = SnackbarId.ReloadLastVisitedThread,
+              aliveUntil = SnackbarInfo.snackbarDuration(10.seconds),
+              content = listOf(
+                SnackbarContentItem.Text(
+                  context.getString(
+                    R.string.reload_last_visited_thread,
+                    lastVisitedThread.title ?: lastVisitedThread.toThreadDescriptor().asReadableString()
+                  )
+                ),
+                SnackbarContentItem.Spacer(space = 8.dp),
+                SnackbarContentItem.Button(
+                  key = SnackbarButton.ReloadLastVisitedThread,
+                  text = context.getString(R.string.reload),
+                  data = lastVisitedThread.toThreadDescriptor()
+                ),
+                SnackbarContentItem.Spacer(space = 8.dp),
+              )
+            )
+          )
+        }
+      }
     )
   }
 
@@ -269,7 +394,7 @@ class HomeScreen(
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
-              isGestureCurrentlyAllowed = {isDrawerDragGestureCurrentlyAllowed(currentScreen) },
+              isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen) },
               onDraggingDrawer = { dragging, progress, velocity ->
                 globalUiInfoManager.dragDrawer(dragging, progress, velocity)
               }
@@ -369,6 +494,11 @@ class HomeScreen(
         pagerState.scrollToPage(page = indexOfPage)
       }
     }
+  }
+
+  enum class SnackbarButton {
+    ReloadLastVisitedCatalog,
+    ReloadLastVisitedThread,
   }
 
   companion object {

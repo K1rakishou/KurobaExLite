@@ -15,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
+import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -34,6 +35,7 @@ class CatalogScreenViewModel(
 ) : PostScreenViewModel(savedStateHandle) {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
   private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
+  private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
   private val catalogScreenState = CatalogScreenPostsState()
   private val updateChanCatalogViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
 
@@ -49,15 +51,23 @@ class CatalogScreenViewModel(
   }
 
   private suspend fun loadPrevVisitedCatalog() {
-    val lastVisitedCatalog = savedStateHandle.get<CatalogDescriptor>(LAST_VISITED_CATALOG_KEY)
-    if (lastVisitedCatalog != null) {
-      logcat(tag = TAG) { "loadPrevVisitedCatalog() loading ${lastVisitedCatalog} from appSettings.lastVisitedCatalog" }
+    val lastVisitedCatalogDescriptor = savedStateHandle.get<CatalogDescriptor>(LAST_VISITED_CATALOG_KEY)
+    if (lastVisitedCatalogDescriptor != null) {
+      logcat(tag = TAG) { "loadPrevVisitedCatalog() found ${lastVisitedCatalogDescriptor} from savedStateHandle" }
 
       loadCatalog(
-        catalogDescriptor = lastVisitedCatalog,
+        catalogDescriptor = lastVisitedCatalogDescriptor,
         loadOptions = LoadOptions(forced = true)
       )
 
+      return
+    }
+
+    val lastVisitedCatalog = appSettings.lastVisitedCatalog.read()
+    if (lastVisitedCatalog != null) {
+      logcat(tag = TAG) { "loadPrevVisitedCatalog() found ${lastVisitedCatalog} from lastVisitedCatalog" }
+
+      lastVisitedEndpointManager.notifyRestoreLastVisitedCatalog(lastVisitedCatalog)
       return
     }
 

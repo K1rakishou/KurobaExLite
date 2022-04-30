@@ -56,6 +56,11 @@ class BooleanSetting(
     }
   }
 
+  override suspend fun remove() {
+    cachedValue = null
+    dataStore.edit { prefs -> prefs.remove(prefsKey) }
+  }
+
   suspend fun toggle(): Boolean {
     val oldValue = read()
     val newValue = !oldValue
