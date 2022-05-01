@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,8 +21,6 @@ import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.dp
 
 private val DefaultPaddingValues = PaddingValues(0.dp)
-
-val SCROLLBAR_WIDTH = 10.dp
 
 sealed class ScrollbarDimens {
   sealed class Vertical : ScrollbarDimens() {
@@ -202,8 +201,18 @@ fun Modifier.scrollbar(
       }
 
       val isScrollbarDragged = scrollbarManualDragProgress != null
-      val targetThumbAlpha = if (isScrollInProgress(lazyStateWrapper) || isScrollbarDragged) 1f else 0f
-      val targetTrackAlpha = if (isScrollInProgress(lazyStateWrapper) || isScrollbarDragged) 0.7f else 0f
+      val targetThumbAlpha = when {
+        isScrollbarDragged -> 1f
+        isScrollInProgress(lazyStateWrapper) -> 0.8f
+        else -> 0f
+      }
+
+      val targetTrackAlpha = when {
+        isScrollbarDragged -> 0.7f
+        isScrollInProgress(lazyStateWrapper) -> 0.5f
+        else -> 0f
+      }
+
       val duration = if (isScrollInProgress(lazyStateWrapper) || isScrollbarDragged) 150 else 1000
       val delay = if (isScrollInProgress(lazyStateWrapper) || isScrollbarDragged) 0 else 1000
 
@@ -223,6 +232,11 @@ fun Modifier.scrollbar(
         )
       )
 
+      val thumbColorAnimated by animateColorAsState(
+        targetValue = if (isScrollbarDragged) scrollbarThumbColorDragged else scrollbarThumbColorNormal,
+        animationSpec = tween(durationMillis = 200)
+      )
+
       this.then(
         Modifier.drawWithContent {
           drawContent()
@@ -232,7 +246,7 @@ fun Modifier.scrollbar(
             && (isScrollInProgress(lazyStateWrapper) || thumbAlphaAnimated > 0f || trackAlphaAnimated > 0f)
 
           // Draw scrollbar if total item count is greater than visible item count and either
-          // currently scrolling or if the animation is still running and lazy column has content
+          // currently scrolling or if any of the animations is still running and lazy column has content
           if (!needDrawScrollbar || firstVisibleElementIndex == null) {
             return@drawWithContent
           }
@@ -272,14 +286,8 @@ fun Modifier.scrollbar(
                 alpha = trackAlphaAnimated
               )
 
-              val thumbColor = if (isScrollbarDragged) {
-                scrollbarThumbColorDragged
-              } else {
-                scrollbarThumbColorNormal
-              }
-
               drawRect(
-                color = thumbColor,
+                color = thumbColorAnimated,
                 topLeft = Offset(offsetX, offsetY),
                 size = Size(scrollbarWidthAdjusted, scrollbarDimens.height.toFloat()),
                 alpha = thumbAlphaAnimated
@@ -319,14 +327,8 @@ fun Modifier.scrollbar(
                 alpha = trackAlphaAnimated
               )
 
-              val thumbColor = if (isScrollbarDragged) {
-                scrollbarThumbColorDragged
-              } else {
-                scrollbarThumbColorNormal
-              }
-
               drawRect(
-                color = thumbColor,
+                color = thumbColorAnimated,
                 topLeft = Offset(offsetX, offsetY),
                 size = Size(scrollbarDimens.width.toFloat(), scrollbarHeightAdjusted),
                 alpha = thumbAlphaAnimated

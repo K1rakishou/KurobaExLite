@@ -31,9 +31,24 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+val DEFAULT_SCROLLBAR_WIDTH = 10.dp
+val DEFAULT_SCROLLBAR_HEIGHT = 64.dp
+
+@Composable
+private fun DefaultScrollbarWidth(): Int {
+  return with(LocalDensity.current) { remember { DEFAULT_SCROLLBAR_WIDTH.toPx().toInt() } }
+}
+
+@Composable
+private fun DefaultScrollbarHeight(): Int {
+  return with(LocalDensity.current) { remember { DEFAULT_SCROLLBAR_HEIGHT.toPx().toInt() } }
+}
+
 @Composable
 fun LazyColumnWithFastScroller(
   modifier: Modifier = Modifier,
+  scrollbarWidth: Int = DefaultScrollbarWidth(),
+  scrollbarHeight: Int = DefaultScrollbarHeight(),
   lazyListState: LazyListState,
   contentPadding: PaddingValues,
   userScrollEnabled: Boolean = true,
@@ -41,12 +56,6 @@ fun LazyColumnWithFastScroller(
   content: LazyListScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val scrollbarWidth = with(LocalDensity.current) {
-    remember { SCROLLBAR_WIDTH.toPx().toInt() }
-  }
-  val scrollbarHeightPx = with(LocalDensity.current) {
-    remember { 64.dp.toPx().toInt() }
-  }
   val paddingTopPx = with(LocalDensity.current) {
     remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
   }
@@ -73,7 +82,6 @@ fun LazyColumnWithFastScroller(
               coroutineScope = coroutineScope,
               lazyStateWrapper = lazyListStateWrapper,
               width = maxWidthPx,
-              height = maxHeightPx,
               paddingTop = paddingTopPx,
               paddingBottom = paddingBottomPx,
               scrollbarWidth = scrollbarWidth,
@@ -91,7 +99,7 @@ fun LazyColumnWithFastScroller(
             lazyStateWrapper = lazyListStateWrapper,
             scrollbarDimens = ScrollbarDimens.Vertical.Static(
               width = scrollbarWidth,
-              height = scrollbarHeightPx
+              height = scrollbarHeight
             ),
             scrollbarTrackColor = chanTheme.scrollbarTrackColorCompose,
             scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormalCompose,
@@ -112,6 +120,8 @@ fun LazyColumnWithFastScroller(
 @Composable
 fun LazyVerticalGridWithFastScroller(
   modifier: Modifier = Modifier,
+  scrollbarWidth: Int = DefaultScrollbarWidth(),
+  scrollbarHeight: Int = DefaultScrollbarHeight(),
   columns: GridCells,
   lazyGridState: LazyGridState,
   contentPadding: PaddingValues,
@@ -120,12 +130,6 @@ fun LazyVerticalGridWithFastScroller(
   content: LazyGridScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val scrollbarWidth = with(LocalDensity.current) {
-    remember { SCROLLBAR_WIDTH.toPx().toInt() }
-  }
-  val scrollbarHeightPx = with(LocalDensity.current) {
-    remember { 64.dp.toPx().toInt() }
-  }
   val paddingTopPx = with(LocalDensity.current) {
     remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
   }
@@ -152,7 +156,6 @@ fun LazyVerticalGridWithFastScroller(
               coroutineScope = coroutineScope,
               lazyStateWrapper = lazyGridStateWrapper,
               width = maxWidthPx,
-              height = maxHeightPx,
               paddingTop = paddingTopPx,
               paddingBottom = paddingBottomPx,
               scrollbarWidth = scrollbarWidth,
@@ -170,7 +173,7 @@ fun LazyVerticalGridWithFastScroller(
             lazyStateWrapper = lazyGridStateWrapper,
             scrollbarDimens = ScrollbarDimens.Vertical.Static(
               width = scrollbarWidth,
-              height = scrollbarHeightPx
+              height = scrollbarHeight
             ),
             scrollbarTrackColor = chanTheme.scrollbarTrackColorCompose,
             scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormalCompose,
@@ -186,15 +189,12 @@ fun LazyVerticalGridWithFastScroller(
       )
     }
   }
-
 }
-
 
 suspend fun PointerInputScope.processFastScrollerInputs(
   coroutineScope: CoroutineScope,
   lazyStateWrapper: LazyStateWrapper,
   width: Int,
-  height: Int,
   paddingTop: Int,
   paddingBottom: Int,
   scrollbarWidth: Int,
@@ -232,7 +232,7 @@ suspend fun PointerInputScope.processFastScrollerInputs(
           nextEvent.changes.lastOrNull()?.let { lastChange ->
             job = coroutineScope.launch {
               val touchY = lastChange.position.y - paddingTop
-              val scrollbarTrackHeight = (lazyStateWrapper as LazyListStateWrapper).viewportHeight - paddingBottom - paddingTop
+              val scrollbarTrackHeight = lazyStateWrapper.viewportHeight - paddingBottom - paddingTop
 
               val touchFraction = (touchY / scrollbarTrackHeight).coerceIn(0f, 1f)
               val itemsCount = (lazyStateWrapper.totalItemsCount - lazyStateWrapper.fullyVisibleItemsCount)
@@ -241,6 +241,9 @@ suspend fun PointerInputScope.processFastScrollerInputs(
               if (touchFraction == 0f) {
                 scrollToIndex = 0
               } else if (touchFraction == 1f) {
+                // We want to use the actual last item index for scrolling when touchFraction == 1f
+                // because otherwise we may end up not at the very bottom of the list but slightly
+                // above it (like 1 element's height)
                 scrollToIndex = lazyStateWrapper.totalItemsCount
               }
 
@@ -253,6 +256,8 @@ suspend fun PointerInputScope.processFastScrollerInputs(
           }
         }
       } finally {
+        // Make sure the coroutine doesn't overwrite the onScrollbarDragStateUpdated() with non-null
+        // value because otherwise the scrollbar will stuck in "dragging" state.
         job?.cancel()
         job = null
 
