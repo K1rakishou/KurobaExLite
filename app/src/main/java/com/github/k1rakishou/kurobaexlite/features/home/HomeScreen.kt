@@ -9,14 +9,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -51,9 +50,12 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.drawPagerSwipeExclusionZoneTutorial
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -278,14 +280,14 @@ class HomeScreen(
               content = listOf(
                 SnackbarContentItem.Text(
                   context.getString(
-                    R.string.reload_last_visited_catalog,
+                    R.string.restore_last_visited_catalog,
                     lastVisitedCatalog.toCatalogDescriptor().asReadableString()
                   )
                 ),
                 SnackbarContentItem.Spacer(space = 8.dp),
                 SnackbarContentItem.Button(
                   key = SnackbarButton.ReloadLastVisitedCatalog,
-                  text = context.getString(R.string.reload),
+                  text = context.getString(R.string.restore),
                   data = lastVisitedCatalog.toCatalogDescriptor()
                 ),
                 SnackbarContentItem.Spacer(space = 8.dp),
@@ -316,14 +318,14 @@ class HomeScreen(
               content = listOf(
                 SnackbarContentItem.Text(
                   context.getString(
-                    R.string.reload_last_visited_thread,
+                    R.string.restore_last_visited_thread,
                     lastVisitedThreadTitle
                   )
                 ),
                 SnackbarContentItem.Spacer(space = 8.dp),
                 SnackbarContentItem.Button(
                   key = SnackbarButton.ReloadLastVisitedThread,
-                  text = context.getString(R.string.reload),
+                  text = context.getString(R.string.restore),
                   data = threadDescriptor
                 ),
                 SnackbarContentItem.Spacer(space = 8.dp),
@@ -350,6 +352,7 @@ class HomeScreen(
     val windowInsets = LocalWindowInsets.current
     val density = LocalDensity.current
     val draggableAreaSize = 350f
+    val coroutineScope = rememberCoroutineScope()
 
     var drawerWidth by remember { mutableStateOf(0) }
     var homeScreenSize by remember { mutableStateOf(IntSize.Zero) }
@@ -411,7 +414,10 @@ class HomeScreen(
           }
         )
         .nestedScroll(nestedScrollConnection)
-        .drawDebugPagerSwipeExclusionZone(pagerSwipeExclusionZone)
+        .drawPagerSwipeExclusionZoneTutorial(
+          pagerSwipeExclusionZone = pagerSwipeExclusionZone,
+          onTutorialFinished = { coroutineScope.launch { showPagerSwipeExclusionZoneDialog() } }
+        )
     ) {
       HorizontalPager(
         modifier = Modifier.fillMaxSize(),
@@ -455,6 +461,20 @@ class HomeScreen(
     }
   }
 
+  private fun showPagerSwipeExclusionZoneDialog() {
+    navigationRouter.presentScreen(
+      DialogScreen(
+        componentActivity = componentActivity,
+        navigationRouter = navigationRouter,
+        params = DialogScreen.Params(
+          title = DialogScreen.Text.Id(R.string.pager_exclusion_zone_dialog_title),
+          description = DialogScreen.Text.Id(R.string.pager_exclusion_zone_dialog_description),
+          positiveButton = DialogScreen.okButton()
+        )
+      )
+    )
+  }
+
   private fun isDrawerDragGestureCurrentlyAllowed(currentScreen: ComposeScreenWithToolbar?): Boolean {
     if (currentScreen == null || currentScreen.hasChildScreens()) {
       return false
@@ -465,25 +485,6 @@ class HomeScreen(
     }
 
     return true
-  }
-
-  private fun Modifier.drawDebugPagerSwipeExclusionZone(pagerSwipeExclusionZone: Rect): Modifier {
-    if (!DRAW_PAGER_SWIPE_EXCLUSION_ZONE) {
-      return this
-    }
-
-    return drawWithContent {
-      drawContent()
-
-      if (!pagerSwipeExclusionZone.size.isEmpty()) {
-        drawRect(
-          color = Color.Green,
-          topLeft = pagerSwipeExclusionZone.topLeft,
-          size = pagerSwipeExclusionZone.size,
-          alpha = 0.5f
-        )
-      }
-    }
   }
 
   @OptIn(ExperimentalPagerApi::class)
@@ -512,7 +513,5 @@ class HomeScreen(
 
   companion object {
     val SCREEN_KEY = ScreenKey("HomeScreen")
-
-    private const val DRAW_PAGER_SWIPE_EXCLUSION_ZONE = false
   }
 }

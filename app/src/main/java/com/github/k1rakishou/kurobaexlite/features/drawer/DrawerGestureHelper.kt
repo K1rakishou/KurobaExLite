@@ -78,8 +78,11 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           }
         } else {
           if (pagerSwipeExclusionZone.contains(downEvent.position)) {
+            for (change in firstEvent.changes) {
+              change.consumeAllChanges()
+            }
+
             var isDrawerDragEvent = false
-            var firstEventConsumed = false
 
             val firstEventTotalTravelDistance = firstEvent.changes
               .fold(Offset.Zero) { acc, change -> acc + change.position }
@@ -88,14 +91,6 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
               val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
               if (nextEvent.type != PointerEventType.Move) {
                 break
-              }
-
-              if (!firstEventConsumed) {
-                firstEventConsumed = true
-
-                for (change in firstEvent.changes) {
-                  change.consumeAllChanges()
-                }
               }
 
               val nextEventTotalTravelDistance = nextEvent.changes

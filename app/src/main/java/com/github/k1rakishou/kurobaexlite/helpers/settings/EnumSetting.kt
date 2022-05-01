@@ -43,7 +43,6 @@ class EnumSetting<T : Enum<T>>(
       ?: defaultValue
 
     cachedValue = readValue
-    _valueFlow.value = readValue
 
     return readValue
   }
@@ -56,7 +55,6 @@ class EnumSetting<T : Enum<T>>(
     dataStore.edit { prefs ->
       prefs.set(prefsKey, value.name)
       cachedValue = value
-      _valueFlow.value = value
     }
   }
 

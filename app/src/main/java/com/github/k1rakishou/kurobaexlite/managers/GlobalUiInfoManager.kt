@@ -182,7 +182,7 @@ class GlobalUiInfoManager(
 
     coroutineScope.launch {
       combine(
-        flow = appSettings.layoutType.valueFlow,
+        flow = appSettings.layoutType.listen(),
         flow2 = currentOrientation,
         transform = { homeScreenLayout, orientation ->
           return@combine LayoutChangingSettings(
@@ -196,32 +196,32 @@ class GlobalUiInfoManager(
     }
 
     coroutineScope.launch {
-      appSettings.textTitleSizeSp.valueFlow
+      appSettings.textTitleSizeSp.listen()
         .collectLatest { value -> _textTitleSizeSp.value = value.sp }
     }
 
     coroutineScope.launch {
-      appSettings.textSubTitleSizeSp.valueFlow
+      appSettings.textSubTitleSizeSp.listen()
         .collectLatest { value -> _textSubTitleSizeSp.value = value.sp }
     }
 
     coroutineScope.launch {
-      appSettings.postCellCommentTextSizeSp.valueFlow
+      appSettings.postCellCommentTextSizeSp.listen()
         .collectLatest { value -> _postCellCommentTextSizeSp.value = value.sp }
     }
 
     coroutineScope.launch {
-      appSettings.postCellSubjectTextSizeSp.valueFlow
+      appSettings.postCellSubjectTextSizeSp.listen()
         .collectLatest { value -> _postCellSubjectTextSizeSp.value = value.sp }
     }
 
     coroutineScope.launch {
-      appSettings.layoutType.valueFlow
+      appSettings.layoutType.listen()
         .collectLatest { value -> _homeScreenLayoutType.value = value }
     }
 
     coroutineScope.launch {
-      appSettings.bookmarksScreenOnLeftSide.valueFlow
+      appSettings.bookmarksScreenOnLeftSide.listen()
         .collectLatest { value -> _bookmarksScreenOnLeftSide.value = value }
     }
 

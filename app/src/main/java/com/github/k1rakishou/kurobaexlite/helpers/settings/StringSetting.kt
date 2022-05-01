@@ -39,7 +39,6 @@ class StringSetting(
       ?: defaultValue
 
     cachedValue = readValue
-    _valueFlow.value = readValue
 
     return readValue
   }
@@ -52,7 +51,6 @@ class StringSetting(
     dataStore.edit { prefs ->
       prefs.set(prefsKey, value)
       cachedValue = value
-      _valueFlow.value = value
     }
   }
 

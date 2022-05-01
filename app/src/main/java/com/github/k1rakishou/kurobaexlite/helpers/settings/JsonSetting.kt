@@ -42,7 +42,6 @@ class JsonSetting<T : Any?>(
       ?: defaultValue
 
     cachedValue = readValue
-    _valueFlow.value = readValue
 
     return readValue
   }
@@ -55,7 +54,6 @@ class JsonSetting<T : Any?>(
     dataStore.edit { prefs ->
       prefs.set(prefsKey, toJson(value))
       cachedValue = value
-      _valueFlow.value = value
     }
   }
 

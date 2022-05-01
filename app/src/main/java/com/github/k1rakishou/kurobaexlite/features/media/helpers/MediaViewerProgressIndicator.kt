@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 
@@ -33,7 +34,7 @@ internal fun DisplayLoadingProgressIndicator(restartIndex: Int, progress: Float)
 
   val arcSize = with(density) { remember { 42.dp.toPx() } }
   val width = with(density) { remember { 4.dp.toPx() } }
-  val textSize = with(density) { 14.dp.toPx() }
+  val textSize = with(density) { 14.sp.toPx() }
 
   val style = remember { Stroke(width = width) }
   val rotationAnimateable = remember { Animatable(0f) }

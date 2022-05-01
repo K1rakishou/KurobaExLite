@@ -40,7 +40,6 @@ class NumberSetting<T : Number>(
       ?: defaultValue
 
     cachedValue = readValue
-    _valueFlow.value = readValue
 
     return readValue
   }
@@ -56,7 +55,6 @@ class NumberSetting<T : Number>(
     dataStore.edit { prefs ->
       prefs.set(prefsKey, numberAsString)
       cachedValue = value
-      _valueFlow.value = value
     }
   }
 

@@ -64,6 +64,8 @@ class AppSettings(
   val lastVisitedCatalog by lazy { JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore) }
   val lastVisitedThread by lazy { JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore) }
 
+  val drawerDragGestureTutorialShown by lazy { BooleanSetting(false, "drawer_drag_gesture_tutorial_shown", dataStore) }
+
   val userAgent by lazy {
     val userAgent = try {
       WebSettings.getDefaultUserAgent(appContext)
