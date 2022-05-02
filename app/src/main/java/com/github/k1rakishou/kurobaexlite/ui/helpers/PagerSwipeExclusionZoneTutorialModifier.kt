@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -38,6 +39,7 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
   onTutorialFinished: () -> Unit
 ): Modifier {
   return composed {
+    val coroutineScope = rememberCoroutineScope()
     val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
     val appSettings = koinRemember<AppSettings>()
     val chanThreadManager = koinRemember<ChanThreadManager>()
@@ -55,7 +57,7 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
       return@composed Modifier
     }
 
-    val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow.collectAsState()
+    val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow(coroutineScope).collectAsState()
     if (drawerVisibility is DrawerVisibility.Opened) {
       LaunchedEffect(
         key1 = Unit,

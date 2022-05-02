@@ -1,105 +1,126 @@
 package com.github.k1rakishou.kurobaexlite.features.drawer
 
-import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.animateDp
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.updateTransition
+import android.os.SystemClock
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.FixedThreshold
+import androidx.compose.material.SwipeableDefaults
+import androidx.compose.material.ThresholdConfig
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreen
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
+import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaSwipeableState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import kotlinx.coroutines.delay
+import kotlin.math.absoluteValue
+import kotlinx.coroutines.CoroutineScope
 
+private val bgColor = Color.Black
+private val velocityTracker = VelocityTracker()
 
-private val COLOR_INVISIBLE = Color(0x00000000)
-private val COLOR_VISIBLE = Color(0x80000000)
+@OptIn(ExperimentalMaterialApi::class)
+class DrawerSwipeState(
+  initialValue: State,
+  animationSpec: AnimationSpec<Float> = SwipeableDefaults.AnimationSpec,
+  confirmStateChange: (State) -> Boolean = { true },
+) : KurobaSwipeableState<DrawerSwipeState.State>(
+  initialValue = initialValue,
+  animationSpec = animationSpec,
+  confirmStateChange = confirmStateChange
+) {
+  enum class State {
+    Closed,
+    Opened;
 
+    companion object {
+      fun fromDrawerVisibility(drawerWidth: Int, drawerVisibility: DrawerVisibility): State {
+        return when (drawerVisibility) {
+          DrawerVisibility.Closed,
+          DrawerVisibility.Closing -> State.Closed
+          is DrawerVisibility.Drag -> {
+            if (drawerVisibility.dragX >= (drawerWidth / 2f)) {
+              State.Opened
+            } else {
+              State.Closed
+            }
+          }
+          DrawerVisibility.Opened,
+          DrawerVisibility.Opening -> State.Opened
+        }
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun HomeScreenDrawerLayout(
   drawerWidth: Int,
   navigationRouter: NavigationRouter
 ) {
   val componentActivity = LocalComponentActivity.current
+  val density = LocalDensity.current
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
   val childRouter = remember { navigationRouter.childRouter(NavigationHistoryScreen.SCREEN_KEY) }
   val drawerScreen = remember { NavigationHistoryScreen(componentActivity, navigationRouter) }
-  val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow.collectAsState()
-  val maxOffsetDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { -drawerWidth.toDp() } }
-  val drawerWidthDp = with(LocalDensity.current) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
+  val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
 
-  val transition = updateTransition(
-    targetState = drawerVisibility,
-    label = "Drawer transition"
-  )
+  val dragEventsCombined = remember { mutableListOf<DrawerVisibility.Drag>() }
+  var drawerVisibilityMut by remember { mutableStateOf<DrawerVisibility>(globalUiInfoManager.currentDrawerVisibility) }
+  val drawerVisibility = drawerVisibilityMut
 
-  val offsetAnimated by transition.animateDp(
-    label = "Offset animation",
-    transitionSpec = {
-      if (
-        targetState is DrawerVisibility.Closing
-        || targetState is DrawerVisibility.Opening
-      ) {
-        tween(durationMillis = 250)
-      } else {
-        snap()
-      }
-    },
-    targetValueByState = { dv ->
-      return@animateDp when (dv) {
-        DrawerVisibility.Closing -> maxOffsetDp
-        DrawerVisibility.Opening -> 0.dp
-        is DrawerVisibility.Drag -> maxOffsetDp * dv.progressInverted
-        DrawerVisibility.Closed -> maxOffsetDp
-        DrawerVisibility.Opened -> 0.dp
-      }
-    }
-  )
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      globalUiInfoManager.drawerVisibilityFlow.collect { event ->
+        drawerVisibilityMut = event
 
-  val backgroundAnimated by transition.animateColor(
-    label = "Color animation",
-    transitionSpec = {
-      if (
-        targetState is DrawerVisibility.Closing
-        || targetState is DrawerVisibility.Opening
-      ) {
-        tween(durationMillis = 250)
-      } else {
-        snap()
-      }
-    },
-    targetValueByState = { dv ->
-      return@animateColor when (dv) {
-        DrawerVisibility.Closing -> COLOR_INVISIBLE
-        DrawerVisibility.Opening -> COLOR_VISIBLE
-        is DrawerVisibility.Drag -> {
-          COLOR_VISIBLE.copy(alpha = COLOR_VISIBLE.alpha * dv.progress)
+        if (event is DrawerVisibility.Drag) {
+          dragEventsCombined += event
+        } else {
+          dragEventsCombined.clear()
         }
-        DrawerVisibility.Closed -> COLOR_INVISIBLE
-        DrawerVisibility.Opened -> COLOR_VISIBLE
       }
     }
   )
+
+  val drawerSwipeState = remember {
+    DrawerSwipeState(
+      initialValue = DrawerSwipeState.State.fromDrawerVisibility(
+        drawerWidth = drawerWidth,
+        drawerVisibility = drawerVisibility
+      )
+    )
+  }
+
+  InitDrawerState(drawerWidth, drawerSwipeState, density)
 
   val clickable = remember(key1 = drawerVisibility) {
     when (drawerVisibility) {
@@ -119,64 +140,169 @@ fun HomeScreenDrawerLayout(
     }
   }
 
-  val isAnimationRunning = if (drawerVisibility is DrawerVisibility.Drag) {
-    (drawerVisibility as DrawerVisibility.Drag).isDragging
-  } else {
-    transition.isRunning
+  var prevDragX by remember { mutableStateOf(0f) }
+  val offsetAnimated by drawerSwipeState.offset
+  val bgAlphaAnimated = remember(key1 = offsetAnimated, key2 = drawerWidth) {
+    val animationProgress = (1f - (offsetAnimated.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
+    return@remember lerpFloat(0f, .8f, animationProgress)
   }
 
-  if (!isAnimationRunning) {
-    val velocityEnoughToAnimate = 7000f
-
-    LaunchedEffect(
-      key1 = drawerVisibility,
-      block = {
-        // debouncing
-        delay(50)
-
-        when (val dv = drawerVisibility) {
+  LaunchedEffect(
+    key1 = drawerVisibility,
+    block = {
+      if (drawerVisibility is DrawerVisibility.Drag) {
+        processDragEvents(
+          prevDragX = prevDragX,
+          dragEventsCombined = dragEventsCombined,
+          drawerSwipeState = drawerSwipeState,
+          offsetAnimated = offsetAnimated,
+          drawerWidth = drawerWidth,
+          globalUiInfoManager = globalUiInfoManager,
+          updatePrevDragX = { newDragX -> prevDragX = newDragX }
+        )
+      } else {
+        when (drawerVisibility) {
+          DrawerVisibility.Closed -> {
+            drawerSwipeState.snapTo(DrawerSwipeState.State.Closed)
+          }
+          DrawerVisibility.Opened -> {
+            drawerSwipeState.snapTo(DrawerSwipeState.State.Opened)
+          }
           DrawerVisibility.Closing -> {
+            drawerSwipeState.animateTo(DrawerSwipeState.State.Closed)
             globalUiInfoManager.closeDrawer(withAnimation = false)
           }
           DrawerVisibility.Opening -> {
+            drawerSwipeState.animateTo(DrawerSwipeState.State.Opened)
             globalUiInfoManager.openDrawer(withAnimation = false)
           }
-          is DrawerVisibility.Drag -> {
-            when {
-              dv.velocity > velocityEnoughToAnimate -> globalUiInfoManager.openDrawer()
-              dv.velocity < -velocityEnoughToAnimate -> globalUiInfoManager.closeDrawer()
-              else -> {
-                if (dv.progress > 0.5f) {
-                  globalUiInfoManager.openDrawer()
-                } else {
-                  globalUiInfoManager.closeDrawer()
-                }
-              }
-            }
-          }
-          else -> {
-            // no-op
-          }
+          is DrawerVisibility.Drag -> unreachable()
         }
-      })
-  }
+
+        velocityTracker.resetTracking()
+      }
+    }
+  )
+
+  val bgColorWithAlpha = remember(key1 = bgAlphaAnimated) { bgColor.copy(alpha = bgAlphaAnimated) }
 
   Box(
     modifier = Modifier
       .fillMaxSize()
-      .background(backgroundAnimated)
+      .background(bgColorWithAlpha)
       .then(clickableModifier)
   ) {
     Box(
       modifier = Modifier
         .width(drawerWidthDp)
         .fillMaxHeight()
-        .absoluteOffset(offsetAnimated)
+        .absoluteOffset { IntOffset(offsetAnimated.toInt(), 0) }
     ) {
       RouterHost(
         navigationRouter = childRouter,
         defaultScreen = { drawerScreen.Content() }
       )
     }
+  }
+}
+
+private suspend fun CoroutineScope.processDragEvents(
+  prevDragX: Float,
+  dragEventsCombined: MutableList<DrawerVisibility.Drag>,
+  drawerSwipeState: DrawerSwipeState,
+  offsetAnimated: Float,
+  drawerWidth: Int,
+  globalUiInfoManager: GlobalUiInfoManager,
+  updatePrevDragX: (newDragX: Float) -> Unit
+) {
+  var currentPrevDragX = prevDragX
+
+  try {
+    dragEventsCombined.mutableIteration { mutableIterator, dragEvent ->
+      mutableIterator.remove()
+
+      if (dragEvent.isDragging) {
+        val dragDelta = dragEvent.dragX - currentPrevDragX
+        currentPrevDragX = dragEvent.dragX
+
+        velocityTracker.addPosition(
+          SystemClock.elapsedRealtime(),
+          Offset(x = dragEvent.dragX, y = 0f)
+        )
+        drawerSwipeState.performDrag(dragDelta)
+
+        return@mutableIteration true
+      } else {
+        val velocityX = velocityTracker.calculateVelocity().x
+        velocityTracker.resetTracking()
+        val opening = velocityX >= 0f
+        val canPerformFling = velocityX.absoluteValue > 5000f
+        val animationProgress = (1f - (offsetAnimated.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
+
+        if (opening) {
+          if (canPerformFling) {
+            drawerSwipeState.performFling(velocityX)
+            globalUiInfoManager.openDrawer(withAnimation = false)
+          } else {
+            if (animationProgress > 0.5f) {
+              globalUiInfoManager.openDrawer(withAnimation = true)
+            } else {
+              globalUiInfoManager.closeDrawer(withAnimation = true)
+            }
+          }
+        } else {
+          if (canPerformFling) {
+            drawerSwipeState.performFling(velocityX)
+            globalUiInfoManager.closeDrawer(withAnimation = false)
+          } else {
+            if (animationProgress > 0.5f) {
+              globalUiInfoManager.openDrawer(withAnimation = true)
+            } else {
+              globalUiInfoManager.closeDrawer(withAnimation = true)
+            }
+          }
+        }
+
+        return@mutableIteration false
+      }
+    }
+  } finally {
+    updatePrevDragX(currentPrevDragX)
+  }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun InitDrawerState(
+  drawerWidth: Int,
+  drawerSwipeState: DrawerSwipeState,
+  density: Density
+) {
+  val anchors = remember {
+    mapOf(
+      Pair(-(drawerWidth.toFloat()), DrawerSwipeState.State.Closed),
+      Pair(0f, DrawerSwipeState.State.Opened),
+    )
+  }
+
+  val thresholds: (from: DrawerSwipeState.State, to: DrawerSwipeState.State) -> ThresholdConfig = remember { { _, _ -> FixedThreshold(56.dp) } }
+  val resistance = remember { SwipeableDefaults.resistanceConfig(anchors.keys) }
+
+  drawerSwipeState.ensureInit(anchors)
+  LaunchedEffect(anchors, drawerSwipeState) {
+    val oldAnchors = drawerSwipeState.anchors
+    drawerSwipeState.anchors = anchors
+    drawerSwipeState.resistance = resistance
+    drawerSwipeState.thresholds = { a, b ->
+      val from = anchors.getValue(a)
+      val to = anchors.getValue(b)
+
+      with(thresholds(from, to)) { density.computeThreshold(a, b) }
+    }
+
+    with(density) {
+      drawerSwipeState.velocityThreshold = SwipeableDefaults.VelocityThreshold.toPx()
+    }
+    drawerSwipeState.processNewAnchors(oldAnchors, anchors)
   }
 }

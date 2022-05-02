@@ -6,11 +6,10 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Velocity
 
 class HomePagerNestedScrollConnection(
-  private val drawerWidth: Float,
   private val currentPagerPage: () -> Int,
   private val isGestureCurrentlyAllowed: () -> Boolean,
   private val shouldConsumeAllScrollEvents: () -> Boolean,
-  private val onDragging: (Boolean, Float, Float) -> Unit
+  private val onDragging: (dragging: Boolean, current: Float) -> Unit
 ) : NestedScrollConnection {
   private var scrolled = 0f
   private var pointerDown = false
@@ -49,8 +48,7 @@ class HomePagerNestedScrollConnection(
 
   override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
     if (scrolled > 0f) {
-      val dragProgress = (scrolled / drawerWidth).coerceIn(0f, 1f)
-      onDragging(false, dragProgress, available.x)
+      onDragging(false, scrolled)
     }
 
     scrolled = 0f
@@ -60,13 +58,11 @@ class HomePagerNestedScrollConnection(
   }
 
   private fun dragDrawerLayout(available: Offset) {
-    if (isGestureCurrentlyAllowed()) {
+    if (!isGestureCurrentlyAllowed()) {
       return
     }
 
     scrolled += available.x
-
-    val dragProgress = (scrolled / drawerWidth).coerceIn(0f, 1f)
-    onDragging(true, dragProgress, 0f)
+    onDragging(true, scrolled)
   }
 }

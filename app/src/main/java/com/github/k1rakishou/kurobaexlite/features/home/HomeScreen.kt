@@ -377,13 +377,10 @@ class HomeScreen(
 
     val nestedScrollConnection = remember(key1 = drawerWidth) {
       HomePagerNestedScrollConnection(
-        drawerWidth = drawerWidth.toFloat(),
         currentPagerPage = { pagerState.currentPage },
         isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen) },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
-        onDragging = { dragging, progress, velocity ->
-          globalUiInfoManager.dragDrawer(dragging, progress, velocity)
-        }
+        onDragging = { dragging, progress -> globalUiInfoManager.dragDrawer(dragging, progress) }
       )
     }
 
@@ -407,9 +404,7 @@ class HomeScreen(
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen) },
-              onDraggingDrawer = { dragging, progress, velocity ->
-                globalUiInfoManager.dragDrawer(dragging, progress, velocity)
-              }
+              onDraggingDrawer = { dragging, progress -> globalUiInfoManager.dragDrawer(dragging, progress) }
             )
           }
         )

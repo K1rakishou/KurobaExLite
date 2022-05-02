@@ -30,11 +30,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import logcat.logcat
 
@@ -80,9 +86,13 @@ class GlobalUiInfoManager(
   val totalScreenHeightState: State<Int>
     get() = _totalScreenHeightState
 
-  private val _drawerVisibilityFlow = MutableStateFlow<DrawerVisibility>(DrawerVisibility.Closed)
-  val drawerVisibilityFlow: StateFlow<DrawerVisibility>
-    get() = _drawerVisibilityFlow.asStateFlow()
+  private var _currentDrawerVisibility: DrawerVisibility = DrawerVisibility.Closed
+  val currentDrawerVisibility: DrawerVisibility
+    get() = _currentDrawerVisibility
+
+  private val _drawerVisibilityFlow = MutableSharedFlow<DrawerVisibility>(extraBufferCapacity = Channel.UNLIMITED)
+  val drawerVisibilityFlow: SharedFlow<DrawerVisibility>
+    get() = _drawerVisibilityFlow.asSharedFlow()
 
   private val _currentPageMapFlow = mutableMapOf<MainUiLayoutMode, MutableStateFlow<CurrentPage>>()
 
@@ -126,7 +136,7 @@ class GlobalUiInfoManager(
         }
       )
 
-      putBoolean(IS_DRAWER_OPENED, drawerVisibilityFlow.value.isOpened)
+      putBoolean(IS_DRAWER_OPENED, _currentDrawerVisibility.isOpened)
     }
   }
 
@@ -162,11 +172,13 @@ class GlobalUiInfoManager(
     }
 
     bundle.getBoolean(IS_DRAWER_OPENED, false).let { isDrawerOpened ->
-      if (isDrawerOpened) {
-        _drawerVisibilityFlow.value = DrawerVisibility.Opened
+      val drawerVisibility = if (isDrawerOpened) {
+        DrawerVisibility.Opened
       } else {
-        _drawerVisibilityFlow.value = DrawerVisibility.Closed
+        DrawerVisibility.Closed
       }
+
+      updateDrawerVisibility(drawerVisibility)
     }
   }
 
@@ -253,6 +265,14 @@ class GlobalUiInfoManager(
   fun isAnyReplyLayoutOpened(): Boolean {
     return replyLayoutVisibilityInfoMap.entries
       .any { (_, replyLayoutVisibilityState) -> replyLayoutVisibilityState.value != ReplyLayoutVisibility.Closed  }
+  }
+
+  fun drawerVisibilityFlow(coroutineScope: CoroutineScope): StateFlow<DrawerVisibility> {
+    return _drawerVisibilityFlow.stateIn(
+      scope = coroutineScope,
+      started = SharingStarted.Lazily,
+      initialValue = _currentDrawerVisibility
+    )
   }
 
   fun getOrCreateHideableUiVisibilityInfo(screenKey: ScreenKey): HideableUiVisibilityInfo {
@@ -407,7 +427,7 @@ class GlobalUiInfoManager(
   }
 
   fun isDrawerOpenedOrOpening(): Boolean {
-    return when (_drawerVisibilityFlow.value) {
+    return when (_currentDrawerVisibility) {
       is DrawerVisibility.Drag -> true
       DrawerVisibility.Closed,
       DrawerVisibility.Closing -> false
@@ -417,27 +437,40 @@ class GlobalUiInfoManager(
   }
 
   fun isDrawerFullyOpened(): Boolean {
-    return _drawerVisibilityFlow.value is DrawerVisibility.Opened
+    return _currentDrawerVisibility is DrawerVisibility.Opened
   }
 
   fun openDrawer(withAnimation: Boolean = true) {
-    if (withAnimation) {
-      _drawerVisibilityFlow.value = DrawerVisibility.Opening
+    val drawerVisibility = if (withAnimation) {
+      DrawerVisibility.Opening
     } else {
-      _drawerVisibilityFlow.value = DrawerVisibility.Opened
+      DrawerVisibility.Opened
     }
+
+    updateDrawerVisibility(drawerVisibility)
   }
 
   fun closeDrawer(withAnimation: Boolean = true) {
-    if (withAnimation) {
-      _drawerVisibilityFlow.value = DrawerVisibility.Closing
+    val drawerVisibility = if (withAnimation) {
+      DrawerVisibility.Closing
     } else {
-      _drawerVisibilityFlow.value = DrawerVisibility.Closed
+      DrawerVisibility.Closed
     }
+
+    updateDrawerVisibility(drawerVisibility)
   }
 
-  fun dragDrawer(isDragging: Boolean, progress: Float, velocity: Float) {
-    _drawerVisibilityFlow.value = DrawerVisibility.Drag(isDragging, progress, velocity)
+  fun dragDrawer(isDragging: Boolean, dragCurrentPositionX: Float) {
+    val drawerVisibility = DrawerVisibility.Drag(
+      isDragging = isDragging,
+      dragX = dragCurrentPositionX
+    )
+    updateDrawerVisibility(drawerVisibility)
+  }
+
+  private fun updateDrawerVisibility(drawerVisibility: DrawerVisibility) {
+    _drawerVisibilityFlow.tryEmit(drawerVisibility)
+    _currentDrawerVisibility = drawerVisibility
   }
 
   private suspend fun updateLayoutModeAndCurrentPage(

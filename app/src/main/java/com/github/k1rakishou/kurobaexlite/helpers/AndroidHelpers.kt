@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -10,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.StatFs
 import android.text.TextUtils
+import android.view.WindowManager
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -21,6 +23,9 @@ class AndroidHelpers(
   private val application: Application,
   private val snackbarManager: SnackbarManager
 ) {
+  private val applicationContext: Context
+    get() = application.applicationContext
+
   private val clipboardManager by lazy { application.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
 
   fun getApiLevel(): Int {
@@ -202,6 +207,16 @@ class AndroidHelpers(
 
       return false
     }
+  }
+
+  fun getDisplayFps(): Int {
+    val activityManager = applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    if (activityManager.isLowRamDevice || !isAndroidM()) {
+      return 30
+    }
+
+    val wm = applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    return wm.defaultDisplay.mode.refreshRate.toInt()
   }
 
   enum class FlavorType {

@@ -197,6 +197,7 @@ object DependencyGraph {
 
       val mpvInitializer = MpvInitializer(
         applicationContext = get(),
+        androidHelpers = get(),
         mpvSettings = mpvSettings
       )
 

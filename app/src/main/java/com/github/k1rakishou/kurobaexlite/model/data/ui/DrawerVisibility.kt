@@ -5,8 +5,8 @@ sealed class DrawerVisibility {
     get() {
       return when (this) {
         Closed,
-        Closing -> false
-        is Drag -> progress > 0.5f
+        Closing,
+        is Drag -> false
         Opened,
         Opening -> true
       }
@@ -14,13 +14,9 @@ sealed class DrawerVisibility {
 
   data class Drag(
     val isDragging: Boolean,
-    val progress: Float,
-    val velocity: Float
+    val dragX: Float
   ) : DrawerVisibility() {
-    val progressInverted: Float
-      get() = 1f - progress
-
-    override fun toString(): String = "DrawerVisibility.Drag($isDragging, $progress, $velocity)"
+    override fun toString(): String = "DrawerVisibility.Drag($isDragging, $dragX)"
   }
 
   object Opening : DrawerVisibility() {

@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
@@ -16,15 +17,15 @@ import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.isOutOfBounds
 import androidx.compose.ui.input.pointer.positionChangeConsumed
-import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
+import androidx.compose.ui.util.fastForEach
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
 
+@OptIn(ExperimentalComposeUiApi::class)
 suspend fun PointerInputScope.detectDrawerDragGestures(
   drawerLongtapGestureZonePx: Float,
   drawerPhoneVisibleWindowWidthPx: Float,
@@ -33,13 +34,11 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   isDrawerOpened: () -> Boolean,
   onStopConsumingScrollEvents: () -> Unit,
   isGestureCurrentlyAllowed: () -> Boolean,
-  onDraggingDrawer: (Boolean, Float, Float) -> Unit
+  onDraggingDrawer: (dragging: Boolean, current: Float) -> Unit
 ) {
-  val velocityTracker = VelocityTracker()
-
   coroutineScope {
     forEachGesture {
-      var prevDragProgress = 0f
+      var prevDragPositionX = 0f
       var dragDownEvent: PointerInputChange? = null
 
       val firstEvent = awaitPointerEventScope {
@@ -87,6 +86,8 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             val firstEventTotalTravelDistance = firstEvent.changes
               .fold(Offset.Zero) { acc, change -> acc + change.position }
 
+            val collectedEvents = mutableListOf<PointerEvent>()
+
             while (isActive) {
               val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
               if (nextEvent.type != PointerEventType.Move) {
@@ -102,13 +103,15 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
                 break
               }
 
+              for (change in nextEvent.changes) {
+                change.consumeAllChanges()
+              }
+
+              collectedEvents += nextEvent
+
               if (distanceDelta.x > viewConfiguration.touchSlop) {
                 isDrawerDragEvent = true
                 break
-              }
-
-              for (change in nextEvent.changes) {
-                change.consumeAllChanges()
               }
             }
 
@@ -117,10 +120,21 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
               return@awaitPointerEventScope null
             }
 
-            val dragProgress = (downEvent.position.x / drawerWidth).coerceIn(0f, 1f)
-            prevDragProgress = dragProgress
+            prevDragPositionX = downEvent.position.x
 
-            onDraggingDrawer(true, dragProgress, 0f)
+            downEvent.historical.fastForEach { historicalChange ->
+              onDraggingDrawer(true, historicalChange.position.x)
+            }
+            collectedEvents.fastForEach { pointerEvent ->
+              pointerEvent.changes.fastForEach { pointerInputChange ->
+                pointerInputChange.historical.forEach { historicalChange ->
+                  onDraggingDrawer(true, historicalChange.position.x)
+                }
+                onDraggingDrawer(true, pointerInputChange.position.x)
+              }
+            }
+
+            onDraggingDrawer(true, downEvent.position.x)
           } else {
             onStopConsumingScrollEvents()
 
@@ -140,10 +154,12 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             if (longPress == null || longPress.position.x > drawerLongtapGestureZonePx) {
               return@awaitPointerEventScope null
             } else {
-              val dragProgress = (longPress.position.x / drawerWidth).coerceIn(0f, 1f)
-              prevDragProgress = dragProgress
+              prevDragPositionX = downEvent.position.x
 
-              onDraggingDrawer(true, dragProgress, 0f)
+              downEvent.historical.fastForEach { historicalChange ->
+                onDraggingDrawer(true, historicalChange.position.x)
+              }
+              onDraggingDrawer(true, downEvent.position.x)
             }
           }
         }
@@ -157,7 +173,6 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
 
       try {
         for (change in firstEvent.changes) {
-          velocityTracker.addPointerInputChange(change)
           change.consumeAllChanges()
         }
 
@@ -175,19 +190,16 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
               break
             }
 
-            velocityTracker.addPointerInputChange(drag)
+            prevDragPositionX = drag.position.x
 
-            val dragProgress = (drag.position.x / drawerWidth).coerceIn(0f, 1f)
-            prevDragProgress = dragProgress
-
-            onDraggingDrawer(true, dragProgress, 0f)
+            drag.historical.fastForEach { historicalChange ->
+              onDraggingDrawer(true, historicalChange.position.x)
+            }
+            onDraggingDrawer(true, drag.position.x)
           }
         }
       } finally {
-        val velocityX = velocityTracker.calculateVelocity().x
-
-        onDraggingDrawer(false, prevDragProgress, velocityX)
-        velocityTracker.resetTracking()
+        onDraggingDrawer(false, prevDragPositionX)
       }
     }
   }

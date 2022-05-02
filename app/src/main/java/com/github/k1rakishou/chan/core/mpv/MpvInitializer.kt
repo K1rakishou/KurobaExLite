@@ -3,11 +3,13 @@ package com.github.k1rakishou.chan.core.mpv
 import android.content.Context
 import android.os.Build
 import android.view.WindowManager
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import logcat.logcat
 
 class MpvInitializer(
   private val applicationContext: Context,
+  private val androidHelpers: AndroidHelpers,
   private val mpvSettings: MpvSettings
 ) {
   private val TAG = "MpvInitializer"
@@ -60,6 +62,18 @@ class MpvInitializer(
 
       logcat(TAG) { "init() Display ${disp.displayId} reports FPS of $refreshRate" }
       MPVLib.mpvSetOptionString("override-display-fps", refreshRate.toString())
+    } else {
+      logcat(TAG) {
+        "init() Android version too old, disabling refresh rate functionality " +
+          "(${Build.VERSION.SDK_INT} < ${Build.VERSION_CODES.M})"
+      }
+    }
+
+    if (androidHelpers.isAndroidM()) {
+      val displayFps = androidHelpers.getDisplayFps()
+
+      logcat(TAG) { "init() displayFps=${displayFps}" }
+      MPVLib.mpvSetOptionString("override-display-fps", displayFps.toString())
     } else {
       logcat(TAG) {
         "init() Android version too old, disabling refresh rate functionality " +
