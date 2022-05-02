@@ -84,6 +84,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             }
 
             var isDrawerDragEvent = false
+            var isWrongDirectionScrollGesture = false
 
             val firstEventTotalTravelDistance = firstEvent.changes
               .fold(Offset.Zero) { acc, change -> acc + change.position }
@@ -102,6 +103,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
               val distanceDelta = nextEventTotalTravelDistance - firstEventTotalTravelDistance
 
               if (distanceDelta.y.absoluteValue > distanceDelta.x.absoluteValue || distanceDelta.x < 0) {
+                isWrongDirectionScrollGesture = true
                 break
               }
 
@@ -118,7 +120,10 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             }
 
             if (!isDrawerDragEvent) {
-              onFailedDrawerDragGestureDetected()
+              if (!isWrongDirectionScrollGesture) {
+                onFailedDrawerDragGestureDetected()
+              }
+
               onStopConsumingScrollEvents()
               return@awaitPointerEventScope null
             }

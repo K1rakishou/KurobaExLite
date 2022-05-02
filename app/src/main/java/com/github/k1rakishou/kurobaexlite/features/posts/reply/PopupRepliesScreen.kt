@@ -184,24 +184,27 @@ class PopupRepliesScreen(
           }
         },
         onLinkableClicked = { postCellData, linkable ->
-          linkableClickHelper.processClickedLinkable(
-            context = context,
-            postCellData = postCellData,
-            linkable = linkable,
-            loadThreadFunc = { threadDescriptor ->
-              threadScreenViewModel.loadThread(threadDescriptor)
-              stopPresenting()
-            },
-            loadCatalogFunc = { catalogDescriptor ->
-              catalogScreenViewModel.loadCatalog(catalogDescriptor)
-              stopPresenting()
-            },
-            showRepliesForPostFunc = { replyViewMode ->
-              coroutineScope.launch {
-                popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode)
+          coroutineScope.launch {
+            linkableClickHelper.processClickedLinkable(
+              context = context,
+              sourceScreenKey = screenKey,
+              postCellData = postCellData,
+              linkable = linkable,
+              loadThreadFunc = { threadDescriptor ->
+                threadScreenViewModel.loadThread(threadDescriptor)
+                stopPresenting()
+              },
+              loadCatalogFunc = { catalogDescriptor ->
+                catalogScreenViewModel.loadCatalog(catalogDescriptor)
+                stopPresenting()
+              },
+              showRepliesForPostFunc = { replyViewMode ->
+                coroutineScope.launch {
+                  popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode)
+                }
               }
-            }
-          )
+            )
+          }
         },
         onPostRepliesClicked = { postDescriptor ->
           coroutineScope.launch {

@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.helpers.ensureSingleElement
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
@@ -71,7 +73,7 @@ fun KurobaSnackbarContainer(
         snackbarManager.snackbarEventFlow.collect { snackbarInfoEvent ->
           when (snackbarInfoEvent) {
             is SnackbarInfoEvent.Push -> {
-              val evenScreenKey = snackbarInfoEvent.snackbarInfo.screenKey
+              val evenScreenKey = safeScreenKey(snackbarInfoEvent.snackbarInfo.screenKey)
               if (evenScreenKey == screenKey) {
                 kurobaSnackbarState.pushSnackbar(snackbarInfoEvent.snackbarInfo)
               }
@@ -157,6 +159,23 @@ fun KurobaSnackbarContainer(
       )
     }
   }
+}
+
+/**
+ * Snackbars can be only shown on MainScreen, CatalogScreen and ThreadScreen.
+ * If the [screenKey] is neither of them then use MainScreen.SCREEN_KEY
+ * Otherwise the snackbar won't be shown at all!
+ * */
+private fun safeScreenKey(screenKey: ScreenKey): ScreenKey {
+  if (screenKey == CatalogScreen.SCREEN_KEY) {
+    return screenKey
+  }
+
+  if (screenKey == ThreadScreen.SCREEN_KEY) {
+    return screenKey
+  }
+
+  return MainScreen.SCREEN_KEY
 }
 
 @Composable

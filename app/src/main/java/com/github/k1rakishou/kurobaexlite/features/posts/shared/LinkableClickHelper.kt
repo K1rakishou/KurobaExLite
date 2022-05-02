@@ -7,10 +7,13 @@ import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScree
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import org.koin.java.KoinJavaComponent.inject
 
@@ -20,9 +23,12 @@ class LinkableClickHelper(
 ) {
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
+  private val chanCache: ChanCache by inject(ChanCache::class.java)
+  private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
-  fun processClickedLinkable(
+  suspend fun processClickedLinkable(
     context: Context,
+    sourceScreenKey: ScreenKey,
     postCellData: PostCellData,
     linkable: PostCommentParser.TextPartSpan.Linkable,
     loadThreadFunc: (ThreadDescriptor) -> Unit,
@@ -31,6 +37,17 @@ class LinkableClickHelper(
   ) {
     when (linkable) {
       is PostCommentParser.TextPartSpan.Linkable.Quote -> {
+        if (linkable.dead) {
+          if (chanCache.getPost(linkable.postDescriptor) == null) {
+            snackbarManager.toast(
+              messageId = R.string.thread_toolbar_cannot_view_dead_posts,
+              screenKey = sourceScreenKey
+            )
+
+            return
+          }
+        }
+
         if (linkable.crossThread) {
           val postDescriptorReadable = linkable.postDescriptor.asReadableString()
 
@@ -72,7 +89,7 @@ class LinkableClickHelper(
         loadCatalogFunc(catalogDescriptor)
       }
       is PostCommentParser.TextPartSpan.Linkable.Search -> {
-        // TODO()
+        // TODO(KurobaEx):
       }
       is PostCommentParser.TextPartSpan.Linkable.Url -> {
         // TODO(KurobaEx): show dialog?

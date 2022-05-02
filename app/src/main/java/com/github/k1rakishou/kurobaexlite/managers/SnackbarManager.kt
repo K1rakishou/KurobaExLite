@@ -76,8 +76,8 @@ class SnackbarManager(
   // A toast is a snack too
   fun toast(
     @StringRes messageId: Int,
-    toastId: String = nextToastId(),
     screenKey: ScreenKey,
+    toastId: String = nextToastId(),
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {
     pushSnackbar(
@@ -127,7 +127,7 @@ class SnackbarManager(
     pushSnackbar(
       SnackbarInfo(
         snackbarId = SnackbarId.Toast(toastId),
-        aliveUntil =SnackbarInfo.snackbarDuration(duration),
+        aliveUntil = SnackbarInfo.snackbarDuration(duration),
         screenKey = screenKey,
         content = listOf(
           SnackbarContentItem.Text(

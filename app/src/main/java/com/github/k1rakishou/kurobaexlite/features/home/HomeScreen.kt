@@ -478,7 +478,8 @@ class HomeScreen(
           title = DialogScreen.Text.Id(R.string.pager_exclusion_zone_dialog_title),
           description = DialogScreen.Text.Id(R.string.pager_exclusion_zone_dialog_description),
           positiveButton = DialogScreen.okButton()
-        )
+        ),
+        canDismissByClickingOutside = false
       )
     )
   }

@@ -389,18 +389,21 @@ class ThreadScreen(
         }
       },
       onLinkableClicked = { postCellData, linkable ->
-        linkableClickHelper.processClickedLinkable(
-          context = context,
-          postCellData = postCellData,
-          linkable = linkable,
-          loadThreadFunc = { threadDescriptor ->
-            threadScreenViewModel.loadThread(threadDescriptor)
-          },
-          loadCatalogFunc = { catalogDescriptor ->
-            catalogScreenViewModel.loadCatalog(catalogDescriptor)
-          },
-          showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
-        )
+        coroutineScope.launch {
+          linkableClickHelper.processClickedLinkable(
+            context = context,
+            sourceScreenKey = screenKey,
+            postCellData = postCellData,
+            linkable = linkable,
+            loadThreadFunc = { threadDescriptor ->
+              threadScreenViewModel.loadThread(threadDescriptor)
+            },
+            loadCatalogFunc = { catalogDescriptor ->
+              catalogScreenViewModel.loadCatalog(catalogDescriptor)
+            },
+            showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
+          )
+        }
       },
       onPostRepliesClicked = { postDescriptor ->
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))

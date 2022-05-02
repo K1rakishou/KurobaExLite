@@ -84,6 +84,7 @@
 
     <string name="thread_toolbar_open_external_thread_dialog_title">Open external thread?</string>
     <string name="thread_toolbar_open_external_thread_dialog_description">Open \'%1$s\'?</string>
+    <string name="thread_toolbar_cannot_view_dead_posts">Cannot view dead posts (archives not supported)</string>
     <string name="thread_toolbar_status_cell_loading_right_now">Loading…</string>
     <string name="thread_toolbar_status_cell_loading_in">Loading in %1$d</string>
     <string name="thread_toolbar_action_copy_thread_url">Copy thread url</string>
@@ -174,7 +175,7 @@
     <string name="image_pick_delegate_select_file_picker">Select a file picker to open a file…</string>
 
     <string name="pager_exclusion_zone_dialog_title">Special drawer drag zone</string>
-    <string name="pager_exclusion_zone_dialog_description">The special drawer drag zone (which is located at the bottom left of the screen) allows you to open the drawer from any ViewPager screen ignoring the ViewPager horizontal scrolling. Doing the drag gesture in any other area outside of the zone will trigger the ViewPager swipe gesture. For now it\'s size is hardcoded and it can\'t be disabled but it will be fixed in the future.</string>
+    <string name="pager_exclusion_zone_dialog_description">The special drawer drag zone (which is located at the bottom left of the screen) allows you to open the drawer from any ViewPager page ignoring the ViewPager horizontal scrolling. Doing the drag gesture in any other area outside of the zone will trigger the ViewPager drag gesture.\n\nFor now it\'s size is hardcoded, it can\'t be disabled and it blocks clicks on elements beneath it but it will be fixed in the future once the Jetpack Compose has the necessary APIs.</string>
     <string name="pager_exclusion_zone_drag_me">DRAG ME</string>
 
 </resources>
