@@ -36,7 +36,7 @@ abstract class ComposeScreenWithToolbar(
     return topScreen.screenKey == screenKey
   }
 
-  fun isChildScreensCount(): Int {
+  fun childScreensCount(): Int {
     return navigationRouter.navigationScreensStack.size
   }
 

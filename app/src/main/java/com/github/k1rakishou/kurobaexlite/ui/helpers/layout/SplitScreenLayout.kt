@@ -34,10 +34,18 @@ class SplitScreenLayout(
   // TODO(KurobaEx): not implemented
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
-
   override fun hasScreen(screenKey: ScreenKey): Boolean {
     return childScreens
       .any { childScreen -> childScreen.composeScreen.screenKey == screenKey }
+  }
+
+  override fun screenHasChildren(screenKey: ScreenKey): Boolean {
+    val childScreen = childScreens
+      .firstOrNull { childScreen -> childScreen.composeScreen.screenKey == screenKey }
+      ?.composeScreen
+      ?: return false
+
+    return childScreen.hasChildScreens()
   }
 
   @Composable

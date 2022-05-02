@@ -27,6 +27,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenDrawerLayout
 import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestures
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
@@ -483,8 +484,14 @@ class HomeScreen(
   }
 
   private fun isDrawerDragGestureCurrentlyAllowed(currentScreen: ComposeScreenWithToolbar?): Boolean {
-    if (currentScreen == null || currentScreen.hasChildScreens()) {
-      return false
+    if (currentScreen is ScreenLayout<*>) {
+      if (currentScreen.screenHasChildren(CatalogScreen.SCREEN_KEY)) {
+        return false
+      }
+    } else {
+      if (currentScreen == null || currentScreen.hasChildScreens()) {
+        return false
+      }
     }
 
     if (globalUiInfoManager.isAnyReplyLayoutOpened()) {
