@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.drawer
 
+import android.os.SystemClock
 import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -36,11 +37,12 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   isGestureCurrentlyAllowed: () -> Boolean,
   onLongtapDragGestureDetected: () -> Unit,
   onFailedDrawerDragGestureDetected: () -> Unit,
-  onDraggingDrawer: (dragging: Boolean, current: Float) -> Unit
+  onDraggingDrawer: (dragging: Boolean, time: Long, current: Float) -> Unit
 ) {
   coroutineScope {
     forEachGesture {
       var prevDragPositionX = 0f
+      var prevTime = SystemClock.elapsedRealtime()
       var dragDownEvent: PointerInputChange? = null
 
       val firstEvent = awaitPointerEventScope {
@@ -129,20 +131,21 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             }
 
             prevDragPositionX = downEvent.position.x
+            prevTime = downEvent.uptimeMillis
 
             downEvent.historical.fastForEach { historicalChange ->
-              onDraggingDrawer(true, historicalChange.position.x)
+              onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
             }
             collectedEvents.fastForEach { pointerEvent ->
               pointerEvent.changes.fastForEach { pointerInputChange ->
                 pointerInputChange.historical.forEach { historicalChange ->
-                  onDraggingDrawer(true, historicalChange.position.x)
+                  onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
                 }
-                onDraggingDrawer(true, pointerInputChange.position.x)
+                onDraggingDrawer(true, pointerInputChange.uptimeMillis, pointerInputChange.position.x)
               }
             }
 
-            onDraggingDrawer(true, downEvent.position.x)
+            onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
           } else {
             onStopConsumingScrollEvents()
 
@@ -165,11 +168,12 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
 
             onLongtapDragGestureDetected()
             prevDragPositionX = downEvent.position.x
+            prevTime = downEvent.uptimeMillis
 
             downEvent.historical.fastForEach { historicalChange ->
-              onDraggingDrawer(true, historicalChange.position.x)
+              onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
             }
-            onDraggingDrawer(true, downEvent.position.x)
+            onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
           }
         }
 
@@ -200,15 +204,16 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             }
 
             prevDragPositionX = drag.position.x
+            prevTime = drag.uptimeMillis
 
             drag.historical.fastForEach { historicalChange ->
-              onDraggingDrawer(true, historicalChange.position.x)
+              onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
             }
-            onDraggingDrawer(true, drag.position.x)
+            onDraggingDrawer(true, drag.uptimeMillis, drag.position.x)
           }
         }
       } finally {
-        onDraggingDrawer(false, prevDragPositionX)
+        onDraggingDrawer(false, prevTime, prevDragPositionX)
       }
     }
   }

@@ -384,7 +384,8 @@ class HomeScreen(
         currentPagerPage = { pagerState.currentPage },
         isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen, true) },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
-        onDragging = { dragging, progress -> globalUiInfoManager.dragDrawer(dragging, progress) }
+        onDragging = { dragging, time, progress -> globalUiInfoManager.dragDrawer(dragging, time, progress) },
+        onFling = { velocity -> globalUiInfoManager.flingDrawer(velocity) }
       )
     }
 
@@ -410,7 +411,7 @@ class HomeScreen(
               isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen, false) },
               onLongtapDragGestureDetected = { longtapDragGestureDetected = true },
               onFailedDrawerDragGestureDetected = { failedDrawerDragGestureDetected = true },
-              onDraggingDrawer = { dragging, progress -> globalUiInfoManager.dragDrawer(dragging, progress) }
+              onDraggingDrawer = { dragging, time, progress -> globalUiInfoManager.dragDrawer(dragging, time, progress) }
             )
           }
         )

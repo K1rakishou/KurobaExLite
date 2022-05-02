@@ -8,6 +8,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
@@ -428,6 +429,7 @@ class GlobalUiInfoManager(
 
   fun isDrawerOpenedOrOpening(): Boolean {
     return when (_currentDrawerVisibility) {
+      is DrawerVisibility.Fling -> true
       is DrawerVisibility.Drag -> true
       DrawerVisibility.Closed,
       DrawerVisibility.Closing -> false
@@ -460,11 +462,17 @@ class GlobalUiInfoManager(
     updateDrawerVisibility(drawerVisibility)
   }
 
-  fun dragDrawer(isDragging: Boolean, dragCurrentPositionX: Float) {
+  fun dragDrawer(isDragging: Boolean, time: Long, dragCurrentPositionX: Float) {
     val drawerVisibility = DrawerVisibility.Drag(
+      time = time,
       isDragging = isDragging,
       dragX = dragCurrentPositionX
     )
+    updateDrawerVisibility(drawerVisibility)
+  }
+
+  fun flingDrawer(velocity: Velocity) {
+    val drawerVisibility = DrawerVisibility.Fling(velocity)
     updateDrawerVisibility(drawerVisibility)
   }
 

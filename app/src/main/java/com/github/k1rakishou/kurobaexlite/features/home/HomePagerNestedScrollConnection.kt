@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.home
 
+import android.os.SystemClock
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -9,7 +10,8 @@ class HomePagerNestedScrollConnection(
   private val currentPagerPage: () -> Int,
   private val isGestureCurrentlyAllowed: () -> Boolean,
   private val shouldConsumeAllScrollEvents: () -> Boolean,
-  private val onDragging: (dragging: Boolean, current: Float) -> Unit
+  private val onDragging: (dragging: Boolean, time: Long, current: Float) -> Unit,
+  private val onFling: (Velocity) -> Unit
 ) : NestedScrollConnection {
   private var scrolled = 0f
   private var pointerDown = false
@@ -47,8 +49,8 @@ class HomePagerNestedScrollConnection(
   }
 
   override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-    if (scrolled > 0f) {
-      onDragging(false, scrolled)
+    if (currentPagerPage() == 0) {
+      onFling(available)
     }
 
     scrolled = 0f
@@ -63,6 +65,6 @@ class HomePagerNestedScrollConnection(
     }
 
     scrolled += available.x
-    onDragging(true, scrolled)
+    onDragging(true, SystemClock.elapsedRealtime(), scrolled)
   }
 }
