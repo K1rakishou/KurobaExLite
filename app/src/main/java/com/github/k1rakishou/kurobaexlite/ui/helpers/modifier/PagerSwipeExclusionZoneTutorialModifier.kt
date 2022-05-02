@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.helpers
+package com.github.k1rakishou.kurobaexlite.ui.helpers.modifier
 
 import android.graphics.Paint
 import android.text.TextPaint
@@ -34,6 +34,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -111,15 +112,15 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
     }
 
     val density = LocalDensity.current
-    val text = stringResource(id = R.string.pager_exclusion_zone_drag_me)
+    val chanTheme = LocalChanTheme.current
+    val text = stringResource(id = R.string.pager_exclusion_zone_drag)
     val textSize = with(density) { 24.sp.toPx() }
     val textTopPadding = with(density) { 32.dp.toPx() }
 
     val arrowWidth = with(density) { 24.dp.toPx() }
     val arrowHeight = with(density) { 48.dp.toPx() }
-    val arrowsTopOffset = with(density) { 80.dp.toPx() }
+    val arrowsTopOffset = with(density) { 50.dp.toPx() }
     val arrowStrokeWidth = with(density) { 4.dp.toPx() }
-    val startOffset = with(density) { 8.dp.toPx() }
     val arrowsPadding = with(density) { 4.dp.toPx() }
     val alphaAnimationProgress by animatable.asState()
 
@@ -133,7 +134,8 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
     }
 
     val textWidth = remember { textPaint.measureText(text) }
-    val arrowsCount = 6
+    val arrowsCount = (pagerSwipeExclusionZone.width / (arrowsPadding + arrowWidth)).toInt()
+    val startOffset = (pagerSwipeExclusionZone.width - (arrowsCount * (arrowsPadding + arrowWidth))) / 2f
 
     var currentFocusedArrow by remember { mutableStateOf(0) }
 
@@ -160,10 +162,10 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
         top = pagerSwipeExclusionZone.topLeft.y
       ) {
         drawRect(
-          color = Color.Blue,
+          color = chanTheme.accentColorCompose,
           topLeft = Offset.Zero,
           size = pagerSwipeExclusionZone.size,
-          alpha = lerpFloat(0f, .5f, alphaAnimationProgress)
+          alpha = lerpFloat(0f, .6f, alphaAnimationProgress)
         )
 
         textPaint.alpha = lerpFloat(0f, 255f, alphaAnimationProgress).toInt()

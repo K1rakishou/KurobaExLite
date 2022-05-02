@@ -176,6 +176,6 @@
 
     <string name="pager_exclusion_zone_dialog_title">Special drawer drag zone</string>
     <string name="pager_exclusion_zone_dialog_description">The special drawer drag zone (which is located at the bottom left of the screen) allows you to open the drawer from any ViewPager page ignoring the ViewPager horizontal scrolling. Doing the drag gesture in any other area outside of the zone will trigger the ViewPager drag gesture.\n\nFor now it\'s size is hardcoded, it can\'t be disabled and it blocks clicks on elements beneath it but it will be fixed in the future once the Jetpack Compose has the necessary APIs.</string>
-    <string name="pager_exclusion_zone_drag_me">DRAG ME</string>
+    <string name="pager_exclusion_zone_drag">DRAG</string>
 
 </resources>

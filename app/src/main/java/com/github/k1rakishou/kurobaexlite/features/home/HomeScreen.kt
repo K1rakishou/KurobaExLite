@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.home
 
+import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
@@ -52,9 +54,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
-import com.github.k1rakishou.kurobaexlite.ui.helpers.drawDragLongtapDragGestureZone
-import com.github.k1rakishou.kurobaexlite.ui.helpers.drawPagerSwipeExclusionZoneTutorial
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDragGestureZone
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawPagerSwipeExclusionZoneTutorial
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -353,7 +355,8 @@ class HomeScreen(
   ) {
     val windowInsets = LocalWindowInsets.current
     val density = LocalDensity.current
-    val draggableAreaSize = 350f
+    val view = LocalView.current
+    val draggableAreaSize = remember { with(density) { 130.dp.toPx() } }
     val coroutineScope = rememberCoroutineScope()
 
     var drawerWidth by remember { mutableStateOf(0) }
@@ -408,10 +411,20 @@ class HomeScreen(
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
-              isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen, false) },
-              onLongtapDragGestureDetected = { longtapDragGestureDetected = true },
+              isGestureCurrentlyAllowed = {
+                isDrawerDragGestureCurrentlyAllowed(
+                  currentScreen = currentScreen,
+                  isFromNestedScroll = false
+                )
+              },
+              onLongtapDragGestureDetected = {
+                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                longtapDragGestureDetected = true
+              },
               onFailedDrawerDragGestureDetected = { failedDrawerDragGestureDetected = true },
-              onDraggingDrawer = { dragging, time, progress -> globalUiInfoManager.dragDrawer(dragging, time, progress) }
+              onDraggingDrawer = { dragging, time, progress ->
+                globalUiInfoManager.dragDrawer(dragging, time, progress)
+              }
             )
           }
         )

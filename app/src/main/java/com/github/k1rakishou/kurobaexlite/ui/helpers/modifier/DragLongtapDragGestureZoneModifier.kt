@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.helpers
+package com.github.k1rakishou.kurobaexlite.ui.helpers.modifier
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -10,7 +10,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 
 fun Modifier.drawDragLongtapDragGestureZone(
   drawerLongtapGestureWidthZonePx: Float,
@@ -18,6 +18,7 @@ fun Modifier.drawDragLongtapDragGestureZone(
   resetFlag: () -> Unit
 ): Modifier {
   return composed {
+    val chanTheme = LocalChanTheme.current
     val animatable = remember { Animatable(initialValue = 0f) }
 
     LaunchedEffect(
@@ -44,7 +45,7 @@ fun Modifier.drawDragLongtapDragGestureZone(
 
       if (dragGestureZoneAlpha > 0f) {
         drawRect(
-          color = Color.Blue,
+          color = chanTheme.accentColorCompose,
           topLeft = Offset.Zero,
           size = Size(
             width = drawerLongtapGestureWidthZonePx,

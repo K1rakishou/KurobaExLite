@@ -31,8 +31,8 @@ data class DefaultDarkTheme(
   override val postSpoilerRevealTextColor: Int = Color.parseColor("#ffffff"),
   override val postUnseenLabelColor: Int = Color.parseColor("#bf3232"),
   override val dividerColor: Int = Color.parseColor("#1effffff"),
-  override val scrollbarTrackColor: Int = Color.parseColor("#9e9e9e"),
-  override val scrollbarThumbColorNormal: Int = Color.parseColor("#383838"),
+  override val scrollbarTrackColor: Int = Color.parseColor("#bababa"),
+  override val scrollbarThumbColorNormal: Int = Color.parseColor("#262626"),
   override val scrollbarThumbColorDragged: Int = accentColor,
 ) : ChanTheme() {
 
