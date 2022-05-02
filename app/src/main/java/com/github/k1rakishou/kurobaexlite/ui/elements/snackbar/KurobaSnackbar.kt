@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.elements.snackbar
 
 import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -56,101 +57,105 @@ fun KurobaSnackbarContainer(
   isTablet: Boolean,
   kurobaSnackbarState: KurobaSnackbarState
 ) {
-  val snackbarManager = koinRemember<SnackbarManager>()
-  val insets = LocalWindowInsets.current
-  val chanTheme = LocalChanTheme.current
-  val maxSnackbarWidth = if (isTablet) 600.dp else 400.dp
+  BoxWithConstraints {
+    val snackbarManager = koinRemember<SnackbarManager>()
+    val insets = LocalWindowInsets.current
+    val chanTheme = LocalChanTheme.current
+    val maxContainerWidth = remember(key1 = maxWidth) { maxWidth - 16.dp }
 
-  LaunchedEffect(
-    key1 = kurobaSnackbarState,
-    block = {
-      snackbarManager.snackbarEventFlow.collect { snackbarInfoEvent ->
-        when (snackbarInfoEvent) {
-          is SnackbarInfoEvent.Push -> {
-            val evenScreenKey = snackbarInfoEvent.snackbarInfo.screenKey
-            if (evenScreenKey == screenKey) {
-              kurobaSnackbarState.pushSnackbar(snackbarInfoEvent.snackbarInfo)
+    val maxSnackbarWidth = (if (isTablet) 600.dp else 400.dp).coerceAtMost(maxContainerWidth)
+
+    LaunchedEffect(
+      key1 = kurobaSnackbarState,
+      block = {
+        snackbarManager.snackbarEventFlow.collect { snackbarInfoEvent ->
+          when (snackbarInfoEvent) {
+            is SnackbarInfoEvent.Push -> {
+              val evenScreenKey = snackbarInfoEvent.snackbarInfo.screenKey
+              if (evenScreenKey == screenKey) {
+                kurobaSnackbarState.pushSnackbar(snackbarInfoEvent.snackbarInfo)
+              }
+            }
+            is SnackbarInfoEvent.Pop -> {
+              kurobaSnackbarState.popSnackbar(snackbarInfoEvent.id)
             }
           }
-          is SnackbarInfoEvent.Pop -> {
-            kurobaSnackbarState.popSnackbar(snackbarInfoEvent.id)
+        }
+      })
+
+    LaunchedEffect(
+      key1 = kurobaSnackbarState,
+      block = {
+        while (isActive) {
+          delay(250L)
+
+          kurobaSnackbarState.removeOldSnackbars()
+        }
+      })
+
+    Box(
+      modifier = modifier
+        .padding(
+          start = insets.left,
+          end = insets.right,
+          top = insets.top,
+          bottom = insets.bottom
+        )
+        .requiredWidthIn(max = maxSnackbarWidth),
+      contentAlignment = Alignment.BottomCenter
+    ) {
+      val activeSnackbars = kurobaSnackbarState.activeSnackbars
+
+      SubcomposeLayout(
+        measurePolicy = { constraints ->
+          if (activeSnackbars.isEmpty()) {
+            return@SubcomposeLayout layout(0, 0) { /*no-op*/ }
+          }
+
+          val measurables = arrayOfNulls<Measurable>(activeSnackbars.size)
+          val placeables = arrayOfNulls<Placeable>(activeSnackbars.size)
+
+          for ((index, snackbarInfo) in activeSnackbars.withIndex()) {
+            val measurable = subcompose(
+              slotId = snackbarInfo.snackbarId,
+              content = {
+                KurobaSnackbarLayout(
+                  isTablet = isTablet,
+                  chanTheme = chanTheme,
+                  snackbarInfo = snackbarInfo,
+                  snackbarManager = snackbarManager,
+                  dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
+                )
+              }
+            ).ensureSingleElement()
+
+            measurables[index] = measurable
+          }
+
+          for ((index, measurable) in measurables.withIndex()) {
+            val placeable = measurable!!.measure(constraints)
+            placeables[index] = placeable
+          }
+
+          val maxWidth = placeables.fold(0f) { acc, placeable -> Math.max(acc, placeable!!.width.toFloat()) }
+          val totalHeight = placeables.fold(0f) { acc, placeable -> acc + placeable!!.height.toFloat() }
+
+          return@SubcomposeLayout layout(maxWidth.toInt(), totalHeight.toInt()) {
+            var takenHeight = 0
+
+            for (placeable in placeables) {
+              if (placeable == null) {
+                continue
+              }
+
+              placeable.placeRelative(0, takenHeight)
+
+              takenHeight += placeable.height
+            }
           }
         }
-      }
-    })
-
-  LaunchedEffect(
-    key1 = kurobaSnackbarState,
-    block = {
-      while (isActive) {
-        delay(100L)
-
-        kurobaSnackbarState.removeOldSnackbars()
-      }
-    })
-
-  Box(
-    modifier = modifier
-      .padding(
-        start = insets.left,
-        end = insets.right,
-        top = insets.top,
-        bottom = insets.bottom
       )
-      .requiredWidthIn(max = maxSnackbarWidth),
-    contentAlignment = Alignment.BottomCenter
-  ) {
-    val activeSnackbars = kurobaSnackbarState.activeSnackbars
-
-    SubcomposeLayout(
-      measurePolicy = { constraints ->
-        if (activeSnackbars.isEmpty()) {
-          return@SubcomposeLayout layout(0, 0) { /*no-op*/ }
-        }
-
-        val measurables = arrayOfNulls<Measurable>(activeSnackbars.size)
-        val placeables = arrayOfNulls<Placeable>(activeSnackbars.size)
-
-        for ((index, snackbarInfo) in activeSnackbars.withIndex()) {
-          val measurable = subcompose(
-            slotId = snackbarInfo.snackbarId,
-            content = {
-              KurobaSnackbarLayout(
-                isTablet = isTablet,
-                chanTheme = chanTheme,
-                snackbarInfo = snackbarInfo,
-                snackbarManager = snackbarManager,
-                dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
-              )
-            }
-          ).ensureSingleElement()
-
-          measurables[index] = measurable
-        }
-
-        for ((index, measurable) in measurables.withIndex()) {
-          val placeable = measurable!!.measure(constraints)
-          placeables[index] = placeable
-        }
-
-        val maxWidth = placeables.fold(0f) { acc, placeable -> Math.max(acc, placeable!!.width.toFloat()) }
-        val totalHeight = placeables.fold(0f) { acc, placeable -> acc + placeable!!.height.toFloat() }
-
-        return@SubcomposeLayout layout(maxWidth.toInt(), totalHeight.toInt()) {
-          var takenHeight = 0
-
-          for (placeable in placeables) {
-            if (placeable == null) {
-              continue
-            }
-
-            placeable.placeRelative(0, takenHeight)
-
-            takenHeight += placeable.height
-          }
-        }
-      }
-    )
+    }
   }
 }
 
