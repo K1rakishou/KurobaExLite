@@ -382,7 +382,7 @@ class HomeScreen(
     val nestedScrollConnection = remember(key1 = drawerWidth) {
       HomePagerNestedScrollConnection(
         currentPagerPage = { pagerState.currentPage },
-        isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen) },
+        isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen, true) },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
         onDragging = { dragging, progress -> globalUiInfoManager.dragDrawer(dragging, progress) }
       )
@@ -407,7 +407,7 @@ class HomeScreen(
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
-              isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen) },
+              isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen, false) },
               onLongtapDragGestureDetected = { longtapDragGestureDetected = true },
               onFailedDrawerDragGestureDetected = { failedDrawerDragGestureDetected = true },
               onDraggingDrawer = { dragging, progress -> globalUiInfoManager.dragDrawer(dragging, progress) }
@@ -483,10 +483,19 @@ class HomeScreen(
     )
   }
 
-  private fun isDrawerDragGestureCurrentlyAllowed(currentScreen: ComposeScreenWithToolbar?): Boolean {
+  private fun isDrawerDragGestureCurrentlyAllowed(
+    currentScreen: ComposeScreenWithToolbar?,
+    isFromNestedScroll: Boolean
+  ): Boolean {
     if (currentScreen is ScreenLayout<*>) {
-      if (currentScreen.screenHasChildren(CatalogScreen.SCREEN_KEY)) {
-        return false
+      if (isFromNestedScroll) {
+        if (currentScreen.anyScreenHasChildren()) {
+          return false
+        }
+      } else {
+        if (currentScreen.screenHasChildren(CatalogScreen.SCREEN_KEY)) {
+          return false
+        }
       }
     } else {
       if (currentScreen == null || currentScreen.hasChildScreens()) {

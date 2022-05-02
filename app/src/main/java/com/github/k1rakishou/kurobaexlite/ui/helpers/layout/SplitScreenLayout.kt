@@ -48,6 +48,10 @@ class SplitScreenLayout(
     return childScreen.hasChildScreens()
   }
 
+  override fun anyScreenHasChildren(): Boolean {
+    return childScreens.any { childScreen -> childScreen.composeScreen.hasChildScreens() }
+  }
+
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val chanTheme = LocalChanTheme.current

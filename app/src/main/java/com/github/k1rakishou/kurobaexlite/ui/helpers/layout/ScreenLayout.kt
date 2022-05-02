@@ -8,6 +8,7 @@ interface ScreenLayout<T : ComposeScreen> {
 
   fun hasScreen(screenKey: ScreenKey): Boolean
   fun screenHasChildren(screenKey: ScreenKey): Boolean
+  fun anyScreenHasChildren(): Boolean
 
   class ChildScreen<T : ComposeScreen>(
     val composeScreen: T,
