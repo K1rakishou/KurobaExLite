@@ -2,6 +2,8 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import android.graphics.Paint
 import android.text.TextPaint
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -35,8 +38,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 fun Modifier.drawPagerSwipeExclusionZoneTutorial(
+  failedDrawerDragGestureDetected: Boolean,
   pagerSwipeExclusionZone: Rect,
-  onTutorialFinished: () -> Unit
+  onTutorialFinished: () -> Unit,
+  resetFlag: () -> Unit
 ): Modifier {
   return composed {
     val coroutineScope = rememberCoroutineScope()
@@ -45,7 +50,7 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
     val chanThreadManager = koinRemember<ChanThreadManager>()
 
     val currentlyOpenedCatalog by chanThreadManager.currentlyOpenedCatalogFlow.collectAsState()
-    if (currentlyOpenedCatalog == null) {
+    if (currentlyOpenedCatalog == null && !failedDrawerDragGestureDetected) {
       return@composed Modifier
     }
 
@@ -53,12 +58,12 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
       .listen()
       .collectAsState(initial = true)
 
-    if (drawerDragGestureTutorialShown) {
+    if (drawerDragGestureTutorialShown && !failedDrawerDragGestureDetected) {
       return@composed Modifier
     }
 
     val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow(coroutineScope).collectAsState()
-    if (drawerVisibility is DrawerVisibility.Opened) {
+    if (drawerVisibility is DrawerVisibility.Opened && !failedDrawerDragGestureDetected) {
       LaunchedEffect(
         key1 = Unit,
         block = {
@@ -68,18 +73,41 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
       )
     }
 
-    var delayFinished by remember { mutableStateOf(false) }
+    val animatable = remember { Animatable(0f) }
 
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        delay(2000)
-        delayFinished = true
+    if (!failedDrawerDragGestureDetected) {
+      var delayFinished by remember { mutableStateOf(false) }
+
+      LaunchedEffect(
+        key1 = Unit,
+        block = {
+          animatable.snapTo(0f)
+
+          delay(2000)
+          animatable.animateTo(1f)
+
+          delayFinished = true
+        }
+      )
+
+      if (!delayFinished) {
+        return@composed Modifier
       }
-    )
+    } else {
+      LaunchedEffect(
+        key1 = Unit,
+        block = {
+          animatable.snapTo(0f)
 
-    if (!delayFinished) {
-      return@composed Modifier
+          try {
+            animatable.animateTo(1f, tween(durationMillis = 100))
+            delay(1000)
+            animatable.animateTo(0f, tween(durationMillis = 100))
+          } finally {
+            resetFlag()
+          }
+        }
+      )
     }
 
     val density = LocalDensity.current
@@ -93,6 +121,7 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
     val arrowStrokeWidth = with(density) { 4.dp.toPx() }
     val startOffset = with(density) { 8.dp.toPx() }
     val arrowsPadding = with(density) { 4.dp.toPx() }
+    val alphaAnimationProgress by animatable.asState()
 
     val textPaint = remember {
       TextPaint().apply {
@@ -134,9 +163,10 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
           color = Color.Blue,
           topLeft = Offset.Zero,
           size = pagerSwipeExclusionZone.size,
-          alpha = 0.5f
+          alpha = lerpFloat(0f, .5f, alphaAnimationProgress)
         )
 
+        textPaint.alpha = lerpFloat(0f, 255f, alphaAnimationProgress).toInt()
         val leftOffset = ((pagerSwipeExclusionZone.width - textWidth) / 2f)
         drawContext.canvas.nativeCanvas.drawText(text, leftOffset, textTopPadding, textPaint)
 
@@ -148,7 +178,7 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
             val alpha = if (currentFocusedArrow == arrowIndex) 1f else .5f
 
             drawArrow(
-              alpha = alpha,
+              alpha = lerpFloat(0f, alpha, alphaAnimationProgress),
               offsetX = offset,
               size = Size(width = arrowWidth, height = arrowHeight),
               strokeWidth = arrowStrokeWidth

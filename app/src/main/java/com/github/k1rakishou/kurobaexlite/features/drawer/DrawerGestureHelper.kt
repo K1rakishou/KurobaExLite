@@ -27,13 +27,15 @@ import kotlinx.coroutines.isActive
 
 @OptIn(ExperimentalComposeUiApi::class)
 suspend fun PointerInputScope.detectDrawerDragGestures(
-  drawerLongtapGestureZonePx: Float,
+  drawerLongtapGestureWidthZonePx: Float,
   drawerPhoneVisibleWindowWidthPx: Float,
   drawerWidth: Float,
   pagerSwipeExclusionZone: Rect,
   isDrawerOpened: () -> Boolean,
   onStopConsumingScrollEvents: () -> Unit,
   isGestureCurrentlyAllowed: () -> Boolean,
+  onLongtapDragGestureDetected: () -> Unit,
+  onFailedDrawerDragGestureDetected: () -> Unit,
   onDraggingDrawer: (dragging: Boolean, current: Float) -> Unit
 ) {
   coroutineScope {
@@ -116,6 +118,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             }
 
             if (!isDrawerDragEvent) {
+              onFailedDrawerDragGestureDetected()
               onStopConsumingScrollEvents()
               return@awaitPointerEventScope null
             }
@@ -138,7 +141,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           } else {
             onStopConsumingScrollEvents()
 
-            if (downEvent.position.x > drawerLongtapGestureZonePx) {
+            if (downEvent.position.x > drawerLongtapGestureWidthZonePx) {
               return@awaitPointerEventScope null
             }
 
@@ -151,16 +154,17 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
               isActive = { isActive }
             )
 
-            if (longPress == null || longPress.position.x > drawerLongtapGestureZonePx) {
+            if (longPress == null || longPress.position.x > drawerLongtapGestureWidthZonePx) {
               return@awaitPointerEventScope null
-            } else {
-              prevDragPositionX = downEvent.position.x
-
-              downEvent.historical.fastForEach { historicalChange ->
-                onDraggingDrawer(true, historicalChange.position.x)
-              }
-              onDraggingDrawer(true, downEvent.position.x)
             }
+
+            onLongtapDragGestureDetected()
+            prevDragPositionX = downEvent.position.x
+
+            downEvent.historical.fastForEach { historicalChange ->
+              onDraggingDrawer(true, historicalChange.position.x)
+            }
+            onDraggingDrawer(true, downEvent.position.x)
           }
         }
 

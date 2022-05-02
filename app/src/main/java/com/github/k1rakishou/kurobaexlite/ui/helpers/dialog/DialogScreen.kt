@@ -45,7 +45,11 @@ class DialogScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val params: Params
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+) : FloatingComposeScreen(
+  componentActivity = componentActivity,
+  navigationRouter = navigationRouter,
+  canDismissByClickingOutside = false
+) {
   private val dialogScreeKey = ScreenKey("DialogScreen_${dialogKey}")
 
   override val screenKey: ScreenKey = dialogScreeKey

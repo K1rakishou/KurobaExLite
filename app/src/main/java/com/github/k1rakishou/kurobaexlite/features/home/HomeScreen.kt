@@ -51,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.drawDragLongtapDragGestureZone
 import com.github.k1rakishou.kurobaexlite.ui.helpers.drawPagerSwipeExclusionZoneTutorial
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
 import kotlin.time.Duration.Companion.seconds
@@ -131,7 +132,7 @@ class HomeScreen(
       return
     }
 
-    val drawerLongtapGestureZonePx = with(LocalDensity.current) { remember { 16.dp.toPx() } }
+    val drawerLongtapGestureWidthZonePx = with(LocalDensity.current) { remember { 16.dp.toPx() } }
     val maxDrawerWidth = with(LocalDensity.current) { remember { 600.dp.toPx().toInt() } }
     val drawerPhoneVisibleWindowWidth = with(LocalDensity.current) { remember { 40.dp.toPx().toInt() } }
 
@@ -215,7 +216,7 @@ class HomeScreen(
       maxDrawerWidth = maxDrawerWidth,
       mainUiLayoutMode = mainUiLayoutMode,
       drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
-      drawerLongtapGestureZonePx = drawerLongtapGestureZonePx,
+      drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
       pagerState = pagerState,
       childScreens = childScreens,
       insets = insets,
@@ -343,7 +344,7 @@ class HomeScreen(
     maxDrawerWidth: Int,
     mainUiLayoutMode: MainUiLayoutMode,
     drawerPhoneVisibleWindowWidth: Int,
-    drawerLongtapGestureZonePx: Float,
+    drawerLongtapGestureWidthZonePx: Float,
     pagerState: PagerState,
     childScreens: HomeChildScreens.ChildScreens,
     insets: Insets,
@@ -357,6 +358,8 @@ class HomeScreen(
     var drawerWidth by remember { mutableStateOf(0) }
     var homeScreenSize by remember { mutableStateOf(IntSize.Zero) }
     var consumeAllScrollEvents by remember { mutableStateOf(false) }
+    var longtapDragGestureDetected by remember { mutableStateOf(false) }
+    var failedDrawerDragGestureDetected by remember { mutableStateOf(false) }
 
     val pagerSwipeExclusionZone = remember(key1 = homeScreenSize) {
       if (homeScreenSize.width > 0 && homeScreenSize.height > 0) {
@@ -391,27 +394,36 @@ class HomeScreen(
           drawerWidth = size.width.coerceAtMost(maxDrawerWidth) - drawerPhoneVisibleWindowWidth
         }
         .pointerInput(
-          drawerLongtapGestureZonePx,
+          drawerLongtapGestureWidthZonePx,
           drawerPhoneVisibleWindowWidth,
           drawerWidth,
           pagerSwipeExclusionZone,
           block = {
             detectDrawerDragGestures(
-              drawerLongtapGestureZonePx = drawerLongtapGestureZonePx,
+              drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
               drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreen) },
+              onLongtapDragGestureDetected = { longtapDragGestureDetected = true },
+              onFailedDrawerDragGestureDetected = { failedDrawerDragGestureDetected = true },
               onDraggingDrawer = { dragging, progress -> globalUiInfoManager.dragDrawer(dragging, progress) }
             )
           }
         )
         .nestedScroll(nestedScrollConnection)
         .drawPagerSwipeExclusionZoneTutorial(
+          failedDrawerDragGestureDetected = failedDrawerDragGestureDetected,
           pagerSwipeExclusionZone = pagerSwipeExclusionZone,
-          onTutorialFinished = { coroutineScope.launch { showPagerSwipeExclusionZoneDialog() } }
+          onTutorialFinished = { coroutineScope.launch { showPagerSwipeExclusionZoneDialog() } },
+          resetFlag = { failedDrawerDragGestureDetected = false }
+        )
+        .drawDragLongtapDragGestureZone(
+          drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
+          longtapDragGestureDetected = longtapDragGestureDetected,
+          resetFlag = { longtapDragGestureDetected = false }
         )
     ) {
       HorizontalPager(

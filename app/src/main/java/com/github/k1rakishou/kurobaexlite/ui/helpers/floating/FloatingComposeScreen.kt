@@ -35,7 +35,8 @@ import kotlinx.coroutines.launch
 
 abstract class FloatingComposeScreen(
   componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter
+  navigationRouter: NavigationRouter,
+  private val canDismissByClickingOutside: Boolean = true
 ) : ComposeScreen(componentActivity, navigationRouter) {
   val horizPaddingDp by lazy { if (globalUiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
   val vertPaddingDp by lazy { if (globalUiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
@@ -82,7 +83,11 @@ abstract class FloatingComposeScreen(
         .fillMaxSize()
         .kurobaClickable(
           hasClickIndication = false,
-          onClick = { coroutineScope.launch { onFloatingControllerBackPressed() } }
+          onClick = {
+            if (canDismissByClickingOutside) {
+              coroutineScope.launch { onFloatingControllerBackPressed() }
+            }
+          }
         )
     ) {
       Box(
