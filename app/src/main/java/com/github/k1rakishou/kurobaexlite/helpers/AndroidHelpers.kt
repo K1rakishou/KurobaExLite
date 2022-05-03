@@ -87,8 +87,8 @@ class AndroidHelpers(
 
   fun isDevFlavor(): Boolean = getFlavorType() == FlavorType.Dev
 
-  fun getAvailableSpaceInBytes(file: File): Long {
-    val stat = StatFs(file.path)
+  fun File.availableSpaceInBytes(): Long {
+    val stat = StatFs(this.path)
     return stat.availableBlocksLong * stat.blockSizeLong
   }
 

@@ -169,27 +169,37 @@ fun DisplayVideo(
     block = {
       videoMediaState.hwDecEventFlow.collect {
         mpvViewMut?.let { mpvView ->
-          if (mpvView.hwdecActive) {
-            // TODO(KurobaEx): strings
+          val prevHwDecActive = mpvView.hwdecActive
+          mpvView.cycleHwdec()
+          val hwDecActive = mpvView.hwdecActive
+
+          if (prevHwDecActive == hwDecActive) {
             snackbarManager.toast(
               screenKey = MainScreen.SCREEN_KEY,
               toastId = MPV_OPTION_CHANGE_TOAST,
-              message = "Switched to software decoding"
+              message = "Failed to toggle software/hardware decoding"
             )
           } else {
-            // TODO(KurobaEx): strings
-            snackbarManager.toast(
-              screenKey = MainScreen.SCREEN_KEY,
-              toastId = MPV_OPTION_CHANGE_TOAST,
-              message = "Switched to hardware decoding"
-            )
+            if (hwDecActive) {
+              // TODO(KurobaEx): strings
+              snackbarManager.toast(
+                screenKey = MainScreen.SCREEN_KEY,
+                toastId = MPV_OPTION_CHANGE_TOAST,
+                message = "Switched to software decoding"
+              )
+            } else {
+              // TODO(KurobaEx): strings
+              snackbarManager.toast(
+                screenKey = MainScreen.SCREEN_KEY,
+                toastId = MPV_OPTION_CHANGE_TOAST,
+                message = "Switched to hardware decoding"
+              )
+            }
+
+
+            videoMediaStateSaveable.wasHardwareDecodingEnabled = hwDecActive
+            videoMediaState.hardwareDecodingEnabledState.value = hwDecActive
           }
-
-          mpvView.cycleHwdec()
-
-          val hwDecActive = mpvView.hwdecActive
-          videoMediaStateSaveable.wasHardwareDecodingEnabled = hwDecActive
-          videoMediaState.hardwareDecodingEnabledState.value = hwDecActive
         }
       }
     }

@@ -75,6 +75,7 @@ class MPVView(
     private fun observeProperties() {
         // This observes all properties needed by MPVView or MPVActivity
         data class Property(val name: String, val format: Int)
+
         val p = arrayOf(
             Property("time-pos", MPV_FORMAT_INT64),
             Property("demuxer-cache-duration", MPV_FORMAT_INT64),
