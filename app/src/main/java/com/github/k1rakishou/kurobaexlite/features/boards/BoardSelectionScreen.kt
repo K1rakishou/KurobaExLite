@@ -91,7 +91,7 @@ class BoardSelectionScreen(
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
   @Composable
-  override fun Content() {
+  override fun HomeNavigationScreenContent() {
     val chanTheme = LocalChanTheme.current
 
     HandleBackPresses {

@@ -381,6 +381,7 @@ class HomeScreen(
     val currentScreen = remember(key1 = pagerState.currentPage) {
       childScreens.screens.getOrNull(pagerState.currentPage)
     }
+    val currentScreenUpdated by rememberUpdatedState(newValue = currentScreen)
 
     val nestedScrollConnection = remember(key1 = drawerWidth) {
       HomePagerNestedScrollConnection(
@@ -413,7 +414,7 @@ class HomeScreen(
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = {
                 isDrawerDragGestureCurrentlyAllowed(
-                  currentScreen = currentScreen,
+                  currentScreen = currentScreenUpdated,
                   isFromNestedScroll = false
                 )
               },

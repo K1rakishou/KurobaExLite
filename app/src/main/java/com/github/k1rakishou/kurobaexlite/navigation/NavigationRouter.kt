@@ -87,6 +87,10 @@ open class NavigationRouter(
   }
 
   open fun popScreen(newComposeScreen: ComposeScreen): Boolean {
+    return popScreen(newComposeScreen, true)
+  }
+
+  open fun popScreen(newComposeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
     val indexOfPrev = _navigationScreensStack
       .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
 
@@ -97,9 +101,15 @@ open class NavigationRouter(
 
     _navigationScreensStack.removeAt(indexOfPrev)
 
+    val newScreenUpdate = if (withAnimation) {
+      ScreenUpdate.Pop(newComposeScreen)
+    } else {
+      ScreenUpdate.Remove(newComposeScreen)
+    }
+
     val navigationScreenUpdates = combineScreenUpdates(
       oldScreens = _navigationScreensStack,
-      newScreenUpdate = ScreenUpdate.Pop(newComposeScreen)
+      newScreenUpdate = newScreenUpdate
     )
 
     logcat.logcat(tag = TAG) { "popScreen(${newComposeScreen.screenKey.key})" }
@@ -319,11 +329,15 @@ open class NavigationRouter(
         is Pop -> true
         is Push -> false
         is Set -> false
+        is Remove -> true
       }
     }
     
     data class Set(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
       override fun toString(): String = "Set(key=${composeScreen.screenKey.key})"
+    }
+    data class Remove(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
+      override fun toString(): String = "Remove(key=${composeScreen.screenKey.key})"
     }
     data class Push(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
       override fun toString(): String = "Push(key=${composeScreen.screenKey.key})"

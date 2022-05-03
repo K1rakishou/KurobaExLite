@@ -84,7 +84,7 @@ class SplitScreenLayout(
   }
 
   @Composable
-  override fun Content() {
+  override fun HomeNavigationScreenContent() {
     val chanTheme = LocalChanTheme.current
     val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 

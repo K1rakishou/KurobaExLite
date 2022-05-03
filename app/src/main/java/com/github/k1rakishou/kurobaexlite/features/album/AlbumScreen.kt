@@ -93,7 +93,7 @@ class AlbumScreen(
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
   @Composable
-  override fun Content() {
+  override fun HomeNavigationScreenContent() {
     val chanTheme = LocalChanTheme.current
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)

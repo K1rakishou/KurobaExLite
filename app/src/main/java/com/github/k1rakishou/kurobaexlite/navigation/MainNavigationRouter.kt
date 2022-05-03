@@ -61,6 +61,10 @@ class MainNavigationRouter : NavigationRouter(
   }
 
   override fun popScreen(newComposeScreen: ComposeScreen): Boolean {
+    return popScreen(newComposeScreen, true)
+  }
+
+  override fun popScreen(newComposeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
     val indexOfPrev = navigationScreensStack
       .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
 
@@ -71,9 +75,15 @@ class MainNavigationRouter : NavigationRouter(
 
     _navigationScreensStack.removeAt(indexOfPrev)
 
+    val newScreenUpdate = if (withAnimation) {
+      ScreenUpdate.Pop(newComposeScreen)
+    } else {
+      ScreenUpdate.Remove(newComposeScreen)
+    }
+
     val navigationScreenUpdates = combineScreenUpdates(
       oldScreens = navigationScreensStack,
-      newScreenUpdate = ScreenUpdate.Pop(newComposeScreen)
+      newScreenUpdate = newScreenUpdate
     )
     val floatingScreenUpdates = _floatingScreensStack
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }

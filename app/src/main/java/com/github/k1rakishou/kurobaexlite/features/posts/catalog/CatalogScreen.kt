@@ -289,7 +289,7 @@ class CatalogScreen(
   }
 
   @Composable
-  override fun Content() {
+  override fun HomeNavigationScreenContent() {
     HandleBackPresses {
       if (replyLayoutState.onBackPressed()) {
         return@HandleBackPresses true

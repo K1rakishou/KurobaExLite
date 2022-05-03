@@ -334,7 +334,7 @@ class FloatingMenuScreen(
     KurobaComposeIcon(
       modifier = Modifier
         .size(40.dp)
-        .kurobaClickable(onClick = { onItemClicked(item) })
+        .kurobaClickable(bounded = false, onClick = { onItemClicked(item) })
         .padding(4.dp),
       drawableId = item.iconId
     )

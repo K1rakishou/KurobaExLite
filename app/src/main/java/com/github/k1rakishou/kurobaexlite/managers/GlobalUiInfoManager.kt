@@ -462,11 +462,11 @@ class GlobalUiInfoManager(
     updateDrawerVisibility(drawerVisibility)
   }
 
-  fun dragDrawer(isDragging: Boolean, time: Long, dragCurrentPositionX: Float) {
+  fun dragDrawer(isDragging: Boolean, time: Long, dragX: Float) {
     val drawerVisibility = DrawerVisibility.Drag(
       time = time,
       isDragging = isDragging,
-      dragX = dragCurrentPositionX
+      dragX = dragX
     )
     updateDrawerVisibility(drawerVisibility)
   }

@@ -27,6 +27,7 @@ fun ScreenTransition(
     is NavigationRouter.ScreenUpdate.Pop -> 1f
     is NavigationRouter.ScreenUpdate.Fade -> 1f
     is NavigationRouter.ScreenUpdate.Set -> 1f
+    is NavigationRouter.ScreenUpdate.Remove -> 0f
   }
 
   val alphaInitial = when (screenUpdate) {
@@ -39,6 +40,7 @@ fun ScreenTransition(
       }
     }
     is NavigationRouter.ScreenUpdate.Set -> 1f
+    is NavigationRouter.ScreenUpdate.Remove -> 0f
   }
 
   val canRenderInitial = when (screenUpdate) {
@@ -51,6 +53,7 @@ fun ScreenTransition(
       }
     }
     is NavigationRouter.ScreenUpdate.Set -> true
+    is NavigationRouter.ScreenUpdate.Remove -> false
   }
 
   var scaleAnimated by remember(key1 = screenUpdate) { mutableStateOf(scaleInitial) }
@@ -152,6 +155,12 @@ fun ScreenTransition(
           alphaAnimated = 1f
           onScreenUpdateFinished(screenUpdate)
           canRender = true
+        }
+        is NavigationRouter.ScreenUpdate.Remove -> {
+          scaleAnimated = 0f
+          alphaAnimated = 0f
+          onScreenUpdateFinished(screenUpdate)
+          canRender = false
         }
       }
     }

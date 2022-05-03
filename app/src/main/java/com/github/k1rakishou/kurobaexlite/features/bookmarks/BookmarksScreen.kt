@@ -69,7 +69,7 @@ class BookmarksScreen(
   }
 
   @Composable
-  override fun Content() {
+  override fun HomeNavigationScreenContent() {
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
