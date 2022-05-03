@@ -356,7 +356,7 @@ class HomeScreen(
     val windowInsets = LocalWindowInsets.current
     val density = LocalDensity.current
     val view = LocalView.current
-    val draggableAreaSize = remember { with(density) { 130.dp.toPx() } }
+    val draggableAreaSize = remember { with(density) { Size(130.dp.toPx(), height = 60.dp.toPx()) } }
     val coroutineScope = rememberCoroutineScope()
 
     var drawerWidth by remember { mutableStateOf(0) }
@@ -370,8 +370,8 @@ class HomeScreen(
         val bottomInsetPx = with(density) { windowInsets.bottom.roundToPx() }
 
         Rect(
-          offset = Offset(0f, homeScreenSize.height - draggableAreaSize - bottomInsetPx),
-          size = Size(draggableAreaSize, draggableAreaSize)
+          offset = Offset(0f, homeScreenSize.height - draggableAreaSize.height - bottomInsetPx),
+          size = draggableAreaSize
         )
       } else {
         Rect.Zero

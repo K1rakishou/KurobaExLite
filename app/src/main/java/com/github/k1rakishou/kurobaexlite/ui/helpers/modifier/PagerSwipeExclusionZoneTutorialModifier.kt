@@ -114,12 +114,13 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
     val density = LocalDensity.current
     val chanTheme = LocalChanTheme.current
     val text = stringResource(id = R.string.pager_exclusion_zone_drag)
-    val textSize = with(density) { 24.sp.toPx() }
-    val textTopPadding = with(density) { 32.dp.toPx() }
+    val textSize = with(density) { 18.sp.toPx() }
+    val textTopPadding = with(density) { 16.dp.toPx() }
 
-    val arrowWidth = with(density) { 24.dp.toPx() }
-    val arrowHeight = with(density) { 48.dp.toPx() }
-    val arrowsTopOffset = with(density) { 50.dp.toPx() }
+    val arrowWidth = with(density) { 12.dp.toPx() }
+    val arrowHeight = with(density) { 24.dp.toPx() }
+    val horizPadding = with(density) { 8.dp.toPx() }
+    val arrowsTopOffset = with(density) { 24.dp.toPx() }
     val arrowStrokeWidth = with(density) { 4.dp.toPx() }
     val arrowsPadding = with(density) { 4.dp.toPx() }
     val alphaAnimationProgress by animatable.asState()
@@ -134,7 +135,7 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
     }
 
     val textWidth = remember { textPaint.measureText(text) }
-    val arrowsCount = (pagerSwipeExclusionZone.width / (arrowsPadding + arrowWidth)).toInt()
+    val arrowsCount = ((pagerSwipeExclusionZone.width - (horizPadding * 2)) / (arrowsPadding + arrowWidth)).toInt()
     val startOffset = (pagerSwipeExclusionZone.width - (arrowsCount * (arrowsPadding + arrowWidth))) / 2f
 
     var currentFocusedArrow by remember { mutableStateOf(0) }
@@ -143,7 +144,7 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
       key1 = Unit,
       block = {
         while (isActive) {
-          delay(125L)
+          delay(75L)
 
           currentFocusedArrow = (currentFocusedArrow + 1) % arrowsCount
         }
