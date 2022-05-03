@@ -144,6 +144,7 @@
     <string name="media_viewer_mpv_unknown_time">--:--</string>
     <string name="media_viewer_mpv_hw_decoding">HW</string>
     <string name="media_viewer_mpv_sw_decoding">SW</string>
+    <string name="media_viewer_close_label_text">Close viewer</string>
 
     <string name="navigation_history_screen_removed_navigation_item_text">Removed \'%1$s\'</string>
 

@@ -58,6 +58,7 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.DisplayLoadingProgressIndicator
+import com.github.k1rakishou.kurobaexlite.features.media.helpers.DraggableArea
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPreviewStrip
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerScreenVideoControls
@@ -747,92 +748,94 @@ class MediaViewerScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
-    when (postImageDataLoadState) {
-      is ImageLoadState.PreparingForLoading -> {
-        var loadingProgressMut by remember { mutableStateOf<Pair<Int, Float>?>(null) }
+    DraggableArea(closeScreen = { stopPresenting() }) {
+      when (postImageDataLoadState) {
+        is ImageLoadState.PreparingForLoading -> {
+          var loadingProgressMut by remember { mutableStateOf<Pair<Int, Float>?>(null) }
 
-        LoadFullImage(
-          mediaViewerScreenState = mediaViewerScreenState,
-          postImageDataLoadState = postImageDataLoadState,
-          onLoadProgressUpdated = { restartIndex, progress ->
-            loadingProgressMut = Pair(restartIndex, progress)
-          }
-        )
+          LoadFullImage(
+            mediaViewerScreenState = mediaViewerScreenState,
+            postImageDataLoadState = postImageDataLoadState,
+            onLoadProgressUpdated = { restartIndex, progress ->
+              loadingProgressMut = Pair(restartIndex, progress)
+            }
+          )
 
-        displayImagePreviewMovable()
-
-        val loadingProgress = loadingProgressMut
-        if (loadingProgress != null) {
-          val restartIndex = loadingProgress.first
-          val progress = loadingProgress.second
-
-          DisplayLoadingProgressIndicator(restartIndex, progress)
-        }
-      }
-      is ImageLoadState.Progress -> {
-        // no-op
-      }
-      is ImageLoadState.Ready -> {
-        var fullMediaLoaded by remember { mutableStateOf(false) }
-        if (!fullMediaLoaded) {
           displayImagePreviewMovable()
+
+          val loadingProgress = loadingProgressMut
+          if (loadingProgress != null) {
+            val restartIndex = loadingProgress.first
+            val progress = loadingProgress.second
+
+            DisplayLoadingProgressIndicator(restartIndex, progress)
+          }
         }
+        is ImageLoadState.Progress -> {
+          // no-op
+        }
+        is ImageLoadState.Ready -> {
+          var fullMediaLoaded by remember { mutableStateOf(false) }
+          if (!fullMediaLoaded) {
+            displayImagePreviewMovable()
+          }
 
-        when (mediaState) {
-          is MediaState.Static -> {
-            val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
+          when (mediaState) {
+            is MediaState.Static -> {
+              val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
 
-            DisplayFullImage(
-              postImageDataLoadState = postImageDataLoadState,
-              imageFile = imageFile,
-              onFullImageLoaded = { fullMediaLoaded = true },
-              onFullImageFailedToLoad = { fullMediaLoaded = false },
-              onImageTapped = { onMediaTapped() },
-              reloadImage = {
-                coroutineScope.launch {
-                  mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
-                  images[page] = ImageLoadState.PreparingForLoading(postImageDataLoadState.postImage)
+              DisplayFullImage(
+                postImageDataLoadState = postImageDataLoadState,
+                imageFile = imageFile,
+                onFullImageLoaded = { fullMediaLoaded = true },
+                onFullImageFailedToLoad = { fullMediaLoaded = false },
+                onImageTapped = { onMediaTapped() },
+                reloadImage = {
+                  coroutineScope.launch {
+                    mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
+                    images[page] = ImageLoadState.PreparingForLoading(postImageDataLoadState.postImage)
+                  }
                 }
-              }
-            )
-          }
-          is MediaState.Video -> {
-            DisplayVideo(
-              pageIndex = page,
-              pagerState = pagerState,
-              toolbarHeight = toolbarHeight,
-              mpvSettings = mpvSettings,
-              postImageDataLoadState = postImageDataLoadState,
-              snackbarManager = snackbarManager,
-              checkLibrariesInstalledAndLoaded = checkLibrariesInstalledAndLoaded,
-              onPlayerLoaded = { fullMediaLoaded = true },
-              onPlayerUnloaded = { fullMediaLoaded = false },
-              videoMediaState = mediaState,
-              onVideoTapped = { onMediaTapped() },
-              installMpvLibsFromGithubButtonClicked = {
-                onInstallMpvLibsFromGithubButtonClicked(
-                  mpvSettings = mpvSettings,
-                  context = context
-                )
-              }
-            )
-          }
-          is MediaState.Unsupported -> {
-            DisplayUnsupportedMedia(
-              toolbarHeight = toolbarHeight,
-              postImageDataLoadState = postImageDataLoadState,
-              onFullImageLoaded = { fullMediaLoaded = true },
-              onFullImageFailedToLoad = { fullMediaLoaded = false },
-              onImageTapped = { onMediaTapped() }
-            )
+              )
+            }
+            is MediaState.Video -> {
+              DisplayVideo(
+                pageIndex = page,
+                pagerState = pagerState,
+                toolbarHeight = toolbarHeight,
+                mpvSettings = mpvSettings,
+                postImageDataLoadState = postImageDataLoadState,
+                snackbarManager = snackbarManager,
+                checkLibrariesInstalledAndLoaded = checkLibrariesInstalledAndLoaded,
+                onPlayerLoaded = { fullMediaLoaded = true },
+                onPlayerUnloaded = { fullMediaLoaded = false },
+                videoMediaState = mediaState,
+                onVideoTapped = { onMediaTapped() },
+                installMpvLibsFromGithubButtonClicked = {
+                  onInstallMpvLibsFromGithubButtonClicked(
+                    mpvSettings = mpvSettings,
+                    context = context
+                  )
+                }
+              )
+            }
+            is MediaState.Unsupported -> {
+              DisplayUnsupportedMedia(
+                toolbarHeight = toolbarHeight,
+                postImageDataLoadState = postImageDataLoadState,
+                onFullImageLoaded = { fullMediaLoaded = true },
+                onFullImageFailedToLoad = { fullMediaLoaded = false },
+                onImageTapped = { onMediaTapped() }
+              )
+            }
           }
         }
-      }
-      is ImageLoadState.Error -> {
-        DisplayImageLoadError(
-          toolbarHeight = toolbarHeight,
-          postImageDataLoadState = postImageDataLoadState
-        )
+        is ImageLoadState.Error -> {
+          DisplayImageLoadError(
+            toolbarHeight = toolbarHeight,
+            postImageDataLoadState = postImageDataLoadState
+          )
+        }
       }
     }
   }
