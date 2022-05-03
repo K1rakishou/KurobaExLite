@@ -111,7 +111,9 @@ fun DraggableArea(
               scroller.startScroll(startX, startY, deltaX, deltaY, 125)
             }
             is EndAction.Close -> {
+              contentAlpha = 0f
               closeScreen()
+              return@consumeEach
             }
           }
 
@@ -157,6 +159,7 @@ fun DraggableArea(
           ignoreAllMotionEvents = false
 
           if (endAction is EndAction.Fling) {
+            contentAlpha = 0f
             closeScreen()
           }
         }
