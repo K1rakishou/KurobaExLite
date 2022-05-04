@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -37,6 +38,7 @@ fun ReplyLayoutContainer(
   chanDescriptor: ChanDescriptor?,
   replyLayoutState: IReplyLayoutState,
   replyLayoutViewModel: ReplyLayoutViewModel,
+  onPostedSuccessfully: (PostDescriptor) -> Unit,
   onAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
   if (chanDescriptor == null || replyLayoutState !is ReplyLayoutState) {
@@ -51,6 +53,15 @@ fun ReplyLayoutContainer(
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
   var maxAvailableHeight by remember { mutableStateOf<Int>(0) }
+
+  LaunchedEffect(
+    key1 = chanDescriptor,
+    block = {
+      replyLayoutState.successfullyPostedEventsFlow.collect { postDescriptor ->
+        onPostedSuccessfully(postDescriptor)
+      }
+    }
+  )
 
   LaunchedEffect(
     key1 = chanDescriptor,

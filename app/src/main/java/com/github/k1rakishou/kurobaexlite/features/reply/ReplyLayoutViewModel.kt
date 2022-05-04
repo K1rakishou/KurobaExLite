@@ -318,7 +318,7 @@ class ReplyLayoutViewModel(
     withContext(NonCancellable) {
       replyLayoutState.onReplySendEnded()
       replyLayoutState.onReplyProgressChanged(null)
-      
+
       when (val replyResponse = (replyEvent as ReplyEvent.Success).replyResponse) {
         is ReplyResponse.AuthenticationRequired -> {
           when {
@@ -356,15 +356,10 @@ class ReplyLayoutViewModel(
         }
         is ReplyResponse.Success -> {
           val postDescriptor = replyResponse.postDescriptor
-
-          if (chanDescriptor is CatalogDescriptor) {
-            // TODO(KurobaEx): switch to thread screen and load this thread
-          }
-
           modifyMarkedPosts.markPostAsMine(postDescriptor)
 
           showToast(chanDescriptor, appResources.string(R.string.reply_view_model_reply_sent_successfully))
-          replyLayoutState.onReplySendEndedSuccessfully()
+          replyLayoutState.onReplySendEndedSuccessfully(postDescriptor)
           logcat(TAG) { "sendReply($screenKey) success postDescriptor: ${postDescriptor}" }
         }
       }

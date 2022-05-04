@@ -21,6 +21,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.io.File
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -70,6 +71,10 @@ class ReplyLayoutState(
   private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Closed)
   override val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
     get() = _replyLayoutVisibilityState
+
+  private val _successfullyPostedEventsFlow = MutableSharedFlow<PostDescriptor>(extraBufferCapacity = Channel.UNLIMITED)
+  val successfullyPostedEventsFlow: SharedFlow<PostDescriptor>
+    get() = _successfullyPostedEventsFlow.asSharedFlow()
 
   private val _replyText = mutableStateOf(TextFieldValue())
   val replyText: State<TextFieldValue>
@@ -163,7 +168,7 @@ class ReplyLayoutState(
     _replySendProgressState.value = progress
   }
 
-  fun onReplySendEndedSuccessfully() {
+  fun onReplySendEndedSuccessfully(postDescriptor: PostDescriptor) {
     Snapshot.withMutableSnapshot {
       _attachedMediaList.forEach { attachedMedia -> attachedMedia.deleteFile() }
 
@@ -175,6 +180,7 @@ class ReplyLayoutState(
       onReplyLayoutVisibilityStateChanged()
 
       _sendReplyState.value = SendReplyState.Finished
+      _successfullyPostedEventsFlow.tryEmit(postDescriptor)
     }
   }
 

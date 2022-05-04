@@ -145,7 +145,6 @@ class CatalogScreenToolbarActionHandler(
                     is ThreadDescriptor -> {
                       threadScreenViewModel.loadThread(resolvedDescriptor.chanDescriptor)
 
-                      // TODO(KurobaEx): come up with a better solution than doing it manually
                       globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
                     }
                   }
@@ -160,7 +159,6 @@ class CatalogScreenToolbarActionHandler(
                     loadOptions = loadOptions
                   )
 
-                  // TODO(KurobaEx): come up with a better solution than doing it manually
                   globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
                 }
               }

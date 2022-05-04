@@ -479,6 +479,9 @@ class ThreadScreen(
       replyLayoutViewModel = replyLayoutViewModel,
       onAttachedMediaClicked = { attachedMedia ->
         // TODO(KurobaEx): show options
+      },
+      onPostedSuccessfully = { postDescriptor ->
+        // no-op
       }
     )
 

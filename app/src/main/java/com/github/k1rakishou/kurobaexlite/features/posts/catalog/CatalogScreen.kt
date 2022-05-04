@@ -375,7 +375,6 @@ class CatalogScreen(
       postListOptions = postListOptions,
       postsScreenViewModel = catalogScreenViewModel,
       onPostCellClicked = { postCellData ->
-        // TODO(KurobaEx): come up with a better solution than doing it manually
         globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
 
         val threadDescriptor = ThreadDescriptor(
@@ -473,6 +472,10 @@ class CatalogScreen(
       replyLayoutViewModel = replyLayoutViewModel,
       onAttachedMediaClicked = { attachedMedia ->
         // TODO(KurobaEx): show options
+      },
+      onPostedSuccessfully = { postDescriptor ->
+        threadScreenViewModel.loadThread(postDescriptor.threadDescriptor)
+        globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
       }
     )
 
