@@ -26,11 +26,14 @@ import com.github.k1rakishou.kurobaexlite.sites.ReplyResponse
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.logcat
 
 class ReplyLayoutViewModel(
@@ -201,31 +204,37 @@ class ReplyLayoutViewModel(
 
         logcat(TAG) { "sendReply($screenKey) getCaptchaSolutionOrRequestNewOne() end, captcha=${captcha}" }
 
-        replyInfo.sendReply(replyData).collect { replyEvent ->
-          processReplyEvents(
-            replyEvent = replyEvent,
-            replyLayoutState = replyLayoutState,
-            screenKey = screenKey,
-            chanDescriptor = chanDescriptor
-          )
-        }
+        replyInfo.sendReply(replyData)
+          .catch { error -> emit(ReplyEvent.Error(error)) }
+          .collect { replyEvent ->
+            processReplyEvents(
+              replyEvent = replyEvent,
+              replyLayoutState = replyLayoutState,
+              screenKey = screenKey,
+              chanDescriptor = chanDescriptor
+            )
+          }
       } catch (error: Throwable) {
-        replyLayoutState.onReplyProgressChanged(null)
-
         if (manuallyCanceled.contains(screenKey) || error is CancellationException) {
           logcatError(TAG) { "sendReply($screenKey) canceled" }
 
           val message = appResources.string(R.string.reply_view_model_reply_send_canceled_by_user)
-          showToast(chanDescriptor, message)
+          replyLayoutState.replyShowErrorToast(message)
           replyLayoutState.onReplySendCanceled()
         } else {
           logcatError(TAG) { "sendReply($screenKey) error: ${error.asLogIfImportantOrErrorMessage()}" }
 
-          val message = appResources.string(R.string.reply_view_model_reply_send_error, error.errorMessageOrClassName())
-          showErrorToast(chanDescriptor, message)
-          replyLayoutState.onReplySendEndedWithError(error)
+          val message = appResources.string(
+            R.string.reply_view_model_reply_send_error,
+            error.errorMessageOrClassName()
+          )
+
+          replyLayoutState.replyShowErrorToast(message)
+          replyLayoutState.onReplySendEndedWithError()
         }
       } finally {
+        replyLayoutState.onReplyProgressChanged(null)
+
         sendReplyJobMap.remove(screenKey)
         manuallyCanceled.remove(screenKey)
       }
@@ -290,65 +299,74 @@ class ReplyLayoutViewModel(
     screenKey: ScreenKey,
     chanDescriptor: ChanDescriptor
   ) {
-    val replyResponse = when (replyEvent) {
-      ReplyEvent.Start -> {
-        replyLayoutState.onReplyProgressChanged(0f)
-        return
-      }
-      is ReplyEvent.Progress -> {
-        replyLayoutState.onReplyProgressChanged(replyEvent.progress)
-        return
-      }
-      is ReplyEvent.Error -> {
-        throw replyEvent.error
-      }
-      is ReplyEvent.Success -> replyEvent.replyResponse
+    if (replyEvent is ReplyEvent.Start) {
+      replyLayoutState.onReplyProgressChanged(0f)
+      return
     }
 
-    when (replyResponse) {
-      is ReplyResponse.AuthenticationRequired -> {
-        when {
-          replyResponse.forgotCaptcha -> {
-            replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_you_forgot_captcha_error))
+    if (replyEvent is ReplyEvent.Progress) {
+      replyLayoutState.onReplyProgressChanged(replyEvent.progress)
+      return
+    }
+
+    if (replyEvent is ReplyEvent.Error) {
+      replyLayoutState.onReplySendEnded()
+      replyLayoutState.onReplyProgressChanged(null)
+      throw replyEvent.error
+    }
+
+    withContext(NonCancellable) {
+      replyLayoutState.onReplySendEnded()
+      replyLayoutState.onReplyProgressChanged(null)
+      
+      when (val replyResponse = (replyEvent as ReplyEvent.Success).replyResponse) {
+        is ReplyResponse.AuthenticationRequired -> {
+          when {
+            replyResponse.forgotCaptcha -> {
+              replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_you_forgot_captcha_error))
+            }
+            replyResponse.mistypedCaptcha -> {
+              replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_you_mistyped_captcha_error))
+            }
+            else -> {
+              replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_generic_authentication_error))
+            }
           }
-          replyResponse.mistypedCaptcha -> {
-            replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_you_mistyped_captcha_error))
-          }
-          else -> {
-            replyLayoutState.replyShowErrorToast(appResources.string(R.string.reply_view_model_generic_authentication_error))
-          }
+
+          replyLayoutState.onReplySendEndedWithError()
         }
-      }
-      is ReplyResponse.Banned -> {
-        val message = appResources.string(R.string.reply_view_model_you_are_banned_error, replyResponse.banMessage)
-        replyLayoutState.replyShowErrorToast(message)
-      }
-      is ReplyResponse.Error -> {
-        val message = appResources.string(R.string.reply_view_model_unknown_posting_error, replyResponse.errorMessage)
-        replyLayoutState.replyShowErrorToast(message)
-      }
-      is ReplyResponse.RateLimited -> {
-        val message = appResources.string(
-          R.string.reply_view_model_posting_rate_limit_error,
-          (replyResponse.timeToWaitMs / 1000L).toString()
-        )
-
-        replyLayoutState.replyShowErrorToast(message)
-      }
-      is ReplyResponse.Success -> {
-        val postDescriptor = replyResponse.postDescriptor
-
-        if (chanDescriptor is CatalogDescriptor) {
-          // TODO(KurobaEx): switch to thread screen and load this thread
+        is ReplyResponse.Banned -> {
+          val message = appResources.string(R.string.reply_view_model_you_are_banned_error, replyResponse.banMessage)
+          replyLayoutState.replyShowErrorToast(message)
+          replyLayoutState.onReplySendEndedWithError()
         }
+        is ReplyResponse.Error -> {
+          val message = appResources.string(R.string.reply_view_model_unknown_posting_error, replyResponse.errorMessage)
+          replyLayoutState.replyShowErrorToast(message)
+          replyLayoutState.onReplySendEndedWithError()
+        }
+        is ReplyResponse.RateLimited -> {
+          val message = appResources.string(
+            R.string.reply_view_model_posting_rate_limit_error,
+            (replyResponse.timeToWaitMs / 1000L).toString()
+          )
 
-        modifyMarkedPosts.markPostAsMine(postDescriptor)
+          replyLayoutState.replyShowErrorToast(message)
+          replyLayoutState.onReplySendEndedWithError()
+        }
+        is ReplyResponse.Success -> {
+          val postDescriptor = replyResponse.postDescriptor
 
-        showToast(chanDescriptor, appResources.string(R.string.reply_view_model_reply_sent_successfully))
-        replyLayoutState.onReplySendEndedSuccessfully()
-        replyLayoutState.onReplyProgressChanged(null)
+          if (chanDescriptor is CatalogDescriptor) {
+            // TODO(KurobaEx): switch to thread screen and load this thread
+          }
 
-        logcat(TAG) { "sendReply($screenKey) success postDescriptor: ${postDescriptor}" }
+          modifyMarkedPosts.markPostAsMine(postDescriptor)
+
+          showToast(chanDescriptor, appResources.string(R.string.reply_view_model_reply_sent_successfully))
+          replyLayoutState.onReplySendEndedSuccessfully()
+          logcat(TAG) { "sendReply($screenKey) success postDescriptor: ${postDescriptor}" }
+        }
       }
     }
   }

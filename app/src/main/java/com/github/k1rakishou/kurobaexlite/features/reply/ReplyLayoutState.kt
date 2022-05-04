@@ -79,7 +79,7 @@ class ReplyLayoutState(
   val attachedMediaList: List<AttachedMedia>
     get() = _attachedMediaList
 
-  private val _sendReplyState = mutableStateOf<SendReplyState>(SendReplyState.Finished(null))
+  private val _sendReplyState = mutableStateOf<SendReplyState>(SendReplyState.Finished)
   val sendReplyState: State<SendReplyState>
     get() = _sendReplyState
 
@@ -155,6 +155,10 @@ class ReplyLayoutState(
     _sendReplyState.value = SendReplyState.Started
   }
 
+  fun onReplySendEnded() {
+    _sendReplyState.value = SendReplyState.ReplySent
+  }
+
   fun onReplyProgressChanged(progress: Float?) {
     _replySendProgressState.value = progress
   }
@@ -170,22 +174,19 @@ class ReplyLayoutState(
       onAttachedImagesUpdated()
       onReplyLayoutVisibilityStateChanged()
 
-      _sendReplyState.value = SendReplyState.Finished(error = null)
+      _sendReplyState.value = SendReplyState.Finished
     }
   }
 
   fun onReplySendCanceled() {
     Snapshot.withMutableSnapshot {
-      _sendReplyState.value = SendReplyState.Finished(error = null)
+      _sendReplyState.value = SendReplyState.Finished
     }
   }
 
-  fun onReplySendEndedWithError(error: Throwable) {
+  fun onReplySendEndedWithError() {
     Snapshot.withMutableSnapshot {
-      onAttachedImagesUpdated()
-      onReplyLayoutVisibilityStateChanged()
-
-      _sendReplyState.value = SendReplyState.Finished(error = error)
+      _sendReplyState.value = SendReplyState.Finished
     }
   }
 
@@ -354,13 +355,15 @@ sealed class SendReplyState {
   val canCancel: Boolean
     get() {
       return when (this) {
+        is ReplySent,
         is Finished -> false
         Started -> true
       }
     }
 
   object Started : SendReplyState()
-  data class Finished(val error: Throwable?) : SendReplyState()
+  object ReplySent : SendReplyState()
+  object Finished : SendReplyState()
 }
 
 enum class ReplyLayoutVisibility(val value: Int) {

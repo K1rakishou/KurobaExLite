@@ -91,11 +91,10 @@ fun ReplyLayoutContainer(
     }
   )
 
-  val replyLayoutEnabled = remember(key1 = sendReplyState, key2 = chanDescriptor) {
-    return@remember when (sendReplyState) {
-      SendReplyState.Started -> false
-      is SendReplyState.Finished -> true
-    }
+  val replyLayoutEnabled = when (sendReplyState) {
+    SendReplyState.Started,
+    is SendReplyState.ReplySent -> false
+    is SendReplyState.Finished -> true
   }
 
   Box(
