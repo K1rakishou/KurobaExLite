@@ -95,7 +95,7 @@ class CatalogScreen(
     rightPartInfo = RightPartInfo(
       ToolbarIcon(CatalogToolbarIcons.Search, R.drawable.ic_baseline_search_24, false),
       ToolbarIcon(CatalogToolbarIcons.Sort, R.drawable.ic_baseline_sort_24, false),
-      ToolbarIcon(CatalogToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24, false),
+      ToolbarIcon(CatalogToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
     ),
     postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
   )
@@ -216,6 +216,10 @@ class CatalogScreen(
       block = {
         catalogToolbarState.rightPartInfo?.let { rightPartInfo ->
           rightPartInfo.toolbarIcons.forEach { toolbarIcon ->
+            if (toolbarIcon.key == CatalogToolbarIcons.Overflow) {
+              return@forEach
+            }
+
             toolbarIcon.iconVisible.value = screenContentLoaded
           }
         }

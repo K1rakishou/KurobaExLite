@@ -106,7 +106,7 @@ class ThreadScreen(
       middlePartInfo = MiddlePartInfo(centerContent = false),
       rightPartInfo = RightPartInfo(
         ToolbarIcon(ThreadToolbarIcons.Search, R.drawable.ic_baseline_search_24, false),
-        ToolbarIcon(ThreadToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24, false),
+        ToolbarIcon(ThreadToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
       ),
       postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
     )
@@ -218,6 +218,10 @@ class ThreadScreen(
       block = {
         threadToolbarState.rightPartInfo?.let { rightPartInfo ->
           rightPartInfo.toolbarIcons.forEach { toolbarIcon ->
+            if (toolbarIcon.key == ThreadToolbarIcons.Overflow) {
+              return@forEach
+            }
+
             toolbarIcon.iconVisible.value = screenContentLoaded
           }
         }
