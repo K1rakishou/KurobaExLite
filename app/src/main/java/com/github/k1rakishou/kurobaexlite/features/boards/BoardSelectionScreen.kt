@@ -116,6 +116,15 @@ class BoardSelectionScreen(
     val searchQuery by searchQueryState
     var loadBoardsForSiteEvent by remember { mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Uninitialized) }
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        boardSelectionScreenViewModel
+          .getOrLoadBoardsForSite(siteKey = siteKey, page = 0, forceReload = false)
+          .collect { boardsListAsync -> loadBoardsForSiteEvent = boardsListAsync }
+      }
+    )
+
     Box(
       modifier = Modifier
         .fillMaxSize()
@@ -137,15 +146,6 @@ class BoardSelectionScreen(
           }
         }
       ) {
-        LaunchedEffect(
-          key1 = Unit,
-          block = {
-            boardSelectionScreenViewModel
-              .getOrLoadBoardsForSite(siteKey = siteKey, page = 0, forceReload = false)
-              .collect { boardsListAsync -> loadBoardsForSiteEvent = boardsListAsync }
-          }
-        )
-
         BuildBoardsList(
           searchQuery = searchQuery,
           loadBoardsForSiteEvent = loadBoardsForSiteEvent,
@@ -193,7 +193,8 @@ class BoardSelectionScreen(
         )
 
         value = AsyncData.Data(sortedBoards)
-      })
+      }
+    )
 
     val lazyListState = rememberLazyListState()
 

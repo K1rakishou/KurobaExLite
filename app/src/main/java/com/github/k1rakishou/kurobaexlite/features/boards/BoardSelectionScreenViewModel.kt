@@ -82,7 +82,10 @@ class BoardSelectionScreenViewModel : BaseViewModel() {
 
       siteBoards.forEach { chanBoard ->
         boardsCache[chanBoard.catalogDescriptor] = chanBoard
-        loadedBoardsForSite.add(chanBoard.catalogDescriptor)
+
+        if (!loadedBoardsForSite.contains(chanBoard.catalogDescriptor)) {
+          loadedBoardsForSite.add(chanBoard.catalogDescriptor)
+        }
       }
 
       send(AsyncData.Data(siteBoards.map { mapChanBoardToChanBoardUiData(it) }))

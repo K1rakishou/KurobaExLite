@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -39,6 +41,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
@@ -242,7 +245,8 @@ private fun KurobaSnackbarLayout(
         onSnackbarClicked = { snackbarClickable, snackbarId ->
           snackbarManager.onSnackbarElementClicked(snackbarClickable)
           dismissSnackbar(snackbarId)
-        }
+        },
+        onDismissSnackbar = { snackbarId -> dismissSnackbar(snackbarId) }
       )
     }
   }
@@ -256,7 +260,8 @@ private fun RowScope.KurobaSnackbarContent(
   aliveUntil: Long?,
   content: List<SnackbarContentItem>,
   snackbarId: SnackbarId,
-  onSnackbarClicked: (SnackbarClickable, SnackbarId) -> Unit
+  onSnackbarClicked: (SnackbarClickable, SnackbarId) -> Unit,
+  onDismissSnackbar: (SnackbarId) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val textSize = if (isTablet) 18.sp else 16.sp
@@ -284,11 +289,25 @@ private fun RowScope.KurobaSnackbarContent(
       }
     )
 
-    KurobaComposeLoadingIndicator(
-      progress = progress,
-      modifier = Modifier.wrapContentSize(),
-      indicatorSize = 24.dp
-    )
+    Box(
+      modifier = Modifier.kurobaClickable(
+        bounded = false,
+        onClick = { onDismissSnackbar(snackbarId) }
+      ),
+      contentAlignment = Alignment.Center
+    ) {
+      KurobaComposeLoadingIndicator(
+        progress = progress,
+        modifier = Modifier.wrapContentSize(),
+        indicatorSize = 24.dp
+      )
+
+      KurobaComposeIcon(
+        modifier = Modifier
+          .size(14.dp),
+        drawableId = R.drawable.ic_baseline_close_24
+      )
+    }
 
     Spacer(modifier = Modifier.width(8.dp))
   }
