@@ -56,7 +56,7 @@ abstract class ComposeScreen(
       error("Can't pop FloatingComposeScreen, use stopPresenting()")
     }
 
-    return navigationRouter.requireParentRouter().popScreen(this)
+    return navigationRouter.popScreen(this)
   }
 
   suspend fun onBackPressed(): Boolean {

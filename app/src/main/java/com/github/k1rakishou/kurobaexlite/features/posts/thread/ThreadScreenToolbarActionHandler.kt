@@ -52,8 +52,13 @@ class ThreadScreenToolbarActionHandler {
         val threadDescriptor = threadScreenViewModel.threadDescriptor
           ?: return
 
-        val childRouter = navigationRouter.childRouter(AlbumScreen.SCREEN_KEY)
-        navigationRouter.pushScreen(AlbumScreen(threadDescriptor, componentActivity, childRouter))
+        val albumScreen = AlbumScreen(
+          chanDescriptor = threadDescriptor,
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter
+        )
+
+        navigationRouter.pushScreen(albumScreen)
       }
       ACTION_SCROLL_TOP -> threadScreenViewModel.scrollTop()
       ACTION_SCROLL_BOTTOM -> threadScreenViewModel.scrollBottom()

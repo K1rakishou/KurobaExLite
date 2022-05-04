@@ -64,8 +64,13 @@ class CatalogScreenToolbarActionHandler(
         val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
           ?: return
 
-        val childRouter = navigationRouter.childRouter(AlbumScreen.SCREEN_KEY)
-        navigationRouter.pushScreen(AlbumScreen(catalogDescriptor, componentActivity, childRouter))
+        val albumScreen = AlbumScreen(
+          chanDescriptor = catalogDescriptor,
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter
+        )
+
+        navigationRouter.pushScreen(albumScreen)
       }
       ACTION_SCROLL_TOP -> catalogScreenViewModel.scrollTop()
       ACTION_SCROLL_BOTTOM -> catalogScreenViewModel.scrollBottom()

@@ -161,10 +161,6 @@ open class NavigationRouter(
     )
   }
 
-  fun requireParentRouter(): NavigationRouter {
-    return requireNotNull(parentRouter) { "Parent router is null" }
-  }
-
   fun getRouterByKey(screenKey: ScreenKey): NavigationRouter {
     if (routerKey == screenKey) {
       return this

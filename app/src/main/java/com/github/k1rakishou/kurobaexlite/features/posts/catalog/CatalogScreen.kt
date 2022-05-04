@@ -39,7 +39,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
@@ -271,11 +270,9 @@ class CatalogScreen(
       canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, globalUiInfoManager.currentPage()) },
       onLeftIconClicked = { globalUiInfoManager.openDrawer() },
       onMiddleMenuClicked = {
-        val childRouter = navigationRouter.childRouter(BoardSelectionScreen.SCREEN_KEY)
-
         val boardSelectionScreen = BoardSelectionScreen(
           componentActivity = componentActivity,
-          navigationRouter = childRouter,
+          navigationRouter = navigationRouter,
           catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
         )
 
@@ -313,14 +310,6 @@ class CatalogScreen(
       currentChanDescriptor = { catalogScreenViewModel.catalogDescriptor }
     )
 
-    RouterHost(
-      navigationRouter = navigationRouter,
-      defaultScreen = { CatalogPostListScreenContent() }
-    )
-  }
-
-  @Composable
-  private fun CatalogPostListScreenContent() {
     Box(modifier = Modifier.fillMaxSize()) {
       CatalogPostListScreen()
     }

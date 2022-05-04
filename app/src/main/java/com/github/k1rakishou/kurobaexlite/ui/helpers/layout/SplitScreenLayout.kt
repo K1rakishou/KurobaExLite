@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -97,7 +98,14 @@ class SplitScreenLayout(
             .fillMaxHeight()
             .weight(weight = weight)
         ) {
-          childScreen.composeScreen.Content()
+          val childRouter = remember(key1 = childScreen.composeScreen.screenKey) {
+            navigationRouter.childRouter(childScreen.composeScreen.screenKey)
+          }
+
+          RouterHost(
+            navigationRouter = childRouter,
+            defaultScreen = { childScreen.composeScreen.Content() }
+          )
 
           if (index >= 0 && index < childScreens.size) {
             Divider(

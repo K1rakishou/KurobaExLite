@@ -38,7 +38,6 @@ import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
@@ -306,14 +305,6 @@ class ThreadScreen(
       currentChanDescriptor = { threadScreenViewModel.threadDescriptor }
     )
 
-    RouterHost(
-      navigationRouter = navigationRouter,
-      defaultScreen = { ThreadPostListScreenContent() }
-    )
-  }
-
-  @Composable
-  private fun ThreadPostListScreenContent() {
     Box(modifier = Modifier.fillMaxSize()) {
       ThreadPostListScreen()
     }

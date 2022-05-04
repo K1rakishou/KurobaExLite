@@ -38,6 +38,7 @@ import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
@@ -72,9 +73,6 @@ class HomeScreen(
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val homeChildScreens by lazy { HomeChildScreens(componentActivity, navigationRouter) }
   private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
-
-  private val currentChildScreensState = mutableStateOf<HomeChildScreens.ChildScreens?>(null)
-  private val currentChildIndex = mutableStateOf<Int?>(null)
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -117,17 +115,20 @@ class HomeScreen(
       key1 = bookmarksScreenOnLeftSide,
       key2 = mainUiLayoutMode
     ) {
-      val childScreens = homeChildScreens.getChildScreens(mainUiLayoutMode, bookmarksScreenOnLeftSide)
-      currentChildScreensState.value = childScreens
-
-      return@remember childScreens
+      return@remember homeChildScreens.getChildScreens(
+        uiLayoutMode = mainUiLayoutMode,
+        bookmarksScreenOnLeftSide = bookmarksScreenOnLeftSide
+      )
     }
 
-    val initialScreenIndexMut = remember(key1 = currentPage, key2 = childScreens) {
-      val initialChildIndex = homeChildScreens.screenIndexByPage(currentPage, childScreens)
-      currentChildIndex.value = initialChildIndex
-
-      return@remember initialChildIndex
+    val initialScreenIndexMut = remember(
+      key1 = currentPage,
+      key2 = childScreens
+    ) {
+      return@remember homeChildScreens.screenIndexByPage(
+        currentPage = currentPage,
+        childScreens = childScreens
+      )
     }
 
     val initialScreenIndex = initialScreenIndexMut
@@ -455,7 +456,10 @@ class HomeScreen(
             .fillMaxSize()
             .consumeClicks(enabled = transitionIsProgress)
         ) {
-          childScreen.Content()
+          RouterHost(
+            navigationRouter = navigationRouter,
+            defaultScreen = { childScreen.Content() }
+          )
         }
       }
 

@@ -19,15 +19,15 @@ class HomeScreenLayouter(
     return@lazy listOf<ComposeScreenWithToolbar>(
       BookmarksScreen(
         componentActivity = componentActivity,
-        navigationRouter = navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY)
+        navigationRouter = navigationRouter
       ),
       CatalogScreen(
         componentActivity = componentActivity,
-        navigationRouter = navigationRouter.childRouter(CatalogScreen.SCREEN_KEY)
+        navigationRouter = navigationRouter
       ),
       ThreadScreen(
         componentActivity = componentActivity,
-        navigationRouter = navigationRouter.childRouter(ThreadScreen.SCREEN_KEY)
+        navigationRouter = navigationRouter
       )
     )
   }
@@ -36,7 +36,7 @@ class HomeScreenLayouter(
     return@lazy listOf<ComposeScreenWithToolbar>(
       BookmarksScreen(
         componentActivity = componentActivity,
-        navigationRouter = navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY)
+        navigationRouter = navigationRouter
       ),
       SplitScreenLayout(
         componentActivity = componentActivity,

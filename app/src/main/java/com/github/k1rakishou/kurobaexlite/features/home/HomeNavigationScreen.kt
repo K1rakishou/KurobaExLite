@@ -66,7 +66,7 @@ abstract class HomeNavigationScreen(
           key1 = currentValue,
           block = {
             if (currentValue == Anchors.Hidden) {
-              navigationRouter.requireParentRouter().popScreen(
+              navigationRouter.popScreen(
                 newComposeScreen = this@HomeNavigationScreen,
                 withAnimation = false
               )
@@ -113,7 +113,7 @@ abstract class HomeNavigationScreen(
   abstract fun HomeNavigationScreenContent()
 
   private fun topHomeNavigationScreenExceptDefault(): HomeNavigationScreen? {
-    val navigationScreensStack = navigationRouter.requireParentRouter().navigationScreensStack
+    val navigationScreensStack = navigationRouter.navigationScreensStack
     if (navigationScreensStack.isEmpty()) {
       return null
     }
