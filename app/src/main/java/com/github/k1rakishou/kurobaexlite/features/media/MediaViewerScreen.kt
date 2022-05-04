@@ -28,13 +28,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -75,7 +74,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
@@ -130,7 +128,6 @@ class MediaViewerScreen(
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
-    val mediaViewerScreenState = remember { MediaViewerScreenState(appSettings) }
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
     var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getBounds()) }
@@ -139,6 +136,10 @@ class MediaViewerScreen(
 
     val animatable = remember { Animatable(0f) }
     val animationProgress by animatable.asState()
+
+    val mediaViewerScreenState = rememberSaveable(saver = MediaViewerScreenState.Saver(appSettings)) {
+      MediaViewerScreenState(appSettings)
+    }
 
     Box(
       modifier = Modifier
@@ -799,6 +800,12 @@ class MediaViewerScreen(
               )
             }
             is MediaState.Video -> {
+              val muteByDefault by mediaViewerScreenState.muteByDefault
+
+              LaunchedEffect(
+                key1 = muteByDefault,
+                block = { mediaState.isMutedState.value = muteByDefault })
+
               DisplayVideo(
                 pageIndex = page,
                 pagerState = pagerState,
@@ -816,7 +823,8 @@ class MediaViewerScreen(
                     mpvSettings = mpvSettings,
                     context = context
                   )
-                }
+                },
+                toggleMuteByDefaultState = { mediaViewerScreenState.toggleMuteByDefault() }
               )
             }
             is MediaState.Unsupported -> {
@@ -1052,26 +1060,6 @@ class MediaViewerScreen(
         )
       }
     )
-  }
-
-  class MediaViewerScreenState(
-    private val appSettings: AppSettings
-  ) {
-    var images: SnapshotStateList<ImageLoadState>? = null
-    val initialPage = mutableStateOf<Int?>(null)
-
-    val currentlyLoadedMediaMap = mutableStateMapOf<Int, MediaState>()
-    val mediaViewerUiVisible = mutableStateOf(false)
-
-    fun isLoaded(): Boolean = initialPage.value != null && images != null
-    fun requireImages(): SnapshotStateList<ImageLoadState> = requireNotNull(images) { "images not initialized yet!" }
-
-    suspend fun toggleMediaViewerUiVisibility() {
-      val newValue = !mediaViewerUiVisible.value
-
-      mediaViewerUiVisible.value = newValue
-      appSettings.mediaViewerUiVisible.write(newValue)
-    }
   }
 
   companion object {

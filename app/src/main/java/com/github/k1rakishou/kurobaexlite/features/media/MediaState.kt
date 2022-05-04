@@ -29,7 +29,7 @@ sealed class MediaState {
     val videoControlsVisibleState = mutableStateOf(true)
     val videoStartedPlayingState = mutableStateOf(false)
     val hasAudioState = mutableStateOf(false)
-    val isMutedState = mutableStateOf(false)
+    val isMutedState = mutableStateOf(true)
     val isPausedState = mutableStateOf(false)
     val hardwareDecodingEnabledState = mutableStateOf(true)
     val timePositionState = mutableStateOf<Long?>(null)
@@ -53,8 +53,8 @@ sealed class MediaState {
       hwDecEventFlow.tryEmit(Unit)
     }
 
-    suspend fun seekTo(position: Int) {
-      seekEventFlow.emit(position)
+    fun seekTo(position: Int) {
+      seekEventFlow.tryEmit(position)
     }
 
     override fun toString(): String {

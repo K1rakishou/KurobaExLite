@@ -83,6 +83,7 @@ class MPVView(
             Property("pause", MPV_FORMAT_FLAG),
             Property("audio", MPV_FORMAT_FLAG),
             Property("mute", MPV_FORMAT_STRING),
+            Property("hwdec", MPV_FORMAT_STRING),
             Property("video-params", MPV_FORMAT_NONE),
             Property("video-format", MPV_FORMAT_NONE),
         )

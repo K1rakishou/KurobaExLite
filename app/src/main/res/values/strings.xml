@@ -145,6 +145,13 @@
     <string name="media_viewer_mpv_hw_decoding">HW</string>
     <string name="media_viewer_mpv_sw_decoding">SW</string>
     <string name="media_viewer_close_label_text">Close viewer</string>
+    <string name="media_viewer_muted">Muted</string>
+    <string name="media_viewer_unmuted">Unmuted</string>
+    <string name="media_viewer_paused">Paused</string>
+    <string name="media_viewer_unpaused">Unpaused</string>
+    <string name="media_viewer_hwsw_decoding_toggle_failed">Failed to toggle software/hardware decoding</string>
+    <string name="media_viewer_switched_to_hw_decoding">Switched to hardware decoding</string>
+    <string name="media_viewer_switched_to_sw_decoding">Switched to software decoding</string>
 
     <string name="navigation_history_screen_removed_navigation_item_text">Removed \'%1$s\'</string>
 

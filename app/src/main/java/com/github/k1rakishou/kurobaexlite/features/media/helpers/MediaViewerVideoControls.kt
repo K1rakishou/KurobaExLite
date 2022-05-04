@@ -46,7 +46,9 @@ internal fun MediaViewerScreenVideoControls(
 ) {
   val chanTheme = LocalChanTheme.current
   val disabledAlpha = ContentAlpha.disabled
-  val videoStartedPlaying by videoMediaState.videoStartedPlayingState
+
+  val videoStartedPlayingState by videoMediaState.videoStartedPlayingState
+  val videoStartedPlayingUpdated by rememberUpdatedState(newValue = videoStartedPlayingState)
   val videoControlsVisible by videoMediaState.videoControlsVisibleState
 
   Column(
@@ -61,8 +63,10 @@ internal fun MediaViewerScreenVideoControls(
       val timePosition by videoMediaState.timePositionState
       val duration by videoMediaState.durationState
       val demuxerCacheDuration by videoMediaState.demuxerCacheDurationState
-      val videoDurationMut by rememberUpdatedState(newValue = videoMediaState.durationState.value)
-      val lastSlideOffsetMut by rememberUpdatedState(newValue = videoMediaState.slideOffsetState.value)
+      val videoDuration by videoMediaState.durationState
+      val videoDurationUpdated by rememberUpdatedState(newValue = videoDuration)
+      val slideOffset by videoMediaState.slideOffsetState
+      val lastSlideOffsetUpdated by rememberUpdatedState(newValue = slideOffset)
 
       val demuxerCachePercents = if (timePosition != null && duration != null && demuxerCacheDuration != null) {
         ((timePosition!!.toFloat() + demuxerCacheDuration!!.toFloat()) / duration!!.toFloat()).coerceIn(0f, 1f)
@@ -104,14 +108,16 @@ internal fun MediaViewerScreenVideoControls(
             key1 = videoMediaState,
             block = {
               processTapToSeekGesture(
-                videoStartedPlaying = videoStartedPlaying,
-                videoMediaState = videoMediaState,
-                videoDurationMut = videoDurationMut,
-                lastSlideOffsetMut = lastSlideOffsetMut
+                videoStartedPlaying = { videoStartedPlayingUpdated },
+                videoDuration = { videoDurationUpdated },
+                lastSlideOffset = { lastSlideOffsetUpdated },
+                blockAutoPositionUpdateState = { videoMediaState.blockAutoPositionUpdateState.value = true },
+                unBlockAutoPositionUpdateState = { videoMediaState.blockAutoPositionUpdateState.value = false },
+                seekTo = { newPosition -> videoMediaState.seekTo(newPosition) },
               )
             }
           ),
-        enabled = videoStartedPlaying,
+        enabled = videoStartedPlayingUpdated,
         trackColor = Color.White,
         thumbColorNormal = chanTheme.accentColorCompose,
         thumbColorPressed = Color.White,
@@ -147,7 +153,7 @@ internal fun MediaViewerScreenVideoControls(
         modifier = Modifier.size(42.dp),
         contentAlignment = Alignment.Center
       ) {
-        if (videoStartedPlaying || !videoControlsVisible) {
+        if (videoStartedPlayingUpdated || !videoControlsVisible) {
           Spacer(modifier = Modifier.fillMaxSize())
         } else {
           KurobaComposeLoadingIndicator(
@@ -170,13 +176,13 @@ internal fun MediaViewerScreenVideoControls(
         modifier = Modifier
           .size(42.dp)
           .kurobaClickable(
-            enabled = videoStartedPlaying,
+            enabled = videoStartedPlayingUpdated,
             bounded = false,
             onClick = { videoMediaState.toggleHwDec() }
           ),
         contentAlignment = Alignment.Center
       ) {
-        val alpha = if (videoStartedPlaying) 1f else disabledAlpha
+        val alpha = if (videoStartedPlayingUpdated) 1f else disabledAlpha
 
         Text(
           modifier = Modifier.graphicsLayer { this.alpha = alpha },
@@ -190,7 +196,7 @@ internal fun MediaViewerScreenVideoControls(
       IconButton(
         modifier = Modifier
           .size(42.dp),
-        enabled = hasAudio && videoStartedPlaying,
+        enabled = hasAudio && videoStartedPlayingUpdated,
         onClick = { videoMediaState.toggleMute() }
       ) {
         val drawableId = if (isMuted) {
@@ -207,7 +213,7 @@ internal fun MediaViewerScreenVideoControls(
       IconButton(
         modifier = Modifier
           .size(42.dp),
-        enabled = videoStartedPlaying,
+        enabled = videoStartedPlayingUpdated,
         onClick = { videoMediaState.togglePlayPause() }
       ) {
         val drawableId = if (isPaused) {
@@ -223,20 +229,22 @@ internal fun MediaViewerScreenVideoControls(
 }
 
 private suspend fun PointerInputScope.processTapToSeekGesture(
-  videoStartedPlaying: Boolean,
-  videoMediaState: MediaState.Video,
-  videoDurationMut: Long?,
-  lastSlideOffsetMut: Float
+  videoStartedPlaying: () -> Boolean,
+  videoDuration: () -> Long?,
+  lastSlideOffset: () -> Float,
+  blockAutoPositionUpdateState: () -> Unit,
+  unBlockAutoPositionUpdateState: () -> Unit,
+  seekTo: (Int) -> Unit
 ) {
   forEachGesture {
     awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
 
-    if (!videoStartedPlaying) {
+    if (!videoStartedPlaying()) {
       return@forEachGesture
     }
 
     try {
-      videoMediaState.blockAutoPositionUpdateState.value = true
+      blockAutoPositionUpdateState()
 
       while (true) {
         val event = awaitPointerEventScope { awaitPointerEvent(PointerEventPass.Main) }
@@ -245,15 +253,13 @@ private suspend fun PointerInputScope.processTapToSeekGesture(
         }
       }
     } finally {
-      val videoDuration = videoDurationMut
-      val lastSlideOffset = lastSlideOffsetMut
-
-      if (videoDuration != null) {
-        val newPosition = (videoDuration.toFloat() * lastSlideOffset).toInt()
-        videoMediaState.seekTo(newPosition)
+      val duration = videoDuration()
+      if (duration != null) {
+        val newPosition = (duration.toFloat() * lastSlideOffset()).toInt()
+        seekTo(newPosition)
       }
 
-      videoMediaState.blockAutoPositionUpdateState.value = false
+      unBlockAutoPositionUpdateState()
     }
   }
 }

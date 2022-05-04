@@ -7,7 +7,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.unit.Dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.ChildToolbar
-import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
+import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenState
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenToolbarContainer
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
@@ -32,7 +32,7 @@ private enum class ToolbarIcons {
 internal fun MediaViewerToolbar(
   toolbarHeight: Dp,
   screenKey: ScreenKey,
-  mediaViewerScreenState: MediaViewerScreen.MediaViewerScreenState,
+  mediaViewerScreenState: MediaViewerScreenState,
   pagerState: PagerState?,
   onDownloadMediaClicked: (IPostImage) -> Unit,
   onBackPressed: () -> Unit
@@ -96,7 +96,7 @@ internal fun MediaViewerToolbar(
 @Composable
 private fun MediaToolbar(
   screenKey: ScreenKey,
-  mediaViewerScreenState: MediaViewerScreen.MediaViewerScreenState,
+  mediaViewerScreenState: MediaViewerScreenState,
   currentPagerPage: Int,
   onDownloadMediaClicked: (IPostImage) -> Unit,
   onBackPressed: () -> Unit
@@ -149,7 +149,7 @@ private fun MediaToolbar(
 
 @Composable
 private fun UpdateMediaViewerToolbarTitle(
-  mediaViewerScreenState: MediaViewerScreen.MediaViewerScreenState,
+  mediaViewerScreenState: MediaViewerScreenState,
   kurobaToolbarState: KurobaToolbarState,
   currentPagerPage: Int
 ) {

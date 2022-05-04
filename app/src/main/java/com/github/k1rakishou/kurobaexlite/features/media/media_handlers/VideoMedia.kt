@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -70,10 +69,11 @@ fun DisplayVideo(
   onPlayerUnloaded: () -> Unit,
   onVideoTapped: () -> Unit,
   videoMediaState: MediaState.Video?,
-  installMpvLibsFromGithubButtonClicked: () -> Unit
+  installMpvLibsFromGithubButtonClicked: () -> Unit,
+  toggleMuteByDefaultState: () -> Unit
 ) {
   if (pagerState.currentPage != pageIndex || videoMediaState == null) {
-    SideEffect { onPlayerUnloaded() }
+    LaunchedEffect(key1 = Unit, block = { onPlayerUnloaded() })
     return
   }
 
@@ -104,7 +104,7 @@ fun DisplayVideo(
 
   var mpvViewMut by remember(key1 = videoMediaState) { mutableStateOf<MPVView?>(null) }
   val videoStartedPlaying by videoMediaState.videoStartedPlayingState
-  val blockAutoPositionUpdate by rememberUpdatedState(newValue = videoMediaState.blockAutoPositionUpdateState.value)
+
   val videoMediaStateSaveable = rememberSaveable(
     saver = VideoMediaStateSaveable.Saver,
     key = "pager_page_${pageIndex}"
@@ -115,23 +115,33 @@ fun DisplayVideo(
     block = {
       videoMediaState.muteEventFlow.collect {
         mpvViewMut?.let { mpvView ->
+          val hasAudioState = videoMediaState.hasAudioState.value
+          if (!hasAudioState || !videoStartedPlaying) {
+            videoMediaState.isMutedState.value = true
+            videoMediaStateSaveable.wasMuted = true
+            return@let
+          }
+
+          toggleMuteByDefaultState()
           mpvView.muteUnmute(!videoMediaState.isMutedState.value)
 
           if (mpvView.isMuted) {
-            // TODO(KurobaEx): strings
             snackbarManager.toast(
               screenKey = MainScreen.SCREEN_KEY,
               toastId = MPV_OPTION_CHANGE_TOAST,
-              message = "Muted"
+              message = context.resources.getString(R.string.media_viewer_muted)
             )
           } else {
-            // TODO(KurobaEx): strings
             snackbarManager.toast(
               screenKey = MainScreen.SCREEN_KEY,
               toastId = MPV_OPTION_CHANGE_TOAST,
-              message = "Unmuted"
+              message = context.resources.getString(R.string.media_viewer_unmuted)
             )
           }
+
+          val isMuted = mpvView.isMuted
+          videoMediaState.isMutedState.value = isMuted
+          videoMediaStateSaveable.wasMuted = isMuted
         }
       }
     }
@@ -145,18 +155,16 @@ fun DisplayVideo(
           mpvView.cyclePause()
 
           if (mpvView.paused == true) {
-            // TODO(KurobaEx): strings
             snackbarManager.toast(
               screenKey = MainScreen.SCREEN_KEY,
               toastId = MPV_OPTION_CHANGE_TOAST,
-              message = "Paused"
+              message = context.resources.getString(R.string.media_viewer_paused)
             )
           } else {
-            // TODO(KurobaEx): strings
             snackbarManager.toast(
               screenKey = MainScreen.SCREEN_KEY,
               toastId = MPV_OPTION_CHANGE_TOAST,
-              message = "Resumed"
+              message = context.resources.getString(R.string.media_viewer_unpaused)
             )
           }
         }
@@ -177,22 +185,20 @@ fun DisplayVideo(
             snackbarManager.toast(
               screenKey = MainScreen.SCREEN_KEY,
               toastId = MPV_OPTION_CHANGE_TOAST,
-              message = "Failed to toggle software/hardware decoding"
+              message = context.resources.getString(R.string.media_viewer_hwsw_decoding_toggle_failed)
             )
           } else {
             if (hwDecActive) {
-              // TODO(KurobaEx): strings
               snackbarManager.toast(
                 screenKey = MainScreen.SCREEN_KEY,
                 toastId = MPV_OPTION_CHANGE_TOAST,
-                message = "Switched to software decoding"
+                message = context.resources.getString(R.string.media_viewer_switched_to_hw_decoding)
               )
             } else {
-              // TODO(KurobaEx): strings
               snackbarManager.toast(
                 screenKey = MainScreen.SCREEN_KEY,
                 toastId = MPV_OPTION_CHANGE_TOAST,
-                message = "Switched to hardware decoding"
+                message = context.resources.getString(R.string.media_viewer_switched_to_sw_decoding)
               )
             }
 
@@ -215,7 +221,6 @@ fun DisplayVideo(
   )
 
   val eventObserver = rememberEventObserver(
-    blockAutoPositionUpdate = blockAutoPositionUpdate,
     videoMediaState = videoMediaState,
     videoMediaStateSaveable = videoMediaStateSaveable,
     mpvViewMut = mpvViewMut,
@@ -256,6 +261,7 @@ fun DisplayVideo(
 
         videoMediaState.videoControlsVisibleState.value = true
 
+        mpvView.muteUnmute(videoMediaState.isMutedState.value)
         mpvView.playFile(postImageDataLoadState.fullImageUrlAsString)
         mpvView.visibility = View.VISIBLE
 
@@ -304,69 +310,79 @@ private fun rememberLogObserver(
 
 @Composable
 private fun rememberEventObserver(
-  blockAutoPositionUpdate: Boolean,
   videoMediaState: MediaState.Video,
   videoMediaStateSaveable: VideoMediaStateSaveable,
   mpvViewMut: MPVView?,
   hasAudioState: MutableState<Boolean>,
   videoStartedPlayingState: MutableState<Boolean>
 ): MPVLib.EventObserver {
-  var hasAudio by hasAudioState
   var videoStartedPlaying by videoStartedPlayingState
   val mpvViewMutUpdated by rememberUpdatedState(newValue = mpvViewMut)
   val videoMediaStateUpdated by rememberUpdatedState(newValue = videoMediaState)
   val videoMediaStateSaveableUpdated by rememberUpdatedState(newValue = videoMediaStateSaveable)
 
+  val blockAutoPositionUpdateState by videoMediaState.blockAutoPositionUpdateState
+  val blockAutoPositionUpdateUpdated by rememberUpdatedState(newValue = blockAutoPositionUpdateState)
+
   return remember {
     object : MPVLib.EventObserver {
-      val canUpdateState: Boolean
-        get() = !blockAutoPositionUpdate && !videoMediaStateSaveableUpdated.needRestoreState && videoStartedPlaying
+
+      private val canUpdateState: Boolean
+        get() = !blockAutoPositionUpdateUpdated &&
+          !videoMediaStateSaveableUpdated.needRestoreState &&
+          videoStartedPlaying
 
       override fun eventProperty(property: String) {}
       override fun eventProperty(property: String, value: Long) {
         when (property) {
           "time-pos" -> {
-            if (canUpdateState) {
-              videoMediaState.timePositionState.value = value
-              mpvViewMut?.let { mpvView ->
-                val prev = videoMediaState.demuxerCacheDurationState.value ?: 0L
-                val current = mpvView.demuxerCacheDuration?.toLong() ?: 0L
+            if (!canUpdateState) {
+              return
+            }
 
-                videoMediaState.demuxerCacheDurationState.value = Math.max(prev, current)
-              }
-              videoMediaStateSaveableUpdated.prevTimePosition = value.toInt()
-              updateSliderPositionState()
+            videoMediaState.timePositionState.value = value
+            mpvViewMut?.let { mpvView ->
+              val prev = videoMediaState.demuxerCacheDurationState.value ?: 0L
+              val current = mpvView.demuxerCacheDuration?.toLong() ?: 0L
 
-              if (mpvViewMutUpdated != null) {
-                if (videoMediaState.durationState.value == null) {
-                  mpvViewMutUpdated?.let { mpvView ->
-                    mpvView.duration?.let { duration ->
-                      videoMediaState.durationState.value = duration.toLong()
-                    }
+              videoMediaState.demuxerCacheDurationState.value = Math.max(prev, current)
+            }
+            videoMediaStateSaveableUpdated.prevTimePosition = value.toInt()
+            updateSliderPositionState()
+
+            if (mpvViewMutUpdated != null) {
+              if (videoMediaState.durationState.value == null) {
+                mpvViewMutUpdated?.let { mpvView ->
+                  mpvView.duration?.let { duration ->
+                    videoMediaState.durationState.value = duration.toLong()
                   }
                 }
+              }
 
-                if (videoMediaState.demuxerCacheDurationState.value == null) {
-                  mpvViewMutUpdated?.let { mpvView ->
-                    mpvView.demuxerCacheDuration?.let { cacheDuration ->
-                      videoMediaState.demuxerCacheDurationState.value = cacheDuration.toLong()
-                    }
+              if (videoMediaState.demuxerCacheDurationState.value == null) {
+                mpvViewMutUpdated?.let { mpvView ->
+                  mpvView.demuxerCacheDuration?.let { cacheDuration ->
+                    videoMediaState.demuxerCacheDurationState.value = cacheDuration.toLong()
                   }
                 }
               }
             }
           }
           "demuxer-cache-duration" -> {
-            if (canUpdateState) {
-              val prev = videoMediaState.demuxerCacheDurationState.value ?: 0L
-              videoMediaState.demuxerCacheDurationState.value = Math.max(prev, value)
+            if (!canUpdateState) {
+              return
             }
+
+            val prev = videoMediaState.demuxerCacheDurationState.value ?: 0L
+            videoMediaState.demuxerCacheDurationState.value = Math.max(prev, value)
           }
           "duration" -> {
-            if (canUpdateState) {
-              videoMediaState.durationState.value = value
-              updateSliderPositionState()
+            if (!canUpdateState) {
+              return
             }
+
+            videoMediaState.durationState.value = value
+            updateSliderPositionState()
           }
         }
       }
@@ -391,14 +407,13 @@ private fun rememberEventObserver(
 
         when (property) {
           "mute" -> {
-            val isMuted = if (videoStartedPlaying && !hasAudio) {
-              true
-            } else {
-              (mpvViewMutUpdated?.isMuted ?: true)
-            }
+            // no-op
+          }
+          "hwdec" -> {
+            val usingHardwareDecoding = value != "no"
 
-            videoMediaState.isMutedState.value = isMuted
-            videoMediaStateSaveableUpdated.wasMuted = isMuted
+            videoMediaState.hardwareDecodingEnabledState.value = usingHardwareDecoding
+            videoMediaStateSaveableUpdated.wasHardwareDecodingEnabled = usingHardwareDecoding
           }
         }
       }
@@ -411,7 +426,7 @@ private fun rememberEventObserver(
           MPVLib.mpvEventId.MPV_EVENT_PLAYBACK_RESTART -> {
             logcat(TAG) { "onEvent MPV_EVENT_PLAYBACK_RESTART" }
             videoStartedPlaying = true
-            hasAudio = mpvViewMutUpdated?.audioCodec != null
+            hasAudioState.value = mpvViewMutUpdated?.audioCodec != null
 
             mpvViewMutUpdated?.let { mpvView ->
               if (videoMediaStateSaveableUpdated.needRestoreState) {
@@ -480,7 +495,7 @@ private fun DisplayMpvLibrariesAreNotLoadedError(
   mpvSettings: MpvSettings,
   installMpvLibsFromGithubButtonClicked: () -> Unit
 ) {
-  SideEffect { onPlayerLoaded() }
+  LaunchedEffect(key1 = Unit, block = { onPlayerLoaded() })
 
   val lastError = remember { MPVLib.getLastError() }
   val additionalPaddings = PaddingValues(top = toolbarHeight)
