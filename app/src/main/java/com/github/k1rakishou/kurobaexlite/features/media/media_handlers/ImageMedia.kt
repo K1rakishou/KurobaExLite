@@ -2,8 +2,12 @@ package com.github.k1rakishou.kurobaexlite.features.media.media_handlers
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImage
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageDecoder
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageEventListener
@@ -26,6 +30,7 @@ import java.io.File
 fun DisplayFullImage(
   postImageDataLoadState: ImageLoadState.Ready,
   imageFile: File,
+  setIsDragGestureAllowedFunc: ((currPosition: Offset, startPosition: Offset) -> Boolean) -> Unit,
   onFullImageLoaded: () -> Unit,
   onFullImageFailedToLoad: () -> Unit,
   onImageTapped: () -> Unit,
@@ -90,16 +95,41 @@ fun DisplayFullImage(
     }
   }
 
+  val state = rememberComposeSubsamplingScaleImageState(
+    scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
+    doubleTapZoom = 2f,
+    maxScale = 3f,
+    maxMaxTileSize = { MaxTileSize.Auto() },
+    minimumScaleType = { MinimumScaleType.ScaleTypeCenterInside },
+    imageDecoderProvider = imageDecoderProvider
+  )
+  val stateUpdated by rememberUpdatedState(newValue = state)
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      val isDragGestureAllowed: (Offset, Offset) -> Boolean = func@ { currPosition, startPosition ->
+        val panInfo = stateUpdated.getPanInfo()
+        if (panInfo == null) {
+          return@func false
+        }
+
+        if (currPosition.y - startPosition.y > 0 && !panInfo.touchesTop()) {
+          return@func false
+        } else if (currPosition.y - startPosition.y < 0 && !panInfo.touchesBottom()) {
+          return@func false
+        }
+
+        return@func true
+      }
+
+      setIsDragGestureAllowedFunc(isDragGestureAllowed)
+    }
+  )
+
   ComposeSubsamplingScaleImage(
     modifier = Modifier.fillMaxSize(),
-    state = rememberComposeSubsamplingScaleImageState(
-      scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
-      doubleTapZoom = 2f,
-      maxScale = 3f,
-      maxMaxTileSize = { MaxTileSize.Auto() },
-      minimumScaleType = { MinimumScaleType.ScaleTypeCenterInside },
-      imageDecoderProvider = imageDecoderProvider
-    ),
+    state = state,
     imageSourceProvider = imageSourceProvider,
     eventListener = eventListener,
     onImageTapped = { onImageTapped() }

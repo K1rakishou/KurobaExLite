@@ -37,6 +37,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
@@ -119,6 +120,8 @@ class MediaViewerScreen(
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
+
+  private val defaultIsDragGestureAllowedFunc: (currPosition: Offset, startPosition: Offset) -> Boolean = { _, _ -> true }
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.Pop
@@ -749,8 +752,12 @@ class MediaViewerScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
+    var isDragGestureAllowedFunc by remember { mutableStateOf(defaultIsDragGestureAllowedFunc) }
 
-    DraggableArea(closeScreen = { stopPresenting() }) {
+    DraggableArea(
+      closeScreen = { stopPresenting() },
+      isDragGestureAllowedFunc = { currPosition, startPosition -> isDragGestureAllowedFunc(currPosition, startPosition) }
+    ) {
       when (postImageDataLoadState) {
         is ImageLoadState.PreparingForLoading -> {
           var loadingProgressMut by remember { mutableStateOf<Pair<Int, Float>?>(null) }
@@ -800,6 +807,7 @@ class MediaViewerScreen(
               DisplayFullImage(
                 postImageDataLoadState = postImageDataLoadState,
                 imageFile = imageFile,
+                setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
                 onFullImageLoaded = { fullMediaLoaded = true },
                 onFullImageFailedToLoad = { fullMediaLoaded = false },
                 onImageTapped = { onMediaTapped() },
@@ -817,6 +825,11 @@ class MediaViewerScreen(
               LaunchedEffect(
                 key1 = muteByDefault,
                 block = { mediaState.isMutedState.value = muteByDefault })
+
+              LaunchedEffect(
+                key1 = Unit,
+                block = { isDragGestureAllowedFunc = defaultIsDragGestureAllowedFunc }
+              )
 
               DisplayVideo(
                 pageIndex = page,
@@ -840,6 +853,11 @@ class MediaViewerScreen(
               )
             }
             is MediaState.Unsupported -> {
+              LaunchedEffect(
+                key1 = Unit,
+                block = { isDragGestureAllowedFunc = defaultIsDragGestureAllowedFunc }
+              )
+
               DisplayUnsupportedMedia(
                 toolbarHeight = toolbarHeight,
                 postImageDataLoadState = postImageDataLoadState,

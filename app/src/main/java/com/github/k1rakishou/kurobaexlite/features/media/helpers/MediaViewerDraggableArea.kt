@@ -60,6 +60,7 @@ private val boldTypeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 @Composable
 fun DraggableArea(
   closeScreen: () -> Unit,
+  isDragGestureAllowedFunc: (currentPosition: Offset, startPosition: Offset) -> Boolean,
   content: @Composable () -> Unit
 ) {
   val context = LocalContext.current
@@ -191,16 +192,23 @@ fun DraggableArea(
                 return@awaitPointerEventScope
               }
 
+              var skipGesture = false
+
               val touchSlopChange = awaitTouchSlopOrCancellation(
                 pointerId = firstChange.id,
                 onTouchSlopReached = { change, overSlop ->
+                  if (!isDragGestureAllowedFunc(change.position, firstChange.position)) {
+                    skipGesture = true
+                    return@awaitTouchSlopOrCancellation
+                  }
+
                   if (overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
                     change.consumeAllChanges()
                   }
                 }
               )
 
-              if (touchSlopChange == null) {
+              if (touchSlopChange == null || skipGesture) {
                 return@awaitPointerEventScope
               }
 

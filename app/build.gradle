@@ -210,7 +210,7 @@ dependencies {
     implementation "org.jsoup:jsoup:${jsoup}"
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
-    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:899dd4440c'
+    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:6d4652a9a4'
 
     implementation "com.squareup.moshi:moshi-kotlin:${moshi}"
     ksp "com.squareup.moshi:moshi-kotlin-codegen:${moshi}"
@@ -225,16 +225,4 @@ dependencies {
     androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_version"
     testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:${kotlin_coroutines_version}"
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
-}
-
-def getCurrentFlavor(String name) {
-    Object resultFlavor = null
-
-    android.productFlavors.all { flavor ->
-        if (flavor.name == name) {
-            resultFlavor = flavor
-        }
-    }
-
-    return resultFlavor
 }
