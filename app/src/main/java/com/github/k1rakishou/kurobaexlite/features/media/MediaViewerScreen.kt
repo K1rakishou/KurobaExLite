@@ -86,6 +86,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelper
@@ -765,7 +766,9 @@ class MediaViewerScreen(
           displayImagePreviewMovable()
 
           val loadingProgress = loadingProgressMut
-          if (loadingProgress != null) {
+          if (loadingProgress == null) {
+            KurobaComposeLoadingIndicator()
+          } else {
             val restartIndex = loadingProgress.first
             val progress = loadingProgress.second
 
@@ -939,7 +942,7 @@ class MediaViewerScreen(
       imageLoadState.fullImageUrl == postImageData.fullImageAsUrl
     }
 
-    // We can just stream videos without having to load the first
+    // We can just stream videos without having to load them first
     if (postImageDataLoadState.postImage.imageType() == ImageType.Video) {
       mediaViewerScreenState.requireImages().set(index, ImageLoadState.Ready(postImageData, null))
       return

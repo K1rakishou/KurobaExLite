@@ -47,7 +47,7 @@ fun MediaViewerPreviewStrip(
   val density = LocalDensity.current
   val currentPage = pagerState.currentPage
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
-  val lazyListState = rememberLazyListState(initialFirstVisibleItemIndex = currentPage)
+  val lazyListState = rememberLazyListState()
 
   val itemSizeDp = if (globalUiInfoManager.isTablet) 64.dp else 42.dp
   val padding = if (globalUiInfoManager.isTablet) 4.dp else 2.dp
@@ -71,11 +71,17 @@ fun MediaViewerPreviewStrip(
     return@remember (stripWidth - itemSizePx) / 2
   }
 
-  LaunchedEffect(
-    key1 = currentPage,
-    key2 = scrollOffset,
-    block = { lazyListState.animateScrollToItem(currentPage, -scrollOffset) }
-  )
+  if (stripWidth != null) {
+    LaunchedEffect(
+      key1 = Unit,
+      block = { lazyListState.scrollToItem(currentPage, -scrollOffset) }
+    )
+
+    LaunchedEffect(
+      key1 = currentPage,
+      block = { lazyListState.animateScrollToItem(currentPage, -scrollOffset) }
+    )
+  }
 
   Column(
     modifier = Modifier

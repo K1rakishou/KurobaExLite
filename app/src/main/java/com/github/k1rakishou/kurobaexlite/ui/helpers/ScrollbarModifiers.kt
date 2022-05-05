@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -22,7 +23,10 @@ import androidx.compose.ui.unit.dp
 
 private val DefaultPaddingValues = PaddingValues(0.dp)
 
+@Immutable
 sealed class ScrollbarDimens {
+
+  @Immutable
   sealed class Vertical : ScrollbarDimens() {
     abstract val width: Int
 
@@ -30,6 +34,7 @@ sealed class ScrollbarDimens {
     data class Static(override val width: Int, val height: Int) : Vertical()
   }
 
+  @Immutable
   sealed class Horizontal : ScrollbarDimens() {
     abstract val height: Int
 

@@ -294,7 +294,9 @@ class GlobalUiInfoManager(
     screenKey: ScreenKey,
     mainUiLayoutMode: MainUiLayoutMode
   ) {
-    val currentUiLayoutMode = currentUiLayoutModeState.value!!
+    val currentUiLayoutMode = currentUiLayoutModeState.value
+      ?: return
+
     if (currentUiLayoutMode != mainUiLayoutMode) {
       return
     }
@@ -318,7 +320,8 @@ class GlobalUiInfoManager(
     screenKey: ScreenKey,
     animate: Boolean = true
   ) {
-    val currentUiLayoutMode = currentUiLayoutModeState.value!!
+    val currentUiLayoutMode = currentUiLayoutModeState.value
+      ?: return
 
     if (screenKey == currentPage(currentUiLayoutMode)?.screenKey) {
       return
@@ -481,7 +484,7 @@ class GlobalUiInfoManager(
     _currentDrawerVisibility = drawerVisibility
   }
 
-  private suspend fun updateLayoutModeAndCurrentPage(
+  private fun updateLayoutModeAndCurrentPage(
     layoutType: LayoutType,
     orientation: Int?
   ) {
