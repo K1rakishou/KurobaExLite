@@ -205,7 +205,10 @@ internal fun MediaViewerScreenVideoControls(
           R.drawable.ic_volume_up_white_24dp
         }
 
-        KurobaComposeIcon(drawableId = drawableId)
+        KurobaComposeIcon(
+          drawableId = drawableId,
+          enabled = hasAudio && videoStartedPlayingUpdated
+        )
       }
 
       Spacer(modifier = Modifier.width(8.dp))
@@ -222,7 +225,10 @@ internal fun MediaViewerScreenVideoControls(
           R.drawable.exo_icon_pause
         }
 
-        KurobaComposeIcon(drawableId = drawableId)
+        KurobaComposeIcon(
+          drawableId = drawableId,
+          enabled = videoStartedPlayingUpdated
+        )
       }
     }
   }

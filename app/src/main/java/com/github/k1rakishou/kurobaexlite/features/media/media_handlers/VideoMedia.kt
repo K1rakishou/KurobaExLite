@@ -15,7 +15,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -223,9 +222,7 @@ fun DisplayVideo(
   val eventObserver = rememberEventObserver(
     videoMediaState = videoMediaState,
     videoMediaStateSaveable = videoMediaStateSaveable,
-    mpvViewMut = mpvViewMut,
-    hasAudioState = videoMediaState.hasAudioState,
-    videoStartedPlayingState = videoMediaState.videoStartedPlayingState
+    mpvViewMut = mpvViewMut
   )
 
   val logObserver = rememberLogObserver(snackbarManager)
@@ -313,10 +310,8 @@ private fun rememberEventObserver(
   videoMediaState: MediaState.Video,
   videoMediaStateSaveable: VideoMediaStateSaveable,
   mpvViewMut: MPVView?,
-  hasAudioState: MutableState<Boolean>,
-  videoStartedPlayingState: MutableState<Boolean>
 ): MPVLib.EventObserver {
-  var videoStartedPlaying by videoStartedPlayingState
+  var videoStartedPlaying by videoMediaState.videoStartedPlayingState
   val mpvViewMutUpdated by rememberUpdatedState(newValue = mpvViewMut)
   val videoMediaStateUpdated by rememberUpdatedState(newValue = videoMediaState)
   val videoMediaStateSaveableUpdated by rememberUpdatedState(newValue = videoMediaStateSaveable)
@@ -425,19 +420,16 @@ private fun rememberEventObserver(
           }
           MPVLib.mpvEventId.MPV_EVENT_PLAYBACK_RESTART -> {
             logcat(TAG) { "onEvent MPV_EVENT_PLAYBACK_RESTART" }
+
             videoStartedPlaying = true
-            hasAudioState.value = mpvViewMutUpdated?.audioCodec != null
+            videoMediaState.hasAudioState.value = mpvViewMutUpdated?.audioCodec != null
 
             mpvViewMutUpdated?.let { mpvView ->
               if (videoMediaStateSaveableUpdated.needRestoreState) {
-                videoMediaStateSaveableUpdated.wasMuted
-                  ?.let { mute -> mpvView.muteUnmute(mute) }
-                videoMediaStateSaveableUpdated.wasPaused
-                  ?.let { pause -> mpvView.pauseUnpause(pause) }
-                videoMediaStateSaveableUpdated.wasHardwareDecodingEnabled
-                  ?.let { enable -> mpvView.enableDisableHwDec(enable) }
-                videoMediaStateSaveableUpdated.prevTimePosition
-                  ?.let { prevTime -> mpvView.timePos = prevTime }
+                videoMediaStateSaveableUpdated.wasMuted?.let { mute -> mpvView.muteUnmute(mute) }
+                videoMediaStateSaveableUpdated.wasPaused?.let { pause -> mpvView.pauseUnpause(pause) }
+                videoMediaStateSaveableUpdated.wasHardwareDecodingEnabled?.let { enable -> mpvView.enableDisableHwDec(enable) }
+                videoMediaStateSaveableUpdated.prevTimePosition?.let { prevTime -> mpvView.timePos = prevTime }
 
                 videoMediaStateSaveableUpdated.needRestoreState = false
               }
