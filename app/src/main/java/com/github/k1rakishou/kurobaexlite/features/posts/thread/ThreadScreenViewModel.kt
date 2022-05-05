@@ -244,6 +244,7 @@ class ThreadScreenViewModel(
 
     postScreenState.lastLoadErrorState.value = null
     onThreadLoadingStart(threadDescriptor, loadOptions)
+    globalUiInfoManager.onLoadingErrorUpdatedOrRemoved(screenKey, false)
 
     if (threadDescriptor != null) {
       val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)?.lastViewedPDForScroll
@@ -264,6 +265,8 @@ class ThreadScreenViewModel(
       threadAutoUpdater.stopAutoUpdaterLoop()
       threadScreenState.lastLoadErrorState.value = error
       threadScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      globalUiInfoManager.onLoadingErrorUpdatedOrRemoved(screenKey, true)
+
       onThreadLoadingEnd(threadDescriptor)
 
       _postsFullyParsedOnceFlow.emit(true)

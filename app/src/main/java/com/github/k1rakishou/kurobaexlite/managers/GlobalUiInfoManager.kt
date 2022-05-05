@@ -420,7 +420,6 @@ class GlobalUiInfoManager(
     hideableUiVisibilityInfo.update(replyLayoutOpened = replyLayoutVisibility != ReplyLayoutVisibility.Closed)
   }
 
-  // TODO(KurobaEx):
   fun onLoadingErrorUpdatedOrRemoved(screenKey: ScreenKey, hasLoadError: Boolean) {
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,

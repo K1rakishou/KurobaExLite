@@ -124,6 +124,7 @@ class CatalogScreenViewModel(
     val startTime = SystemClock.elapsedRealtime()
     postScreenState.lastLoadErrorState.value = null
     onCatalogLoadingStart(catalogDescriptor, loadOptions)
+    globalUiInfoManager.onLoadingErrorUpdatedOrRemoved(screenKey, false)
 
     val postsLoadResultMaybe = if (loadOptions.loadFromNetwork || catalogDescriptor == null) {
       if (loadOptions.deleteCached && catalogDescriptor != null) {
@@ -142,6 +143,8 @@ class CatalogScreenViewModel(
 
       catalogScreenState.lastLoadErrorState.value = error
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
+      globalUiInfoManager.onLoadingErrorUpdatedOrRemoved(screenKey, true)
+
       onCatalogLoadingEnd(catalogDescriptor)
       _postsFullyParsedOnceFlow.emit(true)
       onReloadFinished?.invoke()
