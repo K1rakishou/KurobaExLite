@@ -754,6 +754,15 @@ class MediaViewerScreen(
       when (postImageDataLoadState) {
         is ImageLoadState.PreparingForLoading -> {
           var loadingProgressMut by remember { mutableStateOf<Pair<Int, Float>?>(null) }
+          var minimumLoadTimePassed by remember { mutableStateOf(false) }
+
+          LaunchedEffect(
+            key1 = Unit,
+            block = {
+              delay(150)
+              minimumLoadTimePassed = true
+            }
+          )
 
           LoadFullImage(
             mediaViewerScreenState = mediaViewerScreenState,
@@ -766,9 +775,9 @@ class MediaViewerScreen(
           displayImagePreviewMovable()
 
           val loadingProgress = loadingProgressMut
-          if (loadingProgress == null) {
+          if (loadingProgress == null && minimumLoadTimePassed) {
             KurobaComposeLoadingIndicator()
-          } else {
+          } else if (loadingProgress != null) {
             val restartIndex = loadingProgress.first
             val progress = loadingProgress.second
 

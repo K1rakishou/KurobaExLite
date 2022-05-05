@@ -37,6 +37,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.sort.WeightedSorter
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
@@ -101,6 +102,14 @@ class BoardSelectionScreen(
 
       return@HandleBackPresses popScreen()
     }
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
+        snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
+      }
+    )
 
     val siteKey = catalogDescriptor?.siteKey
       ?: Chan4.SITE_KEY

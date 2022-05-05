@@ -20,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -101,6 +102,8 @@ class CatalogScreenViewModel(
   ) {
     loadCatalogJob?.cancel()
     loadCatalogJob = null
+
+    snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
 
     loadCatalogJob = viewModelScope.launch {
       loadCatalogInternal(

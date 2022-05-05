@@ -139,15 +139,17 @@ fun DraggableArea(
 
               currentPosition = Offset(scroller.currX.toFloat(), scroller.currY.toFloat())
 
-              contentAlpha = calculateAlpha(
-                startX = scroller.startX.toFloat(),
-                startY = scroller.startY.toFloat(),
-                currX = scroller.currX.toFloat(),
-                currY = scroller.currY.toFloat(),
-                finalX = scroller.finalX.toFloat(),
-                finalY = scroller.finalY.toFloat(),
-                invert = endAction is EndAction.ScrollBack
-              )
+              if (endAction is EndAction.Fling) {
+                contentAlpha = calculateAlpha(
+                  startX = scroller.startX.toFloat(),
+                  startY = scroller.startY.toFloat(),
+                  currX = scroller.currX.toFloat(),
+                  currY = scroller.currY.toFloat(),
+                  finalX = scroller.finalX.toFloat(),
+                  finalY = scroller.finalY.toFloat(),
+                  invert = endAction is EndAction.ScrollBack
+                )
+              }
 
               delay(delayMs)
             }

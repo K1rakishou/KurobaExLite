@@ -31,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestur
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
@@ -262,12 +263,14 @@ class HomeScreen(
                 ?: return@collectLatest
 
               catalogScreenViewModel.loadCatalog(catalogDescriptor)
+              globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
             }
             SnackbarButton.ReloadLastVisitedThread -> {
               val threadDescriptor = snackbarClickable.data as? ThreadDescriptor
                 ?: return@collectLatest
 
               threadScreenViewModel.loadThread(threadDescriptor)
+              globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
             }
           }
         }
