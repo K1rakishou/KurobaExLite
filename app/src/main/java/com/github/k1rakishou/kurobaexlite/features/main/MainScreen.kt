@@ -52,7 +52,10 @@ class MainScreen(
         val availableWidth = contentSize.width
         val availableHeight = contentSize.height
 
-        globalUiInfoManager.updateMaxParentSize(availableWidth, availableHeight)
+        globalUiInfoManager.updateMaxParentSize(
+          availableWidth = availableWidth,
+          availableHeight = availableHeight
+        )
 
         val homeScreen = remember {
           val prevHomeScreen = navigationRouter.getScreenByKey(HomeScreen.SCREEN_KEY)

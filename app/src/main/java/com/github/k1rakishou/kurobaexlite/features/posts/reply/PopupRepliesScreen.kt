@@ -98,7 +98,7 @@ class PopupRepliesScreen(
           ownerScreenKey = screenKey,
           pullToRefreshEnabled = false,
           contentPadding = PaddingValues(),
-          mainUiLayoutMode = MainUiLayoutMode.Portrait,
+          mainUiLayoutMode = MainUiLayoutMode.Phone,
           postCellCommentTextSizeSp = postCellCommentTextSizeSp,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
           detectLinkableClicks = true,

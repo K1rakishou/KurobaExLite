@@ -46,7 +46,7 @@ abstract class HomeNavigationScreen(
       val screenWidth = constraints.maxWidth
 
       val modifier = if (
-        currentUiLayoutMode == MainUiLayoutMode.Portrait &&
+        currentUiLayoutMode == MainUiLayoutMode.Phone &&
         topHomeNavigationScreen != null &&
         topHomeNavigationScreen.screenKey == screenKey
       ) {

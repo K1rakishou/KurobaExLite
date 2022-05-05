@@ -59,8 +59,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDragGestureZone
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawPagerSwipeExclusionZoneTutorial
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -83,6 +85,7 @@ class HomeScreen(
   override fun Content() {
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
+    val context = LocalContext.current
 
     val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
@@ -148,6 +151,28 @@ class HomeScreen(
     // There is an issue to add support for that on the google's issues tracker but it's almost
     // 2 years old. So for the time being we have to hack around the issue.
     val pagerState = rememberPagerState(key1 = orientation, initialPage = initialScreenIndex)
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        globalUiInfoManager.notEnoughWidthForSplitLayoutFlow
+          .debounce(250.milliseconds)
+          .collect { (minCatalogSplitModelWidth, availableWidthForCatalog) ->
+            val errorMessage = context.resources.getString(
+              R.string.not_enough_with_for_split_layout_mode,
+              minCatalogSplitModelWidth,
+              availableWidthForCatalog
+            )
+
+            snackbarManager.errorToast(
+              message = errorMessage,
+              toastId = "not_enough_width_for_split_layout_mode",
+              screenKey = MainScreen.SCREEN_KEY,
+              duration = 4000.milliseconds
+            )
+          }
+      }
+    )
 
     LaunchedEffect(
       key1 = mainUiLayoutMode,

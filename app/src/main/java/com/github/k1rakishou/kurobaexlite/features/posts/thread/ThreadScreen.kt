@@ -97,7 +97,7 @@ class ThreadScreen(
     }
 
     val leftIconInfo = when (mainUiLayoutMode) {
-      MainUiLayoutMode.Portrait -> LeftIconInfo(R.drawable.ic_baseline_arrow_back_24)
+      MainUiLayoutMode.Phone -> LeftIconInfo(R.drawable.ic_baseline_arrow_back_24)
       MainUiLayoutMode.Split -> null
     }
 

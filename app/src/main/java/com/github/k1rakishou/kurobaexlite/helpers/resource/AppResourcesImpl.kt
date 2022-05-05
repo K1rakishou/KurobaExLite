@@ -1,10 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.helpers.resource
 
 import android.content.Context
+import androidx.compose.ui.unit.Density
 
 class AppResourcesImpl(
   private val appContext: Context
 ) : AppResources {
+  override val composeDensity by lazy { Density(appContext) }
 
   override fun string(stringId: Int, vararg args: Any): String {
     return if (args.isEmpty()) {

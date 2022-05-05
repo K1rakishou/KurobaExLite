@@ -7,6 +7,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -57,13 +58,12 @@ class GlobalUiInfoManager(
   private val job = SupervisorJob()
   private val coroutineScope = CoroutineScope(Dispatchers.Main + job + appScope.coroutineContext)
 
-  private val toolbarHeight by lazy { appResources.dimension(R.dimen.toolbar_height) }
+  val toolbarHeight by lazy { appResources.dimension(R.dimen.toolbar_height) }
+  val isTablet by lazy { appResources.boolean(R.bool.isTablet) }
 
   private val _lastTouchPosition = Point(0, 0)
   val lastTouchPosition: Point
     get() = Point(_lastTouchPosition.x, _lastTouchPosition.y)
-
-  val isTablet by lazy { appResources.boolean(R.bool.isTablet) }
 
   val orientations = arrayOf(
     Configuration.ORIENTATION_PORTRAIT,
@@ -78,6 +78,10 @@ class GlobalUiInfoManager(
 
   val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
   val currentOrientation = MutableStateFlow<Int?>(null)
+
+  private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>>(extraBufferCapacity = Channel.UNLIMITED)
+  val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>>
+    get() = _notEnoughWidthForSplitLayoutFlow.asSharedFlow()
 
   private var _totalScreenWidthState = mutableStateOf(0)
   val totalScreenWidthState: State<Int>
@@ -112,9 +116,6 @@ class GlobalUiInfoManager(
   val postCellSubjectTextSizeSp: StateFlow<TextUnit>
     get() = _postCellSubjectTextSizeSp.asStateFlow()
 
-  private val _homeScreenLayoutType = MutableStateFlow(LayoutType.Auto)
-  val homeScreenLayoutType: StateFlow<LayoutType>
-    get() = _homeScreenLayoutType.asStateFlow()
   private val _bookmarksScreenOnLeftSide = MutableStateFlow(false)
   val bookmarksScreenOnLeftSide: StateFlow<Boolean>
     get() = _bookmarksScreenOnLeftSide.asStateFlow()
@@ -190,21 +191,24 @@ class GlobalUiInfoManager(
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
-    _homeScreenLayoutType.value = appSettings.layoutType.read()
     _bookmarksScreenOnLeftSide.value = appSettings.bookmarksScreenOnLeftSide.read()
 
     coroutineScope.launch {
+      val totalScreenWidthFlow = snapshotFlow { totalScreenWidthState.value }
+
       combine(
         flow = appSettings.layoutType.listen(),
         flow2 = currentOrientation,
-        transform = { homeScreenLayout, orientation ->
+        flow3 = totalScreenWidthFlow,
+        transform = { homeScreenLayout, orientation, totalScreenWidth ->
           return@combine LayoutChangingSettings(
             orientation = orientation,
-            homeScreenLayoutType = homeScreenLayout
+            homeScreenLayoutType = homeScreenLayout,
+            totalScreenWidth = totalScreenWidth
           )
         }
-      ).collectLatest { (orientation, layoutType) ->
-        updateLayoutModeAndCurrentPage(layoutType, orientation)
+      ).collectLatest { (orientation, layoutType, totalScreenWidth) ->
+        updateLayoutModeAndCurrentPage(layoutType, orientation, totalScreenWidth)
       }
     }
 
@@ -226,11 +230,6 @@ class GlobalUiInfoManager(
     coroutineScope.launch {
       appSettings.postCellSubjectTextSizeSp.listen()
         .collectLatest { value -> _postCellSubjectTextSizeSp.value = value.sp }
-    }
-
-    coroutineScope.launch {
-      appSettings.layoutType.listen()
-        .collectLatest { value -> _homeScreenLayoutType.value = value }
     }
 
     coroutineScope.launch {
@@ -485,7 +484,8 @@ class GlobalUiInfoManager(
 
   private fun updateLayoutModeAndCurrentPage(
     layoutType: LayoutType,
-    orientation: Int?
+    orientation: Int?,
+    totalScreenWidth: Int
   ) {
     if (orientation == null) {
       val prevLayoutMode = currentUiLayoutModeState.value
@@ -506,24 +506,39 @@ class GlobalUiInfoManager(
       LayoutType.Auto -> {
         when {
           isTablet -> MainUiLayoutMode.Split
-          orientation == Configuration.ORIENTATION_PORTRAIT -> MainUiLayoutMode.Portrait
+          orientation == Configuration.ORIENTATION_PORTRAIT -> MainUiLayoutMode.Phone
           else -> MainUiLayoutMode.Split
         }
       }
-      LayoutType.Phone -> MainUiLayoutMode.Portrait
+      LayoutType.Phone -> MainUiLayoutMode.Phone
       LayoutType.Split -> MainUiLayoutMode.Split
     }
 
-    if (!_currentPageMapFlow.containsKey(uiLayoutMode)) {
-      val screenKey = when (uiLayoutMode) {
-        MainUiLayoutMode.Portrait -> CatalogScreen.SCREEN_KEY
-        MainUiLayoutMode.Split -> CatalogScreen.SCREEN_KEY
-      }
+    MainUiLayoutMode.values().forEach { layoutMode ->
+      if (!_currentPageMapFlow.containsKey(layoutMode)) {
+        val screenKey = when (layoutMode) {
+          MainUiLayoutMode.Phone -> CatalogScreen.SCREEN_KEY
+          MainUiLayoutMode.Split -> CatalogScreen.SCREEN_KEY
+        }
 
-      _currentPageMapFlow[uiLayoutMode] = MutableStateFlow(CurrentPage(screenKey, false))
+        _currentPageMapFlow[layoutMode] = MutableStateFlow(CurrentPage(screenKey, false))
+      }
     }
 
-    currentUiLayoutModeState.value = uiLayoutMode
+    if (totalScreenWidth <= 0) {
+      currentUiLayoutModeState.value = MainUiLayoutMode.Phone
+      return
+    }
+
+    val availableWidthForCatalog = totalScreenWidth * CATALOG_SCREEN_WEIGHT
+    val minCatalogSplitModelWidth = with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
+
+    if (uiLayoutMode == MainUiLayoutMode.Split && availableWidthForCatalog < minCatalogSplitModelWidth) {
+      _notEnoughWidthForSplitLayoutFlow.tryEmit(Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth))
+      currentUiLayoutModeState.value = MainUiLayoutMode.Phone
+    } else {
+      currentUiLayoutModeState.value = uiLayoutMode
+    }
   }
 
   companion object {
@@ -534,23 +549,29 @@ class GlobalUiInfoManager(
     private const val MAIN_UI_LAYOUT_MODE = "main_ui_layout_mode"
     private const val CURRENT_PAGE = "current_page"
     private const val IS_DRAWER_OPENED = "is_drawer_opened"
+
+    const val CATALOG_SCREEN_WEIGHT = .4f
+    const val THREAD_SCREEN_WEIGHT = .6f
+
+    private val minCatalogSplitModelWidthDp = 200.dp
   }
 
 }
 
 @Immutable
 enum class MainUiLayoutMode(val value: Int) {
-  Portrait(0),
+  Phone(0),
   Split(1);
 
   companion object {
     fun fromRawValue(rawValue: Int): MainUiLayoutMode {
-      return values().firstOrNull { it.value == rawValue } ?: Portrait
+      return values().firstOrNull { it.value == rawValue } ?: Phone
     }
   }
 }
 
 private data class LayoutChangingSettings(
   val orientation: Int?,
-  val homeScreenLayoutType: LayoutType
+  val homeScreenLayoutType: LayoutType,
+  val totalScreenWidth: Int
 )

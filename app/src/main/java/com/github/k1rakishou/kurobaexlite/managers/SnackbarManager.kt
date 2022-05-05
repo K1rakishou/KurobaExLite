@@ -250,7 +250,7 @@ class SnackbarManager(
   class RemovedSnackbarInfo(
     val snackbarId: SnackbarId,
     val timedOut: Boolean
-    )
+  )
 
   companion object {
     private val TOAST_ID_COUNTER = AtomicLong(0L)

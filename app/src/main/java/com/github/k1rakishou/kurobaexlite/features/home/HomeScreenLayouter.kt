@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
@@ -48,14 +49,14 @@ class HomeScreenLayouter(
                 componentActivity = componentActivity,
                 navigationRouter = router.childRouter(CatalogScreen.SCREEN_KEY)
               ),
-              weight = 0.4f
+              weight = GlobalUiInfoManager.CATALOG_SCREEN_WEIGHT
             ),
             ScreenLayout.ChildScreen(
               composeScreen = ThreadScreen(
                 componentActivity = componentActivity,
                 navigationRouter = router.childRouter(ThreadScreen.SCREEN_KEY)
               ),
-              weight = 0.6f
+              weight = GlobalUiInfoManager.THREAD_SCREEN_WEIGHT
             )
           )
         }
@@ -68,7 +69,7 @@ class HomeScreenLayouter(
     bookmarksScreenOnLeftSide: Boolean
   ): List<ComposeScreenWithToolbar> {
     when (uiLayoutMode) {
-      MainUiLayoutMode.Portrait -> {
+      MainUiLayoutMode.Phone -> {
         if (bookmarksScreenOnLeftSide) {
           return portraitScreens
         }
