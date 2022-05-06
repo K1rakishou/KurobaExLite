@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
@@ -37,6 +38,8 @@ class CatalogScreenViewModel(
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
   private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
   private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
+  private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
+
   private val catalogScreenState = CatalogScreenPostsState()
   private val updateChanCatalogViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
 
@@ -64,7 +67,7 @@ class CatalogScreenViewModel(
       return
     }
 
-    val lastVisitedCatalog = appSettings.lastVisitedCatalog.read()
+    val lastVisitedCatalog = loadNavigationHistory.lastVisitedCatalog()
     if (lastVisitedCatalog != null) {
       logcat(tag = TAG) { "loadPrevVisitedCatalog() found ${lastVisitedCatalog} from lastVisitedCatalog" }
 

@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
-import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedCatalog
-import com.github.k1rakishou.kurobaexlite.helpers.settings.LastVisitedThread
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -12,15 +11,15 @@ import kotlinx.coroutines.launch
 class LastVisitedEndpointManager(
   private val appScope: CoroutineScope
 ) {
-  private val _lastVisitedCatalogFlow = MutableSharedFlow<LastVisitedCatalog>(extraBufferCapacity = 1)
-  val lastVisitedCatalogFlow: SharedFlow<LastVisitedCatalog>
+  private val _lastVisitedCatalogFlow = MutableSharedFlow<LoadNavigationHistory.LastVisitedCatalog>(extraBufferCapacity = 1)
+  val lastVisitedCatalogFlow: SharedFlow<LoadNavigationHistory.LastVisitedCatalog>
     get() = _lastVisitedCatalogFlow.asSharedFlow()
 
-  private val _lastVisitedThreadFlow = MutableSharedFlow<LastVisitedThread>(extraBufferCapacity = 1)
-  val lastVisitedThreadFlow: SharedFlow<LastVisitedThread>
+  private val _lastVisitedThreadFlow = MutableSharedFlow<LoadNavigationHistory.LastVisitedThread>(extraBufferCapacity = 1)
+  val lastVisitedThreadFlow: SharedFlow<LoadNavigationHistory.LastVisitedThread>
     get() = _lastVisitedThreadFlow.asSharedFlow()
 
-  fun notifyRestoreLastVisitedCatalog(lastVisitedCatalog: LastVisitedCatalog) {
+  fun notifyRestoreLastVisitedCatalog(lastVisitedCatalog: LoadNavigationHistory.LastVisitedCatalog) {
     appScope.launch {
       // Wait a little bit for the UI to initialize
       delay(500)
@@ -28,7 +27,7 @@ class LastVisitedEndpointManager(
     }
   }
 
-  fun notifyRestoreLastVisitedThread(lastVisitedThread: LastVisitedThread) {
+  fun notifyRestoreLastVisitedThread(lastVisitedThread: LoadNavigationHistory.LastVisitedThread) {
     appScope.launch {
       // Wait a little bit for the UI to initialize
       delay(500)

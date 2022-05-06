@@ -35,15 +35,23 @@ abstract class NavigationHistoryDao {
   abstract suspend fun selectAllOrdered(maxCount: Int): List<NavigationHistoryEntity>
 
   @Query("""
-    DELETE FROM navigation_history 
-    WHERE navigation_history.sort_order NOT IN 
-    (
-      SELECT navigation_history.sort_order FROM navigation_history
-      ORDER BY sort_order
-      LIMIT :maxCount
-    )
+    SELECT * FROM navigation_history
+    WHERE navigation_history.catalog_or_thread_thread_no > 0
+    ORDER BY sort_order
+    LIMIT 1
   """)
-  abstract suspend fun deleteEntriesExceedingLimit(maxCount: Int)
+  abstract suspend fun selectLastVisitedThreadEntity(): NavigationHistoryEntity?
+
+  @Query("""
+    SELECT * FROM navigation_history
+    WHERE navigation_history.catalog_or_thread_thread_no <= 0
+    ORDER BY sort_order
+    LIMIT 1
+  """)
+  abstract suspend fun selectLastVisitedCatalogEntity(): NavigationHistoryEntity?
+
+  @Query("DELETE FROM navigation_history")
+  abstract suspend fun deleteAll()
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   abstract suspend fun insertOrUpdateMany(navigationHistoryEntityList: List<NavigationHistoryEntity>)

@@ -53,9 +53,7 @@ class NavigationHistoryScreenViewModel : BaseViewModel() {
       }
     }
 
-    loadNavigationHistory.loadFromDatabase(
-      maxCount = appSettings.navigationHistoryMaxSize.read()
-    )
+    loadNavigationHistory.loadFromDatabase(appSettings.navigationHistoryMaxSize.read())
   }
 
   fun removeNavigationElement(uiNavigationElement: UiNavigationElement) {

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.navigation
 
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
@@ -21,9 +22,6 @@ class LoadNavigationHistory(
     }
 
     kurobaExLiteDatabase.transaction {
-      // This is how we limit the max amount of navigation history elements in the database
-      navigationHistoryDao.deleteEntriesExceedingLimit(maxCount)
-
       val navigationHistoryEntityList = navigationHistoryDao.selectAllOrdered(maxCount)
       if (navigationHistoryEntityList.isEmpty()) {
         logcat(TAG) { "navigationHistoryDao.selectAllOrdered(maxCount) returned empty list" }
@@ -49,6 +47,42 @@ class LoadNavigationHistory(
       logcat(TAG) { "loaded ${navigationElementList.size} navigation elements" }
     }.onFailure { error -> logcat(TAG) { "loadFromDatabase() error: ${error.asLog()}" } }
   }
+
+  suspend fun loadLastVisitedThread(): LastVisitedThread? {
+    return kurobaExLiteDatabase.call {
+      val navigationHistoryEntity = navigationHistoryDao.selectLastVisitedThreadEntity()
+        ?: return@call null
+
+      return@call LastVisitedThread(
+        threadDescriptor = navigationHistoryEntity.catalogOrThreadKey.threadDescriptor,
+        title = navigationHistoryEntity.title
+      )
+    }
+      .onFailure { error -> logcatError(TAG) { "selectLastVisitedThreadEntity() error: ${error.asLog()}" } }
+      .getOrNull()
+  }
+
+  suspend fun lastVisitedCatalog(): LastVisitedCatalog? {
+    return kurobaExLiteDatabase.call {
+      val navigationHistoryEntity = navigationHistoryDao.selectLastVisitedCatalogEntity()
+        ?: return@call null
+
+      return@call LastVisitedCatalog(
+        catalogDescriptor = navigationHistoryEntity.catalogOrThreadKey.catalogDescriptor
+      )
+    }
+      .onFailure { error -> logcatError(TAG) { "selectLastVisitedCatalogEntity() error: ${error.asLog()}" } }
+      .getOrNull()
+  }
+
+  data class LastVisitedCatalog(
+    val catalogDescriptor: CatalogDescriptor
+  )
+
+  data class LastVisitedThread(
+    val threadDescriptor: ThreadDescriptor,
+    val title: String?,
+  )
 
   companion object {
     private const val TAG = "LoadNavigationHistory"

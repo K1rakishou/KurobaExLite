@@ -7,8 +7,10 @@ import com.github.k1rakishou.kurobaexlite.model.data.entity.NavigationHistoryEnt
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
 
@@ -28,6 +30,8 @@ class PersistNavigationHistory(
       kurobaExLiteDatabase.transaction {
         val wholeNavigationHistory = navigationHistoryManager.all()
         if (wholeNavigationHistory.isEmpty()) {
+          logcat(TAG) { "wholeNavigationHistory is empty, deleting everything from the database" }
+          navigationHistoryDao.deleteAll()
           return@transaction
         }
 
@@ -40,7 +44,12 @@ class PersistNavigationHistory(
           )
         }
 
-        navigationHistoryDao.insertOrUpdateMany(navigationHistoryEntityList)
+        withContext(NonCancellable) {
+          // This is how we limit the max amount of navigation history elements in the database
+          navigationHistoryDao.deleteAll()
+          navigationHistoryDao.insertOrUpdateMany(navigationHistoryEntityList)
+        }
+
         logcat(TAG) { "persisted ${navigationHistoryEntityList.size} navigation elements" }
       }.onFailure { error -> logcat(TAG) { "persist() error: ${error.asLog()}" } }
     }

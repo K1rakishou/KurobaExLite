@@ -9,9 +9,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -61,9 +58,6 @@ class AppSettings(
   val lastRememberedFilePicker by lazy { StringSetting("", "last_remembered_file_picker", dataStore) }
   val mediaViewerUiVisible by lazy { BooleanSetting(true, "media_viewer_ui_visible", dataStore) }
 
-  val lastVisitedCatalog by lazy { JsonSetting<LastVisitedCatalog?>(moshi.adapter(LastVisitedCatalog::class.java), null, "last_visited_catalog", dataStore) }
-  val lastVisitedThread by lazy { JsonSetting<LastVisitedThread?>(moshi.adapter(LastVisitedThread::class.java), null, "last_visited_thread", dataStore) }
-
   val drawerDragGestureTutorialShown by lazy { BooleanSetting(false, "drawer_drag_gesture_tutorial_shown", dataStore) }
 
   val userAgent by lazy {
@@ -99,57 +93,6 @@ data class CatalogSortSetting(
   @Json (name = "sort") val sort: CatalogSort = CatalogSort.BUMP,
   @Json (name = "ascending") val ascending: Boolean = false
 )
-
-@JsonClass(generateAdapter = true)
-data class LastVisitedCatalog(
-  @Json (name = "site_key") val siteKey: String,
-  @Json (name = "board_code") val boardCode: String
-) {
-
-  fun toCatalogDescriptor(): CatalogDescriptor {
-    return CatalogDescriptor(
-      siteKey = SiteKey(siteKey),
-      boardCode = boardCode
-    )
-  }
-
-  companion object {
-    fun fromCatalogDescriptor(catalogDescriptor: CatalogDescriptor): LastVisitedCatalog {
-      return LastVisitedCatalog(
-        siteKey = catalogDescriptor.siteKeyActual,
-        boardCode = catalogDescriptor.boardCode
-      )
-    }
-  }
-}
-
-@JsonClass(generateAdapter = true)
-data class LastVisitedThread(
-  @Json (name = "site_key") val siteKey: String,
-  @Json (name = "board_code") val boardCode: String,
-  @Json (name = "thread_no") val threadNo: Long,
-  @Json (name = "title") val title: String?,
-) {
-
-  fun toThreadDescriptor(): ThreadDescriptor {
-    return ThreadDescriptor.create(
-      siteKey = SiteKey(siteKey),
-      boardCode = boardCode,
-      threadNo = threadNo
-    )
-  }
-
-  companion object {
-    fun fromThreadDescriptor(threadDescriptor: ThreadDescriptor, title: String?): LastVisitedThread {
-      return LastVisitedThread(
-        siteKey = threadDescriptor.siteKeyActual,
-        boardCode = threadDescriptor.boardCode,
-        threadNo = threadDescriptor.threadNo,
-        title = title
-      )
-    }
-  }
-}
 
 enum class CatalogSort(val orderName: String) {
   BUMP("bump"),

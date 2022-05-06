@@ -29,14 +29,14 @@ import kotlinx.coroutines.withContext
 abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
 
   @CheckResult
-  suspend fun <T : Any> transaction(func: suspend Daos.() -> T): Result<T> {
+  suspend fun <T> transaction(func: suspend Daos.() -> T): Result<T> {
     return withContext(roomDispatcher) {
       return@withContext Result.Try { withTransaction { func(this@KurobaExLiteDatabase) } }
     }
   }
 
   @CheckResult
-  suspend fun <T : Any> call(func: suspend Daos.() -> T): Result<T> {
+  suspend fun <T> call(func: suspend Daos.() -> T): Result<T> {
     return withContext(roomDispatcher) {
       return@withContext Result.Try { func(this@KurobaExLiteDatabase) }
     }

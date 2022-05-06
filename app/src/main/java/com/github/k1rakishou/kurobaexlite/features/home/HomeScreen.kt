@@ -261,22 +261,6 @@ class HomeScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        snackbarManager.removedSnackbarsFlow.collect { removedSnackbarInfoSet ->
-          val removedSnackbarIds = removedSnackbarInfoSet.map { it.snackbarId }.toSet()
-
-          if (SnackbarId.ReloadLastVisitedCatalog in removedSnackbarIds) {
-            appSettings.lastVisitedCatalog.remove()
-          }
-          if (SnackbarId.ReloadLastVisitedThread in removedSnackbarIds) {
-            appSettings.lastVisitedThread.remove()
-          }
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
         snackbarManager.snackbarElementsClickFlow.collectLatest { snackbarClickable ->
           if (snackbarClickable.key !is SnackbarButton) {
             return@collectLatest
@@ -309,19 +293,19 @@ class HomeScreen(
           snackbarManager.pushSnackbar(
             SnackbarInfo(
               snackbarId = SnackbarId.ReloadLastVisitedCatalog,
-              aliveUntil = SnackbarInfo.snackbarDuration(10.seconds),
+              aliveUntil = SnackbarInfo.snackbarDuration(7.seconds),
               content = listOf(
                 SnackbarContentItem.Text(
                   context.getString(
                     R.string.restore_last_visited_catalog,
-                    lastVisitedCatalog.toCatalogDescriptor().asReadableString()
+                    lastVisitedCatalog.catalogDescriptor.asReadableString()
                   )
                 ),
                 SnackbarContentItem.Spacer(space = 8.dp),
                 SnackbarContentItem.Button(
                   key = SnackbarButton.ReloadLastVisitedCatalog,
                   text = context.getString(R.string.restore),
-                  data = lastVisitedCatalog.toCatalogDescriptor()
+                  data = lastVisitedCatalog.catalogDescriptor
                 ),
                 SnackbarContentItem.Spacer(space = 8.dp),
               )
@@ -335,7 +319,7 @@ class HomeScreen(
       key1 = Unit,
       block = {
         lastVisitedEndpointManager.lastVisitedThreadFlow.collect { lastVisitedThread ->
-          val threadDescriptor = lastVisitedThread.toThreadDescriptor()
+          val threadDescriptor = lastVisitedThread.threadDescriptor
 
           val lastVisitedThreadTitle = if (lastVisitedThread.title.isNotNullNorBlank()) {
             "${threadDescriptor.siteKeyActual}/${threadDescriptor.boardCode}/${lastVisitedThread.title}"
@@ -347,7 +331,7 @@ class HomeScreen(
             SnackbarInfo(
               screenKey = MainScreen.SCREEN_KEY,
               snackbarId = SnackbarId.ReloadLastVisitedThread,
-              aliveUntil = SnackbarInfo.snackbarDuration(10.seconds),
+              aliveUntil = SnackbarInfo.snackbarDuration(7.seconds),
               content = listOf(
                 SnackbarContentItem.Text(
                   context.getString(

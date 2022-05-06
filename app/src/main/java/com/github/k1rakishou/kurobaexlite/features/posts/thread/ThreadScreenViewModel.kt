@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
@@ -44,6 +45,7 @@ class ThreadScreenViewModel(
   private val updateChanThreadView: UpdateChanThreadView by inject(UpdateChanThreadView::class.java)
   private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
   private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
+  private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     executeUpdate = { refresh() },
@@ -82,7 +84,7 @@ class ThreadScreenViewModel(
       return
     }
 
-    val lastVisitedThread = appSettings.lastVisitedThread.read()
+    val lastVisitedThread = loadNavigationHistory.loadLastVisitedThread()
     if (lastVisitedThread != null) {
       logcat(tag = TAG) { "loadPrevVisitedThread() found ${lastVisitedThread} from lastVisitedThread" }
 
