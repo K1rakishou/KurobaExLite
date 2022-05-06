@@ -4,8 +4,10 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,12 +20,15 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -34,6 +39,7 @@ import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -45,23 +51,30 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class NavigationHistoryScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen(componentActivity, navigationRouter) {
   private val navigationHistoryScreenViewModel: NavigationHistoryScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
@@ -69,11 +82,90 @@ class NavigationHistoryScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
+  override val hasFab: Boolean = false
+
+  // TODO(KurobaEx): not implemented
+  override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
+
+  private val historyToolbarState by lazy {
+    return@lazy KurobaToolbarState(
+      leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
+      middlePartInfo = MiddlePartInfo(centerContent = false),
+      rightPartInfo = RightPartInfo(
+        ToolbarIcon(HistoryToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
+      )
+    )
+  }
+
   @Composable
-  override fun Content() {
+  override fun Toolbar(boxScope: BoxScope) {
+    val screenContentLoaded by screenContentLoadedFlow.collectAsState()
+    val historyScreenOnLeftSideMut by appSettings.historyScreenOnLeftSide.listen().collectAsState(initial = null)
+    val historyScreenOnLeftSide = historyScreenOnLeftSideMut
+
+    LaunchedEffect(
+      key1 = screenContentLoaded,
+      block = {
+        historyToolbarState.rightPartInfo?.let { rightPartInfo ->
+          rightPartInfo.toolbarIcons.forEach { toolbarIcon ->
+            if (toolbarIcon.key == HistoryToolbarIcons.Overflow) {
+              return@forEach
+            }
+
+            toolbarIcon.iconVisible.value = screenContentLoaded
+          }
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        // TODO(KurobaEx):
+        historyToolbarState.toolbarTitleState.value = "History"
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        historyToolbarState.toolbarIconClickEventFlow.collect { key ->
+          when (key as HistoryToolbarIcons) {
+            HistoryToolbarIcons.Overflow -> {
+              // TODO(KurobaEx):
+            }
+          }
+        }
+      }
+    )
+
+    KurobaToolbar(
+      screenKey = screenKey,
+      kurobaToolbarState = historyToolbarState,
+      canProcessBackEvent = { true },
+      onLeftIconClicked = {
+        if (historyScreenOnLeftSide == null) {
+          return@KurobaToolbar
+        }
+
+        if (historyScreenOnLeftSide) {
+          globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
+        } else {
+          globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
+        }
+      },
+      onMiddleMenuClicked = null,
+      onSearchQueryUpdated = null
+    )
+  }
+
+  @Composable
+  override fun HomeNavigationScreenContent() {
     val chanTheme = LocalChanTheme.current
     val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
+
+    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val navigationHistoryList = navigationHistoryScreenViewModel.navigationHistoryList
     val circleCropTransformation = remember { CircleCropTransformation() }
     val navElementHeight = 42.dp
@@ -154,7 +246,9 @@ class NavigationHistoryScreen(
         .background(chanTheme.backColorCompose)
         .consumeClicks(enabled = true)
     ) {
-      val contentPadding = remember(key1 = windowInsets) { windowInsets.asPaddingValues() }
+      val contentPadding = remember(key1 = windowInsets) {
+        PaddingValues(top = toolbarHeight + windowInsets.top, bottom = windowInsets.bottom)
+      }
 
       LazyColumnWithFastScroller(
         modifier = Modifier.fillMaxSize(),
@@ -208,7 +302,6 @@ class NavigationHistoryScreen(
             circleCropTransformation = circleCropTransformation,
             onItemClicked = { element ->
               catalogScreenViewModel.loadCatalog(element.chanDescriptor)
-              globalUiInfoManager.closeDrawer(withAnimation = true)
               globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
               navigationHistoryScreenViewModel.reorderNavigationElement(element)
             },
@@ -224,7 +317,6 @@ class NavigationHistoryScreen(
             circleCropTransformation = circleCropTransformation,
             onItemClicked = { element ->
               threadScreenViewModel.loadThread(element.chanDescriptor)
-              globalUiInfoManager.closeDrawer(withAnimation = true)
               globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
               navigationHistoryScreenViewModel.reorderNavigationElement(element)
             },
@@ -411,6 +503,10 @@ class NavigationHistoryScreen(
 
   enum class SnackbarButton {
     UndoNavHistoryDeletion
+  }
+
+  private enum class HistoryToolbarIcons {
+    Overflow
   }
 
   companion object {

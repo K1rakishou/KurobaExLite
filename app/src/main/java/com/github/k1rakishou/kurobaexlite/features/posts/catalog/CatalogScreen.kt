@@ -111,9 +111,9 @@ class CatalogScreen(
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_layout_mode)
       ),
       FloatingMenuItem.Check(
-        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_BOOKMARKS_SCREEN_POSITION,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_bookmarks_on_left_side),
-        isChecked = { appSettings.bookmarksScreenOnLeftSide.read() }
+        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_HISTORY_SCREEN_POSITION,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_history_on_left_side),
+        isChecked = { appSettings.historyScreenOnLeftSide.read() }
       ),
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ACTION_OPEN_THREAD_BY_IDENTIFIER,

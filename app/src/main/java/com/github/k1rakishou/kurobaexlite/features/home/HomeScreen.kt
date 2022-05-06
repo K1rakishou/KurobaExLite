@@ -112,16 +112,16 @@ class HomeScreen(
       return
     }
 
-    val bookmarksScreenOnLeftSide by globalUiInfoManager.bookmarksScreenOnLeftSide.collectAsState()
+    val historyScreenOnLeftSide by globalUiInfoManager.historyScreenOnLeftSide.collectAsState()
     val currentPage by globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
 
     val childScreens = remember(
-      key1 = bookmarksScreenOnLeftSide,
+      key1 = historyScreenOnLeftSide,
       key2 = mainUiLayoutMode
     ) {
       return@remember homeChildScreens.getChildScreens(
         uiLayoutMode = mainUiLayoutMode,
-        bookmarksScreenOnLeftSide = bookmarksScreenOnLeftSide
+        historyScreenOnLeftSide = historyScreenOnLeftSide
       )
     }
 
@@ -176,7 +176,7 @@ class HomeScreen(
 
     LaunchedEffect(
       key1 = mainUiLayoutMode,
-      key2 = bookmarksScreenOnLeftSide,
+      key2 = historyScreenOnLeftSide,
       block = {
         globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collect { currentPage ->
           scrollToPageByScreenKey(

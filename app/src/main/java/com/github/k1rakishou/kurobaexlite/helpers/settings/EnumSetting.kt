@@ -69,6 +69,9 @@ class EnumSetting<T : Enum<T>>(
       val enumValue = enumValues.firstOrNull { it.name == enumName }
 
       return@map enumValue ?: read()
+    }.catch {
+      write(defaultValue)
+      emit(defaultValue)
     }
   }
 

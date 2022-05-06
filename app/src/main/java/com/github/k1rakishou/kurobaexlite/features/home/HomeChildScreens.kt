@@ -18,9 +18,9 @@ class HomeChildScreens(
 
   fun getChildScreens(
     uiLayoutMode: MainUiLayoutMode,
-    bookmarksScreenOnLeftSide: Boolean
+    historyScreenOnLeftSide: Boolean
   ): ChildScreens {
-    val screens = homeScreenLayouter.layoutScreens(uiLayoutMode, bookmarksScreenOnLeftSide)
+    val screens = homeScreenLayouter.layoutScreens(uiLayoutMode, historyScreenOnLeftSide)
     return ChildScreens(screens)
   }
 

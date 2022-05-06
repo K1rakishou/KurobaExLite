@@ -79,7 +79,7 @@
     <string name="catalog_toolbar_open_thread_by_identifier">Open thread by any identifier</string>
     <string name="catalog_toolbar_open_thread_by_identifier_subtitle">Allows opening threads by url/threadId/etc.</string>
     <string name="catalog_toolbar_layout_mode">Layout mode</string>
-    <string name="catalog_toolbar_bookmarks_on_left_side">Bookmarks screen on left side</string>
+    <string name="catalog_toolbar_history_on_left_side">History screen on left side</string>
     <string name="catalog_toolbar_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_toolbar_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
     <string name="catalog_toolbar_album">Album</string>

@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.home
 
 import androidx.activity.ComponentActivity
-import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen
+import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -18,7 +18,7 @@ class HomeScreenLayouter(
 
   private val portraitScreens by lazy {
     return@lazy listOf<ComposeScreenWithToolbar>(
-      BookmarksScreen(
+      NavigationHistoryScreen(
         componentActivity = componentActivity,
         navigationRouter = navigationRouter
       ),
@@ -35,7 +35,7 @@ class HomeScreenLayouter(
 
   private val splitScreens by lazy {
     return@lazy listOf<ComposeScreenWithToolbar>(
-      BookmarksScreen(
+      NavigationHistoryScreen(
         componentActivity = componentActivity,
         navigationRouter = navigationRouter
       ),
@@ -66,11 +66,11 @@ class HomeScreenLayouter(
 
   fun layoutScreens(
     uiLayoutMode: MainUiLayoutMode,
-    bookmarksScreenOnLeftSide: Boolean
+    historyScreenOnLeftSide: Boolean
   ): List<ComposeScreenWithToolbar> {
     when (uiLayoutMode) {
       MainUiLayoutMode.Phone -> {
-        if (bookmarksScreenOnLeftSide) {
+        if (historyScreenOnLeftSide) {
           return portraitScreens
         }
 
@@ -80,7 +80,7 @@ class HomeScreenLayouter(
         return screens
       }
       MainUiLayoutMode.Split -> {
-        if (bookmarksScreenOnLeftSide) {
+        if (historyScreenOnLeftSide) {
           return splitScreens
         }
 

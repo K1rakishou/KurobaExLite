@@ -25,7 +25,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreen
+import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
@@ -82,8 +82,8 @@ fun HomeScreenDrawerLayout(
   val density = LocalDensity.current
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
-  val childRouter = remember { navigationRouter.childRouter(NavigationHistoryScreen.SCREEN_KEY) }
-  val drawerScreen = remember { NavigationHistoryScreen(componentActivity, navigationRouter) }
+  val childRouter = remember { navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY) }
+  val drawerScreen = remember { BookmarksScreen(componentActivity, navigationRouter) }
   val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
 
   val dragEventsCombined = remember { mutableListOf<DrawerVisibility.Drag>() }

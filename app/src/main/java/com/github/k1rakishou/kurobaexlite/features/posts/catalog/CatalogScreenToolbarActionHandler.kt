@@ -53,7 +53,7 @@ class CatalogScreenToolbarActionHandler(
           navigationRouter = navigationRouter
         )
       }
-      ACTION_BOOKMARKS_SCREEN_POSITION -> appSettings.bookmarksScreenOnLeftSide.toggle()
+      ACTION_HISTORY_SCREEN_POSITION -> appSettings.historyScreenOnLeftSide.toggle()
       ACTION_OPEN_THREAD_BY_IDENTIFIER -> {
         handleOpenThreadByIdentifier(
           componentActivity = componentActivity,
@@ -176,7 +176,7 @@ class CatalogScreenToolbarActionHandler(
     const val ACTION_SCROLL_BOTTOM = 3
     const val ACTION_LAYOUT_MODE = 4
     const val ACTION_CATALOG_ALBUM = 5
-    const val ACTION_BOOKMARKS_SCREEN_POSITION = 6
+    const val ACTION_HISTORY_SCREEN_POSITION = 6
   }
 
 }

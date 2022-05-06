@@ -62,6 +62,10 @@ class StringSetting(
   override fun listen(): Flow<String> {
     return dataStore.data
       .map { prefs -> prefs.get(prefsKey) ?: read() }
+      .catch {
+        write(defaultValue)
+        emit(defaultValue)
+      }
   }
 
 }

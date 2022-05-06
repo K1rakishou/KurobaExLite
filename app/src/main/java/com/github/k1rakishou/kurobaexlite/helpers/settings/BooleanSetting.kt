@@ -70,6 +70,10 @@ class BooleanSetting(
   override fun listen(): Flow<Boolean> {
     return dataStore.data
       .map { prefs -> prefs.get(prefsKey) ?: read() }
+      .catch {
+        write(defaultValue)
+        emit(defaultValue)
+      }
   }
 
 }

@@ -33,7 +33,7 @@ class AppSettings(
   }
 
   val layoutType by lazy { EnumSetting<LayoutType>(LayoutType.Auto, "layout_type", LayoutType::class.java, dataStore) }
-  val bookmarksScreenOnLeftSide by lazy { BooleanSetting(true, "bookmarks_screen_on_left_side", dataStore) }
+  val historyScreenOnLeftSide by lazy { BooleanSetting(true, "history_screen_on_left_side", dataStore) }
 
   val textTitleSizeSp by lazy {
     val defaultValue = if (isTablet) 16 else 14

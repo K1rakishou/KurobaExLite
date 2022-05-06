@@ -66,6 +66,10 @@ class NumberSetting<T : Number>(
   override fun listen(): Flow<T> {
     return dataStore.data
       .map { prefs -> (prefs.get(prefsKey)?.deserializeToNumber() as T?) ?: read() }
+      .catch {
+        write(defaultValue)
+        emit(defaultValue)
+      }
   }
 
   private fun Number.serializeToString(): String? {

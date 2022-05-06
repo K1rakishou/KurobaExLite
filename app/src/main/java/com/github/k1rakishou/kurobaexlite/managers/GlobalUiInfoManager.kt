@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.SaveableComponent
 import com.github.k1rakishou.kurobaexlite.helpers.getParcelableMap
@@ -28,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.HideableUiVisibilityInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SplitScreenLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -116,9 +118,9 @@ class GlobalUiInfoManager(
   val postCellSubjectTextSizeSp: StateFlow<TextUnit>
     get() = _postCellSubjectTextSizeSp.asStateFlow()
 
-  private val _bookmarksScreenOnLeftSide = MutableStateFlow(false)
-  val bookmarksScreenOnLeftSide: StateFlow<Boolean>
-    get() = _bookmarksScreenOnLeftSide.asStateFlow()
+  private val _historyScreenOnLeftSide = MutableStateFlow(false)
+  val historyScreenOnLeftSide: StateFlow<Boolean>
+    get() = _historyScreenOnLeftSide.asStateFlow()
   // ^^^ Settings
 
   override val key: String = SAVE_STATE_KEY
@@ -191,7 +193,7 @@ class GlobalUiInfoManager(
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
-    _bookmarksScreenOnLeftSide.value = appSettings.bookmarksScreenOnLeftSide.read()
+    _historyScreenOnLeftSide.value = appSettings.historyScreenOnLeftSide.read()
 
     coroutineScope.launch {
       val totalScreenWidthFlow = snapshotFlow { totalScreenWidthState.value }
@@ -233,8 +235,8 @@ class GlobalUiInfoManager(
     }
 
     coroutineScope.launch {
-      appSettings.bookmarksScreenOnLeftSide.listen()
-        .collectLatest { value -> _bookmarksScreenOnLeftSide.value = value }
+      appSettings.historyScreenOnLeftSide.listen()
+        .collectLatest { value -> _historyScreenOnLeftSide.value = value }
     }
 
     logcat { "UiInfoManager initialization finished" }
@@ -300,15 +302,17 @@ class GlobalUiInfoManager(
       return
     }
 
-    if (screenKey == currentPage(currentUiLayoutMode)?.screenKey) {
+    val actualScreenKey = layoutModeDependantScreenKey(screenKey, currentUiLayoutMode)
+
+    if (actualScreenKey == currentPage(currentUiLayoutMode)?.screenKey) {
       return
     }
 
-    val newCurrentPage = CurrentPage(screenKey, false)
+    val newCurrentPage = CurrentPage(actualScreenKey, false)
     _currentPageMapFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
-      key = screenKey,
+      key = actualScreenKey,
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
@@ -322,15 +326,20 @@ class GlobalUiInfoManager(
     val currentUiLayoutMode = currentUiLayoutModeState.value
       ?: return
 
-    if (screenKey == currentPage(currentUiLayoutMode)?.screenKey) {
+    val actualScreenKey = layoutModeDependantScreenKey(
+      screenKey = screenKey,
+      currentUiLayoutMode = currentUiLayoutMode
+    )
+
+    if (actualScreenKey == currentPage(currentUiLayoutMode)?.screenKey) {
       return
     }
 
-    val newCurrentPage = CurrentPage(screenKey, animate)
+    val newCurrentPage = CurrentPage(actualScreenKey, animate)
     _currentPageMapFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
-      key = screenKey,
+      key = actualScreenKey,
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
@@ -475,6 +484,22 @@ class GlobalUiInfoManager(
   fun flingDrawer(velocity: Velocity) {
     val drawerVisibility = DrawerVisibility.Fling(velocity)
     updateDrawerVisibility(drawerVisibility)
+  }
+
+  private fun layoutModeDependantScreenKey(
+    screenKey: ScreenKey,
+    currentUiLayoutMode: MainUiLayoutMode
+  ): ScreenKey {
+    return when (currentUiLayoutMode) {
+      MainUiLayoutMode.Phone -> screenKey
+      MainUiLayoutMode.Split -> {
+        if (screenKey == CatalogScreen.SCREEN_KEY || screenKey == ThreadScreen.SCREEN_KEY) {
+          return SplitScreenLayout.SCREEN_KEY
+        }
+
+        return screenKey
+      }
+    }
   }
 
   private fun updateDrawerVisibility(drawerVisibility: DrawerVisibility) {

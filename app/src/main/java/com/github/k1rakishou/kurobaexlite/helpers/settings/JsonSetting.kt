@@ -69,6 +69,10 @@ class JsonSetting<T : Any?>(
           ?.let { fromJson(it) }
           ?: read()
       }
+      .catch {
+        write(defaultValue)
+        emit(defaultValue)
+      }
   }
 
   private fun toJson(value: T): String {
