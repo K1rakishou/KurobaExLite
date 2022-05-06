@@ -185,7 +185,7 @@ class CatalogSelectionScreen(
     val filteredBoardsAsyncData by produceState(
       initialValue = loadBoardsForSiteEvent,
       key1 = searchQuery,
-      key2 = loadBoardsForSiteEvent.javaClass,
+      key2 = loadBoardsForSiteEvent,
       producer = {
         if (loadBoardsForSiteEvent !is AsyncData.Data || searchQuery.isNullOrEmpty()) {
           value = loadBoardsForSiteEvent
@@ -387,6 +387,6 @@ class CatalogSelectionScreen(
   }
 
   companion object {
-    val SCREEN_KEY = ScreenKey("BoardSelectionScreen")
+    val SCREEN_KEY = ScreenKey("CatalogSelectionScreen")
   }
 }

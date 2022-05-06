@@ -14,10 +14,8 @@ import org.koin.core.context.GlobalContext.startKoin
 class KurobaExLiteApplication : Application() {
   private val appCoroutineScope = KurobaCoroutineScope()
 
-  // TODO(KurobaEx): [Click to expand] doesn't work
   // TODO(KurobaEx): PullToRefresh in catalog scrolls to the middle of the catalog
-  // TODO(KurobaEx): Text selection doesn't work.
-  // TODO(KurobaEx): When using search on BoardSelectionScreen and then navigating to a board without
+  // TODO(KurobaEx): When using search on CatalogSelectionScreen and then navigating to a board without
   //  closing the search first will keep the search toolbar but loose the search query.
 
   override fun onCreate() {

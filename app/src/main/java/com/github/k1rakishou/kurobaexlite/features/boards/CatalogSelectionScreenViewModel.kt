@@ -34,14 +34,12 @@ class CatalogSelectionScreenViewModel : BaseViewModel() {
         defaultValue = { mutableListWithCap(64) }
       )
 
-      if (!forceReload) {
-        if (loadedBoardsForSite.isNotEmpty()) {
-          val chanBoards = loadedBoardsForSite
-            .mapNotNull { catalogDescriptor -> boardsCache[catalogDescriptor] }
+      if (!forceReload && loadedBoardsForSite.isNotEmpty()) {
+        val chanBoards = loadedBoardsForSite
+          .mapNotNull { catalogDescriptor -> boardsCache[catalogDescriptor] }
 
-          send(AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) }))
-          return@channelFlow
-        }
+        send(AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) }))
+        return@channelFlow
       }
 
       val emitLoadingStateJob = coroutineScope {

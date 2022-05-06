@@ -33,14 +33,6 @@ class RetrieveSiteCatalogList(
       }
 
       if (!forceReload) {
-        logcat(TAG) { "Reading from cache..." }
-
-        val catalogListFromCache = catalogManager.bySiteKey(siteKey)
-        if (catalogListFromCache.isNotEmpty()) {
-          logcat(TAG) { "Got catalogs from memory cache: count=${catalogListFromCache.size}" }
-          return@Try catalogListFromCache
-        }
-
         logcat(TAG) { "Reading from disk..." }
 
         val readCatalogsResult = kurobaExLiteDatabase.call { chanCatalogDao.selectAllForSiteOrdered(siteKey.key) }
