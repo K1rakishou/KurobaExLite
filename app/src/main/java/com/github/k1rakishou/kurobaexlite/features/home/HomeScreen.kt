@@ -426,6 +426,7 @@ class HomeScreen(
               drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
+              currentPagerPage = { pagerState.currentPage },
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = {

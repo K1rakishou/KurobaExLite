@@ -32,6 +32,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   drawerPhoneVisibleWindowWidthPx: Float,
   drawerWidth: Float,
   pagerSwipeExclusionZone: Rect,
+  currentPagerPage: () -> Int,
   isDrawerOpened: () -> Boolean,
   onStopConsumingScrollEvents: () -> Unit,
   isGestureCurrentlyAllowed: () -> Boolean,
@@ -146,7 +147,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             }
 
             onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
-          } else {
+          } else if (currentPagerPage() != 0) {
             onStopConsumingScrollEvents()
 
             if (downEvent.position.x > drawerLongtapGestureWidthZonePx) {
@@ -174,6 +175,8 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
               onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
             }
             onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
+          } else {
+            return@awaitPointerEventScope null
           }
         }
 
