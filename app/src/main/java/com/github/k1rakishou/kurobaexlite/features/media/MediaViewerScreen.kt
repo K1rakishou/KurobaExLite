@@ -767,7 +767,7 @@ class MediaViewerScreen(
           LaunchedEffect(
             key1 = Unit,
             block = {
-              delay(150)
+              delay(500)
               minimumLoadTimePassed = true
             }
           )

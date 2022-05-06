@@ -83,9 +83,6 @@ class CatalogScreenViewModel(
     onReloadFinished: (() -> Unit)?
   ) {
     val currentlyOpenedCatalog = chanThreadManager.currentlyOpenedCatalog
-    if (currentlyOpenedCatalog != null) {
-      resetPosition(currentlyOpenedCatalog)
-    }
 
     loadCatalog(
       catalogDescriptor = currentlyOpenedCatalog,
@@ -105,6 +102,10 @@ class CatalogScreenViewModel(
   ) {
     loadCatalogJob?.cancel()
     loadCatalogJob = null
+
+    if (catalogDescriptor != null) {
+      resetPosition(catalogDescriptor)
+    }
 
     snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
 
