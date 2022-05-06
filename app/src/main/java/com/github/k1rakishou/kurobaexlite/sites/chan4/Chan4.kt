@@ -6,8 +6,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -155,7 +155,7 @@ class Chan4(
       return "https://a.4cdn.org/boards.json"
     }
 
-    override fun siteBoardsDataSource(): IBoardDataSource<SiteKey, BoardsData> {
+    override fun siteBoardsDataSource(): IBoardDataSource<SiteKey, CatalogsData> {
       return chan4DataSource
     }
   }

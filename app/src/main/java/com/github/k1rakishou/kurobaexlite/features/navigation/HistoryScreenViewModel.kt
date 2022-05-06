@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 
-class NavigationHistoryScreenViewModel : BaseViewModel() {
+class HistoryScreenViewModel : BaseViewModel() {
   private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)

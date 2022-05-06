@@ -73,7 +73,7 @@ class ThreadScreenViewModel(
   private suspend fun loadPrevVisitedThread() {
     val lastVisitedThreadDescriptor = savedStateHandle.get<ThreadDescriptor>(LAST_VISITED_THREAD_KEY)
     if (lastVisitedThreadDescriptor != null) {
-      logcat(tag = TAG) { "loadPrevVisitedThread() found ${lastVisitedThreadDescriptor} from savedStateHandle" }
+      logcat(tag = TAG) { "loadPrevVisitedThread() got ${lastVisitedThreadDescriptor} from savedStateHandle" }
 
       loadThread(
         threadDescriptor = lastVisitedThreadDescriptor,
@@ -86,7 +86,7 @@ class ThreadScreenViewModel(
 
     val lastVisitedThread = loadNavigationHistory.loadLastVisitedThread()
     if (lastVisitedThread != null) {
-      logcat(tag = TAG) { "loadPrevVisitedThread() found ${lastVisitedThread} from lastVisitedThread" }
+      logcat(tag = TAG) { "loadPrevVisitedThread() got ${lastVisitedThread} from loadNavigationHistory" }
 
       lastVisitedEndpointManager.notifyRestoreLastVisitedThread(lastVisitedThread)
       return

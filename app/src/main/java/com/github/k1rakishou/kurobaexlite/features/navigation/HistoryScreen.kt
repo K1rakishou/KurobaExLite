@@ -71,11 +71,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class NavigationHistoryScreen(
+class HistoryScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : HomeNavigationScreen(componentActivity, navigationRouter) {
-  private val navigationHistoryScreenViewModel: NavigationHistoryScreenViewModel by componentActivity.viewModel()
+  private val historyScreenViewModel: HistoryScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val deleteNavElementIconWidth = 40.dp
@@ -166,7 +166,7 @@ class NavigationHistoryScreen(
     val context = LocalContext.current
 
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-    val navigationHistoryList = navigationHistoryScreenViewModel.navigationHistoryList
+    val navigationHistoryList = historyScreenViewModel.navigationHistoryList
     val circleCropTransformation = remember { CircleCropTransformation() }
     val navElementHeight = 42.dp
     val lazyListState = rememberLazyListState()
@@ -174,7 +174,7 @@ class NavigationHistoryScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        navigationHistoryScreenViewModel.scrollNavigationHistoryToTopEvents.collectLatest {
+        historyScreenViewModel.scrollNavigationHistoryToTopEvents.collectLatest {
           val firstCompletelyVisibleItem = lazyListState.layoutInfo.visibleItemsInfo
             .firstOrNull { lazyListItemInfo -> lazyListItemInfo.offset >= 0 }
             ?: return@collectLatest
@@ -188,7 +188,7 @@ class NavigationHistoryScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        navigationHistoryScreenViewModel.removedElementsFlow.collectLatest { (index, uiNavElement) ->
+        historyScreenViewModel.removedElementsFlow.collectLatest { (index, uiNavElement) ->
           val title = when (uiNavElement) {
             is UiNavigationElement.Catalog -> {
               uiNavElement.chanDescriptor.asReadableString()
@@ -235,7 +235,7 @@ class NavigationHistoryScreen(
               val prevIndex = pair.first
               val uiNavigationElement = pair.second
 
-              navigationHistoryScreenViewModel.undoNavElementDeletion(prevIndex, uiNavigationElement)
+              historyScreenViewModel.undoNavElementDeletion(prevIndex, uiNavigationElement)
             }
           }
         }
@@ -303,10 +303,10 @@ class NavigationHistoryScreen(
             onItemClicked = { element ->
               catalogScreenViewModel.loadCatalog(element.chanDescriptor)
               globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
-              navigationHistoryScreenViewModel.reorderNavigationElement(element)
+              historyScreenViewModel.reorderNavigationElement(element)
             },
             onRemoveClicked = { element ->
-              navigationHistoryScreenViewModel.removeNavigationElement(element)
+              historyScreenViewModel.removeNavigationElement(element)
             }
           )
         }
@@ -318,10 +318,10 @@ class NavigationHistoryScreen(
             onItemClicked = { element ->
               threadScreenViewModel.loadThread(element.chanDescriptor)
               globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
-              navigationHistoryScreenViewModel.reorderNavigationElement(element)
+              historyScreenViewModel.reorderNavigationElement(element)
             },
             onRemoveClicked = { element ->
-              navigationHistoryScreenViewModel.removeNavigationElement(element)
+              historyScreenViewModel.removeNavigationElement(element)
             }
           )
         }
@@ -510,7 +510,7 @@ class NavigationHistoryScreen(
   }
 
   companion object {
-    val SCREEN_KEY = ScreenKey("NavigationHistoryScreen")
+    val SCREEN_KEY = ScreenKey("HistoryScreen")
   }
 
 }

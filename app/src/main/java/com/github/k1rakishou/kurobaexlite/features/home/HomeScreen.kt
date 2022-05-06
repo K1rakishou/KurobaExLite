@@ -472,7 +472,7 @@ class HomeScreen(
             .consumeClicks(enabled = transitionIsProgress)
         ) {
           RouterHost(
-            navigationRouter = navigationRouter,
+            navigationRouter = navigationRouter.childRouter(childScreen.screenKey),
             defaultScreen = { childScreen.Content() }
           )
         }

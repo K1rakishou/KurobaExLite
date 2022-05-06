@@ -5,9 +5,9 @@ import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.interactors.GetSiteBoardList
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
 import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.model.data.local.SiteBoard
+import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import kotlinx.coroutines.coroutineScope
@@ -18,15 +18,14 @@ import kotlinx.coroutines.launch
 import logcat.asLog
 import org.koin.java.KoinJavaComponent.inject
 
-class BoardSelectionScreenViewModel : BaseViewModel() {
-  private val getSiteBoardList: GetSiteBoardList by inject(GetSiteBoardList::class.java)
+class CatalogSelectionScreenViewModel : BaseViewModel() {
+  private val retrieveSiteCatalogList: RetrieveSiteCatalogList by inject(RetrieveSiteCatalogList::class.java)
 
-  private val boardsCache = mutableMapOf<CatalogDescriptor, SiteBoard>()
+  private val boardsCache = mutableMapOf<CatalogDescriptor, ChanCatalog>()
   private val loadedBoardsPerSite = mutableMapOf<SiteKey, MutableList<CatalogDescriptor>>()
 
   fun getOrLoadBoardsForSite(
     siteKey: SiteKey,
-    page: Int,
     forceReload: Boolean
   ): Flow<AsyncData<List<ChanBoardUiData>>> {
     return channelFlow {
@@ -57,7 +56,7 @@ class BoardSelectionScreenViewModel : BaseViewModel() {
       }
 
       val siteBoardsResult = try {
-        getSiteBoardList.await(siteKey, page, forceReload)
+        retrieveSiteCatalogList.await(siteKey = siteKey, forceReload = forceReload)
       } finally {
         emitLoadingStateJob.cancel()
       }
@@ -92,22 +91,22 @@ class BoardSelectionScreenViewModel : BaseViewModel() {
     }
   }
 
-  private fun mapChanBoardToChanBoardUiData(siteBoard: SiteBoard): ChanBoardUiData {
+  private fun mapChanBoardToChanBoardUiData(chanCatalog: ChanCatalog): ChanBoardUiData {
     val title = buildString {
       append("/")
-      append(siteBoard.catalogDescriptor.boardCode)
+      append(chanCatalog.catalogDescriptor.boardCode)
       append("/")
 
-      if (siteBoard.boardTitle.isNotNullNorEmpty()) {
+      if (chanCatalog.boardTitle.isNotNullNorEmpty()) {
         append(" — ")
-        append(siteBoard.boardTitle)
+        append(chanCatalog.boardTitle)
       }
     }
 
     return ChanBoardUiData(
-      catalogDescriptor = siteBoard.catalogDescriptor,
+      catalogDescriptor = chanCatalog.catalogDescriptor,
       title = title,
-      subtitle = siteBoard.boardDescription
+      subtitle = chanCatalog.boardDescription
     )
   }
 

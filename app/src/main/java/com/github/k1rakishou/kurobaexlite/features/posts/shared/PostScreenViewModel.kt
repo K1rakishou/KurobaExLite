@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
@@ -73,6 +74,7 @@ abstract class PostScreenViewModel(
   protected val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   protected val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
   protected val loadMarkedPosts: LoadMarkedPosts by inject(LoadMarkedPosts::class.java)
+  protected val loadChanCatalog: LoadChanCatalog by inject(LoadChanCatalog::class.java)
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
@@ -120,6 +122,7 @@ abstract class PostScreenViewModel(
     postScreenState.onStartLoading(threadDescriptor)
 
     if (threadDescriptor != null) {
+      loadChanCatalog.await(threadDescriptor)
       loadMarkedPosts.load(threadDescriptor)
     }
 
@@ -136,6 +139,10 @@ abstract class PostScreenViewModel(
 
     postScreenState.updateChanDescriptor(catalogDescriptor)
     postScreenState.onStartLoading(catalogDescriptor)
+
+    if (catalogDescriptor != null) {
+      loadChanCatalog.await(catalogDescriptor)
+    }
 
     updatePostsParsedOnceJob?.cancel()
     updatePostsParsedOnceJob = null

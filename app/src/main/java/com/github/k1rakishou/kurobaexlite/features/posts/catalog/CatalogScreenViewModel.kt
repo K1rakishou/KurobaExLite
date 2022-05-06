@@ -57,7 +57,7 @@ class CatalogScreenViewModel(
   private suspend fun loadPrevVisitedCatalog() {
     val lastVisitedCatalogDescriptor = savedStateHandle.get<CatalogDescriptor>(LAST_VISITED_CATALOG_KEY)
     if (lastVisitedCatalogDescriptor != null) {
-      logcat(tag = TAG) { "loadPrevVisitedCatalog() found ${lastVisitedCatalogDescriptor} from savedStateHandle" }
+      logcat(tag = TAG) { "loadPrevVisitedCatalog() got ${lastVisitedCatalogDescriptor} from savedStateHandle" }
 
       loadCatalog(
         catalogDescriptor = lastVisitedCatalogDescriptor,
@@ -69,7 +69,7 @@ class CatalogScreenViewModel(
 
     val lastVisitedCatalog = loadNavigationHistory.lastVisitedCatalog()
     if (lastVisitedCatalog != null) {
-      logcat(tag = TAG) { "loadPrevVisitedCatalog() found ${lastVisitedCatalog} from lastVisitedCatalog" }
+      logcat(tag = TAG) { "loadPrevVisitedCatalog() got ${lastVisitedCatalog} from loadNavigationHistory" }
 
       lastVisitedEndpointManager.notifyRestoreLastVisitedCatalog(lastVisitedCatalog)
       return

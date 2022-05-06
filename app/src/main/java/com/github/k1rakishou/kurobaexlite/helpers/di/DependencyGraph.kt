@@ -12,13 +12,13 @@ import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.boards.BoardSelectionScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
-import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
@@ -30,14 +30,14 @@ import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
-import com.github.k1rakishou.kurobaexlite.helpers.cache.site_data.SiteDataPersister
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.interactors.GetSiteBoardList
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
@@ -47,6 +47,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThread
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
+import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -132,7 +133,6 @@ object DependencyGraph {
         markedPostManager = get()
       )
     }
-    single { SiteDataPersister(appContext = get(), moshi = get()) }
     single { MediaSaver(applicationContext = get(), androidHelpers = get(), proxiedOkHttpClient = get()) }
     single<AppResources> { AppResourcesImpl(appContext = get()) }
     single {
@@ -148,6 +148,7 @@ object DependencyGraph {
 
   private fun Module.managers() {
     single { SiteManager(appContext = get()) }
+    single { CatalogManager() }
     single { ChanThreadManager(siteManager = get(), chanCache = get()) }
     single { PostReplyChainManager() }
     single { ChanViewManager() }
@@ -188,7 +189,7 @@ object DependencyGraph {
     }
     viewModel { AlbumScreenViewModel() }
     viewModel { PopupRepliesScreenViewModel(savedStateHandle = get()) }
-    viewModel { BoardSelectionScreenViewModel() }
+    viewModel { CatalogSelectionScreenViewModel() }
     viewModel {
       val mpvSettings = MpvSettings(
         appContext = get(),
@@ -211,7 +212,7 @@ object DependencyGraph {
         mediaSaver = get(),
       )
     }
-    viewModel { NavigationHistoryScreenViewModel() }
+    viewModel { HistoryScreenViewModel() }
     viewModel {
       ReplyLayoutViewModel(
         captchaManager = get(),
@@ -258,9 +259,16 @@ object DependencyGraph {
       )
     }
     single {
-      GetSiteBoardList(
+      RetrieveSiteCatalogList(
         siteManager = get(),
-        siteDataPersister = get()
+        catalogManager = get(),
+        kurobaExLiteDatabase = get()
+      )
+    }
+    single {
+      LoadChanCatalog(
+        catalogManager = get(),
+        kurobaExLiteDatabase = get()
       )
     }
 

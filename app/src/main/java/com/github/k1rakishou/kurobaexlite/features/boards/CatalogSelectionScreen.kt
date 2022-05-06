@@ -60,12 +60,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class BoardSelectionScreen(
+class CatalogSelectionScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val catalogDescriptor: CatalogDescriptor?
 ) : HomeNavigationScreen(componentActivity, navigationRouter) {
-  private val boardSelectionScreenViewModel: BoardSelectionScreenViewModel by componentActivity.viewModel()
+  private val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -128,8 +128,8 @@ class BoardSelectionScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        boardSelectionScreenViewModel
-          .getOrLoadBoardsForSite(siteKey = siteKey, page = 0, forceReload = false)
+        catalogSelectionScreenViewModel
+          .getOrLoadBoardsForSite(siteKey = siteKey, forceReload = false)
           .collect { boardsListAsync -> loadBoardsForSiteEvent = boardsListAsync }
       }
     )
@@ -147,8 +147,8 @@ class BoardSelectionScreen(
         topPadding = pullToRefreshToPadding,
         onTriggered = {
           coroutineScope.launch {
-            boardSelectionScreenViewModel
-              .getOrLoadBoardsForSite(siteKey = siteKey, page = 0, forceReload = true)
+            catalogSelectionScreenViewModel
+              .getOrLoadBoardsForSite(siteKey = siteKey, forceReload = true)
               .collect { boardsListAsync -> loadBoardsForSiteEvent = boardsListAsync }
 
             pullToRefreshState.stopRefreshing()

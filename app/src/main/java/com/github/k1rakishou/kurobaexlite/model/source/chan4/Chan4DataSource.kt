@@ -10,12 +10,12 @@ import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
-import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
-import com.github.k1rakishou.kurobaexlite.model.data.local.SiteBoard
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardsDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageDataJson
@@ -43,7 +43,7 @@ class Chan4DataSource(
   private val moshi: Moshi
 ) : ICatalogDataSource<CatalogDescriptor, CatalogData>,
   IThreadDataSource<ThreadDescriptor, ThreadData>,
-  IBoardDataSource<SiteKey, BoardsData> {
+  IBoardDataSource<SiteKey, CatalogsData> {
 
   override suspend fun loadThread(
     threadDescriptor: ThreadDescriptor,
@@ -219,7 +219,7 @@ class Chan4DataSource(
     }
   }
 
-  override suspend fun loadBoards(input: SiteKey): Result<BoardsData> {
+  override suspend fun loadBoards(input: SiteKey): Result<CatalogsData> {
     return withContext(Dispatchers.IO) {
       return@withContext Result.Try {
         val site = siteManager.bySiteKey(input)
@@ -249,7 +249,7 @@ class Chan4DataSource(
           val boardTitle = boardDataJson.boardTitle
           val boardDescription = boardDataJson.boardDescription?.let { HtmlUnescape.unescape(it) }
 
-          return@mapNotNull SiteBoard(
+          return@mapNotNull ChanCatalog(
             catalogDescriptor = CatalogDescriptor(input, boardCode),
             boardTitle = boardTitle,
             boardDescription = boardDescription,
@@ -257,7 +257,7 @@ class Chan4DataSource(
           )
         }
 
-        return@Try BoardsData(chanBoards)
+        return@Try CatalogsData(chanBoards)
       }
     }
   }

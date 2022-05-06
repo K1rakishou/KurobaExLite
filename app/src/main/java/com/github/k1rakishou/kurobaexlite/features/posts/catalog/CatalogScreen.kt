@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.boards.BoardSelectionScreen
+import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
@@ -274,13 +274,13 @@ class CatalogScreen(
       canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, globalUiInfoManager.currentPage()) },
       onLeftIconClicked = { globalUiInfoManager.openDrawer() },
       onMiddleMenuClicked = {
-        val boardSelectionScreen = BoardSelectionScreen(
+        val catalogSelectionScreen = CatalogSelectionScreen(
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
           catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
         )
 
-        navigationRouter.pushScreen(boardSelectionScreen)
+        navigationRouter.pushScreen(catalogSelectionScreen)
       },
       onSearchQueryUpdated = { searchQuery ->
         globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)

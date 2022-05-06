@@ -68,16 +68,4 @@ fun RouterHost(
       }
     }
   }
-
-  if (screenUpdateTransaction.floatingScreenUpdates.isNotEmpty()) {
-    for (secondaryScreenUpdate in screenUpdateTransaction.floatingScreenUpdates) {
-      key(secondaryScreenUpdate.screen.screenKey) {
-        ScreenTransition(
-          screenUpdate = secondaryScreenUpdate,
-          onScreenUpdateFinished = { screenUpdate -> navigationRouter.onScreenUpdateFinished(screenUpdate) },
-          content = { secondaryScreenUpdate.screen.Content() }
-        )
-      }
-    }
-  }
 }

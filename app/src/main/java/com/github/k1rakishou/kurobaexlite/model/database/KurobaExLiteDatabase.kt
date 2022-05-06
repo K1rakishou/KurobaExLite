@@ -7,6 +7,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.withTransaction
 import com.github.k1rakishou.kurobaexlite.helpers.Try
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogDao
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogSortOrderEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.MarkedPostDao
@@ -21,7 +24,9 @@ import kotlinx.coroutines.withContext
   entities = [
     ChanThreadViewEntity::class,
     NavigationHistoryEntity::class,
-    MarkedPostEntity::class
+    MarkedPostEntity::class,
+    ChanCatalogEntity::class,
+    ChanCatalogSortOrderEntity::class,
   ],
   version = 1,
   exportSchema = true
@@ -73,4 +78,5 @@ interface Daos {
   val chanThreadViewDao: ChanThreadViewDao
   val navigationHistoryDao: NavigationHistoryDao
   val markedPostDao: MarkedPostDao
+  val chanCatalogDao: ChanCatalogDao
 }

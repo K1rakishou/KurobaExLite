@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
-import com.github.k1rakishou.kurobaexlite.model.data.local.BoardsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -50,7 +50,7 @@ interface Site {
 
   interface BoardsInfo {
     fun boardsUrl(): String
-    fun siteBoardsDataSource(): IBoardDataSource<SiteKey, BoardsData>
+    fun siteBoardsDataSource(): IBoardDataSource<SiteKey, CatalogsData>
   }
 
   interface ReplyInfo {

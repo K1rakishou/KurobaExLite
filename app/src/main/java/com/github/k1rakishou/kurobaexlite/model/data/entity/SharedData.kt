@@ -7,6 +7,31 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 
+data class CatalogKey(
+  @ColumnInfo(name = SITE_KEY) val siteKey: String,
+  @ColumnInfo(name = BOARD_CODE) val boardCode: String,
+) {
+
+  val catalogDescriptor by lazy(mode = LazyThreadSafetyMode.NONE) {
+    return@lazy CatalogDescriptor(
+      siteKey = SiteKey(siteKey),
+      boardCode = boardCode
+    )
+  }
+
+  companion object {
+    const val SITE_KEY = "site_key"
+    const val BOARD_CODE = "board_code"
+
+    fun fromCatalogDescriptor(catalogDescriptor: CatalogDescriptor): CatalogKey {
+      return CatalogKey(
+        siteKey = catalogDescriptor.siteKeyActual,
+        boardCode = catalogDescriptor.boardCode
+      )
+    }
+  }
+}
+
 data class CatalogOrThreadKey(
   @ColumnInfo(name = SITE_KEY) val siteKey: String,
   @ColumnInfo(name = BOARD_CODE) val boardCode: String,

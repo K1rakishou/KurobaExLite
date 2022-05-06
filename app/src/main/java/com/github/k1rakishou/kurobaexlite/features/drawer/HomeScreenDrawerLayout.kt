@@ -82,7 +82,6 @@ fun HomeScreenDrawerLayout(
   val density = LocalDensity.current
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
-  val childRouter = remember { navigationRouter.childRouter(BookmarksScreen.SCREEN_KEY) }
   val drawerScreen = remember { BookmarksScreen(componentActivity, navigationRouter) }
   val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
 
@@ -215,7 +214,7 @@ fun HomeScreenDrawerLayout(
         .absoluteOffset { IntOffset(offsetAnimated.toInt(), 0) }
     ) {
       RouterHost(
-        navigationRouter = childRouter,
+        navigationRouter = navigationRouter,
         defaultScreen = { drawerScreen.Content() }
       )
     }

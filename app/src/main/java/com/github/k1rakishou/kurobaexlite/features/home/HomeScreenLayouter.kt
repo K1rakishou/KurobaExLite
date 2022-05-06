@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.home
 
 import androidx.activity.ComponentActivity
-import com.github.k1rakishou.kurobaexlite.features.navigation.NavigationHistoryScreen
+import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -18,26 +18,26 @@ class HomeScreenLayouter(
 
   private val portraitScreens by lazy {
     return@lazy listOf<ComposeScreenWithToolbar>(
-      NavigationHistoryScreen(
+      HistoryScreen(
         componentActivity = componentActivity,
-        navigationRouter = navigationRouter
+        navigationRouter = navigationRouter.childRouter(HistoryScreen.SCREEN_KEY)
       ),
       CatalogScreen(
         componentActivity = componentActivity,
-        navigationRouter = navigationRouter
+        navigationRouter = navigationRouter.childRouter(CatalogScreen.SCREEN_KEY)
       ),
       ThreadScreen(
         componentActivity = componentActivity,
-        navigationRouter = navigationRouter
+        navigationRouter = navigationRouter.childRouter(ThreadScreen.SCREEN_KEY)
       )
     )
   }
 
   private val splitScreens by lazy {
     return@lazy listOf<ComposeScreenWithToolbar>(
-      NavigationHistoryScreen(
+      HistoryScreen(
         componentActivity = componentActivity,
-        navigationRouter = navigationRouter
+        navigationRouter = navigationRouter.childRouter(HistoryScreen.SCREEN_KEY)
       ),
       SplitScreenLayout(
         componentActivity = componentActivity,

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "6d24521182a9f242c9de50b7b3c94e2e",
+    "identityHash": "76a84af6e402edb40bf87ff733431cb9",
     "entities": [
       {
         "tableName": "chan_thread_view",
@@ -191,12 +191,111 @@
         },
         "indices": [],
         "foreignKeys": []
+      },
+      {
+        "tableName": "chan_catalog",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`database_id` INTEGER NOT NULL, `board_title` TEXT, `board_description` TEXT, `work_safe` INTEGER NOT NULL, `catalog_site_key` TEXT NOT NULL, `catalog_board_code` TEXT NOT NULL, PRIMARY KEY(`catalog_site_key`, `catalog_board_code`))",
+        "fields": [
+          {
+            "fieldPath": "databaseId",
+            "columnName": "database_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "boardTitle",
+            "columnName": "board_title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "boardDescription",
+            "columnName": "board_description",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "workSafe",
+            "columnName": "work_safe",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogKey.siteKey",
+            "columnName": "catalog_site_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogKey.boardCode",
+            "columnName": "catalog_board_code",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "catalog_site_key",
+            "catalog_board_code"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [
+          {
+            "name": "index_chan_catalog_database_id",
+            "unique": true,
+            "columnNames": [
+              "database_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_chan_catalog_database_id` ON `${TABLE_NAME}` (`database_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "chan_catalog_sort_order",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_database_id` INTEGER NOT NULL, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`owner_database_id`), FOREIGN KEY(`owner_database_id`) REFERENCES `chan_catalog`(`database_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "ownerDatabaseId",
+            "columnName": "owner_database_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "owner_database_id"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "chan_catalog",
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "owner_database_id"
+            ],
+            "referencedColumns": [
+              "database_id"
+            ]
+          }
+        ]
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6d24521182a9f242c9de50b7b3c94e2e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '76a84af6e402edb40bf87ff733431cb9')"
     ]
   }
 }
