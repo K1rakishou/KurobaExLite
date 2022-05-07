@@ -44,7 +44,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectPointerTouches
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectTouches
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
@@ -276,7 +276,7 @@ class HistoryScreen(
           .pointerInput(
             key1 = Unit,
             block = {
-              detectPointerTouches { touching ->
+              detectTouches { touching ->
                 globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
               }
             }

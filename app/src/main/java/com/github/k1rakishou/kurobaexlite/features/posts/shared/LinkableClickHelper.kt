@@ -15,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
+import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 class LinkableClickHelper(
@@ -26,6 +27,36 @@ class LinkableClickHelper(
   private val chanCache: ChanCache by inject(ChanCache::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
+  suspend fun processLongClickedLinkable(
+    context: Context,
+    sourceScreenKey: ScreenKey,
+    postCellData: PostCellData,
+    linkable: PostCommentParser.TextPartSpan.Linkable,
+  ) {
+    logcat(TAG) {
+      "processLongClickedLinkable() sourceScreenKey=${sourceScreenKey}, " +
+        "postDescriptor=${postCellData.postDescriptor}, linkable=${linkable}"
+    }
+
+    // TODO(KurobaEx): copy full link
+    // TODO(KurobaEx): open link in browser
+
+    when (linkable) {
+      is PostCommentParser.TextPartSpan.Linkable.Board -> {
+        // TODO(KurobaEx):
+      }
+      is PostCommentParser.TextPartSpan.Linkable.Quote -> {
+        // TODO(KurobaEx):
+      }
+      is PostCommentParser.TextPartSpan.Linkable.Search -> {
+        // TODO(KurobaEx):
+      }
+      is PostCommentParser.TextPartSpan.Linkable.Url -> {
+        // TODO(KurobaEx):
+      }
+    }
+  }
+
   suspend fun processClickedLinkable(
     context: Context,
     sourceScreenKey: ScreenKey,
@@ -35,6 +66,11 @@ class LinkableClickHelper(
     loadCatalogFunc: (CatalogDescriptor) -> Unit,
     showRepliesForPostFunc: (PopupRepliesScreen.ReplyViewMode) -> Unit
   ) {
+    logcat(TAG) {
+      "processClickedLinkable() sourceScreenKey=${sourceScreenKey}, " +
+        "postDescriptor=${postCellData.postDescriptor}, linkable=${linkable}"
+    }
+
     when (linkable) {
       is PostCommentParser.TextPartSpan.Linkable.Quote -> {
         if (linkable.dead) {
@@ -99,5 +135,7 @@ class LinkableClickHelper(
     }
   }
 
-
+  companion object {
+    private const val TAG = "LinkableClickHelper"
+  }
 }

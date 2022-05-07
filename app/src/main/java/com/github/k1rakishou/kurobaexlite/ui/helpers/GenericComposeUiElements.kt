@@ -275,7 +275,8 @@ fun KurobaComposeClickableText(
   inlineContent: Map<String, InlineTextContent> = mapOf(),
   annotationBgColors: Map<String, Color> = mapOf(),
   detectClickedAnnotations: (Offset, TextLayoutResult?, AnnotatedString) -> AnnotatedString.Range<String>?,
-  onTextAnnotationClicked: (AnnotatedString, Int) -> Unit
+  onTextAnnotationClicked: (AnnotatedString, Int) -> Unit,
+  onTextAnnotationLongClicked: (AnnotatedString, Int) -> Unit,
 ) {
   var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
   var currentlyPressedAnnotationPath by remember { mutableStateOf<Path?>(null) }
@@ -305,6 +306,14 @@ fun KurobaComposeClickableText(
           layoutResult?.let { result ->
             val offset = result.getOffsetForPosition(pos)
             onTextAnnotationClicked(text, offset)
+          }
+        },
+        onLongPress = { pos ->
+          currentlyPressedAnnotationPath = null
+
+          layoutResult?.let { result ->
+            val offset = result.getOffsetForPosition(pos)
+            onTextAnnotationLongClicked(text, offset)
           }
         },
         onUpOrCancel = { currentlyPressedAnnotationPath = null }

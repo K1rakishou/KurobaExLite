@@ -79,6 +79,7 @@ internal fun PostListContent(
   onPostCellClicked: (PostCellData) -> Unit,
   onPostCellLongClicked: (PostCellData) -> Unit,
   onLinkableClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
+  onLinkableLongClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
   onPostRepliesClicked: (PostDescriptor) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
@@ -196,7 +197,20 @@ internal fun PostListContent(
         postCellData = postCellData,
         postComment = postComment,
         characterOffset = offset,
-        onLinkableClicked = onLinkableClicked
+        longClicked = false,
+        onLinkableClicked = onLinkableClicked,
+        onLinkableLongClicked = onLinkableLongClicked
+      )
+    },
+    onPostCellCommentLongClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
+      processClickedAnnotation(
+        postsScreenViewModel = postsScreenViewModel,
+        postCellData = postCellData,
+        postComment = postComment,
+        characterOffset = offset,
+        longClicked = true,
+        onLinkableClicked = onLinkableClicked,
+        onLinkableLongClicked = onLinkableLongClicked
       )
     },
     onPostRepliesClicked = { postCellData: PostCellData ->
@@ -310,6 +324,7 @@ private fun PostListInternal(
   onPostCellClicked: (PostCellData) -> Unit,
   onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
@@ -396,7 +411,7 @@ private fun PostListInternal(
             .pointerInput(
               key1 = Unit,
               block = {
-                detectPointerTouches { touching -> onCurrentlyTouchingPostList(touching) }
+                detectTouches { touching -> onCurrentlyTouchingPostList(touching) }
               }
             )
         ),
@@ -447,6 +462,7 @@ private fun PostListInternal(
                 onPostCellClicked = onPostCellClicked,
                 onPostCellLongClicked = onPostCellLongClicked,
                 onPostCellCommentClicked = onPostCellCommentClicked,
+                onPostCellCommentLongClicked = onPostCellCommentLongClicked,
                 onPostRepliesClicked = onPostRepliesClicked,
                 onQuotePostClicked = onQuotePostClicked,
                 onQuotePostWithCommentClicked = onQuotePostWithCommentClicked,
@@ -596,6 +612,7 @@ private fun LazyListScope.postList(
   onPostCellClicked: (PostCellData) -> Unit,
   onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
@@ -641,6 +658,7 @@ private fun LazyListScope.postList(
         onPostCellClicked = onPostCellClicked,
         onPostCellLongClicked = onPostCellLongClicked,
         onPostCellCommentClicked = onPostCellCommentClicked,
+        onPostCellCommentLongClicked = onPostCellCommentLongClicked,
         onPostRepliesClicked = onPostRepliesClicked,
         onQuotePostClicked = onQuotePostClicked,
         onQuotePostWithCommentClicked = onQuotePostWithCommentClicked,
@@ -678,6 +696,7 @@ private fun LazyItemScope.PostCellContainer(
   onPostCellClicked: (PostCellData) -> Unit,
   onPostCellLongClicked: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
@@ -750,6 +769,7 @@ private fun LazyItemScope.PostCellContainer(
         onPostBind = onPostBind,
         onPostUnbind = onPostUnbind,
         onPostCellCommentClicked = onPostCellCommentClicked,
+        onPostCellCommentLongClicked = onPostCellCommentLongClicked,
         onPostRepliesClicked = onPostRepliesClicked,
         onQuotePostClicked = onQuotePostClicked,
         onQuotePostWithCommentClicked = onQuotePostWithCommentClicked,

@@ -400,6 +400,16 @@ class ThreadScreen(
           )
         }
       },
+      onLinkableLongClicked = { postCellData, linkable ->
+        coroutineScope.launch {
+          linkableClickHelper.processLongClickedLinkable(
+            context = context,
+            sourceScreenKey = screenKey,
+            postCellData = postCellData,
+            linkable = linkable
+          )
+        }
+      },
       onPostRepliesClicked = { postDescriptor ->
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
       },

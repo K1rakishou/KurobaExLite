@@ -399,6 +399,9 @@ class CatalogScreen(
       onLinkableClicked = { postCellData, linkable ->
         // no-op (for now?)
       },
+      onLinkableLongClicked = { postCellData, linkable ->
+        // no-op (for now?)
+      },
       onPostRepliesClicked = { postDescriptor ->
         // no-op
       },

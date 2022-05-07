@@ -206,6 +206,16 @@ class PopupRepliesScreen(
             )
           }
         },
+        onLinkableLongClicked = { postCellData, linkable ->
+          coroutineScope.launch {
+            linkableClickHelper.processLongClickedLinkable(
+              context = context,
+              sourceScreenKey = screenKey,
+              postCellData = postCellData,
+              linkable = linkable
+            )
+          }
+        },
         onPostRepliesClicked = { postDescriptor ->
           coroutineScope.launch {
             popupRepliesScreenViewModel.loadRepliesForMode(ReplyViewMode.RepliesFrom(postDescriptor))

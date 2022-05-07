@@ -63,6 +63,7 @@ internal fun PostCell(
   onPostBind: (PostCellData) -> Unit,
   onPostUnbind: (PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
@@ -111,7 +112,8 @@ internal fun PostCell(
         detectLinkableClicks = detectLinkableClicks,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         onSelectionModeChanged = onSelectionModeChanged,
-        onPostCellCommentClicked = onPostCellCommentClicked
+        onPostCellCommentClicked = onPostCellCommentClicked,
+        onPostCellCommentLongClicked = onPostCellCommentLongClicked
       )
 
       PostCellFooter(
@@ -273,7 +275,8 @@ private fun PostCellComment(
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
   onSelectionModeChanged: (Boolean) -> Unit,
-  onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit
+  onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
   val clickedTextBackgroundColorMap = remember(key1 = chanTheme) { createClickableTextColorMap(chanTheme) }
@@ -294,7 +297,8 @@ private fun PostCellComment(
         detectClickedAnnotations = { offset, textLayoutResult, text ->
           return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)
         },
-        onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(postCellData, text, offset) }
+        onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(postCellData, text, offset) },
+        onTextAnnotationLongClicked = { text, offset -> onPostCellCommentLongClicked(postCellData, text, offset) },
       )
     }
   } else if (postComment == null) {

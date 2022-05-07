@@ -18,9 +18,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import logcat.logcat
 
-internal suspend fun PointerInputScope.detectPointerTouches(onCurrentlyTouching: (Boolean) -> Unit) {
+internal suspend fun PointerInputScope.detectTouches(onCurrentlyTouching: (Boolean) -> Unit) {
   forEachGesture {
     awaitPointerEventScope {
       val down = awaitPointerEvent(pass = PointerEventPass.Initial)
@@ -53,7 +52,9 @@ internal fun processClickedAnnotation(
   postCellData: PostCellData,
   postComment: AnnotatedString,
   characterOffset: Int,
+  longClicked: Boolean,
   onLinkableClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
+  onLinkableLongClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
 ) {
   val parsedPostDataContext = postCellData.parsedPostData?.parsedPostDataContext
     ?: return
@@ -65,6 +66,10 @@ internal fun processClickedAnnotation(
   for ((index, clickedAnnotation) in clickedAnnotations.withIndex()) {
     when (clickedAnnotation.tag) {
       PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG -> {
+        if (longClicked) {
+          continue
+        }
+
         if (!parsedPostDataContext.revealFullPostComment) {
           postsScreenViewModel.reparsePost(
             postCellData = postCellData,
@@ -75,21 +80,20 @@ internal fun processClickedAnnotation(
         break
       }
       PostCommentApplier.ANNOTATION_POST_LINKABLE -> {
-        val text = postComment.text.substring(clickedAnnotation.start, clickedAnnotation.end)
         val linkable = clickedAnnotation.extractLinkableAnnotationItem()
-        logcat(tag = "processClickedAnnotation") {
-          "Clicked '${text}' with linkable: ${linkable}"
-        }
-
         if (linkable != null) {
-          onLinkableClicked(postCellData, linkable)
+          if (longClicked) {
+            onLinkableLongClicked(postCellData, linkable)
+          } else {
+            onLinkableClicked(postCellData, linkable)
+          }
         }
 
         break
       }
       PostCommentApplier.ANNOTATION_POST_SPOILER_TEXT -> {
-        logcat(tag = "processClickedAnnotation") {
-          "Clicked spoiler text, start=${clickedAnnotation.start}, end=${clickedAnnotation.end}"
+        if (longClicked) {
+          continue
         }
 
         val textSpoilerOpenedPositionSet = parsedPostDataContext.textSpoilerOpenedPositionSet.toMutableSet()
