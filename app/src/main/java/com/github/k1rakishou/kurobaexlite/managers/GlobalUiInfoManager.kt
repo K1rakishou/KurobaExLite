@@ -316,7 +316,7 @@ class GlobalUiInfoManager(
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    hideableUiVisibilityInfo.update(postListScrollState = 1f)
+    hideableUiVisibilityInfo.update(contentListScrollState = 1f)
   }
 
   fun updateCurrentPage(
@@ -343,10 +343,10 @@ class GlobalUiInfoManager(
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    hideableUiVisibilityInfo.update(postListScrollState = 1f)
+    hideableUiVisibilityInfo.update(contentListScrollState = 1f)
   }
 
-  fun onChildContentScrolling(
+  fun onContentListScrolling(
     screenKey: ScreenKey,
     delta: Float
   ) {
@@ -355,7 +355,7 @@ class GlobalUiInfoManager(
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    var currentTransparency = hideableUiVisibilityInfo.postListScrollState.value
+    var currentTransparency = hideableUiVisibilityInfo.contentListScrollState.value
     currentTransparency += (delta / toolbarHeight)
 
     if (currentTransparency < 0f) {
@@ -366,16 +366,16 @@ class GlobalUiInfoManager(
       currentTransparency = 1f
     }
 
-    hideableUiVisibilityInfo.update(postListScrollState = currentTransparency)
+    hideableUiVisibilityInfo.update(contentListScrollState = currentTransparency)
   }
 
-  fun onPostListDragStateChanged(screenKey: ScreenKey, dragging: Boolean) {
+  fun onCurrentlyTouchingContentList(screenKey: ScreenKey, touching: Boolean) {
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    hideableUiVisibilityInfo.update(postListDragState = dragging)
+    hideableUiVisibilityInfo.update(contentListTouchingState = touching)
   }
 
   fun onFastScrollerDragStateChanged(screenKey: ScreenKey, dragging: Boolean) {
@@ -387,13 +387,13 @@ class GlobalUiInfoManager(
     hideableUiVisibilityInfo.update(fastScrollerDragState = dragging)
   }
 
-  fun onPostListTouchingTopOrBottomStateChanged(screenKey: ScreenKey,touching: Boolean) {
+  fun onContentListTouchingTopOrBottomStateChanged(screenKey: ScreenKey, touching: Boolean) {
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    hideableUiVisibilityInfo.update(postListTouchingTopOrBottomState = touching)
+    hideableUiVisibilityInfo.update(contentListTouchingTopOrBottomState = touching)
   }
 
   fun onChildScreenSearchStateChanged(screenKey: ScreenKey, searchQuery: String?) {

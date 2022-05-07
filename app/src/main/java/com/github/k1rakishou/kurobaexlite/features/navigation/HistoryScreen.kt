@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyItemScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -42,6 +44,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectPointerTouches
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
@@ -65,6 +68,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.detectListScrollEvents
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -251,7 +255,35 @@ class HistoryScreen(
       }
 
       LazyColumnWithFastScroller(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+          .fillMaxSize()
+          .detectListScrollEvents(
+            token = "onHistoryListScrolled",
+            onListScrolled = { delta ->
+              globalUiInfoManager.onContentListScrolling(screenKey, delta)
+
+              detectTouchingTopOrBottomOfList(
+                lazyListState = lazyListState,
+                onListTouchingTopOrBottomStateChanged = { touching ->
+                  globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(
+                    screenKey = screenKey,
+                    touching = touching
+                  )
+                }
+              )
+            }
+          )
+          .pointerInput(
+            key1 = Unit,
+            block = {
+              detectPointerTouches { touching ->
+                globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
+              }
+            }
+          ),
+        onFastScrollerDragStateChanged = { dragging ->
+          globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
+        },
         lazyListState = lazyListState,
         contentPadding = contentPadding,
         content = {
@@ -278,6 +310,27 @@ class HistoryScreen(
           )
         }
       )
+    }
+  }
+
+  private fun detectTouchingTopOrBottomOfList(
+    lazyListState: LazyListState,
+    onListTouchingTopOrBottomStateChanged: (Boolean) -> Unit
+  ) {
+    val firstVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+    val lastVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
+    val maxAllowedOffset = 64
+
+    if (firstVisibleItem != null && lastVisibleItem != null) {
+      val firstVisibleItemIndex = firstVisibleItem.index
+      val firstVisibleItemOffset = firstVisibleItem.offset
+      val lastVisibleItemIndex = lastVisibleItem.index
+
+      val totalCount = lazyListState.layoutInfo.totalItemsCount
+      val touchingTop = firstVisibleItemIndex <= 0 && firstVisibleItemOffset in 0..maxAllowedOffset
+      val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
+
+      onListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
     }
   }
 

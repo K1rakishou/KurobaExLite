@@ -29,9 +29,9 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.scrollbar
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.scrollbar
 
 private const val TAG = "MediaViewerPreviewStrip"
 

@@ -425,13 +425,13 @@ class CatalogScreen(
         navigationRouter.presentScreen(mediaViewerScreen)
       },
       onPostListScrolled = { delta ->
-        globalUiInfoManager.onChildContentScrolling(screenKey, delta)
+        globalUiInfoManager.onContentListScrolling(screenKey, delta)
       },
       onPostListTouchingTopOrBottomStateChanged = { touching ->
-        globalUiInfoManager.onPostListTouchingTopOrBottomStateChanged(screenKey, touching)
+        globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(screenKey, touching)
       },
-      onPostListDragStateChanged = { dragging ->
-        globalUiInfoManager.onPostListDragStateChanged(screenKey, dragging)
+      onCurrentlyTouchingPostList = { touching ->
+        globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
       },
       onFastScrollerDragStateChanged = { dragging ->
         globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)

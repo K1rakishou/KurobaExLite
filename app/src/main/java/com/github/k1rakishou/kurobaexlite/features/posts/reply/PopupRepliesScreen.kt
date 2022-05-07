@@ -235,7 +235,7 @@ class PopupRepliesScreen(
         },
         onPostListScrolled = { delta -> /*no-op*/ },
         onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
-        onPostListDragStateChanged = { dragging -> /*no-op*/ },
+        onCurrentlyTouchingPostList = { touching -> /*no-op*/ },
         onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
         loadingContent = { isInPopup -> /*no-op*/ },
       )

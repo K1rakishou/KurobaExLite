@@ -432,13 +432,13 @@ class ThreadScreen(
         navigationRouter.presentScreen(mediaViewerScreen)
       },
       onPostListScrolled = { delta ->
-        globalUiInfoManager.onChildContentScrolling(screenKey, delta)
+        globalUiInfoManager.onContentListScrolling(screenKey, delta)
       },
       onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
-        globalUiInfoManager.onPostListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
+        globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
       },
-      onPostListDragStateChanged = { dragging ->
-        globalUiInfoManager.onPostListDragStateChanged(screenKey, dragging)
+      onCurrentlyTouchingPostList = { touching ->
+        globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
       },
       onFastScrollerDragStateChanged = { dragging ->
         globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)

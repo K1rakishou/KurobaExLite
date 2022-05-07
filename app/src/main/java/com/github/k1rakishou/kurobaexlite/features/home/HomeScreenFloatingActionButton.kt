@@ -61,9 +61,9 @@ fun BoxScope.HomeScreenFloatingActionButton(
   }
 
   var activeSnackbarsCount by remember { mutableStateOf(0) }
-  val postListScrollPosition by hideableUiVisibilityInfo.postListScrollState.collectAsState()
-  val touchingTopOrBottomOfList by hideableUiVisibilityInfo.postListTouchingTopOrBottomState.collectAsState()
-  val isDraggingPostList by hideableUiVisibilityInfo.postListDragState.collectAsState()
+  val postListScrollPosition by hideableUiVisibilityInfo.contentListScrollState.collectAsState()
+  val touchingTopOrBottomOfList by hideableUiVisibilityInfo.contentListTouchingTopOrBottomState.collectAsState()
+  val isDraggingPostList by hideableUiVisibilityInfo.contentListTouchingState.collectAsState()
   val isDraggingFastScroller by hideableUiVisibilityInfo.fastScrollerDragState.collectAsState()
   val screensUsingSearch by hideableUiVisibilityInfo.childScreensUsingSearch.collectAsState()
   val hasLoadError by hideableUiVisibilityInfo.hasLoadError.collectAsState()

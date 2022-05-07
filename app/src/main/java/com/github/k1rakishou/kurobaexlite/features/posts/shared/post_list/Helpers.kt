@@ -20,7 +20,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import logcat.logcat
 
-internal suspend fun PointerInputScope.processDragEvents(onPostListDragStateChanged: (Boolean) -> Unit) {
+internal suspend fun PointerInputScope.detectPointerTouches(onCurrentlyTouching: (Boolean) -> Unit) {
   forEachGesture {
     awaitPointerEventScope {
       val down = awaitPointerEvent(pass = PointerEventPass.Initial)
@@ -28,7 +28,7 @@ internal suspend fun PointerInputScope.processDragEvents(onPostListDragStateChan
         return@awaitPointerEventScope
       }
 
-      onPostListDragStateChanged(true)
+      onCurrentlyTouching(true)
 
       try {
         while (true) {
@@ -42,7 +42,7 @@ internal suspend fun PointerInputScope.processDragEvents(onPostListDragStateChan
           }
         }
       } finally {
-        onPostListDragStateChanged(false)
+        onCurrentlyTouching(false)
       }
     }
   }

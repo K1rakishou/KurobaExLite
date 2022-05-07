@@ -1,7 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
-import android.os.Handler
-import android.os.Looper
 import android.os.SystemClock
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -32,12 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -45,7 +39,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.os.HandlerCompat
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
@@ -70,6 +63,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.detectListScrollEvents
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -90,7 +84,7 @@ internal fun PostListContent(
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
-  onPostListDragStateChanged: (Boolean) -> Unit,
+  onCurrentlyTouchingPostList: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   emptyContent: @Composable LazyItemScope.(Boolean, Boolean) -> Unit = { isInPopup, isCatalogMode ->
@@ -218,7 +212,7 @@ internal fun PostListContent(
       processPostListScrollEventFunc()
       onPostListScrolled(scrollDelta)
     },
-    onPostListDragStateChanged = onPostListDragStateChanged,
+    onCurrentlyTouchingPostList = onCurrentlyTouchingPostList,
     onFastScrollerDragStateChanged = { isDraggingFastScroller ->
       if (!isDraggingFastScroller) {
         processPostListScrollEventFunc()
@@ -322,7 +316,7 @@ private fun PostListInternal(
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
   onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
   onPostListScrolled: (Float) -> Unit,
-  onPostListDragStateChanged: (Boolean) -> Unit,
+  onCurrentlyTouchingPostList: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
   emptyContent: @Composable LazyItemScope.(Boolean, Boolean) -> Unit,
   loadingContent: @Composable LazyItemScope.(Boolean) -> Unit,
@@ -352,43 +346,6 @@ private fun PostListInternal(
 
   val pullToRefreshTopPaddingDp = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
   val pullToRefreshState = rememberPullToRefreshState()
-
-  val nestedScrollConnection = remember {
-    object : NestedScrollConnection {
-      private var lastCallTime = 0L
-      private var accumulatedScrollOffsetY: Float = 0f
-
-      private val token = "onPostListScrolled"
-      private val notifyIntervalMs = 32L
-      private val handler = Handler(Looper.getMainLooper())
-
-      override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        val now = SystemClock.elapsedRealtime()
-        accumulatedScrollOffsetY += available.y
-
-        // Only notify about scroll events every [notifyIntervalMs] ms because otherwise stuff may
-        // get laggy.
-        if (now - lastCallTime > notifyIntervalMs) {
-          lastCallTime = now
-          onPostListScrolled(accumulatedScrollOffsetY)
-          accumulatedScrollOffsetY = 0f
-        }
-
-        handler.removeCallbacksAndMessages(token)
-        HandlerCompat.postDelayed(
-          handler,
-          {
-            onPostListScrolled(accumulatedScrollOffsetY)
-            accumulatedScrollOffsetY = 0f
-          },
-          token,
-          notifyIntervalMs
-        )
-
-        return Offset.Zero
-      }
-    }
-  }
 
   val buildThreadStatusCellFunc: @Composable ((LazyItemScope) -> Unit)? = if (
     !isCatalogMode &&
@@ -432,11 +389,14 @@ private fun PostListInternal(
       LazyColumnWithFastScroller(
         modifier = modifier.then(
           Modifier
-            .nestedScroll(nestedScrollConnection)
+            .detectListScrollEvents(
+              token = "onPostListScrolled",
+              onListScrolled = { delta -> onPostListScrolled(delta) }
+            )
             .pointerInput(
               key1 = Unit,
               block = {
-                processDragEvents { dragging -> onPostListDragStateChanged(dragging) }
+                detectPointerTouches { touching -> onCurrentlyTouchingPostList(touching) }
               }
             )
         ),

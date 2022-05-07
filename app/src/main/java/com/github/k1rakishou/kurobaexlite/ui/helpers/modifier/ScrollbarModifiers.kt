@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.ui.helpers
+package com.github.k1rakishou.kurobaexlite.ui.helpers.modifier
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 
 private val DefaultPaddingValues = PaddingValues(0.dp)
 

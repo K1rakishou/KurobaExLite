@@ -25,6 +25,11 @@ import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyGridStateWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyStateWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.scrollbar
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

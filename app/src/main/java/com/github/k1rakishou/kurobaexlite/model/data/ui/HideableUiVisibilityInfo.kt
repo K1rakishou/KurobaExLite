@@ -10,17 +10,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class HideableUiVisibilityInfo() : Parcelable {
-  private val _postListScrollState = MutableStateFlow<Float>(1f)
-  val postListScrollState: StateFlow<Float>
-    get() = _postListScrollState.asStateFlow()
+  private val _contentListScrollState = MutableStateFlow<Float>(1f)
+  val contentListScrollState: StateFlow<Float>
+    get() = _contentListScrollState.asStateFlow()
 
-  private val _postListTouchingTopOrBottomState = MutableStateFlow<Boolean>(false)
-  val postListTouchingTopOrBottomState: StateFlow<Boolean>
-    get() = _postListTouchingTopOrBottomState.asStateFlow()
+  private val _contentListTouchingTopOrBottomState = MutableStateFlow<Boolean>(false)
+  val contentListTouchingTopOrBottomState: StateFlow<Boolean>
+    get() = _contentListTouchingTopOrBottomState.asStateFlow()
 
-  private val _postListDragState = MutableStateFlow(false)
-  val postListDragState: StateFlow<Boolean>
-    get() = _postListDragState.asStateFlow()
+  private val _contentListTouchingState = MutableStateFlow(false)
+  val contentListTouchingState: StateFlow<Boolean>
+    get() = _contentListTouchingState.asStateFlow()
 
   private val _fastScrollerDragState = MutableStateFlow(false)
   val fastScrollerDragState: StateFlow<Boolean>
@@ -39,24 +39,24 @@ class HideableUiVisibilityInfo() : Parcelable {
     get() = _replyLayoutOpened.asStateFlow()
 
   constructor(parcel: Parcel) : this() {
-    _postListScrollState.value = parcel.readFloat()
-    _postListTouchingTopOrBottomState.value = parcel.readBooleanKt()
+    _contentListScrollState.value = parcel.readFloat()
+    _contentListTouchingTopOrBottomState.value = parcel.readBooleanKt()
     _hasLoadError.value = parcel.readBooleanKt()
     _replyLayoutOpened.value = parcel.readBooleanKt()
   }
 
   fun update(
-    postListScrollState: Float? = null,
-    postListTouchingTopOrBottomState: Boolean? = null,
-    postListDragState: Boolean? = null,
+    contentListScrollState: Float? = null,
+    contentListTouchingTopOrBottomState: Boolean? = null,
+    contentListTouchingState: Boolean? = null,
     fastScrollerDragState: Boolean? = null,
     hasLoadError: Boolean? = null,
     replyLayoutOpened: Boolean? = null,
     childScreenSearchInfo: ChildScreenSearchInfo? = null
   ) {
-    postListScrollState?.let { _postListScrollState.value = it }
-    postListTouchingTopOrBottomState?.let { _postListTouchingTopOrBottomState.value = it }
-    postListDragState?.let { _postListDragState.value = it }
+    contentListScrollState?.let { _contentListScrollState.value = it }
+    contentListTouchingTopOrBottomState?.let { _contentListTouchingTopOrBottomState.value = it }
+    contentListTouchingState?.let { _contentListTouchingState.value = it }
     fastScrollerDragState?.let { _fastScrollerDragState.value = it }
     hasLoadError?.let { _hasLoadError.value = it }
     replyLayoutOpened?.let { _replyLayoutOpened.value = it }
@@ -75,8 +75,8 @@ class HideableUiVisibilityInfo() : Parcelable {
   }
 
   override fun writeToParcel(parcel: Parcel, flags: Int) {
-    parcel.writeFloat(postListScrollState.value)
-    parcel.writeBooleanKt(_postListTouchingTopOrBottomState.value)
+    parcel.writeFloat(contentListScrollState.value)
+    parcel.writeBooleanKt(_contentListTouchingTopOrBottomState.value)
     parcel.writeBooleanKt(_hasLoadError.value)
     parcel.writeBooleanKt(_replyLayoutOpened.value)
   }
