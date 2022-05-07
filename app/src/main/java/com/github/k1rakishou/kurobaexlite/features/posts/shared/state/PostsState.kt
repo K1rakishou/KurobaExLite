@@ -1,12 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.state
 
 import android.os.SystemClock
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.linkedMapWithCap
@@ -29,10 +26,10 @@ class PostsState(
     get() = _lastUpdatedOn
 
   private val postIndexes = linkedMapWithCap<PostDescriptor, Int>(128)
-  private val allPosts = mutableListWithCap<MutableState<PostCellData>>(128)
+  private val allPosts = mutableListWithCap<PostCellData>(128)
 
-  private val postsProcessed = mutableStateListOf<MutableState<PostCellData>>()
-  val posts: List<State<PostCellData>>
+  private val postsProcessed = mutableStateListOf<PostCellData>()
+  val posts: List<PostCellData>
     get() = postsProcessed
 
   private val searchQueryFlow = MutableStateFlow<String?>(null)
@@ -49,7 +46,7 @@ class PostsState(
     postDescriptors.forEach { postDescriptor ->
       val postIndex = postIndexes[postDescriptor]
         ?: return@forEach
-      val postCellData = allPosts.getOrNull(postIndex)?.value
+      val postCellData = allPosts.getOrNull(postIndex)
         ?: return@forEach
 
       resultList += postCellData
@@ -63,46 +60,40 @@ class PostsState(
     searchQueryFlow.value = searchQuery
 
     if (searchQuery == prevSearchQuery || searchQuery.isNullOrEmpty()) {
-      if (postsProcessed.size != allPosts.size) {
-        postsProcessed.clear()
-        postsProcessed.addAll(allPosts)
+      postsProcessed.clear()
+      postsProcessed.addAll(allPosts)
+    } else {
+      val matchedPostCellDataStates = allPosts.mapNotNull { postCellData ->
+        if (searchQuery.isEmpty()) {
+          return@mapNotNull postCellData
+        }
+
+        val commentMatchesQuery = postCellData.parsedPostData
+          ?.processedPostComment
+          ?.text
+          ?.contains(other = searchQuery, ignoreCase = true)
+          ?: false
+
+        if (commentMatchesQuery) {
+          return@mapNotNull postCellData
+        }
+
+        val subjectMatchesQuery = postCellData.parsedPostData
+          ?.processedPostSubject
+          ?.text
+          ?.contains(other = searchQuery, ignoreCase = true)
+          ?: false
+
+        if (subjectMatchesQuery) {
+          return@mapNotNull postCellData
+        }
+
+        return@mapNotNull null
       }
 
-      return
+      postsProcessed.clear()
+      postsProcessed.addAll(matchedPostCellDataStates)
     }
-
-    val matchedPostCellDataStates = allPosts.mapNotNull { postCellDataState ->
-      val postCellData = postCellDataState.value
-
-      if (searchQuery.isEmpty()) {
-        return@mapNotNull postCellDataState
-      }
-
-      val commentMatchesQuery = postCellData.parsedPostData
-        ?.processedPostComment
-        ?.text
-        ?.contains(other = searchQuery, ignoreCase = true)
-        ?: false
-
-      if (commentMatchesQuery) {
-        return@mapNotNull postCellDataState
-      }
-
-      val subjectMatchesQuery = postCellData.parsedPostData
-        ?.processedPostSubject
-        ?.text
-        ?.contains(other = searchQuery, ignoreCase = true)
-        ?: false
-
-      if (subjectMatchesQuery) {
-        return@mapNotNull postCellDataState
-      }
-
-      return@mapNotNull null
-    }
-
-    postsProcessed.clear()
-    postsProcessed.addAll(matchedPostCellDataStates)
   }
 
   /**
@@ -116,17 +107,17 @@ class PostsState(
         postIndexes[postCellData.postDescriptor] = nextPostIndex
 
         // We assume that posts can only be inserted at the end of the post list
-        allPosts += mutableStateOf(postCellData)
+        allPosts += postCellData
       } else {
         _lastUpdatedOn = SystemClock.elapsedRealtime()
-        allPosts[index].value = postCellData
+        allPosts[index] = postCellData
       }
 
       if (androidHelpers.isDevFlavor()) {
         if (checkFirstPostIsOriginal) {
           val originalPost = allPosts.firstOrNull()
           if (originalPost != null) {
-            check(originalPost.value.isOP) { "First post is not OP" }
+            check(originalPost.isOP) { "First post is not OP" }
           }
         }
 
@@ -135,7 +126,7 @@ class PostsState(
         }
 
         val postMutableDeduplicated = allPosts.toHashSetByKey { postCellDataState ->
-          postCellDataState.value.postDescriptor
+          postCellDataState.postDescriptor
         }
 
         check(postMutableDeduplicated.size == allPosts.size) {
@@ -153,7 +144,10 @@ class PostsState(
   /**
    * Do not call directly! Use PostScreenState.insertOrUpdateMany() instead!
    * */
-  fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>, checkFirstPostIsOriginal: Boolean) {
+  fun insertOrUpdateMany(
+    postCellDataCollection: Collection<PostCellData>,
+    checkFirstPostIsOriginal: Boolean
+  ) {
     if (postCellDataCollection.isEmpty()) {
       return
     }
@@ -169,9 +163,9 @@ class PostsState(
           postIndexes[postDescriptor] = initialIndex++
 
           // We assume that posts can only be inserted at the end of the post list
-          allPosts += mutableStateOf(postCellData)
+          allPosts += postCellData
         } else {
-          allPosts[index].value = postCellData
+          allPosts[index] = postCellData
         }
       }
 
@@ -179,7 +173,7 @@ class PostsState(
         if (checkFirstPostIsOriginal) {
           val originalPost = allPosts.firstOrNull()
           if (originalPost != null) {
-            check(originalPost.value.isOP) { "First post is not OP" }
+            check(originalPost.isOP) { "First post is not OP" }
           }
         }
 
@@ -188,7 +182,7 @@ class PostsState(
         }
 
         val postMutableDeduplicated = allPosts.toHashSetByKey { postCellDataState ->
-          postCellDataState.value.postDescriptor
+          postCellDataState.postDescriptor
         }
 
         check(postMutableDeduplicated.size == allPosts.size) {

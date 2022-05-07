@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.album
 
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.State
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
@@ -21,7 +20,7 @@ class AlbumScreenViewModel : BaseViewModel() {
 
   suspend fun loadAlbumFromPostStateList(
     chanDescriptor: ChanDescriptor,
-    postStateList: List<State<PostCellData>>
+    postCellDataList: List<PostCellData>
   ): Album {
     return withContext(Dispatchers.Default) {
       val totalImages = mutableListWithCap<IPostImage>(32)
@@ -33,14 +32,12 @@ class AlbumScreenViewModel : BaseViewModel() {
         is ThreadDescriptor -> chanViewManager.read(chanDescriptor)?.lastViewedPDForScroll
       }
 
-      postStateList.forEachIndexed { index, postState ->
-        val postCellData = postState.value
-
+      postCellDataList.forEachIndexed { index, postCellData ->
         if (postCellData.postDescriptor == lastViewedPostDescriptor) {
           if (postCellData.images.isNotNullNorEmpty()) {
             imageToScrollTo = postCellData.images.first()
           } else {
-            imageToScrollTo = findFirstSuitableImageCloseToIndex(postStateList, index)
+            imageToScrollTo = findFirstSuitableImageCloseToIndex(postCellDataList, index)
           }
         }
 
@@ -58,13 +55,12 @@ class AlbumScreenViewModel : BaseViewModel() {
   }
 
   private fun findFirstSuitableImageCloseToIndex(
-    postStateList: List<State<PostCellData>>,
+    postStateList: List<PostCellData>,
     startIndex: Int
   ): IPostImage? {
     // First, find next post with images
     for (index in startIndex until postStateList.size) {
       val images = postStateList.getOrNull(index)
-        ?.value
         ?.images
         ?.takeIf { images -> images.isNotEmpty() }
         ?: continue
@@ -75,7 +71,6 @@ class AlbumScreenViewModel : BaseViewModel() {
     // If we failed to find next post the try to find previous post with images
     for (index in startIndex downTo 0) {
       val images = postStateList.getOrNull(index)
-        ?.value
         ?.images
         ?.takeIf { images -> images.isNotEmpty() }
         ?: continue

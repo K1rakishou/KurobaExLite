@@ -557,7 +557,7 @@ abstract class PostScreenViewModel(
         ?: emptyList()
 
       val index = posts
-        .indexOfLast { postDataState -> postDataState.value.postDescriptor == scrollToPost }
+        .indexOfLast { postCellData -> postCellData.postDescriptor == scrollToPost }
 
       logcat(tag = TAG) {
         "restoreScrollPosition($chanDescriptor, $scrollToPost) " +
@@ -596,7 +596,7 @@ abstract class PostScreenViewModel(
 
     if (posts != null && lastViewedPostDescriptor != null) {
       val index = posts
-        .indexOfLast { postDataState -> postDataState.value.postDescriptor == lastViewedPostDescriptor }
+        .indexOfLast { postCellData -> postCellData.postDescriptor == lastViewedPostDescriptor }
 
       logcat(tag = TAG) {
         "restoreScrollPosition($chanDescriptor, $scrollToPost) " +

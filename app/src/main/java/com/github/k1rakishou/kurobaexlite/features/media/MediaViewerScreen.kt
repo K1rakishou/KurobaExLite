@@ -518,13 +518,13 @@ class MediaViewerScreen(
           threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
         }
 
-        val postCellDataStateListMut = (postsAsyncDataState as? AsyncData.Data)?.data?.posts
-        val postCellDataStateList = postCellDataStateListMut
+        val postCellDataListMut = (postsAsyncDataState as? AsyncData.Data)?.data?.posts
+        val postCellDataList = postCellDataListMut
 
         LaunchedEffect(
-          key1 = postCellDataStateList,
+          key1 = postCellDataList,
           block = {
-            if (postCellDataStateList == null) {
+            if (postCellDataList == null) {
               Snapshot.withMutableSnapshot {
                 mediaViewerScreenState.images = null
                 mediaViewerScreenState.initialPage.value = null
@@ -535,7 +535,7 @@ class MediaViewerScreen(
             }
 
             val initResult = mediaViewerScreenViewModel.initFromPostStateList(
-              postCellDataStateList = postCellDataStateList,
+              postCellDataList = postCellDataList,
               initialImageUrl = mediaViewerParams.initialImage
             )
 

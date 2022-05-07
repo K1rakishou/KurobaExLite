@@ -152,7 +152,7 @@ class AlbumScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
-    val postCellDataStateList = (postsAsyncData as? AsyncData.Data)?.data?.posts
+    val postCellDataList = (postsAsyncData as? AsyncData.Data)?.data?.posts
     var albumMut by remember { mutableStateOf<AlbumScreenViewModel.Album?>(null) }
     val album = albumMut
 
@@ -164,10 +164,10 @@ class AlbumScreen(
         buttonText = stringResource(id = R.string.reload),
         onButtonClicked = {
           coroutineScope.launch {
-            val freshPostCellDataStateList = (postsAsyncData as? AsyncData.Data)?.data?.posts
+            val freshPostCellDataList = (postsAsyncData as? AsyncData.Data)?.data?.posts
               ?: return@launch
 
-            albumScreenViewModel.loadAlbumFromPostStateList(chanDescriptor, freshPostCellDataStateList)
+            albumScreenViewModel.loadAlbumFromPostStateList(chanDescriptor, freshPostCellDataList)
           }
         }
       )
@@ -176,14 +176,14 @@ class AlbumScreen(
     }
 
     LaunchedEffect(
-      key1 = postCellDataStateList,
+      key1 = postCellDataList,
       block = {
-        if (postCellDataStateList == null) {
+        if (postCellDataList == null) {
           albumMut = null
           return@LaunchedEffect
         }
 
-        albumMut = albumScreenViewModel.loadAlbumFromPostStateList(chanDescriptor, postCellDataStateList)
+        albumMut = albumScreenViewModel.loadAlbumFromPostStateList(chanDescriptor, postCellDataList)
       }
     )
 

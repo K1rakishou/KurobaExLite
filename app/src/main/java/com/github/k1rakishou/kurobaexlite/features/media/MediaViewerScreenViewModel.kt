@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.features.media
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import androidx.compose.runtime.State
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import coil.request.ErrorResult
@@ -62,7 +61,7 @@ class MediaViewerScreenViewModel(
     get() = mpvInitializer.initialized
 
   suspend fun initFromPostStateList(
-    postCellDataStateList: List<State<PostCellData>>,
+    postCellDataList: List<PostCellData>,
     initialImageUrl: HttpUrl
   ): InitResult {
     return withContext(Dispatchers.Default) {
@@ -71,9 +70,7 @@ class MediaViewerScreenViewModel(
 
       val imagesToShow = mutableListOf<IPostImage>()
 
-      postCellDataStateList.forEach { postCellDataState ->
-        val postCellData = postCellDataState.value
-
+      postCellDataList.forEach { postCellData ->
         val threadImages = postCellData.images
           ?: return@forEach
 

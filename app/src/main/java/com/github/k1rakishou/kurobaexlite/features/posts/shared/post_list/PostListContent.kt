@@ -25,7 +25,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -285,8 +284,8 @@ private fun processPostListScrollEvent(
       lastCompletelyVisibleItem = visibleItemsInfo.getOrNull(visibleItemsInfo.lastIndex - 1)
     }
 
-    val firstVisiblePostData = firstCompletelyVisibleItem?.let { item -> postDataList.getOrNull(item.index)?.value }
-    val lastVisiblePostData = lastCompletelyVisibleItem?.let { item -> postDataList.getOrNull(item.index)?.value }
+    val firstVisiblePostData = firstCompletelyVisibleItem?.let { item -> postDataList.getOrNull(item.index) }
+    val lastVisiblePostData = lastCompletelyVisibleItem?.let { item -> postDataList.getOrNull(item.index) }
     val postListTouchingBottom = visibleItemsInfo.lastOrNull()?.key == threadStatusCellKey
 
     if (firstVisiblePostData != null && lastVisiblePostData != null) {
@@ -629,7 +628,7 @@ private fun LazyListScope.postList(
   lastViewedPostDescriptorForIndicator: PostDescriptor?,
   cellsPadding: PaddingValues,
   postListOptions: PostListOptions,
-  postCellDataList: List<State<PostCellData>>,
+  postCellDataList: List<PostCellData>,
   onPostBind: (PostCellData) -> Unit,
   onPostUnbind: (PostCellData) -> Unit,
   canAnimateInsertion: (PostCellData) -> Boolean,
@@ -646,9 +645,9 @@ private fun LazyListScope.postList(
 ) {
   items(
     count = postCellDataList.size,
-    key = { index -> "${postCellKeyPrefix}_${postCellDataList[index].value.postDescriptor}" },
+    key = { index -> "${postCellKeyPrefix}_${postCellDataList[index].postDescriptor}" },
     itemContent = { index ->
-      val postCellData by postCellDataList[index]
+      val postCellData = postCellDataList[index]
 
       var rememberedHashForUpdateAnimation by remember {
         mutableStateOf(postCellData.postServerDataHashForListAnimations)
