@@ -11,9 +11,11 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
@@ -46,6 +48,7 @@ class ThreadScreenViewModel(
   private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
   private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
   private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
+  private val addOrRemoveBookmark: AddOrRemoveBookmark by inject(AddOrRemoveBookmark::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     executeUpdate = { refresh() },
@@ -58,6 +61,7 @@ class ThreadScreenViewModel(
   private val threadScreenState = ThreadScreenPostsState()
   private var loadThreadJob: Job? = null
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
+  private val bookmarkThreadExecutor = RendezvousCoroutineExecutor(viewModelScope)
 
   override val postScreenState: PostScreenState = threadScreenState
 
@@ -225,6 +229,28 @@ class ThreadScreenViewModel(
     loadThreadJob = viewModelScope.launch {
       resetTimer()
       loadThreadInternal(threadDescriptor, loadOptions, onReloadFinished)
+    }
+  }
+
+  fun bookmarkOrUnbookmarkThread() {
+    bookmarkThreadExecutor.post {
+      val bookmarkDescriptor = threadDescriptor
+        ?: return@post
+
+      val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(bookmarkDescriptor.toOriginalPostDescriptor())
+        ?: return@post
+
+      val bookmarkThumbnail = chanCache.getOriginalPost(bookmarkDescriptor)
+        ?.images
+        ?.firstOrNull()
+        ?.thumbnailUrl
+        ?: return@post
+
+      addOrRemoveBookmark.addOrRemoveBookmark(
+        threadDescriptor = bookmarkDescriptor,
+        bookmarkTitle = bookmarkTitle,
+        bookmarkThumbnail = bookmarkThumbnail
+      )
     }
   }
 

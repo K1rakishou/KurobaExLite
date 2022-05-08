@@ -1,15 +1,18 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
+import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
+import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkDataDto
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.settings.SiteSettings
@@ -27,8 +30,10 @@ interface Site {
   fun boardsInfo(): BoardsInfo?
   fun postImageInfo(): PostImageInfo?
   fun replyInfo(): ReplyInfo?
-  fun icon(): HttpUrl?
+  fun bookmarkInfo(): BookmarkInfo?
 
+  fun parser(): AbstractSitePostParser
+  fun icon(): HttpUrl?
   fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor?
   fun requestModifier(): RequestModifier<Site>
   fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String?
@@ -56,6 +61,11 @@ interface Site {
   interface ReplyInfo {
     fun replyUrl(chanDescriptor: ChanDescriptor): String
     fun sendReply(replyData: ReplyData): Flow<ReplyEvent>
+  }
+
+  interface BookmarkInfo {
+    fun bookmarkUrl(boardCode: String, threadNo: Long): String
+    fun bookmarkDataSource(): IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkDataDto>
   }
 }
 

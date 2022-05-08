@@ -2,10 +2,10 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "76a84af6e402edb40bf87ff733431cb9",
+    "identityHash": "78f4a4489685ab83ed29ba423b7d855e",
     "entities": [
       {
-        "tableName": "chan_thread_view",
+        "tableName": "chan_thread_views",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`thread_site_key` TEXT NOT NULL, `thread_board_code` TEXT NOT NULL, `thread_thread_no` INTEGER NOT NULL, `last_viewed_for_indicator_post_no` INTEGER, `last_viewed_for_indicator_post_sub_no` INTEGER, `last_viewed_for_scroll_post_no` INTEGER, `last_viewed_for_scroll_post_sub_no` INTEGER, `last_viewed_for_newPosts_post_no` INTEGER, `last_viewed_for_newPosts_post_sub_no` INTEGER, `last_loaded_post_no` INTEGER, `last_loaded_post_sub_no` INTEGER, PRIMARY KEY(`thread_site_key`, `thread_board_code`, `thread_thread_no`))",
         "fields": [
           {
@@ -139,7 +139,7 @@
         "foreignKeys": []
       },
       {
-        "tableName": "mark_post",
+        "tableName": "marked_posts",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`type` INTEGER NOT NULL, `marked_post_site_key` TEXT NOT NULL, `marked_post_board_code` TEXT NOT NULL, `marked_post_thread_no` INTEGER NOT NULL, `marked_post_post_no` INTEGER NOT NULL, `marked_post_post_sub_no` INTEGER NOT NULL, PRIMARY KEY(`marked_post_site_key`, `marked_post_board_code`, `marked_post_thread_no`, `marked_post_post_no`, `marked_post_post_sub_no`))",
         "fields": [
           {
@@ -193,7 +193,7 @@
         "foreignKeys": []
       },
       {
-        "tableName": "chan_catalog",
+        "tableName": "chan_catalogs",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`database_id` INTEGER NOT NULL, `board_title` TEXT, `board_description` TEXT, `work_safe` INTEGER NOT NULL, `catalog_site_key` TEXT NOT NULL, `catalog_board_code` TEXT NOT NULL, PRIMARY KEY(`catalog_site_key`, `catalog_board_code`))",
         "fields": [
           {
@@ -242,20 +242,20 @@
         },
         "indices": [
           {
-            "name": "index_chan_catalog_database_id",
+            "name": "index_chan_catalogs_database_id",
             "unique": true,
             "columnNames": [
               "database_id"
             ],
             "orders": [],
-            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_chan_catalog_database_id` ON `${TABLE_NAME}` (`database_id`)"
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_chan_catalogs_database_id` ON `${TABLE_NAME}` (`database_id`)"
           }
         ],
         "foreignKeys": []
       },
       {
         "tableName": "chan_catalog_sort_order",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_database_id` INTEGER NOT NULL, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`owner_database_id`), FOREIGN KEY(`owner_database_id`) REFERENCES `chan_catalog`(`database_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_database_id` INTEGER NOT NULL, `sort_order` INTEGER NOT NULL, PRIMARY KEY(`owner_database_id`), FOREIGN KEY(`owner_database_id`) REFERENCES `chan_catalogs`(`database_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "ownerDatabaseId",
@@ -279,7 +279,203 @@
         "indices": [],
         "foreignKeys": [
           {
-            "table": "chan_catalog",
+            "table": "chan_catalogs",
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "owner_database_id"
+            ],
+            "referencedColumns": [
+              "database_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "thread_bookmarks",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`database_id` INTEGER NOT NULL, `seen_posts_count` INTEGER, `total_posts_count` INTEGER, `title` TEXT, `thumbnail_url` TEXT, `state` INTEGER NOT NULL, `created_on` INTEGER NOT NULL, `bookmark_site_key` TEXT NOT NULL, `bookmark_board_code` TEXT NOT NULL, `bookmark_thread_no` INTEGER NOT NULL, `last_viewed_post_post_no` INTEGER, `last_viewed_post_post_sub_no` INTEGER, `thread_last_post_post_no` INTEGER, `thread_last_post_post_sub_no` INTEGER, PRIMARY KEY(`bookmark_site_key`, `bookmark_board_code`, `bookmark_thread_no`))",
+        "fields": [
+          {
+            "fieldPath": "databaseId",
+            "columnName": "database_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seenPostsCount",
+            "columnName": "seen_posts_count",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "totalPostsCount",
+            "columnName": "total_posts_count",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "thumbnailUrl",
+            "columnName": "thumbnail_url",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdOn",
+            "columnName": "created_on",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookmarkKey.siteKey",
+            "columnName": "bookmark_site_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookmarkKey.boardCode",
+            "columnName": "bookmark_board_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookmarkKey.threadNo",
+            "columnName": "bookmark_thread_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastViewedPostKey.postNo",
+            "columnName": "last_viewed_post_post_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "lastViewedPostKey.postSubNo",
+            "columnName": "last_viewed_post_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "threadLastPostKey.postNo",
+            "columnName": "thread_last_post_post_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "threadLastPostKey.postSubNo",
+            "columnName": "thread_last_post_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "bookmark_site_key",
+            "bookmark_board_code",
+            "bookmark_thread_no"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [
+          {
+            "name": "index_thread_bookmarks_database_id",
+            "unique": true,
+            "columnNames": [
+              "database_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_thread_bookmarks_database_id` ON `${TABLE_NAME}` (`database_id`)"
+          }
+        ],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "thread_bookmark_replies",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_database_id` INTEGER NOT NULL, `already_seen` INTEGER NOT NULL, `already_notified` INTEGER NOT NULL, `already_read` INTEGER NOT NULL, `time` INTEGER NOT NULL, `comment_raw` TEXT, `reply_post_post_no` INTEGER NOT NULL, `reply_post_post_sub_no` INTEGER NOT NULL, `reply_to_post_post_no` INTEGER NOT NULL, `reply_to_post_post_sub_no` INTEGER NOT NULL, PRIMARY KEY(`owner_database_id`), FOREIGN KEY(`owner_database_id`) REFERENCES `thread_bookmarks`(`database_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "ownerDatabaseId",
+            "columnName": "owner_database_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alreadySeen",
+            "columnName": "already_seen",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alreadyNotified",
+            "columnName": "already_notified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alreadyRead",
+            "columnName": "already_read",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "commentRaw",
+            "columnName": "comment_raw",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "replyPostKey.postNo",
+            "columnName": "reply_post_post_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "replyPostKey.postSubNo",
+            "columnName": "reply_post_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "repliesToPostKey.postNo",
+            "columnName": "reply_to_post_post_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "repliesToPostKey.postSubNo",
+            "columnName": "reply_to_post_post_sub_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "owner_database_id"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": [
+          {
+            "table": "thread_bookmarks",
             "onDelete": "CASCADE",
             "onUpdate": "CASCADE",
             "columns": [
@@ -295,7 +491,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '76a84af6e402edb40bf87ff733431cb9')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '78f4a4489685ab83ed29ba423b7d855e')"
     ]
   }
 }

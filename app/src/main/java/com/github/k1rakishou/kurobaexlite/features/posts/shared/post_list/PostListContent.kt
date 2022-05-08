@@ -45,10 +45,10 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -78,8 +78,8 @@ internal fun PostListContent(
   postsScreenViewModel: PostScreenViewModel,
   onPostCellClicked: (PostCellData) -> Unit,
   onPostCellLongClicked: (PostCellData) -> Unit,
-  onLinkableClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
-  onLinkableLongClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
+  onLinkableClicked: (PostCellData, TextPartSpan.Linkable) -> Unit,
+  onLinkableLongClicked: (PostCellData, TextPartSpan.Linkable) -> Unit,
   onPostRepliesClicked: (PostDescriptor) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,

@@ -10,18 +10,18 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class SiteManager(
   private val appContext: Context
-) {
+) : ISiteManager {
   private val sites = ConcurrentHashMap<SiteKey, Site>()
 
   init {
     sites[Chan4.SITE_KEY] = Chan4(appContext)
   }
 
-  fun bySiteKey(siteKey: SiteKey): Site? {
+  override fun bySiteKey(siteKey: SiteKey): Site? {
     return sites[siteKey]
   }
 
-  fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor? {
+  override fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor? {
     val httpUrl = rawIdentifier.toHttpUrlOrNull()
 
     for ((_, site) in sites) {

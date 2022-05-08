@@ -87,6 +87,11 @@ data class ThreadDescriptor(
   val catalogDescriptor: CatalogDescriptor,
   val threadNo: Long
 ) : Parcelable, ChanDescriptor() {
+
+  init {
+    check(threadNo >= 0L) { "Bad threadNo: ${threadNo}" }
+  }
+
   override val siteKey: SiteKey
     get() = catalogDescriptor.siteKey
   val siteKeyActual: String
@@ -170,7 +175,13 @@ data class PostDescriptor(
   val threadDescriptor: ThreadDescriptor,
   val postNo: Long,
   val postSubNo: Long = 0L
-) : Parcelable {
+) : Parcelable, Comparable<PostDescriptor> {
+
+  init {
+    check(postNo >= 0L) { "Bad postNo: ${postNo}" }
+    check(postSubNo >= 0L) { "Bad postSubNo: ${postSubNo}" }
+  }
+
   val siteKeyActual: String
     get() = threadDescriptor.catalogDescriptor.siteKey.key
   val siteKey: SiteKey
@@ -192,6 +203,28 @@ data class PostDescriptor(
     buffer.writeLong(postSubNo)
 
     return buffer
+  }
+
+  override fun compareTo(other: PostDescriptor): Int {
+    if (this.threadNo > other.threadNo) {
+      return 1
+    } else if (this.threadNo < other.threadNo) {
+      return -1
+    }
+
+    if (this.postNo > other.postNo) {
+      return 1
+    } else if (this.postNo < other.postNo) {
+      return -1
+    }
+
+    if (this.postSubNo > other.postSubNo) {
+      return 1
+    } else if (this.postSubNo < other.postSubNo) {
+      return -1
+    }
+
+    return 0
   }
 
   override fun toString(): String {
@@ -228,6 +261,21 @@ data class PostDescriptor(
   }
 
   companion object {
+
+    fun create(
+      threadDescriptor: ThreadDescriptor,
+      postNo: Long,
+      postSubNo: Long = 0L
+    ): PostDescriptor {
+      return create(
+        siteKey = threadDescriptor.siteKey,
+        boardCode = threadDescriptor.boardCode,
+        threadNo = threadDescriptor.threadNo,
+        postNo = postNo,
+        postSubNo = postSubNo
+      )
+    }
+
     fun create(
       siteKey: SiteKey,
       boardCode: String,
@@ -254,6 +302,25 @@ data class PostDescriptor(
       val postSubNo = buffer.readLong()
 
       return PostDescriptor(threadDescriptor, postNo, postSubNo)
+    }
+
+    fun maxOfPostDescriptors(one: PostDescriptor?, other: PostDescriptor?): PostDescriptor? {
+      if (one == null && other == null) {
+        return null
+      }
+
+      if (one == null || other == null) {
+        return one ?: other
+      }
+
+      val result = one.compareTo(other)
+      if (result > 0) {
+        return one
+      } else if (result < 0) {
+        return other
+      }
+
+      return one
     }
   }
 }

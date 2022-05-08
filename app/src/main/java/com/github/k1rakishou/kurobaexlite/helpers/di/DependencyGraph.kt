@@ -27,15 +27,21 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.notification.ReplyNotificationsHelper
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ExtractRepliesToMyPosts
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
@@ -46,11 +52,14 @@ import com.github.k1rakishou.kurobaexlite.interactors.navigation.PersistNavigati
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
+import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
+import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.ISiteManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
@@ -111,7 +120,7 @@ object DependencyGraph {
     single { ProxiedOkHttpClient() }
     single { GlobalConstants(get()) }
     single { Moshi.Builder().build() }
-    single { PostCommentParser() }
+    single { PostCommentParser(siteManager = get()) }
     single { PostCommentApplier() }
     single { FullScreenHelpers(get()) }
     single { AndroidHelpers(application = get(), snackbarManager = get()) }
@@ -123,6 +132,7 @@ object DependencyGraph {
     single { MediaViewerPostListScroller() }
     single { CrossThreadFollowHistory() }
     single { ClickedThumbnailBoundsStorage() }
+    single { ReplyNotificationsHelper() }
     single {
       ParsedPostDataCache(
         appContext = get(),
@@ -148,6 +158,8 @@ object DependencyGraph {
 
   private fun Module.managers() {
     single { SiteManager(appContext = get()) }
+    single<ISiteManager> { get<SiteManager>() }
+    single { ApplicationVisibilityManager() }
     single { CatalogManager() }
     single { ChanThreadManager(siteManager = get(), chanCache = get()) }
     single { PostReplyChainManager() }
@@ -157,6 +169,7 @@ object DependencyGraph {
     single { MarkedPostManager() }
     single { CaptchaManager() }
     single { LastVisitedEndpointManager(appScope = get()) }
+    single { BookmarksManager() }
 
     single {
       GlobalUiInfoManager(
@@ -269,6 +282,53 @@ object DependencyGraph {
       LoadChanCatalog(
         catalogManager = get(),
         kurobaExLiteDatabase = get()
+      )
+    }
+    single {
+      FetchThreadBookmarkInfo(
+        siteManager = get(),
+        bookmarksManager = get(),
+        kurobaExLiteDatabase = get(),
+        replyNotificationsHelper = get(),
+        loadChanThreadView = get(),
+        extractRepliesToMyPosts = get(),
+        appSettings = get(),
+        androidHelpers = get(),
+      )
+    }
+    single {
+      ExtractRepliesToMyPosts(
+        appScope = get(),
+        postCommentParser = get(),
+        siteManager = get(),
+        kurobaExLiteDatabase = get()
+      )
+    }
+    single {
+      AddOrRemoveBookmark(
+        appContext = get(),
+        androidHelpers = get(),
+        bookmarksManager = get(),
+        applicationVisibilityManager = get(),
+        kurobaExLiteDatabase = get()
+      )
+    }
+    single {
+      LoadBookmarks(
+        appContext = get(),
+        appScope = get(),
+        androidHelpers = get(),
+        applicationVisibilityManager = get(),
+        bookmarksManager = get(),
+        kurobaExLiteDatabase = get()
+      )
+    }
+    single {
+      UpdatePostSeenForBookmark(
+        appScope = get(),
+        chanCache = get(),
+        bookmarksManager = get(),
+        kurobaExLiteDatabase = get(),
       )
     }
 

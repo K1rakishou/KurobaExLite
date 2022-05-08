@@ -33,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -67,6 +68,7 @@ class ThreadScreen(
   private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
+  private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
 
   private val threadScreenToolbarActionHandler by lazy {
     ThreadScreenToolbarActionHandler()
@@ -106,6 +108,7 @@ class ThreadScreen(
       middlePartInfo = MiddlePartInfo(centerContent = false),
       rightPartInfo = RightPartInfo(
         ToolbarIcon(ThreadToolbarIcons.Search, R.drawable.ic_baseline_search_24, false),
+        ToolbarIcon(ThreadToolbarIcons.Bookmark, R.drawable.ic_baseline_bookmark_border_24, false),
         ToolbarIcon(ThreadToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
       ),
       postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
@@ -234,11 +237,14 @@ class ThreadScreen(
       kurobaToolbarState = threadToolbarState
     )
 
+    UpdateThreadBookmarkIcon()
+
     LaunchedEffect(
       key1 = Unit,
       block = {
         threadToolbarState.toolbarIconClickEventFlow.collect { key ->
           when (key as ThreadToolbarIcons) {
+            ThreadToolbarIcons.Bookmark -> threadScreenViewModel.bookmarkOrUnbookmarkThread()
             ThreadToolbarIcons.Search -> threadToolbarState.openSearch()
             ThreadToolbarIcons.Overflow -> {
               navigationRouter.presentScreen(
@@ -510,11 +516,81 @@ class ThreadScreen(
     }
   }
 
+  @Composable
+  private fun UpdateThreadBookmarkIcon() {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        threadScreenViewModel.currentlyOpenedThreadFlow.collect { currentlyOpenedThreadDescriptor ->
+          val currentThreadDescriptor = threadScreenViewModel.threadDescriptor
+            ?: return@collect
+
+          if (currentlyOpenedThreadDescriptor != currentThreadDescriptor) {
+            return@collect
+          }
+
+          val isThreadBookmarked = bookmarksManager.contains(currentThreadDescriptor)
+
+          threadToolbarState.rightIconByKey(ThreadToolbarIcons.Bookmark)
+            ?.let { bookmarkThreadIcon ->
+              if (isThreadBookmarked) {
+                bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_24
+              } else {
+                bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
+              }
+            }
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        bookmarksManager.bookmarkEventsFlow.collect { event ->
+          val currentThreadDescriptor = threadScreenViewModel.threadDescriptor
+
+          when (event) {
+            is BookmarksManager.Event.Created -> {
+              val isForThisThread = event.threadDescriptors
+                .any { threadDescriptor -> threadDescriptor == currentThreadDescriptor }
+
+              if (!isForThisThread) {
+                return@collect
+              }
+
+              threadToolbarState.rightIconByKey(ThreadToolbarIcons.Bookmark)
+                ?.let { bookmarkThreadIcon ->
+                  bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_24
+                }
+            }
+            is BookmarksManager.Event.Deleted -> {
+              val isForThisThread = event.threadDescriptors
+                .any { threadDescriptor -> threadDescriptor == currentThreadDescriptor }
+
+              if (!isForThisThread) {
+                return@collect
+              }
+
+              threadToolbarState.rightIconByKey(ThreadToolbarIcons.Bookmark)
+                ?.let { bookmarkThreadIcon ->
+                  bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
+                }
+            }
+            BookmarksManager.Event.Loaded -> {
+              // no-op
+            }
+          }
+        }
+      }
+    )
+  }
+
   private enum class ReplyToolbarIcons {
     PickLocalFile
   }
 
   private enum class ThreadToolbarIcons {
+    Bookmark,
     Search,
     Overflow
   }

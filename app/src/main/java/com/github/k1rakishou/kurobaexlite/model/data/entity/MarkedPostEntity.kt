@@ -15,7 +15,7 @@ class MarkedPostEntity(
 ) {
 
   companion object {
-    const val TABLE_NAME = "mark_post"
+    const val TABLE_NAME = "marked_posts"
   }
 }
 
@@ -23,7 +23,7 @@ class MarkedPostEntity(
 abstract class MarkedPostDao {
 
   @Query("""
-    SELECT * FROM mark_post
+    SELECT * FROM marked_posts
     WHERE 
         marked_post_site_key = :siteKey
     AND
@@ -34,14 +34,32 @@ abstract class MarkedPostDao {
   abstract suspend fun select(
     siteKey: String,
     boardCode: String,
-    threadNo: Long
+    threadNo: Long,
+  ): List<MarkedPostEntity>
+
+  @Query("""
+    SELECT * FROM marked_posts
+    WHERE 
+        marked_post_site_key = :siteKey
+    AND
+        marked_post_board_code = :boardCode
+    AND
+        marked_post_thread_no = :threadNo
+    AND
+        type = :type
+  """)
+  abstract suspend fun selectWithType(
+    siteKey: String,
+    boardCode: String,
+    threadNo: Long,
+    type: Int
   ): List<MarkedPostEntity>
 
   @Insert(onConflict = OnConflictStrategy.IGNORE)
   abstract suspend fun insert(markedPostEntity: MarkedPostEntity)
 
   @Query("""
-    DELETE FROM mark_post
+    DELETE FROM marked_posts
     WHERE 
         marked_post_site_key = :siteKey
     AND

@@ -5,6 +5,7 @@ import androidx.annotation.CheckResult
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import androidx.room.withTransaction
 import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogDao
@@ -16,8 +17,13 @@ import com.github.k1rakishou.kurobaexlite.model.data.entity.MarkedPostDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.MarkedPostEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.NavigationHistoryDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.NavigationHistoryEntity
-import java.util.concurrent.Executors
-import kotlinx.coroutines.asCoroutineDispatcher
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkDao
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkReplyEntity
+import com.github.k1rakishou.kurobaexlite.model.database.converters.BitSetTypeConverter
+import com.github.k1rakishou.kurobaexlite.model.database.converters.DateTimeTypeConverter
+import com.github.k1rakishou.kurobaexlite.model.database.converters.HttpUrlTypeConverter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Database(
@@ -27,29 +33,36 @@ import kotlinx.coroutines.withContext
     MarkedPostEntity::class,
     ChanCatalogEntity::class,
     ChanCatalogSortOrderEntity::class,
+    ThreadBookmarkEntity::class,
+    ThreadBookmarkReplyEntity::class
   ],
   version = 1,
   exportSchema = true
+)
+@TypeConverters(
+  value = [
+    DateTimeTypeConverter::class,
+    HttpUrlTypeConverter::class,
+    BitSetTypeConverter::class,
+  ]
 )
 abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
 
   @CheckResult
   suspend fun <T> transaction(func: suspend Daos.() -> T): Result<T> {
-    return withContext(roomDispatcher) {
+    return withContext(Dispatchers.IO) {
       return@withContext Result.Try { withTransaction { func(this@KurobaExLiteDatabase) } }
     }
   }
 
   @CheckResult
   suspend fun <T> call(func: suspend Daos.() -> T): Result<T> {
-    return withContext(roomDispatcher) {
+    return withContext(Dispatchers.IO) {
       return@withContext Result.Try { func(this@KurobaExLiteDatabase) }
     }
   }
 
   companion object {
-    internal val roomDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-
     const val DATABASE_NAME = "kuroba_ex_lite.db"
     const val EMPTY_JSON = "{}"
 
@@ -79,4 +92,5 @@ interface Daos {
   val navigationHistoryDao: NavigationHistoryDao
   val markedPostDao: MarkedPostDao
   val chanCatalogDao: ChanCatalogDao
+  val threadBookmarkDao: ThreadBookmarkDao
 }

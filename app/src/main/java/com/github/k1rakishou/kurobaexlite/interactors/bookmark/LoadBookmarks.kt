@@ -1,0 +1,86 @@
+package com.github.k1rakishou.kurobaexlite.interactors.bookmark
+
+import android.content.Context
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
+import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
+import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
+import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import logcat.logcat
+
+class LoadBookmarks(
+  private val appContext: Context,
+  private val appScope: CoroutineScope,
+  private val androidHelpers: AndroidHelpers,
+  private val applicationVisibilityManager: ApplicationVisibilityManager,
+  private val bookmarksManager: BookmarksManager,
+  private val kurobaExLiteDatabase: KurobaExLiteDatabase,
+  private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
+  private val bookmarksLoaded = AtomicBoolean(false)
+
+  fun execute(onFinished: (Throwable?) -> Unit) {
+    if (bookmarksLoaded.get()) {
+      return
+    }
+
+    appScope.launch(dispatcher) {
+      if (!bookmarksLoaded.compareAndSet(false, true)) {
+        return@launch
+      }
+
+      val exception = kurobaExLiteDatabase.transaction {
+        val threadBookmarks = threadBookmarkDao.selectAllBookmarksWithReplies()
+          .map { threadBookmarkEntityWithReplies ->
+            return@map ThreadBookmark.fromThreadBookmarkEntityWithReplies(
+              threadBookmarkEntityWithReplies
+            )
+          }
+
+        bookmarksManager.init(threadBookmarks)
+        return@transaction threadBookmarks.size
+      }
+        .onFailure { error ->
+          logcatError(TAG) { "Load bookmarks from database error: ${error.asLogIfImportantOrErrorMessage()}" }
+        }
+        .onSuccess { loadedBookmarksCount ->
+          logcat(TAG) { "Loaded ${loadedBookmarksCount} bookmarks from database" }
+        }
+        .exceptionOrNull()
+
+      if (exception != null) {
+        onFinished(exception)
+        return@launch
+      }
+
+      val activeBookmarksCount = bookmarksManager.activeBookmarksCount()
+      if (activeBookmarksCount > 0) {
+        logcat(TAG) { "activeBookmarksCount is greater than zero (${activeBookmarksCount}) restarting the work" }
+
+        BookmarkBackgroundWatcherWorker.restartBackgroundWork(
+          appContext = appContext,
+          flavorType = androidHelpers.getFlavorType(),
+          isInForeground = applicationVisibilityManager.isAppInForeground(),
+          addInitialDelay = false
+        )
+      } else {
+        logcat(TAG) { "No active bookmarks loaded, doing nothing" }
+      }
+
+      onFinished(null)
+    }
+  }
+
+  companion object {
+    private const val TAG = "LoadBookmarks"
+  }
+
+}

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers
+package com.github.k1rakishou.kurobaexlite.helpers.parser
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isUnspecified
@@ -6,6 +6,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import com.github.k1rakishou.kurobaexlite.helpers.buildAnnotatedString
+import com.github.k1rakishou.kurobaexlite.helpers.createAnnotationItem
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
@@ -19,7 +21,7 @@ class PostCommentApplier {
   suspend fun applyTextPartsToAnnotatedString(
     chanTheme: ChanTheme,
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
-    textParts: List<PostCommentParser.TextPart>,
+    textParts: List<TextPart>,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
     val capacity = textParts.sumOf { it.text.length }
@@ -50,7 +52,7 @@ class PostCommentApplier {
   private suspend fun processTextPart(
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     chanTheme: ChanTheme,
-    textPart: PostCommentParser.TextPart,
+    textPart: TextPart,
     parsedPostDataContext: ParsedPostDataContext,
     totalLength: Int,
   ): Pair<AnnotatedString, Boolean> {
@@ -87,7 +89,7 @@ class PostCommentApplier {
 
   private fun AnnotatedString.Builder.processTextPartSpans(
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
-    spans: List<PostCommentParser.TextPartSpan>,
+    spans: List<TextPartSpan>,
     chanTheme: ChanTheme,
     parsedPostDataContext: ParsedPostDataContext,
     totalLength: Int
@@ -105,24 +107,24 @@ class PostCommentApplier {
       var end: Int? = null
 
       when (span) {
-        is PostCommentParser.TextPartSpan.PartialSpan -> {
+        is TextPartSpan.PartialSpan -> {
           start = span.start
           end = span.end
           underline = true
 
           when (span.linkSpan) {
-            is PostCommentParser.TextPartSpan.Linkable.Url -> {
+            is TextPartSpan.Linkable.Url -> {
               fgColor = chanTheme.postLinkColorCompose
             }
-            is PostCommentParser.TextPartSpan.BgColor,
-            is PostCommentParser.TextPartSpan.BgColorId,
-            is PostCommentParser.TextPartSpan.FgColor,
-            is PostCommentParser.TextPartSpan.FgColorId,
-            is PostCommentParser.TextPartSpan.Linkable.Board,
-            is PostCommentParser.TextPartSpan.Linkable.Quote,
-            is PostCommentParser.TextPartSpan.Linkable.Search,
-            is PostCommentParser.TextPartSpan.PartialSpan,
-            PostCommentParser.TextPartSpan.Spoiler -> {
+            is TextPartSpan.BgColor,
+            is TextPartSpan.BgColorId,
+            is TextPartSpan.FgColor,
+            is TextPartSpan.FgColorId,
+            is TextPartSpan.Linkable.Board,
+            is TextPartSpan.Linkable.Quote,
+            is TextPartSpan.Linkable.Search,
+            is TextPartSpan.PartialSpan,
+            TextPartSpan.Spoiler -> {
               error("${span.linkSpan::class.java.simpleName} is not supported as a partial span")
             }
           }
@@ -133,19 +135,19 @@ class PostCommentApplier {
 
           annotationValue = span.linkSpan.createAnnotationItem()
         }
-        is PostCommentParser.TextPartSpan.BgColor -> {
+        is TextPartSpan.BgColor -> {
           bgColor = Color(span.color)
         }
-        is PostCommentParser.TextPartSpan.FgColor -> {
+        is TextPartSpan.FgColor -> {
           fgColor = Color(span.color)
         }
-        is PostCommentParser.TextPartSpan.BgColorId -> {
+        is TextPartSpan.BgColorId -> {
           bgColor = Color(chanTheme.getColorByColorId(span.colorId))
         }
-        is PostCommentParser.TextPartSpan.FgColorId -> {
+        is TextPartSpan.FgColorId -> {
           fgColor = Color(chanTheme.getColorByColorId(span.colorId))
         }
-        is PostCommentParser.TextPartSpan.Spoiler -> {
+        is TextPartSpan.Spoiler -> {
           bgColor = chanTheme.postSpoilerColorCompose
 
           val shouldRevealSpoiler = matchesOpenedSpoilerPosition(
@@ -162,15 +164,15 @@ class PostCommentApplier {
 
           annotationTag = ANNOTATION_POST_SPOILER_TEXT
         }
-        is PostCommentParser.TextPartSpan.Linkable -> {
+        is TextPartSpan.Linkable -> {
           when (span) {
-            is PostCommentParser.TextPartSpan.Linkable.Quote,
-            is PostCommentParser.TextPartSpan.Linkable.Board,
-            is PostCommentParser.TextPartSpan.Linkable.Search,
-            is PostCommentParser.TextPartSpan.Linkable.Url -> {
+            is TextPartSpan.Linkable.Quote,
+            is TextPartSpan.Linkable.Board,
+            is TextPartSpan.Linkable.Search,
+            is TextPartSpan.Linkable.Url -> {
               underline = true
 
-              if (span is PostCommentParser.TextPartSpan.Linkable.Quote) {
+              if (span is TextPartSpan.Linkable.Quote) {
                 if (span.postDescriptor.isOP && !span.crossThread) {
                   this.append(" ")
                   this.append(OP_POSTFIX)
@@ -203,10 +205,10 @@ class PostCommentApplier {
                 bold = parsedPostDataContext.highlightedPostDescriptor == span.postDescriptor
               }
 
-              fgColor = if (span is PostCommentParser.TextPartSpan.Linkable.Url) {
+              fgColor = if (span is TextPartSpan.Linkable.Url) {
                 chanTheme.postLinkColorCompose
               } else if (
-                span is PostCommentParser.TextPartSpan.Linkable.Quote
+                span is TextPartSpan.Linkable.Quote
                 && parsedPostDataContext.highlightedPostDescriptor == span.postDescriptor
               ) {
                 ThemeEngine.manipulateColor(chanTheme.postQuoteColorCompose, 0.7f)
@@ -285,7 +287,7 @@ class PostCommentApplier {
 
   private fun trimTextPartIfNeeded(
     totalLength: Int,
-    textPart: PostCommentParser.TextPart,
+    textPart: TextPart,
     parsedPostDataContext: ParsedPostDataContext
   ): Pair<String, Boolean> {
     val maxLength = parsedPostDataContext.maxPostCommentLength()

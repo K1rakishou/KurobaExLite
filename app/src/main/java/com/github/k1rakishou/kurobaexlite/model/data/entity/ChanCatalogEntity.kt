@@ -25,7 +25,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 )
 data class ChanCatalogEntity(
   @PrimaryKey @Embedded(prefix = "catalog_") val catalogKey: CatalogKey,
-  @ColumnInfo(name = "database_id") val databaseId: Long,
+  @ColumnInfo(name = "database_id") val databaseId: Long = -1L,
   @ColumnInfo(name = "board_title") val boardTitle: String?,
   @ColumnInfo(name = "board_description") val boardDescription: String?,
   @ColumnInfo(name = "work_safe") val workSafe: Boolean
@@ -41,7 +41,7 @@ data class ChanCatalogEntity(
   }
 
   companion object {
-    const val TABLE_NAME = "chan_catalog"
+    const val TABLE_NAME = "chan_catalogs"
   }
 }
 
@@ -87,23 +87,24 @@ data class ChanCatalogEntitySorted(
 @Dao
 abstract class ChanCatalogDao {
 
+  @Transaction
   @Query("""
-    SELECT * FROM chan_catalog
+    SELECT * FROM chan_catalogs
     INNER JOIN chan_catalog_sort_order
-        ON chan_catalog.database_id = chan_catalog_sort_order.owner_database_id
+        ON chan_catalogs.database_id = chan_catalog_sort_order.owner_database_id
     WHERE
-        chan_catalog.catalog_site_key = :siteKey
+        chan_catalogs.catalog_site_key = :siteKey
     ORDER BY 
         chan_catalog_sort_order.sort_order
   """)
   abstract suspend fun selectAllForSiteOrdered(siteKey: String): List<ChanCatalogEntitySorted>
 
   @Query("""
-    SELECT * FROM chan_catalog
+    SELECT * FROM chan_catalogs
     WHERE 
-        chan_catalog.catalog_site_key = :siteKey
+        chan_catalogs.catalog_site_key = :siteKey
     AND
-        chan_catalog.catalog_board_code = :boardCode
+        chan_catalogs.catalog_board_code = :boardCode
     LIMIT 1
   """)
   abstract suspend fun selectCatalog(siteKey: String, boardCode: String): ChanCatalogEntity
@@ -144,7 +145,7 @@ abstract class ChanCatalogDao {
   }
 
   @Query("""
-    INSERT INTO chan_catalog(
+    INSERT INTO chan_catalogs(
         catalog_site_key,
         catalog_board_code,
         database_id,
@@ -155,7 +156,7 @@ abstract class ChanCatalogDao {
     VALUES(
         :siteKey,
         :boardCode,
-        (SELECT IFNULL(MAX(database_id), 0) + 1 FROM chan_catalog),
+        (SELECT IFNULL(MAX(database_id), 0) + 1 FROM chan_catalogs),
         :boardTitle,
         :boardDescription,
         :workSafe
@@ -171,11 +172,11 @@ abstract class ChanCatalogDao {
 
   @Query("""
     SELECT database_id
-    FROM chan_catalog
+    FROM chan_catalogs
     WHERE
-        chan_catalog.catalog_site_key = :siteKey
+        chan_catalogs.catalog_site_key = :siteKey
     AND
-        chan_catalog.catalog_board_code = :boardCode
+        chan_catalogs.catalog_board_code = :boardCode
     LIMIT 1
   """)
   protected abstract suspend fun selectChanCatalogDatabaseId(

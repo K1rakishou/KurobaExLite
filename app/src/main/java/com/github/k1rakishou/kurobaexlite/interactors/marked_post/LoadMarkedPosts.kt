@@ -29,7 +29,7 @@ class LoadMarkedPosts(
         val markedPostType = MarkedPostType.fromTypRaw(markedPostEntity.type)
           ?: return@mapNotNull null
 
-        MarkedPost(
+        return@mapNotNull MarkedPost(
           postDescriptor = markedPostEntity.postKey.postDescriptor,
           markedPostType = markedPostType
         )

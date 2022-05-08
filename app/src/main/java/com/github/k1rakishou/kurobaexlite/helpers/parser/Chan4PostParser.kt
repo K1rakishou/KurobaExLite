@@ -1,0 +1,256 @@
+package com.github.k1rakishou.kurobaexlite.helpers.parser
+
+import androidx.annotation.VisibleForTesting
+import com.github.k1rakishou.kurobaexlite.helpers.decodeUrlOrNull
+import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
+import java.nio.charset.StandardCharsets
+
+class Chan4PostParser : AbstractSitePostParser() {
+
+  override fun parseHtmlNode(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>,
+    postDescriptor: PostDescriptor
+  ) {
+    when (htmlTag.tagName) {
+      "br" -> {
+        childTextParts += TextPartMut(text = "\n")
+      }
+      "s" -> {
+        for (childTextPart in childTextParts) {
+          childTextPart.spans.add(TextPartSpan.Spoiler)
+        }
+      }
+      "span",
+      "a" -> {
+        if (htmlTag.hasClass("quote")) {
+          for (childTextPart in childTextParts) {
+            childTextPart.spans.add(TextPartSpan.FgColorId(ChanThemeColorId.PostInlineQuote))
+          }
+
+          return
+        }
+
+        val className = htmlTag.classAttrOrNull()
+          ?: return
+
+        val childTextPart = if (childTextParts.size == 1) {
+          childTextParts.first()
+        } else {
+          val mergedTextPart = mergeChildTextPartsIntoOne(childTextParts)
+
+          childTextParts.clear()
+          childTextParts.add(mergedTextPart)
+
+          mergedTextPart
+        }
+
+        val isDeadLink = htmlTag.tagName == "span" && htmlTag.hasClass("deadlink")
+
+        val href = if (isDeadLink) {
+          childTextPart.text
+        } else {
+          htmlTag.attrUnescapedOrNull("href")
+        }
+
+        if (href.isNullOrEmpty()) {
+          return
+        }
+
+        val linkable = parseLinkable(className, href, postDescriptor)
+        if (linkable == null) {
+          logcatError { "Failed to parse linkable. className='$className', href='$href'" }
+          return
+        }
+
+        childTextPart.spans += linkable
+      }
+      "wbr" -> {
+        error("<wbr> tags should all be removed during the HTML parsing stage. This is most likely a HTML parser bug.")
+      }
+      else -> {
+        logcatError {
+          "Unsupported tag with name '${htmlTag.tagName}' found. " +
+            "(postDescriptor=$postDescriptor, htmlTag=$htmlTag)"
+        }
+      }
+    }
+  }
+
+  @VisibleForTesting
+  override fun parseLinkable(
+    className: String,
+    href: String,
+    postDescriptor: PostDescriptor
+  ): TextPartSpan.Linkable? {
+    val isDeadLink = className.equals(other = "deadlink", ignoreCase = true)
+    val isQuoteLink = className.equals(other = "quotelink", ignoreCase = true)
+
+    if (!isDeadLink && !isQuoteLink) {
+      return null
+    }
+
+    if (href.startsWith("#") || href.startsWith(">>")) {
+      // Internal quote, e.g. '#p370525473'
+      // or
+      // Internal dead quote, e.g. '>>370525473'
+      val postNo = href.drop(2).toLongOrNull()
+        ?: return null
+
+      if (postNo <= 0) {
+        return null
+      }
+
+      val quotePostDescriptor = PostDescriptor(
+        threadDescriptor = postDescriptor.threadDescriptor,
+        postNo = postNo
+      )
+
+      return TextPartSpan.Linkable.Quote(
+        crossThread = false,
+        dead = isDeadLink,
+        postDescriptor = quotePostDescriptor
+      )
+    }
+
+    if (href.startsWith("/")) {
+      // External quote
+
+      val hrefPreprocessed = preprocessHref(href)
+
+      when {
+        href.contains("/thread/") -> {
+          // Thread quotes:
+          // '/qst/thread/5126311#p5126311'
+          // '/aco/thread/6149612#p6149612'
+
+          // Cross-thread quotes:
+          // '/vg/thread/369649921#p369650787'
+          // '/vg/thread/369649921'
+
+          val fullPathSplit = hrefPreprocessed.split("/")
+            .filter { part -> part.isNotBlank() }
+
+          val threadSegment = fullPathSplit.getOrNull(1)
+          if (threadSegment?.equals("thread", ignoreCase = true) != true) {
+            return null
+          }
+
+          val boardCode = fullPathSplit.getOrNull(0)
+            ?: return null
+          val threadNoPostNo = fullPathSplit.getOrNull(2)
+            ?: return null
+
+          var threadNo = 0L
+          var postNo = 0L
+
+          if (threadNoPostNo.contains("#p")) {
+            val threadNoPostNoSplit = threadNoPostNo.split("#p")
+
+            threadNo = threadNoPostNoSplit.getOrNull(0)?.toLongOrNull()
+              ?: return null
+            postNo = threadNoPostNoSplit.getOrNull(1)?.toLongOrNull()
+              ?: return null
+          } else {
+            threadNo = threadNoPostNo.toLongOrNull()
+              ?: return null
+            postNo = threadNo
+          }
+
+          if (threadNo <= 0 || postNo <= 0) {
+            return null
+          }
+
+          val quotePostDescriptor = PostDescriptor.create(
+            siteKey = postDescriptor.siteKey,
+            boardCode = boardCode,
+            threadNo = threadNo,
+            postNo = postNo
+          )
+
+          return TextPartSpan.Linkable.Quote(
+            crossThread = true,
+            dead = isDeadLink,
+            postDescriptor = quotePostDescriptor
+          )
+        }
+        hrefPreprocessed.contains("#s") -> {
+          // Search quotes:
+          // '/vg/catalog#s=tesog%2F'
+          // '/aco/catalog#s=weg%2F'
+
+          val fullPathSplit = hrefPreprocessed.split("/")
+            .filter { part -> part.isNotBlank() }
+
+          val boardCode = fullPathSplit.getOrNull(0)
+            ?: return null
+          val theRest = fullPathSplit.getOrNull(1)?.removePrefix("catalog#s=")
+            ?: return null
+
+          val decodedQuery = decodeUrlOrNull(theRest, StandardCharsets.UTF_8.name())
+            ?.removeSuffix("/")
+            ?: return null
+
+          return TextPartSpan.Linkable.Search(
+            boardCode = boardCode,
+            searchQuery = decodedQuery
+          )
+        }
+        else -> {
+          val fullPathSplit = hrefPreprocessed.split("/")
+            .filter { part -> part.isNotBlank() }
+
+          if (fullPathSplit.size == 1) {
+            // Board quotes:
+            // '/jp/'
+            // '/jp/'
+            val boardCode = fullPathSplit.get(0).removePrefix("/").removeSuffix("/").trim()
+            if (boardCode.isBlank()) {
+              return null
+            }
+
+            return TextPartSpan.Linkable.Board(
+              boardCode = boardCode
+            )
+          }
+        }
+      }
+    }
+
+    return null
+  }
+
+  override fun postProcessTextParts(textPartMut: TextPartMut): TextPartMut {
+    val text = textPartMut.text
+    val links = LINK_EXTRACTOR.extractLinks(text)
+
+    for (link in links) {
+      val urlSpan = TextPartSpan.Linkable.Url(text.substring(link.beginIndex, link.endIndex))
+
+      textPartMut.spans += TextPartSpan.PartialSpan(
+        start = link.beginIndex,
+        end = link.endIndex,
+        linkSpan = urlSpan
+      )
+    }
+
+    return textPartMut
+  }
+
+  protected fun preprocessHref(href: String): String {
+    // //boards.4channel.org/qst/thread/5126311#p5126311  -> qst/thread/5126311#p5126311
+    // /qst/thread/5126311#p5126311                       -> qst/thread/5126311#p5126311
+
+    var resultHref = href
+
+    if (href.startsWith("//")) {
+      resultHref = href.removePrefix("//").dropWhile { it != '/' }
+    }
+
+    return resultHref.removePrefix("/")
+  }
+
+}

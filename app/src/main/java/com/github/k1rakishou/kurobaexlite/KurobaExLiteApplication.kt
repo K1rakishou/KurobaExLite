@@ -5,13 +5,17 @@ import android.util.Log
 import com.github.k1rakishou.kurobaexlite.helpers.di.DependencyGraph
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import kotlin.system.exitProcess
 import logcat.LogPriority
 import logcat.LogcatLogger
 import logcat.asLog
 import org.koin.core.context.GlobalContext.startKoin
+import org.koin.java.KoinJavaComponent.inject
 
 class KurobaExLiteApplication : Application() {
+  private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
+
   private val appCoroutineScope = KurobaCoroutineScope()
 
   // TODO(KurobaEx): PullToRefresh in catalog scrolls to the middle of the catalog
@@ -21,12 +25,6 @@ class KurobaExLiteApplication : Application() {
   override fun onCreate() {
     super.onCreate()
 
-    Thread.setDefaultUncaughtExceptionHandler { thread, e ->
-      // if there's any uncaught crash stuff, just dump them to the log and exit immediately
-      logcatError { "Unhandled exception in thread: ${thread.name}, error: ${e.asLog()}" }
-      exitProcess(-1)
-    }
-
     startKoin {
       modules(
         DependencyGraph.initialize(
@@ -34,6 +32,14 @@ class KurobaExLiteApplication : Application() {
           appCoroutineScope = appCoroutineScope
         )
       )
+    }
+
+    registerActivityLifecycleCallbacks(applicationVisibilityManager)
+
+    Thread.setDefaultUncaughtExceptionHandler { thread, e ->
+      // if there's any uncaught crash stuff, just dump them to the log and exit immediately
+      logcatError { "Unhandled exception in thread: ${thread.name}, error: ${e.asLog()}" }
+      exitProcess(-1)
     }
 
     LogcatLogger.install(KurobaExLiteLogger())

@@ -24,7 +24,7 @@ class UpdateChanThreadView(
   ): ChanThreadView? {
     val updatedChanThreadView = chanViewManager.insertOrUpdate(threadDescriptor) {
       if (threadLastPostDescriptor != null) {
-        lastLoadedPostDescriptor = maxOfPostDescriptors(
+        lastLoadedPostDescriptor = PostDescriptor.maxOfPostDescriptors(
           one = lastLoadedPostDescriptor,
           other = threadLastPostDescriptor
         )
@@ -33,7 +33,7 @@ class UpdateChanThreadView(
       if (postListTouchingBottom == true) {
         lastViewedPDForIndicator = null
       } else if (lastViewedPDForIndicator == null) {
-        lastViewedPDForIndicator = maxOfPostDescriptors(
+        lastViewedPDForIndicator = PostDescriptor.maxOfPostDescriptors(
           one = threadLastPostDescriptor,
           other = lastLoadedPostDescriptor
         )
@@ -69,40 +69,6 @@ class UpdateChanThreadView(
     }
 
     return updatedChanThreadView
-  }
-
-  private fun maxOfPostDescriptors(one: PostDescriptor?, other: PostDescriptor?): PostDescriptor? {
-    if (one == null && other == null) {
-      return null
-    }
-
-    if (one == null || other == null) {
-      if (one != null) {
-        return one
-      }
-
-      return other
-    }
-
-    if (one.threadNo > other.threadNo) {
-      return one
-    } else if (one.threadNo < other.threadNo) {
-      return other
-    }
-
-    if (one.postNo > other.postNo) {
-      return one
-    } else if (one.postNo < other.postNo) {
-      return other
-    }
-
-    if (one.postSubNo > other.postSubNo) {
-      return one
-    } else if (one.postSubNo < other.postSubNo) {
-      return other
-    }
-
-    return other
   }
 
   companion object {

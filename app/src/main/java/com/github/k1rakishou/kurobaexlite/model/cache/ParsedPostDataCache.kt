@@ -8,8 +8,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
@@ -17,6 +15,10 @@ import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPart
+import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -369,13 +371,13 @@ class ParsedPostDataCache(
   }
 
   private suspend fun getMarkedPostInfoSetForQuoteSpans(
-    textParts: List<PostCommentParser.TextPart>
+    textParts: List<TextPart>
   ): Map<PostDescriptor, Set<MarkedPost>> {
     val foundQuotes = mutableSetOf<PostDescriptor>()
 
     for (textPart in textParts) {
       for (span in textPart.spans) {
-        if (span is PostCommentParser.TextPartSpan.Linkable.Quote && !span.crossThread) {
+        if (span is TextPartSpan.Linkable.Quote && !span.crossThread) {
           foundQuotes += span.postDescriptor
         }
       }
@@ -390,21 +392,21 @@ class ParsedPostDataCache(
 
   private suspend fun processReplyChains(
     postDescriptor: PostDescriptor,
-    textParts: List<PostCommentParser.TextPart>
+    textParts: List<TextPart>
   ) {
     val repliesTo = mutableSetOf<PostDescriptor>()
 
     for (textPart in textParts) {
       for (textPartSpan in textPart.spans) {
-        if (textPartSpan !is PostCommentParser.TextPartSpan.Linkable) {
+        if (textPartSpan !is TextPartSpan.Linkable) {
           continue
         }
 
         when (textPartSpan) {
-          is PostCommentParser.TextPartSpan.Linkable.Board,
-          is PostCommentParser.TextPartSpan.Linkable.Search,
-          is PostCommentParser.TextPartSpan.Linkable.Url -> continue
-          is PostCommentParser.TextPartSpan.Linkable.Quote -> {
+          is TextPartSpan.Linkable.Board,
+          is TextPartSpan.Linkable.Search,
+          is TextPartSpan.Linkable.Url -> continue
+          is TextPartSpan.Linkable.Quote -> {
             if (textPartSpan.crossThread) {
               continue
             }

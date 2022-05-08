@@ -138,6 +138,10 @@ class ChanCache(
     return threads[threadDescriptor]?.getLastPost()
   }
 
+  suspend fun getNewPostsCount(postDescriptor: PostDescriptor): Int {
+    return threads[postDescriptor.threadDescriptor]?.getNewPostsCount(postDescriptor) ?: 0
+  }
+
   private suspend fun evictOld(
     cache: ConcurrentHashMap<ChanDescriptor, IChanCache>,
     maxCachedCount: Int

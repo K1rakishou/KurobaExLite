@@ -17,15 +17,20 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
+import com.github.k1rakishou.kurobaexlite.model.data.local.dto.StickyThread
+import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkDataDto
+import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardsDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.PostImageDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadBookmarkInfoJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadDataJson
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.Site
@@ -43,7 +48,8 @@ class Chan4DataSource(
   private val moshi: Moshi
 ) : ICatalogDataSource<CatalogDescriptor, CatalogData>,
   IThreadDataSource<ThreadDescriptor, ThreadData>,
-  IBoardDataSource<SiteKey, CatalogsData> {
+  IBoardDataSource<SiteKey, CatalogsData>,
+  IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkDataDto> {
 
   override suspend fun loadThread(
     threadDescriptor: ThreadDescriptor,
@@ -258,6 +264,73 @@ class Chan4DataSource(
         }
 
         return@Try CatalogsData(chanBoards)
+      }
+    }
+  }
+
+  override suspend fun loadBookmarkData(input: ThreadDescriptor): Result<ThreadBookmarkDataDto> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(input.siteKey)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val bookmarkInfo = site.bookmarkInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support bookmarks")
+
+        val bookmarkUrl = bookmarkInfo.bookmarkUrl(
+          boardCode = input.boardCode,
+          threadNo = input.threadNo
+        )
+
+        val request = Request.Builder()
+          .url(bookmarkUrl)
+          .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifyCatalogOrThreadGetRequest(
+              site = site,
+              chanDescriptor = input,
+              requestBuilder = requestBuilder
+            )
+          }
+          .build()
+
+        val threadBookmarkInfoJsonAdapter = moshi.adapter<ThreadBookmarkInfoJson>(ThreadBookmarkInfoJson::class.java)
+        val threadBookmarkInfoJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+          request,
+          threadBookmarkInfoJsonAdapter
+        )
+
+        val boardsDataJson = threadBookmarkInfoJsonResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert thread json into ThreadBookmarkInfoJson object")
+
+        val threadBookmarkInfoPostObjects = boardsDataJson.postInfoForBookmarkList.map { postInfoForBookmarkJson ->
+          if (postInfoForBookmarkJson.isOp) {
+            val stickyPost = StickyThread.create(
+              isSticky = postInfoForBookmarkJson.isSticky,
+              stickyCap = postInfoForBookmarkJson.stickyCap ?: -1
+            )
+
+            return@map ThreadBookmarkInfoPostObject.OriginalPost(
+              postDescriptor = PostDescriptor.create(input, postInfoForBookmarkJson.postNo),
+              closed = postInfoForBookmarkJson.isClosed,
+              archived = postInfoForBookmarkJson.isArchived,
+              isBumpLimit = postInfoForBookmarkJson.isBumpLimit,
+              isImageLimit = postInfoForBookmarkJson.isImageLimit,
+              stickyThread = stickyPost,
+              comment = postInfoForBookmarkJson.comment
+            )
+          } else {
+            return@map ThreadBookmarkInfoPostObject.RegularPost(
+              postDescriptor = PostDescriptor.create(input, postInfoForBookmarkJson.postNo),
+              comment = postInfoForBookmarkJson.comment
+            )
+          }
+        }
+
+        return@Try ThreadBookmarkDataDto(
+          threadDescriptor = input,
+          postObjects = threadBookmarkInfoPostObjects
+        )
       }
     }
   }

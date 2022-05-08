@@ -2,14 +2,14 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.AnnotatedString
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.helpers.hash.MurmurHashUtils
+import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPart
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 @Immutable
 data class ParsedPostData(
-  val parsedPostParts: List<PostCommentParser.TextPart>,
+  val parsedPostParts: List<TextPart>,
   val parsedPostComment: String,
   val parsedPostSubject: String,
   val processedPostComment: AnnotatedString,

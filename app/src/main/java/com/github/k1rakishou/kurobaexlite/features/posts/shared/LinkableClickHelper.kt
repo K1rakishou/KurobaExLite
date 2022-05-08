@@ -6,7 +6,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
+import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -31,7 +31,7 @@ class LinkableClickHelper(
     context: Context,
     sourceScreenKey: ScreenKey,
     postCellData: PostCellData,
-    linkable: PostCommentParser.TextPartSpan.Linkable,
+    linkable: TextPartSpan.Linkable,
   ) {
     logcat(TAG) {
       "processLongClickedLinkable() sourceScreenKey=${sourceScreenKey}, " +
@@ -42,16 +42,16 @@ class LinkableClickHelper(
     // TODO(KurobaEx): open link in browser
 
     when (linkable) {
-      is PostCommentParser.TextPartSpan.Linkable.Board -> {
+      is TextPartSpan.Linkable.Board -> {
         // TODO(KurobaEx):
       }
-      is PostCommentParser.TextPartSpan.Linkable.Quote -> {
+      is TextPartSpan.Linkable.Quote -> {
         // TODO(KurobaEx):
       }
-      is PostCommentParser.TextPartSpan.Linkable.Search -> {
+      is TextPartSpan.Linkable.Search -> {
         // TODO(KurobaEx):
       }
-      is PostCommentParser.TextPartSpan.Linkable.Url -> {
+      is TextPartSpan.Linkable.Url -> {
         // TODO(KurobaEx):
       }
     }
@@ -61,7 +61,7 @@ class LinkableClickHelper(
     context: Context,
     sourceScreenKey: ScreenKey,
     postCellData: PostCellData,
-    linkable: PostCommentParser.TextPartSpan.Linkable,
+    linkable: TextPartSpan.Linkable,
     loadThreadFunc: (ThreadDescriptor) -> Unit,
     loadCatalogFunc: (CatalogDescriptor) -> Unit,
     showRepliesForPostFunc: (PopupRepliesScreen.ReplyViewMode) -> Unit
@@ -72,7 +72,7 @@ class LinkableClickHelper(
     }
 
     when (linkable) {
-      is PostCommentParser.TextPartSpan.Linkable.Quote -> {
+      is TextPartSpan.Linkable.Quote -> {
         if (linkable.dead) {
           if (chanCache.getPost(linkable.postDescriptor) == null) {
             snackbarManager.toast(
@@ -116,7 +116,7 @@ class LinkableClickHelper(
         val replyTo = PopupRepliesScreen.ReplyViewMode.ReplyTo(linkable.postDescriptor)
         showRepliesForPostFunc(replyTo)
       }
-      is PostCommentParser.TextPartSpan.Linkable.Board -> {
+      is TextPartSpan.Linkable.Board -> {
         val catalogDescriptor = CatalogDescriptor(
           siteKey = postCellData.postDescriptor.siteKey,
           boardCode = linkable.boardCode
@@ -124,10 +124,10 @@ class LinkableClickHelper(
 
         loadCatalogFunc(catalogDescriptor)
       }
-      is PostCommentParser.TextPartSpan.Linkable.Search -> {
+      is TextPartSpan.Linkable.Search -> {
         // TODO(KurobaEx):
       }
-      is PostCommentParser.TextPartSpan.Linkable.Url -> {
+      is TextPartSpan.Linkable.Url -> {
         // TODO(KurobaEx): show dialog?
         // TODO(KurobaEx): open in media viewer if the link ends with a recognizable media extension.
         androidHelpers.openLink(context, linkable.url)

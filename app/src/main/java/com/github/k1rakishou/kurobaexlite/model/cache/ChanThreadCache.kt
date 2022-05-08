@@ -118,6 +118,12 @@ class ChanThreadCache(
     return mutex.withLockNonCancellable { posts.lastOrNull() }
   }
 
+  suspend fun getNewPostsCount(postDescriptor: PostDescriptor): Int {
+    return mutex.withLockNonCancellable {
+      posts.count { chanPost -> chanPost.postDescriptor > postDescriptor }
+    }
+  }
+
   companion object {
     private const val TAG = "ChanThreadCache"
 

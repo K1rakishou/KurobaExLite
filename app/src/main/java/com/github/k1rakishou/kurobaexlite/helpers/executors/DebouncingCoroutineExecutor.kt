@@ -3,8 +3,10 @@ package com.github.k1rakishou.kurobaexlite.helpers.executors
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -17,7 +19,8 @@ import logcat.asLog
 @Suppress("JoinDeclarationAndAssignment")
 @OptIn(ExperimentalCoroutinesApi::class)
 class DebouncingCoroutineExecutor(
-  private val scope: CoroutineScope
+  private val scope: CoroutineScope,
+  private val dispatcher: CoroutineDispatcher = Dispatchers.Main
 ) {
   private val debouncers = mutableMapOf<String?, Debouncer>()
 
@@ -32,7 +35,7 @@ class DebouncingCoroutineExecutor(
 
     val debouncer = debouncers.getOrPut(
       key = key,
-      defaultValue = { Debouncer(scope, coroutineExceptionHandler) }
+      defaultValue = { Debouncer(dispatcher, scope, coroutineExceptionHandler) }
     )
 
     return debouncer.post(timeout, func)
@@ -50,6 +53,7 @@ class DebouncingCoroutineExecutor(
   }
 
   class Debouncer(
+    private val dispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope,
     private val coroutineExceptionHandler: CoroutineExceptionHandler
   ) {
@@ -68,7 +72,7 @@ class DebouncingCoroutineExecutor(
           }
 
           activeJob?.cancel()
-          activeJob = scope.launch {
+          activeJob = scope.launch(dispatcher) {
             delay(payload.timeout)
 
             if (counter.get() != payload.id || !isActive) {

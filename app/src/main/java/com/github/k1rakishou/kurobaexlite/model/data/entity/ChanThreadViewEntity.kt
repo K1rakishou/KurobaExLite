@@ -19,7 +19,7 @@ data class ChanThreadViewEntity(
   @Embedded(prefix = "last_loaded_") val lastLoadedPost: ThreadLocalPostKey?
 ) {
   companion object {
-    const val TABLE_NAME = "chan_thread_view"
+    const val TABLE_NAME = "chan_thread_views"
   }
 }
 
@@ -29,7 +29,7 @@ abstract class ChanThreadViewDao {
   abstract suspend fun insert(chanThreadViewEntity: ChanThreadViewEntity)
 
   @Query("""
-    SELECT * FROM chan_thread_view
+    SELECT * FROM chan_thread_views
     WHERE 
         thread_site_key = :siteKey
     AND

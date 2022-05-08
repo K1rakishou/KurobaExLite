@@ -67,10 +67,11 @@ class PostScreenToolbarInfo(val isCatalogScreen: Boolean)
 
 class ToolbarIcon(
   val key: Any,
-  @DrawableRes val drawableId: Int,
+  @DrawableRes drawableId: Int,
   visible: Boolean = true
 ) {
   val iconVisible = mutableStateOf(visible)
+  val drawableId = mutableStateOf(drawableId)
 }
 
 private val toolbarIconSize = 30.dp
@@ -97,6 +98,11 @@ class KurobaToolbarState(
   private val _toolbarIconClickEventFlow = MutableSharedFlow<Any>(extraBufferCapacity = Channel.UNLIMITED)
   val toolbarIconClickEventFlow: SharedFlow<Any>
     get() = _toolbarIconClickEventFlow.asSharedFlow()
+
+  fun rightIconByKey(key: Any): ToolbarIcon? {
+    return rightPartInfo?.toolbarIcons
+      ?.firstOrNull { toolbarIcon -> toolbarIcon.key == key }
+  }
 
   fun onToolbarIconClicked(key: Any) {
     _toolbarIconClickEventFlow.tryEmit(key)
@@ -309,6 +315,8 @@ fun rightPartBuilder(
       for ((index, toolbarIcon) in toolbarIcons.withIndex()) {
         val iconVisible by toolbarIcon.iconVisible
         if (iconVisible) {
+          val drawableId by toolbarIcon.drawableId
+
           key(toolbarIcon.key) {
             KurobaComposeIcon(
               modifier = Modifier
@@ -317,7 +325,7 @@ fun rightPartBuilder(
                   bounded = false,
                   onClick = { kurobaToolbarState.onToolbarIconClicked(toolbarIcon.key) }
                 ),
-              drawableId = toolbarIcon.drawableId
+              drawableId = drawableId
             )
 
             if (index != toolbarIcons.lastIndex) {

@@ -117,7 +117,6 @@ class RetrieveSiteCatalogList(
             } else {
               toInsert += ChanCatalogEntity(
                 catalogKey = CatalogKey.fromCatalogDescriptor(chanCatalog.catalogDescriptor),
-                databaseId = -1,
                 boardTitle = chanCatalog.boardTitle,
                 boardDescription = chanCatalog.boardDescription,
                 workSafe = chanCatalog.workSafe,

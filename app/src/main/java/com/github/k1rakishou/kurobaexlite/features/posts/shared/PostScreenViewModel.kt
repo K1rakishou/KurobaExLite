@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
@@ -75,6 +76,7 @@ abstract class PostScreenViewModel(
   protected val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
   protected val loadMarkedPosts: LoadMarkedPosts by inject(LoadMarkedPosts::class.java)
   protected val loadChanCatalog: LoadChanCatalog by inject(LoadChanCatalog::class.java)
+  protected val updatePostSeenForBookmark: UpdatePostSeenForBookmark by inject(UpdatePostSeenForBookmark::class.java)
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
@@ -675,6 +677,10 @@ abstract class PostScreenViewModel(
       postsParsedOnce = postsFullyParsedOnceFlow.value,
       postDescriptor = postCellData.postDescriptor
     )
+
+    if (descriptor is ThreadDescriptor) {
+      updatePostSeenForBookmark.onPostViewed(postCellData.postDescriptor)
+    }
   }
 
   fun onPostUnbind(postCellData: PostCellData) {

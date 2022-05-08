@@ -11,9 +11,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentApplier
-import com.github.k1rakishou.kurobaexlite.helpers.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.extractLinkableAnnotationItem
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -53,8 +53,8 @@ internal fun processClickedAnnotation(
   postComment: AnnotatedString,
   characterOffset: Int,
   longClicked: Boolean,
-  onLinkableClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
-  onLinkableLongClicked: (PostCellData, PostCommentParser.TextPartSpan.Linkable) -> Unit,
+  onLinkableClicked: (PostCellData, TextPartSpan.Linkable) -> Unit,
+  onLinkableLongClicked: (PostCellData, TextPartSpan.Linkable) -> Unit,
 ) {
   val parsedPostDataContext = postCellData.parsedPostData?.parsedPostDataContext
     ?: return

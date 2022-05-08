@@ -22,6 +22,8 @@ class AppSettings(
   private val dataStore by lazy { appContext.dataStore }
   private val isTablet by lazy { appContext.resources.getBoolean(R.bool.isTablet) }
 
+  val processorsCount by lazy { Runtime.getRuntime().availableProcessors() }
+
   val specialUserAgentFor4chanPosting by lazy {
     buildString {
       val applicationLabel = appContext.packageManager.getApplicationLabel(appContext.applicationInfo)

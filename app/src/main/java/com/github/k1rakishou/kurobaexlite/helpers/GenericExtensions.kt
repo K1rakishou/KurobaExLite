@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import java.io.InterruptedIOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -21,7 +22,12 @@ import kotlin.coroutines.resumeWithException
 import kotlin.math.abs
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -56,6 +62,10 @@ inline fun <T> Result.Companion.Try(func: () -> T): Result<T> {
 
 fun <T> Result<T>.unwrap(): T {
   return getOrThrow()
+}
+
+fun <T> Result<T>.ignore() {
+  return
 }
 
 fun Result<*>.exceptionOrThrow(): Throwable {
@@ -461,7 +471,7 @@ fun Buffer.readUtfString(): String {
   return readString(length, StandardCharsets.UTF_8)
 }
 
-fun AnnotatedString.Range<String>.extractLinkableAnnotationItem(): PostCommentParser.TextPartSpan.Linkable? {
+fun AnnotatedString.Range<String>.extractLinkableAnnotationItem(): TextPartSpan.Linkable? {
   if (item.isEmpty()) {
     return null
   }
@@ -472,10 +482,10 @@ fun AnnotatedString.Range<String>.extractLinkableAnnotationItem(): PostCommentPa
   val buffer = Buffer()
   buffer.write(base64Decoded)
 
-  return PostCommentParser.TextPartSpan.Linkable.deserialize(buffer)
+  return TextPartSpan.Linkable.deserialize(buffer)
 }
 
-fun PostCommentParser.TextPartSpan.Linkable.createAnnotationItem(): String {
+fun TextPartSpan.Linkable.createAnnotationItem(): String {
   return serialize().readByteString().base64()
 }
 
@@ -617,5 +627,36 @@ fun Matcher.groupOrNull(group: Int): String? {
     this.group(group)
   } catch (error: Throwable) {
     null
+  }
+}
+
+suspend fun <T, R> processDataCollectionConcurrently(
+  dataList: Collection<T>,
+  batchCount: Int,
+  dispatcher: CoroutineDispatcher,
+  processFunc: suspend (T) -> R?
+): List<R> {
+  if (dataList.isEmpty()) {
+    return emptyList()
+  }
+
+  return supervisorScope {
+    return@supervisorScope dataList
+      .chunked(batchCount)
+      .flatMap { dataChunk ->
+        return@flatMap dataChunk
+          .map { data ->
+            return@map async(dispatcher) {
+              try {
+                ensureActive()
+                return@async processFunc(data)
+              } catch (error: Throwable) {
+                return@async null
+              }
+            }
+          }
+          .awaitAll()
+          .filterNotNull()
+      }
   }
 }

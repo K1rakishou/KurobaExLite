@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.sites
 
 import androidx.annotation.CallSuper
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import okhttp3.Request
 
@@ -23,6 +24,16 @@ open class RequestModifier<T : Site>(
 
   @CallSuper
   open suspend fun modifyCaptchaGetRequest(site: T, requestBuilder: Request.Builder) {
+    requestBuilder.addHeader(userAgentHeaderKey, appSettings.userAgent.read())
+    requestBuilder.addHeader(acceptEncodingHeaderKey, gzipHeaderValue)
+  }
+
+  @CallSuper
+  open suspend fun modifyCatalogOrThreadGetRequest(
+    site: T,
+    chanDescriptor: ThreadDescriptor,
+    requestBuilder: Request.Builder
+  ) {
     requestBuilder.addHeader(userAgentHeaderKey, appSettings.userAgent.read())
     requestBuilder.addHeader(acceptEncodingHeaderKey, gzipHeaderValue)
   }

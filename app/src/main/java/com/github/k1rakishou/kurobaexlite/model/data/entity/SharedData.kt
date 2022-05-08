@@ -32,6 +32,36 @@ data class CatalogKey(
   }
 }
 
+data class ThreadKey(
+  @ColumnInfo(name = SITE_KEY) val siteKey: String,
+  @ColumnInfo(name = BOARD_CODE) val boardCode: String,
+  @ColumnInfo(name = THREAD_NO) val threadNo: Long
+) {
+
+  val threadDescriptor by lazy(mode = LazyThreadSafetyMode.NONE) {
+    return@lazy ThreadDescriptor.create(
+      siteKey = SiteKey(siteKey),
+      boardCode = boardCode,
+      threadNo = threadNo
+    )
+  }
+
+  companion object {
+    const val SITE_KEY = "site_key"
+    const val BOARD_CODE = "board_code"
+    const val THREAD_NO = "thread_no"
+
+    fun fromThreadDescriptor(threadDescriptor: ThreadDescriptor): ThreadKey {
+      return ThreadKey(
+        siteKey = threadDescriptor.siteKeyActual,
+        boardCode = threadDescriptor.boardCode,
+        threadNo = threadDescriptor.threadNo
+      )
+    }
+  }
+}
+
+
 data class CatalogOrThreadKey(
   @ColumnInfo(name = SITE_KEY) val siteKey: String,
   @ColumnInfo(name = BOARD_CODE) val boardCode: String,
@@ -49,7 +79,7 @@ data class CatalogOrThreadKey(
   }
 
   val catalogDescriptor by lazy(mode = LazyThreadSafetyMode.NONE) {
-    check(threadNo == -1L) { "Bad threadNo: ${threadNo}" }
+    check(threadNo < 0L) { "Bad threadNo: ${threadNo}" }
 
     return@lazy CatalogDescriptor(
       siteKey = SiteKey(siteKey),
@@ -136,7 +166,11 @@ data class ThreadLocalPostKey(
   @ColumnInfo(name = PostKey.POST_SUB_NO) val postSubNo: Long = 0
 ) {
 
-  fun postDescriptor(threadDescriptor: ThreadDescriptor): PostDescriptor {
+  fun postDescriptor(threadDescriptor: ThreadDescriptor): PostDescriptor? {
+    if (postNo < 0) {
+      return null
+    }
+
     return PostDescriptor.create(
       siteKey = threadDescriptor.siteKey,
       boardCode = threadDescriptor.boardCode,

@@ -62,6 +62,7 @@
     <string name="undo">Undo</string>
 
     <string name="main_activity_press_back_again_to_exit">Press back again to exit the app</string>
+    <string name="main_screen_view_model_failed_to_load_bookmarks_from_database">Failed to load bookmarks from database, error: \'%1$s\'</string>
 
     <string name="toolbar_loading_title">Loading…</string>
     <string name="toolbar_loading_error">Error loading</string>
