@@ -57,6 +57,8 @@ abstract class ChanTheme {
   abstract val scrollbarTrackColor: Int
   abstract val scrollbarThumbColorNormal: Int
   abstract val scrollbarThumbColorDragged: Int
+  abstract val bookmarkCounterHasRepliesColor: Int
+  abstract val bookmarkCounterNormalColor: Int
 
   abstract fun fullCopy(): ChanTheme
 
@@ -91,6 +93,9 @@ abstract class ChanTheme {
   val postSpoilerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerColor) }
   val postSpoilerRevealTextColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerRevealTextColor) }
   val postQuoteColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postQuoteColor) }
+
+  val bookmarkCounterHasRepliesColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterHasRepliesColor) }
+  val bookmarkCounterNormalColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterNormalColor) }
 
   open val mainFont: Typeface = ROBOTO_MEDIUM
 

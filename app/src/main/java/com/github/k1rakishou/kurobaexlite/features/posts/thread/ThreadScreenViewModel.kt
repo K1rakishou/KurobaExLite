@@ -16,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
@@ -49,6 +50,7 @@ class ThreadScreenViewModel(
   private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
   private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
   private val addOrRemoveBookmark: AddOrRemoveBookmark by inject(AddOrRemoveBookmark::class.java)
+  private val updatePostSeenForBookmark: UpdatePostSeenForBookmark by inject(UpdatePostSeenForBookmark::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     executeUpdate = { refresh() },
@@ -474,6 +476,8 @@ class ThreadScreenViewModel(
       lastVisiblePostDescriptor = lastVisiblePostData.postDescriptor,
       postListTouchingBottom = postListTouchingBottom
     )
+
+    updatePostSeenForBookmark.onPostViewed(lastVisiblePostData.postDescriptor)
   }
 
   private fun updateLastLoadedAndViewedPosts(

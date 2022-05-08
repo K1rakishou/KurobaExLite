@@ -34,6 +34,8 @@ data class DefaultDarkTheme(
   override val scrollbarTrackColor: Int = Color.parseColor("#bababa"),
   override val scrollbarThumbColorNormal: Int = Color.parseColor("#262626"),
   override val scrollbarThumbColorDragged: Int = accentColor,
+  override val bookmarkCounterHasRepliesColor: Int = Color.parseColor("#ff4444"),
+  override val bookmarkCounterNormalColor: Int = Color.parseColor("#33B5E5"),
 ) : ChanTheme() {
 
   override fun fullCopy(): ChanTheme {

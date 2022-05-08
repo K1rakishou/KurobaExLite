@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.managers
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,16 +19,24 @@ class BookmarksManager {
   val bookmarkEventsFlow: SharedFlow<Event>
     get() = _bookmarkEventsFlow.asSharedFlow()
 
+  private val initializationFlag = CompletableDeferred<Unit>()
+
+  suspend fun awaitUntilInitialized() {
+    initializationFlag.await()
+  }
+
   suspend fun init(threadBookmarksFromDatabase: List<ThreadBookmark>) {
-    mutex.withLock {
-      threadBookmarks.clear()
+    try {
+      mutex.withLock {
+        threadBookmarks.clear()
 
-      threadBookmarksFromDatabase.forEach { threadBookmark ->
-        threadBookmarks[threadBookmark.threadDescriptor] = threadBookmark
+        threadBookmarksFromDatabase.forEach { threadBookmark ->
+          threadBookmarks[threadBookmark.threadDescriptor] = threadBookmark
+        }
       }
+    } finally {
+      initializationFlag.complete(Unit)
     }
-
-    _bookmarkEventsFlow.emit(Event.Loaded)
   }
 
   suspend fun contains(threadDescriptor: ThreadDescriptor): Boolean {
@@ -54,6 +63,10 @@ class BookmarksManager {
         threadBookmarks[threadDescriptor]?.deepCopy()
       }
     }
+  }
+
+  suspend fun getAllBookmarks(): List<ThreadBookmark> {
+   return mutex.withLock { threadBookmarks.values.map { threadBookmark -> threadBookmark.deepCopy() } }
   }
 
   suspend fun getActiveBookmarkDescriptors(): List<ThreadDescriptor> {
@@ -101,7 +114,7 @@ class BookmarksManager {
       threadBookmark.updateLastViewedPostDescriptor(postDescriptor)
       threadBookmark.readRepliesUpTo(postDescriptor)
 
-      return true
+      return@withLock true
     }
 
     if (updated) {
@@ -112,7 +125,6 @@ class BookmarksManager {
   }
 
   sealed class Event(val threadDescriptors: List<ThreadDescriptor>) {
-    object Loaded : Event(emptyList())
     class Created(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
     class Updated(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
     class Deleted(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)

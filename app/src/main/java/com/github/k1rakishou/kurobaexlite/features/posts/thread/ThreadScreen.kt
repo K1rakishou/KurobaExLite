@@ -576,9 +576,6 @@ class ThreadScreen(
                   bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
                 }
             }
-            BookmarksManager.Event.Loaded -> {
-              // no-op
-            }
           }
         }
       }

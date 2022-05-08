@@ -171,6 +171,8 @@ data class ThreadLocalPostKey(
       return null
     }
 
+    check(postSubNo >= 0L) { "Bad postSubNo: $postSubNo" }
+
     return PostDescriptor.create(
       siteKey = threadDescriptor.siteKey,
       boardCode = threadDescriptor.boardCode,

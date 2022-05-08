@@ -11,6 +11,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Relation
+import androidx.room.Transaction
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
@@ -191,11 +192,82 @@ abstract class ThreadBookmarkDao {
     createdOn: DateTime
   )
 
-  @Insert(onConflict = OnConflictStrategy.IGNORE)
-  abstract suspend fun update(threadBookmarkEntity: ThreadBookmarkEntity)
+  @Transaction
+  open suspend fun update(threadBookmarkEntity: ThreadBookmarkEntity) {
+    updateInternal(
+      siteKey = threadBookmarkEntity.bookmarkKey.siteKey,
+      boardCode = threadBookmarkEntity.bookmarkKey.boardCode,
+      threadNo = threadBookmarkEntity.bookmarkKey.threadNo,
+      seenPostsCount = threadBookmarkEntity.seenPostsCount,
+      totalPostsCount = threadBookmarkEntity.totalPostsCount,
+      lastViewedPostNo = threadBookmarkEntity.lastViewedPostKey?.postNo ?: -1L,
+      lastViewedPostSubNo = threadBookmarkEntity.lastViewedPostKey?.postSubNo ?: -1L,
+      threadLastPostNo = threadBookmarkEntity.threadLastPostKey?.postNo ?: -1L,
+      threadLastPostSubNo = threadBookmarkEntity.threadLastPostKey?.postSubNo ?: -1L,
+      title = threadBookmarkEntity.title,
+      thumbnailUrl = threadBookmarkEntity.thumbnailUrl,
+      state = threadBookmarkEntity.state,
+      createdOn = threadBookmarkEntity.createdOn,
+    )
+  }
 
-  @Insert(onConflict = OnConflictStrategy.IGNORE)
-  abstract suspend fun updateMany(threadBookmarkEntityList: List<ThreadBookmarkEntity>)
+  @Transaction
+  open suspend fun updateMany(threadBookmarkEntityList: List<ThreadBookmarkEntity>) {
+    threadBookmarkEntityList.forEach { threadBookmarkEntity ->
+      updateInternal(
+        siteKey = threadBookmarkEntity.bookmarkKey.siteKey,
+        boardCode = threadBookmarkEntity.bookmarkKey.boardCode,
+        threadNo = threadBookmarkEntity.bookmarkKey.threadNo,
+        seenPostsCount = threadBookmarkEntity.seenPostsCount,
+        totalPostsCount = threadBookmarkEntity.totalPostsCount,
+        lastViewedPostNo = threadBookmarkEntity.lastViewedPostKey?.postNo ?: -1L,
+        lastViewedPostSubNo = threadBookmarkEntity.lastViewedPostKey?.postSubNo ?: -1L,
+        threadLastPostNo = threadBookmarkEntity.threadLastPostKey?.postNo ?: -1L,
+        threadLastPostSubNo = threadBookmarkEntity.threadLastPostKey?.postSubNo ?: -1L,
+        title = threadBookmarkEntity.title,
+        thumbnailUrl = threadBookmarkEntity.thumbnailUrl,
+        state = threadBookmarkEntity.state,
+        createdOn = threadBookmarkEntity.createdOn,
+      )
+    }
+  }
+
+  @Query("""
+    UPDATE OR FAIL
+        thread_bookmarks
+    SET
+        seen_posts_count = :seenPostsCount,
+        total_posts_count = :totalPostsCount,
+        title = :title,
+        thumbnail_url = :thumbnailUrl,
+        state = :state,
+        created_on = :createdOn,
+        last_viewed_post_post_no = max(last_viewed_post_post_no, :lastViewedPostNo),
+        last_viewed_post_post_sub_no = max(last_viewed_post_post_sub_no, :lastViewedPostSubNo),
+        thread_last_post_post_no = max(thread_last_post_post_no, :threadLastPostNo),
+        thread_last_post_post_sub_no = max(thread_last_post_post_sub_no, :threadLastPostSubNo)
+    WHERE
+        bookmark_site_key = :siteKey
+    AND
+        bookmark_board_code = :boardCode
+    AND
+        bookmark_thread_no = :threadNo
+  """)
+  protected abstract suspend fun updateInternal(
+    siteKey: String,
+    boardCode: String,
+    threadNo: Long,
+    seenPostsCount: Int?,
+    totalPostsCount: Int?,
+    title: String?,
+    thumbnailUrl: HttpUrl?,
+    state: BitSet,
+    createdOn: DateTime,
+    lastViewedPostNo: Long,
+    lastViewedPostSubNo: Long,
+    threadLastPostNo: Long,
+    threadLastPostSubNo: Long
+  )
 
   @Query("""
     DELETE FROM thread_bookmarks
@@ -245,8 +317,8 @@ abstract class ThreadBookmarkDao {
           totalPostsCount = threadBookmark.totalPostsCount,
           lastViewedPostNo = threadBookmark.lastViewedPostPostDescriptor?.postNo ?: -1L,
           lastViewedPostSubNo = threadBookmark.lastViewedPostPostDescriptor?.postSubNo ?: -1L,
-          threadLastPostNo = threadBookmark.lastPostPostDescriptorOfThread?.postNo ?: -1L,
-          threadLastPostSubNo = threadBookmark.lastPostPostDescriptorOfThread?.postSubNo ?: -1L,
+          threadLastPostNo = threadBookmark.lastPostDescriptorOfThread?.postNo ?: -1L,
+          threadLastPostSubNo = threadBookmark.lastPostDescriptorOfThread?.postSubNo ?: -1L,
           title = threadBookmark.title,
           thumbnailUrl = threadBookmark.thumbnailUrl,
           state = threadBookmark.state,

@@ -1,6 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
 object AppConstants {
+  const val TEXT_SEPARATOR = " • "
+
   object RequestCodes {
     const val LOCAL_FILE_PICKER_LAST_SELECTION_REQUEST_CODE = 1
   }

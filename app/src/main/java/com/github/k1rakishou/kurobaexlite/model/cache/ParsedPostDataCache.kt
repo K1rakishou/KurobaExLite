@@ -7,6 +7,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.buildAnnotatedString
@@ -451,7 +452,7 @@ class ParsedPostDataCache(
         if (parsedPostDataContext.isParsingThread) {
           append("#")
           append(postIndex + 1)
-          append(TEXT_SEPARATOR)
+          append(AppConstants.TEXT_SEPARATOR)
         }
 
         append("No. ")
@@ -476,7 +477,7 @@ class ParsedPostDataCache(
             0
           ).toString()
 
-          append(TEXT_SEPARATOR)
+          append(AppConstants.TEXT_SEPARATOR)
           append(timeString)
         }
 
@@ -608,10 +609,6 @@ class ParsedPostDataCache(
     }
 
     return null
-  }
-
-  companion object {
-    private const val TEXT_SEPARATOR = " • "
   }
 
 }

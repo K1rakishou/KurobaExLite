@@ -27,6 +27,9 @@ class AndroidHelpers(
     get() = application.applicationContext
 
   private val clipboardManager by lazy { application.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager }
+  private val activityManager by lazy { application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager }
+
+  val isSlowDevice by lazy { activityManager.isLowRamDevice || !isAndroidM() }
 
   fun getApiLevel(): Int {
     return Build.VERSION.SDK_INT
@@ -210,8 +213,7 @@ class AndroidHelpers(
   }
 
   fun getDisplayFps(): Int {
-    val activityManager = applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    if (activityManager.isLowRamDevice || !isAndroidM()) {
+    if (isSlowDevice || !isAndroidM()) {
       return 30
     }
 

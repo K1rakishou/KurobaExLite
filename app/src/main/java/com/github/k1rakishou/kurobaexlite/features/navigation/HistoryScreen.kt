@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -32,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImagePainter
@@ -172,7 +171,6 @@ class HistoryScreen(
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val navigationHistoryList = historyScreenViewModel.navigationHistoryList
     val circleCropTransformation = remember { CircleCropTransformation() }
-    val navElementHeight = 42.dp
     val lazyListState = rememberLazyListState()
 
     LaunchedEffect(
@@ -300,9 +298,6 @@ class HistoryScreen(
               val navigationElement = navigationHistoryList[index]
 
               NavigationElement(
-                index = index,
-                lastIndex = navigationHistoryList.lastIndex,
-                navElementHeight = navElementHeight,
                 navigationElement = navigationElement,
                 circleCropTransformation = circleCropTransformation
               )
@@ -337,9 +332,6 @@ class HistoryScreen(
   @OptIn(ExperimentalFoundationApi::class)
   @Composable
   private fun LazyItemScope.NavigationElement(
-    index: Int,
-    lastIndex: Int,
-    navElementHeight: Dp,
     navigationElement: UiNavigationElement,
     circleCropTransformation: CircleCropTransformation,
   ) {
@@ -350,7 +342,6 @@ class HistoryScreen(
       when (navigationElement) {
         is UiNavigationElement.Catalog -> {
           CatalogNavigationElement(
-            navElementHeight = navElementHeight,
             navigationElement = navigationElement,
             circleCropTransformation = circleCropTransformation,
             onItemClicked = { element ->
@@ -365,7 +356,6 @@ class HistoryScreen(
         }
         is UiNavigationElement.Thread -> {
           ThreadNavigationElement(
-            navElementHeight = navElementHeight,
             navigationElement = navigationElement,
             circleCropTransformation = circleCropTransformation,
             onItemClicked = { element ->
@@ -379,16 +369,11 @@ class HistoryScreen(
           )
         }
       }
-
-      if (index < lastIndex) {
-        Spacer(modifier = Modifier.height(4.dp))
-      }
     }
   }
 
   @Composable
   private fun CatalogNavigationElement(
-    navElementHeight: Dp,
     navigationElement: UiNavigationElement.Catalog,
     circleCropTransformation: CircleCropTransformation,
     onItemClicked: (UiNavigationElement.Catalog) -> Unit,
@@ -398,7 +383,8 @@ class HistoryScreen(
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .height(navElementHeight)
+        .wrapContentHeight()
+        .padding(vertical = 2.dp)
         .kurobaClickable(onClick = { onItemClicked(navigationElement) }),
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -416,13 +402,15 @@ class HistoryScreen(
       Spacer(modifier = Modifier.width(4.dp))
 
       if (navigationElement.iconUrl != null) {
+        val thumbnailSize = dimensionResource(id = R.dimen.history_or_bookmark_thumbnail_size)
+
         NavigationIcon(
-          modifier = Modifier.size(navElementHeight),
+          modifier = Modifier.size(thumbnailSize),
           iconUrl = navigationElement.iconUrl,
           circleCropTransformation = circleCropTransformation
         )
 
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(8.dp))
       }
 
       val title = remember { navigationElement.chanDescriptor.asReadableString() }
@@ -439,7 +427,6 @@ class HistoryScreen(
 
   @Composable
   private fun ThreadNavigationElement(
-    navElementHeight: Dp,
     navigationElement: UiNavigationElement.Thread,
     circleCropTransformation: CircleCropTransformation,
     onItemClicked: (UiNavigationElement.Thread) -> Unit,
@@ -448,7 +435,8 @@ class HistoryScreen(
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .height(navElementHeight)
+        .wrapContentHeight()
+        .padding(vertical = 2.dp)
         .kurobaClickable(onClick = { onItemClicked(navigationElement) }),
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -466,13 +454,15 @@ class HistoryScreen(
       Spacer(modifier = Modifier.width(4.dp))
 
       if (navigationElement.iconUrl != null) {
+        val thumbnailSize = dimensionResource(id = R.dimen.history_or_bookmark_thumbnail_size)
+
         NavigationIcon(
-          modifier = Modifier.size(navElementHeight),
+          modifier = Modifier.size(thumbnailSize),
           iconUrl = navigationElement.iconUrl,
           circleCropTransformation = circleCropTransformation
         )
 
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(8.dp))
       }
 
       val title = remember {

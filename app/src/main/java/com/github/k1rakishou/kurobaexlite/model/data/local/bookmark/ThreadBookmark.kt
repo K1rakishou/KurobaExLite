@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.dto.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import java.util.BitSet
+import kotlin.math.max
 import okhttp3.HttpUrl
 import org.joda.time.DateTime
 
@@ -16,7 +17,7 @@ class ThreadBookmark private constructor(
   var seenPostsCount: Int = 0,
   var totalPostsCount: Int = 0,
   var lastViewedPostPostDescriptor: PostDescriptor? = null,
-  var lastPostPostDescriptorOfThread: PostDescriptor? = null,
+  var lastPostDescriptorOfThread: PostDescriptor? = null,
   val threadBookmarkReplies: MutableMap<PostDescriptor, ThreadBookmarkReply> = mutableMapOf(),
   var title: String? = null,
   var thumbnailUrl: HttpUrl? = null,
@@ -41,7 +42,7 @@ class ThreadBookmark private constructor(
       seenPostsCount = seenPostsCount,
       totalPostsCount = totalPostsCount,
       lastViewedPostPostDescriptor = lastViewedPostPostDescriptor,
-      lastPostPostDescriptorOfThread = lastPostPostDescriptorOfThread,
+      lastPostDescriptorOfThread = lastPostDescriptorOfThread,
       threadBookmarkReplies = threadBookmarkRepliesCopy,
       title = title,
       thumbnailUrl = thumbnailUrl,
@@ -52,11 +53,15 @@ class ThreadBookmark private constructor(
   }
 
   fun isActive(): Boolean = state.get(BOOKMARK_STATE_WATCHING)
-  fun isArchived(): Boolean = state.get(BOOKMARK_STATE_THREAD_ARCHIVED)
-  fun isClosed(): Boolean = state.get(BOOKMARK_STATE_THREAD_CLOSED)
-  fun isStickyClosed(): Boolean = state.get(BOOKMARK_STATE_STICKY_NO_CAP) && state.get(
-    BOOKMARK_STATE_THREAD_CLOSED
-  )
+  fun isStickyClosed(): Boolean = state.get(BOOKMARK_STATE_STICKY_NO_CAP) && state.get(BOOKMARK_STATE_THREAD_CLOSED)
+  fun isThreadDeleted(): Boolean = state.get(BOOKMARK_STATE_THREAD_DELETED)
+  fun isThreadArchived(): Boolean = state.get(BOOKMARK_STATE_THREAD_ARCHIVED)
+  fun isBumpLimit(): Boolean = state.get(BOOKMARK_STATE_THREAD_BUMP_LIMIT)
+  fun isImageLimit(): Boolean = state.get(BOOKMARK_STATE_THREAD_IMAGE_LIMIT)
+  fun isRollingSticky(): Boolean = stickyThread is StickyThread.StickyWithCap
+  fun isFirstFetch(): Boolean = state.get(BOOKMARK_STATE_FIRST_FETCH)
+  fun isError(): Boolean = state.get(BOOKMARK_STATE_ERROR)
+  fun isFilterWatchBookmark(): Boolean = state.get(BOOKMARK_FILTER_WATCH)
 
   fun clearFirstFetchFlag() {
     if (state.get(BOOKMARK_STATE_FIRST_FETCH)) {
@@ -72,6 +77,9 @@ class ThreadBookmark private constructor(
     return (totalPostsCount - seenPostsCount).coerceAtLeast(0)
   }
 
+  fun newPostsCount(): Int = max(0, totalPostsCount - seenPostsCount)
+  fun newQuotesCount(): Int = threadBookmarkReplies.values.count { reply -> !reply.alreadyRead }
+
   fun updateLastViewedPostDescriptor(newLastViewedPostPostDescriptor: PostDescriptor?) {
     lastViewedPostPostDescriptor = PostDescriptor.maxOfPostDescriptors(
       one = lastViewedPostPostDescriptor,
@@ -80,8 +88,8 @@ class ThreadBookmark private constructor(
   }
 
   fun updateLastThreadPostDescriptor(newLastThreadPostPostDescriptor: PostDescriptor?) {
-    lastPostPostDescriptorOfThread = PostDescriptor.maxOfPostDescriptors(
-      one = lastPostPostDescriptorOfThread,
+    lastPostDescriptorOfThread = PostDescriptor.maxOfPostDescriptors(
+      one = lastPostDescriptorOfThread,
       other = newLastThreadPostPostDescriptor
     )
   }
@@ -160,7 +168,7 @@ class ThreadBookmark private constructor(
     seenPostsCount = totalPostsCount
     lastViewedPostPostDescriptor = PostDescriptor.maxOfPostDescriptors(
       one = lastViewedPostPostDescriptor,
-      other = lastPostPostDescriptorOfThread
+      other = lastPostDescriptorOfThread
     )
 
     threadBookmarkReplies.values.forEach { threadBookmarkReply ->
@@ -245,7 +253,7 @@ class ThreadBookmark private constructor(
       seenPostsCount = seenPostsCount,
       totalPostsCount = totalPostsCount,
       lastViewedPostKey = lastViewedPostPostDescriptor?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
-      threadLastPostKey = lastPostPostDescriptorOfThread?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
+      threadLastPostKey = lastPostDescriptorOfThread?.let { ThreadLocalPostKey.fromPostDescriptor(it) },
       title = title,
       thumbnailUrl = thumbnailUrl,
       state = state,
@@ -263,7 +271,7 @@ class ThreadBookmark private constructor(
     if (seenPostsCount != other.seenPostsCount) return false
     if (totalPostsCount != other.totalPostsCount) return false
     if (lastViewedPostPostDescriptor != other.lastViewedPostPostDescriptor) return false
-    if (lastPostPostDescriptorOfThread != other.lastPostPostDescriptorOfThread) return false
+    if (lastPostDescriptorOfThread != other.lastPostDescriptorOfThread) return false
     if (title != other.title) return false
     if (thumbnailUrl != other.thumbnailUrl) return false
     if (state != other.state) return false
@@ -282,7 +290,7 @@ class ThreadBookmark private constructor(
     result = 31 * result + seenPostsCount
     result = 31 * result + totalPostsCount
     result = 31 * result + lastViewedPostPostDescriptor.hashCode()
-    result = 31 * result + lastPostPostDescriptorOfThread.hashCode()
+    result = 31 * result + lastPostDescriptorOfThread.hashCode()
     result = 31 * result + threadBookmarkReplies.hashCode()
     result = 31 * result + (title?.hashCode() ?: 0)
     result = 31 * result + (thumbnailUrl?.hashCode() ?: 0)
@@ -295,7 +303,7 @@ class ThreadBookmark private constructor(
   override fun toString(): String {
     return "ThreadBookmark(threadDescriptor=$threadDescriptor, seenPostsCount=$seenPostsCount, " +
       "threadRepliesCount=$totalPostsCount, threadLastViewedPostPostDescriptor=$lastViewedPostPostDescriptor, " +
-      "threadLastPostPostDescriptor=$lastPostPostDescriptorOfThread, threadBookmarkReplies=$threadBookmarkReplies, " +
+      "threadLastPostPostDescriptor=$lastPostDescriptorOfThread, threadBookmarkReplies=$threadBookmarkReplies, " +
       "title=${title?.take(20)}, thumbnailUrl=$thumbnailUrl, stickyThread=$stickyThread, " +
       "state=${stateToString()}, createdOn=${createdOn})"
   }
@@ -458,6 +466,7 @@ class ThreadBookmark private constructor(
     ): ThreadBookmark {
       val threadBookmarkEntity = threadBookmarkEntityWithReplies.threadBookmarkEntity
       val threadDescriptor = threadBookmarkEntity.bookmarkKey.threadDescriptor
+
       val threadBookmarkReplies = ThreadBookmarkReply.fromThreadBookmarkReplyEntity(
         threadDescriptor = threadDescriptor,
         threadBookmarkReplyEntities = threadBookmarkEntityWithReplies.threadBookmarkEntityReplies
@@ -465,15 +474,15 @@ class ThreadBookmark private constructor(
 
       return ThreadBookmark(
         threadDescriptor = threadBookmarkEntity.bookmarkKey.threadDescriptor,
-          seenPostsCount = threadBookmarkEntity.seenPostsCount ?: 0,
-          totalPostsCount = threadBookmarkEntity.totalPostsCount ?: 0,
-          lastViewedPostPostDescriptor = threadBookmarkEntity.lastViewedPostKey?.postDescriptor(threadDescriptor),
-          lastPostPostDescriptorOfThread = threadBookmarkEntity.threadLastPostKey?.postDescriptor(threadDescriptor),
-          threadBookmarkReplies = threadBookmarkReplies,
-          title = threadBookmarkEntity.title,
-          thumbnailUrl = threadBookmarkEntity.thumbnailUrl,
-          state = threadBookmarkEntity.state,
-          createdOn = threadBookmarkEntity.createdOn
+        seenPostsCount = threadBookmarkEntity.seenPostsCount ?: 0,
+        totalPostsCount = threadBookmarkEntity.totalPostsCount ?: 0,
+        lastViewedPostPostDescriptor = threadBookmarkEntity.lastViewedPostKey?.postDescriptor(threadDescriptor),
+        lastPostDescriptorOfThread = threadBookmarkEntity.threadLastPostKey?.postDescriptor(threadDescriptor),
+        threadBookmarkReplies = threadBookmarkReplies,
+        title = threadBookmarkEntity.title,
+        thumbnailUrl = threadBookmarkEntity.thumbnailUrl,
+        state = threadBookmarkEntity.state,
+        createdOn = threadBookmarkEntity.createdOn
       )
     }
 

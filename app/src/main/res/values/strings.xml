@@ -74,6 +74,7 @@
 
     <string name="catalog_new_thread_on_board">New thread on /%1$s/</string>
     <string name="thread_new_reply">New reply in thread %1$d</string>
+    <string name="bookmark_loading_state">Loading…</string>
 
     <string name="not_enough_with_for_split_layout_mode">Not enough width for Split layout mode. Required at least %1$d px but actual is %2$d px. Resetting to Phone layout mode.</string>
 
