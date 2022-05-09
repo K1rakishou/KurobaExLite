@@ -1,9 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.features.bookmarks
 
 import androidx.activity.ComponentActivity
-import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.Animatable
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.animateInt
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,9 +24,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -61,6 +67,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import kotlinx.coroutines.delay
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -130,13 +137,54 @@ class BookmarksScreen(
   ) {
     val chanTheme = LocalChanTheme.current
     val itemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
-    val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow.collectAsState(initial = DrawerVisibility.Closed)
+    val animationDurationMs = 500
+
+    val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow
+      .collectAsState(initial = DrawerVisibility.Closed)
+    val isDrawerCurrentlyOpened = drawerVisibility.isOpened
+
+    val textAnimationSpec = remember(key1 = isDrawerCurrentlyOpened) {
+      if (isDrawerCurrentlyOpened && canUseFancyAnimations) {
+        tween<Int>(durationMillis = animationDurationMs)
+      } else {
+        snap<Int>()
+      }
+    }
+
+    val selectedOnBackColorCompose = remember(key1 = chanTheme.selectedOnBackColorCompose) {
+      chanTheme.selectedOnBackColorCompose.copy(alpha = 0.5f)
+    }
+
+    var threadBookmarkHash by remember { mutableStateOf(threadBookmarkUi.hashCode()) }
+    val bgAnimatable = remember { Animatable(chanTheme.backColorCompose) }
+
+    LaunchedEffect(
+      key1 = threadBookmarkHash,
+      key2 = threadBookmarkUi.hashCode(),
+      block = {
+        if (threadBookmarkUi.hashCode() == threadBookmarkHash) {
+          return@LaunchedEffect
+        }
+
+        try {
+          bgAnimatable.animateTo(selectedOnBackColorCompose, tween(250))
+          delay(500)
+          bgAnimatable.animateTo(chanTheme.backColorCompose, tween(250))
+        } finally {
+          bgAnimatable.snapTo(chanTheme.backColorCompose)
+          threadBookmarkHash = threadBookmarkUi.hashCode()
+        }
+      }
+    )
+
+    val bookmarkBgColor by bgAnimatable.asState()
 
     Row(
       modifier = Modifier
         .fillMaxWidth()
         .height(itemHeight)
         .padding(vertical = 2.dp)
+        .background(bookmarkBgColor)
         .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
         .animateItemPlacement(),
       verticalAlignment = Alignment.CenterVertically
@@ -185,8 +233,7 @@ class BookmarksScreen(
             .fillMaxWidth()
             .weight(0.5f),
           threadBookmarkStatsUi = threadBookmarkStatsUi,
-          isDrawerCurrentlyOpened = drawerVisibility.isOpened,
-          canUseFancyAnimations = canUseFancyAnimations
+          textAnimationSpec = textAnimationSpec,
         )
       }
     }
@@ -196,35 +243,30 @@ class BookmarksScreen(
   private fun ThreadBookmarkAdditionalInfo(
     modifier: Modifier,
     threadBookmarkStatsUi: ThreadBookmarkStatsUi,
-    isDrawerCurrentlyOpened: Boolean,
-    canUseFancyAnimations: Boolean
+    textAnimationSpec: FiniteAnimationSpec<Int>
   ) {
     val context = LocalContext.current
     val chanTheme = LocalChanTheme.current
 
-    val newPosts by threadBookmarkStatsUi.newPosts
-    val newQuotes by threadBookmarkStatsUi.newQuotes
-    val totalPosts by threadBookmarkStatsUi.totalPosts
-
-    val animationSpec = remember(key1 = isDrawerCurrentlyOpened) {
-      if (isDrawerCurrentlyOpened && canUseFancyAnimations) {
-        tween<Int>(durationMillis = 500)
-      } else {
-        snap<Int>()
-      }
-    }
-
-    val newPostsAnimated by animateIntAsState(
-      targetValue = newPosts,
-      animationSpec = animationSpec
+    val transition = updateTransition(
+      targetState = threadBookmarkStatsUi,
+      label = "Bookmark animation"
     )
-    val newQuotesAnimated by animateIntAsState(
-      targetValue = newQuotes,
-      animationSpec = animationSpec
+
+    val newPostsAnimated by transition.animateInt(
+      label = "New posts text animation",
+      transitionSpec = { textAnimationSpec },
+      targetValueByState = { state -> state.newPosts.value }
     )
-    val totalPostsAnimated by animateIntAsState(
-      targetValue = totalPosts,
-      animationSpec = animationSpec
+    val newQuotesAnimated by transition.animateInt(
+      label = "New quotes text animation",
+      transitionSpec = { textAnimationSpec },
+      targetValueByState = { state -> state.newQuotes.value }
+    )
+    val totalPostsAnimated by transition.animateInt(
+      label = "Total posts text textAnimationSpec",
+      transitionSpec = { textAnimationSpec },
+      targetValueByState = { state -> state.totalPosts.value }
     )
 
     val isFirstFetch by threadBookmarkStatsUi.isFirstFetch
@@ -282,6 +324,7 @@ class BookmarksScreen(
             )
 
             if (newQuotesAnimated > 0) {
+              append(" (")
               append(
                 buildAnnotatedString {
                   if (!isDead && newQuotesAnimated > 0) {
@@ -290,11 +333,10 @@ class BookmarksScreen(
                     pushStyle(SpanStyle(color = defaultTextColor))
                   }
 
-                  append(" (")
                   append(newQuotesAnimated.toString())
-                  append(")")
                 }
               )
+              append(")")
             }
           }
         )
@@ -304,15 +346,15 @@ class BookmarksScreen(
             append(AppConstants.TEXT_SEPARATOR)
           }
 
+          append("Pg: ")
           append(
             buildAnnotatedString {
-              if (!isDead) {
-                if (currentPage >= totalPages) {
-                  pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
-                }
+              if (!isDead && currentPage >= totalPages) {
+                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+              } else {
+                pushStyle(SpanStyle(color = defaultTextColor))
               }
 
-              append("Pg: ")
               append(currentPage.toString())
               append("/")
               append(totalPages.toString())

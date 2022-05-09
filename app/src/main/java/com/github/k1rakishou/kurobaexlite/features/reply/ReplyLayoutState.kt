@@ -141,7 +141,7 @@ class ReplyLayoutState(
 
       logcat(TAG) {
         "restoreFromBundle() " +
-          "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, "
+          "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, " +
           "replyText=\'${replyTextFromBundle.take(32)}\', " +
           "attachedImages=\'${_attachedMediaList.joinToString(transform = { it.path })}\'"
       }

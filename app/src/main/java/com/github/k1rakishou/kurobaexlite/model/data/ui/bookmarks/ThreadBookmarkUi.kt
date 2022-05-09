@@ -39,6 +39,31 @@ class ThreadBookmarkUi(
     threadBookmarkStatsUi.updatePagesFrom(threadPage)
   }
 
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as ThreadBookmarkUi
+
+    if (threadDescriptor != other.threadDescriptor) return false
+    if (title != other.title) return false
+    if (thumbnailUrl != other.thumbnailUrl) return false
+    if (threadBookmarkStatsUi != other.threadBookmarkStatsUi) return false
+    if (createdOn != other.createdOn) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = threadDescriptor.hashCode()
+    result = 31 * result + title.hashCode()
+    result = 31 * result + (thumbnailUrl?.hashCode() ?: 0)
+    result = 31 * result + threadBookmarkStatsUi.hashCode()
+    result = 31 * result + createdOn.hashCode()
+    return result
+  }
+
+
   companion object {
     fun fromThreadBookmark(
       threadBookmark: ThreadBookmark,
@@ -147,6 +172,45 @@ class ThreadBookmarkStatsUi private constructor(
     _currentPage.value = threadPage.page
     _totalPages.value = threadPage.totalPages
   }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as ThreadBookmarkStatsUi
+
+    if (_watching.value != other._watching.value) return false
+    if (_newPosts.value != other._newPosts.value) return false
+    if (_newQuotes.value != other._newQuotes.value) return false
+    if (_totalPosts.value != other._totalPosts.value) return false
+    if (_currentPage.value != other._currentPage.value) return false
+    if (_totalPages.value != other._totalPages.value) return false
+    if (_isBumpLimit.value != other._isBumpLimit.value) return false
+    if (_isImageLimit.value != other._isImageLimit.value) return false
+    if (_isFirstFetch.value != other._isFirstFetch.value) return false
+    if (_isDeleted.value != other._isDeleted.value) return false
+    if (_isArchived.value != other._isArchived.value) return false
+    if (_isError.value != other._isError.value) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = _watching.value.hashCode()
+    result = 31 * result + _newPosts.value.hashCode()
+    result = 31 * result + _newQuotes.value.hashCode()
+    result = 31 * result + _totalPosts.value.hashCode()
+    result = 31 * result + _currentPage.value.hashCode()
+    result = 31 * result + _totalPages.value.hashCode()
+    result = 31 * result + _isBumpLimit.value.hashCode()
+    result = 31 * result + _isImageLimit.value.hashCode()
+    result = 31 * result + _isFirstFetch.value.hashCode()
+    result = 31 * result + _isDeleted.value.hashCode()
+    result = 31 * result + _isArchived.value.hashCode()
+    result = 31 * result + _isError.value.hashCode()
+    return result
+  }
+
 
   companion object {
     fun fromThreadBookmark(

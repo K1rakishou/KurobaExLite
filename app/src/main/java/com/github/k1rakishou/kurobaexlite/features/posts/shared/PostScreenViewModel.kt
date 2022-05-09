@@ -54,6 +54,7 @@ import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
@@ -428,7 +429,7 @@ abstract class PostScreenViewModel(
 
       try {
         val startTime = SystemClock.elapsedRealtime()
-        logcat(tag = TAG) {
+        logcat(TAG) {
           "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts... " +
             "(chunksCount=$chunksCount, chunkSize=$chunkSize)"
         }
@@ -439,7 +440,7 @@ abstract class PostScreenViewModel(
             .chunked(chunkSize)
             .mapIndexed { chunkIndex, postDataListChunk ->
               return@mapIndexed async(globalConstants.postParserDispatcher) {
-                logcat(tag = TAG) {
+                logcat(TAG, LogPriority.VERBOSE) {
                   "parseRemainingPostsAsyncRegular() running chunk ${chunkIndex} with " +
                     "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
                 }
@@ -467,7 +468,9 @@ abstract class PostScreenViewModel(
                   }
                 }
 
-                logcat(tag = TAG) { "parseRemainingPostsAsyncRegular() chunk ${chunkIndex} processing finished" }
+                logcat(TAG, LogPriority.VERBOSE) {
+                  "parseRemainingPostsAsyncRegular() chunk ${chunkIndex} processing finished"
+                }
               }
             }
             .toList()
@@ -487,9 +490,10 @@ abstract class PostScreenViewModel(
           val repliesToChunkSize = (repliesToPostDataSet.size / chunksCount).coerceAtLeast(chunksCount)
 
           if (repliesToPostDataSet.isNotEmpty()) {
-            logcat(tag = TAG) {
+            logcat(TAG, LogPriority.VERBOSE) {
               "parseRemainingPostsAsyncReplies() starting parsing ${repliesToPostDataSet.size} posts... " +
-                "(repliesToPostDescriptorSet=${repliesToPostDescriptorSet.size}, chunksCount=$chunksCount, chunkSize=$repliesToChunkSize)"
+                "(repliesToPostDescriptorSet=${repliesToPostDescriptorSet.size}, " +
+                "chunksCount=$chunksCount, chunkSize=$repliesToChunkSize)"
             }
 
             supervisorScope {
@@ -497,7 +501,7 @@ abstract class PostScreenViewModel(
                 .chunked(repliesToChunkSize)
                 .mapIndexed { chunkIndex, postDataListChunk ->
                   return@mapIndexed async(globalConstants.postParserDispatcher) {
-                    logcat(tag = TAG) {
+                    logcat(TAG, LogPriority.VERBOSE) {
                       "parseRemainingPostsAsyncReplies() running chunk ${chunkIndex} with " +
                         "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
                     }
@@ -523,7 +527,9 @@ abstract class PostScreenViewModel(
                       }
                     }
 
-                    logcat(tag = TAG) { "parseRemainingPostsAsyncReplies() chunk ${chunkIndex} processing finished" }
+                    logcat(TAG, LogPriority.VERBOSE) {
+                      "parseRemainingPostsAsyncReplies() chunk ${chunkIndex} processing finished"
+                    }
                   }
                 }
                 .toList()
@@ -533,15 +539,17 @@ abstract class PostScreenViewModel(
         }
 
         val postCellDataListSorted = sorter(resultMap.values)
-        logcat(tag = TAG) { "parseRemainingPostsAsync() resultMap=${resultMap.size}, postDataList=${postDataList.size}" }
-
         showPostsLoadingSnackbarJob.cancel()
         withContext(NonCancellable) { onPostsParsed(postCellDataListSorted) }
 
         val deltaTime = SystemClock.elapsedRealtime() - startTime
-        logcat(tag = TAG) { "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms" }
+        logcat(TAG) {
+          "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms"
+        }
       } catch (error: Throwable) {
-        logcat(tag = TAG) { "parseRemainingPostsAsync() error: ${error.asLog()}" }
+        logcat(TAG) {
+          "parseRemainingPostsAsync() error: ${error.asLog()}"
+        }
       } finally {
         showPostsLoadingSnackbarJob.cancel()
       }
