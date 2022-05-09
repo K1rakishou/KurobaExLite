@@ -18,7 +18,7 @@ abstract class BaseViewModel : ViewModel() {
 
   @CallSuper
   open suspend fun onViewModelReady() {
-    logcat("BaseViewModel", LogPriority.INFO) { "ViewModel ${this.javaClass.simpleName} created" }
+    logcat("BaseViewModel", LogPriority.VERBOSE) { "ViewModel ${this.javaClass.simpleName} created" }
   }
 
   override fun onCleared() {

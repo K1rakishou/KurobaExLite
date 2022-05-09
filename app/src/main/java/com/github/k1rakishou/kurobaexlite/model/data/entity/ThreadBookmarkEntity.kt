@@ -255,6 +255,21 @@ abstract class ThreadBookmarkDao {
     sortOrder: Int
   )
 
+  @Query("""
+    DELETE FROM thread_bookmark_sort_orders
+    WHERE
+        bookmark_site_key = :siteKey
+    AND
+        bookmark_board_code = :boardCode
+    AND
+        bookmark_thread_no = :threadNo
+  """)
+  abstract suspend fun deleteThreadBookmarkSortOrderEntity(
+    siteKey: String,
+    boardCode: String,
+    threadNo: Long,
+  )
+
   @Transaction
   open suspend fun update(threadBookmarkEntity: ThreadBookmarkEntity) {
     updateInternal(

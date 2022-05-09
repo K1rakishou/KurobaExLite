@@ -530,7 +530,7 @@ sealed class SnackbarContentItem {
     val textColor: Color? = null,
     val takeWholeWidth: Boolean = true
   ) : SnackbarContentItem() {
-    val formattedText by lazy { text.filter { ch -> ch != '\n' } }
+    val formattedText by lazy { text.replace('\n', ' ') }
   }
 
   data class Button(
@@ -551,6 +551,7 @@ sealed class SnackbarId(
   object CatalogOrThreadPostsLoading : SnackbarId("catalog_or_thread_posts_loading")
   object NewPosts : SnackbarId("new_posts")
   object NavHistoryElementRemoved : SnackbarId("nav_history_element_removed")
+  object ThreadBookmarkRemoved : SnackbarId("thread_bookmark_removed")
   object ReloadLastVisitedCatalog : SnackbarId("reload_last_visited_catalog")
   object ReloadLastVisitedThread : SnackbarId("reload_last_visited_thread")
 

@@ -6,11 +6,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.SortBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkUi
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
@@ -20,6 +22,7 @@ class BookmarksScreenViewModel : BaseViewModel() {
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
   private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
   private val sortBookmarks: SortBookmarks by inject(SortBookmarks::class.java)
+  private val deleteBookmark: DeleteBookmark by inject(DeleteBookmark::class.java)
 
   private val _bookmarksList = mutableStateListOf<ThreadBookmarkUi>()
   val bookmarksList: List<ThreadBookmarkUi>
@@ -43,7 +46,7 @@ class BookmarksScreenViewModel : BaseViewModel() {
     viewModelScope.launch {
       bookmarksManager.awaitUntilInitialized()
 
-      val loadedBookmarks = sortBookmarks.await(bookmarksManager.getAllBookmarks())
+      val loadedBookmarks = sortBookmarks.sort(bookmarksManager.getAllBookmarks())
         .mapNotNull { threadBookmark ->
           return@mapNotNull ThreadBookmarkUi.fromThreadBookmark(
             threadBookmark = threadBookmark,
@@ -57,6 +60,26 @@ class BookmarksScreenViewModel : BaseViewModel() {
       bookmarksManager.bookmarkEventsFlow.collect { event ->
         processBookmarkEvent(event)
       }
+    }
+  }
+
+  fun deleteBookmark(threadDescriptor: ThreadDescriptor, onBookmarkDeleted: (ThreadBookmark, Int) -> Unit) {
+    viewModelScope.launch {
+      val oldPosition = _bookmarksList
+        .indexOfFirst { threadBookmarkUi -> threadBookmarkUi.threadDescriptor == threadDescriptor }
+        .takeIf { position -> position >= 0 }
+        ?: 0
+
+      val deletedBookmark = deleteBookmark.deleteFrom(threadDescriptor, oldPosition)
+      if (deletedBookmark != null) {
+        onBookmarkDeleted(deletedBookmark, oldPosition)
+      }
+    }
+  }
+
+  fun undoBookmarkDeletion(threadBookmark: ThreadBookmark, index: Int) {
+    viewModelScope.launch {
+      deleteBookmark.undoDeletion(threadBookmark, index)
     }
   }
 
@@ -93,18 +116,20 @@ class BookmarksScreenViewModel : BaseViewModel() {
           )
         }
 
-        _bookmarksList.addAll(0, newBookmarks)
+        val index = event.index ?: 0
+        _bookmarksList.addAll(index, newBookmarks)
       }
       is BookmarksManager.Event.Deleted -> {
         val bookmarksToDelete = event.threadDescriptors.toSet()
+        val toDelete = mutableSetOf<ThreadBookmarkUi>()
 
-        _bookmarksList.mutableIteration { iterator, threadBookmarkUi ->
+        _bookmarksList.forEach { threadBookmarkUi ->
           if (threadBookmarkUi.threadDescriptor in bookmarksToDelete) {
-            iterator.remove()
+            toDelete += threadBookmarkUi
           }
-
-          return@mutableIteration true
         }
+
+        _bookmarksList.removeAll(toDelete)
       }
       is BookmarksManager.Event.Updated -> {
         event.threadDescriptors.forEach { threadDescriptor ->

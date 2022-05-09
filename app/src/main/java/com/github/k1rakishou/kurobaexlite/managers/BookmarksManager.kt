@@ -77,7 +77,7 @@ class BookmarksManager {
     }
   }
 
-  suspend fun putBookmark(threadBookmark: ThreadBookmark) {
+  suspend fun putBookmark(threadBookmark: ThreadBookmark, index: Int? = null) {
     val created = mutex.withLock {
       val created = !threadBookmarks.containsKey(threadBookmark.threadDescriptor)
 
@@ -86,17 +86,19 @@ class BookmarksManager {
     }
 
     if (created) {
-      _bookmarkEventsFlow.emit(Event.Created(listOf(threadBookmark.threadDescriptor)))
+      _bookmarkEventsFlow.emit(Event.Created(index, listOf(threadBookmark.threadDescriptor)))
     } else {
       _bookmarkEventsFlow.emit(Event.Updated(listOf(threadBookmark.threadDescriptor)))
     }
   }
 
-  suspend fun removeBookmark(threadDescriptor: ThreadDescriptor) {
-    val deleted = mutex.withLock { threadBookmarks.remove(threadDescriptor) } != null
-    if (deleted) {
+  suspend fun removeBookmark(threadDescriptor: ThreadDescriptor): ThreadBookmark? {
+    val deletedBookmark = mutex.withLock { threadBookmarks.remove(threadDescriptor) }
+    if (deletedBookmark != null) {
       _bookmarkEventsFlow.emit(Event.Deleted(listOf(threadDescriptor)))
     }
+
+    return deletedBookmark
   }
 
   suspend fun onPostViewed(postDescriptor: PostDescriptor, unseenPostsCount: Int): Boolean {
@@ -125,7 +127,7 @@ class BookmarksManager {
   }
 
   sealed class Event(val threadDescriptors: List<ThreadDescriptor>) {
-    class Created(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
+    class Created(val index: Int?, threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
     class Updated(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
     class Deleted(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
   }

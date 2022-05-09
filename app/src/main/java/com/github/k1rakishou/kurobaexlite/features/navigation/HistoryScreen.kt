@@ -46,6 +46,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectTouches
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
@@ -68,7 +69,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.detectListScrollEvents
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -203,7 +204,9 @@ class HistoryScreen(
           snackbarManager.pushSnackbar(
             SnackbarInfo(
               snackbarId = SnackbarId.NavHistoryElementRemoved,
-              aliveUntil = SnackbarInfo.snackbarDuration(3.seconds),
+              aliveUntil = SnackbarInfo.snackbarDuration(
+                AppConstants.deleteNavHistoryTimeoutMs.milliseconds
+              ),
               content = listOf(
                 SnackbarContentItem.Text(
                   context.getString(R.string.navigation_history_screen_removed_navigation_item_text, title)

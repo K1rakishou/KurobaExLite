@@ -39,6 +39,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ExtractRepliesToMyPosts
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
@@ -349,6 +350,13 @@ object DependencyGraph {
     }
     single {
       SortBookmarks(kurobaExLiteDatabase = get())
+    }
+    single {
+      DeleteBookmark(
+        appScope = get(),
+        bookmarksManager = get(),
+        kurobaExLiteDatabase = get()
+      )
     }
 
     single {

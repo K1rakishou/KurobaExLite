@@ -9,30 +9,22 @@ import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 class SortBookmarks(
   private val kurobaExLiteDatabase: KurobaExLiteDatabase
 ) {
-  private var cachedThreadBookmarkSortOrders: MutableList<ThreadBookmarkSortOrder>? = null
-
-  suspend fun await(bookmarks: List<ThreadBookmark>): List<ThreadBookmark> {
+  suspend fun sort(bookmarks: List<ThreadBookmark>): List<ThreadBookmark> {
     if (bookmarks.isEmpty()) {
       return bookmarks
     }
 
-    var threadBookmarkSortOrders = synchronized(this) {
-      cachedThreadBookmarkSortOrders?.toMutableList()
-    }
-
-    if (threadBookmarkSortOrders.isNullOrEmpty()) {
-      threadBookmarkSortOrders = kurobaExLiteDatabase.call {
-        threadBookmarkDao.selectAllThreadBookmarkSortOrders().map { threadBookmarkSortOrderEntity ->
-          ThreadBookmarkSortOrder(
-            threadDescriptor = threadBookmarkSortOrderEntity.bookmarkKey.threadDescriptor,
-            sortOrder = threadBookmarkSortOrderEntity.sortOrder
-          )
-        }
-      }.onFailure { error ->
-        logcatError(TAG) { "selectAllThreadBookmarkSortOrders() error: ${error.asLogIfImportantOrErrorMessage()}" }
-      }.getOrNull()
-        ?.toMutableList()
-    }
+    var threadBookmarkSortOrders = kurobaExLiteDatabase.call {
+      threadBookmarkDao.selectAllThreadBookmarkSortOrders().map { threadBookmarkSortOrderEntity ->
+        ThreadBookmarkSortOrder(
+          threadDescriptor = threadBookmarkSortOrderEntity.bookmarkKey.threadDescriptor,
+          sortOrder = threadBookmarkSortOrderEntity.sortOrder
+        )
+      }
+    }.onFailure { error ->
+      logcatError(TAG) { "selectAllThreadBookmarkSortOrders() error: ${error.asLogIfImportantOrErrorMessage()}" }
+    }.getOrNull()
+      ?.toMutableList()
 
     if (threadBookmarkSortOrders == null || threadBookmarkSortOrders.isEmpty()) {
       threadBookmarkSortOrders = (bookmarks.indices).map { index ->
@@ -54,10 +46,6 @@ class SortBookmarks(
           sortOrder = minSortOrder--
         )
       }
-    }
-
-    synchronized(this) {
-      cachedThreadBookmarkSortOrders = threadBookmarkSortOrders.toMutableList()
     }
 
     val threadBookmarkSortOrdersMap = threadBookmarkSortOrders

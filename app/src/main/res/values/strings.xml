@@ -157,7 +157,8 @@
     <string name="media_viewer_switched_to_hw_decoding">Switched to hardware decoding</string>
     <string name="media_viewer_switched_to_sw_decoding">Switched to software decoding</string>
 
-    <string name="navigation_history_screen_removed_navigation_item_text">Removed \'%1$s\'</string>
+    <string name="navigation_history_screen_removed_navigation_item_text">Removed history \'%1$s\'</string>
+    <string name="thread_bookmarks_screen_removed_bookmark_item_text">Removed bookmark \'%1$s\'</string>
 
     <string name="restore_last_visited_catalog">Restore last visited catalog \'%1$s\'?</string>
     <string name="restore_last_visited_thread">Restore last visited thread \'%1$s\'?</string>

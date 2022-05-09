@@ -2,6 +2,8 @@ package com.github.k1rakishou.kurobaexlite.helpers
 
 object AppConstants {
   const val TEXT_SEPARATOR = " • "
+  const val deleteNavHistoryTimeoutMs = 5000L
+  const val deleteBookmarkTimeoutMs = 5000L
 
   object RequestCodes {
     const val LOCAL_FILE_PICKER_LAST_SELECTION_REQUEST_CODE = 1
