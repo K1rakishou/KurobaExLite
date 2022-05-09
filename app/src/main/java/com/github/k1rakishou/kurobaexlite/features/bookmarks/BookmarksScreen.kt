@@ -45,6 +45,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +69,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkStatsUi
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkUi
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
@@ -331,10 +333,10 @@ class BookmarksScreen(
         KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
-            .weight(0.5f),
+            .weight(0.6f),
           text = threadBookmarkUi.title,
           color = textColor,
-          fontSize = 14.sp,
+          fontSize = 15.sp,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis
         )
@@ -342,7 +344,7 @@ class BookmarksScreen(
         ThreadBookmarkAdditionalInfo(
           modifier = Modifier
             .fillMaxWidth()
-            .weight(0.5f),
+            .weight(0.4f),
           threadBookmarkStatsUi = threadBookmarkStatsUi,
           textAnimationSpec = textAnimationSpec,
         )
@@ -404,147 +406,28 @@ class BookmarksScreen(
       isDeleted,
       isError,
     ) {
-      val defaultTextColor = if (isDead) {
-        chanTheme.textColorHintCompose
-      } else {
-        chanTheme.textColorSecondaryCompose
-      }
-
-      buildAnnotatedString {
-        pushStyle(SpanStyle(color = defaultTextColor))
-
-        if (isFirstFetch) {
-          append(context.getString(R.string.bookmark_loading_state))
-          return@buildAnnotatedString
-        }
-
-        append(
-          buildAnnotatedString {
-            append(
-              buildAnnotatedString {
-                if (!isDead && newPostsAnimated > 0) {
-                  pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
-                } else {
-                  pushStyle(SpanStyle(color = defaultTextColor))
-                }
-
-                append(newPostsAnimated.toString())
-                append("/")
-                append(totalPostsAnimated.toString())
-              }
-            )
-
-            if (newQuotesAnimated > 0) {
-              append(" (")
-              append(
-                buildAnnotatedString {
-                  if (!isDead && newQuotesAnimated > 0) {
-                    pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColorCompose))
-                  } else {
-                    pushStyle(SpanStyle(color = defaultTextColor))
-                  }
-
-                  append(newQuotesAnimated.toString())
-                }
-              )
-              append(")")
-            }
-          }
-        )
-
-        if (totalPages > 0) {
-          if (length > 0) {
-            append(AppConstants.TEXT_SEPARATOR)
-          }
-
-          append("Pg: ")
-          append(
-            buildAnnotatedString {
-              if (!isDead && currentPage >= totalPages) {
-                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
-              } else {
-                pushStyle(SpanStyle(color = defaultTextColor))
-              }
-
-              append(currentPage.toString())
-              append("/")
-              append(totalPages.toString())
-            }
-          )
-        }
-
-        if (isBumpLimit) {
-          if (length > 0) {
-            append(AppConstants.TEXT_SEPARATOR)
-          }
-
-          append(
-            buildAnnotatedString {
-              if (!isDead) {
-                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
-              }
-
-              append("BL")
-            }
-          )
-        }
-
-        if (isImageLimit) {
-          if (length > 0) {
-            append(AppConstants.TEXT_SEPARATOR)
-          }
-
-          append(
-            buildAnnotatedString {
-              if (!isDead) {
-                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
-              }
-
-              append("IL")
-            }
-          )
-        }
-
-        if (isDeleted) {
-          if (length > 0) {
-            append(AppConstants.TEXT_SEPARATOR)
-          }
-
-          append(
-            buildAnnotatedString {
-              pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
-              append("Del")
-            }
-          )
-        } else {
-          if (isArchived) {
-            if (length > 0) {
-              append(AppConstants.TEXT_SEPARATOR)
-            }
-
-            append("Arch")
-          }
-        }
-
-        if (isError) {
-          if (length > 0) {
-            append(AppConstants.TEXT_SEPARATOR)
-          }
-
-          append(
-            buildAnnotatedString {
-              pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
-              append("Err")
-            }
-          )
-        }
-      }
+      convertBookmarkStateToText(
+        isDead = isDead,
+        chanTheme = chanTheme,
+        isFirstFetch = isFirstFetch,
+        context = context,
+        newPostsAnimated = newPostsAnimated,
+        totalPostsAnimated = totalPostsAnimated,
+        newQuotesAnimated = newQuotesAnimated,
+        totalPages = totalPages,
+        currentPage = currentPage,
+        isBumpLimit = isBumpLimit,
+        isImageLimit = isImageLimit,
+        isDeleted = isDeleted,
+        isArchived = isArchived,
+        isError = isError
+      )
     }
 
     KurobaComposeText(
       modifier = modifier,
       color = Color.Unspecified,
-      fontSize = 12.sp,
+      fontSize = 13.sp,
       text = bookmarkAdditionalInfoText
     )
   }
@@ -610,6 +493,159 @@ class BookmarksScreen(
           SubcomposeAsyncImageContent()
         }
       )
+    }
+  }
+
+  private fun convertBookmarkStateToText(
+    isDead: Boolean,
+    chanTheme: ChanTheme,
+    isFirstFetch: Boolean,
+    context: Context,
+    newPostsAnimated: Int,
+    totalPostsAnimated: Int,
+    newQuotesAnimated: Int,
+    totalPages: Int,
+    currentPage: Int,
+    isBumpLimit: Boolean,
+    isImageLimit: Boolean,
+    isDeleted: Boolean,
+    isArchived: Boolean,
+    isError: Boolean
+  ): AnnotatedString {
+    val defaultTextColor = if (isDead) {
+      chanTheme.textColorHintCompose
+    } else {
+      chanTheme.textColorSecondaryCompose
+    }
+
+    return buildAnnotatedString {
+      pushStyle(SpanStyle(color = defaultTextColor))
+
+      if (isFirstFetch) {
+        append(context.getString(R.string.bookmark_loading_state))
+        return@buildAnnotatedString
+      }
+
+      append(
+        buildAnnotatedString {
+          append(
+            buildAnnotatedString {
+              if (!isDead && newPostsAnimated > 0) {
+                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+              } else {
+                pushStyle(SpanStyle(color = defaultTextColor))
+              }
+
+              append(newPostsAnimated.toString())
+              append("/")
+              append(totalPostsAnimated.toString())
+            }
+          )
+
+          if (newQuotesAnimated > 0) {
+            append(" (")
+            append(
+              buildAnnotatedString {
+                if (!isDead && newQuotesAnimated > 0) {
+                  pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColorCompose))
+                } else {
+                  pushStyle(SpanStyle(color = defaultTextColor))
+                }
+
+                append(newQuotesAnimated.toString())
+              }
+            )
+            append(")")
+          }
+        }
+      )
+
+      if (totalPages > 0) {
+        if (length > 0) {
+          append(AppConstants.TEXT_SEPARATOR)
+        }
+
+        append("Pg: ")
+        append(
+          buildAnnotatedString {
+            if (!isDead && currentPage >= totalPages) {
+              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+            } else {
+              pushStyle(SpanStyle(color = defaultTextColor))
+            }
+
+            append(currentPage.toString())
+            append("/")
+            append(totalPages.toString())
+          }
+        )
+      }
+
+      if (isBumpLimit) {
+        if (length > 0) {
+          append(AppConstants.TEXT_SEPARATOR)
+        }
+
+        append(
+          buildAnnotatedString {
+            if (!isDead) {
+              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+            }
+
+            append("BL")
+          }
+        )
+      }
+
+      if (isImageLimit) {
+        if (length > 0) {
+          append(AppConstants.TEXT_SEPARATOR)
+        }
+
+        append(
+          buildAnnotatedString {
+            if (!isDead) {
+              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+            }
+
+            append("IL")
+          }
+        )
+      }
+
+      if (isDeleted) {
+        if (length > 0) {
+          append(AppConstants.TEXT_SEPARATOR)
+        }
+
+        append(
+          buildAnnotatedString {
+            pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
+            append("Del")
+          }
+        )
+      } else {
+        if (isArchived) {
+          if (length > 0) {
+            append(AppConstants.TEXT_SEPARATOR)
+          }
+
+          append("Arch")
+        }
+      }
+
+      if (isError) {
+        if (length > 0) {
+          append(AppConstants.TEXT_SEPARATOR)
+        }
+
+        append(
+          buildAnnotatedString {
+            pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
+            append("Err")
+          }
+        )
+      }
     }
   }
 
