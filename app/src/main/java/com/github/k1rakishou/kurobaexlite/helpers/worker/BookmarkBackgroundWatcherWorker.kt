@@ -12,8 +12,10 @@ import androidx.work.await
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import java.util.concurrent.TimeUnit
@@ -30,10 +32,21 @@ class BookmarkBackgroundWatcherWorker(
   private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
   private val fetchThreadBookmarkInfo: FetchThreadBookmarkInfo by inject(FetchThreadBookmarkInfo::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
+  private val loadBookmarks: LoadBookmarks by inject(LoadBookmarks::class.java)
 
   override suspend fun doWork(): Result {
+    logcat(TAG) { "doWork() start" }
+
+    val loadBookmarksResult = loadBookmarks.executeSuspend(restartWork = false)
+    if (loadBookmarksResult.isFailure) {
+      val error = loadBookmarksResult.exceptionOrThrow()
+      logcat(TAG) { "loadBookmarks.executeSuspend() error: ${error.asLogIfImportantOrErrorMessage()}" }
+      return Result.failure()
+    }
+
     val activeBookmarkDescriptors = bookmarksManager.getActiveBookmarkDescriptors()
     if (activeBookmarkDescriptors.isEmpty()) {
+      logcat(TAG) { "activeBookmarkDescriptors are empty, doing nothing" }
       return Result.success()
     }
 
@@ -56,13 +69,15 @@ class BookmarkBackgroundWatcherWorker(
         restartBackgroundWork(
           appContext = applicationContext,
           flavorType = androidHelpers.getFlavorType(),
-          isInForeground = applicationVisibilityManager.isAppInForeground()
+          isInForeground = applicationVisibilityManager.isAppInForeground(),
+          addInitialDelay = true
         )
       }
     } else {
       logcat(TAG) { "activeBookmarksCount: ${activeBookmarksCount} the work loop is finished" }
     }
 
+    logcat(TAG) { "doWork() end" }
     return Result.success()
   }
 
@@ -73,7 +88,7 @@ class BookmarkBackgroundWatcherWorker(
       appContext: Context,
       flavorType: AndroidHelpers.FlavorType,
       isInForeground: Boolean,
-      addInitialDelay: Boolean = true,
+      addInitialDelay: Boolean,
     ) {
       val tag = AppConstants.WorkerTags.getUniqueTag(flavorType)
       logcat(TAG) { "restartBackgroundWork() called tag=$tag" }
@@ -86,7 +101,11 @@ class BookmarkBackgroundWatcherWorker(
         if (isInForeground) {
           30L * 1000L // 30 seconds
         } else {
-          15 * 60L * 1000L // 15 minutes
+          if (flavorType == AndroidHelpers.FlavorType.Dev) {
+            1 * 60L * 1000L // 1 minute
+          } else {
+            15 * 60L * 1000L // 15 minutes
+          }
         }
       } else {
         1000L
@@ -100,7 +119,7 @@ class BookmarkBackgroundWatcherWorker(
 
       WorkManager
         .getInstance(appContext)
-        .enqueueUniqueWork(tag, ExistingWorkPolicy.APPEND_OR_REPLACE, workRequest)
+        .enqueueUniqueWork(tag, ExistingWorkPolicy.REPLACE, workRequest)
         .result
         .await()
 

@@ -18,10 +18,9 @@ class MainActivityViewModel : BaseViewModel() {
   val rootNavigationRouter = MainNavigationRouter()
 
   override suspend fun onViewModelReady() {
-    loadBookmarks.execute { exception ->
-      if (exception == null) {
-        return@execute
-      }
+    loadBookmarks.execute(restartWork = true) { result ->
+      val exception = result.exceptionOrNull()
+        ?: return@execute
 
       snackbarManager.errorToast(
         message = appResources.string(

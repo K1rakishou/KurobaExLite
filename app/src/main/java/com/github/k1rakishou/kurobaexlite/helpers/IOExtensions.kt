@@ -10,6 +10,7 @@ import java.io.OutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import logcat.LogPriority
 import logcat.logcat
 import okhttp3.Call
 import okhttp3.Callback
@@ -50,9 +51,9 @@ suspend fun OkHttpClient.suspendCallConvertToString(
 ): Result<String> {
   return withContext(Dispatchers.IO) {
     return@withContext Result.Try {
-      logcat { "suspendCallConvertToString() url='${request.url}' start" }
+      logcat(priority = LogPriority.VERBOSE) { "suspendCallConvertToString() url='${request.url}' start" }
       val response = suspendCall(request)
-      logcat { "suspendCallConvertToString() url='${request.url}' end" }
+      logcat(priority = LogPriority.VERBOSE) { "suspendCallConvertToString() url='${request.url}' end" }
 
       if (!response.isSuccessful) {
         throw BadStatusResponseException(response.code)
@@ -74,9 +75,9 @@ suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertIntoJsonObjectW
 ): Result<out T?> {
   return withContext(Dispatchers.IO) {
     return@withContext Result.Try {
-      logcat { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}' start" }
+      logcat(priority = LogPriority.VERBOSE) { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}' start" }
       val response = suspendCall(request)
-      logcat { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}' end" }
+      logcat(priority = LogPriority.VERBOSE) { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}' end" }
 
       if (!response.isSuccessful) {
         throw BadStatusResponseException(response.code)

@@ -47,6 +47,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.image.GrayscaleTransformation
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkStatsUi
@@ -69,7 +70,9 @@ class BookmarksScreen(
 ) : ComposeScreen(componentActivity, navigationRouter) {
   private val bookmarksScreenViewModel: BookmarksScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
+
   private val circleCropTransformation = CircleCropTransformation()
+  private val grayscaleTransformation = GrayscaleTransformation()
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -138,17 +141,6 @@ class BookmarksScreen(
         .animateItemPlacement(),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(40.dp)
-          .padding(2.dp)
-          .kurobaClickable(
-            bounded = false,
-            onClick = { onDeleteBookmarkClicked(threadBookmarkUi) }
-          ),
-        drawableId = R.drawable.ic_baseline_close_24
-      )
-
       Spacer(modifier = Modifier.width(4.dp))
 
       val threadBookmarkStatsUi = threadBookmarkUi.threadBookmarkStatsUi
@@ -164,7 +156,7 @@ class BookmarksScreen(
             .size(thumbnailSize)
             .graphicsLayer { alpha = if (isDead) 0.5f else 1f },
           iconUrl = threadBookmarkUi.thumbnailUrl,
-          circleCropTransformation = circleCropTransformation
+          isDead = isDead
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -259,8 +251,14 @@ class BookmarksScreen(
       isDeleted,
       isError,
     ) {
+      val defaultTextColor = if (isDead) {
+        chanTheme.textColorHintCompose
+      } else {
+        chanTheme.textColorSecondaryCompose
+      }
+
       buildAnnotatedString {
-        pushStyle(SpanStyle(color = chanTheme.textColorHintCompose))
+        pushStyle(SpanStyle(color = defaultTextColor))
 
         if (isFirstFetch) {
           append(context.getString(R.string.bookmark_loading_state))
@@ -269,17 +267,35 @@ class BookmarksScreen(
 
         append(
           buildAnnotatedString {
-            if (!isDead) {
-              if (newQuotesAnimated > 0) {
-                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColorCompose))
-              } else if (newPostsAnimated > 0) {
-                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
-              }
-            }
+            append(
+              buildAnnotatedString {
+                if (!isDead && newPostsAnimated > 0) {
+                  pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+                } else {
+                  pushStyle(SpanStyle(color = defaultTextColor))
+                }
 
-            append(newPostsAnimated.toString())
-            append(" / ")
-            append(totalPostsAnimated.toString())
+                append(newPostsAnimated.toString())
+                append(" / ")
+                append(totalPostsAnimated.toString())
+              }
+            )
+
+            if (newQuotesAnimated > 0) {
+              append(
+                buildAnnotatedString {
+                  if (!isDead && newQuotesAnimated > 0) {
+                    pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColorCompose))
+                  } else {
+                    pushStyle(SpanStyle(color = defaultTextColor))
+                  }
+
+                  append(" (")
+                  append(newQuotesAnimated.toString())
+                  append(")")
+                }
+              )
+            }
           }
         )
 
@@ -344,7 +360,7 @@ class BookmarksScreen(
           append(
             buildAnnotatedString {
               pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
-              append("DEL")
+              append("Del")
             }
           )
         } else {
@@ -353,7 +369,7 @@ class BookmarksScreen(
               append(AppConstants.TEXT_SEPARATOR)
             }
 
-            append("ARCH")
+            append("Arch")
           }
         }
 
@@ -365,7 +381,7 @@ class BookmarksScreen(
           append(
             buildAnnotatedString {
               pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
-              append("ERR")
+              append("Err")
             }
           )
         }
@@ -384,7 +400,7 @@ class BookmarksScreen(
   private fun BookmarkThumbnail(
     modifier: Modifier = Modifier,
     iconUrl: String,
-    circleCropTransformation: CircleCropTransformation,
+    isDead: Boolean
   ) {
     val context = LocalContext.current
 
@@ -403,12 +419,20 @@ class BookmarksScreen(
         }
       }
 
+      val transformations = remember(key1 = isDead) {
+        if (isDead) {
+          listOf(circleCropTransformation, grayscaleTransformation)
+        } else {
+          listOf(circleCropTransformation)
+        }
+      }
+
       SubcomposeAsyncImage(
         modifier = Modifier.fillMaxSize(),
         model = ImageRequest.Builder(context)
           .data(iconUrl)
           .crossfade(true)
-          .transformations(circleCropTransformation)
+          .transformations(transformations)
           .build(),
         contentScale = ContentScale.Crop,
         contentDescription = null,
