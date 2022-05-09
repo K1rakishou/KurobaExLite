@@ -5,6 +5,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
 import org.joda.time.DateTime
 
 @Stable
@@ -24,24 +25,35 @@ class ThreadBookmarkUi(
 
   fun updateStatsFrom(
     threadBookmark: ThreadBookmark,
-    currentPage: Int?,
-    totalPages: Int?
+    threadPage: CatalogPagesRepository.ThreadPage?
   ) {
     threadBookmarkStatsUi.updateFrom(
       threadBookmark = threadBookmark,
-      currentPage = currentPage,
-      totalPages = totalPages
+      threadPage = threadPage
     )
   }
 
+  fun updatePagesFrom(
+    threadPage: CatalogPagesRepository.ThreadPage
+  ) {
+    threadBookmarkStatsUi.updatePagesFrom(threadPage)
+  }
+
   companion object {
-    fun fromThreadBookmark(threadBookmark: ThreadBookmark): ThreadBookmarkUi? {
+    fun fromThreadBookmark(
+      threadBookmark: ThreadBookmark,
+      threadPage: CatalogPagesRepository.ThreadPage?
+    ): ThreadBookmarkUi? {
       return ThreadBookmarkUi(
         threadDescriptor = threadBookmark.threadDescriptor,
         title = threadBookmark.title ?: return null,
         thumbnailUrl = threadBookmark.thumbnailUrl?.toString(),
         createdOn = threadBookmark.createdOn,
-        threadBookmarkStatsUi = ThreadBookmarkStatsUi.fromThreadBookmark(threadBookmark)
+        threadBookmarkStatsUi = ThreadBookmarkStatsUi.fromThreadBookmark(
+          threadBookmark = threadBookmark,
+          currentPage = threadPage?.page,
+          totalPages = threadPage?.totalPages
+        )
       )
     }
   }
@@ -107,11 +119,15 @@ class ThreadBookmarkStatsUi private constructor(
     return pagesCount in 1..page
   }
 
+  fun hasPagesInfo(): Boolean {
+    return totalPages.value > 0
+  }
+
   fun isDead(): Boolean = isDeleted.value || isArchived.value
 
   fun isDeadOrNotWatching(): Boolean = isDead() || !watching.value
 
-  fun updateFrom(threadBookmark: ThreadBookmark, currentPage: Int?, totalPages: Int?) {
+  fun updateFrom(threadBookmark: ThreadBookmark, threadPage: CatalogPagesRepository.ThreadPage?) {
     _watching.value = threadBookmark.isActive()
     _newPosts.value = threadBookmark.newPostsCount()
     _newQuotes.value = threadBookmark.newQuotesCount()
@@ -123,17 +139,28 @@ class ThreadBookmarkStatsUi private constructor(
     _isArchived.value = threadBookmark.isThreadArchived()
     _isError.value = threadBookmark.isError()
 
-    _currentPage.value = currentPage ?: 0
-    _totalPages.value = totalPages ?: 0
+    _currentPage.value = threadPage?.page ?: 0
+    _totalPages.value = threadPage?.totalPages ?: 0
+  }
+
+  fun updatePagesFrom(threadPage: CatalogPagesRepository.ThreadPage) {
+    _currentPage.value = threadPage.page
+    _totalPages.value = threadPage.totalPages
   }
 
   companion object {
-    fun fromThreadBookmark(threadBookmark: ThreadBookmark): ThreadBookmarkStatsUi {
+    fun fromThreadBookmark(
+      threadBookmark: ThreadBookmark,
+      currentPage: Int?,
+      totalPages: Int?
+    ): ThreadBookmarkStatsUi {
       return ThreadBookmarkStatsUi(
         watching = threadBookmark.isActive(),
         newPosts = threadBookmark.newPostsCount(),
         newQuotes = threadBookmark.newQuotesCount(),
         totalPosts = threadBookmark.totalPostsCount,
+        currentPage = currentPage ?: 0,
+        totalPages = totalPages ?: 0,
         isBumpLimit = threadBookmark.isBumpLimit(),
         isImageLimit = threadBookmark.isImageLimit(),
         isFirstFetch = threadBookmark.isFirstFetch(),

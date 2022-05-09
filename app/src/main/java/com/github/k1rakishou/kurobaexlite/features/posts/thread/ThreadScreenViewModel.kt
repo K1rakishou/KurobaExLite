@@ -28,6 +28,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadStatusCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +52,7 @@ class ThreadScreenViewModel(
   private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
   private val addOrRemoveBookmark: AddOrRemoveBookmark by inject(AddOrRemoveBookmark::class.java)
   private val updatePostSeenForBookmark: UpdatePostSeenForBookmark by inject(UpdatePostSeenForBookmark::class.java)
+  private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     executeUpdate = { refresh() },
@@ -503,7 +505,7 @@ class ThreadScreenViewModel(
     }
   }
 
-  private fun formatThreadCellData(
+  private suspend fun formatThreadCellData(
     postLoadResult: PostsLoadResult?,
     prevThreadStatusCellData: ThreadStatusCellData?,
   ): ThreadStatusCellData {
@@ -519,10 +521,16 @@ class ThreadScreenViewModel(
     val bumpLimit = originalPostData?.bumpLimit ?: prevThreadStatusCellData?.bumpLimit
     val imageLimit = originalPostData?.imageLimit ?: prevThreadStatusCellData?.imageLimit
 
+    val threadPageFromRepo = originalPostData?.postDescriptor?.threadDescriptor
+      ?.let { threadDescriptor -> catalogPagesRepository.getThreadPage(threadDescriptor) }
+
+    val threadPage = threadPageFromRepo ?: prevThreadStatusCellData?.threadPage
+
     return ThreadStatusCellData(
       totalReplies = totalReplies,
       totalImages = totalImages,
       totalPosters = totalPosters,
+      threadPage = threadPage,
       archived = archived,
       closed = closed,
       sticky = sticky,

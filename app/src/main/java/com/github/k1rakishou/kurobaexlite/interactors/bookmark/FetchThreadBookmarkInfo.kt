@@ -13,11 +13,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmarkReply
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.StickyThread
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkDataDto
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -136,7 +136,7 @@ class FetchThreadBookmarkInfo(
         val postsQuotingMeMap = postsQuotingMe.map
 
         val fetchResultPairsList = successFetchResults
-          .map { fetchResult -> fetchResult.threadDescriptor to fetchResult.threadBookmarkDataDto }
+          .map { fetchResult -> fetchResult.threadDescriptor to fetchResult.threadBookmarkData }
           .toList()
 
         val updatedBookmarkDescriptors = fetchResultPairsList
@@ -158,7 +158,7 @@ class FetchThreadBookmarkInfo(
             updateSingleBookmark(
               threadBookmark = threadBookmark,
               threadDescriptor = threadDescriptor,
-              threadBookmarkDataDto = threadBookmarkDataDto,
+              threadBookmarkData = threadBookmarkDataDto,
               originalPost = originalPost,
               quotesToMeMap = quotesToMeMap
             )
@@ -238,7 +238,7 @@ class FetchThreadBookmarkInfo(
   private suspend fun updateSingleBookmark(
     threadBookmark: ThreadBookmark,
     threadDescriptor: ThreadDescriptor,
-    threadBookmarkDataDto: ThreadBookmarkDataDto,
+    threadBookmarkData: ThreadBookmarkData,
     originalPost: ThreadBookmarkInfoPostObject.OriginalPost,
     quotesToMeMap: Map<PostDescriptor, List<ExtractRepliesToMyPosts.ReplyToMyPost>>
   ) {
@@ -253,7 +253,7 @@ class FetchThreadBookmarkInfo(
       loadChanThreadView.execute(threadDescriptor)?.lastViewedPDForScroll
     }
 
-    threadBookmark.updateThreadRepliesCount(threadBookmarkDataDto.getPostsCountWithoutOP())
+    threadBookmark.updateThreadRepliesCount(threadBookmarkData.getPostsCountWithoutOP())
 
     // We need to handle rolling sticky (sticky threads with max posts cap) a little bit
     // differently so store this information for now (we don't need to persist it though)
@@ -273,7 +273,7 @@ class FetchThreadBookmarkInfo(
     // When seenPostsCount is zero we can update it seen post information we get by calculating
     // the amount of posts which postNo is less or equals to lastViewedPostNo
     if (threadBookmark.seenPostsCount == 0) {
-      threadBookmark.seenPostsCount = threadBookmarkDataDto.countAmountOfSeenPosts(lastViewedPostDescriptor)
+      threadBookmark.seenPostsCount = threadBookmarkData.countAmountOfSeenPosts(lastViewedPostDescriptor)
     }
 
     quotesToMeMap.forEach { (myPostPostDescriptor, replyToMyPostList) ->
@@ -288,7 +288,7 @@ class FetchThreadBookmarkInfo(
       }
     }
 
-    val newPostsCount = threadBookmarkDataDto.postObjects
+    val newPostsCount = threadBookmarkData.postObjects
       .count { threadBookmarkInfoPostObject ->
         if (lastViewedPostDescriptor == null) {
           return@count true
@@ -301,7 +301,7 @@ class FetchThreadBookmarkInfo(
     threadBookmark.updateSeenPostCountAfterFetch(newPostsCount)
     threadBookmark.setBumpLimit(originalPost.isBumpLimit)
     threadBookmark.setImageLimit(originalPost.isImageLimit)
-    threadBookmark.updateLastThreadPostDescriptor(threadBookmarkDataDto.lastThreadPostDescriptor())
+    threadBookmark.updateLastThreadPostDescriptor(threadBookmarkData.lastThreadPostDescriptor())
 
     threadBookmark.updateState(
       archived = originalPost.archived,
@@ -405,7 +405,7 @@ class FetchThreadBookmarkInfo(
         }
         is ThreadBookmarkFetchResult.Success -> {
           if (androidHelpers.isDevFlavor()) {
-            val originalPost = fetchResult.threadBookmarkDataDto.postObjects.firstOrNull { post ->
+            val originalPost = fetchResult.threadBookmarkData.postObjects.firstOrNull { post ->
               post is ThreadBookmarkInfoPostObject.OriginalPost
             } as? ThreadBookmarkInfoPostObject.OriginalPost
 
@@ -445,7 +445,7 @@ class FetchThreadBookmarkInfo(
     ) : ThreadBookmarkFetchResult(threadDescriptor)
 
     class Success(
-      val threadBookmarkDataDto: ThreadBookmarkDataDto,
+      val threadBookmarkData: ThreadBookmarkData,
       threadDescriptor: ThreadDescriptor
     ) : ThreadBookmarkFetchResult(threadDescriptor)
   }

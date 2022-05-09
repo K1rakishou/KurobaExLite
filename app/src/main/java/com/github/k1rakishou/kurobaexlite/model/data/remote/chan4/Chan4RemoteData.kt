@@ -112,3 +112,14 @@ data class PostInfoForBookmarkJson(
   val comment: String
     get() = com ?: ""
 }
+
+@JsonClass(generateAdapter = true)
+data class CatalogPageJson(
+  val page: Int,
+  val threads: List<CatalogPageThreadJson>
+)
+
+@JsonClass(generateAdapter = true)
+data class CatalogPageThreadJson(
+  @Json(name = "no") val postNo: Long,
+)

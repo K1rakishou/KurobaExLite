@@ -148,6 +148,12 @@ data class ThreadDescriptor(
   }
 
   companion object {
+    fun create(catalogDescriptor: CatalogDescriptor, threadNo: Long): ThreadDescriptor {
+      require(threadNo > 0L) { "Bad threadNo: $threadNo" }
+
+      return create(catalogDescriptor.siteKey, catalogDescriptor.boardCode, threadNo)
+    }
+
     fun create(siteKey: SiteKey, boardCode: String, threadNo: Long): ThreadDescriptor {
       require(threadNo > 0L) { "Bad threadNo: $threadNo" }
 

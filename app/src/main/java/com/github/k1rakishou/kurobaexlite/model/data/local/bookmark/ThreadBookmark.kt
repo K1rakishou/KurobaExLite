@@ -4,7 +4,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkEntityWithReplies
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadKey
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadLocalPostKey
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.StickyThread
+import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import java.util.BitSet

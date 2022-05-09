@@ -6,5 +6,7 @@ import com.github.k1rakishou.kurobaexlite.sites.Site
 
 interface ISiteManager {
   fun bySiteKey(siteKey: SiteKey): Site?
+  fun supportsSite(siteKey: SiteKey): Boolean
+
   fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor?
 }

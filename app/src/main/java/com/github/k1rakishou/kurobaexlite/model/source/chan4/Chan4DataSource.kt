@@ -5,23 +5,26 @@ import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertIntoJsonObjectWithAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.StickyThread
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkDataDto
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardsDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.PostImageDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadBookmarkInfoJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadDataJson
@@ -32,6 +35,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.squareup.moshi.Moshi
@@ -49,7 +53,8 @@ class Chan4DataSource(
 ) : ICatalogDataSource<CatalogDescriptor, CatalogData>,
   IThreadDataSource<ThreadDescriptor, ThreadData>,
   IBoardDataSource<SiteKey, CatalogsData>,
-  IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkDataDto> {
+  IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkData>,
+  ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?> {
 
   override suspend fun loadThread(
     threadDescriptor: ThreadDescriptor,
@@ -268,7 +273,7 @@ class Chan4DataSource(
     }
   }
 
-  override suspend fun loadBookmarkData(input: ThreadDescriptor): Result<ThreadBookmarkDataDto> {
+  override suspend fun loadBookmarkData(input: ThreadDescriptor): Result<ThreadBookmarkData> {
     return withContext(Dispatchers.IO) {
       return@withContext Result.Try {
         val site = siteManager.bySiteKey(input.siteKey)
@@ -327,9 +332,61 @@ class Chan4DataSource(
           }
         }
 
-        return@Try ThreadBookmarkDataDto(
+        return@Try ThreadBookmarkData(
           threadDescriptor = input,
           postObjects = threadBookmarkInfoPostObjects
+        )
+      }
+    }
+  }
+
+  override suspend fun loadCatalogPagesData(input: CatalogDescriptor): Result<CatalogPagesData?> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(input.siteKey)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val catalogPagesInfo = site.catalogPagesInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support catalogPagesInfo")
+
+        val catalogPagesUrl = catalogPagesInfo.catalogPagesUrl(
+          boardCode = input.boardCode,
+        )
+
+        val request = Request.Builder()
+          .url(catalogPagesUrl)
+          .get()
+          .build()
+
+        val catalogPageJsonListType = Types.newParameterizedType(List::class.java, CatalogPageJson::class.java)
+        val catalogPageJsonListAdapter = moshi.adapter<List<CatalogPageJson>>(catalogPageJsonListType)
+
+        val catalogPageJsonListResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+          request,
+          catalogPageJsonListAdapter
+        )
+
+        val catalogPageJsonList = catalogPageJsonListResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert catalog pages json into catalogPageJsonList object")
+
+        if (catalogPageJsonList.isEmpty()) {
+          return@Try null
+        }
+
+        val pagesInfoMap = mutableMapWithCap<ThreadDescriptor, Int>(100)
+
+        catalogPageJsonList.forEach { catalogPageJson ->
+          val page = catalogPageJson.page
+
+          catalogPageJson.threads.forEach { catalogPageThreadJson ->
+            val threadDescriptor = ThreadDescriptor.create(input, catalogPageThreadJson.postNo)
+            pagesInfoMap[threadDescriptor] = page
+          }
+        }
+
+        return@Try CatalogPagesData(
+          pagesTotal = catalogPageJsonList.size,
+          pagesInfo = pagesInfoMap
         )
       }
     }

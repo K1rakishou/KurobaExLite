@@ -1,9 +1,9 @@
-package com.github.k1rakishou.kurobaexlite.model.data.local.dto
+package com.github.k1rakishou.kurobaexlite.model.data.local
 
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 
-class ThreadBookmarkDataDto(
+class ThreadBookmarkData(
   val threadDescriptor: ThreadDescriptor,
   val postObjects: List<ThreadBookmarkInfoPostObject>
 ) {

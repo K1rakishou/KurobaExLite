@@ -71,6 +71,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
+import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
@@ -98,6 +99,7 @@ object DependencyGraph {
       kurobaDiskLruCache()
       coilMediaDiskCache()
       coilImageLoader()
+      repositories()
       interactors()
       managers()
       viewModels()
@@ -247,6 +249,15 @@ object DependencyGraph {
     }
     viewModel {
       BookmarksScreenViewModel()
+    }
+  }
+
+  private fun Module.repositories() {
+    single {
+      CatalogPagesRepository(
+        appScope = get(),
+        siteManager = get(),
+      )
     }
   }
 

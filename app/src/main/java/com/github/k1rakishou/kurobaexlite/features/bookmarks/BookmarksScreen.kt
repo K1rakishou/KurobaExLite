@@ -276,7 +276,7 @@ class BookmarksScreen(
                 }
 
                 append(newPostsAnimated.toString())
-                append(" / ")
+                append("/")
                 append(totalPostsAnimated.toString())
               }
             )

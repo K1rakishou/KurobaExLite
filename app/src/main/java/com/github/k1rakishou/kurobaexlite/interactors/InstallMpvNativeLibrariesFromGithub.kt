@@ -31,7 +31,6 @@ class InstallMpvNativeLibrariesFromGithub(
   private val moshi: Moshi,
   private val proxiedOkHttpClient: ProxiedOkHttpClient
 ) {
-  private val githubReleaseResponsesListType = Types.newParameterizedType(List::class.java, GithubReleaseResponse::class.java)
   private val lookupTag = "v${MPVLib.SUPPORTED_MPV_PLAYER_VERSION}"
 
   suspend fun execute(mpvSettings: MpvSettings): Result<Unit> {
@@ -53,6 +52,7 @@ class InstallMpvNativeLibrariesFromGithub(
       .url(KUROBAEX_MPV_LIBS_RELEASES_ENDPOINT)
       .build()
 
+    val githubReleaseResponsesListType = Types.newParameterizedType(List::class.java, GithubReleaseResponse::class.java)
     val adapter = moshi.adapter<List<GithubReleaseResponse>>(githubReleaseResponsesListType)
     val githubReleases = proxiedOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(request, adapter)
       .unwrap()

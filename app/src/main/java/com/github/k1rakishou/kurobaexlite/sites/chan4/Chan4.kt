@@ -9,9 +9,10 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.Chan4PostParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkDataDto
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
@@ -19,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.sites.RequestModifier
@@ -50,8 +52,9 @@ class Chan4(
   private val chan4SiteSettings by lazy { Chan4SiteSettings(appContext, moshi) }
   private val chan4ReplyInfo by lazy { Chan4ReplyInfo(this, proxiedOkHttpClient) }
   private val chan4BookmarkInfo by lazy { BookmarkInfo(chan4DataSource) }
-  private val chan4PostParser by lazy { Chan4PostParser() }
+  private val chan4CatalogPagesInfo by lazy { CatalogPagesInfo(chan4DataSource) }
 
+  private val chan4PostParser by lazy { Chan4PostParser() }
   private val icon by lazy { "https://s.4cdn.org/image/favicon.ico".toHttpUrl() }
 
   override val siteKey: SiteKey = SITE_KEY
@@ -65,6 +68,7 @@ class Chan4(
   override fun postImageInfo(): Site.PostImageInfo = chan4PostImageInfo
   override fun replyInfo(): Site.ReplyInfo = chan4ReplyInfo
   override fun bookmarkInfo(): Site.BookmarkInfo = chan4BookmarkInfo
+  override fun catalogPagesInfo(): Site.CatalogPagesInfo = chan4CatalogPagesInfo
 
   override fun parser(): AbstractSitePostParser = chan4PostParser
   override fun icon(): HttpUrl = icon
@@ -183,7 +187,17 @@ class Chan4(
       return "https://a.4cdn.org/${boardCode}/thread/${threadNo}.json"
     }
 
-    override fun bookmarkDataSource(): IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkDataDto> {
+    override fun bookmarkDataSource(): IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkData> {
+      return chan4DataSource
+    }
+  }
+
+  class CatalogPagesInfo(private val chan4DataSource: Chan4DataSource): Site.CatalogPagesInfo {
+    override fun catalogPagesUrl(boardCode: String): String {
+      return "https://a.4cdn.org/${boardCode}/threads.json"
+    }
+
+    override fun catalogPagesDataSource(): ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?> {
       return chan4DataSource
     }
   }

@@ -77,7 +77,7 @@ class ExtractRepliesToMyPosts(
     // Value - set of postNo that the "Key" quotes.
     val quoteOwnerPostsMap = mutableMapWithCap<PostDescriptor, MutableSet<ReplyToMyPost>>(32)
 
-    successFetchResult.threadBookmarkDataDto.postObjects.forEach { simplePostObject ->
+    successFetchResult.threadBookmarkData.postObjects.forEach { simplePostObject ->
       val extractedQuotes = postCommentParser.parsePostComment(
         simplePostObject.comment(),
         simplePostObject.postDescriptor()

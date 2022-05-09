@@ -2,10 +2,11 @@ package com.github.k1rakishou.kurobaexlite.sites
 
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
-import com.github.k1rakishou.kurobaexlite.model.data.local.dto.ThreadBookmarkDataDto
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -14,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.settings.SiteSettings
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +33,7 @@ interface Site {
   fun postImageInfo(): PostImageInfo?
   fun replyInfo(): ReplyInfo?
   fun bookmarkInfo(): BookmarkInfo?
+  fun catalogPagesInfo(): CatalogPagesInfo?
 
   fun parser(): AbstractSitePostParser
   fun icon(): HttpUrl?
@@ -65,8 +68,14 @@ interface Site {
 
   interface BookmarkInfo {
     fun bookmarkUrl(boardCode: String, threadNo: Long): String
-    fun bookmarkDataSource(): IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkDataDto>
+    fun bookmarkDataSource(): IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkData>
   }
+
+  interface CatalogPagesInfo {
+    fun catalogPagesUrl(boardCode: String): String
+    fun catalogPagesDataSource(): ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?>
+  }
+
 }
 
 sealed class ReplyEvent {

@@ -21,6 +21,10 @@ class SiteManager(
     return sites[siteKey]
   }
 
+  override fun supportsSite(siteKey: SiteKey): Boolean {
+    return sites.containsKey(siteKey)
+  }
+
   override fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor? {
     val httpUrl = rawIdentifier.toHttpUrlOrNull()
 

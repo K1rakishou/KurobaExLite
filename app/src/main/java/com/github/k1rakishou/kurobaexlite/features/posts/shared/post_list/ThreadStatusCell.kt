@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -93,7 +94,7 @@ internal fun LazyItemScope.ThreadStatusCell(
 
         if (threadStatusCellDataUpdated.totalImages > 0) {
           if (length > 0) {
-            append(", ")
+            append(AppConstants.TEXT_SEPARATOR)
           }
 
           append(threadStatusCellDataUpdated.totalImages.toString())
@@ -102,16 +103,27 @@ internal fun LazyItemScope.ThreadStatusCell(
 
         if (threadStatusCellDataUpdated.totalPosters > 0) {
           if (length > 0) {
-            append(", ")
+            append(AppConstants.TEXT_SEPARATOR)
           }
 
           append(threadStatusCellDataUpdated.totalPosters.toString())
           append("P")
         }
 
+        if (threadStatusCellDataUpdated.threadPage != null) {
+          if (length > 0) {
+            append(AppConstants.TEXT_SEPARATOR)
+          }
+
+          append("Pg: ")
+          append(threadStatusCellDataUpdated.threadPage.page.toString())
+          append("/")
+          append(threadStatusCellDataUpdated.threadPage.totalPages.toString())
+        }
+
         if (threadStatusCellDataUpdated.bumpLimit == true) {
           if (length > 0) {
-            append(", ")
+            append(AppConstants.TEXT_SEPARATOR)
           }
 
           append("BL")
@@ -119,7 +131,7 @@ internal fun LazyItemScope.ThreadStatusCell(
 
         if (threadStatusCellDataUpdated.imageLimit == true) {
           if (length > 0) {
-            append(", ")
+            append(AppConstants.TEXT_SEPARATOR)
           }
 
           append("IL")
