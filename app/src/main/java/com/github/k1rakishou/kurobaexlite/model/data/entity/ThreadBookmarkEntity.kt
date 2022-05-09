@@ -75,6 +75,32 @@ data class ThreadBookmarkReplyEntity(
   }
 }
 
+@Entity(
+  tableName = ThreadBookmarkSortOrderEntity.TABLE_NAME,
+  foreignKeys = [
+    ForeignKey(
+      entity = ThreadBookmarkEntity::class,
+      parentColumns = ["database_id"],
+      childColumns = ["owner_database_id"],
+      onDelete = ForeignKey.CASCADE,
+      onUpdate = ForeignKey.CASCADE
+    )
+  ],
+  indices = [
+    Index("sort_order")
+  ]
+)
+data class ThreadBookmarkSortOrderEntity(
+  @PrimaryKey(autoGenerate = false) @ColumnInfo(name = "owner_database_id") val ownerDatabaseId: Long = 0L,
+  @Embedded(prefix = "bookmark_") val bookmarkKey: ThreadKey,
+  @ColumnInfo(name = "sort_order") val sortOrder: Int,
+) {
+
+  companion object {
+    const val TABLE_NAME = "thread_bookmark_sort_orders"
+  }
+}
+
 data class BookmarkKeyWithDatabaseId(
   @Embedded(prefix = "bookmark_") val threadKey: ThreadKey,
   @ColumnInfo(name = "database_id") val databaseId: Long,
@@ -111,6 +137,13 @@ abstract class ThreadBookmarkDao {
   """)
   abstract suspend fun selectAllBookmarksWithReplies(): List<ThreadBookmarkEntityWithReplies>
 
+  @Query("""
+    SELECT *
+    FROM thread_bookmark_sort_orders
+    ORDER BY thread_bookmark_sort_orders.sort_order
+  """)
+  abstract suspend fun selectAllThreadBookmarkSortOrders(): List<ThreadBookmarkSortOrderEntity>
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   abstract suspend fun insertManyThreadBookmarkReplyEntities(
     threadBookmarkReplyEntityList: List<ThreadBookmarkReplyEntity>
@@ -141,6 +174,12 @@ abstract class ThreadBookmarkDao {
     FROM thread_bookmarks
   """)
   abstract suspend fun selectExistingKeys(): List<BookmarkKeyWithDatabaseId>
+
+  @Query("""
+    SELECT IFNULL(MIN(sort_order), 0)
+    FROM thread_bookmark_sort_orders
+  """)
+  abstract suspend fun selectMinSortOrder(): Int
 
   @Query("""
     INSERT INTO thread_bookmarks(
@@ -190,6 +229,30 @@ abstract class ThreadBookmarkDao {
     thumbnailUrl: HttpUrl?,
     state: BitSet,
     createdOn: DateTime
+  )
+
+  @Query("""
+    INSERT OR REPLACE INTO thread_bookmark_sort_orders(
+        bookmark_site_key,
+        bookmark_board_code,
+        bookmark_thread_no,
+        owner_database_id,
+        sort_order
+    )
+    VALUES(
+        :siteKey,
+        :boardCode,
+        :threadNo,
+        :ownerDatabaseId,
+        :sortOrder
+    )
+  """)
+  protected abstract suspend fun insertOrUpdateThreadBookmarkSortOrderEntity(
+    siteKey: String,
+    boardCode: String,
+    threadNo: Long,
+    ownerDatabaseId: Long,
+    sortOrder: Int
   )
 
   @Transaction
@@ -308,6 +371,8 @@ abstract class ThreadBookmarkDao {
     }
 
     if (toInsert.isNotEmpty()) {
+      var minSortOrder = selectMinSortOrder() - 1
+
       toInsert.forEach { threadBookmark ->
         insertThreadBookmarkEntity(
           siteKey = threadBookmark.threadDescriptor.siteKey.key,
@@ -325,10 +390,20 @@ abstract class ThreadBookmarkDao {
           createdOn = threadBookmark.createdOn,
         )
 
-        databaseIdsMap[threadBookmark.threadDescriptor] = selectDatabaseIdByKey(
+        val databaseId = selectDatabaseIdByKey(
           siteKey = threadBookmark.threadDescriptor.siteKey.key,
           boardCode = threadBookmark.threadDescriptor.boardCode,
           threadNo = threadBookmark.threadDescriptor.threadNo,
+        )
+
+        databaseIdsMap[threadBookmark.threadDescriptor] = databaseId
+
+        insertOrUpdateThreadBookmarkSortOrderEntity(
+          siteKey = threadBookmark.threadDescriptor.siteKey.key,
+          boardCode = threadBookmark.threadDescriptor.boardCode,
+          threadNo = threadBookmark.threadDescriptor.threadNo,
+          ownerDatabaseId = databaseId,
+          sortOrder = minSortOrder--
         )
       }
     }

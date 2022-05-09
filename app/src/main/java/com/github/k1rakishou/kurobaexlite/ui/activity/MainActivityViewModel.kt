@@ -18,6 +18,8 @@ class MainActivityViewModel : BaseViewModel() {
   val rootNavigationRouter = MainNavigationRouter()
 
   override suspend fun onViewModelReady() {
+    super.onViewModelReady()
+
     loadBookmarks.execute(restartWork = true) { result ->
       val exception = result.exceptionOrNull()
         ?: return@execute

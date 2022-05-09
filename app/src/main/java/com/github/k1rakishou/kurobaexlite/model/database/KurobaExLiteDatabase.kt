@@ -20,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.entity.NavigationHistoryEnt
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkReplyEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkSortOrderEntity
 import com.github.k1rakishou.kurobaexlite.model.database.converters.BitSetTypeConverter
 import com.github.k1rakishou.kurobaexlite.model.database.converters.DateTimeTypeConverter
 import com.github.k1rakishou.kurobaexlite.model.database.converters.HttpUrlTypeConverter
@@ -34,7 +35,8 @@ import kotlinx.coroutines.withContext
     ChanCatalogEntity::class,
     ChanCatalogSortOrderEntity::class,
     ThreadBookmarkEntity::class,
-    ThreadBookmarkReplyEntity::class
+    ThreadBookmarkReplyEntity::class,
+    ThreadBookmarkSortOrderEntity::class
   ],
   version = 1,
   exportSchema = true

@@ -51,6 +51,8 @@ class CatalogScreenViewModel(
   override val postScreenState: PostScreenState = catalogScreenState
 
   override suspend fun onViewModelReady() {
+    super.onViewModelReady()
+
     loadPrevVisitedCatalog()
   }
 

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "78f4a4489685ab83ed29ba423b7d855e",
+    "identityHash": "6bce5484b739bd170964b439b90ac025",
     "entities": [
       {
         "tableName": "chan_thread_views",
@@ -486,12 +486,78 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "thread_bookmark_sort_orders",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_database_id` INTEGER NOT NULL, `sort_order` INTEGER NOT NULL, `bookmark_site_key` TEXT NOT NULL, `bookmark_board_code` TEXT NOT NULL, `bookmark_thread_no` INTEGER NOT NULL, PRIMARY KEY(`owner_database_id`), FOREIGN KEY(`owner_database_id`) REFERENCES `thread_bookmarks`(`database_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "ownerDatabaseId",
+            "columnName": "owner_database_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookmarkKey.siteKey",
+            "columnName": "bookmark_site_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookmarkKey.boardCode",
+            "columnName": "bookmark_board_code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bookmarkKey.threadNo",
+            "columnName": "bookmark_thread_no",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "owner_database_id"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [
+          {
+            "name": "index_thread_bookmark_sort_orders_sort_order",
+            "unique": false,
+            "columnNames": [
+              "sort_order"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_thread_bookmark_sort_orders_sort_order` ON `${TABLE_NAME}` (`sort_order`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "thread_bookmarks",
+            "onDelete": "CASCADE",
+            "onUpdate": "CASCADE",
+            "columns": [
+              "owner_database_id"
+            ],
+            "referencedColumns": [
+              "database_id"
+            ]
+          }
+        ]
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '78f4a4489685ab83ed29ba423b7d855e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6bce5484b739bd170964b439b90ac025')"
     ]
   }
 }

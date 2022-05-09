@@ -75,6 +75,8 @@ class ThreadScreenViewModel(
     get() = chanDescriptor as? ThreadDescriptor
 
   override suspend fun onViewModelReady() {
+    super.onViewModelReady()
+
     loadPrevVisitedThread()
   }
 

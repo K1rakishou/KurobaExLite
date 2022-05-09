@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.SortBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkUi
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -18,6 +19,7 @@ class BookmarksScreenViewModel : BaseViewModel() {
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
   private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
+  private val sortBookmarks: SortBookmarks by inject(SortBookmarks::class.java)
 
   private val _bookmarksList = mutableStateListOf<ThreadBookmarkUi>()
   val bookmarksList: List<ThreadBookmarkUi>
@@ -41,7 +43,7 @@ class BookmarksScreenViewModel : BaseViewModel() {
     viewModelScope.launch {
       bookmarksManager.awaitUntilInitialized()
 
-      val loadedBookmarks = bookmarksManager.getAllBookmarks()
+      val loadedBookmarks = sortBookmarks.await(bookmarksManager.getAllBookmarks())
         .mapNotNull { threadBookmark ->
           return@mapNotNull ThreadBookmarkUi.fromThreadBookmark(
             threadBookmark = threadBookmark,

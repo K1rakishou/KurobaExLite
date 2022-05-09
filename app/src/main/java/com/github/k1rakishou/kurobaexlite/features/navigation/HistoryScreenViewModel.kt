@@ -47,13 +47,17 @@ class HistoryScreenViewModel : BaseViewModel() {
     get() = _scrollNavigationHistoryToTopEvents.asSharedFlow()
 
   override suspend fun onViewModelReady() {
+    super.onViewModelReady()
+
     viewModelScope.launch {
       navigationHistoryManager.navigationUpdates.collectLatest { navigationUpdate ->
         processNavigationUpdates(navigationUpdate)
       }
     }
 
-    loadNavigationHistory.loadFromDatabase(appSettings.navigationHistoryMaxSize.read())
+    viewModelScope.launch {
+      loadNavigationHistory.loadFromDatabase(appSettings.navigationHistoryMaxSize.read())
+    }
   }
 
   fun removeNavigationElement(uiNavigationElement: UiNavigationElement) {

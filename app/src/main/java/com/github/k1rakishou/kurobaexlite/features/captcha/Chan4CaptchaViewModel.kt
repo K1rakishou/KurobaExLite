@@ -52,6 +52,7 @@ class Chan4CaptchaViewModel(
   val captchaInfoToShow = mutableStateOf<AsyncData<CaptchaInfo>>(AsyncData.Uninitialized)
 
   override suspend fun onViewModelReady() {
+    super.onViewModelReady()
   }
 
   fun cleanup() {

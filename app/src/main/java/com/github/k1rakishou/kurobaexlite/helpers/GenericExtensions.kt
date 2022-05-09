@@ -660,3 +660,7 @@ suspend fun <T, R> processDataCollectionConcurrently(
       }
   }
 }
+
+fun <T> Lazy<T>.forceInit(): T {
+  return this.value
+}
