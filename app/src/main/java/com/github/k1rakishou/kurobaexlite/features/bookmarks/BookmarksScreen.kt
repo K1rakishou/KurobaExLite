@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.absoluteOffset
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -81,6 +80,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.ReorderableState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.detectReorder
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.draggedItem
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.rememberReorderState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.reorderable
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -103,7 +107,7 @@ class BookmarksScreen(
     val chanTheme = LocalChanTheme.current
     val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
-    val lastListState = rememberLazyListState()
+    val lazyListState = rememberLazyListState()
 
     val contentPadding = remember(key1 = windowInsets) {
       PaddingValues(top = windowInsets.top, bottom = windowInsets.bottom)
@@ -134,15 +138,24 @@ class BookmarksScreen(
         }
       })
 
+    val reorderableState = rememberReorderState(lazyListState = lazyListState)
+
     BoxWithConstraints {
       val availableWidth = constraints.maxWidth.toFloat()
 
       if (availableWidth > 0) {
         LazyColumnWithFastScroller(
-          modifier = Modifier
+          lazyListContainerModifier = Modifier
             .fillMaxSize()
             .background(chanTheme.backColorCompose),
-          lazyListState = lastListState,
+          lazyListModifier = Modifier
+            .fillMaxSize()
+            .reorderable(
+              state = reorderableState,
+              onMove = { from, to -> bookmarksScreenViewModel.onMove(from, to) },
+              onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from, to) }
+            ),
+          lazyListState = reorderableState.lazyListState,
           contentPadding = contentPadding,
           content = {
             items(
@@ -155,6 +168,7 @@ class BookmarksScreen(
                   canUseFancyAnimations = canUseFancyAnimations,
                   threadBookmarkUi = threadBookmarkUi,
                   availableWidth = availableWidth,
+                  reorderableState = reorderableState,
                   onBookmarkClicked = { clickedThreadBookmarkUi ->
                     threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
                     globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
@@ -214,6 +228,7 @@ class BookmarksScreen(
     canUseFancyAnimations: Boolean,
     threadBookmarkUi: ThreadBookmarkUi,
     availableWidth: Float,
+    reorderableState: ReorderableState,
     onBookmarkClicked: (ThreadBookmarkUi) -> Unit,
     onBookmarkDeleted: (ThreadBookmarkUi) -> Unit
   ) {
@@ -270,6 +285,7 @@ class BookmarksScreen(
     }
     val bookmarkOffset by swipeableState.offset
     val bookmarkAlpha = 1f - (bookmarkOffset / availableWidth).coerceIn(0f, 1f)
+    val swipeableStateEnabled = reorderableState.draggedIndex == null
 
     LaunchedEffect(
       key1 = swipeableState.currentValue,
@@ -287,18 +303,20 @@ class BookmarksScreen(
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .height(itemHeight)
-        .background(bookmarkBgColor)
-        .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
         .padding(vertical = 2.dp)
+        .height(itemHeight)
+        .draggedItem(reorderableState.offsetByKey(threadBookmarkUi.threadDescriptor))
+        .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
+        .absoluteOffset { IntOffset(x = bookmarkOffset.toInt(), y = 0) }
+        .background(bookmarkBgColor)
         .animateItemPlacement()
         .swipeable(
+          enabled = swipeableStateEnabled,
           state = swipeableState,
           anchors = anchors,
           orientation = Orientation.Horizontal,
-          thresholds = { _, _ -> FractionalThreshold(.65f) },
+          thresholds = { _, _ -> FractionalThreshold(.65f) }
         )
-        .absoluteOffset { IntOffset(x = bookmarkOffset.toInt(), y = 0) }
         .graphicsLayer { alpha = bookmarkAlpha },
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -323,7 +341,7 @@ class BookmarksScreen(
         Spacer(modifier = Modifier.width(8.dp))
       }
 
-      Column(modifier = Modifier.fillMaxHeight()) {
+      Column(modifier = Modifier.weight(1f)) {
         val textColor = if (isDead) {
           chanTheme.textColorHintCompose
         } else {
@@ -349,6 +367,16 @@ class BookmarksScreen(
           textAnimationSpec = textAnimationSpec,
         )
       }
+
+      KurobaComposeIcon(
+        modifier = Modifier
+          .size(32.dp)
+          .padding(all = 4.dp)
+          .detectReorder(reorderableState),
+        drawableId = R.drawable.ic_baseline_reorder_24
+      )
+
+      Spacer(modifier = Modifier.width(4.dp))
     }
   }
 
@@ -407,10 +435,8 @@ class BookmarksScreen(
       isError,
     ) {
       convertBookmarkStateToText(
-        isDead = isDead,
-        chanTheme = chanTheme,
-        isFirstFetch = isFirstFetch,
         context = context,
+        chanTheme = chanTheme,
         newPostsAnimated = newPostsAnimated,
         totalPostsAnimated = totalPostsAnimated,
         newQuotesAnimated = newQuotesAnimated,
@@ -420,7 +446,9 @@ class BookmarksScreen(
         isImageLimit = isImageLimit,
         isDeleted = isDeleted,
         isArchived = isArchived,
-        isError = isError
+        isError = isError,
+        isDead = isDead,
+        isFirstFetch = isFirstFetch,
       )
     }
 
@@ -476,7 +504,7 @@ class BookmarksScreen(
           val state = painter.state
 
           if (state is AsyncImagePainter.State.Error) {
-            logcatError {
+            logcatError(TAG) {
               "BookmarkThumbnail() url=${iconUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
             }
 
@@ -497,10 +525,8 @@ class BookmarksScreen(
   }
 
   private fun convertBookmarkStateToText(
-    isDead: Boolean,
-    chanTheme: ChanTheme,
-    isFirstFetch: Boolean,
     context: Context,
+    chanTheme: ChanTheme,
     newPostsAnimated: Int,
     totalPostsAnimated: Int,
     newQuotesAnimated: Int,
@@ -510,7 +536,9 @@ class BookmarksScreen(
     isImageLimit: Boolean,
     isDeleted: Boolean,
     isArchived: Boolean,
-    isError: Boolean
+    isError: Boolean,
+    isDead: Boolean,
+    isFirstFetch: Boolean
   ): AnnotatedString {
     val defaultTextColor = if (isDead) {
       chanTheme.textColorHintCompose

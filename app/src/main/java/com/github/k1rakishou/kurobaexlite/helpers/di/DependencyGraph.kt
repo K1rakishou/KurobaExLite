@@ -43,7 +43,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ExtractRepliesToMyPosts
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.SortBookmarks
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
@@ -349,7 +349,7 @@ object DependencyGraph {
       )
     }
     single {
-      SortBookmarks(kurobaExLiteDatabase = get())
+      ReorderBookmarks(kurobaExLiteDatabase = get())
     }
     single {
       DeleteBookmark(

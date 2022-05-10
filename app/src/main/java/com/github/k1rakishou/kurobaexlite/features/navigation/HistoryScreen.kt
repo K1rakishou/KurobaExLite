@@ -256,7 +256,7 @@ class HistoryScreen(
       }
 
       LazyColumnWithFastScroller(
-        modifier = Modifier
+        lazyListContainerModifier = Modifier
           .fillMaxSize()
           .detectListScrollEvents(
             token = "onHistoryListScrolled",

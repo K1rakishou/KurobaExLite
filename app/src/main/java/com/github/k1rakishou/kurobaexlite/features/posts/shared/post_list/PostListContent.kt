@@ -402,7 +402,7 @@ private fun PostListInternal(
       }
     ) {
       LazyColumnWithFastScroller(
-        modifier = modifier.then(
+        lazyListContainerModifier = modifier.then(
           Modifier
             .detectListScrollEvents(
               token = "onPostListScrolled",

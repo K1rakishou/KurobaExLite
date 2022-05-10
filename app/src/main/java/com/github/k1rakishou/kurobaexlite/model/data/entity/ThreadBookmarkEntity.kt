@@ -122,6 +122,7 @@ abstract class ThreadBookmarkDao {
 
   // Only load replies that are not seen/notified/read yet, otherwise there is no point in loading
   // them
+  @Transaction
   @Query("""
     SELECT *
     FROM thread_bookmarks
@@ -230,6 +231,21 @@ abstract class ThreadBookmarkDao {
     state: BitSet,
     createdOn: DateTime
   )
+
+  @Transaction
+  open suspend fun insertOrUpdateThreadBookmarkSortOrderEntities(
+    threadBookmarkSortOrderEntities: List<ThreadBookmarkSortOrderEntity>
+  ) {
+    threadBookmarkSortOrderEntities.forEach { threadBookmarkSortOrderEntity ->
+      insertOrUpdateThreadBookmarkSortOrderEntity(
+        siteKey = threadBookmarkSortOrderEntity.bookmarkKey.siteKey,
+        boardCode = threadBookmarkSortOrderEntity.bookmarkKey.boardCode,
+        threadNo = threadBookmarkSortOrderEntity.bookmarkKey.threadNo,
+        ownerDatabaseId = threadBookmarkSortOrderEntity.ownerDatabaseId,
+        sortOrder = threadBookmarkSortOrderEntity.sortOrder
+      )
+    }
+  }
 
   @Query("""
     INSERT OR REPLACE INTO thread_bookmark_sort_orders(

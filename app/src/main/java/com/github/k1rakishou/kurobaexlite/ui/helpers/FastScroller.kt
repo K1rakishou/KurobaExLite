@@ -51,7 +51,8 @@ private fun DefaultScrollbarHeight(): Int {
 
 @Composable
 fun LazyColumnWithFastScroller(
-  modifier: Modifier = Modifier,
+  lazyListContainerModifier: Modifier = Modifier,
+  lazyListModifier: Modifier = Modifier,
   scrollbarWidth: Int = DefaultScrollbarWidth(),
   scrollbarHeight: Int = DefaultScrollbarHeight(),
   lazyListState: LazyListState,
@@ -72,7 +73,7 @@ fun LazyColumnWithFastScroller(
 
   var scrollbarDragProgress by remember { mutableStateOf<Float?>(null) }
 
-  BoxWithConstraints(modifier = modifier) {
+  BoxWithConstraints(modifier = lazyListContainerModifier) {
     val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
     val maxHeightPx = with(LocalDensity.current) { maxHeight.toPx().toInt() }
 
@@ -100,6 +101,7 @@ fun LazyColumnWithFastScroller(
     ) {
       LazyColumn(
         modifier = Modifier
+          .then(lazyListModifier)
           .scrollbar(
             lazyStateWrapper = lazyListStateWrapper,
             scrollbarDimens = ScrollbarDimens.Vertical.Static(

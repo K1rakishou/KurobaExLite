@@ -221,7 +221,7 @@ class CatalogSelectionScreen(
     )
 
     LazyColumnWithFastScroller(
-      modifier = Modifier.fillMaxSize(),
+      lazyListContainerModifier = Modifier.fillMaxSize(),
       contentPadding = paddingValues,
       lazyListState = lazyListState,
       content = {

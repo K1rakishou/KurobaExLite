@@ -53,6 +53,44 @@ class DrawerSwipeState(
   animationSpec = animationSpec,
   confirmStateChange = confirmStateChange
 ) {
+
+  @OptIn(ExperimentalMaterialApi::class)
+  @Composable
+  fun InitDrawerState(
+    drawerWidth: Int,
+    density: Density
+  ) {
+    val anchors = remember {
+      mapOf(
+        Pair(-(drawerWidth.toFloat()), State.Closed),
+        Pair(0f, State.Opened),
+      )
+    }
+
+    val thresholds: (from: State, to: State) -> ThresholdConfig = remember { { _, _ -> FixedThreshold(56.dp) } }
+    val resistance = remember { SwipeableDefaults.resistanceConfig(anchors.keys) }
+
+    this@DrawerSwipeState.ensureInit(anchors)
+
+    LaunchedEffect(anchors, this@DrawerSwipeState) {
+      val oldAnchors = this@DrawerSwipeState.anchors
+      this@DrawerSwipeState.anchors = anchors
+      this@DrawerSwipeState.resistance = resistance
+      this@DrawerSwipeState.thresholds = { a, b ->
+        val from = anchors.getValue(a)
+        val to = anchors.getValue(b)
+
+        with(thresholds(from, to)) { density.computeThreshold(a, b) }
+      }
+
+      with(density) {
+        this@DrawerSwipeState.velocityThreshold = SwipeableDefaults.VelocityThreshold.toPx()
+      }
+
+      this@DrawerSwipeState.processNewAnchors(oldAnchors, anchors)
+    }
+  }
+
   enum class State {
     Closed,
     Opened;
@@ -111,7 +149,7 @@ fun HomeScreenDrawerLayout(
     )
   }
 
-  InitDrawerState(drawerWidth, drawerSwipeState, density)
+  drawerSwipeState.InitDrawerState(drawerWidth, density)
 
   val clickable = remember(key1 = drawerVisibility) {
     when (drawerVisibility) {
@@ -134,6 +172,7 @@ fun HomeScreenDrawerLayout(
 
   var prevDragX by remember { mutableStateOf(0f) }
   val offsetAnimated by drawerSwipeState.offset
+
   val bgAlphaAnimated = remember(key1 = offsetAnimated, key2 = drawerWidth) {
     val animationProgress = (1f - (offsetAnimated.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
     return@remember lerpFloat(0f, .8f, animationProgress)
@@ -310,41 +349,5 @@ private suspend fun endDragWithFling(
         globalUiInfoManager.closeDrawer(withAnimation = true)
       }
     }
-  }
-}
-
-@OptIn(ExperimentalMaterialApi::class)
-@Composable
-private fun InitDrawerState(
-  drawerWidth: Int,
-  drawerSwipeState: DrawerSwipeState,
-  density: Density
-) {
-  val anchors = remember {
-    mapOf(
-      Pair(-(drawerWidth.toFloat()), DrawerSwipeState.State.Closed),
-      Pair(0f, DrawerSwipeState.State.Opened),
-    )
-  }
-
-  val thresholds: (from: DrawerSwipeState.State, to: DrawerSwipeState.State) -> ThresholdConfig = remember { { _, _ -> FixedThreshold(56.dp) } }
-  val resistance = remember { SwipeableDefaults.resistanceConfig(anchors.keys) }
-
-  drawerSwipeState.ensureInit(anchors)
-  LaunchedEffect(anchors, drawerSwipeState) {
-    val oldAnchors = drawerSwipeState.anchors
-    drawerSwipeState.anchors = anchors
-    drawerSwipeState.resistance = resistance
-    drawerSwipeState.thresholds = { a, b ->
-      val from = anchors.getValue(a)
-      val to = anchors.getValue(b)
-
-      with(thresholds(from, to)) { density.computeThreshold(a, b) }
-    }
-
-    with(density) {
-      drawerSwipeState.velocityThreshold = SwipeableDefaults.VelocityThreshold.toPx()
-    }
-    drawerSwipeState.processNewAnchors(oldAnchors, anchors)
   }
 }
