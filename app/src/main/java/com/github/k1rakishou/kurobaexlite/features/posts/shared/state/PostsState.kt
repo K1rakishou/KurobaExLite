@@ -12,7 +12,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.toHashSetByKey
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.koin.java.KoinJavaComponent.inject
 
 @Stable
@@ -31,8 +30,6 @@ class PostsState(
   private val postsProcessed = mutableStateListOf<PostCellData>()
   val posts: List<PostCellData>
     get() = postsProcessed
-
-  private val searchQueryFlow = MutableStateFlow<String?>(null)
 
   val postListAnimationInfoMap = mutableStateMapOf<PostDescriptor, PreviousPostDataInfo>()
 
@@ -56,50 +53,46 @@ class PostsState(
   }
 
   fun onSearchQueryUpdated(searchQuery: String?) {
-    val prevSearchQuery = searchQueryFlow.value
-    searchQueryFlow.value = searchQuery
-
-    if (searchQuery == prevSearchQuery || searchQuery.isNullOrEmpty()) {
-      postsProcessed.clear()
-      postsProcessed.addAll(allPosts)
-    } else {
-      val matchedPostCellDataStates = allPosts.mapNotNull { postCellData ->
-        if (searchQuery.isEmpty()) {
-          return@mapNotNull postCellData
-        }
-
-        val commentMatchesQuery = postCellData.parsedPostData
-          ?.processedPostComment
-          ?.text
-          ?.contains(other = searchQuery, ignoreCase = true)
-          ?: false
-
-        if (commentMatchesQuery) {
-          return@mapNotNull postCellData
-        }
-
-        val subjectMatchesQuery = postCellData.parsedPostData
-          ?.processedPostSubject
-          ?.text
-          ?.contains(other = searchQuery, ignoreCase = true)
-          ?: false
-
-        if (subjectMatchesQuery) {
-          return@mapNotNull postCellData
-        }
-
-        return@mapNotNull null
+    val matchedPostCellDataStates = allPosts.mapNotNull { postCellData ->
+      if (searchQuery == null || searchQuery.isEmpty()) {
+        return@mapNotNull postCellData
       }
 
-      postsProcessed.clear()
-      postsProcessed.addAll(matchedPostCellDataStates)
+      val commentMatchesQuery = postCellData.parsedPostData
+        ?.processedPostComment
+        ?.text
+        ?.contains(other = searchQuery, ignoreCase = true)
+        ?: false
+
+      if (commentMatchesQuery) {
+        return@mapNotNull postCellData
+      }
+
+      val subjectMatchesQuery = postCellData.parsedPostData
+        ?.processedPostSubject
+        ?.text
+        ?.contains(other = searchQuery, ignoreCase = true)
+        ?: false
+
+      if (subjectMatchesQuery) {
+        return@mapNotNull postCellData
+      }
+
+      return@mapNotNull null
     }
+
+    postsProcessed.clear()
+    postsProcessed.addAll(matchedPostCellDataStates)
   }
 
   /**
    * Do not call directly! Use PostScreenState.insertOrUpdate() instead!
    * */
-  fun insertOrUpdate(postCellData: PostCellData, checkFirstPostIsOriginal: Boolean) {
+  fun insertOrUpdate(
+    postCellData: PostCellData,
+    searchQuery: String?,
+    checkFirstPostIsOriginal: Boolean
+  ) {
     Snapshot.withMutableSnapshot {
       val index = postIndexes[postCellData.postDescriptor]
       if (index == null) {
@@ -137,7 +130,7 @@ class PostsState(
       }
 
       updatePostListAnimationInfoMap(listOf(postCellData))
-      onSearchQueryUpdated(searchQueryFlow.value)
+      onSearchQueryUpdated(searchQuery)
     }
   }
 
@@ -146,6 +139,7 @@ class PostsState(
    * */
   fun insertOrUpdateMany(
     postCellDataCollection: Collection<PostCellData>,
+    searchQuery: String?,
     checkFirstPostIsOriginal: Boolean
   ) {
     if (postCellDataCollection.isEmpty()) {
@@ -194,7 +188,7 @@ class PostsState(
 
       _lastUpdatedOn = SystemClock.elapsedRealtime()
       updatePostListAnimationInfoMap(postCellDataCollection)
-      onSearchQueryUpdated(searchQueryFlow.value)
+      onSearchQueryUpdated(searchQuery)
     }
   }
 

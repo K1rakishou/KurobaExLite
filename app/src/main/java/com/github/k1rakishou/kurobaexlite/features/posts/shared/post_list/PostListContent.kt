@@ -444,7 +444,7 @@ private fun PostListInternal(
                   return@postList canAnimateInsertion(
                     previousPostDataInfoMap = previousPostDataInfoMap,
                     postCellData = postCellData,
-                    searchQuery = postsScreenViewModel.postScreenState.searchQueryFlow.value,
+                    searchQuery = postsScreenViewModel.postScreenState.currentSearchQuery,
                     inPopup = isInPopup,
                     postsParsedOnce = postsScreenViewModel.postsFullyParsedOnceFlow.value
                   )
@@ -453,7 +453,7 @@ private fun PostListInternal(
                   return@postList canAnimateUpdate(
                     previousPostDataInfoMap = previousPostDataInfoMap,
                     postCellData = postCellData,
-                    searchQuery = postsScreenViewModel.postScreenState.searchQueryFlow.value,
+                    searchQuery = postsScreenViewModel.postScreenState.currentSearchQuery,
                     inPopup = isInPopup,
                     rememberedHashForListAnimations = rememberedHashForListAnimations,
                     postsParsedOnce = postsScreenViewModel.postsFullyParsedOnceFlow.value

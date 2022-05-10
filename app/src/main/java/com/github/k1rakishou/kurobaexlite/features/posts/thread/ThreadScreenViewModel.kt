@@ -58,7 +58,7 @@ class ThreadScreenViewModel(
     executeUpdate = { refresh() },
     canUpdate = {
       return@ThreadAutoUpdater threadScreenState.postsAsyncDataState.value is AsyncData.Data &&
-        threadScreenState.searchQueryFlow.value == null
+        threadScreenState.currentSearchQuery == null
     }
   )
 

@@ -52,6 +52,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 
 private const val searchQueryKey = "search_query"
 
@@ -371,7 +372,7 @@ private fun BoxScope.PostsScreenSearchToolbar(
   parentBgColor: Color,
   stackContainerState: AnimateableStackContainerState<ToolbarType>,
   onSearchQueryUpdated: ((String?) -> Unit)?,
-  onCloseSearchClicked: () -> Unit
+  onCloseSearchClicked: suspend () -> Unit
 ) {
   val keyboardController = LocalSoftwareKeyboardController.current
   val coroutineScope = rememberCoroutineScope()
@@ -385,11 +386,22 @@ private fun BoxScope.PostsScreenSearchToolbar(
   DisposableEffect(
     key1 = Unit,
     effect = {
-      onSearchQueryUpdated?.invoke(searchQuery.text)
-
       onDispose {
-        onSearchQueryUpdated?.invoke(null)
         keyboardController?.hide()
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      stackContainerState.disposingElements.collect { postsScreenToolbarType ->
+        if (postsScreenToolbarType != ToolbarType.Search) {
+          return@collect
+        }
+
+        stackContainerState.removeData(searchQueryKey)
+        onSearchQueryUpdated?.invoke(null)
       }
     }
   )
@@ -402,15 +414,17 @@ private fun BoxScope.PostsScreenSearchToolbar(
           .kurobaClickable(
             bounded = false,
             onClick = {
-              stackContainerState.removeData(searchQueryKey)
+              coroutineScope.launch {
+                stackContainerState.removeData(searchQueryKey)
 
-              if (searchQuery.text.isNotEmpty()) {
-                searchQuery = TextFieldValue(text = "")
-                onSearchQueryUpdated?.invoke("")
-              } else {
-                searchDebouncer.stop()
-                onSearchQueryUpdated?.invoke(null)
-                onCloseSearchClicked()
+                if (searchQuery.text.isNotEmpty()) {
+                  searchQuery = TextFieldValue(text = "")
+                  onSearchQueryUpdated?.invoke("")
+                } else {
+                  searchDebouncer.stop()
+                  onSearchQueryUpdated?.invoke(null)
+                  onCloseSearchClicked()
+                }
               }
             }
           ),

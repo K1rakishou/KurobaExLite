@@ -19,7 +19,13 @@ abstract class PostScreenState(
 ) {
   val postsAsyncDataState = MutableStateFlow<AsyncData<PostsState>>(AsyncData.Uninitialized)
   val threadCellDataState = MutableStateFlow<ThreadStatusCellData?>(null)
-  val searchQueryFlow = MutableStateFlow<String?>(null)
+
+  private val _searchQueryFlow = MutableStateFlow<String?>(null)
+  val searchQueryFlow: StateFlow<String?>
+    get() = _searchQueryFlow
+
+  val currentSearchQuery: String?
+    get() = searchQueryFlow.value
 
   val lastViewedPostDescriptorForScrollRestoration = MutableStateFlow<PostDescriptor?>(null)
   val lastViewedPostDescriptorForIndicator = MutableStateFlow<PostDescriptor?>(null)
@@ -50,14 +56,22 @@ abstract class PostScreenState(
   @CallSuper
   open fun insertOrUpdate(postCellData: PostCellData) {
     doWithDataState { postsState ->
-      postsState.insertOrUpdate(postCellData, checkFirstPostIsOriginal)
+      postsState.insertOrUpdate(
+        postCellData = postCellData,
+        searchQuery = currentSearchQuery,
+        checkFirstPostIsOriginal = checkFirstPostIsOriginal
+      )
     }
   }
 
   @CallSuper
   open fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     doWithDataState { postsState ->
-      postsState.insertOrUpdateMany(postCellDataCollection, checkFirstPostIsOriginal)
+      postsState.insertOrUpdateMany(
+        postCellDataCollection = postCellDataCollection,
+        searchQuery = currentSearchQuery,
+        checkFirstPostIsOriginal = checkFirstPostIsOriginal
+      )
     }
   }
 
@@ -65,7 +79,7 @@ abstract class PostScreenState(
     doWithDataState { postsState ->
       Snapshot.withMutableSnapshot {
         postsState.onSearchQueryUpdated(searchQuery)
-        searchQueryFlow.value = searchQuery
+        _searchQueryFlow.value = searchQuery
       }
     }
   }
