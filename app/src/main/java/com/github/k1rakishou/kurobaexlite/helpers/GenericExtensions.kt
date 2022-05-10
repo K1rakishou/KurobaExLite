@@ -64,6 +64,14 @@ fun <T> Result<T>.unwrap(): T {
   return getOrThrow()
 }
 
+fun <T> Result<T>.mapErrorToError(mapper: (Throwable) -> Throwable): Result<T> {
+  if (isFailure) {
+    return Result.failure(mapper(exceptionOrThrow()))
+  }
+
+  return this
+}
+
 fun <T> Result<T>.ignore() {
   return
 }

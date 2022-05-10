@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
@@ -85,7 +86,17 @@ class FetchThreadBookmarkInfo(
       return@processDataCollectionConcurrently bookmarkInfo.bookmarkDataSource()
         .loadBookmarkData(threadDescriptor)
         .map { threadBookmarkData -> ThreadBookmarkFetchResult.Success(threadBookmarkData, threadDescriptor)  }
-        .getOrElse { error -> ThreadBookmarkFetchResult.Error(error, threadDescriptor) }
+        .getOrElse { error ->
+          if (error is BadStatusResponseException) {
+            if (error.isNotFoundError()) {
+              return@getOrElse ThreadBookmarkFetchResult.NotFoundOnServer(threadDescriptor)
+            } else {
+              return@getOrElse ThreadBookmarkFetchResult.BadStatusCode(error.status, threadDescriptor)
+            }
+          }
+
+          return@getOrElse ThreadBookmarkFetchResult.Error(error, threadDescriptor)
+        }
     }
   }
 
@@ -187,10 +198,10 @@ class FetchThreadBookmarkInfo(
         when (unsuccessFetchResult) {
           is ThreadBookmarkFetchResult.Error,
           is ThreadBookmarkFetchResult.BadStatusCode -> {
-            threadBookmark.updateState(error = true)
+            threadBookmark.updateState(error = true, deleted = false)
           }
           is ThreadBookmarkFetchResult.NotFoundOnServer -> {
-            threadBookmark.updateState(deleted = true)
+            threadBookmark.updateState(error = false, deleted = true)
           }
           is ThreadBookmarkFetchResult.AlreadyDeleted -> {
             // No-op. This just means that the user has deleted this bookmark while it was fetching

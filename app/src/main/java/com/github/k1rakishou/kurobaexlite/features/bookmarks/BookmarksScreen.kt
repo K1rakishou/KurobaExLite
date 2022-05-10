@@ -9,6 +9,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -25,6 +26,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.rememberSwipeableState
@@ -39,18 +42,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.toBitmap
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
@@ -67,6 +76,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookma
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkStatsUi
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkUi
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
@@ -88,8 +98,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.rememberRe
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.reorderable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.withContext
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class BookmarksScreen(
@@ -382,6 +394,7 @@ class BookmarksScreen(
           modifier = Modifier
             .fillMaxWidth()
             .weight(0.4f),
+          threadDescriptor = threadBookmarkUi.threadDescriptor,
           threadBookmarkStatsUi = threadBookmarkStatsUi,
           textAnimationSpec = textAnimationSpec,
         )
@@ -402,11 +415,13 @@ class BookmarksScreen(
   @Composable
   private fun ThreadBookmarkAdditionalInfo(
     modifier: Modifier,
+    threadDescriptor: ThreadDescriptor,
     threadBookmarkStatsUi: ThreadBookmarkStatsUi,
     textAnimationSpec: FiniteAnimationSpec<Int>
   ) {
     val context = LocalContext.current
     val chanTheme = LocalChanTheme.current
+    val fontSize = 13.sp
 
     val transition = updateTransition(
       targetState = threadBookmarkStatsUi,
@@ -456,6 +471,7 @@ class BookmarksScreen(
       convertBookmarkStateToText(
         context = context,
         chanTheme = chanTheme,
+        threadDescriptor = threadDescriptor,
         newPostsAnimated = newPostsAnimated,
         totalPostsAnimated = totalPostsAnimated,
         newQuotesAnimated = newQuotesAnimated,
@@ -471,11 +487,25 @@ class BookmarksScreen(
       )
     }
 
+    val bookmarkInlinedContent = remember(key1 = isDead) {
+      val resultMap = mutableMapOf<String, InlineTextContent>()
+
+      BookmarkAnnotatedContent.values().forEach { bookmarkAnnotatedContent ->
+        resultMap[bookmarkAnnotatedContent.id] = InlineTextContent(
+          placeholder = Placeholder(fontSize, fontSize, PlaceholderVerticalAlign.Center),
+          children = { BookmarkAnnotatedContent.Content(bookmarkAnnotatedContent, isDead) }
+        )
+      }
+
+      return@remember resultMap
+    }
+
     KurobaComposeText(
       modifier = modifier,
       color = Color.Unspecified,
-      fontSize = 13.sp,
-      text = bookmarkAdditionalInfoText
+      fontSize = fontSize,
+      text = bookmarkAdditionalInfoText,
+      inlineContent = bookmarkInlinedContent
     )
   }
 
@@ -546,6 +576,7 @@ class BookmarksScreen(
   private fun convertBookmarkStateToText(
     context: Context,
     chanTheme: ChanTheme,
+    threadDescriptor: ThreadDescriptor,
     newPostsAnimated: Int,
     totalPostsAnimated: Int,
     newQuotesAnimated: Int,
@@ -567,6 +598,11 @@ class BookmarksScreen(
 
     return buildAnnotatedString {
       pushStyle(SpanStyle(color = defaultTextColor))
+
+      append("/")
+      append(threadDescriptor.catalogDescriptor.boardCode)
+      append("/")
+      append(AppConstants.TEXT_SEPARATOR)
 
       if (isFirstFetch) {
         append(context.getString(R.string.bookmark_loading_state))
@@ -662,36 +698,24 @@ class BookmarksScreen(
 
       if (isDeleted) {
         if (length > 0) {
-          append(AppConstants.TEXT_SEPARATOR)
+          append(" ")
         }
 
-        append(
-          buildAnnotatedString {
-            pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
-            append("Del")
-          }
-        )
-      } else {
-        if (isArchived) {
-          if (length > 0) {
-            append(AppConstants.TEXT_SEPARATOR)
-          }
-
-          append("Arch")
+        appendInlineContent(BookmarkAnnotatedContent.ThreadDeleted.id)
+      } else if (isArchived) {
+        if (length > 0) {
+          append(" ")
         }
+
+        appendInlineContent(BookmarkAnnotatedContent.ThreadArchived.id)
       }
 
       if (isError) {
         if (length > 0) {
-          append(AppConstants.TEXT_SEPARATOR)
+          append(" ")
         }
 
-        append(
-          buildAnnotatedString {
-            pushStyle(SpanStyle(color = chanTheme.accentColorCompose))
-            append("Err")
-          }
-        )
+        appendInlineContent(BookmarkAnnotatedContent.ThreadError.id)
       }
     }
   }
@@ -703,6 +727,49 @@ class BookmarksScreen(
 
   enum class SnackbarButton {
     UndoThreadBookmarkDeletion
+  }
+
+  enum class BookmarkAnnotatedContent(val id: String) {
+    ThreadDeleted("id_thread_deleted"),
+    ThreadArchived("id_thread_archived"),
+    ThreadError("id_thread_error");
+
+    companion object {
+      @Composable
+      fun Content(bookmarkAnnotatedContent: BookmarkAnnotatedContent, isDead: Boolean) {
+        val context = LocalContext.current
+
+        var imageBitmapMut by remember { mutableStateOf<ImageBitmap?>(null) }
+        val imageBitmap = imageBitmapMut
+
+        LaunchedEffect(
+          key1 = this,
+          block = {
+            val drawableId = when (bookmarkAnnotatedContent) {
+              ThreadDeleted -> R.drawable.trash_icon
+              ThreadArchived -> R.drawable.archived_icon
+              ThreadError -> R.drawable.error_icon
+            }
+
+            val drawable = ResourcesCompat.getDrawable(context.resources, drawableId, null)
+              ?: return@LaunchedEffect
+
+            imageBitmapMut = withContext(Dispatchers.IO) { drawable.toBitmap().asImageBitmap() }
+          })
+
+        val iconAlpha = remember(key1 = isDead) { if (isDead) 0.5f else 1f }
+
+        if (imageBitmap != null) {
+          Image(
+            modifier = Modifier
+              .fillMaxSize()
+              .graphicsLayer { alpha = iconAlpha },
+            bitmap = imageBitmap,
+            contentDescription = null
+          )
+        }
+      }
+    }
   }
 
   companion object {
