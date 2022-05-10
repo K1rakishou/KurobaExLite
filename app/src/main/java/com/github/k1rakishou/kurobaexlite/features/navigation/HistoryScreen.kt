@@ -421,7 +421,7 @@ class HistoryScreen(
       KurobaComposeText(
         modifier = Modifier.fillMaxWidth(),
         text = title,
-        fontSize = 14.sp,
+        fontSize = 15.sp,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
@@ -479,7 +479,7 @@ class HistoryScreen(
       KurobaComposeText(
         modifier = Modifier.fillMaxWidth(),
         text = title,
-        fontSize = 14.sp,
+        fontSize = 15.sp,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
       )
