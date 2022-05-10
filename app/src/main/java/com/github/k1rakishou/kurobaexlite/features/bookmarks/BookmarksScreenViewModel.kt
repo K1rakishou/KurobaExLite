@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.bookmarks
 
+import android.content.Context
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -8,6 +9,7 @@ import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.move
+import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
@@ -35,6 +37,8 @@ class BookmarksScreenViewModel : BaseViewModel() {
   private val _canUseFancyAnimations = mutableStateOf(false)
   val canUseFancyAnimations: State<Boolean>
     get() = _canUseFancyAnimations
+
+  val backgroundWatcherEventsFlow = bookmarksManager.backgroundWatcherEventsFlow
 
   override suspend fun onViewModelReady() {
     super.onViewModelReady()
@@ -107,6 +111,19 @@ class BookmarksScreenViewModel : BaseViewModel() {
       }
 
       onMove(to, from)
+    }
+  }
+
+  fun forceRefreshBookmarks(context: Context) {
+    val appContext = context.applicationContext
+
+    viewModelScope.launch {
+      BookmarkBackgroundWatcherWorker.restartBackgroundWork(
+        appContext = appContext,
+        flavorType = androidHelpers.getFlavorType(),
+        isInForeground = true,
+        addInitialDelay = false
+      )
     }
   }
 

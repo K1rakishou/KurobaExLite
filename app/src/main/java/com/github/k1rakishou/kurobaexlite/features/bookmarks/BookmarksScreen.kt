@@ -77,6 +77,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -85,6 +86,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.detectReor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.draggedItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.rememberReorderState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.reorderable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -139,58 +141,75 @@ class BookmarksScreen(
       })
 
     val reorderableState = rememberReorderState(lazyListState = lazyListState)
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        bookmarksScreenViewModel.backgroundWatcherEventsFlow.collect {
+          pullToRefreshState.stopRefreshing()
+        }
+      }
+    )
 
     BoxWithConstraints {
       val availableWidth = constraints.maxWidth.toFloat()
+      val pullToRefreshToPadding = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
 
       if (availableWidth > 0) {
-        LazyColumnWithFastScroller(
-          lazyListContainerModifier = Modifier
-            .fillMaxSize()
-            .background(chanTheme.backColorCompose),
-          lazyListModifier = Modifier
-            .fillMaxSize()
-            .reorderable(
-              state = reorderableState,
-              onMove = { from, to -> bookmarksScreenViewModel.onMove(from, to) },
-              onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from, to) }
-            ),
-          lazyListState = reorderableState.lazyListState,
-          contentPadding = contentPadding,
-          content = {
-            items(
-              count = bookmarkList.size,
-              key = { index -> bookmarkList[index].threadDescriptor },
-              itemContent = { index ->
-                val threadBookmarkUi = bookmarkList[index]
+        PullToRefresh(
+          pullToRefreshState = pullToRefreshState,
+          topPadding = pullToRefreshToPadding,
+          onTriggered = { bookmarksScreenViewModel.forceRefreshBookmarks(context) }
+        ) {
+          LazyColumnWithFastScroller(
+            lazyListContainerModifier = Modifier
+              .fillMaxSize()
+              .background(chanTheme.backColorCompose),
+            lazyListModifier = Modifier
+              .fillMaxSize()
+              .reorderable(
+                state = reorderableState,
+                onMove = { from, to -> bookmarksScreenViewModel.onMove(from, to) },
+                onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from, to) }
+              ),
+            lazyListState = reorderableState.lazyListState,
+            contentPadding = contentPadding,
+            content = {
+              items(
+                count = bookmarkList.size,
+                key = { index -> bookmarkList[index].threadDescriptor },
+                itemContent = { index ->
+                  val threadBookmarkUi = bookmarkList[index]
 
-                ThreadBookmarkItem(
-                  canUseFancyAnimations = canUseFancyAnimations,
-                  threadBookmarkUi = threadBookmarkUi,
-                  availableWidth = availableWidth,
-                  reorderableState = reorderableState,
-                  onBookmarkClicked = { clickedThreadBookmarkUi ->
-                    threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
-                    globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
-                    globalUiInfoManager.closeDrawer(withAnimation = true)
-                  },
-                  onBookmarkDeleted = { clickedThreadBookmarkUi ->
-                    bookmarksScreenViewModel.deleteBookmark(
-                      threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
-                      onBookmarkDeleted = { deletedBookmark, oldPosition ->
-                        showRevertBookmarkDeletion(
-                          context = context,
-                          deletedBookmark = deletedBookmark,
-                          oldPosition = oldPosition
-                        )
-                      }
-                    )
-                  },
-                )
-              }
-            )
-          }
-        )
+                  ThreadBookmarkItem(
+                    canUseFancyAnimations = canUseFancyAnimations,
+                    threadBookmarkUi = threadBookmarkUi,
+                    availableWidth = availableWidth,
+                    reorderableState = reorderableState,
+                    onBookmarkClicked = { clickedThreadBookmarkUi ->
+                      threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
+                      globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
+                      globalUiInfoManager.closeDrawer(withAnimation = true)
+                    },
+                    onBookmarkDeleted = { clickedThreadBookmarkUi ->
+                      bookmarksScreenViewModel.deleteBookmark(
+                        threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
+                        onBookmarkDeleted = { deletedBookmark, oldPosition ->
+                          showRevertBookmarkDeletion(
+                            context = context,
+                            deletedBookmark = deletedBookmark,
+                            oldPosition = oldPosition
+                          )
+                        }
+                      )
+                    },
+                  )
+                }
+              )
+            }
+          )
+        }
       }
     }
   }

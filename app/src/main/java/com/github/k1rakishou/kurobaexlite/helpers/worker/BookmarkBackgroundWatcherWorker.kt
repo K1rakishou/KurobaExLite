@@ -35,6 +35,14 @@ class BookmarkBackgroundWatcherWorker(
   private val loadBookmarks: LoadBookmarks by inject(LoadBookmarks::class.java)
 
   override suspend fun doWork(): Result {
+    try {
+      return doWorkInternal()
+    } finally {
+      bookmarksManager.onBackgroundWatcherWorkFinished()
+    }
+  }
+
+  private suspend fun doWorkInternal(): Result {
     logcat(TAG) { "doWork() start" }
 
     val loadBookmarksResult = loadBookmarks.executeSuspend(restartWork = false)

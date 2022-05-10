@@ -19,6 +19,10 @@ class BookmarksManager {
   val bookmarkEventsFlow: SharedFlow<Event>
     get() = _bookmarkEventsFlow.asSharedFlow()
 
+  private val _backgroundWatcherEventsFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
+  val backgroundWatcherEventsFlow: SharedFlow<Unit>
+    get() = _backgroundWatcherEventsFlow.asSharedFlow()
+
   private val initializationFlag = CompletableDeferred<Unit>()
 
   suspend fun awaitUntilInitialized() {
@@ -124,6 +128,10 @@ class BookmarksManager {
     }
 
     return updated
+  }
+
+  suspend fun onBackgroundWatcherWorkFinished() {
+    _backgroundWatcherEventsFlow.emit(Unit)
   }
 
   sealed class Event(val threadDescriptors: List<ThreadDescriptor>) {
