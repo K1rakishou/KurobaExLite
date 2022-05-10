@@ -38,6 +38,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaSwipeableState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 private val bgColor = Color.Black
 private val flingVelocity = 5000f
@@ -170,11 +171,11 @@ fun HomeScreenDrawerLayout(
     }
   }
 
-  var prevDragX by remember { mutableStateOf(0f) }
-  val offsetAnimated by drawerSwipeState.offset
+  val drawerOffsetFloat by drawerSwipeState.offset
+  val drawerOffset = drawerOffsetFloat.roundToInt()
 
-  val bgAlphaAnimated = remember(key1 = offsetAnimated, key2 = drawerWidth) {
-    val animationProgress = (1f - (offsetAnimated.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
+  val bgAlphaAnimated = remember(key1 = drawerOffset, key2 = drawerWidth) {
+    val animationProgress = (1f - (drawerOffset.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
     return@remember lerpFloat(0f, .8f, animationProgress)
   }
 
@@ -182,19 +183,18 @@ fun HomeScreenDrawerLayout(
     key1 = drawerVisibility,
     block = {
       if (drawerSwipeState.isAnimationRunning) {
+        dragEventsCombined.clear()
         return@LaunchedEffect
       }
 
       when (drawerVisibility) {
         is DrawerVisibility.Drag -> {
           processDragEvents(
-            prevDragX = prevDragX,
             dragEventsCombined = dragEventsCombined,
             drawerSwipeState = drawerSwipeState,
-            offsetAnimated = offsetAnimated,
+            offsetAnimated = drawerOffsetFloat,
             drawerWidth = drawerWidth,
-            globalUiInfoManager = globalUiInfoManager,
-            updatePrevDragX = { newDragX -> prevDragX = newDragX }
+            globalUiInfoManager = globalUiInfoManager
           )
         }
         is DrawerVisibility.Fling -> {
@@ -203,7 +203,7 @@ fun HomeScreenDrawerLayout(
           val velocityX = drawerVisibility.velocity.x
           val opening = velocityX >= 0f
           val canPerformFling = velocityX.absoluteValue > flingVelocity
-          val animationProgress = (1f - (offsetAnimated.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
+          val animationProgress = (1f - (drawerOffset.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
 
           endDragWithFling(
             opening = opening,
@@ -250,7 +250,7 @@ fun HomeScreenDrawerLayout(
       modifier = Modifier
         .width(drawerWidthDp)
         .fillMaxHeight()
-        .absoluteOffset { IntOffset(offsetAnimated.toInt(), 0) }
+        .absoluteOffset { IntOffset(drawerOffset, 0) }
     ) {
       RouterHost(
         navigationRouter = navigationRouter,
@@ -261,15 +261,13 @@ fun HomeScreenDrawerLayout(
 }
 
 private suspend fun processDragEvents(
-  prevDragX: Float,
   dragEventsCombined: MutableList<DrawerVisibility.Drag>,
   drawerSwipeState: DrawerSwipeState,
   offsetAnimated: Float,
   drawerWidth: Int,
-  globalUiInfoManager: GlobalUiInfoManager,
-  updatePrevDragX: (newDragX: Float) -> Unit
+  globalUiInfoManager: GlobalUiInfoManager
 ) {
-  var currentPrevDragX = prevDragX
+  var currentPrevDragX = Float.NaN
   var endedNormally = false
 
   try {
@@ -277,14 +275,20 @@ private suspend fun processDragEvents(
       mutableIterator.remove()
 
       if (dragEvent.isDragging) {
+        if (currentPrevDragX.isNaN()) {
+          currentPrevDragX = dragEvent.dragX
+        }
+
         val dragDelta = dragEvent.dragX - currentPrevDragX
-        currentPrevDragX = dragEvent.dragX
 
         velocityTracker.addPosition(
           timeMillis = dragEvent.time,
           position = Offset(x = dragEvent.dragX, y = 0f)
         )
+
         drawerSwipeState.performDrag(dragDelta)
+        currentPrevDragX = dragEvent.dragX
+
         return@mutableIteration true
       } else {
         val velocityX = velocityTracker.calculateVelocity().x
@@ -314,8 +318,6 @@ private suspend fun processDragEvents(
     if (endedNormally) {
       dragEventsCombined.clear()
     }
-
-    updatePrevDragX(currentPrevDragX)
   }
 }
 
