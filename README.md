@@ -28,7 +28,7 @@ Right now you can:
 - View media. ComposeSubsamplingScaleImage for static images, mpv (downloadable) for gifs/videos.
 - Reply to posts.
 - View albums.
-- Track navigation history (for now it's always enabled and always in the drawer).
+- Track navigation history (for now it's always enabled).
 - Bookmarks.
 
 What you can't do which will be implemented in the future:
