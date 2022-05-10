@@ -29,9 +29,9 @@ Right now you can:
 - Reply to posts.
 - View albums.
 - Track navigation history (for now it's always enabled and always in the drawer).
+- Bookmarks.
 
 What you can't do which will be implemented in the future:
 - Navigate other sites (maybe?).
-- Bookmarks.
 
 The Main work is currently being done on the general UI/UX which is going to be different from KurobaEx.
