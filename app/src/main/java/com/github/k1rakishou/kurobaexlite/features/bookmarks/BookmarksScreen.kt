@@ -57,6 +57,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import coil.size.Size
 import coil.transform.CircleCropTransformation
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -511,6 +512,7 @@ class BookmarksScreen(
           .data(iconUrl)
           .crossfade(true)
           .transformations(transformations)
+          .size(Size.ORIGINAL)
           .build(),
         contentScale = ContentScale.Crop,
         contentDescription = null,

@@ -38,6 +38,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import coil.size.Size
 import coil.transform.CircleCropTransformation
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
@@ -515,6 +516,7 @@ class HistoryScreen(
           .data(iconUrl)
           .crossfade(true)
           .transformations(circleCropTransformation)
+          .size(Size.ORIGINAL)
           .build(),
         contentScale = ContentScale.Crop,
         contentDescription = null,

@@ -24,6 +24,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
@@ -95,6 +96,7 @@ private fun AttachedMediaThumbnail(
       model = ImageRequest.Builder(context)
         .data(attachedMediaFile)
         .crossfade(true)
+        .size(Size.ORIGINAL)
         .build(),
       contentDescription = null,
       contentScale = ContentScale.Crop,

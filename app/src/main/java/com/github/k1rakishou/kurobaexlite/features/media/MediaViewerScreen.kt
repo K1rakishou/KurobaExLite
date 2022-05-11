@@ -51,6 +51,7 @@ import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import coil.size.Size
 import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
@@ -103,6 +104,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import logcat.LogPriority
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -126,7 +128,6 @@ class MediaViewerScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.Pop
 
-  @OptIn(ExperimentalPagerApi::class)
   @Composable
   override fun CardContent() {
     val chanTheme = LocalChanTheme.current
@@ -168,6 +169,12 @@ class MediaViewerScreen(
           coroutineScope = coroutineScope,
           insets = insets,
           onPreviewLoadingFinished = { postImage ->
+            logcat(TAG, LogPriority.VERBOSE) {
+              "onPreviewLoadingFinished() " +
+                "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
+                "got '${postImage.fullImageAsString}'"
+            }
+
             if (clickedThumbnailBounds == null || postImage == clickedThumbnailBounds?.postImage) {
               previewLoadingFinished = true
             }
@@ -180,6 +187,10 @@ class MediaViewerScreen(
         clickedThumbnailBounds = clickedThumbnailBounds,
         onTransitionFinished = {
           if (!transitionFinished) {
+            logcat(TAG, LogPriority.VERBOSE) {
+              "onTransitionFinished() for image '${clickedThumbnailBounds?.postImage?.fullImageAsString}'"
+            }
+
             animatable.snapTo(1f)
             transitionFinished = true
           }
@@ -442,7 +453,7 @@ class MediaViewerScreen(
 
           success = true
         } catch (error: Throwable) {
-          logcatError { "error: ${error.errorMessageOrClassName()}" }
+          logcatError(TAG) { "TransitionPreview() loadThumbnailBitmap() error: ${error.errorMessageOrClassName()}" }
           success = false
         } finally {
           if (!success) {
@@ -1063,6 +1074,7 @@ class MediaViewerScreen(
       model = ImageRequest.Builder(context)
         .data(postImageData.thumbnailAsUrl)
         .crossfade(false)
+        .size(Size.ORIGINAL)
         .build(),
       contentDescription = null,
       contentScale = ContentScale.Fit,
@@ -1084,6 +1096,8 @@ class MediaViewerScreen(
             if (state is AsyncImagePainter.State.Success || state is AsyncImagePainter.State.Error) {
               if (!callbackCalled) {
                 callbackCalled = true
+
+                logcat(TAG) { "onPreviewLoadingFinished() url=\'${postImageData.fullImageAsString}\'" }
                 onPreviewLoadingFinished(postImageData)
               }
             }
