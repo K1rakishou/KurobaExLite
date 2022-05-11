@@ -50,6 +50,7 @@ class MainNavigationRouter : NavigationRouter(
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
 
     _navigationScreensStack.add(newComposeScreen)
+    newComposeScreen.onCreate()
     logcat.logcat(tag = TAG) { "pushScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
@@ -127,6 +128,7 @@ class MainNavigationRouter : NavigationRouter(
     }
 
     _floatingScreensStack.add(floatingComposeScreen)
+    floatingComposeScreen.onCreate()
     logcat.logcat(tag = TAG) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
@@ -191,7 +193,7 @@ class MainNavigationRouter : NavigationRouter(
       return
     }
 
-    screenDestroyCallbacks.forEach { callback -> callback(screenUpdate.screen.screenKey) }
+    screenUpdate.screen.onDispose()
 
     if (navigationScreensStack.isEmpty() && floatingScreensStack.isEmpty()) {
       _screenUpdatesFlow.value = null

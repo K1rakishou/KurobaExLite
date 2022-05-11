@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
@@ -53,11 +52,6 @@ abstract class FloatingComposeScreen(
     val localTextInputService = LocalTextInputService.current
 
     HandleBackPresses { onFloatingControllerBackPressed() }
-
-    // However when it comes to screen destroy events, we need use the MainScreen's router since that's
-    // where all the floating screens are being added to.
-    val mainRouter = remember { navigationRouter.getRouterByKey(MainScreen.SCREEN_KEY) }
-    mainRouter.HandleScreenDestroyEvents(screenKey = screenKey) { onDestroy() }
 
     // Make sure the keyboard is getting closed when a floating screen is destroyed
     DisposableEffect(
@@ -172,10 +166,6 @@ abstract class FloatingComposeScreen(
   @CallSuper
   open suspend fun onFloatingControllerBackPressed(): Boolean {
     return stopPresenting()
-  }
-
-  open fun onDestroy() {
-
   }
 
   protected fun stopPresenting(): Boolean {

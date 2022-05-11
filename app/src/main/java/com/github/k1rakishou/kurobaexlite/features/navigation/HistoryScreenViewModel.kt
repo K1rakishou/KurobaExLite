@@ -17,7 +17,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 
@@ -50,7 +49,7 @@ class HistoryScreenViewModel : BaseViewModel() {
     super.onViewModelReady()
 
     viewModelScope.launch {
-      navigationHistoryManager.navigationUpdates.collectLatest { navigationUpdate ->
+      navigationHistoryManager.navigationUpdates.collect { navigationUpdate ->
         processNavigationUpdates(navigationUpdate)
       }
     }

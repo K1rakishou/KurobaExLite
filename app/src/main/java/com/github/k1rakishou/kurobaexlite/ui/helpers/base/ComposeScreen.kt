@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.base
 
 import androidx.activity.ComponentActivity
+import androidx.annotation.CallSuper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -11,6 +12,8 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import logcat.LogPriority
+import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 abstract class ComposeScreen(
@@ -35,6 +38,16 @@ abstract class ComposeScreen(
         onDispose { backPressHandlers -= backPressHandler }
       }
     )
+  }
+
+  @CallSuper
+  open fun onCreate() {
+    logcat(TAG, LogPriority.VERBOSE) { "onCreate(${screenKey.key})" }
+  }
+
+  @CallSuper
+  open suspend fun onDispose() {
+    logcat(TAG, LogPriority.VERBOSE) { "onDispose(${screenKey.key})" }
   }
 
   @Composable
@@ -67,6 +80,10 @@ abstract class ComposeScreen(
     }
 
     return false
+  }
+
+  companion object {
+    private const val TAG = "ComposeScreen"
   }
 
 }

@@ -1,8 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
 import android.content.Intent
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
@@ -35,28 +33,6 @@ open class NavigationRouter(
   val intentsFlow: SharedFlow<Intent>
     get() = _intentsFlow.asSharedFlow()
 
-  protected val screenDestroyCallbacks = mutableListOf<suspend (ScreenKey) -> Unit>()
-
-  @Composable
-  fun HandleScreenDestroyEvents(screenKey: ScreenKey, onScreenDestroyed: suspend () -> Unit) {
-    DisposableEffect(
-      key1 = screenKey,
-      effect = {
-        var notified = false
-
-        val callback: suspend (ScreenKey) -> Unit = { destroyedScreenKey ->
-          if (destroyedScreenKey == screenKey && !notified) {
-            notified = true
-            onScreenDestroyed()
-          }
-        }
-
-        screenDestroyCallbacks += callback
-        onDispose { screenDestroyCallbacks -= callback }
-      }
-    )
-  }
-
   open fun pushScreen(newComposeScreen: ComposeScreen): Boolean {
     if (newComposeScreen is FloatingComposeScreen) {
       error("FloatingComposeScreens must be added via presentScreen() function!")
@@ -76,6 +52,7 @@ open class NavigationRouter(
     )
 
     _navigationScreensStack.add(newComposeScreen)
+    newComposeScreen.onCreate()
     logcat.logcat(tag = TAG) { "pushScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
@@ -239,10 +216,6 @@ open class NavigationRouter(
     }
   }
 
-  fun onDestroy() {
-    childRouters.values.forEach { childRouter -> childRouter.onDestroy() }
-  }
-
   fun isInsideScreen(lookupScreenKey: ScreenKey): Boolean {
     if (_navigationScreensStack.any { composeScreen -> composeScreen.screenKey == lookupScreenKey }) {
       return true
@@ -260,7 +233,7 @@ open class NavigationRouter(
       return
     }
 
-    screenDestroyCallbacks.forEach { callback -> callback(screenUpdate.screen.screenKey) }
+    screenUpdate.screen.onDispose()
 
     if (_navigationScreensStack.isEmpty()) {
       _screenUpdatesFlow.value = null

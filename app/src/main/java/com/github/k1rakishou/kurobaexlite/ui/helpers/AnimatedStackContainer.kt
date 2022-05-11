@@ -15,13 +15,9 @@ import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.rememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.removeIfKt
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 
 @Composable
-fun <T> AnimateableStackContainer(
+fun <T : DisposableElement> AnimateableStackContainer(
   state: AnimateableStackContainerState<T>,
   content: @Composable (T) -> Unit
 ) {
@@ -62,7 +58,7 @@ fun <T> AnimateableStackContainer(
 }
 
 @Composable
-fun <T> rememberAnimateableStackContainerState(
+fun <T : DisposableElement> rememberAnimateableStackContainerState(
   screenKey: ScreenKey,
   initialValues: List<StackContainerElementWrapper<T>> = emptyList()
 ): AnimateableStackContainerState<T> {
@@ -80,7 +76,7 @@ class AnimateableStackContainerViewModel : ViewModel() {
 }
 
 @Composable
-private fun <T> StackContainerTransition(
+private fun <T : DisposableElement> StackContainerTransition(
   animationDuration: Int = 250,
   stackContainerAnimation: StackContainerAnimation<T>,
   onAnimationFinished: suspend () -> Unit,
@@ -161,7 +157,7 @@ private fun <T> StackContainerTransition(
   }
 }
 
-private suspend fun <T> animateInternal(
+private suspend fun <T : DisposableElement> animateInternal(
   stackContainerAnimation: StackContainerAnimation<T>,
   animationDuration: Int,
   onCanRenderChanged: (Boolean) -> Unit,
@@ -256,13 +252,17 @@ private suspend fun <T> animateInternal(
   }
 }
 
-abstract class StackContainerElementWrapper<T>(
+interface DisposableElement {
+  fun onDispose()
+}
+
+abstract class StackContainerElementWrapper<T : DisposableElement>(
   val element: T
 ) {
   abstract val key: Any
 }
 
-class SimpleStackContainerElement<T>(
+class SimpleStackContainerElement<T : DisposableElement>(
   element: T,
   private val keyExtractor: (T) -> Any
 ) : StackContainerElementWrapper<T>(element) {
@@ -272,7 +272,7 @@ class SimpleStackContainerElement<T>(
 }
 
 @Stable
-class AnimateableStackContainerState<T>(
+class AnimateableStackContainerState<T : DisposableElement>(
   initialValues: List<StackContainerElementWrapper<T>>,
   private val duplicateChecker: MutableSet<Any> = mutableSetOf(),
   private val _addedElementWrappers: SnapshotStateList<StackContainerAnimation<T>> = mutableStateListOf(),
@@ -285,29 +285,11 @@ class AnimateableStackContainerState<T>(
   val addedElementsCount: Int
     get() = _addedElementWrappers.size
 
-  private val _disposingElements = MutableSharedFlow<T>(extraBufferCapacity = Channel.UNLIMITED)
-  val disposingElements: SharedFlow<T>
-    get() = _disposingElements.asSharedFlow()
-
-  private val data = mutableMapOf<Any, Any?>()
-
   init {
     initialValues.forEach { initialValue ->
       _addedElementWrappers += StackContainerAnimation.Set(initialValue)
       duplicateChecker.add(initialValue.key)
     }
-  }
-
-  fun storeData(key: Any, value: Any?) {
-    data[key] = value
-  }
-
-  fun removeData(key: Any) {
-    data.remove(key)
-  }
-
-  fun <T : Any?> readData(key: Any): T {
-    return data[key] as T
   }
 
   fun set(elementWrapper: StackContainerElementWrapper<T>) {
@@ -353,17 +335,24 @@ class AnimateableStackContainerState<T>(
     _animatingElements.add(StackContainerAnimation.Push<T>(elementWrapper))
   }
 
-  suspend fun popTillRoot() {
+  fun popAll() {
     _animatingElements.clear()
 
-    while (addedElementsCount > 1) {
+    while (addedElementWrappers.isNotEmpty()) {
       removeTop(withAnimation = false)
     }
   }
 
-  suspend fun removeTop(withAnimation: Boolean = true): Boolean {
+  fun removeTop(
+    withAnimation: Boolean = true,
+    predicate: (Any) -> Boolean = { true }
+  ): Boolean {
     val topElement = _addedElementWrappers.lastOrNull()
       ?: return false
+
+    if (!predicate(topElement.elementWrapper.key)) {
+      return false
+    }
 
     if (!duplicateChecker.remove(topElement.elementWrapper.key)) {
       return false
@@ -374,7 +363,7 @@ class AnimateableStackContainerState<T>(
       duplicateChecker.remove(topElement.elementWrapper.key)
 
       if (removed) {
-        _disposingElements.emit(topElement.elementWrapper.element)
+        topElement.elementWrapper.element.onDispose()
       }
 
       return true
@@ -432,14 +421,14 @@ class AnimateableStackContainerState<T>(
     }
   }
 
-  internal suspend fun onAnimationFinished() {
+  internal fun onAnimationFinished() {
     if (animatingElements.isEmpty()) {
       return
     }
 
     animatingElements
       .filter { stackContainerAnimation -> stackContainerAnimation.isDisposing }
-      .forEach { disposingElement -> _disposingElements.emit(disposingElement.elementWrapper.element) }
+      .forEach { disposingElement -> disposingElement.elementWrapper.element.onDispose() }
 
     Snapshot.withMutableSnapshot {
       for (animatingElement in animatingElements) {
@@ -453,7 +442,6 @@ class AnimateableStackContainerState<T>(
                 if (animatingElement.fadeType.isRemoving) {
                   _addedElementWrappers
                     .removeIfKt { it.elementWrapper.key == animatingElement.elementWrapper.key }
-                  _disposingElements.tryEmit(animatingElement.elementWrapper.element)
                 } else {
                   _addedElementWrappers.add(animatingElement)
                 }
@@ -463,7 +451,6 @@ class AnimateableStackContainerState<T>(
           is StackContainerAnimation.Pop -> {
             _addedElementWrappers
               .removeIfKt { it.elementWrapper.key == animatingElement.elementWrapper.key }
-            _disposingElements.tryEmit(animatingElement.elementWrapper.element)
           }
           is StackContainerAnimation.Push -> {
             _addedElementWrappers.add(animatingElement)
@@ -471,7 +458,6 @@ class AnimateableStackContainerState<T>(
           is StackContainerAnimation.Remove -> {
             _addedElementWrappers
               .removeIfKt { it.elementWrapper.key == animatingElement.elementWrapper.key }
-            _disposingElements.tryEmit(animatingElement.elementWrapper.element)
           }
           is StackContainerAnimation.Set -> {
             _addedElementWrappers.add(animatingElement)
@@ -485,7 +471,7 @@ class AnimateableStackContainerState<T>(
 
 }
 
-sealed class StackContainerAnimation<T> {
+sealed class StackContainerAnimation<T : DisposableElement> {
   abstract val elementWrapper: StackContainerElementWrapper<T>
 
   val isDisposing: Boolean
@@ -499,31 +485,31 @@ sealed class StackContainerAnimation<T> {
       }
     }
 
-  data class Set<T>(
+  data class Set<T : DisposableElement>(
     override val elementWrapper: StackContainerElementWrapper<T>
   ) : StackContainerAnimation<T>() {
     override fun toString(): String = "Set(key=${elementWrapper.key})"
   }
 
-  data class Remove<T>(
+  data class Remove<T : DisposableElement>(
     override val elementWrapper: StackContainerElementWrapper<T>
   ) : StackContainerAnimation<T>() {
     override fun toString(): String = "Remove(key=${elementWrapper.key})"
   }
 
-  data class Push<T>(
+  data class Push<T : DisposableElement>(
     override val elementWrapper: StackContainerElementWrapper<T>
   ) : StackContainerAnimation<T>() {
     override fun toString(): String = "Push(key=${elementWrapper.key})"
   }
 
-  data class Pop<T>(
+  data class Pop<T : DisposableElement>(
     override val elementWrapper: StackContainerElementWrapper<T>
   ) : StackContainerAnimation<T>() {
     override fun toString(): String = "Pop(key=${elementWrapper.key})"
   }
 
-  data class Fade<T>(
+  data class Fade<T : DisposableElement>(
     override val elementWrapper: StackContainerElementWrapper<T>,
     val fadeType: FadeType
   ) : StackContainerAnimation<T>() {

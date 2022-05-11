@@ -298,7 +298,9 @@ class PopupRepliesScreen(
     return super.onFloatingControllerBackPressed()
   }
 
-  override fun onDestroy() {
+  override suspend fun onDispose() {
+    super.onDispose()
+
     popupRepliesScreenViewModel.clearPostReplyChainStack()
   }
 

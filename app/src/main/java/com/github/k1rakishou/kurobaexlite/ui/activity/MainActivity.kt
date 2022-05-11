@@ -89,7 +89,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   }
 
   override fun onDestroy() {
-    mainActivityViewModel.rootNavigationRouter.onDestroy()
     coroutineScope.cancelChildren()
     clickedThumbnailBoundsStorage.clear()
     localFilePicker.detachActivity()

@@ -116,35 +116,33 @@ class ReplyLayoutState(
   }
 
   private fun restoreFromBundle() {
-    Snapshot.withMutableSnapshot {
-      val replyTextFromBundle = bundle.getString(replyTextKey) ?: ""
+    val replyTextFromBundle = bundle.getString(replyTextKey) ?: ""
 
-      val textFieldValue = TextFieldValue(
-        text = replyTextFromBundle,
-        selection = TextRange(replyTextFromBundle.length)
-      )
+    val textFieldValue = TextFieldValue(
+      text = replyTextFromBundle,
+      selection = TextRange(replyTextFromBundle.length)
+    )
 
-      onReplyTextChanged(textFieldValue)
+    onReplyTextChanged(textFieldValue)
 
-      _replyLayoutVisibilityState.value = bundle.getInt(replyLayoutVisibilityKey)
-        .let { ReplyLayoutVisibility.fromRawValue(it) }
+    _replyLayoutVisibilityState.value = bundle.getInt(replyLayoutVisibilityKey)
+      .let { ReplyLayoutVisibility.fromRawValue(it) }
 
-      bundle.getParcelableArrayList<AttachedMedia>(attachedMediaListKey)?.let { prevAttachedImagePathList ->
-        val prevAttachedImages = prevAttachedImagePathList
-          .filter { attachedMedia -> attachedMedia.exists() }
+    bundle.getParcelableArrayList<AttachedMedia>(attachedMediaListKey)?.let { prevAttachedImagePathList ->
+      val prevAttachedImages = prevAttachedImagePathList
+        .filter { attachedMedia -> attachedMedia.exists() }
 
-        _attachedMediaList.clear()
-        _attachedMediaList.addAll(prevAttachedImages)
-      }
+      _attachedMediaList.clear()
+      _attachedMediaList.addAll(prevAttachedImages)
+    }
 
-      onReplyLayoutVisibilityStateChanged()
+    onReplyLayoutVisibilityStateChanged()
 
-      logcat(TAG) {
-        "restoreFromBundle() " +
-          "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, " +
-          "replyText=\'${replyTextFromBundle.take(32)}\', " +
-          "attachedImages=\'${_attachedMediaList.joinToString(transform = { it.path })}\'"
-      }
+    logcat(TAG) {
+      "restoreFromBundle() " +
+        "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, " +
+        "replyText=\'${replyTextFromBundle.take(32)}\', " +
+        "attachedImages=\'${_attachedMediaList.joinToString(transform = { it.path })}\'"
     }
   }
 

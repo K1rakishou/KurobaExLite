@@ -4,12 +4,21 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
 
 abstract class ComposeScreenWithToolbar(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
+
+  abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<*>
+
+  override suspend fun onDispose() {
+    super.onDispose()
+
+    kurobaToolbarContainerState.popChildToolbars()
+  }
 
   @Composable
   abstract fun Toolbar(boxScope: BoxScope)

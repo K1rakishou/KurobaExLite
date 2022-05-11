@@ -12,8 +12,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
@@ -23,11 +23,14 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenDefaultToolbar
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.sort.SortCatalogThreadsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
@@ -40,18 +43,13 @@ import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostScreenToolbarInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
@@ -92,24 +90,74 @@ class CatalogScreen(
   private val replyLayoutState: IReplyLayoutState
     get() = replyLayoutViewModel.getOrCreateReplyLayoutState(catalogScreenViewModel.chanDescriptor)
 
-  private val replyLayoutToolbarState = KurobaToolbarState(
-    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_close_24),
-    middlePartInfo = MiddlePartInfo(centerContent = false),
-    rightPartInfo = RightPartInfo(
-      ToolbarIcon(ReplyToolbarIcons.PickLocalFile, R.drawable.ic_baseline_attach_file_24)
-    )
-  )
+  private val defaultToolbar by lazy {
+    CatalogScreenDefaultToolbar(
+      catalogScreenViewModel = catalogScreenViewModel,
+      parsedPostDataCache = parsedPostDataCache,
+      onBackPressed = { globalUiInfoManager.openDrawer() },
+      showCatalogSelectionScreen = {
+        val catalogSelectionScreen = CatalogSelectionScreen(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
+        )
+        navigationRouter.pushScreen(catalogSelectionScreen)
+      },
+      showSortCatalogThreadsScreen = {
+        val sortCatalogThreadsScreen = SortCatalogThreadsScreen(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          onApplied = { catalogScreenViewModel.onCatalogSortChanged() }
+        )
 
-  private val catalogToolbarState = KurobaToolbarState(
-    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_dehaze_24),
-    middlePartInfo = MiddlePartInfo(centerContent = true),
-    rightPartInfo = RightPartInfo(
-      ToolbarIcon(CatalogToolbarIcons.Search, R.drawable.ic_baseline_search_24, false),
-      ToolbarIcon(CatalogToolbarIcons.Sort, R.drawable.ic_baseline_sort_24, false),
-      ToolbarIcon(CatalogToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
-    ),
-    postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = true)
-  )
+        navigationRouter.presentScreen(sortCatalogThreadsScreen)
+      },
+      showOverflowMenu = {
+        navigationRouter.presentScreen(
+          FloatingMenuScreen(
+            floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            menuItems = floatingMenuItems,
+            onMenuItemClicked = { menuItem ->
+              catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(
+                navigationRouter = navigationRouter,
+                menuItem = menuItem
+              )
+            }
+          )
+        )
+      },
+      showLocalSearchToolbar = {
+        kurobaToolbarContainerState.fadeInToolbar(localSearchToolbar)
+      }
+    )
+  }
+
+  private val replyToolbar by lazy {
+    CatalogScreenReplyToolbar(
+      threadScreenViewModel = threadScreenViewModel,
+      closeReplyLayout = { replyLayoutState.onBackPressed() },
+      pickLocalFile = {
+        val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+          ?: return@CatalogScreenReplyToolbar
+
+        replyLayoutViewModel.onPickFileRequested(catalogDescriptor)
+      }
+    )
+  }
+
+  private val localSearchToolbar by lazy {
+    PostsScreenLocalSearchToolbar(
+      onSearchQueryUpdated = { searchQuery ->
+        globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
+        catalogScreenViewModel.updateSearchQuery(searchQuery)
+      },
+      closeSearch = { kurobaToolbarContainerState.popToolbar(PostsScreenLocalSearchToolbar.key) }
+    )
+  }
+
+  override val kurobaToolbarContainerState = KurobaToolbarContainerState<ChildToolbar>()
 
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
@@ -156,158 +204,34 @@ class CatalogScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
-    val mainUiLayoutMode = mainUiLayoutModeMut ?: return
-
-    val catalogDescriptor by catalogScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
-    val replyLayoutVisibility by replyLayoutStateByDescriptor(catalogDescriptor).replyLayoutVisibilityState
-
-    if (replyLayoutVisibility != ReplyLayoutVisibility.Closed) {
-      ReplyLayoutToolbar(mainUiLayoutMode)
-    } else {
-      CatalogScreenToolbar(mainUiLayoutMode)
-    }
-  }
-
-  @Composable
-  private fun ReplyLayoutToolbar(mainUiLayoutMode: MainUiLayoutMode) {
-    val context = LocalContext.current
-
-    val currentCatalogDescriptorMut by threadScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
-    val currentCatalogDescriptor = currentCatalogDescriptorMut
-
-    LaunchedEffect(
-      key1 = currentCatalogDescriptor,
-      block = {
-        if (currentCatalogDescriptor == null) {
-          return@LaunchedEffect
-        }
-
-        replyLayoutToolbarState.toolbarTitleState.value = context.resources.getString(
-          R.string.catalog_new_thread_on_board,
-          currentCatalogDescriptor.boardCode
-        )
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        replyLayoutToolbarState.toolbarIconClickEventFlow.collect { key ->
-          when (key as ReplyToolbarIcons) {
-            ReplyToolbarIcons.PickLocalFile -> {
-              val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
-                ?: return@collect
-
-              replyLayoutViewModel.onPickFileRequested(catalogDescriptor)
-            }
-          }
-        }
-      }
-    )
-
-    KurobaToolbar(
+    KurobaToolbarContainer(
       screenKey = screenKey,
-      kurobaToolbarState = replyLayoutToolbarState,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, globalUiInfoManager.currentPage()) },
-      onLeftIconClicked = { replyLayoutState.onBackPressed() },
-      onMiddleMenuClicked = null,
-      onSearchQueryUpdated = null
-    )
-  }
+      kurobaToolbarContainerState = kurobaToolbarContainerState,
+      canProcessBackEvent = {
+        val mainUiLayoutMode = globalUiInfoManager.currentUiLayoutModeState.value
+          ?: return@KurobaToolbarContainer false
 
-  @Composable
-  private fun CatalogScreenToolbar(
-    mainUiLayoutMode: MainUiLayoutMode
-  ) {
-    val screenContentLoaded by screenContentLoadedFlow.collectAsState()
-
-    LaunchedEffect(
-      key1 = screenContentLoaded,
-      block = {
-        catalogToolbarState.rightPartInfo?.let { rightPartInfo ->
-          rightPartInfo.toolbarIcons.forEach { toolbarIcon ->
-            if (toolbarIcon.key == CatalogToolbarIcons.Overflow) {
-              return@forEach
-            }
-
-            toolbarIcon.iconVisible.value = screenContentLoaded
-          }
-        }
-      }
-    )
-
-    UpdateToolbarTitle(
-      parsedPostDataCache = parsedPostDataCache,
-      postScreenState = catalogScreenViewModel.postScreenState,
-      kurobaToolbarState = catalogToolbarState
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        catalogToolbarState.toolbarIconClickEventFlow.collect { key ->
-          when (key as CatalogToolbarIcons) {
-            CatalogToolbarIcons.Search -> catalogToolbarState.openSearch()
-            CatalogToolbarIcons.Sort -> {
-              val sortCatalogThreadsScreen = SortCatalogThreadsScreen(
-                componentActivity = componentActivity,
-                navigationRouter = navigationRouter,
-                onApplied = { catalogScreenViewModel.onCatalogSortChanged() }
-              )
-
-              navigationRouter.presentScreen(sortCatalogThreadsScreen)
-            }
-            CatalogToolbarIcons.Overflow -> {
-              navigationRouter.presentScreen(
-                FloatingMenuScreen(
-                  floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
-                  componentActivity = componentActivity,
-                  navigationRouter = navigationRouter,
-                  menuItems = floatingMenuItems,
-                  onMenuItemClicked = { menuItem ->
-                    catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(
-                      navigationRouter = navigationRouter,
-                      menuItem = menuItem
-                    )
-                  }
-                )
-              )
-            }
-          }
-        }
-      }
-    )
-
-    KurobaToolbar(
-      screenKey = screenKey,
-      kurobaToolbarState = catalogToolbarState,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, globalUiInfoManager.currentPage()) },
-      onLeftIconClicked = { globalUiInfoManager.openDrawer() },
-      onMiddleMenuClicked = {
-        val catalogSelectionScreen = CatalogSelectionScreen(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
+        return@KurobaToolbarContainer canProcessBackEvent(
+          uiLayoutMode = mainUiLayoutMode,
+          currentPage = globalUiInfoManager.currentPage()
         )
-
-        navigationRouter.pushScreen(catalogSelectionScreen)
       },
-      onSearchQueryUpdated = { searchQuery ->
-        globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
-        catalogScreenViewModel.updateSearchQuery(searchQuery)
-      }
     )
   }
 
   @Composable
   override fun HomeNavigationScreenContent() {
+    LaunchedEffect(
+      key1 = Unit,
+      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
+    )
+
     HandleBackPresses {
       if (replyLayoutState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
-      if (catalogToolbarState.onBackPressed()) {
+      if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
@@ -471,6 +395,29 @@ class CatalogScreen(
       }
     )
 
+    val currentCatalogDescriptor by threadScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
+
+    LaunchedEffect(
+      key1 = currentCatalogDescriptor,
+      block = {
+        snapshotFlow {
+          replyLayoutViewModel.getOrCreateReplyLayoutState(currentCatalogDescriptor)
+            .replyLayoutVisibilityState
+            .value
+        }.collect { replyLayoutVisibility ->
+          when (replyLayoutVisibility) {
+            ReplyLayoutVisibility.Closed -> {
+              kurobaToolbarContainerState.popToolbar(CatalogScreenReplyToolbar.key)
+            }
+            ReplyLayoutVisibility.Opened,
+            ReplyLayoutVisibility.Expanded -> {
+              kurobaToolbarContainerState.fadeInToolbar(replyToolbar)
+            }
+          }
+        }
+      }
+    )
+
     if (mainUiLayoutMode == MainUiLayoutMode.Split) {
       PostsScreenFloatingActionButton(
         screenKey = screenKey,
@@ -518,23 +465,6 @@ class CatalogScreen(
       isTablet = globalUiInfoManager.isTablet,
       kurobaSnackbarState = kurobaSnackbarState
     )
-  }
-
-  @Composable
-  private fun replyLayoutStateByDescriptor(chanDescriptor: ChanDescriptor?): IReplyLayoutState {
-    return remember(key1 = chanDescriptor) {
-      replyLayoutViewModel.getOrCreateReplyLayoutState(chanDescriptor)
-    }
-  }
-
-  private enum class ReplyToolbarIcons {
-    PickLocalFile
-  }
-
-  private enum class CatalogToolbarIcons {
-    Search,
-    Sort,
-    Overflow
   }
 
   companion object {

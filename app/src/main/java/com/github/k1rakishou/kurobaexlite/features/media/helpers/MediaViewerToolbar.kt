@@ -14,17 +14,20 @@ import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.util.Locale
 
 private enum class ToolbarIcons {
-  DownloadMedia
+  Back,
+  DownloadMedia,
+  Overflow
 }
 
 @OptIn(ExperimentalPagerApi::class)
@@ -101,21 +104,29 @@ private fun MediaToolbar(
   onDownloadMediaClicked: (IPostImage) -> Unit,
   onBackPressed: () -> Unit
 ) {
-  val kurobaToolbarState = remember {
-    return@remember KurobaToolbarState(
-      leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
-      middlePartInfo = MiddlePartInfo(centerContent = false),
-      rightPartInfo = RightPartInfo(
-        ToolbarIcon(ToolbarIcons.DownloadMedia, R.drawable.ic_baseline_download_24)
-      )
-    )
+  val componentActivity = LocalComponentActivity.current
+
+  val kurobaToolbarContainerState = remember {
+    KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>()
+  }
+
+  val simpleToolbarState = remember {
+    return@remember SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
+      .titleId(R.string.history_screen_toolbar_title)
+      .leftIcon(ToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(ToolbarIcon(key = ToolbarIcons.DownloadMedia, drawableId = R.drawable.ic_baseline_download_24))
+      .addRightIcon(ToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .build()
   }
 
   LaunchedEffect(
     key1 = Unit,
     block = {
-      kurobaToolbarState.toolbarIconClickEventFlow.collect { key ->
-        when (key as ToolbarIcons) {
+      simpleToolbarState.iconClickEvents.collect { key ->
+        when (key) {
+          ToolbarIcons.Back -> {
+            onBackPressed()
+          }
           ToolbarIcons.DownloadMedia -> {
             mediaViewerScreenState.images?.let { images ->
               val postImageToDownload = images.getOrNull(currentPagerPage)?.postImage
@@ -124,6 +135,9 @@ private fun MediaToolbar(
               onDownloadMediaClicked(postImageToDownload)
             }
           }
+          ToolbarIcons.Overflow -> {
+            // no-op
+          }
         }
       }
     }
@@ -131,26 +145,21 @@ private fun MediaToolbar(
 
   UpdateMediaViewerToolbarTitle(
     mediaViewerScreenState = mediaViewerScreenState,
-    kurobaToolbarState = kurobaToolbarState,
+    simpleToolbarState = simpleToolbarState,
     currentPagerPage = currentPagerPage
   )
 
-  KurobaToolbar(
+  KurobaToolbarContainer(
     screenKey = screenKey,
-    kurobaToolbarState = kurobaToolbarState,
+    kurobaToolbarContainerState = kurobaToolbarContainerState,
     canProcessBackEvent = { true },
-    onLeftIconClicked = { onBackPressed() },
-    onMiddleMenuClicked = {
-      // no-op
-    },
-    onSearchQueryUpdated = null,
   )
 }
 
 @Composable
 private fun UpdateMediaViewerToolbarTitle(
   mediaViewerScreenState: MediaViewerScreenState,
-  kurobaToolbarState: KurobaToolbarState,
+  simpleToolbarState: SimpleToolbarState<ToolbarIcons>,
   currentPagerPage: Int
 ) {
   val isLoaded = mediaViewerScreenState.isLoaded()
@@ -175,8 +184,8 @@ private fun UpdateMediaViewerToolbarTitle(
       Snapshot.withMutableSnapshot {
         val imagesCount = mediaViewerScreenState.images?.size
 
-        kurobaToolbarState.toolbarTitleState.value = HtmlUnescape.unescape(currentImageData.originalFileNameEscaped)
-        kurobaToolbarState.toolbarSubtitleState.value = formatImageInfo(
+        simpleToolbarState.toolbarTitleState.value = HtmlUnescape.unescape(currentImageData.originalFileNameEscaped)
+        simpleToolbarState.toolbarSubtitleState.value = formatImageInfo(
           currentPagerPage = currentPagerPage,
           imagesCount = imagesCount,
           currentImageData = currentImageData

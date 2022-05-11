@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -55,11 +56,10 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -92,75 +92,54 @@ class HistoryScreen(
   // TODO(KurobaEx): not implemented
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
-  private val historyToolbarState by lazy {
-    return@lazy KurobaToolbarState(
-      leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
-      middlePartInfo = MiddlePartInfo(centerContent = false),
-      rightPartInfo = RightPartInfo(
-        ToolbarIcon(HistoryToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
-      )
+  private val simpleToolbarState by lazy {
+    SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
+      .titleId(R.string.history_screen_toolbar_title)
+      .leftIcon(ToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(ToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .build()
+  }
+
+  private val defaultToolbar by lazy {
+    SimpleToolbar(
+      toolbarKey = "HistoryScreenToolbar",
+      simpleToolbarState = simpleToolbarState
     )
   }
 
+  override val kurobaToolbarContainerState by lazy { KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>() }
+
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val screenContentLoaded by screenContentLoadedFlow.collectAsState()
     val historyScreenOnLeftSideMut by appSettings.historyScreenOnLeftSide.listen().collectAsState(initial = null)
-    val historyScreenOnLeftSide = historyScreenOnLeftSideMut
+    val historyScreenOnLeftSideUpdated by rememberUpdatedState(newValue = historyScreenOnLeftSideMut)
 
     LaunchedEffect(
-      key1 = screenContentLoaded,
+      key1 = Unit,
       block = {
-        historyToolbarState.rightPartInfo?.let { rightPartInfo ->
-          rightPartInfo.toolbarIcons.forEach { toolbarIcon ->
-            if (toolbarIcon.key == HistoryToolbarIcons.Overflow) {
-              return@forEach
+        simpleToolbarState.iconClickEvents.collect { icon ->
+          when (icon) {
+            ToolbarIcons.Back -> {
+              if (!kurobaToolbarContainerState.onBackPressed()) {
+                if (historyScreenOnLeftSideUpdated == true) {
+                  globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
+                } else {
+                  globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
+                }
+              }
             }
-
-            toolbarIcon.iconVisible.value = screenContentLoaded
-          }
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        // TODO(KurobaEx):
-        historyToolbarState.toolbarTitleState.value = "History"
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        historyToolbarState.toolbarIconClickEventFlow.collect { key ->
-          when (key as HistoryToolbarIcons) {
-            HistoryToolbarIcons.Overflow -> {
-              // TODO(KurobaEx):
+            ToolbarIcons.Overflow -> {
+              // no-op
             }
           }
         }
       }
     )
 
-    KurobaToolbar(
+    KurobaToolbarContainer(
       screenKey = screenKey,
-      kurobaToolbarState = historyToolbarState,
-      canProcessBackEvent = { true },
-      onLeftIconClicked = {
-        if (historyScreenOnLeftSide == null) {
-          return@KurobaToolbar
-        }
-
-        if (historyScreenOnLeftSide) {
-          globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
-        } else {
-          globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
-        }
-      },
-      onMiddleMenuClicked = null,
-      onSearchQueryUpdated = null
+      kurobaToolbarContainerState = kurobaToolbarContainerState,
+      canProcessBackEvent = { true }
     )
   }
 
@@ -174,6 +153,11 @@ class HistoryScreen(
     val navigationHistoryList = historyScreenViewModel.navigationHistoryList
     val circleCropTransformation = remember { CircleCropTransformation() }
     val lazyListState = rememberLazyListState()
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
+    )
 
     LaunchedEffect(
       key1 = Unit,
@@ -553,7 +537,8 @@ class HistoryScreen(
     UndoNavHistoryDeletion
   }
 
-  private enum class HistoryToolbarIcons {
+  enum class ToolbarIcons {
+    Back,
     Overflow
   }
 

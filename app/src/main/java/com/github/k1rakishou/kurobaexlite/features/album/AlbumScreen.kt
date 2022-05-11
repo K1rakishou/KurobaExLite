@@ -45,10 +45,11 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -77,16 +78,43 @@ class AlbumScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-  private val kurobaToolbarState = KurobaToolbarState(
-    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
-    middlePartInfo = MiddlePartInfo(centerContent = false)
-  )
+  private val simpleToolbarState by lazy {
+    SimpleToolbarStateBuilder.Builder<ToolbarIcon>(componentActivity)
+      .titleId(R.string.album_screen_toolbar_title)
+      .leftIcon(ToolbarIcon(key = ToolbarIcon.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(ToolbarIcon(key = ToolbarIcon.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .build()
+  }
+
+  private val defaultToolbar by lazy {
+    SimpleToolbar(
+      toolbarKey = "AlbumScreenToolbar",
+      simpleToolbarState = simpleToolbarState
+    )
+  }
+
+  override val kurobaToolbarContainerState by lazy { KurobaToolbarContainerState<SimpleToolbar<ToolbarIcon>>() }
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    ScreenToolbar(
-      kurobaToolbarState = kurobaToolbarState,
-      onBackArrowClicked = { popScreen() }
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        simpleToolbarState.iconClickEvents.collect { icon ->
+          when (icon) {
+            ToolbarIcon.Back -> { onBackPressed() }
+            ToolbarIcon.Overflow -> {
+              // no-op
+            }
+          }
+        }
+      }
+    )
+
+    KurobaToolbarContainer(
+      screenKey = screenKey,
+      kurobaToolbarContainerState = kurobaToolbarContainerState,
+      canProcessBackEvent = { true }
     )
   }
 
@@ -101,8 +129,13 @@ class AlbumScreen(
       windowInsets.copy(newTop = windowInsets.top + toolbarHeight).asPaddingValues()
     }
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
+    )
+
     HandleBackPresses {
-      if (kurobaToolbarState.onBackPressed()) {
+      if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
@@ -260,27 +293,10 @@ class AlbumScreen(
     )
   }
 
-  @Composable
-  private fun ScreenToolbar(
-    kurobaToolbarState: KurobaToolbarState,
-    onBackArrowClicked: () -> Unit,
-  ) {
-    val toolbarTitle = stringResource(id = R.string.album_screen_toolbar_title)
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarState.toolbarTitleState.value = toolbarTitle })
-
-    KurobaToolbar(
-      screenKey = screenKey,
-      kurobaToolbarState = kurobaToolbarState,
-      canProcessBackEvent = { true },
-      onLeftIconClicked = onBackArrowClicked,
-      onMiddleMenuClicked = null,
-      onSearchQueryUpdated = null
-    )
+  enum class ToolbarIcon {
+    Back,
+    Overflow
   }
-
 
   companion object {
     val SCREEN_KEY = ScreenKey("AlbumScreen")

@@ -16,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
+import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
@@ -39,6 +40,7 @@ class CatalogScreenViewModel(
   private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
   private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
   private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
+  private val catalogManager: CatalogManager by inject(CatalogManager::class.java)
 
   private val catalogScreenState = CatalogScreenPostsState()
   private val updateChanCatalogViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
@@ -251,6 +253,13 @@ class CatalogScreenViewModel(
         onReloadFinished = { scrollTop() }
       )
     }
+  }
+
+  suspend fun isCatalogSearchSupported(): Boolean {
+    val descriptor = catalogDescriptor
+      ?: return false
+
+    return catalogManager.byCatalogDescriptor(descriptor)?.globalSearchSupported == true
   }
 
   override fun onPostScrollChanged(

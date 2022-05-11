@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
@@ -14,10 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun BoxScope.KurobaToolbarLayout(
+fun KurobaToolbarLayout(
   leftPart: (@Composable BoxScope.() -> Unit)? = null,
   middlePart: @Composable BoxScope.() -> Unit,
-  rightPart: (@Composable BoxScope.() -> Unit)?
+  rightPart: (@Composable RowScope.() -> Unit)?
 ) {
   Row(
     modifier = Modifier
@@ -46,9 +47,9 @@ fun BoxScope.KurobaToolbarLayout(
     Spacer(modifier = Modifier.width(8.dp))
 
     if (rightPart != null) {
-      Box(
+      Row(
         modifier = Modifier.fillMaxHeight().wrapContentWidth(),
-        contentAlignment = Alignment.CenterStart
+        verticalAlignment = Alignment.CenterVertically
       ) {
         rightPart()
       }

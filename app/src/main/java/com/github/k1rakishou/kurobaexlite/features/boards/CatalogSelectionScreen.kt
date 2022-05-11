@@ -38,11 +38,12 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleSearchToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -73,19 +74,54 @@ class CatalogSelectionScreen(
 
   private val searchQueryState = mutableStateOf<String?>(null)
 
-  private val kurobaToolbarState = KurobaToolbarState(
-    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_arrow_back_24),
-    middlePartInfo = MiddlePartInfo(centerContent = false),
-    rightPartInfo = RightPartInfo(
-      ToolbarIcon(ToolbarIcons.Search, R.drawable.ic_baseline_search_24)
+  private val simpleToolbarState by lazy {
+    SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
+      .titleId(R.string.board_selection_screen_toolbar_title)
+      .leftIcon(ToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(ToolbarIcon(key = ToolbarIcons.Search, drawableId = R.drawable.ic_baseline_search_24))
+      .addRightIcon(ToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .build()
+  }
+
+  private val defaultToolbar by lazy {
+    SimpleToolbar(
+      toolbarKey = "CatalogSelectionScreenToolbar",
+      simpleToolbarState = simpleToolbarState
     )
-  )
+  }
+
+  private val searchToolbar by lazy {
+    SimpleSearchToolbar(
+      onSearchQueryUpdated = { searchQuery -> searchQueryState.value = searchQuery },
+      closeSearch = { kurobaToolbarContainerState.popToolbar(SimpleSearchToolbar.key) }
+    )
+  }
+
+  override val kurobaToolbarContainerState by lazy { KurobaToolbarContainerState<ChildToolbar>() }
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    ScreenToolbar(
-      onBackArrowClicked = { popScreen() },
-      onSearchQueryUpdated = { updatedSearchQuery -> searchQueryState.value = updatedSearchQuery }
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        simpleToolbarState.iconClickEvents.collect { key ->
+          when (key) {
+            ToolbarIcons.Search -> {
+              kurobaToolbarContainerState.fadeInToolbar(searchToolbar)
+            }
+            ToolbarIcons.Back -> { onBackPressed() }
+            ToolbarIcons.Overflow -> {
+              // no-op
+            }
+          }
+        }
+      }
+    )
+
+    KurobaToolbarContainer(
+      screenKey = screenKey,
+      kurobaToolbarContainerState = kurobaToolbarContainerState,
+      canProcessBackEvent = { true }
     )
   }
 
@@ -96,7 +132,7 @@ class CatalogSelectionScreen(
     val chanTheme = LocalChanTheme.current
 
     HandleBackPresses {
-      if (kurobaToolbarState.onBackPressed()) {
+      if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
@@ -109,6 +145,11 @@ class CatalogSelectionScreen(
         snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
         snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
       }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
     )
 
     val siteKey = catalogDescriptor?.siteKey
@@ -160,10 +201,12 @@ class CatalogSelectionScreen(
           loadBoardsForSiteEvent = loadBoardsForSiteEvent,
           paddingValues = paddingValues,
           onBoardClicked = { clickedCatalogDescriptor ->
-            kurobaToolbarState.popChildToolbars()
+            coroutineScope.launch {
+              kurobaToolbarContainerState.popChildToolbars()
 
-            catalogScreenViewModel.loadCatalog(clickedCatalogDescriptor)
-            popScreen()
+              catalogScreenViewModel.loadCatalog(clickedCatalogDescriptor)
+              popScreen()
+            }
           }
         )
       }
@@ -349,41 +392,10 @@ class CatalogSelectionScreen(
     }
   }
 
-  @Composable
-  private fun ScreenToolbar(
-    onBackArrowClicked: () -> Unit,
-    onSearchQueryUpdated: (String?) -> Unit
-  ) {
-    val toolbarTitle = stringResource(id = R.string.board_selection_screen_toolbar_title)
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarState.toolbarTitleState.value = toolbarTitle }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        kurobaToolbarState.toolbarIconClickEventFlow.collect { key ->
-          when (key as ToolbarIcons) {
-            ToolbarIcons.Search -> kurobaToolbarState.openSearch()
-          }
-        }
-      }
-    )
-
-    KurobaToolbar(
-      screenKey = screenKey,
-      kurobaToolbarState = kurobaToolbarState,
-      canProcessBackEvent = { true },
-      onLeftIconClicked = onBackArrowClicked,
-      onMiddleMenuClicked = null,
-      onSearchQueryUpdated = onSearchQueryUpdated
-    )
-  }
-
   enum class ToolbarIcons {
-    Search
+    Back,
+    Search,
+    Overflow
   }
 
   companion object {

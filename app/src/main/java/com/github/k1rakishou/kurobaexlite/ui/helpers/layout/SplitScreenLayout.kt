@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -34,6 +35,8 @@ class SplitScreenLayout(
 
   // TODO(KurobaEx): not implemented
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
+
+  override val kurobaToolbarContainerState by lazy { KurobaToolbarContainerState<Nothing>() }
 
   override fun hasScreen(screenKey: ScreenKey): Boolean {
     return childScreens

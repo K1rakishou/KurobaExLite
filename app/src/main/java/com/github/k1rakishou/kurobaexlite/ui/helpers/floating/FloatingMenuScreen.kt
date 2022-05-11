@@ -56,21 +56,20 @@ class FloatingMenuScreen(
   override val screenKey: ScreenKey = floatingMenuScreenKey
   override val contentAlignment: Alignment = touchPositionDependantAlignment
 
-  override fun onDestroy() {
-    coroutineScope.launch {
-      val callbacksWereEmpty = callbacksToInvokeMap.isEmpty()
+  override suspend fun onDispose() {
+    super.onDispose()
 
-      callbacksToInvokeMap.values.forEach { menuItem ->
-        logcat(tag = "FloatingMenuScreen") { "calling onMenuItemClicked(${menuItem.menuItemKey})" }
-        onMenuItemClicked(menuItem)
-      }
+    val callbacksWereEmpty = callbacksToInvokeMap.isEmpty()
 
-      callbacksToInvokeMap.clear()
-      coroutineScope.cancel()
+    callbacksToInvokeMap.values.forEach { menuItem ->
+      logcat(tag = "FloatingMenuScreen") { "calling onMenuItemClicked(${menuItem.menuItemKey})" }
+      onMenuItemClicked(menuItem)
+    }
 
-      if (shouldCallOnDismiss && callbacksWereEmpty) {
-        onDismiss()
-      }
+    callbacksToInvokeMap.clear()
+
+    if (shouldCallOnDismiss && callbacksWereEmpty) {
+      onDismiss()
     }
   }
 

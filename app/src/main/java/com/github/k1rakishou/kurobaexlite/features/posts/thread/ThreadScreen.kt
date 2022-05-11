@@ -12,6 +12,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -22,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
@@ -29,6 +31,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.toolbar.ThreadScreenDefaultToolbar
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.toolbar.ThreadScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
@@ -36,18 +41,13 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.LeftIconInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.MiddlePartInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.PostScreenToolbarInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.RightPartInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
@@ -85,35 +85,61 @@ class ThreadScreen(
   private val replyLayoutState: IReplyLayoutState
     get() = replyLayoutViewModel.getOrCreateReplyLayoutState(threadScreenViewModel.chanDescriptor)
 
-  private val replyLayoutToolbarState = KurobaToolbarState(
-    leftIconInfo = LeftIconInfo(R.drawable.ic_baseline_close_24),
-    middlePartInfo = MiddlePartInfo(centerContent = false),
-    rightPartInfo = RightPartInfo(
-      ToolbarIcon(ReplyToolbarIcons.PickLocalFile, R.drawable.ic_baseline_attach_file_24)
-    )
-  )
-
-  private val threadToolbarState by lazy {
-    val mainUiLayoutMode = requireNotNull(globalUiInfoManager.currentUiLayoutModeState.value) {
-      "currentUiLayoutModeState is not initialized yet!"
-    }
-
-    val leftIconInfo = when (mainUiLayoutMode) {
-      MainUiLayoutMode.Phone -> LeftIconInfo(R.drawable.ic_baseline_arrow_back_24)
-      MainUiLayoutMode.Split -> null
-    }
-
-    return@lazy KurobaToolbarState(
-      leftIconInfo = leftIconInfo,
-      middlePartInfo = MiddlePartInfo(centerContent = false),
-      rightPartInfo = RightPartInfo(
-        ToolbarIcon(ThreadToolbarIcons.Search, R.drawable.ic_baseline_search_24, false),
-        ToolbarIcon(ThreadToolbarIcons.Bookmark, R.drawable.ic_baseline_bookmark_border_24, false),
-        ToolbarIcon(ThreadToolbarIcons.Overflow, R.drawable.ic_baseline_more_vert_24),
-      ),
-      postScreenToolbarInfo = PostScreenToolbarInfo(isCatalogScreen = false)
+  private val defaultToolbar by lazy {
+    ThreadScreenDefaultToolbar(
+      bookmarksManager = bookmarksManager,
+      threadScreenViewModel = threadScreenViewModel,
+      parsedPostDataCache = parsedPostDataCache,
+      globalUiInfoManager = globalUiInfoManager,
+      onBackPressed = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY, true) },
+      toggleBookmarkState = { threadScreenViewModel.bookmarkOrUnbookmarkThread() },
+      showLocalSearchToolbar = {
+        kurobaToolbarContainerState.fadeInToolbar(localSearchToolbar)
+      },
+      showOverflowMenu = {
+        navigationRouter.presentScreen(
+          FloatingMenuScreen(
+            floatingMenuKey = FloatingMenuScreen.THREAD_OVERFLOW,
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            menuItems = floatingMenuItems,
+            onMenuItemClicked = { menuItem ->
+              threadScreenToolbarActionHandler.processClickedToolbarMenuItem(
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter,
+                menuItem = menuItem
+              )
+            }
+          )
+        )
+      }
     )
   }
+
+  private val replyToolbar by lazy {
+    ThreadScreenReplyToolbar(
+      threadScreenViewModel = threadScreenViewModel,
+      closeReplyLayout = { replyLayoutState.onBackPressed() },
+      pickLocalFile = {
+        val threadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@ThreadScreenReplyToolbar
+
+        replyLayoutViewModel.onPickFileRequested(threadDescriptor)
+      }
+    )
+  }
+
+  private val localSearchToolbar by lazy {
+    PostsScreenLocalSearchToolbar(
+      onSearchQueryUpdated = { searchQuery ->
+        globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
+        threadScreenViewModel.updateSearchQuery(searchQuery)
+      },
+      closeSearch = { kurobaToolbarContainerState.popToolbar(PostsScreenLocalSearchToolbar.key) }
+    )
+  }
+
+  override val kurobaToolbarContainerState = KurobaToolbarContainerState<ChildToolbar>()
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
@@ -150,139 +176,18 @@ class ThreadScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
-    val mainUiLayoutMode = mainUiLayoutModeMut ?: return
-
-    val threadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
-    val replyLayoutVisibility by replyLayoutStateByDescriptor(threadDescriptor).replyLayoutVisibilityState
-
-    if (replyLayoutVisibility != ReplyLayoutVisibility.Closed) {
-      ReplyLayoutToolbar(mainUiLayoutMode)
-    } else {
-      ThreadScreenToolbar(mainUiLayoutMode)
-    }
-  }
-
-  @Composable
-  private fun ReplyLayoutToolbar(mainUiLayoutMode: MainUiLayoutMode) {
-    val context = LocalContext.current
-
-    val currentThreadDescriptorMut by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
-    val currentThreadDescriptor = currentThreadDescriptorMut
-
-    LaunchedEffect(
-      key1 = currentThreadDescriptor,
-      block = {
-        if (currentThreadDescriptor == null) {
-          return@LaunchedEffect
-        }
-
-        replyLayoutToolbarState.toolbarTitleState.value = context.resources.getString(
-          R.string.thread_new_reply,
-          currentThreadDescriptor.threadNo
-        )
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        replyLayoutToolbarState.toolbarIconClickEventFlow.collect { key ->
-          when (key as ReplyToolbarIcons) {
-            ReplyToolbarIcons.PickLocalFile -> {
-              val threadDescriptor = threadScreenViewModel.threadDescriptor
-                ?: return@collect
-
-              replyLayoutViewModel.onPickFileRequested(threadDescriptor)
-            }
-          }
-        }
-      }
-    )
-
-    KurobaToolbar(
+    KurobaToolbarContainer(
       screenKey = screenKey,
-      kurobaToolbarState = replyLayoutToolbarState,
-      canProcessBackEvent = { canProcessBackEvent(mainUiLayoutMode, globalUiInfoManager.currentPage()) },
-      onLeftIconClicked = { replyLayoutState.onBackPressed() },
-      onMiddleMenuClicked = null,
-      onSearchQueryUpdated = null
-    )
-  }
-
-  @Composable
-  private fun ThreadScreenToolbar(
-    mainUiLayoutMode: MainUiLayoutMode
-  ) {
-    val screenContentLoaded by screenContentLoadedFlow.collectAsState()
-
-    LaunchedEffect(
-      key1 = screenContentLoaded,
-      block = {
-        threadToolbarState.rightPartInfo?.let { rightPartInfo ->
-          rightPartInfo.toolbarIcons.forEach { toolbarIcon ->
-            if (toolbarIcon.key == ThreadToolbarIcons.Overflow) {
-              return@forEach
-            }
-
-            toolbarIcon.iconVisible.value = screenContentLoaded
-          }
-        }
-      }
-    )
-
-    UpdateToolbarTitle(
-      parsedPostDataCache = parsedPostDataCache,
-      postScreenState = threadScreenViewModel.postScreenState,
-      kurobaToolbarState = threadToolbarState
-    )
-
-    UpdateThreadBookmarkIcon()
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        threadToolbarState.toolbarIconClickEventFlow.collect { key ->
-          when (key as ThreadToolbarIcons) {
-            ThreadToolbarIcons.Bookmark -> threadScreenViewModel.bookmarkOrUnbookmarkThread()
-            ThreadToolbarIcons.Search -> threadToolbarState.openSearch()
-            ThreadToolbarIcons.Overflow -> {
-              navigationRouter.presentScreen(
-                FloatingMenuScreen(
-                  floatingMenuKey = FloatingMenuScreen.THREAD_OVERFLOW,
-                  componentActivity = componentActivity,
-                  navigationRouter = navigationRouter,
-                  menuItems = floatingMenuItems,
-                  onMenuItemClicked = { menuItem ->
-                    threadScreenToolbarActionHandler.processClickedToolbarMenuItem(
-                      componentActivity = componentActivity,
-                      navigationRouter = navigationRouter,
-                      menuItem = menuItem
-                    )
-                  }
-                )
-              )
-            }
-          }
-        }
-      }
-    )
-
-    KurobaToolbar(
-      screenKey = screenKey,
-      kurobaToolbarState = threadToolbarState,
+      kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = {
-        canProcessBackEvent(
-          mainUiLayoutMode,
-          globalUiInfoManager.currentPage()
+        val mainUiLayoutMode = globalUiInfoManager.currentUiLayoutModeState.value
+          ?: return@KurobaToolbarContainer false
+
+        return@KurobaToolbarContainer canProcessBackEvent(
+          uiLayoutMode = mainUiLayoutMode,
+          currentPage = globalUiInfoManager.currentPage()
         )
       },
-      onLeftIconClicked = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY) },
-      onMiddleMenuClicked = null,
-      onSearchQueryUpdated = { searchQuery ->
-        globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
-        threadScreenViewModel.updateSearchQuery(searchQuery)
-      }
     )
   }
 
@@ -293,7 +198,7 @@ class ThreadScreen(
         return@HandleBackPresses true
       }
 
-      if (threadToolbarState.onBackPressed()) {
+      if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
@@ -461,6 +366,34 @@ class ThreadScreen(
       }
     )
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
+    )
+
+    val currentThreadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
+
+    LaunchedEffect(
+      key1 = currentThreadDescriptor,
+      block = {
+        snapshotFlow {
+          replyLayoutViewModel.getOrCreateReplyLayoutState(currentThreadDescriptor)
+            .replyLayoutVisibilityState
+            .value
+        }.collect { replyLayoutVisibility ->
+          when (replyLayoutVisibility) {
+            ReplyLayoutVisibility.Closed -> {
+              kurobaToolbarContainerState.popToolbar(CatalogScreenReplyToolbar.key)
+            }
+            ReplyLayoutVisibility.Opened,
+            ReplyLayoutVisibility.Expanded -> {
+              kurobaToolbarContainerState.fadeInToolbar(replyToolbar)
+            }
+          }
+        }
+      }
+    )
+
     if (mainUiLayoutMode == MainUiLayoutMode.Split) {
       PostsScreenFloatingActionButton(
         screenKey = screenKey,
@@ -507,89 +440,6 @@ class ThreadScreen(
       isTablet = globalUiInfoManager.isTablet,
       kurobaSnackbarState = kurobaSnackbarState
     )
-  }
-
-  @Composable
-  private fun replyLayoutStateByDescriptor(chanDescriptor: ChanDescriptor?): IReplyLayoutState {
-    return remember(key1 = chanDescriptor) {
-      replyLayoutViewModel.getOrCreateReplyLayoutState(chanDescriptor)
-    }
-  }
-
-  @Composable
-  private fun UpdateThreadBookmarkIcon() {
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        threadScreenViewModel.currentlyOpenedThreadFlow.collect { currentlyOpenedThreadDescriptor ->
-          val currentThreadDescriptor = threadScreenViewModel.threadDescriptor
-            ?: return@collect
-
-          if (currentlyOpenedThreadDescriptor != currentThreadDescriptor) {
-            return@collect
-          }
-
-          val isThreadBookmarked = bookmarksManager.contains(currentThreadDescriptor)
-
-          threadToolbarState.rightIconByKey(ThreadToolbarIcons.Bookmark)
-            ?.let { bookmarkThreadIcon ->
-              if (isThreadBookmarked) {
-                bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_24
-              } else {
-                bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
-              }
-            }
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        bookmarksManager.bookmarkEventsFlow.collect { event ->
-          val currentThreadDescriptor = threadScreenViewModel.threadDescriptor
-
-          when (event) {
-            is BookmarksManager.Event.Created -> {
-              val isForThisThread = event.threadDescriptors
-                .any { threadDescriptor -> threadDescriptor == currentThreadDescriptor }
-
-              if (!isForThisThread) {
-                return@collect
-              }
-
-              threadToolbarState.rightIconByKey(ThreadToolbarIcons.Bookmark)
-                ?.let { bookmarkThreadIcon ->
-                  bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_24
-                }
-            }
-            is BookmarksManager.Event.Deleted -> {
-              val isForThisThread = event.threadDescriptors
-                .any { threadDescriptor -> threadDescriptor == currentThreadDescriptor }
-
-              if (!isForThisThread) {
-                return@collect
-              }
-
-              threadToolbarState.rightIconByKey(ThreadToolbarIcons.Bookmark)
-                ?.let { bookmarkThreadIcon ->
-                  bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
-                }
-            }
-          }
-        }
-      }
-    )
-  }
-
-  private enum class ReplyToolbarIcons {
-    PickLocalFile
-  }
-
-  private enum class ThreadToolbarIcons {
-    Bookmark,
-    Search,
-    Overflow
   }
 
   companion object {
