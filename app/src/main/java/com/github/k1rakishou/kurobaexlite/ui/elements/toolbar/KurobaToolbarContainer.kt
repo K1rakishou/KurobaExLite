@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.AnimateableStackContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.AnimateableStackContainerState
@@ -75,35 +76,64 @@ class ToolbarIcon<T : Any>(
 @Stable
 class KurobaToolbarContainerState<T : ChildToolbar> {
   private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
+  private val callbacksToInvoke = mutableListOf<(AnimateableStackContainerState<T>) -> Unit>()
+
   private lateinit var _stackContainerState: AnimateableStackContainerState<T>
 
   fun init(stackContainerState: AnimateableStackContainerState<T>) {
     _stackContainerState = stackContainerState
+
+    callbacksToInvoke.fastForEach { callback -> callback.invoke(stackContainerState) }
+    callbacksToInvoke.clear()
   }
 
   fun setToolbar(childToolbar: T) {
-    _stackContainerState.set(
-      SimpleStackContainerElement(
-        element = childToolbar,
-        keyExtractor = { it.toolbarKey }
+    val func = { containerState: AnimateableStackContainerState<T> ->
+      containerState.set(
+        SimpleStackContainerElement(
+          element = childToolbar,
+          keyExtractor = { it.toolbarKey }
+        )
       )
-    )
+    }
+
+    if (!::_stackContainerState.isInitialized) {
+      callbacksToInvoke += func
+    } else {
+      func.invoke(_stackContainerState)
+    }
   }
 
   fun fadeInToolbar(childToolbar: T) {
-    _stackContainerState.fadeIn(
-      SimpleStackContainerElement(
-        element = childToolbar,
-        keyExtractor = { it.toolbarKey }
+    val func = { containerState: AnimateableStackContainerState<T> ->
+      containerState.fadeIn(
+        SimpleStackContainerElement(
+          element = childToolbar,
+          keyExtractor = { it.toolbarKey }
+        )
       )
-    )
+    }
+
+    if (!::_stackContainerState.isInitialized) {
+      callbacksToInvoke += func
+    } else {
+      func.invoke(_stackContainerState)
+    }
   }
 
   fun popChildToolbars() {
+    if (!::_stackContainerState.isInitialized) {
+      return
+    }
+
     _stackContainerState.popAll()
   }
 
   fun popToolbar(expectedKey: String) {
+    if (!::_stackContainerState.isInitialized) {
+      return
+    }
+
     _stackContainerState.removeTop(
       withAnimation = true,
       predicate = { topToolbarKey -> expectedKey == topToolbarKey }

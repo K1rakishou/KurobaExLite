@@ -13,5 +13,6 @@ data class BoardDataJson(
   @Json(name = "board") val boardCode: String?,
   @Json(name = "title") val boardTitle: String?,
   @Json(name = "meta_description") val boardDescription: String?,
-  @Json(name = "ws_board") val workSafe: Int?
+  @Json(name = "ws_board") val workSafe: Int?,
+  @Json(name = "is_archived") val isArchived: Int?,
 )

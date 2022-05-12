@@ -7,6 +7,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeBackgroundScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import logcat.LogPriority
+import logcat.logcat
 
 class MainNavigationRouter : NavigationRouter(
   routerKey = MainScreen.SCREEN_KEY,
@@ -50,8 +52,8 @@ class MainNavigationRouter : NavigationRouter(
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
 
     _navigationScreensStack.add(newComposeScreen)
+    logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${newComposeScreen.screenKey.key})" }
     newComposeScreen.onCreate()
-    logcat.logcat(tag = TAG) { "pushScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -89,7 +91,7 @@ class MainNavigationRouter : NavigationRouter(
     val floatingScreenUpdates = _floatingScreensStack
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
 
-    logcat.logcat(tag = TAG) { "popScreen(${newComposeScreen.screenKey.key})" }
+    logcat(TAG, LogPriority.VERBOSE) { "popScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -116,7 +118,7 @@ class MainNavigationRouter : NavigationRouter(
     ).toMutableList()
 
     if (_floatingScreensStack.none { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
-      logcat.logcat(tag = TAG) { "presentScreen(${floatingComposeScreen.screenKey.key}) adding bgScreen" }
+      logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key}) adding bgScreen" }
 
       val bgScreen = FloatingComposeBackgroundScreen(
         componentActivity = floatingComposeScreen.componentActivity,
@@ -128,8 +130,8 @@ class MainNavigationRouter : NavigationRouter(
     }
 
     _floatingScreensStack.add(floatingComposeScreen)
+    logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
     floatingComposeScreen.onCreate()
-    logcat.logcat(tag = TAG) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -156,7 +158,7 @@ class MainNavigationRouter : NavigationRouter(
     ).toMutableList()
 
     if (_floatingScreensStack.size <= 1 && _floatingScreensStack.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
-      logcat.logcat(tag = TAG) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
+      logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
 
       val indexOfPrevBg = floatingScreenUpdates
         .indexOfFirst { screenUpdate -> screenUpdate.screen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
@@ -178,7 +180,7 @@ class MainNavigationRouter : NavigationRouter(
       }
     }
 
-    logcat.logcat(tag = TAG) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key})" }
+    logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,

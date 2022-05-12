@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import logcat.LogPriority
+import logcat.logcat
 
 open class NavigationRouter(
   val routerKey: ScreenKey,
@@ -52,8 +54,8 @@ open class NavigationRouter(
     )
 
     _navigationScreensStack.add(newComposeScreen)
+    logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${newComposeScreen.screenKey.key})" }
     newComposeScreen.onCreate()
-    logcat.logcat(tag = TAG) { "pushScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -89,7 +91,7 @@ open class NavigationRouter(
       newScreenUpdate = newScreenUpdate
     )
 
-    logcat.logcat(tag = TAG) { "popScreen(${newComposeScreen.screenKey.key})" }
+    logcat(TAG, LogPriority.VERBOSE) { "popScreen(${newComposeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,

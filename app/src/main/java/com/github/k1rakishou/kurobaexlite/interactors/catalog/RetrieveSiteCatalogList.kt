@@ -113,6 +113,7 @@ class RetrieveSiteCatalogList(
                 boardTitle = chanCatalog.boardTitle,
                 boardDescription = chanCatalog.boardDescription,
                 workSafe = chanCatalog.workSafe,
+                globalSearchSupported = chanCatalog.globalSearchSupported
               )
             } else {
               toInsert += ChanCatalogEntity(
@@ -120,6 +121,7 @@ class RetrieveSiteCatalogList(
                 boardTitle = chanCatalog.boardTitle,
                 boardDescription = chanCatalog.boardDescription,
                 workSafe = chanCatalog.workSafe,
+                globalSearchSupported = chanCatalog.globalSearchSupported,
               )
             }
           }

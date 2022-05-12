@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "6bce5484b739bd170964b439b90ac025",
+    "identityHash": "d5db0fd786bc903bcb881846628c14c8",
     "entities": [
       {
         "tableName": "chan_thread_views",
@@ -194,7 +194,7 @@
       },
       {
         "tableName": "chan_catalogs",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`database_id` INTEGER NOT NULL, `board_title` TEXT, `board_description` TEXT, `work_safe` INTEGER NOT NULL, `catalog_site_key` TEXT NOT NULL, `catalog_board_code` TEXT NOT NULL, PRIMARY KEY(`catalog_site_key`, `catalog_board_code`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`database_id` INTEGER NOT NULL, `board_title` TEXT, `board_description` TEXT, `work_safe` INTEGER NOT NULL, `global_search_supported` INTEGER NOT NULL, `catalog_site_key` TEXT NOT NULL, `catalog_board_code` TEXT NOT NULL, PRIMARY KEY(`catalog_site_key`, `catalog_board_code`))",
         "fields": [
           {
             "fieldPath": "databaseId",
@@ -217,6 +217,12 @@
           {
             "fieldPath": "workSafe",
             "columnName": "work_safe",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "globalSearchSupported",
+            "columnName": "global_search_supported",
             "affinity": "INTEGER",
             "notNull": true
           },

@@ -221,11 +221,6 @@ class CatalogScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
-    )
-
     HandleBackPresses {
       if (replyLayoutState.onBackPressed()) {
         return@HandleBackPresses true
@@ -374,6 +369,11 @@ class CatalogScreen(
       onFastScrollerDragStateChanged = { dragging ->
         globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
       }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
     )
 
     LaunchedEffect(
