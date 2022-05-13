@@ -27,7 +27,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
-import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 
@@ -36,19 +35,23 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 fun BoxScope.HomeScreenFloatingActionButton(
   insets: Insets,
   pagerState: PagerState,
-  childScreens: List<ComposeScreenWithToolbar>,
+  pagesWrapper: HomeScreenPageConverter.PagesWrapper,
   mainUiLayoutMode: MainUiLayoutMode,
   onFabClicked: (ScreenKey) -> Unit
 ) {
-  require(childScreens.isNotEmpty()) { "childScreens is empty!" }
+  require(pagesWrapper.pagesCount > 0) { "pagesWrapper is empty!" }
 
   if (mainUiLayoutMode == MainUiLayoutMode.Split) {
     return
   }
 
-  val currentScreen = childScreens.getOrNull(pagerState.currentPage)?.topChildScreen() ?: return
-  val currentScreenKey = currentScreen.screenKey
+  val currentScreen = pagesWrapper.pageByIndex(pagerState.currentPage)
+    ?.childScreens
+    ?.firstOrNull()
+    ?.composeScreen
+    ?: return
 
+  val currentScreenKey = currentScreen.screenKey
   if (currentScreen !is HomeNavigationScreen) {
     return
   }

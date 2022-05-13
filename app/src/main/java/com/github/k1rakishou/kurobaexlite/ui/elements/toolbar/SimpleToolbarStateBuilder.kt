@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -46,11 +47,17 @@ import kotlinx.coroutines.launch
 class SimpleToolbarStateBuilder<T : Any> private constructor(
   private val context: Context
 ) {
+  private var tag: String? = null
   private var toolbarTitle: String? = null
   private var toolbarSubtitle: String? = null
 
-  private var leftIcon: ToolbarIcon<T>? = null
-  private val rightIcons = mutableListOf<ToolbarIcon<T>>()
+  private var leftIcon: KurobaToolbarIcon<T>? = null
+  private val rightIcons = mutableListOf<KurobaToolbarIcon<T>>()
+
+  fun tag(tag: String): SimpleToolbarStateBuilder<T> {
+    this.tag = tag
+    return this
+  }
 
   fun titleString(title: String): SimpleToolbarStateBuilder<T> {
     toolbarTitle = title
@@ -67,18 +74,19 @@ class SimpleToolbarStateBuilder<T : Any> private constructor(
     return this
   }
 
-  fun leftIcon(toolbarIcon: ToolbarIcon<T>): SimpleToolbarStateBuilder<T> {
+  fun leftIcon(toolbarIcon: KurobaToolbarIcon<T>): SimpleToolbarStateBuilder<T> {
     leftIcon = toolbarIcon
     return this
   }
 
-  fun addRightIcon(toolbarIcon: ToolbarIcon<T>): SimpleToolbarStateBuilder<T> {
+  fun addRightIcon(toolbarIcon: KurobaToolbarIcon<T>): SimpleToolbarStateBuilder<T> {
     rightIcons += toolbarIcon
     return this
   }
 
   fun build(): SimpleToolbarState<T> {
     return SimpleToolbarState(
+      tag = tag,
       title = toolbarTitle,
       subtitle = toolbarSubtitle,
       _leftIcon = requireNotNull(leftIcon) { "Left icon is null!" },
@@ -94,17 +102,17 @@ class SimpleToolbarStateBuilder<T : Any> private constructor(
 }
 
 class SimpleToolbarState<T : Any>(
+  val tag: String?,
   title: String?,
   subtitle: String?,
-  _leftIcon: ToolbarIcon<T>,
-  _rightIcons: List<ToolbarIcon<T>>
+  _leftIcon: KurobaToolbarIcon<T>,
+  _rightIcons: List<KurobaToolbarIcon<T>>
 ) {
   val toolbarTitleState = mutableStateOf<String?>(title)
   val toolbarSubtitleState = mutableStateOf<String?>(subtitle)
 
   val leftIcon = _leftIcon
   val rightIcons = _rightIcons
-
 
   private val _iconClickEvents = MutableSharedFlow<T>(extraBufferCapacity = Channel.UNLIMITED)
   val iconClickEvents: SharedFlow<T>
@@ -119,7 +127,7 @@ class SimpleToolbarState<T : Any>(
 class SimpleToolbar<T : Any>(
   override val toolbarKey: String,
   val simpleToolbarState: SimpleToolbarState<T>
-) : ChildToolbar() {
+) : KurobaChildToolbar() {
 
   @Composable
   override fun Content() {
@@ -181,7 +189,7 @@ class SimpleToolbar<T : Any>(
 class SimpleSearchToolbar(
   val onSearchQueryUpdated: (String?) -> Unit,
   val closeSearch: suspend () -> Unit
-) : ChildToolbar() {
+) : KurobaChildToolbar() {
 
   override val toolbarKey: String = key
 
@@ -197,11 +205,13 @@ class SimpleSearchToolbar(
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
     val searchDebouncer = remember { DebouncingCoroutineExecutor(coroutineScope) }
-
     val chanTheme = LocalChanTheme.current
     val parentBgColor = chanTheme.primaryColorCompose
 
-    var searchQuery by remember { mutableStateOf(TextFieldValue()) }
+    var searchQuery by rememberSaveable(
+      key = "${toolbarKey}_search_query",
+      stateSaver = TextFieldValue.Saver
+    ) { mutableStateOf(TextFieldValue()) }
 
     DisposableEffect(
       key1 = Unit,

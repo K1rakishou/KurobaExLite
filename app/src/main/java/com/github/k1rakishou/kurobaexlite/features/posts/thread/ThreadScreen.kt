@@ -12,7 +12,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -23,7 +22,6 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
@@ -45,7 +43,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -131,15 +129,16 @@ class ThreadScreen(
 
   private val localSearchToolbar by lazy {
     PostsScreenLocalSearchToolbar(
-      onSearchQueryUpdated = { searchQuery ->
-        globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, searchQuery)
-        threadScreenViewModel.updateSearchQuery(searchQuery)
-      },
+      onToolbarCreated = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, true) },
+      onToolbarDisposed = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, false) },
+      onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
       closeSearch = { kurobaToolbarContainerState.popToolbar(PostsScreenLocalSearchToolbar.key) }
     )
   }
 
-  override val kurobaToolbarContainerState = KurobaToolbarContainerState<ChildToolbar>()
+  override val kurobaToolbarContainerState by lazy {
+    KurobaToolbarContainerState<KurobaChildToolbar>(screenKey)
+  }
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isCatalogScreen: Boolean = false
@@ -177,16 +176,22 @@ class ThreadScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     KurobaToolbarContainer(
-      screenKey = screenKey,
+      key = screenKey,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = {
         val mainUiLayoutMode = globalUiInfoManager.currentUiLayoutModeState.value
           ?: return@KurobaToolbarContainer false
+        val currentPage = globalUiInfoManager.currentPage()
+          ?: return@KurobaToolbarContainer false
 
-        return@KurobaToolbarContainer canProcessBackEvent(
-          uiLayoutMode = mainUiLayoutMode,
-          currentPage = globalUiInfoManager.currentPage()
-        )
+        return@KurobaToolbarContainer when (mainUiLayoutMode) {
+          MainUiLayoutMode.Phone -> {
+            currentPage.screenKey == screenKey
+          }
+          MainUiLayoutMode.Split -> {
+            currentPage.screenKey == screenKey || currentPage.screenKey == CatalogScreen.SCREEN_KEY
+          }
+        }
       },
     )
   }
@@ -368,27 +373,24 @@ class ThreadScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
+      block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
     )
 
     val currentThreadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
 
+    val replyLayoutVisibility by replyLayoutViewModel.getOrCreateReplyLayoutState(currentThreadDescriptor)
+      .replyLayoutVisibilityState
+
     LaunchedEffect(
-      key1 = currentThreadDescriptor,
+      key1 = replyLayoutVisibility,
       block = {
-        snapshotFlow {
-          replyLayoutViewModel.getOrCreateReplyLayoutState(currentThreadDescriptor)
-            .replyLayoutVisibilityState
-            .value
-        }.collect { replyLayoutVisibility ->
-          when (replyLayoutVisibility) {
-            ReplyLayoutVisibility.Closed -> {
-              kurobaToolbarContainerState.popToolbar(CatalogScreenReplyToolbar.key)
-            }
-            ReplyLayoutVisibility.Opened,
-            ReplyLayoutVisibility.Expanded -> {
-              kurobaToolbarContainerState.fadeInToolbar(replyToolbar)
-            }
+        when (replyLayoutVisibility) {
+          ReplyLayoutVisibility.Closed -> {
+            kurobaToolbarContainerState.popToolbar(ThreadScreenReplyToolbar.key)
+          }
+          ReplyLayoutVisibility.Opened,
+          ReplyLayoutVisibility.Expanded -> {
+            kurobaToolbarContainerState.fadeInToolbar(replyToolbar)
           }
         }
       }

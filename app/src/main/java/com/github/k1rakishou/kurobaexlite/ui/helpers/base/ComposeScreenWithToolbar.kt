@@ -5,14 +5,13 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
-import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
 
 abstract class ComposeScreenWithToolbar(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
 
-  abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<*>
+  protected abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<*>
 
   override suspend fun onDispose() {
     super.onDispose()
@@ -35,11 +34,6 @@ abstract class ComposeScreenWithToolbar(
   fun isScreenAtTop(screenKey: ScreenKey): Boolean {
     val topScreen = navigationRouter.navigationScreensStack.lastOrNull()
       ?: return false
-
-    if (topScreen is ScreenLayout<*>) {
-      return topScreen.childScreens
-        .any { childScreen -> childScreen.composeScreen.screenKey == screenKey }
-    }
 
     return topScreen.screenKey == screenKey
   }

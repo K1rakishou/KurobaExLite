@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenTransition
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 
 @Suppress("UnnecessaryVariable", "FoldInitializerAndIfToElvis")
 @Composable
@@ -13,6 +15,7 @@ fun RootRouterHost(
 ) {
   val screenUpdateTransactionState by rootNavigationRouter.screenUpdatesFlow.collectAsState()
   val screenUpdateTransaction = screenUpdateTransactionState
+  val saveableStateHolder = rememberSaveableStateHolder()
 
   if (screenUpdateTransaction == null) {
     return
@@ -20,24 +23,32 @@ fun RootRouterHost(
 
   if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
     for (primaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {
-      key(primaryScreenUpdate.screen.screenKey) {
-        ScreenTransition(
-          screenUpdate = primaryScreenUpdate,
-          onScreenUpdateFinished = { screenUpdate -> rootNavigationRouter.onScreenUpdateFinished(screenUpdate) },
-          content = { primaryScreenUpdate.screen.Content() }
-        )
+      saveableStateHolder.SaveableStateProvider(key = "primary_${primaryScreenUpdate.screen.screenKey.key}") {
+        key(primaryScreenUpdate.screen.screenKey) {
+          ScreenTransition(
+            screenUpdate = primaryScreenUpdate,
+            onScreenUpdateFinished = { screenUpdate ->
+              rootNavigationRouter.onScreenUpdateFinished(screenUpdate)
+                                     },
+            content = { primaryScreenUpdate.screen.Content() }
+          )
+        }
       }
     }
   }
 
   if (screenUpdateTransaction.floatingScreenUpdates.isNotEmpty()) {
-    for (secondaryScreenUpdate in screenUpdateTransaction.floatingScreenUpdates) {
-      key(secondaryScreenUpdate.screen.screenKey) {
-        ScreenTransition(
-          screenUpdate = secondaryScreenUpdate,
-          onScreenUpdateFinished = { screenUpdate -> rootNavigationRouter.onScreenUpdateFinished(screenUpdate) },
-          content = { secondaryScreenUpdate.screen.Content() }
-        )
+    for (floatingScreenUpdate in screenUpdateTransaction.floatingScreenUpdates) {
+      saveableStateHolder.SaveableStateProvider(key = "floating_${floatingScreenUpdate.screen.screenKey.key}") {
+        key(floatingScreenUpdate.screen.screenKey) {
+          ScreenTransition(
+            screenUpdate = floatingScreenUpdate,
+            onScreenUpdateFinished = { screenUpdate ->
+              rootNavigationRouter.onScreenUpdateFinished(screenUpdate)
+            },
+            content = { floatingScreenUpdate.screen.Content() }
+          )
+        }
       }
     }
   }
@@ -46,9 +57,14 @@ fun RootRouterHost(
 @Composable
 fun RouterHost(
   navigationRouter: NavigationRouter,
-  defaultScreen: @Composable () -> Unit
+  defaultScreenFunc: @Composable () -> ComposeScreen
 ) {
-  defaultScreen()
+  val saveableStateHolder = rememberSaveableStateHolder()
+  val defaultScreen = defaultScreenFunc()
+
+  saveableStateHolder.SaveableStateProvider(key = "primary_${defaultScreen.screenKey.key}") {
+    defaultScreen.Content()
+  }
 
   val screenUpdateTransactionState by navigationRouter.screenUpdatesFlow.collectAsState()
   val screenUpdateTransaction = screenUpdateTransactionState
@@ -59,12 +75,16 @@ fun RouterHost(
 
   if (screenUpdateTransaction.navigationScreenUpdates.isNotEmpty()) {
     for (primaryScreenUpdate in screenUpdateTransaction.navigationScreenUpdates) {
-      key(primaryScreenUpdate.screen.screenKey) {
-        ScreenTransition(
-          screenUpdate = primaryScreenUpdate,
-          onScreenUpdateFinished = { screenUpdate -> navigationRouter.onScreenUpdateFinished(screenUpdate) },
-          content = { primaryScreenUpdate.screen.Content() }
-        )
+      saveableStateHolder.SaveableStateProvider(key = "primary_${primaryScreenUpdate.screen.screenKey.key}") {
+        key(primaryScreenUpdate.screen.screenKey) {
+          ScreenTransition(
+            screenUpdate = primaryScreenUpdate,
+            onScreenUpdateFinished = { screenUpdate ->
+              navigationRouter.onScreenUpdateFinished(screenUpdate)
+            },
+            content = { primaryScreenUpdate.screen.Content() }
+          )
+        }
       }
     }
   }

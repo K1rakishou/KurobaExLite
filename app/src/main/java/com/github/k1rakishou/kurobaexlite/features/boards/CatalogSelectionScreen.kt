@@ -38,13 +38,13 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleSearchToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -77,15 +77,15 @@ class CatalogSelectionScreen(
   private val simpleToolbarState by lazy {
     SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
       .titleId(R.string.board_selection_screen_toolbar_title)
-      .leftIcon(ToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
-      .addRightIcon(ToolbarIcon(key = ToolbarIcons.Search, drawableId = R.drawable.ic_baseline_search_24))
-      .addRightIcon(ToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Search, drawableId = R.drawable.ic_baseline_search_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
       .build()
   }
 
   private val defaultToolbar by lazy {
     SimpleToolbar(
-      toolbarKey = "CatalogSelectionScreenToolbar",
+      toolbarKey = screenKey.key,
       simpleToolbarState = simpleToolbarState
     )
   }
@@ -97,7 +97,9 @@ class CatalogSelectionScreen(
     )
   }
 
-  override val kurobaToolbarContainerState by lazy { KurobaToolbarContainerState<ChildToolbar>() }
+  override val kurobaToolbarContainerState by lazy {
+    KurobaToolbarContainerState<KurobaChildToolbar>(screenKey)
+  }
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
@@ -119,7 +121,7 @@ class CatalogSelectionScreen(
     )
 
     KurobaToolbarContainer(
-      screenKey = screenKey,
+      key = screenKey,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = { true }
     )
@@ -149,7 +151,7 @@ class CatalogSelectionScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
+      block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
     )
 
     val siteKey = catalogDescriptor?.siteKey
@@ -158,7 +160,11 @@ class CatalogSelectionScreen(
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val paddingValues = remember(key1 = windowInsets) {
-      windowInsets.copy(newTop = windowInsets.top + toolbarHeight).asPaddingValues()
+      windowInsets.copy(
+        newLeft = 0.dp,
+        newRight = 0.dp,
+        newTop = windowInsets.top + toolbarHeight
+      ).asPaddingValues()
     }
 
     val pullToRefreshState = rememberPullToRefreshState()

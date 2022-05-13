@@ -43,33 +43,37 @@ fun HomeScreenToolbarContainer(
   insets: Insets,
   chanTheme: ChanTheme,
   pagerState: PagerState,
-  childScreens: List<ComposeScreenWithToolbar>,
+  pagesWrapper: HomeScreenPageConverter.PagesWrapper,
   mainUiLayoutMode: MainUiLayoutMode,
   maxZOrder: Int = 1000
 ) {
-  require(childScreens.isNotEmpty()) { "childScreens is empty!" }
+  require(pagesWrapper.pagesCount >= 0) { "pagesWrapper is empty!" }
 
-  val currentScreen = childScreens.getOrNull(pagerState.currentPage) ?: return
-  val currentScreenKey = currentScreen.screenKey
+  val currentScreen = pagesWrapper.pageByIndex(pagerState.currentPage)
+    ?.childScreens
+    ?.firstOrNull()
+    ?.composeScreen
+    ?: return
 
   if (currentScreen !is HomeNavigationScreen) {
     return
   }
 
+  val currentScreenKey = currentScreen.screenKey
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
   val hideableUiVisibilityInfo = remember(key1 = currentScreenKey) {
     globalUiInfoManager.getOrCreateHideableUiVisibilityInfo(currentScreenKey)
   }
 
-  val currentPage = pagerState.currentPage.coerceIn(0, childScreens.lastIndex)
-  val targetPage = pagerState.targetPage.coerceIn(0, childScreens.lastIndex)
+  val currentPageIndex = pagerState.currentPage.coerceIn(0, pagesWrapper.pagesCount - 1)
+  val targetPageIndex = pagerState.targetPage.coerceIn(0, pagesWrapper.pagesCount - 1)
   val animationProgress = pagerState.currentPageOffset
 
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
-  val transitionIsProgress = currentPage != targetPage
+  val transitionIsProgress = currentPageIndex != targetPageIndex
 
   val postListScrollPosition by hideableUiVisibilityInfo.contentListScrollState.collectAsState()
   val touchingTopOrBottomOfList by hideableUiVisibilityInfo.contentListTouchingTopOrBottomState.collectAsState()
@@ -136,26 +140,27 @@ fun HomeScreenToolbarContainer(
         .fillMaxWidth()
         .height(toolbarHeight)
     ) {
-      val zOrders = remember(key1 = childScreens.size) { IntArray(childScreens.size) { 0 } }
+      val zOrders = remember(key1 = pagesWrapper.pagesCount) { IntArray(pagesWrapper.pagesCount) { 0 } }
 
-      for ((pageIndex, _) in childScreens.withIndex()) {
+      for ((pageIndex, _) in pagesWrapper.pages.withIndex()) {
         when (pageIndex) {
           // (Currently animated) Always behind the target and above everything else
-          currentPage -> zOrders[pageIndex] = maxZOrder - 1
+          currentPageIndex -> zOrders[pageIndex] = maxZOrder - 1
           // (Currently animated) Always at the top
-          targetPage -> zOrders[pageIndex] = maxZOrder
+          targetPageIndex -> zOrders[pageIndex] = maxZOrder
           else -> zOrders[pageIndex] = pageIndex
         }
       }
 
-      for ((pageIndex, currentScreen) in childScreens.withIndex()) {
+      for ((pageIndex, currentPage) in pagesWrapper.pages.withIndex()) {
         val zOrder = zOrders[pageIndex]
-        val screenToolbarMovable = remember(currentScreen.screenKey) {
-          movableContentOf { currentScreen.topChildScreen().Toolbar(this) }
+
+        val screenToolbarMovable = remember(currentPage) {
+          movableContentOf { currentPage.Toolbar(this) }
         }
 
         when (pageIndex) {
-          currentPage -> {
+          currentPageIndex -> {
             val currentToolbarAlpha = lerpFloat(1f, 0f, Math.abs(animationProgress))
             val currentToolbarTranslation = if (animationProgress >= 0f) {
               lerpFloat(0f, toolbarTranslationDistancePx, Math.abs(animationProgress))
@@ -173,7 +178,7 @@ fun HomeScreenToolbarContainer(
               toolbarContent = { screenToolbarMovable() }
             )
           }
-          targetPage -> {
+          targetPageIndex -> {
             val targetToolbarAlpha = lerpFloat(0f, 1f, Math.abs(animationProgress))
             val targetToolbarTranslation = if (animationProgress >= 0f) {
               lerpFloat(-toolbarTranslationDistancePx, 0f, Math.abs(animationProgress))

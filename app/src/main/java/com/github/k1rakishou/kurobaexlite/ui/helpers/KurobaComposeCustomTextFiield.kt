@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -43,7 +42,6 @@ import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun KurobaComposeCustomTextField(
   value: TextFieldValue,

@@ -254,7 +254,7 @@ fun HomeScreenDrawerLayout(
     ) {
       RouterHost(
         navigationRouter = navigationRouter,
-        defaultScreen = { drawerScreen.Content() }
+        defaultScreenFunc = { drawerScreen }
       )
     }
   }

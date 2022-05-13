@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.media
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.Paint
@@ -169,13 +170,17 @@ class MediaViewerScreen(
           coroutineScope = coroutineScope,
           insets = insets,
           onPreviewLoadingFinished = { postImage ->
+            val previewLoadingFinishedForOutThumbnail = clickedThumbnailBounds == null
+              || postImage == clickedThumbnailBounds?.postImage
+
             logcat(TAG, LogPriority.VERBOSE) {
               "onPreviewLoadingFinished() " +
                 "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
-                "got '${postImage.fullImageAsString}'"
+                "got '${postImage.fullImageAsString}', " +
+                "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
             }
 
-            if (clickedThumbnailBounds == null || postImage == clickedThumbnailBounds?.postImage) {
+            if (previewLoadingFinishedForOutThumbnail) {
               previewLoadingFinished = true
             }
           }
@@ -268,6 +273,7 @@ class MediaViewerScreen(
 
       MediaViewerToolbar(
         toolbarHeight = toolbarHeight,
+        backgroundColor = bgColor,
         screenKey = screenKey,
         mediaViewerScreenState = mediaViewerScreenState,
         pagerState = pagerStateHolder,
@@ -420,7 +426,10 @@ class MediaViewerScreen(
     if (clickedThumbnailBounds == null) {
       LaunchedEffect(
         key1 = Unit,
-        block = { onTransitionFinished() }
+        block = {
+          logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() clickedThumbnailBounds == null" }
+          onTransitionFinished()
+        }
       )
 
       return
@@ -453,10 +462,11 @@ class MediaViewerScreen(
 
           success = true
         } catch (error: Throwable) {
-          logcatError(TAG) { "TransitionPreview() loadThumbnailBitmap() error: ${error.errorMessageOrClassName()}" }
+          logcatError(TAG) { "loadThumbnailBitmap() error: ${error.errorMessageOrClassName()}" }
           success = false
         } finally {
           if (!success) {
+            logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() success: false" }
             onTransitionFinished()
           }
         }
@@ -473,6 +483,7 @@ class MediaViewerScreen(
         try {
           animatable.animateTo(1f, animationSpec = tween(250))
         } finally {
+          logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() success: true" }
           onTransitionFinished()
         }
       }
@@ -592,16 +603,6 @@ class MediaViewerScreen(
     onViewPagerInitialized: (PagerState) -> Unit,
     onPreviewLoadingFinished: (IPostImage) -> Unit
   ) {
-    if (!mediaViewerScreenState.isLoaded()) {
-      return
-    }
-
-    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-    val orientation = orientationMut
-    if (orientation == null) {
-      return
-    }
-
     val context = LocalContext.current
     val initialPageMut by mediaViewerScreenState.initialPage
     val imagesMut = mediaViewerScreenState.images
@@ -612,6 +613,9 @@ class MediaViewerScreen(
     if (initialPage == null || images == null) {
       return
     }
+
+    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
+    val orientation = orientationMut ?: Configuration.ORIENTATION_PORTRAIT
 
     if (images.isEmpty()) {
       val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
@@ -640,11 +644,19 @@ class MediaViewerScreen(
       }
     }
 
-    var initialPageLoaded by remember { mutableStateOf(false) }
+    var initialScrollHappened by remember { mutableStateOf(false) }
+    val pagerState = rememberPagerState()
 
-    val pagerState = rememberPagerState(
-      key1 = orientation,
-      initialPage = initialPage
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        try {
+          pagerState.scrollToPage(initialPage)
+          delay(250L)
+        } finally {
+          initialScrollHappened = true
+        }
+      }
     )
 
     LaunchedEffect(
@@ -655,8 +667,7 @@ class MediaViewerScreen(
     LaunchedEffect(
       key1 = pagerState.currentPage,
       block = {
-        if (initialPage == pagerState.currentPage && !initialPageLoaded) {
-          initialPageLoaded = true
+        if (!initialScrollHappened) {
           return@LaunchedEffect
         }
 

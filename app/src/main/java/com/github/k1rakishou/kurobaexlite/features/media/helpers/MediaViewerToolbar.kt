@@ -1,14 +1,22 @@
 package com.github.k1rakishou.kurobaexlite.features.media.helpers
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.media.ChildToolbar
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenState
-import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenToolbarContainer
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
@@ -16,24 +24,21 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import java.util.Locale
-
-private enum class ToolbarIcons {
-  Back,
-  DownloadMedia,
-  Overflow
-}
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 internal fun MediaViewerToolbar(
   toolbarHeight: Dp,
+  backgroundColor: Color,
   screenKey: ScreenKey,
   mediaViewerScreenState: MediaViewerScreenState,
   pagerState: PagerState?,
@@ -44,85 +49,117 @@ internal fun MediaViewerToolbar(
     return
   }
 
+  val insets = LocalWindowInsets.current
+  val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
   val currentImageIndex = pagerState.currentPage
   val targetImageIndex = pagerState.targetPage
 
-  val currentToolbarKey = remember(key1 = currentImageIndex) {
-    mediaViewerScreenState.requireImages().get(currentImageIndex).fullImageUrlAsString
+  val kurobaToolbarContainerState = remember {
+    KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>(screenKey)
   }
 
-  val targetToolbarKey = remember(key1 = targetImageIndex) {
-    mediaViewerScreenState.requireImages().get(targetImageIndex).fullImageUrlAsString
-  }
-
-  val childToolbars = remember(key1 = currentToolbarKey, key2 = targetToolbarKey) {
+  val childToolbars = remember(key1 = currentImageIndex, key2 = targetImageIndex) {
     val childToolbars = mutableListOf<ChildToolbar>()
 
+    val currentToolbarKey = "MediaViewerToolbar_${currentImageIndex}"
     childToolbars += ChildToolbar(
       key = currentToolbarKey,
       indexInList = currentImageIndex,
       content = {
         MediaToolbar(
           screenKey = screenKey,
+          toolbarKey = currentToolbarKey,
+          kurobaToolbarContainerState = kurobaToolbarContainerState,
           mediaViewerScreenState = mediaViewerScreenState,
           currentPagerPage = currentImageIndex,
           onDownloadMediaClicked = onDownloadMediaClicked,
           onBackPressed = onBackPressed
         )
-      }
-    )
+      })
 
-    childToolbars += ChildToolbar(
-      key = targetToolbarKey,
-      indexInList = targetImageIndex,
-      content = {
-        MediaToolbar(
-          screenKey = screenKey,
-          mediaViewerScreenState = mediaViewerScreenState,
-          currentPagerPage = targetImageIndex,
-          onDownloadMediaClicked = onDownloadMediaClicked,
-          onBackPressed = onBackPressed
-        )
-      }
-    )
+    if (currentImageIndex != targetImageIndex) {
+      val targetToolbarKey = "MediaViewerToolbar_${targetImageIndex}"
+      childToolbars += ChildToolbar(
+        key = targetToolbarKey,
+        indexInList = targetImageIndex,
+        content = {
+          MediaToolbar(
+            screenKey = screenKey,
+            toolbarKey = targetToolbarKey,
+            kurobaToolbarContainerState = kurobaToolbarContainerState,
+            mediaViewerScreenState = mediaViewerScreenState,
+            currentPagerPage = targetImageIndex,
+            onDownloadMediaClicked = onDownloadMediaClicked,
+            onBackPressed = onBackPressed
+          )
+        }
+      )
+    }
 
     return@remember childToolbars
   }
 
-  MediaViewerScreenToolbarContainer(
-    toolbarHeight = toolbarHeight,
-    pagerState = pagerState,
-    childToolbars = childToolbars
-  )
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(toolbarTotalHeight)
+      .consumeClicks()
+  ) {
+    Spacer(modifier = Modifier.height(insets.top))
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(toolbarHeight)
+    ) {
+      KurobaToolbarContainer(
+        key = screenKey,
+        backgroundColor = backgroundColor,
+        kurobaToolbarContainerState = kurobaToolbarContainerState,
+        canProcessBackEvent = { true },
+      )
+
+      childToolbars.fastForEach { childToolbar ->
+        key(childToolbar.key) {
+          childToolbar.content(this)
+        }
+      }
+    }
+  }
 }
 
 @Composable
 private fun MediaToolbar(
   screenKey: ScreenKey,
+  toolbarKey: String,
+  kurobaToolbarContainerState: KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>,
   mediaViewerScreenState: MediaViewerScreenState,
   currentPagerPage: Int,
   onDownloadMediaClicked: (IPostImage) -> Unit,
-  onBackPressed: () -> Unit
+  onBackPressed: () -> Unit,
 ) {
   val componentActivity = LocalComponentActivity.current
 
-  val kurobaToolbarContainerState = remember {
-    KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>()
+  val defaultToolbarState = remember(key1 = toolbarKey) {
+    return@remember SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
+      .tag(toolbarKey)
+      .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.DownloadMedia, drawableId = R.drawable.ic_baseline_download_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .build()
   }
 
-  val simpleToolbarState = remember {
-    return@remember SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
-      .titleId(R.string.history_screen_toolbar_title)
-      .leftIcon(ToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
-      .addRightIcon(ToolbarIcon(key = ToolbarIcons.DownloadMedia, drawableId = R.drawable.ic_baseline_download_24))
-      .addRightIcon(ToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
-      .build()
+  val defaultToolbar = remember(key1 = toolbarKey) {
+    SimpleToolbar(
+      toolbarKey = toolbarKey,
+      simpleToolbarState = defaultToolbarState
+    )
   }
 
   LaunchedEffect(
     key1 = Unit,
     block = {
-      simpleToolbarState.iconClickEvents.collect { key ->
+      defaultToolbarState.iconClickEvents.collect { key ->
         when (key) {
           ToolbarIcons.Back -> {
             onBackPressed()
@@ -143,14 +180,28 @@ private fun MediaToolbar(
     }
   )
 
+  DisposableEffect(
+    key1 = Unit,
+    effect = {
+      kurobaToolbarContainerState.setToolbar(childToolbar = defaultToolbar)
+
+      onDispose {
+        kurobaToolbarContainerState.removeToolbar(
+          expectedKey = defaultToolbar.toolbarKey,
+          withAnimation = false
+        )
+      }
+    }
+  )
+
   UpdateMediaViewerToolbarTitle(
     mediaViewerScreenState = mediaViewerScreenState,
-    simpleToolbarState = simpleToolbarState,
+    toolbarState = defaultToolbarState,
     currentPagerPage = currentPagerPage
   )
 
   KurobaToolbarContainer(
-    screenKey = screenKey,
+    key = screenKey,
     kurobaToolbarContainerState = kurobaToolbarContainerState,
     canProcessBackEvent = { true },
   )
@@ -159,7 +210,7 @@ private fun MediaToolbar(
 @Composable
 private fun UpdateMediaViewerToolbarTitle(
   mediaViewerScreenState: MediaViewerScreenState,
-  simpleToolbarState: SimpleToolbarState<ToolbarIcons>,
+  toolbarState: SimpleToolbarState<ToolbarIcons>,
   currentPagerPage: Int
 ) {
   val isLoaded = mediaViewerScreenState.isLoaded()
@@ -181,17 +232,16 @@ private fun UpdateMediaViewerToolbarTitle(
         return@LaunchedEffect
       }
 
-      Snapshot.withMutableSnapshot {
-        val imagesCount = mediaViewerScreenState.images?.size
+      val imagesCount = mediaViewerScreenState.images?.size
 
-        simpleToolbarState.toolbarTitleState.value = HtmlUnescape.unescape(currentImageData.originalFileNameEscaped)
-        simpleToolbarState.toolbarSubtitleState.value = formatImageInfo(
-          currentPagerPage = currentPagerPage,
-          imagesCount = imagesCount,
-          currentImageData = currentImageData
-        )
-      }
-    })
+      toolbarState.toolbarTitleState.value = HtmlUnescape.unescape(currentImageData.originalFileNameEscaped)
+      toolbarState.toolbarSubtitleState.value = formatImageInfo(
+        currentPagerPage = currentPagerPage,
+        imagesCount = imagesCount,
+        currentImageData = currentImageData
+      )
+    }
+  )
 }
 
 private fun formatImageInfo(
@@ -217,4 +267,16 @@ private fun formatImageInfo(
       append(currentImageData.fileSize.asReadableFileSize())
     }
   }
+}
+
+private class ChildToolbar(
+  val key: Any,
+  val indexInList: Int,
+  val content: @Composable BoxScope.() -> Unit
+)
+
+private enum class ToolbarIcons {
+  Back,
+  DownloadMedia,
+  Overflow
 }

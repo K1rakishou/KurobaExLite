@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -18,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
@@ -27,15 +28,20 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.launch
 
 class PostsScreenLocalSearchToolbar(
+  val onToolbarCreated: () -> Unit,
+  val onToolbarDisposed: () -> Unit,
   val onSearchQueryUpdated: (String?) -> Unit,
   val closeSearch: suspend () -> Unit
-) : ChildToolbar() {
+) : KurobaChildToolbar() {
 
   override val toolbarKey: String = key
 
-  override fun onDispose() {
-    super.onDispose()
+  override fun onCreate() {
+    onToolbarCreated()
+  }
 
+  override fun onDispose() {
+    onToolbarDisposed()
     onSearchQueryUpdated.invoke(null)
   }
 
@@ -45,11 +51,13 @@ class PostsScreenLocalSearchToolbar(
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
     val searchDebouncer = remember { DebouncingCoroutineExecutor(coroutineScope) }
-
     val chanTheme = LocalChanTheme.current
     val parentBgColor = chanTheme.primaryColorCompose
 
-    var searchQuery by remember { mutableStateOf(TextFieldValue()) }
+    var searchQuery by rememberSaveable(
+      key = "${toolbarKey}_search_query",
+      stateSaver = TextFieldValue.Saver
+    ) { mutableStateOf(TextFieldValue()) }
 
     DisposableEffect(
       key1 = Unit,
@@ -71,6 +79,7 @@ class PostsScreenLocalSearchToolbar(
                 coroutineScope.launch {
                   if (searchQuery.text.isNotEmpty()) {
                     searchQuery = TextFieldValue(text = "")
+
                     onSearchQueryUpdated.invoke("")
                   } else {
                     searchDebouncer.stop()

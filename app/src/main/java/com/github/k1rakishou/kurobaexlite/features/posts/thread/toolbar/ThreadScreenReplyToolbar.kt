@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -36,7 +36,7 @@ class ThreadScreenReplyToolbar(
   private val closeReplyLayout: () -> Unit,
   private val pickLocalFile: () -> Unit,
   val state: State = State()
-) : ChildToolbar() {
+) : KurobaChildToolbar() {
 
   override val toolbarKey: String = key
 
@@ -115,13 +115,13 @@ class ThreadScreenReplyToolbar(
   class State {
     val toolbarTitleState = mutableStateOf<String?>(null)
 
-    val leftIcon = ToolbarIcon(
+    val leftIcon = KurobaToolbarIcon(
       key = Icons.Close,
       drawableId = R.drawable.ic_baseline_close_24
     )
 
     val rightIcons = listOf(
-      ToolbarIcon(
+      KurobaToolbarIcon(
         key = Icons.PickLocalFile,
         drawableId = R.drawable.ic_baseline_attach_file_24
       ),

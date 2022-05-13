@@ -58,9 +58,9 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -95,19 +95,21 @@ class HistoryScreen(
   private val simpleToolbarState by lazy {
     SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
       .titleId(R.string.history_screen_toolbar_title)
-      .leftIcon(ToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
-      .addRightIcon(ToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
       .build()
   }
 
   private val defaultToolbar by lazy {
     SimpleToolbar(
-      toolbarKey = "HistoryScreenToolbar",
+      toolbarKey = screenKey.key,
       simpleToolbarState = simpleToolbarState
     )
   }
 
-  override val kurobaToolbarContainerState by lazy { KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>() }
+  override val kurobaToolbarContainerState by lazy {
+    KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>(screenKey)
+  }
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
@@ -137,7 +139,7 @@ class HistoryScreen(
     )
 
     KurobaToolbarContainer(
-      screenKey = screenKey,
+      key = screenKey,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = { true }
     )
@@ -156,7 +158,7 @@ class HistoryScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
+      block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
     )
 
     LaunchedEffect(

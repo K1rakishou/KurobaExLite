@@ -32,9 +32,9 @@ import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -50,7 +50,7 @@ class ThreadScreenDefaultToolbar(
   private val toggleBookmarkState: () -> Unit,
   private val showOverflowMenu: () -> Unit,
   val state: State = State()
-) : ChildToolbar() {
+) : KurobaChildToolbar() {
 
   override val toolbarKey: String = key
 
@@ -295,23 +295,23 @@ class ThreadScreenDefaultToolbar(
     val toolbarTitleState = mutableStateOf<String?>(null)
     val toolbarSubtitleState = mutableStateOf<String?>(null)
 
-    val leftIcon = ToolbarIcon(
+    val leftIcon = KurobaToolbarIcon(
       key = Icons.Back,
       drawableId = R.drawable.ic_baseline_arrow_back_24
     )
 
     val rightIcons = listOf(
-      ToolbarIcon(
+      KurobaToolbarIcon(
         key = Icons.Search,
         drawableId = R.drawable.ic_baseline_search_24,
         visible = false
       ),
-      ToolbarIcon(
+      KurobaToolbarIcon(
         key = Icons.Bookmark,
         drawableId = R.drawable.ic_baseline_bookmark_border_24,
         visible = false
       ),
-      ToolbarIcon(
+      KurobaToolbarIcon(
         key = Icons.Overflow,
         drawableId = R.drawable.ic_baseline_more_vert_24
       ),
@@ -321,7 +321,7 @@ class ThreadScreenDefaultToolbar(
     val iconClickEvents: SharedFlow<Icons>
       get() = _iconClickEvents.asSharedFlow()
 
-    fun bookmarkIcon(): ToolbarIcon<Icons> {
+    fun bookmarkIcon(): KurobaToolbarIcon<Icons> {
       return rightIcons.first { icon -> icon.key == Icons.Bookmark }
     }
 

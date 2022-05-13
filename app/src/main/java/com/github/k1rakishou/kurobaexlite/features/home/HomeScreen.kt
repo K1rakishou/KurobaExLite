@@ -28,6 +28,9 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenDrawerLayout
 import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestures
+import com.github.k1rakishou.kurobaexlite.features.home.pages.AbstractPage
+import com.github.k1rakishou.kurobaexlite.features.home.pages.SinglePage
+import com.github.k1rakishou.kurobaexlite.features.home.pages.SplitPage
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
@@ -39,7 +42,6 @@ import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
@@ -56,7 +58,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
-import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.ScreenLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDragGestureZone
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawPagerSwipeExclusionZoneTutorial
 import kotlin.time.Duration.Companion.milliseconds
@@ -74,7 +75,7 @@ class HomeScreen(
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
-  private val homeChildScreens by lazy { HomeChildScreens(componentActivity, navigationRouter) }
+  private val homeScreenPageConverter by lazy { HomeScreenPageConverter(componentActivity, navigationRouter) }
   private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -115,24 +116,21 @@ class HomeScreen(
     val historyScreenOnLeftSide by globalUiInfoManager.historyScreenOnLeftSide.collectAsState()
     val currentPage by globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
 
-    val childScreens = remember(
+    val pagesWrapper = remember(
       key1 = historyScreenOnLeftSide,
       key2 = mainUiLayoutMode
     ) {
-      return@remember homeChildScreens.getChildScreens(
+      return@remember homeScreenPageConverter.convertScreensToPages(
         uiLayoutMode = mainUiLayoutMode,
         historyScreenOnLeftSide = historyScreenOnLeftSide
       )
     }
 
     val initialScreenIndexMut = remember(
-      key1 = currentPage,
-      key2 = childScreens
+      key1 = currentPage.screenKey,
+      key2 = pagesWrapper
     ) {
-      return@remember homeChildScreens.screenIndexByPage(
-        currentPage = currentPage,
-        childScreens = childScreens
-      )
+      return@remember pagesWrapper.screenIndexByScreenKey(currentPage.screenKey)
     }
 
     val initialScreenIndex = initialScreenIndexMut
@@ -150,7 +148,10 @@ class HomeScreen(
     // being 2 while there are only 2 screens in landscape mode.
     // There is an issue to add support for that on the google's issues tracker but it's almost
     // 2 years old. So for the time being we have to hack around the issue.
-    val pagerState = rememberPagerState(key1 = orientation, initialPage = initialScreenIndex)
+    val pagerState = rememberPagerState(
+      key1 = orientation,
+      initialPage = initialScreenIndex
+    )
 
     LaunchedEffect(
       key1 = Unit,
@@ -177,11 +178,16 @@ class HomeScreen(
     LaunchedEffect(
       key1 = mainUiLayoutMode,
       key2 = historyScreenOnLeftSide,
+      key3 = pagerState.pageCount,
       block = {
+        if (pagerState.pageCount <= 0) {
+          return@LaunchedEffect
+        }
+
         globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collect { currentPage ->
           scrollToPageByScreenKey(
             screenKey = currentPage.screenKey,
-            childScreens = childScreens,
+            pagesWrapper = pagesWrapper,
             pagerState = pagerState,
             animate = currentPage.animate
           )
@@ -192,8 +198,13 @@ class HomeScreen(
     LaunchedEffect(
       key1 = pagerState.currentPage,
       key2 = mainUiLayoutMode,
+      key3 = pagerState.pageCount,
       block = {
-        val screenKey = childScreens.screens.getOrNull(pagerState.currentPage)?.screenKey
+        if (pagerState.pageCount <= 0) {
+          return@LaunchedEffect
+        }
+
+        val screenKey = pagesWrapper.screenKeyByPageIndex(pagerState.currentPage)
           ?: return@LaunchedEffect
 
         globalUiInfoManager.updateCurrentPageForLayoutMode(
@@ -203,7 +214,7 @@ class HomeScreen(
       }
     )
 
-    val childScreensUpdated by rememberUpdatedState(newValue = childScreens)
+    val pagesWrapperUpdated by rememberUpdatedState(newValue = pagesWrapper)
 
     HandleBackPresses {
       if (globalUiInfoManager.isDrawerOpenedOrOpening()) {
@@ -211,31 +222,25 @@ class HomeScreen(
         return@HandleBackPresses true
       }
 
-      val freshCurrentPage = globalUiInfoManager.currentPage(mainUiLayoutMode)
+      val freshCurrentPageScreenKey = globalUiInfoManager.currentPage(mainUiLayoutMode)?.screenKey
         ?: return@HandleBackPresses false
 
       // First, process all child screens
-      val currentScreenIndex = homeChildScreens.screenIndexByPage(freshCurrentPage, childScreensUpdated)
+      val currentScreenIndex = pagesWrapperUpdated.screenIndexByScreenKey(freshCurrentPageScreenKey)
       if (currentScreenIndex != null) {
-        val screens = childScreensUpdated.screens
-        val currentScreen = screens.get(currentScreenIndex)
-
-        if (currentScreen is ScreenLayout<*>) {
-          for (childScreen in currentScreen.childScreens.asReversed()) {
+        val currentPage = pagesWrapperUpdated.pageByIndex(currentScreenIndex)
+        if (currentPage != null) {
+          for (childScreen in currentPage.childScreens.asReversed()) {
             if (childScreen.composeScreen.onBackPressed()) {
               return@HandleBackPresses true
             }
-          }
-        } else {
-          if (currentScreen.onBackPressed()) {
-            return@HandleBackPresses true
           }
         }
       }
 
       // Then reset the ViewPager's current page
-      if (!homeChildScreens.isMainScreen(freshCurrentPage)) {
-        globalUiInfoManager.updateCurrentPage(homeChildScreens.mainScreenKey())
+      if (!homeScreenPageConverter.isMainScreen(freshCurrentPageScreenKey)) {
+        globalUiInfoManager.updateCurrentPage(homeScreenPageConverter.mainScreenKey())
         return@HandleBackPresses true
       }
 
@@ -248,7 +253,7 @@ class HomeScreen(
       drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
       drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
       pagerState = pagerState,
-      childScreens = childScreens,
+      pagesWrapper = pagesWrapper,
       insets = insets,
       chanTheme = chanTheme
     )
@@ -362,7 +367,7 @@ class HomeScreen(
     drawerPhoneVisibleWindowWidth: Int,
     drawerLongtapGestureWidthZonePx: Float,
     pagerState: PagerState,
-    childScreens: HomeChildScreens.ChildScreens,
+    pagesWrapper: HomeScreenPageConverter.PagesWrapper,
     insets: Insets,
     chanTheme: ChanTheme
   ) {
@@ -392,18 +397,20 @@ class HomeScreen(
       }
     }
 
-    val currentScreen = remember(
-      key1 = pagerState.currentPage,
-      key2 = childScreens.screens
-    ) {
-      childScreens.screens.getOrNull(pagerState.currentPage)
+    val currentPageMut = remember(key1 = pagerState.currentPage, key2 = pagesWrapper) {
+      pagesWrapper.pageByIndex(pagerState.currentPage)
     }
-    val currentScreenUpdated by rememberUpdatedState(newValue = currentScreen)
+    val currentPage = currentPageMut
+    if (currentPage == null) {
+      return
+    }
+
+    val currentPageUpdated by rememberUpdatedState(newValue = currentPage)
 
     val nestedScrollConnection = remember(key1 = drawerWidth) {
       HomePagerNestedScrollConnection(
         currentPagerPage = { pagerState.currentPage },
-        isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentScreenUpdated, true) },
+        isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentPageUpdated, true) },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
         onDragging = { dragging, time, progress -> globalUiInfoManager.dragDrawer(dragging, time, progress) },
         onFling = { velocity -> globalUiInfoManager.flingDrawer(velocity) }
@@ -432,7 +439,7 @@ class HomeScreen(
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = {
                 isDrawerDragGestureCurrentlyAllowed(
-                  currentScreen = currentScreenUpdated,
+                  currentPage = currentPage,
                   isFromNestedScroll = false
                 )
               },
@@ -463,9 +470,10 @@ class HomeScreen(
       HorizontalPager(
         modifier = Modifier.fillMaxSize(),
         state = pagerState,
-        count = childScreens.screens.size
+        count = pagesWrapper.pagesCount
       ) { page ->
-        val childScreen = childScreens.screens[page]
+        val childPage = pagesWrapper.pageByIndex(page)
+          ?: return@HorizontalPager
         val transitionIsProgress = pagerState.currentPage != pagerState.targetPage
 
         Box(
@@ -473,10 +481,7 @@ class HomeScreen(
             .fillMaxSize()
             .consumeClicks(enabled = transitionIsProgress)
         ) {
-          RouterHost(
-            navigationRouter = navigationRouter.childRouter(childScreen.screenKey),
-            defaultScreen = { childScreen.Content() }
-          )
+          childPage.Content()
         }
       }
 
@@ -484,14 +489,14 @@ class HomeScreen(
         insets = insets,
         chanTheme = chanTheme,
         pagerState = pagerState,
-        childScreens = childScreens.screens,
+        pagesWrapper = pagesWrapper,
         mainUiLayoutMode = mainUiLayoutMode
       )
 
       HomeScreenFloatingActionButton(
         insets = insets,
         pagerState = pagerState,
-        childScreens = childScreens.screens,
+        pagesWrapper = pagesWrapper,
         mainUiLayoutMode = mainUiLayoutMode,
         onFabClicked = { screenKey -> homeScreenViewModel.onHomeScreenFabClicked(screenKey) }
       )
@@ -521,27 +526,42 @@ class HomeScreen(
   }
 
   private fun isDrawerDragGestureCurrentlyAllowed(
-    currentScreen: ComposeScreenWithToolbar?,
+    currentPage: AbstractPage<ComposeScreenWithToolbar>?,
     isFromNestedScroll: Boolean
   ): Boolean {
-    if (currentScreen is ScreenLayout<*>) {
+    if (currentPage is SplitPage) {
       if (isFromNestedScroll) {
-        if (currentScreen.anyScreenHasChildren()) {
+        if (currentPage.anyScreenHasChildren()) {
           return false
         }
       } else {
-        if (currentScreen.screenHasChildren(CatalogScreen.SCREEN_KEY)) {
+        if (currentPage.screenHasChildren(CatalogScreen.SCREEN_KEY)) {
           return false
         }
       }
     } else {
-      if (currentScreen == null || currentScreen.hasChildScreens()) {
+      if (currentPage == null || currentPage.anyScreenHasChildren()) {
         return false
       }
     }
 
-    if (globalUiInfoManager.isAnyReplyLayoutOpened()) {
-      return false
+    when (currentPage) {
+      is SinglePage -> {
+        if (globalUiInfoManager.isReplyLayoutOpened(currentPage.screenKey())) {
+          return false
+        }
+      }
+      is SplitPage -> {
+        val anyReplyLayoutsOpened = currentPage.childScreens
+          .any { childScreen -> globalUiInfoManager.isReplyLayoutOpened(childScreen.screenKey) }
+
+        if (anyReplyLayoutsOpened) {
+          return false
+        }
+      }
+      null -> {
+        return false
+      }
     }
 
     return true
@@ -550,13 +570,11 @@ class HomeScreen(
   @OptIn(ExperimentalPagerApi::class)
   private suspend fun scrollToPageByScreenKey(
     screenKey: ScreenKey,
-    childScreens: HomeChildScreens.ChildScreens,
+    pagesWrapper: HomeScreenPageConverter.PagesWrapper,
     pagerState: PagerState,
     animate: Boolean
   ) {
-    val indexOfPage = childScreens.screens
-      .indexOfFirst { it.screenKey == screenKey }
-
+    val indexOfPage = pagesWrapper.screenIndexByScreenKey(screenKey) ?: -1
     if (indexOfPage >= 0) {
       if (animate) {
         pagerState.animateScrollToPage(page = indexOfPage)

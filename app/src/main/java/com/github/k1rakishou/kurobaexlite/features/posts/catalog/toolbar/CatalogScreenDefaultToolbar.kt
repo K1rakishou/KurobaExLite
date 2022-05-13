@@ -30,9 +30,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScre
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.channels.Channel
@@ -49,9 +49,9 @@ class CatalogScreenDefaultToolbar(
   private val showLocalSearchToolbar: () -> Unit,
   private val showOverflowMenu: () -> Unit,
   val state: State = State()
-) : ChildToolbar() {
+) : KurobaChildToolbar() {
 
-  override val toolbarKey: String = key
+  override val toolbarKey: Any = key
 
   @Composable
   override fun Content() {
@@ -236,23 +236,23 @@ class CatalogScreenDefaultToolbar(
     val toolbarTitleState = mutableStateOf<String?>(null)
     val toolbarSubtitleState = mutableStateOf<String?>(null)
 
-    val leftIcon = ToolbarIcon(
+    val leftIcon = KurobaToolbarIcon(
       key = Icons.Drawer,
       drawableId = R.drawable.ic_baseline_dehaze_24
     )
 
     val rightIcons = listOf(
-      ToolbarIcon(
+      KurobaToolbarIcon(
         key = Icons.Search,
         drawableId = R.drawable.ic_baseline_search_24,
         visible = false
       ),
-      ToolbarIcon(
+      KurobaToolbarIcon(
         key = Icons.Sort,
         drawableId = R.drawable.ic_baseline_sort_24,
         visible = false
       ),
-      ToolbarIcon(
+      KurobaToolbarIcon(
         key = Icons.Overflow,
         drawableId = R.drawable.ic_baseline_more_vert_24
       ),

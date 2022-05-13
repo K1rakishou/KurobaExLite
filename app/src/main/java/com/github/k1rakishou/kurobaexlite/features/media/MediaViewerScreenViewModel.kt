@@ -65,6 +65,11 @@ class MediaViewerScreenViewModel(
     initialImageUrl: HttpUrl
   ): InitResult {
     return withContext(Dispatchers.Default) {
+      logcat(TAG) {
+        "initFromPostStateList() postCellDataListSize=${postCellDataList.size}, " +
+          "initialImageUrl=${initialImageUrl}, start"
+      }
+
       // Trim the cache every time we open the media viewer
       kurobaLruDiskCache.manualTrim(CacheFileType.PostMediaFull)
 
@@ -81,7 +86,7 @@ class MediaViewerScreenViewModel(
 
       var initialPage = imagesToShow.indexOfFirst { it.fullImageAsUrl == initialImageUrl }
       if (initialPage < 0) {
-        logcatError { "Failed to find post image with url: \'${initialImageUrl}\', resetting it" }
+        logcatError(TAG) { "Failed to find post image with url: \'${initialImageUrl}\', resetting it" }
         initialPage = 0
       }
 
@@ -90,8 +95,15 @@ class MediaViewerScreenViewModel(
         mpvInitializer.init()
       }
 
+      val images = imagesToShow.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) }
+
+      logcat(TAG) {
+        "initFromPostStateList() postCellDataListSize=${postCellDataList.size}, " +
+          "initialImageUrl=${initialImageUrl}, images=${images.size}, initialPage=${initialPage} end"
+      }
+
       return@withContext InitResult(
-        images = imagesToShow.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) },
+        images = images,
         initialPage = initialPage
       )
     }
@@ -255,6 +267,8 @@ class MediaViewerScreenViewModel(
   }
 
   suspend fun loadThumbnailBitmap(context: Context, postImage: IPostImage): Bitmap? {
+    logcat(TAG) { "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl} start" }
+
     val imageRequest = ImageRequest.Builder(context)
       .data(postImage.thumbnailAsUrl)
       .build()
@@ -263,12 +277,17 @@ class MediaViewerScreenViewModel(
     val imageResult = imageLoader.execute(imageRequest)
 
     if (imageResult is ErrorResult) {
-      logcatError { "Failed to load thumbnail bitmap, error: ${imageResult.throwable.errorMessageOrClassName()}" }
+      logcatError(TAG) {
+        "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl}, " +
+          "error: ${imageResult.throwable.errorMessageOrClassName()}"
+      }
+
       return null
     }
 
     imageResult as SuccessResult
 
+    logcat(TAG) { "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl} end" }
     return (imageResult.drawable as BitmapDrawable).bitmap
   }
 

@@ -1,6 +1,5 @@
-package com.github.k1rakishou.kurobaexlite.ui.helpers.layout
+package com.github.k1rakishou.kurobaexlite.features.home.pages
 
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -13,30 +12,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
-import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
-class SplitScreenLayout(
-  componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  childScreensBuilder: (NavigationRouter) -> List<ScreenLayout.ChildScreen<ComposeScreenWithToolbar>>
-) : HomeNavigationScreen(componentActivity, navigationRouter), ScreenLayout<ComposeScreenWithToolbar> {
-  private val _childScreens by lazy { childScreensBuilder.invoke(navigationRouter) }
-  override val childScreens: List<ScreenLayout.ChildScreen<ComposeScreenWithToolbar>> = _childScreens
+class SplitPage private constructor(
+  override val childScreens: List<ChildScreen<ComposeScreenWithToolbar>>
+) : AbstractPage<ComposeScreenWithToolbar>() {
 
-  override val screenKey: ScreenKey = SCREEN_KEY
-
-  // TODO(KurobaEx): not implemented
-  override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
-
-  override val kurobaToolbarContainerState by lazy { KurobaToolbarContainerState<Nothing>() }
+  override fun screenKey(): ScreenKey {
+    return childScreens.first().composeScreen.screenKey
+  }
 
   override fun hasScreen(screenKey: ScreenKey): Boolean {
     return childScreens
@@ -88,7 +75,7 @@ class SplitScreenLayout(
   }
 
   @Composable
-  override fun HomeNavigationScreenContent() {
+  override fun Content() {
     val chanTheme = LocalChanTheme.current
     val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 
@@ -101,13 +88,9 @@ class SplitScreenLayout(
             .fillMaxHeight()
             .weight(weight = weight)
         ) {
-          val childRouter = remember(key1 = childScreen.composeScreen.screenKey) {
-            navigationRouter.childRouter(childScreen.composeScreen.screenKey)
-          }
-
           RouterHost(
-            navigationRouter = childRouter,
-            defaultScreen = { childScreen.composeScreen.Content() }
+            navigationRouter = childScreen.composeScreen.navigationRouter,
+            defaultScreenFunc = { childScreen.composeScreen }
           )
 
           if (index >= 0 && index < childScreens.size) {
@@ -123,7 +106,7 @@ class SplitScreenLayout(
     }
   }
 
-  private fun calculateWeights(childScreens: List<ScreenLayout.ChildScreen<ComposeScreenWithToolbar>>): FloatArray {
+  private fun calculateWeights(childScreens: List<ChildScreen<ComposeScreenWithToolbar>>): FloatArray {
     val allNulls = childScreens.all { it.weight == null }
     if (allNulls) {
       return FloatArray(childScreens.size) { 1f / childScreens.size.toFloat() }
@@ -166,6 +149,12 @@ class SplitScreenLayout(
   }
 
   companion object {
-    val SCREEN_KEY = ScreenKey("SplitScreenLayout")
+    fun of(vararg composeScreenWithWeight: Pair<ComposeScreenWithToolbar, Float>): SplitPage {
+      check(composeScreenWithWeight.isNotEmpty()) { "input is empty" }
+
+      val childScreens = composeScreenWithWeight.map { (screen, weight) -> ChildScreen(screen, weight) }
+      return SplitPage(childScreens)
+    }
   }
+
 }

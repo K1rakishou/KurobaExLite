@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.SaveableComponent
 import com.github.k1rakishou.kurobaexlite.helpers.getParcelableMap
@@ -29,7 +28,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.HideableUiVisibilityInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SplitScreenLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -264,9 +262,12 @@ class GlobalUiInfoManager(
     _lastTouchPosition.set(x.toInt(), y.toInt())
   }
 
-  fun isAnyReplyLayoutOpened(): Boolean {
+  fun isReplyLayoutOpened(screenKey: ScreenKey): Boolean {
     return replyLayoutVisibilityInfoMap.entries
-      .any { (_, replyLayoutVisibilityState) -> replyLayoutVisibilityState.value != ReplyLayoutVisibility.Closed  }
+      .any { (replyLayoutScreenKey, replyLayoutVisibilityState) ->
+        return@any replyLayoutScreenKey == screenKey &&
+          replyLayoutVisibilityState.value != ReplyLayoutVisibility.Closed
+      }
   }
 
   fun drawerVisibilityFlow(coroutineScope: CoroutineScope): StateFlow<DrawerVisibility> {
@@ -302,17 +303,15 @@ class GlobalUiInfoManager(
       return
     }
 
-    val actualScreenKey = layoutModeDependantScreenKey(screenKey, currentUiLayoutMode)
-
-    if (actualScreenKey == currentPage(currentUiLayoutMode)?.screenKey) {
+    if (screenKey == currentPage(currentUiLayoutMode)?.screenKey) {
       return
     }
 
-    val newCurrentPage = CurrentPage(actualScreenKey, false)
+    val newCurrentPage = CurrentPage(screenKey, false)
     _currentPageMapFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
-      key = actualScreenKey,
+      key = screenKey,
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
@@ -326,20 +325,15 @@ class GlobalUiInfoManager(
     val currentUiLayoutMode = currentUiLayoutModeState.value
       ?: return
 
-    val actualScreenKey = layoutModeDependantScreenKey(
-      screenKey = screenKey,
-      currentUiLayoutMode = currentUiLayoutMode
-    )
-
-    if (actualScreenKey == currentPage(currentUiLayoutMode)?.screenKey) {
+    if (screenKey == currentPage(currentUiLayoutMode)?.screenKey) {
       return
     }
 
-    val newCurrentPage = CurrentPage(actualScreenKey, animate)
+    val newCurrentPage = CurrentPage(screenKey, animate)
     _currentPageMapFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
-      key = actualScreenKey,
+      key = screenKey,
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
@@ -396,7 +390,7 @@ class GlobalUiInfoManager(
     hideableUiVisibilityInfo.update(contentListTouchingTopOrBottomState = touching)
   }
 
-  fun onChildScreenSearchStateChanged(screenKey: ScreenKey, searchQuery: String?) {
+  fun onChildScreenSearchStateChanged(screenKey: ScreenKey, usingSearch: Boolean) {
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
       defaultValue = { HideableUiVisibilityInfo() }
@@ -404,7 +398,7 @@ class GlobalUiInfoManager(
 
     val childScreenSearchInfo = ChildScreenSearchInfo(
       screenKey = screenKey,
-      usingSearch = searchQuery != null
+      usingSearch = usingSearch
     )
 
     hideableUiVisibilityInfo.update(childScreenSearchInfo = childScreenSearchInfo)
@@ -484,22 +478,6 @@ class GlobalUiInfoManager(
   fun flingDrawer(velocity: Velocity) {
     val drawerVisibility = DrawerVisibility.Fling(velocity)
     updateDrawerVisibility(drawerVisibility)
-  }
-
-  private fun layoutModeDependantScreenKey(
-    screenKey: ScreenKey,
-    currentUiLayoutMode: MainUiLayoutMode
-  ): ScreenKey {
-    return when (currentUiLayoutMode) {
-      MainUiLayoutMode.Phone -> screenKey
-      MainUiLayoutMode.Split -> {
-        if (screenKey == CatalogScreen.SCREEN_KEY || screenKey == ThreadScreen.SCREEN_KEY) {
-          return SplitScreenLayout.SCREEN_KEY
-        }
-
-        return screenKey
-      }
-    }
   }
 
   private fun updateDrawerVisibility(drawerVisibility: DrawerVisibility) {

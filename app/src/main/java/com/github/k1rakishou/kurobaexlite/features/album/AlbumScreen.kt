@@ -47,9 +47,9 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.ToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -81,19 +81,21 @@ class AlbumScreen(
   private val simpleToolbarState by lazy {
     SimpleToolbarStateBuilder.Builder<ToolbarIcon>(componentActivity)
       .titleId(R.string.album_screen_toolbar_title)
-      .leftIcon(ToolbarIcon(key = ToolbarIcon.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
-      .addRightIcon(ToolbarIcon(key = ToolbarIcon.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .leftIcon(KurobaToolbarIcon(key = ToolbarIcon.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcon.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
       .build()
   }
 
   private val defaultToolbar by lazy {
     SimpleToolbar(
-      toolbarKey = "AlbumScreenToolbar",
+      toolbarKey = screenKey.key,
       simpleToolbarState = simpleToolbarState
     )
   }
 
-  override val kurobaToolbarContainerState by lazy { KurobaToolbarContainerState<SimpleToolbar<ToolbarIcon>>() }
+  override val kurobaToolbarContainerState by lazy {
+    KurobaToolbarContainerState<SimpleToolbar<ToolbarIcon>>(screenKey)
+  }
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
@@ -111,8 +113,15 @@ class AlbumScreen(
       }
     )
 
+    val keySuffix = when (chanDescriptor) {
+      is CatalogDescriptor -> "catalog"
+      is ThreadDescriptor -> "thread"
+    }
+
+    val toolbarKey = "${screenKey.key}_${keySuffix}"
+
     KurobaToolbarContainer(
-      screenKey = screenKey,
+      key = toolbarKey,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = { true }
     )
@@ -126,12 +135,16 @@ class AlbumScreen(
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val paddingValues = remember(key1 = windowInsets) {
-      windowInsets.copy(newTop = windowInsets.top + toolbarHeight).asPaddingValues()
+      windowInsets.copy(
+        newLeft = 0.dp,
+        newRight = 0.dp,
+        newTop = windowInsets.top + toolbarHeight
+      ).asPaddingValues()
     }
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarContainerState.fadeInToolbar(defaultToolbar) }
+      block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
     )
 
     HandleBackPresses {
