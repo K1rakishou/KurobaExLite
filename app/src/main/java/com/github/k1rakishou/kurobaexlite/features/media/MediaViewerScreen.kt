@@ -1108,7 +1108,7 @@ class MediaViewerScreen(
               if (!callbackCalled) {
                 callbackCalled = true
 
-                logcat(TAG) { "onPreviewLoadingFinished() url=\'${postImageData.fullImageAsString}\'" }
+                logcat(TAG, LogPriority.VERBOSE) { "onPreviewLoadingFinished() url=\'${postImageData.fullImageAsString}\'" }
                 onPreviewLoadingFinished(postImageData)
               }
             }

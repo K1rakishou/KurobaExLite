@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar
 
+import android.os.Bundle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -48,10 +49,12 @@ class CatalogScreenDefaultToolbar(
   private val showSortCatalogThreadsScreen: () -> Unit,
   private val showLocalSearchToolbar: () -> Unit,
   private val showOverflowMenu: () -> Unit,
-  val state: State = State()
 ) : KurobaChildToolbar() {
+  private val key = "CatalogScreenDefaultToolbar"
+  private val state: State = State("${key}_state")
 
-  override val toolbarKey: Any = key
+  override val toolbarKey: String = key
+  override val toolbarState: ToolbarState = state
 
   @Composable
   override fun Content() {
@@ -232,7 +235,9 @@ class CatalogScreenDefaultToolbar(
       })
   }
 
-  class State {
+  class State(
+    override val saveableComponentKey: String
+  ) : ToolbarState {
     val toolbarTitleState = mutableStateOf<String?>(null)
     val toolbarSubtitleState = mutableStateOf<String?>(null)
 
@@ -266,6 +271,18 @@ class CatalogScreenDefaultToolbar(
     val selectCatalogClickEvents: SharedFlow<Unit>
       get() = _selectCatalogClickEvents.asSharedFlow()
 
+    override fun saveState(): Bundle {
+      val bundle = Bundle()
+      bundle.putString(TITLE_KEY, toolbarTitleState.value)
+      bundle.putString(SUBTITLE_KEY, toolbarSubtitleState.value)
+      return bundle
+    }
+
+    override fun restoreFromState(bundle: Bundle?) {
+      bundle?.getString(TITLE_KEY)?.let { title -> toolbarTitleState.value = title }
+      bundle?.getString(SUBTITLE_KEY)?.let { subtitle -> toolbarSubtitleState.value = subtitle }
+    }
+
     fun onIconClicked(icons: Icons) {
       _iconClickEvents.tryEmit(icons)
     }
@@ -280,10 +297,11 @@ class CatalogScreenDefaultToolbar(
       Sort,
       Overflow
     }
-  }
 
-  companion object {
-    const val key = "CatalogScreenDefaultToolbar"
+    companion object {
+      private const val TITLE_KEY = "title"
+      private const val SUBTITLE_KEY = "subtitle"
+    }
   }
 
 }

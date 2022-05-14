@@ -89,7 +89,11 @@ class CatalogScreen(
   private val replyLayoutState: IReplyLayoutState
     get() = replyLayoutViewModel.getOrCreateReplyLayoutState(catalogScreenViewModel.chanDescriptor)
 
-  private val defaultToolbar by lazy {
+  override val kurobaToolbarContainerState by lazy {
+    KurobaToolbarContainerState<KurobaChildToolbar>(screenKey)
+  }
+
+  private val defaultToolbar: KurobaChildToolbar by lazy {
     CatalogScreenDefaultToolbar(
       catalogScreenViewModel = catalogScreenViewModel,
       parsedPostDataCache = parsedPostDataCache,
@@ -133,7 +137,7 @@ class CatalogScreen(
     )
   }
 
-  private val replyToolbar by lazy {
+  private val replyToolbar: KurobaChildToolbar by lazy {
     CatalogScreenReplyToolbar(
       threadScreenViewModel = threadScreenViewModel,
       closeReplyLayout = { replyLayoutState.onBackPressed() },
@@ -146,17 +150,14 @@ class CatalogScreen(
     )
   }
 
-  private val localSearchToolbar by lazy {
+  private val localSearchToolbar: KurobaChildToolbar by lazy {
     PostsScreenLocalSearchToolbar(
+      screenKey = screenKey,
       onToolbarCreated = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, true) },
       onToolbarDisposed = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, false) },
       onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
-      closeSearch = { kurobaToolbarContainerState.popToolbar(PostsScreenLocalSearchToolbar.key) }
+      closeSearch = { toolbarKey -> kurobaToolbarContainerState.popToolbar(toolbarKey) }
     )
-  }
-
-  override val kurobaToolbarContainerState by lazy {
-    KurobaToolbarContainerState<KurobaChildToolbar>(screenKey)
   }
 
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
@@ -205,7 +206,7 @@ class CatalogScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     KurobaToolbarContainer(
-      key = screenKey,
+      toolbarContainerKey = screenKey.key,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = {
         val mainUiLayoutMode = globalUiInfoManager.currentUiLayoutModeState.value
@@ -410,7 +411,7 @@ class CatalogScreen(
       block = {
         when (replyLayoutVisibility) {
           ReplyLayoutVisibility.Closed -> {
-            kurobaToolbarContainerState.popToolbar(CatalogScreenReplyToolbar.key)
+            kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
           }
           ReplyLayoutVisibility.Opened,
           ReplyLayoutVisibility.Expanded -> {

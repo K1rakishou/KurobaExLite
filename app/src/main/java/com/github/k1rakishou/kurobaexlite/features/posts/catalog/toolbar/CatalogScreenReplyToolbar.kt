@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar
 
+import android.os.Bundle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,9 +36,11 @@ class CatalogScreenReplyToolbar(
   private val threadScreenViewModel: ThreadScreenViewModel,
   private val closeReplyLayout: () -> Unit,
   private val pickLocalFile: () -> Unit,
-  val state: State = State()
 ) : KurobaChildToolbar() {
+  private val key = "CatalogScreenReplyToolbar"
+  private val state: State = State("${key}_state")
 
+  override val toolbarState: ToolbarState = state
   override val toolbarKey: String = key
 
   @Composable
@@ -112,7 +115,9 @@ class CatalogScreenReplyToolbar(
 
   }
 
-  class State {
+  class State(
+    override val saveableComponentKey: String
+  ) : ToolbarState {
     val toolbarTitleState = mutableStateOf<String?>(null)
 
     val leftIcon = KurobaToolbarIcon(
@@ -131,6 +136,16 @@ class CatalogScreenReplyToolbar(
     val iconClickEvents: SharedFlow<Icons>
       get() = _iconClickEvents.asSharedFlow()
 
+    override fun saveState(): Bundle {
+      return Bundle().apply {
+        putString(TITLE_KEY, toolbarTitleState.value)
+      }
+    }
+
+    override fun restoreFromState(bundle: Bundle?) {
+      bundle?.getString(TITLE_KEY)?.let { title -> toolbarTitleState.value = title }
+    }
+
     fun onIconClicked(icons: State.Icons) {
       _iconClickEvents.tryEmit(icons)
     }
@@ -139,9 +154,10 @@ class CatalogScreenReplyToolbar(
       Close,
       PickLocalFile
     }
+
+    companion object {
+      private const val TITLE_KEY = "title"
+    }
   }
 
-  companion object {
-    const val key = "CatalogScreenReplyToolbar"
-  }
 }

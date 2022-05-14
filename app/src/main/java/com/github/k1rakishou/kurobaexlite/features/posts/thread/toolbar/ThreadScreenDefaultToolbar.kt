@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.thread.toolbar
 
+import android.os.Bundle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -49,9 +51,11 @@ class ThreadScreenDefaultToolbar(
   private val showLocalSearchToolbar: () -> Unit,
   private val toggleBookmarkState: () -> Unit,
   private val showOverflowMenu: () -> Unit,
-  val state: State = State()
 ) : KurobaChildToolbar() {
+  private val key = "ThreadScreenDefaultToolbar"
+  private val state: State = State("${key}_state")
 
+  override val toolbarState: ToolbarState = state
   override val toolbarKey: String = key
 
   @Composable
@@ -123,7 +127,8 @@ class ThreadScreenDefaultToolbar(
             modifier = Modifier
               .fillMaxHeight()
               .fillMaxWidth(),
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
           ) {
             Row {
               Text(
@@ -291,7 +296,9 @@ class ThreadScreenDefaultToolbar(
     )
   }
 
-  class State {
+  class State(
+    override val saveableComponentKey: String
+  ) : ToolbarState {
     val toolbarTitleState = mutableStateOf<String?>(null)
     val toolbarSubtitleState = mutableStateOf<String?>(null)
 
@@ -321,6 +328,18 @@ class ThreadScreenDefaultToolbar(
     val iconClickEvents: SharedFlow<Icons>
       get() = _iconClickEvents.asSharedFlow()
 
+    override fun saveState(): Bundle {
+      return Bundle().apply {
+        putString(TITLE_KEY, toolbarTitleState.value)
+        putString(SUBTITLE_KEY, toolbarSubtitleState.value)
+      }
+    }
+
+    override fun restoreFromState(bundle: Bundle?) {
+      bundle?.getString(TITLE_KEY)?.let { title -> toolbarTitleState.value = title }
+      bundle?.getString(SUBTITLE_KEY)?.let { subtitle -> toolbarSubtitleState.value = subtitle }
+    }
+
     fun bookmarkIcon(): KurobaToolbarIcon<Icons> {
       return rightIcons.first { icon -> icon.key == Icons.Bookmark }
     }
@@ -335,10 +354,11 @@ class ThreadScreenDefaultToolbar(
       Bookmark,
       Overflow
     }
-  }
 
-  companion object {
-    const val key = "ThreadScreenDefaultToolbar"
+    companion object {
+      private const val TITLE_KEY = "title"
+      private const val SUBTITLE_KEY = "subtitle"
+    }
   }
 
 }

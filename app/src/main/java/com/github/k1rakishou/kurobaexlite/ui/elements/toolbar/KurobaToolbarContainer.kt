@@ -13,14 +13,14 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.rememberA
 
 @Composable
 fun <T : KurobaChildToolbar> KurobaToolbarContainer(
-  key: Any,
+  toolbarContainerKey: String,
   backgroundColor: Color? = null,
   kurobaToolbarContainerState: KurobaToolbarContainerState<T>,
   canProcessBackEvent: () -> Boolean
 ) {
   val chanTheme = LocalChanTheme.current
 
-  val stackContainerState = rememberAnimateableStackContainerState<T>(key)
+  val stackContainerState = rememberAnimateableStackContainerState<T>(toolbarContainerKey)
   kurobaToolbarContainerState.init(stackContainerState)
 
   kurobaToolbarContainerState.HandleBackPresses {

@@ -6,101 +6,85 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.github.k1rakishou.kurobaexlite.helpers.removeIfKt
 
 interface DisposableElement {
+  val elementKey: String
+
   fun onCreate()
   fun onDispose()
 }
 
-abstract class StackContainerElementWrapper<T : DisposableElement>(
+class SimpleStackContainerElement<T : DisposableElement>(
   val element: T
 ) {
-  abstract val key: Any
-}
-
-class SimpleStackContainerElement<T : DisposableElement>(
-  element: T,
-  private val keyExtractor: (T) -> Any
-) : StackContainerElementWrapper<T>(element) {
-  private val _key
-    get() = keyExtractor(element)
-
-  override val key: Any = _key
+  val elementKey: String
+    get() = element.elementKey
 }
 
 @Stable
 class AnimateableStackContainerState<T : DisposableElement>(
-  initialValues: List<StackContainerElementWrapper<T>>,
-  private val key: Any,
-  private val _addedElementWrappers: SnapshotStateList<StackContainerChange<T>> = mutableStateListOf(),
-  private val _animatingChanges: SnapshotStateList<StackContainerChange<T>> = mutableStateListOf()
+  private val _addedElements: SnapshotStateList<StackContainerChange<T>> = mutableStateListOf(),
+  private val _animatingElements: SnapshotStateList<StackContainerChange<T>> = mutableStateListOf()
 ) {
-  val addedElementWrappers: List<StackContainerElementWrapper<T>>
-    get() = _addedElementWrappers.map { it.elementWrapper }
-  val animatingChanges: List<StackContainerChange<T>>
-    get() = _animatingChanges
+  val addedElements: List<SimpleStackContainerElement<T>>
+    get() = _addedElements.map { it.stackContainerElement }
+  val animatingElements: List<StackContainerChange<T>>
+    get() = _animatingElements
   val addedElementsCount: Int
-    get() = _addedElementWrappers.size
+    get() = _addedElements.size
 
-  init {
-    initialValues.forEach { initialValue ->
-      _addedElementWrappers += StackContainerChange(initialValue, StackContainerAnimation.Set)
-      initialValue.element.onCreate()
-    }
-  }
-
-  fun setIfEmpty(elementWrapper: StackContainerElementWrapper<T>) {
-    if (_addedElementWrappers.isNotEmpty()) {
+  fun setIfEmpty(stackContainerElement: SimpleStackContainerElement<T>) {
+    if (_addedElements.isNotEmpty()) {
       return
     }
 
-    removeExistingElement(elementWrapper)
-    _animatingChanges.clear()
+    removeExistingElement(stackContainerElement)
+    _animatingElements.clear()
 
-    _addedElementWrappers += StackContainerChange(elementWrapper, StackContainerAnimation.Set)
-    elementWrapper.element.onCreate()
+    _addedElements += StackContainerChange(stackContainerElement, StackContainerAnimation.Set)
+    stackContainerElement.element.onCreate()
   }
 
-  fun fadeIn(elementWrapper: StackContainerElementWrapper<T>) {
-    removeExistingElement(elementWrapper)
-    _animatingChanges.clear()
+  fun fadeIn(stackContainerElement: SimpleStackContainerElement<T>) {
+    removeExistingElement(stackContainerElement)
+    _animatingElements.clear()
 
-    val lastIndex = _addedElementWrappers.lastIndex
+    val lastIndex = _addedElements.lastIndex
     if (lastIndex >= 0) {
-      val topElementWrapper = _addedElementWrappers.get(lastIndex).elementWrapper
+      val topElement = _addedElements.get(lastIndex).stackContainerElement
       val fadeOut = StackContainerChange(
-        elementWrapper = topElementWrapper,
+        stackContainerElement = topElement,
         animation = StackContainerAnimation.Fade(
           fadeType = StackContainerAnimation.FadeType.Out(isDisposing = false)
         )
       )
 
-      _addedElementWrappers.removeAt(lastIndex)
-      _animatingChanges.add(fadeOut)
+      _addedElements.removeAt(lastIndex)
+      _animatingElements.add(fadeOut)
     }
 
     val fadeIn = StackContainerChange(
-      elementWrapper = elementWrapper,
+      stackContainerElement = stackContainerElement,
       animation = StackContainerAnimation.Fade(
         fadeType = StackContainerAnimation.FadeType.In
       )
     )
 
-    _animatingChanges.add(fadeIn)
-    elementWrapper.element.onCreate()
+    _animatingElements.add(fadeIn)
+    stackContainerElement.element.onCreate()
   }
 
-  fun push(elementWrapper: StackContainerElementWrapper<T>) {
-    removeExistingElement(elementWrapper)
-    _animatingChanges.clear()
+  fun push(stackContainerElement: SimpleStackContainerElement<T>) {
+    removeExistingElement(stackContainerElement)
+    _animatingElements.clear()
 
-    val push = StackContainerChange(elementWrapper, StackContainerAnimation.Push)
-    _animatingChanges.add(push)
-    elementWrapper.element.onCreate()
+    val push = StackContainerChange(stackContainerElement, StackContainerAnimation.Push)
+    _animatingElements.add(push)
+    stackContainerElement.element.onCreate()
   }
 
   fun popAll() {
-    _animatingChanges.clear()
+    _animatingElements.clear()
 
-    while (addedElementWrappers.isNotEmpty()) {
+    while (addedElements.isNotEmpty()) {
       removeTop(withAnimation = false)
     }
   }
@@ -109,10 +93,10 @@ class AnimateableStackContainerState<T : DisposableElement>(
     withAnimation: Boolean = true,
     predicate: (Any) -> Boolean = { true }
   ): Boolean {
-    val topChange = _addedElementWrappers.lastOrNull()
+    val topChange = _addedElements.lastOrNull()
       ?: return false
 
-    if (!predicate(topChange.elementWrapper.key)) {
+    if (!predicate(topChange.elementKey)) {
       return false
     }
 
@@ -126,8 +110,8 @@ class AnimateableStackContainerState<T : DisposableElement>(
     key: Any,
     withAnimation: Boolean = true
   ): Boolean {
-    val toRemove = _addedElementWrappers
-      .firstOrNull { stackContainerChange -> stackContainerChange.elementWrapper.key == key }
+    val toRemove = _addedElements
+      .firstOrNull { stackContainerChange -> stackContainerChange.elementKey == key }
       ?: return false
 
     return remove(toRemove, withAnimation)
@@ -138,9 +122,9 @@ class AnimateableStackContainerState<T : DisposableElement>(
     withAnimation: Boolean = true
   ): Boolean {
     if (!withAnimation) {
-      val removed = _addedElementWrappers.removeIfKt { it.elementWrapper.key == stackContainerChange.elementWrapper.key }
+      val removed = _addedElements.removeIfKt { it.elementKey == stackContainerChange.elementKey }
       if (removed) {
-        stackContainerChange.elementWrapper.element.onDispose()
+        stackContainerChange.stackContainerElement.element.onDispose()
       }
 
       return true
@@ -153,11 +137,11 @@ class AnimateableStackContainerState<T : DisposableElement>(
       }
       is StackContainerAnimation.Push -> {
         val pop = StackContainerChange(
-          elementWrapper = stackContainerChange.elementWrapper,
+          stackContainerElement = stackContainerChange.stackContainerElement,
           animation = StackContainerAnimation.Pop
         )
 
-        _animatingChanges.add(pop)
+        _animatingElements.add(pop)
         return true
       }
       is StackContainerAnimation.Remove -> {
@@ -165,34 +149,34 @@ class AnimateableStackContainerState<T : DisposableElement>(
         return false
       }
       is StackContainerAnimation.Set -> {
-        _addedElementWrappers
-          .removeIfKt { it.elementWrapper.key == stackContainerChange.elementWrapper.key }
+        _addedElements
+          .removeIfKt { it.elementKey == stackContainerChange.elementKey }
         return true
       }
       is StackContainerAnimation.Fade -> {
         when (animation.fadeType) {
           StackContainerAnimation.FadeType.In -> {
-            val penultimateIndex = _addedElementWrappers.lastIndex - 1
+            val penultimateIndex = _addedElements.lastIndex - 1
             if (penultimateIndex >= 0) {
-              val penultimateElementWrapper = _addedElementWrappers.get(penultimateIndex).elementWrapper
+              val penultimateElement = _addedElements.get(penultimateIndex).stackContainerElement
               val fadeIn = StackContainerChange(
-                elementWrapper = penultimateElementWrapper,
+                stackContainerElement = penultimateElement,
                 animation = StackContainerAnimation.Fade(StackContainerAnimation.FadeType.In)
               )
 
-              _addedElementWrappers.removeIfKt { it.elementWrapper.key == penultimateElementWrapper.key }
-              _animatingChanges.add(fadeIn)
+              _addedElements.removeIfKt { it.elementKey == penultimateElement.element.elementKey }
+              _animatingElements.add(fadeIn)
             }
 
             val fadeOut = StackContainerChange(
-              elementWrapper = stackContainerChange.elementWrapper,
+              stackContainerElement = stackContainerChange.stackContainerElement,
               animation = StackContainerAnimation.Fade(
                 StackContainerAnimation.FadeType.Out(isDisposing = true)
               )
             )
 
-            _addedElementWrappers.removeIfKt { it.elementWrapper.key == stackContainerChange.elementWrapper.key }
-            _animatingChanges.add(fadeOut)
+            _addedElements.removeIfKt { it.elementKey == stackContainerChange.elementKey }
+            _animatingElements.add(fadeOut)
 
             return true
           }
@@ -206,67 +190,70 @@ class AnimateableStackContainerState<T : DisposableElement>(
   }
 
   internal fun onAnimationFinished() {
-    if (animatingChanges.isEmpty()) {
+    if (animatingElements.isEmpty()) {
       return
     }
 
-    animatingChanges
+    animatingElements
       .filter { change -> change.animation.isDisposing }
-      .forEach { disposingElement -> disposingElement.elementWrapper.element.onDispose() }
+      .forEach { disposingElement -> disposingElement.stackContainerElement.element.onDispose() }
 
-    for (animatingChange in animatingChanges) {
+    for (animatingChange in animatingElements) {
       when (val animation = animatingChange.animation) {
         is StackContainerAnimation.Fade -> {
           when (animation.fadeType) {
             is StackContainerAnimation.FadeType.In -> {
-              _addedElementWrappers.add(animatingChange)
+              _addedElements.add(animatingChange)
             }
             is StackContainerAnimation.FadeType.Out -> {
               if (animation.fadeType.isDisposing) {
-                _addedElementWrappers
-                  .removeIfKt { it.elementWrapper.key == animatingChange.elementWrapper.key }
+                _addedElements
+                  .removeIfKt { it.elementKey == animatingChange.elementKey }
               } else {
-                _addedElementWrappers.add(animatingChange)
+                _addedElements.add(animatingChange)
               }
             }
           }
         }
         is StackContainerAnimation.Pop -> {
-          _addedElementWrappers
-            .removeIfKt { it.elementWrapper.key == animatingChange.elementWrapper.key }
+          _addedElements
+            .removeIfKt { it.elementKey == animatingChange.elementKey }
         }
         is StackContainerAnimation.Push -> {
-          _addedElementWrappers.add(animatingChange)
+          _addedElements.add(animatingChange)
         }
         is StackContainerAnimation.Remove -> {
-          _addedElementWrappers
-            .removeIfKt { it.elementWrapper.key == animatingChange.elementWrapper.key }
+          _addedElements
+            .removeIfKt { it.elementKey == animatingChange.elementKey }
         }
         is StackContainerAnimation.Set -> {
-          _addedElementWrappers.add(animatingChange)
+          _addedElements.add(animatingChange)
         }
       }
     }
 
-    _animatingChanges.clear()
+    _animatingElements.clear()
   }
 
-  private fun removeExistingElement(elementWrapper: StackContainerElementWrapper<T>) {
-    val existingElementIndex = _addedElementWrappers.indexOfFirst { stackContainerChange ->
-      stackContainerChange.elementWrapper.key == elementWrapper.key
+  private fun removeExistingElement(stackContainerElement: SimpleStackContainerElement<T>) {
+    val existingElementIndex = _addedElements.indexOfFirst { stackContainerChange ->
+      stackContainerChange.elementKey == stackContainerElement.element.elementKey
     }
 
     if (existingElementIndex >= 0) {
-      _addedElementWrappers.removeAt(existingElementIndex)
+      _addedElements.removeAt(existingElementIndex)
     }
   }
 
 }
 
 data class StackContainerChange<T : DisposableElement>(
-  val elementWrapper: StackContainerElementWrapper<T>,
+  val stackContainerElement: SimpleStackContainerElement<T>,
   val animation: StackContainerAnimation
-)
+) {
+  val elementKey: String
+    get() = stackContainerElement.element.elementKey
+}
 
 sealed class StackContainerAnimation {
 

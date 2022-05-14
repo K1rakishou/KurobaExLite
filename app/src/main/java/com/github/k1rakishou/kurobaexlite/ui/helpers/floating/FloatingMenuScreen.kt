@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.floating
 
-import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -88,11 +87,7 @@ class FloatingMenuScreen(
     }
 
     val availableWidth = with(LocalDensity.current) {
-      if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-        (maxAvailableWidthPx() / 1.35f).toDp()
-      } else {
-        (maxAvailableWidthPx() / 2f).toDp()
-      }
+      (maxAvailableWidthPx() / 1.35f).toDp()
     }
 
     LazyColumn(

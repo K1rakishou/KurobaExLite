@@ -83,7 +83,7 @@ class ThreadScreen(
   private val replyLayoutState: IReplyLayoutState
     get() = replyLayoutViewModel.getOrCreateReplyLayoutState(threadScreenViewModel.chanDescriptor)
 
-  private val defaultToolbar by lazy {
+  private val defaultToolbar: KurobaChildToolbar by lazy {
     ThreadScreenDefaultToolbar(
       bookmarksManager = bookmarksManager,
       threadScreenViewModel = threadScreenViewModel,
@@ -91,9 +91,7 @@ class ThreadScreen(
       globalUiInfoManager = globalUiInfoManager,
       onBackPressed = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY, true) },
       toggleBookmarkState = { threadScreenViewModel.bookmarkOrUnbookmarkThread() },
-      showLocalSearchToolbar = {
-        kurobaToolbarContainerState.fadeInToolbar(localSearchToolbar)
-      },
+      showLocalSearchToolbar = { kurobaToolbarContainerState.fadeInToolbar(localSearchToolbar) },
       showOverflowMenu = {
         navigationRouter.presentScreen(
           FloatingMenuScreen(
@@ -114,7 +112,7 @@ class ThreadScreen(
     )
   }
 
-  private val replyToolbar by lazy {
+  private val replyToolbar: KurobaChildToolbar by lazy {
     ThreadScreenReplyToolbar(
       threadScreenViewModel = threadScreenViewModel,
       closeReplyLayout = { replyLayoutState.onBackPressed() },
@@ -127,12 +125,13 @@ class ThreadScreen(
     )
   }
 
-  private val localSearchToolbar by lazy {
+  private val localSearchToolbar: KurobaChildToolbar by lazy {
     PostsScreenLocalSearchToolbar(
+      screenKey = screenKey,
       onToolbarCreated = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, true) },
       onToolbarDisposed = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, false) },
       onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
-      closeSearch = { kurobaToolbarContainerState.popToolbar(PostsScreenLocalSearchToolbar.key) }
+      closeSearch = { toolbarKey -> kurobaToolbarContainerState.popToolbar(toolbarKey) }
     )
   }
 
@@ -176,7 +175,7 @@ class ThreadScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     KurobaToolbarContainer(
-      key = screenKey,
+      toolbarContainerKey = screenKey.key,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = {
         val mainUiLayoutMode = globalUiInfoManager.currentUiLayoutModeState.value
@@ -386,7 +385,7 @@ class ThreadScreen(
       block = {
         when (replyLayoutVisibility) {
           ReplyLayoutVisibility.Closed -> {
-            kurobaToolbarContainerState.popToolbar(ThreadScreenReplyToolbar.key)
+            kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
           }
           ReplyLayoutVisibility.Opened,
           ReplyLayoutVisibility.Expanded -> {

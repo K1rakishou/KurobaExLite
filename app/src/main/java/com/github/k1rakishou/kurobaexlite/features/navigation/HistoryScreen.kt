@@ -86,24 +86,26 @@ class HistoryScreen(
   private val deleteNavElementIconWidth = 40.dp
 
   override val screenKey: ScreenKey = SCREEN_KEY
-
   override val hasFab: Boolean = false
 
   // TODO(KurobaEx): not implemented
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
 
-  private val simpleToolbarState by lazy {
+  private val defaultToolbarKey = "${screenKey.key}_toolbar"
+  private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
+
+  private val defaultToolbarState by lazy {
     SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
       .titleId(R.string.history_screen_toolbar_title)
       .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
-      .build()
+      .build(defaultToolbarStateKey)
   }
 
   private val defaultToolbar by lazy {
     SimpleToolbar(
-      toolbarKey = screenKey.key,
-      simpleToolbarState = simpleToolbarState
+      toolbarKey = defaultToolbarKey,
+      simpleToolbarState = defaultToolbarState
     )
   }
 
@@ -119,7 +121,7 @@ class HistoryScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        simpleToolbarState.iconClickEvents.collect { icon ->
+        defaultToolbarState.iconClickEvents.collect { icon ->
           when (icon) {
             ToolbarIcons.Back -> {
               if (!kurobaToolbarContainerState.onBackPressed()) {
@@ -139,7 +141,7 @@ class HistoryScreen(
     )
 
     KurobaToolbarContainer(
-      key = screenKey,
+      toolbarContainerKey = screenKey.key,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = { true }
     )

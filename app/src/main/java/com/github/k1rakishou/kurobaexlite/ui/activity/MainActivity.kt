@@ -25,12 +25,14 @@ import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
+import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainerViewModel
 import kotlin.time.Duration.Companion.seconds
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
   private val mainActivityViewModel: MainActivityViewModel by viewModel()
+  private val animateableStackContainerViewModel: AnimateableStackContainerViewModel by viewModel()
 
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
@@ -48,14 +50,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val runtimePermissionsHelper by lazy { RuntimePermissionsHelper(applicationContext, this) }
 
   init {
-    savedStateRegistry.registerSavedStateProvider(globalUiInfoManager.key) {
-      globalUiInfoManager.saveState()
-    }
-    addOnContextAvailableListener {
-      globalUiInfoManager.restoreFromState(
-        savedStateRegistry.consumeRestoredStateForKey(globalUiInfoManager.key)
-      )
-    }
+    processSaveableComponents()
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -172,6 +167,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         }
       }
     )
+  }
+
+  private fun processSaveableComponents() {
+    savedStateRegistry.registerSavedStateProvider(globalUiInfoManager.saveableComponentKey) {
+      globalUiInfoManager.saveState()
+    }
+    addOnContextAvailableListener {
+      globalUiInfoManager.restoreFromState(
+        savedStateRegistry.consumeRestoredStateForKey(globalUiInfoManager.saveableComponentKey)
+      )
+    }
   }
 
   companion object {

@@ -24,17 +24,20 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayou
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.launch
 
 class PostsScreenLocalSearchToolbar(
+  private val screenKey: ScreenKey,
   val onToolbarCreated: () -> Unit,
   val onToolbarDisposed: () -> Unit,
   val onSearchQueryUpdated: (String?) -> Unit,
-  val closeSearch: suspend () -> Unit
+  val closeSearch: suspend (toolbarKey: String) -> Unit
 ) : KurobaChildToolbar() {
 
-  override val toolbarKey: String = key
+  override val toolbarState: ToolbarState? = null
+  override val toolbarKey: String = "${screenKey.key}_PostsScreenLocalSearchToolbar"
 
   override fun onCreate() {
     onToolbarCreated()
@@ -84,7 +87,7 @@ class PostsScreenLocalSearchToolbar(
                   } else {
                     searchDebouncer.stop()
                     onSearchQueryUpdated.invoke(null)
-                    closeSearch()
+                    closeSearch(toolbarKey)
                   }
                 }
               }
@@ -120,7 +123,4 @@ class PostsScreenLocalSearchToolbar(
     )
   }
 
-  companion object {
-    const val key = "PostsScreenLocalSearchToolbar"
-  }
 }

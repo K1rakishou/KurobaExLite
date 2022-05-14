@@ -13,10 +13,10 @@ fun <T : DisposableElement> AnimateableStackContainer(
   val composedItems = remember { mutableMapOf<T, @Composable (T) -> Unit>() }
 
   // First iterate and draw all fixed in place elements which are not currently being animated
-  for (addedElementWrapper in state.addedElementWrappers) {
-    val element = addedElementWrapper.element
+  for (stackContainerElement in state.addedElements) {
+    val element = stackContainerElement.element
 
-    key(addedElementWrapper.key) {
+    key(stackContainerElement.elementKey) {
       val movableContent = composedItems.getOrPut(
         key = element,
         defaultValue = { movableContentOf<T> { content(element) } }
@@ -27,17 +27,17 @@ fun <T : DisposableElement> AnimateableStackContainer(
   }
 
   // Then iterate and draw elements which are currently being animated
-  for (animatingChange in state.animatingChanges) {
-    val element = animatingChange.elementWrapper.element
+  for (stackContainerElement in state.animatingElements) {
+    val element = stackContainerElement.stackContainerElement.element
 
-    key(animatingChange.elementWrapper.key) {
+    key(stackContainerElement.stackContainerElement.elementKey) {
       val movableContent = composedItems.getOrPut(
         key = element,
         defaultValue = { movableContentOf<T> { content(element) } }
       )
 
       StackContainerTransition(
-        animatingChange = animatingChange,
+        animatingChange = stackContainerElement,
         onAnimationFinished = { state.onAnimationFinished() }
       ) {
         movableContent(element)
@@ -48,23 +48,17 @@ fun <T : DisposableElement> AnimateableStackContainer(
 
 @Composable
 fun <T : DisposableElement> rememberAnimateableStackContainerState(
-  key: Any,
-  initialValues: List<StackContainerElementWrapper<T>> = emptyList()
+  toolbarContainerKey: String
 ): AnimateableStackContainerState<T> {
   val componentActivity = LocalComponentActivity.current
   val viewModel = componentActivity.rememberViewModel<AnimateableStackContainerViewModel>()
 
   return viewModel.storage.getOrPut(
-    key = key,
-    defaultValue = {
-      return@getOrPut AnimateableStackContainerState(
-        initialValues = initialValues,
-        key = key
-      )
-    }
+    key = toolbarContainerKey,
+    defaultValue = { AnimateableStackContainerState<T>() }
   ) as AnimateableStackContainerState<T>
 }
 
 class AnimateableStackContainerViewModel : ViewModel() {
-  internal val storage = mutableMapOf<Any, AnimateableStackContainerState<*>>()
+  internal val storage = mutableMapOf<String, AnimateableStackContainerState<*>>()
 }

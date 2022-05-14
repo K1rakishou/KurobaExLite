@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import java.io.InterruptedIOException
 import java.net.URLDecoder
@@ -37,6 +36,7 @@ import logcat.logcat
 import okhttp3.Request
 import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.context.GlobalContext
 
 
@@ -607,7 +607,7 @@ fun View.emulateMotionEvent(downTime: Long, eventTime: Long, action: Int, x: Flo
 
 @Composable
 inline fun <reified T : ViewModel> ComponentActivity.rememberViewModel(): T {
-  return remember { ViewModelProvider(this).get(T::class.java) }
+  return remember { this.viewModel<T>().value }
 }
 
 @Composable

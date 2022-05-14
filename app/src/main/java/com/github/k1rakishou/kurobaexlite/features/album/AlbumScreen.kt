@@ -78,18 +78,21 @@ class AlbumScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-  private val simpleToolbarState by lazy {
+  private val defaultToolbarKey = "${screenKey.key}_toolbar"
+  private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
+
+  private val defaultToolbarState by lazy {
     SimpleToolbarStateBuilder.Builder<ToolbarIcon>(componentActivity)
       .titleId(R.string.album_screen_toolbar_title)
       .leftIcon(KurobaToolbarIcon(key = ToolbarIcon.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcon.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
-      .build()
+      .build(defaultToolbarStateKey)
   }
 
   private val defaultToolbar by lazy {
     SimpleToolbar(
-      toolbarKey = screenKey.key,
-      simpleToolbarState = simpleToolbarState
+      toolbarKey = defaultToolbarKey,
+      simpleToolbarState = defaultToolbarState
     )
   }
 
@@ -102,7 +105,7 @@ class AlbumScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        simpleToolbarState.iconClickEvents.collect { icon ->
+        defaultToolbarState.iconClickEvents.collect { icon ->
           when (icon) {
             ToolbarIcon.Back -> { onBackPressed() }
             ToolbarIcon.Overflow -> {
@@ -118,10 +121,8 @@ class AlbumScreen(
       is ThreadDescriptor -> "thread"
     }
 
-    val toolbarKey = "${screenKey.key}_${keySuffix}"
-
     KurobaToolbarContainer(
-      key = toolbarKey,
+      toolbarContainerKey = "${screenKey.key}_${keySuffix}",
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = { true }
     )

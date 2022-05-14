@@ -67,7 +67,6 @@ internal fun MediaViewerToolbar(
       indexInList = currentImageIndex,
       content = {
         MediaToolbar(
-          screenKey = screenKey,
           toolbarKey = currentToolbarKey,
           kurobaToolbarContainerState = kurobaToolbarContainerState,
           mediaViewerScreenState = mediaViewerScreenState,
@@ -84,7 +83,6 @@ internal fun MediaViewerToolbar(
         indexInList = targetImageIndex,
         content = {
           MediaToolbar(
-            screenKey = screenKey,
             toolbarKey = targetToolbarKey,
             kurobaToolbarContainerState = kurobaToolbarContainerState,
             mediaViewerScreenState = mediaViewerScreenState,
@@ -113,7 +111,7 @@ internal fun MediaViewerToolbar(
         .height(toolbarHeight)
     ) {
       KurobaToolbarContainer(
-        key = screenKey,
+        toolbarContainerKey = screenKey.key,
         backgroundColor = backgroundColor,
         kurobaToolbarContainerState = kurobaToolbarContainerState,
         canProcessBackEvent = { true },
@@ -130,7 +128,6 @@ internal fun MediaViewerToolbar(
 
 @Composable
 private fun MediaToolbar(
-  screenKey: ScreenKey,
   toolbarKey: String,
   kurobaToolbarContainerState: KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>,
   mediaViewerScreenState: MediaViewerScreenState,
@@ -142,11 +139,10 @@ private fun MediaToolbar(
 
   val defaultToolbarState = remember(key1 = toolbarKey) {
     return@remember SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
-      .tag(toolbarKey)
       .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.DownloadMedia, drawableId = R.drawable.ic_baseline_download_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
-      .build()
+      .build(toolbarKey)
   }
 
   val defaultToolbar = remember(key1 = toolbarKey) {
@@ -198,12 +194,6 @@ private fun MediaToolbar(
     mediaViewerScreenState = mediaViewerScreenState,
     toolbarState = defaultToolbarState,
     currentPagerPage = currentPagerPage
-  )
-
-  KurobaToolbarContainer(
-    key = screenKey,
-    kurobaToolbarContainerState = kurobaToolbarContainerState,
-    canProcessBackEvent = { true },
   )
 }
 

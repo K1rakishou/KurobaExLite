@@ -121,7 +121,7 @@ class GlobalUiInfoManager(
     get() = _historyScreenOnLeftSide.asStateFlow()
   // ^^^ Settings
 
-  override val key: String = SAVE_STATE_KEY
+  override val saveableComponentKey: String = SAVE_STATE_KEY
 
   override fun saveState(): Bundle {
     return Bundle().apply {

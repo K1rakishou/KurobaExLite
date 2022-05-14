@@ -74,26 +74,31 @@ class CatalogSelectionScreen(
 
   private val searchQueryState = mutableStateOf<String?>(null)
 
-  private val simpleToolbarState by lazy {
+  private val defaultToolbarKey = "${screenKey.key}_default"
+  private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
+  private val searchToolbarKey = "${screenKey.key}_search"
+
+  private val defaultToolbarState by lazy {
     SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
       .titleId(R.string.board_selection_screen_toolbar_title)
       .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Search, drawableId = R.drawable.ic_baseline_search_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
-      .build()
+      .build(defaultToolbarStateKey)
   }
 
-  private val defaultToolbar by lazy {
+  private val defaultToolbar: KurobaChildToolbar by lazy {
     SimpleToolbar(
-      toolbarKey = screenKey.key,
-      simpleToolbarState = simpleToolbarState
+      toolbarKey = defaultToolbarKey,
+      simpleToolbarState = defaultToolbarState
     )
   }
 
-  private val searchToolbar by lazy {
+  private val searchToolbar: KurobaChildToolbar by lazy {
     SimpleSearchToolbar(
+      toolbarKey = searchToolbarKey,
       onSearchQueryUpdated = { searchQuery -> searchQueryState.value = searchQuery },
-      closeSearch = { kurobaToolbarContainerState.popToolbar(SimpleSearchToolbar.key) }
+      closeSearch = { kurobaToolbarContainerState.popToolbar(searchToolbarKey) }
     )
   }
 
@@ -106,7 +111,7 @@ class CatalogSelectionScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        simpleToolbarState.iconClickEvents.collect { key ->
+        defaultToolbarState.iconClickEvents.collect { key ->
           when (key) {
             ToolbarIcons.Search -> {
               kurobaToolbarContainerState.fadeInToolbar(searchToolbar)
@@ -121,7 +126,7 @@ class CatalogSelectionScreen(
     )
 
     KurobaToolbarContainer(
-      key = screenKey,
+      toolbarContainerKey = screenKey.key,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = { true }
     )

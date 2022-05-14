@@ -77,6 +77,7 @@ import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesReposito
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
+import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainerViewModel
 import com.squareup.moshi.Moshi
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -252,6 +253,7 @@ object DependencyGraph {
     viewModel {
       BookmarksScreenViewModel()
     }
+    viewModel { AnimateableStackContainerViewModel() }
   }
 
   private fun Module.repositories() {

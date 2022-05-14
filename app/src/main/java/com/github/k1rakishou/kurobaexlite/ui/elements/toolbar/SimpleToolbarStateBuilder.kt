@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
 import android.content.Context
+import android.os.Bundle
 import androidx.annotation.StringRes
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -47,17 +47,11 @@ import kotlinx.coroutines.launch
 class SimpleToolbarStateBuilder<T : Any> private constructor(
   private val context: Context
 ) {
-  private var tag: String? = null
   private var toolbarTitle: String? = null
   private var toolbarSubtitle: String? = null
 
   private var leftIcon: KurobaToolbarIcon<T>? = null
   private val rightIcons = mutableListOf<KurobaToolbarIcon<T>>()
-
-  fun tag(tag: String): SimpleToolbarStateBuilder<T> {
-    this.tag = tag
-    return this
-  }
 
   fun titleString(title: String): SimpleToolbarStateBuilder<T> {
     toolbarTitle = title
@@ -84,9 +78,9 @@ class SimpleToolbarStateBuilder<T : Any> private constructor(
     return this
   }
 
-  fun build(): SimpleToolbarState<T> {
+  fun build(key: String): SimpleToolbarState<T> {
     return SimpleToolbarState(
-      tag = tag,
+      saveableComponentKey = key,
       title = toolbarTitle,
       subtitle = toolbarSubtitle,
       _leftIcon = requireNotNull(leftIcon) { "Left icon is null!" },
@@ -102,12 +96,12 @@ class SimpleToolbarStateBuilder<T : Any> private constructor(
 }
 
 class SimpleToolbarState<T : Any>(
-  val tag: String?,
+  override val saveableComponentKey: String,
   title: String?,
   subtitle: String?,
   _leftIcon: KurobaToolbarIcon<T>,
   _rightIcons: List<KurobaToolbarIcon<T>>
-) {
+) : KurobaChildToolbar.ToolbarState {
   val toolbarTitleState = mutableStateOf<String?>(title)
   val toolbarSubtitleState = mutableStateOf<String?>(subtitle)
 
@@ -118,8 +112,25 @@ class SimpleToolbarState<T : Any>(
   val iconClickEvents: SharedFlow<T>
     get() = _iconClickEvents.asSharedFlow()
 
+  override fun saveState(): Bundle {
+    return Bundle().apply {
+      putString(TITLE_KEY, toolbarTitleState.value)
+      putString(SUBTITLE_KEY, toolbarSubtitleState.value)
+    }
+  }
+
+  override fun restoreFromState(bundle: Bundle?) {
+    bundle?.getString(TITLE_KEY)?.let { title -> toolbarTitleState.value = title }
+    bundle?.getString(SUBTITLE_KEY)?.let { subtitle -> toolbarSubtitleState.value = subtitle }
+  }
+
   fun onIconClicked(iconKey: T) {
     _iconClickEvents.tryEmit(iconKey)
+  }
+
+  companion object {
+    private const val TITLE_KEY = "title"
+    private const val SUBTITLE_KEY = "subtitle"
   }
 
 }
@@ -128,6 +139,8 @@ class SimpleToolbar<T : Any>(
   override val toolbarKey: String,
   val simpleToolbarState: SimpleToolbarState<T>
 ) : KurobaChildToolbar() {
+
+  override val toolbarState: ToolbarState = simpleToolbarState
 
   @Composable
   override fun Content() {
@@ -180,18 +193,16 @@ class SimpleToolbar<T : Any>(
       }
     )
   }
-
-  companion object {
-    const val key = "SimpleToolbar"
-  }
 }
 
 class SimpleSearchToolbar(
+  override val toolbarKey: String,
   val onSearchQueryUpdated: (String?) -> Unit,
   val closeSearch: suspend () -> Unit
 ) : KurobaChildToolbar() {
+  private val state = State("${toolbarKey}_state")
 
-  override val toolbarKey: String = key
+  override val toolbarState: ToolbarState = state
 
   override fun onDispose() {
     super.onDispose()
@@ -208,10 +219,7 @@ class SimpleSearchToolbar(
     val chanTheme = LocalChanTheme.current
     val parentBgColor = chanTheme.primaryColorCompose
 
-    var searchQuery by rememberSaveable(
-      key = "${toolbarKey}_search_query",
-      stateSaver = TextFieldValue.Saver
-    ) { mutableStateOf(TextFieldValue()) }
+    var searchQuery by state.searchQuery
 
     DisposableEffect(
       key1 = Unit,
@@ -273,7 +281,25 @@ class SimpleSearchToolbar(
     )
   }
 
-  companion object {
-    const val key = "SimpleSearchToolbar"
+  class State(
+    override val saveableComponentKey: String
+  ) : ToolbarState {
+    val searchQuery = mutableStateOf(TextFieldValue())
+
+    override fun saveState(): Bundle {
+      return Bundle().apply {
+        putString(SEARCH_QUERY_KEY, searchQuery.value.text)
+      }
+    }
+
+    override fun restoreFromState(bundle: Bundle?) {
+      bundle?.getString(SEARCH_QUERY_KEY)?.let { query -> searchQuery.value = TextFieldValue(text = query) }
+    }
+
+    companion object {
+      private const val SEARCH_QUERY_KEY = "search_query"
+    }
+
   }
+
 }

@@ -26,12 +26,7 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar>(
 
   fun setToolbar(childToolbar: T) {
     val func = { containerState: AnimateableStackContainerState<T> ->
-      containerState.setIfEmpty(
-        SimpleStackContainerElement(
-          element = childToolbar,
-          keyExtractor = { it.toolbarKey }
-        )
-      )
+      containerState.setIfEmpty(SimpleStackContainerElement(childToolbar))
     }
 
     if (!::_stackContainerState.isInitialized) {
@@ -43,12 +38,7 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar>(
 
   fun fadeInToolbar(childToolbar: T) {
     val func = { containerState: AnimateableStackContainerState<T> ->
-      containerState.fadeIn(
-        elementWrapper = SimpleStackContainerElement(
-          element = childToolbar,
-          keyExtractor = { it.toolbarKey }
-        )
-      )
+      containerState.fadeIn(SimpleStackContainerElement(childToolbar))
     }
 
     if (!::_stackContainerState.isInitialized) {
@@ -92,18 +82,18 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar>(
     return topChildToolbarInternal(T::class.java)
   }
 
-  inline fun <reified T : KurobaChildToolbar> childToolbar(key: Any): T? {
+  inline fun <reified T : KurobaChildToolbar> childToolbar(key: String): T? {
     return childToolbarInternal(key, T::class.java)
   }
 
   @PublishedApi
   internal fun <T : KurobaChildToolbar> topChildToolbarInternal(clazz: Class<T>): T? {
-    val added = _stackContainerState.addedElementWrappers.lastOrNull() as? T
+    val added = _stackContainerState.addedElements.lastOrNull() as? T
     if (added != null) {
       return added
     }
 
-    val animating = _stackContainerState.animatingChanges.lastOrNull() as? T
+    val animating = _stackContainerState.animatingElements.lastOrNull() as? T
     if (animating != null) {
       return animating
     }
@@ -112,15 +102,22 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar>(
   }
 
   @PublishedApi
-  internal fun <T : KurobaChildToolbar> childToolbarInternal(key: Any, clazz: Class<T>): T? {
-    val added = _stackContainerState.addedElementWrappers
-      .lastOrNull { wrapper -> wrapper.key == key && wrapper.element.javaClass == clazz } as? T
+  internal fun <T : KurobaChildToolbar> childToolbarInternal(key: String, clazz: Class<T>): T? {
+    val added = _stackContainerState.addedElements
+      .lastOrNull { element ->
+        return@lastOrNull element.elementKey == key &&
+          element.element.javaClass == clazz
+      } as? T
+
     if (added != null) {
       return added
     }
 
-    val animating = _stackContainerState.animatingChanges
-      .lastOrNull { animation -> animation.elementWrapper.key == key && animation.elementWrapper.element.javaClass == clazz } as? T
+    val animating = _stackContainerState.animatingElements
+      .lastOrNull { animation ->
+        return@lastOrNull animation.stackContainerElement.elementKey == key &&
+          animation.stackContainerElement.element.javaClass == clazz
+      } as? T
     if (animating != null) {
       return animating
     }
