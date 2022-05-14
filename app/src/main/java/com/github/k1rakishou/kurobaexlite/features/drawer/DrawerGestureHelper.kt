@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import android.os.SystemClock
-import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
@@ -15,13 +14,12 @@ import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
-import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.isOutOfBounds
-import androidx.compose.ui.input.pointer.positionChangeConsumed
 import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
+import com.github.k1rakishou.kurobaexlite.ui.helpers.gesture.awaitPointerSlopOrCancellationWithPass
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
@@ -68,8 +66,11 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           var overSlop = Offset.Zero
           onStopConsumingScrollEvents()
 
-          val touchSlopChange = awaitTouchSlopOrCancellation(downEvent.id) { change, slop ->
-            change.consumeAllChanges()
+          val touchSlopChange = awaitPointerSlopOrCancellationWithPass(
+            pointerId = downEvent.id,
+            pointerEventPass = PointerEventPass.Initial
+          ) { change, slop ->
+            change.consume()
             overSlop = slop
           }
 
@@ -83,7 +84,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
         } else {
           if (pagerSwipeExclusionZone.contains(downEvent.position)) {
             for (change in firstEvent.changes) {
-              change.consumeAllChanges()
+              change.consume()
             }
 
             var isDrawerDragEvent = false
@@ -111,7 +112,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
               }
 
               for (change in nextEvent.changes) {
-                change.consumeAllChanges()
+                change.consume()
               }
 
               collectedEvents += nextEvent
@@ -155,7 +156,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             }
 
             for (change in firstEvent.changes) {
-              change.consumeAllChanges()
+              change.consume()
             }
 
             val longPress = kurobaAwaitLongPressOrCancellation(
@@ -189,14 +190,14 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
 
       try {
         for (change in firstEvent.changes) {
-          change.consumeAllChanges()
+          change.consume()
         }
 
         awaitPointerEventScope {
           while (isActive) {
             val moveEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
             for (change in moveEvent.changes) {
-              change.consumeAllChanges()
+              change.consume()
             }
 
             val drag = moveEvent.changes.firstOrNull { it.id == dragDownEvent!!.id }
@@ -253,7 +254,7 @@ private suspend fun AwaitPointerEventScope.kurobaAwaitLongPressOrCancellation(
         // the existing pointer event because it comes after the Main pass we checked
         // above.
         val consumeCheck = awaitPointerEvent(PointerEventPass.Final)
-        if (consumeCheck.changes.fastAny { it.positionChangeConsumed() }) {
+        if (consumeCheck.changes.fastAny { it.isConsumed }) {
           finished = true
         }
         if (!event.isPointerUp(currentDown.id)) {

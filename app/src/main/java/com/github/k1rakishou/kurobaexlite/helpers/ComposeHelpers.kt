@@ -10,8 +10,6 @@ import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.consumeDownChange
 import androidx.compose.ui.unit.Density
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -40,7 +38,7 @@ suspend fun PointerInputScope.detectTapGesturesWithFilter(
         return@awaitPointerEventScope
       }
 
-      down.consumeDownChange()
+      if (down.pressed != down.previousPressed) down.consume()
       pressScope.reset()
 
       if (onPress !== NoPressGesture) launch {
@@ -58,7 +56,7 @@ suspend fun PointerInputScope.detectTapGesturesWithFilter(
         if (upOrCancel == null) {
           pressScope.cancel() // tap-up was canceled
         } else {
-          upOrCancel.consumeDownChange()
+          if (upOrCancel.pressed != upOrCancel.previousPressed) upOrCancel.consume()
           pressScope.release()
         }
       } catch (_: PointerEventTimeoutCancellationException) {
@@ -95,7 +93,7 @@ suspend fun PointerInputScope.detectTapGesturesWithFilter(
           withTimeout(longPressTimeout) {
             val secondUp = waitForUpOrCancellation()
             if (secondUp != null) {
-              secondUp.consumeDownChange()
+              if (secondUp.pressed != secondUp.previousPressed) secondUp.consume()
               pressScope.release()
               onDoubleTap(secondUp.position)
             } else {
@@ -133,7 +131,7 @@ private suspend fun AwaitPointerEventScope.awaitSecondDown(
 private suspend fun AwaitPointerEventScope.consumeUntilUp() {
   do {
     val event = awaitPointerEvent()
-    event.changes.forEach { it.consumeAllChanges() }
+    event.changes.forEach { it.consume() }
   } while (event.changes.any { it.pressed })
 }
 

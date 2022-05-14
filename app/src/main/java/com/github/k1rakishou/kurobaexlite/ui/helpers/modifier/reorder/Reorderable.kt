@@ -24,9 +24,6 @@ import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.changedToUp
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.consumeDownChange
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
@@ -168,7 +165,7 @@ fun Modifier.reorderable(
           onDragEnd = { interactions.tryEmit(ReorderAction.End) },
           onDragCancel = { interactions.tryEmit(ReorderAction.End) },
           onDrag = { change, dragAmount ->
-            change.consumeAllChanges()
+            change.consume()
             interactions.tryEmit(ReorderAction.Drag(dragAmount.forOrientation(orientation)))
           })
       }
@@ -186,13 +183,13 @@ private suspend fun PointerInputScope.detectDrag(
     if (
       drag(down) {
         onDrag(it, it.positionChange())
-        it.consumePositionChange()
+        if (it.positionChange() != Offset.Zero) it.consume()
       }
     ) {
       // consume up if we quit drag gracefully with the up
       currentEvent.changes.forEach {
         if (it.changedToUp()) {
-          it.consumeDownChange()
+          if (it.pressed != it.previousPressed) it.consume()
         }
       }
       onDragEnd()

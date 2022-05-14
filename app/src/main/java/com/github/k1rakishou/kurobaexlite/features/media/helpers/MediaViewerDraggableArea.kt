@@ -8,12 +8,10 @@ import android.text.TextPaint
 import android.view.animation.LinearInterpolator
 import android.widget.Scroller
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,7 +26,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
-import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.input.pointer.util.addPointerInputChange
@@ -44,6 +41,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.gesture.awaitPointerSlopOrCancellationWithPass
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
@@ -56,7 +54,6 @@ private val interpolator = LinearInterpolator()
 private val boldTypeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
 
-@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun DraggableArea(
   closeScreen: () -> Unit,
@@ -194,16 +191,17 @@ fun DraggableArea(
 
               var skipGesture = false
 
-              val touchSlopChange = awaitTouchSlopOrCancellation(
+              val touchSlopChange = awaitPointerSlopOrCancellationWithPass(
                 pointerId = firstChange.id,
-                onTouchSlopReached = { change, overSlop ->
+                pointerEventPass = PointerEventPass.Initial,
+                onPointerSlopReached = { change, overSlop ->
                   if (!isDragGestureAllowedFunc(change.position, firstChange.position)) {
                     skipGesture = true
-                    return@awaitTouchSlopOrCancellation
+                    return@awaitPointerSlopOrCancellationWithPass
                   }
 
                   if (overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
-                    change.consumeAllChanges()
+                    change.consume()
                   }
                 }
               )
@@ -214,7 +212,7 @@ fun DraggableArea(
 
               downEvent.changes.fastForEach { pointerInputChange ->
                 velocityTracker.addPointerInputChange(pointerInputChange)
-                pointerInputChange.consumeAllChanges()
+                pointerInputChange.consume()
               }
 
               velocityTracker.addPointerInputChange(touchSlopChange)
@@ -231,7 +229,7 @@ fun DraggableArea(
                     break
                   }
 
-                  moveChange.consumeAllChanges()
+                  moveChange.consume()
                   velocityTracker.addPointerInputChange(moveChange)
 
                   currentPosition = moveChange.position - startPosition

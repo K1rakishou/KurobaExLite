@@ -27,7 +27,7 @@ class MPVView(
     attrs: AttributeSet?
 ) : TextureView(context, attrs), TextureView.SurfaceTextureListener {
     private var filePath: String? = null
-    private var surfaceAttached = false
+    private var _surfaceTexture: SurfaceTexture? = null
     private var _initialized = false
 
     private lateinit var mpvSettings: MpvSettings
@@ -45,6 +45,11 @@ class MPVView(
     fun detach() {
         this.filePath = null
 
+        if (_surfaceTexture != null) {
+            logcat(TAG) { "onSurfaceTextureDestroyed() was not called before detach() got called. Calling it manually." }
+            onSurfaceTextureDestroyed(_surfaceTexture!!)
+        }
+
         // Disable surface callbacks to avoid using unintialized mpv state
         surfaceTextureListener = null
 
@@ -58,7 +63,7 @@ class MPVView(
             return
         }
 
-        if (!surfaceAttached) {
+        if (_surfaceTexture != null) {
             this.filePath = filePath
         } else {
             this.filePath = null
@@ -218,7 +223,7 @@ class MPVView(
 
     override fun onSurfaceTextureAvailable(surfaceTexture: SurfaceTexture, width: Int, height: Int) {
         logcat(TAG) { "attaching surface" }
-        check(!surfaceAttached) { "Surface already attached!" }
+        check(_surfaceTexture == null) { "Surface already attached!" }
 
         MPVLib.mpvAttachSurface(Surface(surfaceTexture))
         // This forces mpv to render subs/osd/whatever into our surface even if it would ordinarily not
@@ -230,17 +235,17 @@ class MPVView(
         }
 
         MPVLib.mpvSetPropertyString("vo", "gpu")
-        surfaceAttached = true
+        _surfaceTexture = surfaceTexture
     }
 
     override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
         logcat(TAG) { "detaching surface" }
-        check(surfaceAttached) { "Surface is not attached!" }
+        check(_surfaceTexture != null) { "Surface is not attached!" }
 
         MPVLib.mpvSetPropertyString("vo", "null")
         MPVLib.mpvSetOptionString("force-window", "no")
         MPVLib.mpvDetachSurface()
-        surfaceAttached = false
+        _surfaceTexture = null
 
         return true
     }

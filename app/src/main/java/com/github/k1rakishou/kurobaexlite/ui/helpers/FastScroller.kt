@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.input.pointer.consumeAllChanges
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -221,7 +220,7 @@ suspend fun PointerInputScope.processFastScrollerInputs(
         return@awaitPointerEventScope
       }
 
-      down.consumeAllChanges()
+      down.consume()
 
       var job: Job? = null
 
@@ -233,7 +232,7 @@ suspend fun PointerInputScope.processFastScrollerInputs(
           }
 
           for (change in nextEvent.changes) {
-            change.consumeAllChanges()
+            change.consume()
           }
 
           nextEvent.changes.lastOrNull()?.let { lastChange ->
