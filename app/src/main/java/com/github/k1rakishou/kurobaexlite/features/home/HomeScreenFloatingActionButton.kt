@@ -49,6 +49,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
     ?.childScreens
     ?.firstOrNull()
     ?.composeScreen
+    ?.topChildScreen()
     ?: return
 
   val currentScreenKey = currentScreen.screenKey

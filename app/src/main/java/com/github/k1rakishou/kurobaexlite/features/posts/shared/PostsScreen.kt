@@ -18,6 +18,8 @@ abstract class PostsScreen(
 ) : HomeNavigationScreen(componentActivity, navigationRouter) {
   abstract val isCatalogScreen: Boolean
 
+  override val hasFab: Boolean = true
+
   protected fun showRepliesForPost(replyViewMode: PopupRepliesScreen.ReplyViewMode) {
     navigationRouter.presentScreen(
       PopupRepliesScreen(

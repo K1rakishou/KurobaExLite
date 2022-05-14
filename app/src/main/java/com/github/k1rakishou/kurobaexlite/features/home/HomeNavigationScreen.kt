@@ -31,8 +31,6 @@ abstract class HomeNavigationScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreenWithToolbar(componentActivity, navigationRouter) {
-  open val hasFab: Boolean = true
-
   abstract val screenContentLoadedFlow: StateFlow<Boolean>
 
   @OptIn(ExperimentalMaterialApi::class)

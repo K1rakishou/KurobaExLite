@@ -10,6 +10,7 @@ abstract class ComposeScreenWithToolbar(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
+  abstract val hasFab: Boolean
 
   protected abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<*>
 
