@@ -5,13 +5,16 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 abstract class ComposeScreenWithToolbar(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
-  abstract val hasFab: Boolean
+  protected val kurobaToolbarContainerViewModel: KurobaToolbarContainerViewModel by componentActivity.viewModel()
 
+  abstract val hasFab: Boolean
   protected abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<*>
 
   override suspend fun onDispose() {

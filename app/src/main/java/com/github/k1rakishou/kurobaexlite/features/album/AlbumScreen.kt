@@ -46,7 +46,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
@@ -97,7 +96,7 @@ class AlbumScreen(
   }
 
   override val kurobaToolbarContainerState by lazy {
-    KurobaToolbarContainerState<SimpleToolbar<ToolbarIcon>>(screenKey)
+    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcon>>(screenKey)
   }
 
   @Composable

@@ -48,7 +48,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarCon
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
@@ -90,7 +89,7 @@ class CatalogScreen(
     get() = replyLayoutViewModel.getOrCreateReplyLayoutState(catalogScreenViewModel.chanDescriptor)
 
   override val kurobaToolbarContainerState by lazy {
-    KurobaToolbarContainerState<KurobaChildToolbar>(screenKey)
+    kurobaToolbarContainerViewModel.getOrCreate<KurobaChildToolbar>(screenKey)
   }
 
   private val defaultToolbar: KurobaChildToolbar by lazy {

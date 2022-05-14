@@ -40,7 +40,6 @@ import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleSearchToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
@@ -103,7 +102,7 @@ class CatalogSelectionScreen(
   }
 
   override val kurobaToolbarContainerState by lazy {
-    KurobaToolbarContainerState<KurobaChildToolbar>(screenKey)
+    kurobaToolbarContainerViewModel.getOrCreate<KurobaChildToolbar>(screenKey)
   }
 
   @Composable

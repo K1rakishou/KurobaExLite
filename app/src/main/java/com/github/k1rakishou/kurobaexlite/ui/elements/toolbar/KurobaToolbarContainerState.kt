@@ -9,9 +9,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.Animateab
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.SimpleStackContainerElement
 
 @Stable
-class KurobaToolbarContainerState<T : KurobaChildToolbar>(
-  val key: Any
-) {
+class KurobaToolbarContainerState<T : KurobaChildToolbar> {
   private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
   private val callbacksToInvoke = mutableListOf<(AnimateableStackContainerState<T>) -> Unit>()
 

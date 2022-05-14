@@ -53,12 +53,12 @@ fun <T : DisposableElement> rememberAnimateableStackContainerState(
   val componentActivity = LocalComponentActivity.current
   val viewModel = componentActivity.rememberViewModel<AnimateableStackContainerViewModel>()
 
-  return viewModel.storage.getOrPut(
+  return viewModel.stackContainerStates.getOrPut(
     key = toolbarContainerKey,
     defaultValue = { AnimateableStackContainerState<T>() }
   ) as AnimateableStackContainerState<T>
 }
 
 class AnimateableStackContainerViewModel : ViewModel() {
-  internal val storage = mutableMapOf<String, AnimateableStackContainerState<*>>()
+  internal val stackContainerStates = mutableMapOf<String, AnimateableStackContainerState<*>>()
 }

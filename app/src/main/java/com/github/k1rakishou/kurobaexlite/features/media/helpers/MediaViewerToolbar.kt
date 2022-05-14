@@ -19,11 +19,13 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenState
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
+import com.github.k1rakishou.kurobaexlite.helpers.rememberViewModel
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarState
@@ -50,12 +52,15 @@ internal fun MediaViewerToolbar(
   }
 
   val insets = LocalWindowInsets.current
+  val componentActivity = LocalComponentActivity.current
+  val kurobaToolbarContainerViewModel = componentActivity.rememberViewModel<KurobaToolbarContainerViewModel>()
+
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
   val currentImageIndex = pagerState.currentPage
   val targetImageIndex = pagerState.targetPage
 
   val kurobaToolbarContainerState = remember {
-    KurobaToolbarContainerState<SimpleToolbar<ToolbarIcons>>(screenKey)
+    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcons>>(screenKey)
   }
 
   val childToolbars = remember(key1 = currentImageIndex, key2 = targetImageIndex) {

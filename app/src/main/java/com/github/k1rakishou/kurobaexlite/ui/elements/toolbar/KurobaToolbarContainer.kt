@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.rememberAnimateableStackContainerState
@@ -51,5 +52,18 @@ fun <T : KurobaChildToolbar> KurobaToolbarContainer(
     ) {
       childToolbar.Content()
     }
+  }
+}
+
+class KurobaToolbarContainerViewModel : ViewModel() {
+  private val kurobaToolbarContainerStateMap = mutableMapOf<Any, KurobaToolbarContainerState<KurobaChildToolbar>>()
+
+  fun <T : KurobaChildToolbar> getOrCreate(
+    key: Any
+  ): KurobaToolbarContainerState<T> {
+    return kurobaToolbarContainerStateMap.getOrPut(
+      key = key,
+      defaultValue = { KurobaToolbarContainerState() }
+    ) as KurobaToolbarContainerState<T>
   }
 }
