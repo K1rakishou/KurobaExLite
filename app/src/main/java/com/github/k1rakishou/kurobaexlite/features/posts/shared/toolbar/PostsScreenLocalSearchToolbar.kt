@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar
 
+import android.os.Bundle
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
@@ -10,7 +11,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -35,9 +35,11 @@ class PostsScreenLocalSearchToolbar(
   val onSearchQueryUpdated: (String?) -> Unit,
   val closeSearch: suspend (toolbarKey: String) -> Unit
 ) : KurobaChildToolbar() {
+  private val key = "${screenKey.key}_PostsScreenLocalSearchToolbar"
+  private val state = State("${key}_state")
 
   override val toolbarState: ToolbarState? = null
-  override val toolbarKey: String = "${screenKey.key}_PostsScreenLocalSearchToolbar"
+  override val toolbarKey: String = key
 
   override fun onCreate() {
     onToolbarCreated()
@@ -45,6 +47,8 @@ class PostsScreenLocalSearchToolbar(
 
   override fun onDispose() {
     onToolbarDisposed()
+
+    state.reset()
     onSearchQueryUpdated.invoke(null)
   }
 
@@ -56,11 +60,7 @@ class PostsScreenLocalSearchToolbar(
     val searchDebouncer = remember { DebouncingCoroutineExecutor(coroutineScope) }
     val chanTheme = LocalChanTheme.current
     val parentBgColor = chanTheme.primaryColorCompose
-
-    var searchQuery by rememberSaveable(
-      key = "${toolbarKey}_search_query",
-      stateSaver = TextFieldValue.Saver
-    ) { mutableStateOf(TextFieldValue()) }
+    var searchQuery by state.searchQuery
 
     DisposableEffect(
       key1 = Unit,
@@ -121,6 +121,31 @@ class PostsScreenLocalSearchToolbar(
       },
       rightPart = null
     )
+  }
+
+  class State(
+    override val saveableComponentKey: String
+  ) : ToolbarState {
+    val searchQuery = mutableStateOf(TextFieldValue())
+
+    override fun saveState(): Bundle {
+      return Bundle().apply {
+        putString(SEARCH_QUERY_KEY, searchQuery.value.text)
+      }
+    }
+
+    override fun restoreFromState(bundle: Bundle?) {
+      bundle?.getString(SEARCH_QUERY_KEY)?.let { query -> searchQuery.value = TextFieldValue(text = query) }
+    }
+
+    fun reset() {
+      searchQuery.value = TextFieldValue()
+    }
+
+    companion object {
+      private const val SEARCH_QUERY_KEY = "search_query"
+    }
+
   }
 
 }
