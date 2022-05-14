@@ -55,10 +55,6 @@ fun HomeScreenToolbarContainer(
     ?.composeScreen
     ?: return
 
-  if (currentScreen !is HomeNavigationScreen) {
-    return
-  }
-
   val currentScreenKey = currentScreen.screenKey
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
@@ -82,7 +78,7 @@ fun HomeScreenToolbarContainer(
   val screensUsingSearch by hideableUiVisibilityInfo.childScreensUsingSearch.collectAsState()
   val replyLayoutOpened by hideableUiVisibilityInfo.replyLayoutOpened.collectAsState()
 
-  val combinedToolbarState by remember(key1 = currentScreenKey) {
+  val combinedToolbarState by remember(key1 = currentScreenKey, key2 = mainUiLayoutMode) {
     derivedStateOf {
       CombinedToolbarState(
         currentScreenKey = currentScreenKey,

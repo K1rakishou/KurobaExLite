@@ -53,6 +53,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
     ?: return
 
   val currentScreenKey = currentScreen.screenKey
+
   if (currentScreen !is HomeNavigationScreen) {
     return
   }
@@ -82,9 +83,10 @@ fun BoxScope.HomeScreenFloatingActionButton(
         .collect { activeSnackbars -> activeSnackbarsCount = activeSnackbars.size }
     })
 
-  val combinedFabState by remember(key1 = currentScreen) {
+  val combinedFabState by remember(key1 = currentScreen, key2 = mainUiLayoutMode) {
     derivedStateOf {
       CombinedFabState(
+        mainUiLayoutMode = mainUiLayoutMode,
         postListScrollPosition = postListScrollPosition,
         touchingTopOrBottomOfList = touchingTopOrBottomOfList,
         isDraggingPostList = isDraggingPostList,
@@ -115,6 +117,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
     },
     targetValueByState = { state ->
       when {
+        state.mainUiLayoutMode == MainUiLayoutMode.Split -> 1f
         !state.screenHasFab -> 0f
         !state.screenContentLoaded -> 0f
         state.activeSnackbarsCount > 0 -> 0f
@@ -145,6 +148,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
 }
 
 private data class CombinedFabState(
+  val mainUiLayoutMode: MainUiLayoutMode,
   val postListScrollPosition: Float,
   val touchingTopOrBottomOfList: Boolean,
   val isDraggingPostList: Boolean,
