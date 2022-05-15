@@ -137,12 +137,28 @@ class ParsedPostDataCache(
     }
   }
 
-  suspend fun getParsedPostDataContext(chanDescriptor: ChanDescriptor, postDescriptor: PostDescriptor): ParsedPostData? {
+  suspend fun getParsedPostData(
+    chanDescriptor: ChanDescriptor,
+    postDescriptor: PostDescriptor
+  ): ParsedPostData? {
     return mutex.withLock {
       when (chanDescriptor) {
         is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor]
         is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor]
       }
+    }
+  }
+
+  suspend fun getParsedPostData(
+    postDescriptor: PostDescriptor
+  ): ParsedPostData? {
+    return mutex.withLock {
+      val fromThread = threadParsedPostDataMap[postDescriptor]
+      if (fromThread != null) {
+        return@withLock fromThread
+      }
+
+      return@withLock catalogParsedPostDataMap[postDescriptor]
     }
   }
 
@@ -310,7 +326,7 @@ class ParsedPostDataCache(
         parsedPostDataContext = parsedPostDataContext
       )
 
-      val postSubjectParsed = HtmlUnescape.unescape(postSubjectUnparsed)
+      val postSubjectParsed = unescapePostSubject(postSubjectUnparsed)
 
       val isPostMarkedAsMine = markedPostManager.getMarkedPosts(postDescriptor)
         .any { markedPost -> markedPost.markedPostType == MarkedPostType.MyPost }
@@ -370,6 +386,9 @@ class ParsedPostDataCache(
       )
     }
   }
+
+  fun unescapePostSubject(postSubjectUnparsed: String) =
+    HtmlUnescape.unescape(postSubjectUnparsed)
 
   private suspend fun getMarkedPostInfoSetForQuoteSpans(
     textParts: List<TextPart>

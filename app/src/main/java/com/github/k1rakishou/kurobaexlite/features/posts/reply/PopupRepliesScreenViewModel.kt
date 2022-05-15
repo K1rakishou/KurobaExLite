@@ -163,7 +163,7 @@ class PopupRepliesScreenViewModel(savedStateHandle: SavedStateHandle) : PostScre
 
     val updatedPostDataList = withContext(Dispatchers.Default) {
       return@withContext postCellDataList.map { oldPostData ->
-        val oldParsedPostDataContext = parsedPostDataCache.getParsedPostDataContext(
+        val oldParsedPostDataContext = parsedPostDataCache.getParsedPostData(
           oldPostData.postDescriptor.threadDescriptor,
           oldPostData.postDescriptor
         )?.parsedPostDataContext

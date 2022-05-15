@@ -150,7 +150,16 @@ object DependencyGraph {
         markedPostManager = get()
       )
     }
-    single { MediaSaver(applicationContext = get(), androidHelpers = get(), proxiedOkHttpClient = get()) }
+
+    single {
+      MediaSaver(
+        applicationContext = get(),
+        androidHelpers = get(),
+        proxiedOkHttpClient = get(),
+        parsedPostDataCache = get()
+      )
+    }
+
     single<AppResources> { AppResourcesImpl(appContext = get()) }
     single {
       LocalFilePicker(

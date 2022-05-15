@@ -8,19 +8,23 @@ import android.provider.MediaStore
 import androidx.annotation.RequiresApi
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.model.ClientException
+import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.imageNameForDiskStore
 import com.github.k1rakishou.kurobaexlite.model.data.mimeType
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import logcat.LogPriority
+import logcat.logcat
 import okhttp3.Request
 import okio.BufferedSource
 
 class MediaSaver(
   private val applicationContext: Context,
   private val androidHelpers: AndroidHelpers,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient
+  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val parsedPostDataCache: ParsedPostDataCache,
 ) {
 
   suspend fun savePostImage(postImage: IPostImage): Result<Unit> {
@@ -51,6 +55,10 @@ class MediaSaver(
             savePostImageAndroidPAndBelow(postImage, bufferedSource)
           }
         }
+      }.onFailure { error ->
+        logcatError(TAG) { "savePostImage(${postImage.fullImageAsString}) error: ${error.asLogIfImportantOrErrorMessage()}" }
+      }.onSuccess {
+        logcat(TAG, LogPriority.VERBOSE) { "savePostImage(${postImage.fullImageAsString}) success" }
       }
     }
   }
@@ -58,13 +66,13 @@ class MediaSaver(
   @Suppress("DEPRECATION")
   private suspend fun savePostImageAndroidPAndBelow(postImage: IPostImage, bufferedSource: BufferedSource) {
     val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    val kurobaExDir = File(downloadsDir, APP_FILES_DIR)
+    val outputDir = File(downloadsDir, getFullDir(postImage, APP_FILES_DIR))
 
-    if (!kurobaExDir.exists()) {
-      check(kurobaExDir.mkdir()) { "\'${kurobaExDir.absolutePath}\' mkdir() failed" }
+    if (!outputDir.exists()) {
+      check(outputDir.mkdirs()) { "\'${outputDir.absolutePath}\' mkdirs() failed" }
     }
 
-    var outputFile = File(kurobaExDir, postImage.imageNameForDiskStore())
+    var outputFile = File(outputDir, postImage.imageNameForDiskStore())
     var duplicateIndex = 1
 
     while (true) {
@@ -72,7 +80,7 @@ class MediaSaver(
         break
       }
 
-      outputFile = File(kurobaExDir, postImage.imageNameForDiskStore(duplicateIndex))
+      outputFile = File(outputDir, postImage.imageNameForDiskStore(duplicateIndex))
       ++duplicateIndex
     }
 
@@ -84,23 +92,13 @@ class MediaSaver(
   @RequiresApi(Build.VERSION_CODES.Q)
   private suspend fun savePostImageAndroidQAndAbove(postImage: IPostImage, bufferedSource: BufferedSource) {
     val contentResolver = applicationContext.contentResolver
-
-    var fileName = postImage.imageNameForDiskStore()
-    var duplicateIndex = 1
-
-    while (true) {
-      if (!fileExists(fileName)) {
-        break
-      }
-
-      fileName = postImage.imageNameForDiskStore(duplicateIndex)
-      ++duplicateIndex
-    }
+    val outputDir = "${Environment.DIRECTORY_DOWNLOADS}/${getFullDir(postImage, APP_FILES_DIR)}"
+    val fileName = postImage.imageNameForDiskStore()
 
     val contentValues = ContentValues()
     contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
     contentValues.put(MediaStore.MediaColumns.MIME_TYPE, postImage.mimeType())
-    contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/$APP_FILES_DIR")
+    contentValues.put(MediaStore.MediaColumns.RELATIVE_PATH, outputDir)
 
     val uri = contentResolver.insert(
       MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL),
@@ -115,18 +113,32 @@ class MediaSaver(
     }
   }
 
-  @RequiresApi(Build.VERSION_CODES.Q)
-  private fun fileExists(fileName: String): Boolean {
-    val selection = "${MediaStore.MediaColumns.DISPLAY_NAME} = ?"
-    val projection = arrayOf(MediaStore.Files.FileColumns._ID)
+  private suspend fun getFullDir(postImage: IPostImage, appFilesDir: String): String {
+    val postDescriptor = postImage.ownerPostDescriptor
+    val originalPostDescriptor = postDescriptor.threadDescriptor.toOriginalPostDescriptor()
 
-    val contentResolver = applicationContext.contentResolver
-    val contentUri = MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
+    val threadTitle = parsedPostDataCache.getParsedPostData(originalPostDescriptor)?.parsedPostSubject
+      ?.mapNotNull { char -> if (char.isLetterOrDigit()) char else '_' }
+      ?.let { charList -> String(charList.toCharArray()) }
 
-    val cursor = contentResolver.query(contentUri, projection, selection, arrayOf(fileName), null)
-      ?: return false
+    return buildString {
+      append(appFilesDir)
+      append("/")
+      append(postDescriptor.siteKeyActual)
+      append("/")
+      append(postDescriptor.boardCode)
+      append("/")
 
-    return cursor.use { c -> c.moveToFirst() }
+      if (threadTitle.isNotNullNorBlank()) {
+        append(postDescriptor.threadNo)
+        append("_")
+        append("(")
+        append(threadTitle)
+        append(")")
+      } else {
+        append(postDescriptor.threadNo)
+      }
+    }
   }
 
   class MediaNotFoundOnServerException(postImage: IPostImage) :
@@ -139,12 +151,16 @@ class MediaSaver(
     ClientException("Failed to save media '${postImage.fullImageAsString}', empty response body")
 
   class MediaSaveException : ClientException {
-    constructor(postImage: IPostImage) : super("Failed to save media \'${postImage.fullImageAsString}\' on disk")
-    constructor(postImage: IPostImage, cause: Throwable) : super("Failed to save media \'${postImage.fullImageAsString}\' on disk", cause)
-    constructor(postImage: IPostImage, message: String) : super("Failed to save media \'${postImage.fullImageAsString}\' on disk, reason: $message")
+    constructor(postImage: IPostImage) :
+      super("Failed to save media \'${postImage.fullImageAsString}\' on disk")
+    constructor(postImage: IPostImage, cause: Throwable) :
+      super("Failed to save media \'${postImage.fullImageAsString}\' on disk", cause)
+    constructor(postImage: IPostImage, message: String) :
+      super("Failed to save media \'${postImage.fullImageAsString}\' on disk, reason: $message")
   }
 
   companion object {
+    private const val TAG = "MediaSaver"
     private const val APP_FILES_DIR = "KurobaExLite"
   }
 
