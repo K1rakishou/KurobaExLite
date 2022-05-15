@@ -28,8 +28,7 @@ data class ChanCatalogEntity(
   @ColumnInfo(name = "database_id") val databaseId: Long = -1L,
   @ColumnInfo(name = "board_title") val boardTitle: String?,
   @ColumnInfo(name = "board_description") val boardDescription: String?,
-  @ColumnInfo(name = "work_safe") val workSafe: Boolean,
-  @ColumnInfo(name = "global_search_supported") val globalSearchSupported: Boolean
+  @ColumnInfo(name = "work_safe") val workSafe: Boolean
 ) {
 
   fun toChanCatalog(): ChanCatalog {
@@ -37,8 +36,7 @@ data class ChanCatalogEntity(
       catalogDescriptor = catalogKey.catalogDescriptor,
       boardTitle = boardTitle,
       boardDescription = boardDescription,
-      workSafe = workSafe,
-      globalSearchSupported = globalSearchSupported
+      workSafe = workSafe
     )
   }
 
@@ -123,8 +121,7 @@ abstract class ChanCatalogDao {
         boardCode = catalogKey.boardCode,
         boardTitle = chanCatalogEntity.boardTitle,
         boardDescription = chanCatalogEntity.boardDescription,
-        workSafe = chanCatalogEntity.workSafe,
-        globalSearchSupported = chanCatalogEntity.globalSearchSupported
+        workSafe = chanCatalogEntity.workSafe
       )
 
       resultDatabaseIds[catalogKey.catalogDescriptor] = selectChanCatalogDatabaseId(
@@ -154,8 +151,7 @@ abstract class ChanCatalogDao {
         database_id,
         board_title,
         board_description,
-        work_safe,
-        global_search_supported
+        work_safe
     )
     VALUES(
         :siteKey,
@@ -163,8 +159,7 @@ abstract class ChanCatalogDao {
         (SELECT IFNULL(MAX(database_id), 0) + 1 FROM chan_catalogs),
         :boardTitle,
         :boardDescription,
-        :workSafe,
-        :globalSearchSupported
+        :workSafe
     )
   """)
   protected abstract suspend fun insertChanCatalogEntity(
@@ -172,8 +167,7 @@ abstract class ChanCatalogDao {
     boardCode: String,
     boardTitle: String?,
     boardDescription: String?,
-    workSafe: Boolean,
-    globalSearchSupported: Boolean
+    workSafe: Boolean
   )
 
   @Query("""

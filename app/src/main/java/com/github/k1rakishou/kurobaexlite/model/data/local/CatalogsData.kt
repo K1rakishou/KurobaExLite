@@ -10,6 +10,5 @@ data class ChanCatalog(
   val catalogDescriptor: CatalogDescriptor,
   val boardTitle: String?,
   val boardDescription: String?,
-  val workSafe: Boolean,
-  val globalSearchSupported: Boolean
+  val workSafe: Boolean
 )

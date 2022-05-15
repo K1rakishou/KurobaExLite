@@ -112,16 +112,14 @@ class RetrieveSiteCatalogList(
                 databaseId = databaseIdMap[chanCatalog.catalogDescriptor]!!,
                 boardTitle = chanCatalog.boardTitle,
                 boardDescription = chanCatalog.boardDescription,
-                workSafe = chanCatalog.workSafe,
-                globalSearchSupported = chanCatalog.globalSearchSupported
+                workSafe = chanCatalog.workSafe
               )
             } else {
               toInsert += ChanCatalogEntity(
                 catalogKey = CatalogKey.fromCatalogDescriptor(chanCatalog.catalogDescriptor),
                 boardTitle = chanCatalog.boardTitle,
                 boardDescription = chanCatalog.boardDescription,
-                workSafe = chanCatalog.workSafe,
-                globalSearchSupported = chanCatalog.globalSearchSupported,
+                workSafe = chanCatalog.workSafe
               )
             }
           }

@@ -255,13 +255,6 @@ class CatalogScreenViewModel(
     }
   }
 
-  suspend fun isCatalogSearchSupported(): Boolean {
-    val descriptor = catalogDescriptor
-      ?: return false
-
-    return catalogManager.byCatalogDescriptor(descriptor)?.globalSearchSupported == true
-  }
-
   override fun onPostScrollChanged(
     firstVisiblePostData: PostCellData,
     lastVisiblePostData: PostCellData,
