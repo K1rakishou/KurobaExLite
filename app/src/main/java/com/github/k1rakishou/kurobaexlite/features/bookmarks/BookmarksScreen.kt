@@ -28,7 +28,9 @@ import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -255,9 +257,7 @@ class BookmarksScreen(
     val itemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
     val animationDurationMs = 500
 
-    val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow
-      .collectAsState(initial = DrawerVisibility.Closed)
-    val isDrawerCurrentlyOpened = drawerVisibility.isOpened
+    val isDrawerCurrentlyOpened by listenForDrawerVisibilityEvents()
 
     val textAnimationSpec = remember(key1 = isDrawerCurrentlyOpened) {
       if (isDrawerCurrentlyOpened && canUseFancyAnimations) {
@@ -376,6 +376,14 @@ class BookmarksScreen(
 
       Spacer(modifier = Modifier.width(4.dp))
     }
+  }
+
+  @Composable
+  private fun listenForDrawerVisibilityEvents(): State<Boolean> {
+    val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow
+      .collectAsState(initial = DrawerVisibility.Closed)
+
+    return remember { derivedStateOf { drawerVisibility.isOpened } }
   }
 
   @Composable
