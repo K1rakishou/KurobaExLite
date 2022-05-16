@@ -31,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostCell
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -243,9 +244,12 @@ class GlobalSearchScreen(
         .padding(cellsPadding)
         .kurobaClickable(
           onClick = {
+            val currentUiLayoutMode = globalUiInfoManager.currentUiLayoutMode
+              ?: return@kurobaClickable
+
             onPostClicked(postCellData.postDescriptor)
 
-            if (dragToCloseEnabled) {
+            if (dragToCloseEnabled && currentUiLayoutMode != MainUiLayoutMode.Split) {
               popScreen()
             }
           },

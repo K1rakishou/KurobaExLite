@@ -79,6 +79,9 @@ class GlobalUiInfoManager(
   val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
   val currentOrientation = MutableStateFlow<Int?>(null)
 
+  val currentUiLayoutMode: MainUiLayoutMode?
+    get() = currentUiLayoutModeState.value
+
   private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>>(extraBufferCapacity = Channel.UNLIMITED)
   val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>>
     get() = _notEnoughWidthForSplitLayoutFlow.asSharedFlow()
