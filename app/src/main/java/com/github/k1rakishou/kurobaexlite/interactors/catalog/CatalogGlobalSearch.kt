@@ -61,7 +61,10 @@ class CatalogGlobalSearch(
       return@withContext posts.map { postData ->
         val parsedPostData = parsedPostDataCache.calculateParsedPostData(
           postData = postData,
-          parsedPostDataContext = ParsedPostDataContext(isParsingCatalog = true),
+          parsedPostDataContext = ParsedPostDataContext(
+            isParsingCatalog = true,
+            revealFullPostComment = true
+          ),
           chanTheme = chanTheme
         )
 

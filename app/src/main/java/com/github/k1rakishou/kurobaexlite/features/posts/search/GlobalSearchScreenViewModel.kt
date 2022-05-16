@@ -299,15 +299,21 @@ class GlobalSearchScreenViewModel : BaseViewModel() {
         (postsAsync as AsyncData.Data).data
       }
 
+      // If all received posts are duplicates then we assume the end of the search results was reached.
+      // We need to do this because 4chan, after reaching the end of the results, will just send us
+      // the first page infinitely for any "page" parameter.
+      var addedAnyPosts = false
+
       newPosts.forEach { newPost ->
         if (!duplicateChecker.add(newPost.postDescriptor)) {
           return@forEach
         }
 
         postsListMutable += newPost
+        addedAnyPosts = true
       }
 
-      if (newPosts.isEmpty()) {
+      if (newPosts.isEmpty() || !addedAnyPosts) {
         _endReachedState.value = true
         return
       }

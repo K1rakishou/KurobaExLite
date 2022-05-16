@@ -61,7 +61,7 @@ class Chan4SearchHtmlReader(
           ?.attr("href")
           ?: return@forEach
 
-        val message = postElement.selectFirst("blockquote[class=postMessage]")?.text() ?: ""
+        val message = postElement.selectFirst("blockquote[class=postMessage]")?.html() ?: ""
         val subject = postElement.selectFirst("span[class=subject]")?.text() ?: ""
 
         val postDescriptor = extractPostDescriptor(postUrl)
