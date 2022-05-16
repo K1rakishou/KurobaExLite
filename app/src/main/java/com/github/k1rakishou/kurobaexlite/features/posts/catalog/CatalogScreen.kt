@@ -58,7 +58,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.takeWhile
-import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -79,11 +78,11 @@ class CatalogScreen(
   private val bookmarksScreenViewModel = componentActivity.viewModel<BookmarksScreenViewModel>()
 
   private val catalogScreenToolbarActionHandler by lazy {
-    CatalogScreenToolbarActionHandler(componentActivity)
+    CatalogScreenToolbarActionHandler(componentActivity, screenCoroutineScope)
   }
 
   private val postLongtapContentMenu by lazy {
-    PostLongtapContentMenu(componentActivity, navigationRouter)
+    PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val replyLayoutState: IReplyLayoutState
@@ -172,7 +171,7 @@ class CatalogScreen(
             
             threadScreenViewModel.loadThread(postDescriptor.threadDescriptor)
           },
-          onScreenClosed = {
+          closeCatalogSearchToolbar = {
             if (localSearchToolbar.searchQuery.isNotEmpty()) {
               return@GlobalSearchScreen
             }
@@ -352,16 +351,13 @@ class CatalogScreen(
         threadScreenViewModel.loadThread(threadDescriptor)
       },
       onPostCellLongClicked = { postCellData ->
-        coroutineScope.launch {
-          postLongtapContentMenu.showMenu(
-            coroutineScope = coroutineScope,
-            postListOptions = postListOptions,
-            postCellData = postCellData,
-            reparsePostsFunc = { postDescriptors ->
-              catalogScreenViewModel.reparsePostsByDescriptors(postDescriptors)
-            }
-          )
-        }
+        postLongtapContentMenu.showMenu(
+          postListOptions = postListOptions,
+          postCellData = postCellData,
+          reparsePostsFunc = { postDescriptors ->
+            catalogScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+          }
+        )
       },
       onLinkableClicked = { postCellData, linkable ->
         // no-op (for now?)

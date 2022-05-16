@@ -68,11 +68,11 @@ class PopupRepliesScreen(
   private val buttonsHeight = 50.dp
 
   private val linkableClickHelper by lazy {
-    LinkableClickHelper(componentActivity, navigationRouter)
+    LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val postLongtapContentMenu by lazy {
-    PostLongtapContentMenu(componentActivity, navigationRouter)
+    PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -169,52 +169,44 @@ class PopupRepliesScreen(
         postsScreenViewModel = popupRepliesScreenViewModel,
         onPostCellClicked = { postCellData -> /*no-op*/ },
         onPostCellLongClicked = { postCellData ->
-          coroutineScope.launch {
-            postLongtapContentMenu.showMenu(
-              coroutineScope = coroutineScope,
-              postListOptions = postListOptions,
-              postCellData = postCellData,
-              reparsePostsFunc = { postDescriptors ->
-                popupRepliesScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+          postLongtapContentMenu.showMenu(
+            postListOptions = postListOptions,
+            postCellData = postCellData,
+            reparsePostsFunc = { postDescriptors ->
+              popupRepliesScreenViewModel.reparsePostsByDescriptors(postDescriptors)
 
-                // Reparse the threadScreenViewModel posts too
-                threadScreenViewModel.reparsePostsByDescriptors(postDescriptors)
-              }
-            )
-          }
+              // Reparse the threadScreenViewModel posts too
+              threadScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+            }
+          )
         },
         onLinkableClicked = { postCellData, linkable ->
-          coroutineScope.launch {
-            linkableClickHelper.processClickedLinkable(
-              context = context,
-              sourceScreenKey = screenKey,
-              postCellData = postCellData,
-              linkable = linkable,
-              loadThreadFunc = { threadDescriptor ->
-                threadScreenViewModel.loadThread(threadDescriptor)
-                stopPresenting()
-              },
-              loadCatalogFunc = { catalogDescriptor ->
-                catalogScreenViewModel.loadCatalog(catalogDescriptor)
-                stopPresenting()
-              },
-              showRepliesForPostFunc = { replyViewMode ->
-                coroutineScope.launch {
-                  popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode)
-                }
+          linkableClickHelper.processClickedLinkable(
+            context = context,
+            sourceScreenKey = screenKey,
+            postCellData = postCellData,
+            linkable = linkable,
+            loadThreadFunc = { threadDescriptor ->
+              threadScreenViewModel.loadThread(threadDescriptor)
+              stopPresenting()
+            },
+            loadCatalogFunc = { catalogDescriptor ->
+              catalogScreenViewModel.loadCatalog(catalogDescriptor)
+              stopPresenting()
+            },
+            showRepliesForPostFunc = { replyViewMode ->
+              coroutineScope.launch {
+                popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode)
               }
-            )
-          }
+            }
+          )
         },
         onLinkableLongClicked = { postCellData, linkable ->
-          coroutineScope.launch {
-            linkableClickHelper.processLongClickedLinkable(
-              context = context,
-              sourceScreenKey = screenKey,
-              postCellData = postCellData,
-              linkable = linkable
-            )
-          }
+          linkableClickHelper.processLongClickedLinkable(
+            sourceScreenKey = screenKey,
+            postCellData = postCellData,
+            linkable = linkable
+          )
         },
         onPostRepliesClicked = { postDescriptor ->
           coroutineScope.launch {
@@ -298,8 +290,8 @@ class PopupRepliesScreen(
     return super.onFloatingControllerBackPressed()
   }
 
-  override suspend fun onDispose() {
-    super.onDispose()
+  override fun onDisposed() {
+    super.onDisposed()
 
     popupRepliesScreenViewModel.clearPostReplyChainStack()
   }

@@ -55,7 +55,7 @@ open class NavigationRouter(
 
     _navigationScreensStack.add(newComposeScreen)
     logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${newComposeScreen.screenKey.key})" }
-    newComposeScreen.onCreate()
+    newComposeScreen.onCreated()
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -92,6 +92,7 @@ open class NavigationRouter(
     )
 
     logcat(TAG, LogPriority.VERBOSE) { "popScreen(${newComposeScreen.screenKey.key})" }
+    newComposeScreen.onStartDisposing()
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -218,24 +219,12 @@ open class NavigationRouter(
     }
   }
 
-  fun isInsideScreen(lookupScreenKey: ScreenKey): Boolean {
-    if (_navigationScreensStack.any { composeScreen -> composeScreen.screenKey == lookupScreenKey }) {
-      return true
-    }
-
-    if (parentRouter == null) {
-      return false
-    }
-
-    return parentRouter.isInsideScreen(lookupScreenKey)
-  }
-
   open suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
     if (!screenUpdate.isScreenBeingRemoved()) {
       return
     }
 
-    screenUpdate.screen.onDispose()
+    screenUpdate.screen.onDisposed()
 
     if (_navigationScreensStack.isEmpty()) {
       _screenUpdatesFlow.value = null

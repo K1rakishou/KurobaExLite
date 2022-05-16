@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
+import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -26,6 +27,7 @@ abstract class ComposeScreen(
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
   private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
+  protected val screenCoroutineScope = KurobaCoroutineScope()
 
   abstract val screenKey: ScreenKey
 
@@ -41,13 +43,19 @@ abstract class ComposeScreen(
   }
 
   @CallSuper
-  open fun onCreate() {
+  open fun onCreated() {
     logcat(TAG, LogPriority.VERBOSE) { "onCreate(${screenKey.key})" }
   }
 
   @CallSuper
-  open suspend fun onDispose() {
-    logcat(TAG, LogPriority.VERBOSE) { "onDispose(${screenKey.key})" }
+  open fun onStartDisposing() {
+    logcat(TAG, LogPriority.VERBOSE) { "onStartDisposing(${screenKey.key})" }
+  }
+
+  @CallSuper
+  open fun onDisposed() {
+    logcat(TAG, LogPriority.VERBOSE) { "onDisposed(${screenKey.key})" }
+    screenCoroutineScope.cancelChildren()
   }
 
   @Composable

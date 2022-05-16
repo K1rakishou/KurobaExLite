@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.features.media
 import android.Manifest
 import android.app.Activity
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.Paint
@@ -46,6 +45,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.core.graphics.withTranslation
 import coil.compose.AsyncImagePainter
@@ -614,9 +614,6 @@ class MediaViewerScreen(
       return
     }
 
-    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-    val orientation = orientationMut ?: Configuration.ORIENTATION_PORTRAIT
-
     if (images.isEmpty()) {
       val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
 
@@ -624,8 +621,7 @@ class MediaViewerScreen(
         modifier = Modifier.fillMaxSize(),
         additionalPaddings = additionalPaddings
       ) {
-        // TODO(KurobaEx): strings
-        KurobaComposeText(text = "No images to show")
+        KurobaComposeText(text = stringResource(id = R.string.media_viewer_no_images_to_show))
       }
 
       return

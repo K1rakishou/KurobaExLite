@@ -148,7 +148,6 @@ class PostsScreenLocalSearchToolbar(
     }
 
     val func: @Composable (RowScope.() -> Unit) = {
-
       Box(
         modifier = Modifier
           .fillMaxHeight()
@@ -163,8 +162,7 @@ class PostsScreenLocalSearchToolbar(
               bounded = false,
               onClick = { onGlobalSearchIconClicked(state.searchQuery.value.text) }
             ),
-          // TODO(KurobaEx): strings
-          text = "Global",
+          text = stringResource(id = R.string.posts_screen_search_toolbar_global_search),
         )
       }
     }

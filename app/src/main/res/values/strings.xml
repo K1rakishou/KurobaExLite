@@ -156,6 +156,7 @@
     <string name="media_viewer_hwsw_decoding_toggle_failed">Failed to toggle software/hardware decoding</string>
     <string name="media_viewer_switched_to_hw_decoding">Switched to hardware decoding</string>
     <string name="media_viewer_switched_to_sw_decoding">Switched to software decoding</string>
+    <string name="media_viewer_no_images_to_show">No images to show</string>
 
     <string name="history_screen_toolbar_title">History</string>
     <string name="navigation_history_screen_removed_navigation_item_text">Removed history \'%1$s\'</string>
@@ -167,6 +168,8 @@
 
     <string name="post_longtap_menu_mark_post_as_own">Mark post as mine</string>
     <string name="post_longtap_menu_unmark_post_as_own">Unmark post as mine</string>
+
+    <string name="post_search_longtap_menu_add_to_history">Add to history</string>
 
     <string name="chan4_captcha_layout_reload">Reload</string>
     <string name="chan4_captcha_layout_verify">Verify</string>
@@ -192,5 +195,11 @@
     <string name="pager_exclusion_zone_dialog_title">Special drawer drag zone</string>
     <string name="pager_exclusion_zone_dialog_description">The special drawer drag zone (which is located at the bottom left of the screen) allows you to open the drawer from any ViewPager page ignoring the ViewPager horizontal scrolling. Doing the drag gesture in any other area outside of the zone will trigger the ViewPager drag gesture.\n\nFor now it\'s size is hardcoded, it can\'t be disabled and it blocks clicks on elements beneath it but it will be fixed in the future once the Jetpack Compose has the necessary APIs.</string>
     <string name="pager_exclusion_zone_drag">DRAG</string>
+
+    <string name="posts_screen_search_toolbar_global_search">Global</string>
+
+    <string name="global_search_screen_end_of_results_reached">End of results reached</string>
+    <string name="global_search_screen_nothing_found_by_query">Nothing found by query \'%1$s\'</string>
+    <string name="global_search_screen_search_query_is_empty">Search query is empty</string>
 
 </resources>

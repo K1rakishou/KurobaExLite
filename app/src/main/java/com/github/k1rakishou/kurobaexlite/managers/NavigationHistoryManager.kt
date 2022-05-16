@@ -40,8 +40,9 @@ class NavigationHistoryManager {
 
   suspend fun addOrReorder(navigationElement: NavigationElement) {
     mutex.withLock {
-      val indexOfExisting = navigationHistory
-        .indexOfFirst { existingNavigationElement -> existingNavigationElement == navigationElement  }
+      val indexOfExisting = navigationHistory.indexOfFirst { existingNavigationElement ->
+        existingNavigationElement.chanDescriptor == navigationElement.chanDescriptor
+      }
 
       when {
         indexOfExisting < 0 -> {
@@ -50,7 +51,7 @@ class NavigationHistoryManager {
         }
         indexOfExisting > 0 -> {
           navigationHistory.add(0, navigationHistory.removeAt(indexOfExisting))
-          _navigationUpdates.emit(NavigationUpdate.Moved(indexOfExisting, navigationElement))
+          _navigationUpdates.emit(NavigationUpdate.Moved(navigationElement))
         }
         else -> {
           // Already at 0th index, nothing to do
@@ -77,22 +78,24 @@ class NavigationHistoryManager {
 
   suspend fun moveToTop(chanDescriptor: ChanDescriptor) {
     mutex.withLock {
-      val indexOfExisting = navigationHistory
-        .indexOfFirst { existingNavigationElement -> existingNavigationElement.chanDescriptor == chanDescriptor }
+      val indexOfExisting = navigationHistory.indexOfFirst { existingNavigationElement ->
+        existingNavigationElement.chanDescriptor == chanDescriptor
+      }
 
       if (indexOfExisting > 0) {
         val removedElement = navigationHistory.removeAt(indexOfExisting)
         navigationHistory.add(0, removedElement)
 
-        _navigationUpdates.emit(NavigationUpdate.Moved(indexOfExisting, removedElement))
+        _navigationUpdates.emit(NavigationUpdate.Moved(removedElement))
       }
     }
   }
 
   suspend fun remove(chanDescriptor: ChanDescriptor) {
     mutex.withLock {
-      val indexOfExisting = navigationHistory
-        .indexOfFirst { existingNavigationElement -> existingNavigationElement.chanDescriptor == chanDescriptor }
+      val indexOfExisting = navigationHistory.indexOfFirst { existingNavigationElement ->
+        existingNavigationElement.chanDescriptor == chanDescriptor
+      }
 
       if (indexOfExisting >= 0) {
         val removedElement = navigationHistory.removeAt(indexOfExisting)
@@ -108,5 +111,5 @@ sealed class NavigationUpdate {
 
   data class Added(val index: Int, val navigationElement: NavigationElement) : NavigationUpdate()
   data class Removed(val navigationElement: NavigationElement) : NavigationUpdate()
-  data class Moved(val prevIndex: Int, val navigationElement: NavigationElement) : NavigationUpdate()
+  data class Moved(val navigationElement: NavigationElement) : NavigationUpdate()
 }

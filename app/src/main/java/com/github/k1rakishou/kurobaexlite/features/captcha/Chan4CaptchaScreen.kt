@@ -73,8 +73,8 @@ class Chan4CaptchaScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
-  override suspend fun onDispose() {
-    super.onDispose()
+  override fun onDisposed() {
+    super.onDisposed()
 
     chan4CaptchaViewModel.resetCaptchaIfCaptchaIsAlmostDead(chanDescriptor)
     chan4CaptchaViewModel.cleanup()

@@ -107,7 +107,7 @@ class HistoryScreenViewModel : BaseViewModel() {
         val uiElement = navigationUpdate.navigationElement.toUiElement()
 
         val index = _navigationHistoryList
-          .indexOfFirst { uiNavigationElement -> uiNavigationElement == uiElement }
+          .indexOfFirst { uiNavigationElement -> uiNavigationElement.chanDescriptor == uiElement.chanDescriptor }
         if (index >= 0) {
           _navigationHistoryList.removeAt(index)
           _removedElementsFlow.tryEmit(Pair(index, uiElement))
@@ -116,9 +116,13 @@ class HistoryScreenViewModel : BaseViewModel() {
       is NavigationUpdate.Moved -> {
         val movedElement = navigationUpdate.navigationElement.toUiElement()
 
-        val prevUiElement = _navigationHistoryList.getOrNull(navigationUpdate.prevIndex)
-        if (prevUiElement != null && prevUiElement == movedElement) {
-          _navigationHistoryList.add(0, _navigationHistoryList.removeAt(navigationUpdate.prevIndex))
+        val movedElementPrevIndex = _navigationHistoryList
+          .indexOfFirst { uiNavigationElement -> uiNavigationElement.chanDescriptor == movedElement.chanDescriptor }
+
+        // We use greater than zero and not greater or equals to zero here because if it's already
+        // at 0th position then there is no point in moving it to 0th position again
+        if (movedElementPrevIndex > 0) {
+          _navigationHistoryList.add(0, _navigationHistoryList.removeAt(movedElementPrevIndex))
         }
       }
     }

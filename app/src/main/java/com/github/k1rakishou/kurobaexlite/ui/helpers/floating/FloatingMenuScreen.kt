@@ -43,7 +43,7 @@ class FloatingMenuScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val menuItems: List<FloatingMenuItem>,
-  private val onMenuItemClicked: suspend (FloatingMenuItem) -> Unit,
+  private val onMenuItemClicked: (FloatingMenuItem) -> Unit,
   private val onDismiss: () -> Unit = {}
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
   private val floatingMenuScreenKey = ScreenKey("FloatingMenuScreen_${floatingMenuKey}")
@@ -55,8 +55,8 @@ class FloatingMenuScreen(
   override val screenKey: ScreenKey = floatingMenuScreenKey
   override val contentAlignment: Alignment = touchPositionDependantAlignment
 
-  override suspend fun onDispose() {
-    super.onDispose()
+  override fun onDisposed() {
+    super.onDisposed()
 
     val callbacksWereEmpty = callbacksToInvokeMap.isEmpty()
 

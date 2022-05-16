@@ -160,7 +160,7 @@ abstract class PostScreenViewModel(
 
     if (threadDescriptor != null) {
       chanCache.onCatalogOrThreadAccessed(threadDescriptor)
-      modifyNavigationHistory.threadLoaded(threadDescriptor)
+      modifyNavigationHistory.addThread(threadDescriptor)
 
       updatePostsParsedOnceJob = viewModelScope.launch {
         delay(250L)
@@ -180,7 +180,7 @@ abstract class PostScreenViewModel(
 
     if (catalogDescriptor != null) {
       chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
-      modifyNavigationHistory.catalogLoaded(catalogDescriptor)
+      modifyNavigationHistory.addCatalog(catalogDescriptor)
 
       updatePostsParsedOnceJob = viewModelScope.launch {
         delay(250L)

@@ -19,11 +19,14 @@ import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreenToolbarActionHandler(
-  private val componentActivity: ComponentActivity
+  private val componentActivity: ComponentActivity,
+  private val screenCoroutineScope: CoroutineScope
 ) {
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val appSettings: AppSettings by inject(AppSettings::class.java)
@@ -33,7 +36,7 @@ class CatalogScreenToolbarActionHandler(
   private lateinit var threadScreenViewModel: ThreadScreenViewModel
   private lateinit var homeScreenViewModel: HomeScreenViewModel
 
-  suspend fun processClickedToolbarMenuItem(
+  fun processClickedToolbarMenuItem(
     navigationRouter: NavigationRouter,
     menuItem: FloatingMenuItem
   ) {
@@ -48,12 +51,18 @@ class CatalogScreenToolbarActionHandler(
         catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
       }
       ACTION_LAYOUT_MODE -> {
-        handleLayoutMode(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter
-        )
+        screenCoroutineScope.launch {
+          handleLayoutMode(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter
+          )
+        }
       }
-      ACTION_HISTORY_SCREEN_POSITION -> appSettings.historyScreenOnLeftSide.toggle()
+      ACTION_HISTORY_SCREEN_POSITION -> {
+        screenCoroutineScope.launch {
+          appSettings.historyScreenOnLeftSide.toggle()
+        }
+      }
       ACTION_OPEN_THREAD_BY_IDENTIFIER -> {
         handleOpenThreadByIdentifier(
           componentActivity = componentActivity,
@@ -100,9 +109,11 @@ class CatalogScreenToolbarActionHandler(
         navigationRouter = navigationRouter,
         menuItems = floatingMenuItems,
         onMenuItemClicked = { clickedMenuItem ->
-          if (clickedMenuItem.menuItemKey is LayoutType) {
-            val layoutType = (clickedMenuItem.menuItemKey as LayoutType)
-            appSettings.layoutType.write(layoutType)
+          screenCoroutineScope.launch {
+            if (clickedMenuItem.menuItemKey is LayoutType) {
+              val layoutType = (clickedMenuItem.menuItemKey as LayoutType)
+              appSettings.layoutType.write(layoutType)
+            }
           }
         }
       )

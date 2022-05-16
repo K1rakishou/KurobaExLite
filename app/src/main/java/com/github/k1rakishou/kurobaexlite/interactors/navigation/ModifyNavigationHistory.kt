@@ -14,11 +14,11 @@ class ModifyNavigationHistory(
   private val parsedPostDataCache: ParsedPostDataCache
 ) {
 
-  suspend fun catalogLoaded(catalogDescriptor: CatalogDescriptor) {
+  suspend fun addCatalog(catalogDescriptor: CatalogDescriptor) {
     navigationHistoryManager.addOrReorder(NavigationElement.Catalog(catalogDescriptor))
   }
 
-  suspend fun threadLoaded(threadDescriptor: ThreadDescriptor) {
+  suspend fun addThread(threadDescriptor: ThreadDescriptor) {
     val title = parsedPostDataCache.formatThreadToolbarTitle(threadDescriptor.toOriginalPostDescriptor())
     val firstImageThumbnailUrl = chanCache.getOriginalPost(threadDescriptor)?.images?.firstOrNull()?.thumbnailAsString
 

@@ -57,9 +57,13 @@ class GlobalSearchScreen(
   navigationRouter: NavigationRouter,
   private val catalogDescriptor: CatalogDescriptor,
   private val onPostClicked: (PostDescriptor) -> Unit,
-  private val onScreenClosed: () -> Unit
+  private val closeCatalogSearchToolbar: () -> Unit
 ) : HomeNavigationScreen(componentActivity, navigationRouter) {
   private val globalSearchScreenViewModel: GlobalSearchScreenViewModel by componentActivity.viewModel()
+
+  private val postSearchLongtapContentMenu by lazy {
+    PostSearchLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  }
 
   override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -86,10 +90,10 @@ class GlobalSearchScreen(
     kurobaToolbarContainerViewModel.getOrCreate<KurobaChildToolbar>(screenKey)
   }
 
-  override suspend fun onDispose() {
-    super.onDispose()
+  override fun onStartDisposing() {
+    super.onStartDisposing()
 
-    onScreenClosed()
+    closeCatalogSearchToolbar()
   }
 
   @Composable
@@ -244,6 +248,9 @@ class GlobalSearchScreen(
             if (dragToCloseEnabled) {
               popScreen()
             }
+          },
+          onLongClick = {
+            postSearchLongtapContentMenu.showMenu(postCellData)
           }
         )
     ) {
@@ -338,8 +345,7 @@ class GlobalSearchScreen(
         .padding(8.dp),
       contentAlignment = Alignment.Center
     ) {
-      // TODO(KurobaEx): strings
-      KurobaComposeText(text = "End of results reached")
+      KurobaComposeText(text = stringResource(id = R.string.global_search_screen_end_of_results_reached))
     }
   }
 
@@ -386,12 +392,11 @@ class GlobalSearchScreen(
 
   @Composable
   private fun SearchQueryIsEmpty() {
-    // TODO(KurobaEx): strings
     Box(
       modifier = Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center
     ) {
-      KurobaComposeText(text = "Search query is empty")
+      KurobaComposeText(text = stringResource(id = R.string.global_search_screen_search_query_is_empty))
     }
   }
 
@@ -404,12 +409,12 @@ class GlobalSearchScreen(
       return
     }
 
-    // TODO(KurobaEx): strings
     Box(
       modifier = Modifier.fillParentMaxSize(),
       contentAlignment = Alignment.Center
     ) {
-      KurobaComposeText(text = "Nothing found by query '${searchQuery}'")
+      val text = stringResource(id = R.string.global_search_screen_nothing_found_by_query, searchQuery)
+      KurobaComposeText(text = text)
     }
   }
 

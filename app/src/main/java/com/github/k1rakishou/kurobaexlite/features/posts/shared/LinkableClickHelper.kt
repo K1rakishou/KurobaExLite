@@ -15,20 +15,22 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 class LinkableClickHelper(
   private val componentActivity: ComponentActivity,
-  private val navigationRouter: NavigationRouter
+  private val navigationRouter: NavigationRouter,
+  private val screenCoroutineScope: CoroutineScope
 ) {
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
   private val chanCache: ChanCache by inject(ChanCache::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
-  suspend fun processLongClickedLinkable(
-    context: Context,
+  fun processLongClickedLinkable(
     sourceScreenKey: ScreenKey,
     postCellData: PostCellData,
     linkable: TextPartSpan.Linkable,
@@ -57,7 +59,7 @@ class LinkableClickHelper(
     }
   }
 
-  suspend fun processClickedLinkable(
+  fun processClickedLinkable(
     context: Context,
     sourceScreenKey: ScreenKey,
     postCellData: PostCellData,
@@ -66,71 +68,73 @@ class LinkableClickHelper(
     loadCatalogFunc: (CatalogDescriptor) -> Unit,
     showRepliesForPostFunc: (PopupRepliesScreen.ReplyViewMode) -> Unit
   ) {
-    logcat(TAG) {
-      "processClickedLinkable() sourceScreenKey=${sourceScreenKey}, " +
-        "postDescriptor=${postCellData.postDescriptor}, linkable=${linkable}"
-    }
+    screenCoroutineScope.launch {
+      logcat(TAG) {
+        "processClickedLinkable() sourceScreenKey=${sourceScreenKey}, " +
+          "postDescriptor=${postCellData.postDescriptor}, linkable=${linkable}"
+      }
 
-    when (linkable) {
-      is TextPartSpan.Linkable.Quote -> {
-        if (linkable.dead) {
-          if (chanCache.getPost(linkable.postDescriptor) == null) {
-            snackbarManager.toast(
-              messageId = R.string.thread_toolbar_cannot_view_dead_posts,
-              screenKey = sourceScreenKey
-            )
+      when (linkable) {
+        is TextPartSpan.Linkable.Quote -> {
+          if (linkable.dead) {
+            if (chanCache.getPost(linkable.postDescriptor) == null) {
+              snackbarManager.toast(
+                messageId = R.string.thread_toolbar_cannot_view_dead_posts,
+                screenKey = sourceScreenKey
+              )
 
-            return
+              return@launch
+            }
           }
-        }
 
-        if (linkable.crossThread) {
-          val postDescriptorReadable = linkable.postDescriptor.asReadableString()
+          if (linkable.crossThread) {
+            val postDescriptorReadable = linkable.postDescriptor.asReadableString()
 
-          navigationRouter.presentScreen(
-            DialogScreen(
-              dialogKey = DialogScreen.OPEN_EXTERNAL_THREAD,
-              componentActivity = componentActivity,
-              navigationRouter = navigationRouter,
-              params = DialogScreen.Params(
-                title = DialogScreen.Text.Id(R.string.thread_toolbar_open_external_thread_dialog_title),
-                description = DialogScreen.Text.String(
-                  context.resources.getString(
-                    R.string.thread_toolbar_open_external_thread_dialog_description,
-                    postDescriptorReadable
-                  )
-                ),
-                negativeButton = DialogScreen.cancelButton(),
-                positiveButton = DialogScreen.okButton {
-                  crossThreadFollowHistory.push(postCellData.postDescriptor.threadDescriptor)
+            navigationRouter.presentScreen(
+              DialogScreen(
+                dialogKey = DialogScreen.OPEN_EXTERNAL_THREAD,
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter,
+                params = DialogScreen.Params(
+                  title = DialogScreen.Text.Id(R.string.thread_toolbar_open_external_thread_dialog_title),
+                  description = DialogScreen.Text.String(
+                    context.resources.getString(
+                      R.string.thread_toolbar_open_external_thread_dialog_description,
+                      postDescriptorReadable
+                    )
+                  ),
+                  negativeButton = DialogScreen.cancelButton(),
+                  positiveButton = DialogScreen.okButton {
+                    crossThreadFollowHistory.push(postCellData.postDescriptor.threadDescriptor)
 
-                  loadThreadFunc(linkable.postDescriptor.threadDescriptor)
-                }
+                    loadThreadFunc(linkable.postDescriptor.threadDescriptor)
+                  }
+                )
               )
             )
+
+            return@launch
+          }
+
+          val replyTo = PopupRepliesScreen.ReplyViewMode.ReplyTo(linkable.postDescriptor)
+          showRepliesForPostFunc(replyTo)
+        }
+        is TextPartSpan.Linkable.Board -> {
+          val catalogDescriptor = CatalogDescriptor(
+            siteKey = postCellData.postDescriptor.siteKey,
+            boardCode = linkable.boardCode
           )
 
-          return
+          loadCatalogFunc(catalogDescriptor)
         }
-
-        val replyTo = PopupRepliesScreen.ReplyViewMode.ReplyTo(linkable.postDescriptor)
-        showRepliesForPostFunc(replyTo)
-      }
-      is TextPartSpan.Linkable.Board -> {
-        val catalogDescriptor = CatalogDescriptor(
-          siteKey = postCellData.postDescriptor.siteKey,
-          boardCode = linkable.boardCode
-        )
-
-        loadCatalogFunc(catalogDescriptor)
-      }
-      is TextPartSpan.Linkable.Search -> {
-        // TODO(KurobaEx):
-      }
-      is TextPartSpan.Linkable.Url -> {
-        // TODO(KurobaEx): show dialog?
-        // TODO(KurobaEx): open in media viewer if the link ends with a recognizable media extension.
-        androidHelpers.openLink(context, linkable.url)
+        is TextPartSpan.Linkable.Search -> {
+          // TODO(KurobaEx):
+        }
+        is TextPartSpan.Linkable.Url -> {
+          // TODO(KurobaEx): show dialog?
+          // TODO(KurobaEx): open in media viewer if the link ends with a recognizable media extension.
+          androidHelpers.openLink(context, linkable.url)
+        }
       }
     }
   }

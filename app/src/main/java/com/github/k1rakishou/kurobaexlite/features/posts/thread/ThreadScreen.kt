@@ -52,7 +52,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -73,11 +72,11 @@ class ThreadScreen(
   }
 
   private val linkableClickHelper by lazy {
-    LinkableClickHelper(componentActivity, navigationRouter)
+    LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val postLongtapContentMenu by lazy {
-    PostLongtapContentMenu(componentActivity, navigationRouter)
+    PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val replyLayoutState: IReplyLayoutState
@@ -288,43 +287,35 @@ class ThreadScreen(
       onPostCellClicked = { postCellData ->
       },
       onPostCellLongClicked = { postCellData ->
-        coroutineScope.launch {
-          postLongtapContentMenu.showMenu(
-            coroutineScope = coroutineScope,
-            postListOptions = postListOptions,
-            postCellData = postCellData,
-            reparsePostsFunc = { postDescriptors ->
-              threadScreenViewModel.reparsePostsByDescriptors(postDescriptors)
-            }
-          )
-        }
+        postLongtapContentMenu.showMenu(
+          postListOptions = postListOptions,
+          postCellData = postCellData,
+          reparsePostsFunc = { postDescriptors ->
+            threadScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+          }
+        )
       },
       onLinkableClicked = { postCellData, linkable ->
-        coroutineScope.launch {
-          linkableClickHelper.processClickedLinkable(
-            context = context,
-            sourceScreenKey = screenKey,
-            postCellData = postCellData,
-            linkable = linkable,
-            loadThreadFunc = { threadDescriptor ->
-              threadScreenViewModel.loadThread(threadDescriptor)
-            },
-            loadCatalogFunc = { catalogDescriptor ->
-              catalogScreenViewModel.loadCatalog(catalogDescriptor)
-            },
-            showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
-          )
-        }
+        linkableClickHelper.processClickedLinkable(
+          context = context,
+          sourceScreenKey = screenKey,
+          postCellData = postCellData,
+          linkable = linkable,
+          loadThreadFunc = { threadDescriptor ->
+            threadScreenViewModel.loadThread(threadDescriptor)
+          },
+          loadCatalogFunc = { catalogDescriptor ->
+            catalogScreenViewModel.loadCatalog(catalogDescriptor)
+          },
+          showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
+        )
       },
       onLinkableLongClicked = { postCellData, linkable ->
-        coroutineScope.launch {
-          linkableClickHelper.processLongClickedLinkable(
-            context = context,
-            sourceScreenKey = screenKey,
-            postCellData = postCellData,
-            linkable = linkable
-          )
-        }
+        linkableClickHelper.processLongClickedLinkable(
+          sourceScreenKey = screenKey,
+          postCellData = postCellData,
+          linkable = linkable
+        )
       },
       onPostRepliesClicked = { postDescriptor ->
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
