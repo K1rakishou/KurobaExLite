@@ -63,18 +63,22 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
         dragDownEvent = downEvent
 
         if (isDrawerOpened()) {
-          var overSlop = Offset.Zero
+          var overSlop: Offset? = null
           onStopConsumingScrollEvents()
 
           val touchSlopChange = awaitPointerSlopOrCancellationWithPass(
             pointerId = downEvent.id,
             pointerEventPass = PointerEventPass.Initial
           ) { change, slop ->
-            change.consume()
-            overSlop = slop
+            // The distance between end and start must be moving horizontally more than vertically
+            // because we are waiting for horizontal drags.
+            if (slop.x.absoluteValue > slop.y.absoluteValue) {
+              change.consume()
+              overSlop = slop
+            }
           }
 
-          if (touchSlopChange == null || overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
+          if (touchSlopChange == null || overSlop == null) {
             return@awaitPointerEventScope null
           }
 
