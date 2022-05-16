@@ -1,5 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.boards
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
@@ -23,6 +25,14 @@ class CatalogSelectionScreenViewModel : BaseViewModel() {
 
   private val boardsCache = mutableMapOf<CatalogDescriptor, ChanCatalog>()
   private val loadedBoardsPerSite = mutableMapOf<SiteKey, MutableList<CatalogDescriptor>>()
+
+  private val _searchQueryState = mutableStateOf<String?>(null)
+  val searchQueryState: State<String?>
+    get() = _searchQueryState
+
+  fun updateSearchQuery(value: String?) {
+    _searchQueryState.value = value
+  }
 
   fun getOrLoadBoardsForSite(
     siteKey: SiteKey,

@@ -48,7 +48,6 @@ class PopupRepliesScreenViewModel(savedStateHandle: SavedStateHandle) : PostScre
 
     return cachedPostCellDataList.flatMapNotNull { postCellData -> postCellData.images }
   }
-
   suspend fun loadRepliesForModeInitial(
     replyViewMode: PopupRepliesScreen.ReplyViewMode,
   ) {

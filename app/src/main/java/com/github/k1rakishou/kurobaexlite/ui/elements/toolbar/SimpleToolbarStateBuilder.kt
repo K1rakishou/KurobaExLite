@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -196,11 +197,15 @@ class SimpleToolbar<T : Any>(
 }
 
 class SimpleSearchToolbar(
+  initialSearchQuery: String?,
   override val toolbarKey: String,
   val onSearchQueryUpdated: (String?) -> Unit,
   val closeSearch: suspend () -> Unit
 ) : KurobaChildToolbar() {
-  private val state = State("${toolbarKey}_state")
+  private val state = State(
+    initialSearchQuery = initialSearchQuery,
+    saveableComponentKey = "${toolbarKey}_state"
+  )
 
   override val toolbarState: ToolbarState = state
 
@@ -265,11 +270,18 @@ class SimpleSearchToolbar(
             .focusable(),
           value = searchQuery,
           labelText = stringResource(R.string.toolbar_type_to_search_hint),
+          singleLine = true,
           parentBackgroundColor = parentBgColor,
+          keyboardActions = KeyboardActions(onDone = { onSearchQueryUpdated.invoke(searchQuery.text) }),
           onValueChange = { updatedQuery ->
-            if (searchQuery != updatedQuery) {
-              searchQuery = updatedQuery
+            val oldText = searchQuery.text
+            val newText = updatedQuery.text
 
+            // Always update the state because otherwise we will lose the current text cursor
+            // position
+            searchQuery = updatedQuery
+
+            if (oldText != newText) {
               searchDebouncer.post(timeout = 125L) {
                 onSearchQueryUpdated.invoke(updatedQuery.text)
               }
@@ -282,9 +294,16 @@ class SimpleSearchToolbar(
   }
 
   class State(
+    initialSearchQuery: String?,
     override val saveableComponentKey: String
   ) : ToolbarState {
     val searchQuery = mutableStateOf(TextFieldValue())
+
+    init {
+      if (initialSearchQuery != null) {
+        searchQuery.value = searchQuery.value.copy(text = initialSearchQuery)
+      }
+    }
 
     override fun saveState(): Bundle {
       return Bundle().apply {

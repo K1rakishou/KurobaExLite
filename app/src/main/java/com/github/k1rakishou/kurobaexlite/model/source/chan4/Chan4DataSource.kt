@@ -6,7 +6,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClien
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertIntoJsonObjectWithAdapter
+import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithHtmlReader
+import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
@@ -18,6 +19,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
+import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
+import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
@@ -36,12 +39,15 @@ import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import logcat.LogPriority
+import logcat.logcat
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 
@@ -54,7 +60,8 @@ class Chan4DataSource(
   IThreadDataSource<ThreadDescriptor, ThreadData>,
   IBoardDataSource<SiteKey, CatalogsData>,
   IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkData>,
-  ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?> {
+  ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?>,
+  IGlobalSearchDataSource<SearchParams, SearchResult> {
 
   override suspend fun loadThread(
     threadDescriptor: ThreadDescriptor,
@@ -73,6 +80,7 @@ class Chan4DataSource(
         val postImageInfo = site.postImageInfo()
 
         val threadUrl = threadInfo.threadUrl(boardCode, threadNo)
+        logcat(TAG, LogPriority.VERBOSE) { "loadThread() url='$threadUrl'" }
 
         val request = Request.Builder()
           .url(threadUrl)
@@ -81,7 +89,7 @@ class Chan4DataSource(
 
         val threadDataJsonJsonAdapter = moshi.adapter<ThreadDataJson>(ThreadDataJson::class.java)
 
-        val threadDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+        val threadDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
           request,
           threadDataJsonJsonAdapter
         )
@@ -167,6 +175,7 @@ class Chan4DataSource(
         val postImageInfo = site.postImageInfo()
 
         val catalogUrl = catalogInfo.catalogUrl(boardCode)
+        logcat(TAG, LogPriority.VERBOSE) { "loadCatalog() url='$catalogUrl'" }
 
         val request = Request.Builder()
           .url(catalogUrl)
@@ -177,7 +186,7 @@ class Chan4DataSource(
           Types.newParameterizedType(List::class.java, CatalogPageDataJson::class.java),
         )
 
-        val catalogPagesDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+        val catalogPagesDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
           request,
           catalogPagesDataJsonAdapter
         )
@@ -240,6 +249,7 @@ class Chan4DataSource(
           ?: throw ChanDataSourceException("Site ${site.readableName} does not support boards list")
 
         val boardsUrl = boardsInfo.boardsUrl()
+        logcat(TAG, LogPriority.VERBOSE) { "loadBoards() url='$boardsUrl'" }
 
         val request = Request.Builder()
           .url(boardsUrl)
@@ -247,7 +257,7 @@ class Chan4DataSource(
           .build()
 
         val boardsDataJsonAdapter = moshi.adapter<BoardsDataJson>(BoardsDataJson::class.java)
-        val boardsDataJsonAdapterResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+        val boardsDataJsonAdapterResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
           request,
           boardsDataJsonAdapter
         )
@@ -286,6 +296,7 @@ class Chan4DataSource(
           boardCode = input.boardCode,
           threadNo = input.threadNo
         )
+        logcat(TAG, LogPriority.VERBOSE) { "loadBookmarkData() url='$bookmarkUrl'" }
 
         val request = Request.Builder()
           .url(bookmarkUrl)
@@ -300,7 +311,7 @@ class Chan4DataSource(
           .build()
 
         val threadBookmarkInfoJsonAdapter = moshi.adapter<ThreadBookmarkInfoJson>(ThreadBookmarkInfoJson::class.java)
-        val threadBookmarkInfoJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+        val threadBookmarkInfoJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
           request,
           threadBookmarkInfoJsonAdapter
         )
@@ -349,9 +360,8 @@ class Chan4DataSource(
         val catalogPagesInfo = site.catalogPagesInfo()
           ?: throw ChanDataSourceException("Site ${site.readableName} does not support catalogPagesInfo")
 
-        val catalogPagesUrl = catalogPagesInfo.catalogPagesUrl(
-          boardCode = input.boardCode,
-        )
+        val catalogPagesUrl = catalogPagesInfo.catalogPagesUrl(input.boardCode)
+        logcat(TAG, LogPriority.VERBOSE) { "loadCatalogPagesData() url='$catalogPagesUrl'" }
 
         val request = Request.Builder()
           .url(catalogPagesUrl)
@@ -361,7 +371,7 @@ class Chan4DataSource(
         val catalogPageJsonListType = Types.newParameterizedType(List::class.java, CatalogPageJson::class.java)
         val catalogPageJsonListAdapter = moshi.adapter<List<CatalogPageJson>>(catalogPageJsonListType)
 
-        val catalogPageJsonListResult = kurobaOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+        val catalogPageJsonListResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
           request,
           catalogPageJsonListAdapter
         )
@@ -388,6 +398,46 @@ class Chan4DataSource(
           pagesTotal = catalogPageJsonList.size,
           pagesInfo = pagesInfoMap
         )
+      }
+    }
+  }
+
+  override suspend fun loadSearchPageData(input: SearchParams): Result<SearchResult> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(input.catalogDescriptor.siteKey)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val globalSearchInfo = site.globalSearchInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support globalSearchInfo")
+
+        val globalSearchUrl = if (input.isSiteWideSearch) {
+          globalSearchInfo.globalSearchUrl(
+            query = input.query,
+            page = input.page
+          )
+        } else {
+          globalSearchInfo.globalSearchUrl(
+            boardCode = input.catalogDescriptor.boardCode,
+            query = input.query,
+            page = input.page
+          )
+        }
+
+        logcat(TAG, LogPriority.VERBOSE) { "loadSearchPageData() url='$globalSearchUrl'" }
+
+        val request = Request.Builder()
+          .url(globalSearchUrl)
+          .get()
+          .build()
+
+        val htmlReader = Chan4SearchHtmlReader(
+          catalogDescriptor = input.catalogDescriptor,
+          currentOffset = input.page * globalSearchInfo.resultsPerPage
+        )
+
+        return@Try kurobaOkHttpClient.okHttpClient().suspendConvertWithHtmlReader(request, htmlReader)
+          .unwrap()
       }
     }
   }
@@ -441,5 +491,9 @@ class Chan4DataSource(
   }
 
   class ChanDataSourceException(message: String) : ClientException(message)
+
+  companion object {
+    private const val TAG = "Chan4DataSource"
+  }
 
 }

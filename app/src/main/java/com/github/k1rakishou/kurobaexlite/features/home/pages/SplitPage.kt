@@ -39,8 +39,8 @@ class SplitPage private constructor(
     return childScreen.hasChildScreens()
   }
 
-  override fun anyScreenHasChildren(): Boolean {
-    return childScreens.any { childScreen -> childScreen.composeScreen.hasChildScreens() }
+  override fun canDragPager(): Boolean {
+    return childScreens.none { childScreen -> childScreen.composeScreen.hasChildScreens() }
   }
 
   @Composable

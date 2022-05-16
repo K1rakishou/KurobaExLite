@@ -51,7 +51,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 @Composable
-internal fun PostCell(
+fun PostCell(
   isCatalogMode: Boolean,
   chanDescriptor: ChanDescriptor,
   detectLinkableClicks: Boolean,

@@ -22,6 +22,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPost
 import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.search.GlobalSearchScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
@@ -45,6 +46,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookma
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.CatalogGlobalSearch
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
@@ -74,6 +76,7 @@ import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
+import com.github.k1rakishou.kurobaexlite.model.repoository.GlobalSearchRepository
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
@@ -265,6 +268,7 @@ object DependencyGraph {
     }
     viewModel { AnimateableStackContainerViewModel() }
     viewModel { KurobaToolbarContainerViewModel() }
+    viewModel { GlobalSearchScreenViewModel() }
   }
 
   private fun Module.repositories() {
@@ -274,6 +278,7 @@ object DependencyGraph {
         siteManager = get(),
       )
     }
+    single { GlobalSearchRepository(siteManager = get()) }
   }
 
   private fun Module.interactors() {
@@ -371,7 +376,6 @@ object DependencyGraph {
         kurobaExLiteDatabase = get()
       )
     }
-
     single {
       LoadNavigationHistory(navigationHistoryManager = get(), kurobaExLiteDatabase = get())
     }
@@ -388,9 +392,9 @@ object DependencyGraph {
     single {
       ModifyMarkedPosts(markedPostManager = get(), kurobaExLiteDatabase = get())
     }
+    single { CatalogGlobalSearch(globalSearchRepository = get(), parsedPostDataCache = get(), themeEngine = get()) }
   }
 
-  @OptIn(ExperimentalCoilApi::class)
   private fun Module.coilMediaDiskCache() {
     single {
       val context: Context = get()

@@ -127,7 +127,7 @@ class AlbumScreen(
     )
   }
 
-  override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
+  override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
 
   @Composable
   override fun HomeNavigationScreenContent() {

@@ -11,7 +11,7 @@ abstract class AbstractPage<T : ComposeScreen> {
   abstract fun screenKey(): ScreenKey
   abstract fun hasScreen(screenKey: ScreenKey): Boolean
   abstract fun screenHasChildren(screenKey: ScreenKey): Boolean
-  abstract fun anyScreenHasChildren(): Boolean
+  abstract fun canDragPager(): Boolean
 
   class ChildScreen<T : ComposeScreen>(
     val composeScreen: T,

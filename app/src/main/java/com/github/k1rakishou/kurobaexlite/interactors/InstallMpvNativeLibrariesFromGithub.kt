@@ -8,7 +8,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
-import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertIntoJsonObjectWithAdapter
+import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
@@ -54,7 +54,7 @@ class InstallMpvNativeLibrariesFromGithub(
 
     val githubReleaseResponsesListType = Types.newParameterizedType(List::class.java, GithubReleaseResponse::class.java)
     val adapter = moshi.adapter<List<GithubReleaseResponse>>(githubReleaseResponsesListType)
-    val githubReleases = proxiedOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(request, adapter)
+    val githubReleases = proxiedOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(request, adapter)
       .unwrap()
 
     if (githubReleases == null) {

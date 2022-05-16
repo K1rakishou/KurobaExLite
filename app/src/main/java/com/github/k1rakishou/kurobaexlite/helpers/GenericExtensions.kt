@@ -698,3 +698,21 @@ suspend fun <T, R> processDataCollectionConcurrently(
 fun <T> Lazy<T>.forceInit(): T {
   return this.value
 }
+
+fun String.removeExtensionIfPresent(): String {
+  val index = this.lastIndexOf('.')
+  if (index < 0) {
+    return this
+  }
+
+  return this.substring(0, index)
+}
+
+fun String.extractFileNameExtension(): String? {
+  val index = this.lastIndexOf('.')
+  return if (index == -1) {
+    null
+  } else {
+    this.substring(index + 1)
+  }
+}

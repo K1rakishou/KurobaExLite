@@ -11,6 +11,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
+import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -21,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.sites.RequestModifier
@@ -53,6 +56,7 @@ class Chan4(
   private val chan4ReplyInfo by lazy { Chan4ReplyInfo(this, proxiedOkHttpClient) }
   private val chan4BookmarkInfo by lazy { BookmarkInfo(chan4DataSource) }
   private val chan4CatalogPagesInfo by lazy { CatalogPagesInfo(chan4DataSource) }
+  private val chan4GlobalSearchInfo by lazy { GlobalSearchInfo(chan4DataSource) }
 
   private val chan4PostParser by lazy { Chan4PostParser() }
   private val icon by lazy { "https://s.4cdn.org/image/favicon.ico".toHttpUrl() }
@@ -69,6 +73,7 @@ class Chan4(
   override fun replyInfo(): Site.ReplyInfo = chan4ReplyInfo
   override fun bookmarkInfo(): Site.BookmarkInfo = chan4BookmarkInfo
   override fun catalogPagesInfo(): Site.CatalogPagesInfo = chan4CatalogPagesInfo
+  override fun globalSearchInfo(): Site.GlobalSearchInfo? = chan4GlobalSearchInfo
 
   override fun parser(): AbstractSitePostParser = chan4PostParser
   override fun icon(): HttpUrl = icon
@@ -200,6 +205,41 @@ class Chan4(
     override fun catalogPagesDataSource(): ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?> {
       return chan4DataSource
     }
+  }
+
+  class GlobalSearchInfo(private val chan4DataSource: Chan4DataSource): Site.GlobalSearchInfo {
+    override val resultsPerPage = 10
+
+    override val supportsSiteWideSearch: Boolean = true
+    override val supportsCatalogSpecificSearch: Boolean = true
+
+    override fun globalSearchUrl(boardCode: String, query: String, page: Int): String {
+      return buildString {
+        append("https://find.4chan.org/?")
+        append("q=${query}")
+        append("&b=${boardCode}")
+
+        if (page > 0) {
+          append("&o=${page * resultsPerPage}")
+        }
+      }
+    }
+
+    override fun globalSearchUrl(query: String, page: Int): String {
+      return buildString {
+        append("https://find.4chan.org/?")
+        append("q=${query}")
+
+        if (page > 0) {
+          append("&o=${page * resultsPerPage}")
+        }
+      }
+    }
+
+    override fun globalSearchDataSource(): IGlobalSearchDataSource<SearchParams, SearchResult> {
+      return chan4DataSource
+    }
+
   }
 
   class Chan4RequestModifier(site: Chan4, appSettings: AppSettings) : RequestModifier<Chan4>(site, appSettings) {

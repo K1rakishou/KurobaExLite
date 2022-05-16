@@ -88,7 +88,7 @@ class HistoryScreen(
   override val hasFab: Boolean = false
 
   // TODO(KurobaEx): not implemented
-  override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
+  override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
 
   private val defaultToolbarKey = "${screenKey.key}_toolbar"
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"

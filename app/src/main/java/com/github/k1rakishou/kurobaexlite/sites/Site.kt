@@ -5,6 +5,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
+import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
+import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -16,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.settings.SiteSettings
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +37,7 @@ interface Site {
   fun replyInfo(): ReplyInfo?
   fun bookmarkInfo(): BookmarkInfo?
   fun catalogPagesInfo(): CatalogPagesInfo?
+  fun globalSearchInfo(): GlobalSearchInfo?
 
   fun parser(): AbstractSitePostParser
   fun icon(): HttpUrl?
@@ -74,6 +78,17 @@ interface Site {
   interface CatalogPagesInfo {
     fun catalogPagesUrl(boardCode: String): String
     fun catalogPagesDataSource(): ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?>
+  }
+
+  interface GlobalSearchInfo {
+    val resultsPerPage: Int
+    val supportsSiteWideSearch: Boolean
+    val supportsCatalogSpecificSearch: Boolean
+
+    fun globalSearchUrl(boardCode: String, query: String, page: Int): String
+    fun globalSearchUrl(query: String, page: Int): String
+
+    fun globalSearchDataSource(): IGlobalSearchDataSource<SearchParams, SearchResult>
   }
 
 }

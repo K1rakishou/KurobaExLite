@@ -531,7 +531,7 @@ class HomeScreen(
   ): Boolean {
     if (currentPage is SplitPage) {
       if (isFromNestedScroll) {
-        if (currentPage.anyScreenHasChildren()) {
+        if (!currentPage.canDragPager()) {
           return false
         }
       } else {
@@ -540,7 +540,7 @@ class HomeScreen(
         }
       }
     } else {
-      if (currentPage == null || currentPage.anyScreenHasChildren()) {
+      if (currentPage == null || !currentPage.canDragPager()) {
         return false
       }
     }

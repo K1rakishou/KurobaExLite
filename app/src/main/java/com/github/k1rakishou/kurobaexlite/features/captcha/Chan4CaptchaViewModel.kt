@@ -12,7 +12,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertIntoJsonObjectWithAdapter
+import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -204,7 +204,7 @@ class Chan4CaptchaViewModel(
     val request = requestBuilder.build()
     val captchaInfoRawAdapter = moshi.adapter(CaptchaInfoRaw::class.java)
 
-    val captchaInfoRawResult = proxiedOkHttpClient.okHttpClient().suspendConvertIntoJsonObjectWithAdapter(
+    val captchaInfoRawResult = proxiedOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
       request = request,
       adapter = captchaInfoRawAdapter
     )

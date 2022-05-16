@@ -24,6 +24,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnai
 import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenDefaultToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
+import com.github.k1rakishou.kurobaexlite.features.posts.search.GlobalSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
@@ -149,12 +150,42 @@ class CatalogScreen(
     )
   }
 
-  private val localSearchToolbar: KurobaChildToolbar by lazy {
+  private val localSearchToolbar: PostsScreenLocalSearchToolbar by lazy {
     PostsScreenLocalSearchToolbar(
       screenKey = screenKey,
       onToolbarCreated = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, true) },
       onToolbarDisposed = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, false) },
       onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
+      onGlobalSearchIconClicked = {
+        val descriptor = catalogScreenViewModel.catalogDescriptor
+          ?: return@PostsScreenLocalSearchToolbar
+
+        val globalSearchScreen = GlobalSearchScreen(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          catalogDescriptor = descriptor,
+          onPostClicked = { postDescriptor ->
+            globalUiInfoManager.updateCurrentPage(
+              screenKey = ThreadScreen.SCREEN_KEY,
+              animate = true
+            )
+            
+            threadScreenViewModel.loadThread(postDescriptor.threadDescriptor)
+          },
+          onScreenClosed = {
+            if (localSearchToolbar.searchQuery.isNotEmpty()) {
+              return@GlobalSearchScreen
+            }
+
+            kurobaToolbarContainerState.popToolbar(
+              expectedKey = localSearchToolbar.toolbarKey,
+              withAnimation = false
+            )
+          }
+        )
+
+        navigationRouter.pushScreen(globalSearchScreen)
+      },
       closeSearch = { toolbarKey -> kurobaToolbarContainerState.popToolbar(toolbarKey) }
     )
   }

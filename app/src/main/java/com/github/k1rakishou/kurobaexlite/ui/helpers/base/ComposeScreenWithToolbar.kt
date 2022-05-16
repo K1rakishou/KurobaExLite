@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.base
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
+import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
@@ -47,5 +48,18 @@ abstract class ComposeScreenWithToolbar(
   }
 
   fun hasChildScreens(): Boolean = navigationRouter.navigationScreensStack.isNotEmpty()
+
+  fun canDragPager(): Boolean {
+    if (navigationRouter.navigationScreensStack.isEmpty()) {
+      return true
+    }
+
+    val topScreen = navigationRouter.navigationScreensStack.last()
+    if (topScreen is HomeNavigationScreen) {
+      return !topScreen.dragToCloseEnabled
+    }
+
+    return true
+  }
 
 }

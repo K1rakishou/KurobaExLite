@@ -13,6 +13,7 @@ import androidx.compose.material.swipeable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +34,10 @@ abstract class HomeNavigationScreen(
 ) : ComposeScreenWithToolbar(componentActivity, navigationRouter) {
   abstract val screenContentLoadedFlow: StateFlow<Boolean>
 
+  open val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(true)
+  val dragToCloseEnabled: Boolean
+    get() = dragToCloseEnabledState.value
+
   @OptIn(ExperimentalMaterialApi::class)
   @Composable
   final override fun Content() {
@@ -44,6 +49,7 @@ abstract class HomeNavigationScreen(
       val screenWidth = constraints.maxWidth
 
       val modifier = if (
+        dragToCloseEnabled &&
         currentUiLayoutMode == MainUiLayoutMode.Phone &&
         topHomeNavigationScreen != null &&
         topHomeNavigationScreen.screenKey == screenKey

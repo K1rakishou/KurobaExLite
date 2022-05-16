@@ -71,8 +71,6 @@ class CatalogSelectionScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-  private val searchQueryState = mutableStateOf<String?>(null)
-
   private val defaultToolbarKey = "${screenKey.key}_default"
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
   private val searchToolbarKey = "${screenKey.key}_search"
@@ -95,8 +93,9 @@ class CatalogSelectionScreen(
 
   private val searchToolbar: KurobaChildToolbar by lazy {
     SimpleSearchToolbar(
+      initialSearchQuery = null,
       toolbarKey = searchToolbarKey,
-      onSearchQueryUpdated = { searchQuery -> searchQueryState.value = searchQuery },
+      onSearchQueryUpdated = { searchQuery -> catalogSelectionScreenViewModel.updateSearchQuery(searchQuery) },
       closeSearch = { kurobaToolbarContainerState.popToolbar(searchToolbarKey) }
     )
   }
@@ -131,7 +130,7 @@ class CatalogSelectionScreen(
     )
   }
 
-  override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
+  override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
 
   @Composable
   override fun HomeNavigationScreenContent() {
@@ -173,7 +172,7 @@ class CatalogSelectionScreen(
 
     val pullToRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
-    val searchQuery by searchQueryState
+    val searchQuery by catalogSelectionScreenViewModel.searchQueryState
     var loadBoardsForSiteEvent by remember { mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Uninitialized) }
 
     LaunchedEffect(

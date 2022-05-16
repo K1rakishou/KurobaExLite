@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
+import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlReader
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.squareup.moshi.JsonAdapter
@@ -69,15 +70,15 @@ suspend fun OkHttpClient.suspendCallConvertToString(
   }
 }
 
-suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertIntoJsonObjectWithAdapter(
+suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertWithJsonAdapter(
   request: Request,
   adapter: JsonAdapter<T>
 ): Result<out T?> {
   return withContext(Dispatchers.IO) {
     return@withContext Result.Try {
-      logcat(priority = LogPriority.VERBOSE) { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}' start" }
+      logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithJsonAdapter() url='${request.url}' start" }
       val response = suspendCall(request)
-      logcat(priority = LogPriority.VERBOSE) { "suspendConvertIntoJsonObjectWithAdapter() url='${request.url}' end" }
+      logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithJsonAdapter() url='${request.url}' end" }
 
       if (!response.isSuccessful) {
         throw BadStatusResponseException(response.code)
@@ -89,6 +90,32 @@ suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertIntoJsonObjectW
       }
 
       return@Try body.useBufferedSource { bufferedSource -> adapter.fromJson(bufferedSource) as T }
+    }
+  }
+}
+
+suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertWithHtmlReader(
+  request: Request,
+  htmlReader: HtmlReader<T>
+): Result<out T> {
+  return withContext(Dispatchers.IO) {
+    return@withContext Result.Try {
+      logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithHtmlReader() url='${request.url}' start" }
+      val response = suspendCall(request)
+      logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithHtmlReader() url='${request.url}' end" }
+
+      if (!response.isSuccessful) {
+        throw BadStatusResponseException(response.code)
+      }
+
+      val body = response.body
+      if (body == null) {
+        throw EmptyBodyResponseException()
+      }
+
+      return@Try body.byteStream().use { inputStream ->
+        htmlReader.readHtml(request.url.toString(), inputStream)
+      }
     }
   }
 }
