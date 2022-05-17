@@ -23,14 +23,13 @@ There is not much to see yet, but if you are really interested you will have to 
 Right now you can:
 - Visit any 4chan board.
 - Navigate reply chains. 
-- Use search.
+- Use search (and global search too).
 - Thread scroll position is stored/restored.
 - View media. ComposeSubsamplingScaleImage for static images, mpv (downloadable) for gifs/videos.
 - Reply to posts.
 - View albums.
 - Track navigation history (for now it's always enabled).
 - Bookmark threads (everything works except reply notifications).
-- Use global search.
 
 What you can't do which will be implemented in the future:
 - Navigate other sites (maybe?).
