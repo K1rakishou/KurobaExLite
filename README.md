@@ -30,6 +30,7 @@ Right now you can:
 - View albums.
 - Track navigation history (for now it's always enabled).
 - Bookmarks.
+- Global search.
 
 What you can't do which will be implemented in the future:
 - Navigate other sites (maybe?).
