@@ -553,7 +553,9 @@ fun KurobaComposeIcon(
   }
 
   Image(
-    modifier = modifier.graphicsLayer { this.alpha = alpha },
+    modifier = Modifier
+      .graphicsLayer { this.alpha = alpha }
+      .then(modifier),
     painter = painterResource(id = drawableId),
     colorFilter = ColorFilter.tint(tintColor),
     contentDescription = null

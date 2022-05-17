@@ -29,7 +29,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.scrollbar
 
@@ -148,9 +147,9 @@ private fun DisplayImagePreview(
     modifier = Modifier
       .size(itemSize)
       .then(highlightModifier)
-      .padding(padding)
-      .kurobaClickable(onClick = { onPreviewClicked(postImage) }),
+      .padding(padding),
     bgColor = Color.Unspecified,
-    postImage = postImage
+    postImage = postImage,
+    onClick = { onPreviewClicked(postImage) }
   )
 }

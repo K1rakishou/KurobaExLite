@@ -49,8 +49,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
-import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -87,7 +87,7 @@ internal fun PostListContent(
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit,
   onCurrentlyTouchingPostList: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   emptyContent: @Composable LazyItemScope.(Boolean, Boolean) -> Unit = { isInPopup, isCatalogMode ->
     PostListEmptyContent(isInPopup, isCatalogMode)
   },
@@ -329,7 +329,7 @@ private fun PostListInternal(
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   onPostListScrolled: (Float) -> Unit,
   onCurrentlyTouchingPostList: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
@@ -616,7 +616,7 @@ private fun LazyListScope.postList(
   onPostRepliesClicked: (PostCellData) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?,
   buildThreadStatusCell: @Composable (LazyItemScope.() -> Unit)? = null
 ) {
@@ -700,7 +700,7 @@ private fun LazyItemScope.PostCellContainer(
   onPostRepliesClicked: (PostCellData) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val chanTheme = LocalChanTheme.current

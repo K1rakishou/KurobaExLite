@@ -38,6 +38,8 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.forceInit
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
@@ -58,7 +60,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.takeWhile
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -374,14 +375,25 @@ class CatalogScreen(
       onQuotePostWithCommentClicked = { postCellData ->
         // no-op
       },
-      onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
+      onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
+        val postImageData = if (postImageDataResult.isFailure) {
+          snackbarManager.errorToast(
+            message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
+            screenKey = screenKey
+          )
+
+          return@PostListContent
+        } else {
+          postImageDataResult.getOrThrow()
+        }
+
         val catalogDescriptor = chanDescriptor as CatalogDescriptor
         clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
         val mediaViewerScreen = MediaViewerScreen(
           mediaViewerParams = MediaViewerParams.Catalog(
             catalogDescriptor = catalogDescriptor,
-            initialImageUrl = postImageData.fullImageUrl.toHttpUrl()
+            initialImageUrl = postImageData.fullImageAsUrl
           ),
           openedFromScreen = screenKey,
           componentActivity = componentActivity,

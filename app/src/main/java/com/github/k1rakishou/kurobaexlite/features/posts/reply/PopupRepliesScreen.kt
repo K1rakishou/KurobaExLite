@@ -41,6 +41,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapConte
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -215,7 +217,18 @@ class PopupRepliesScreen(
         },
         onQuotePostClicked = { postCellData -> },
         onQuotePostWithCommentClicked = { postCellData -> },
-        onPostImageClicked = { _, postImageData, thumbnailBoundsInRoot ->
+        onPostImageClicked = { _, postImageDataResult, thumbnailBoundsInRoot ->
+          val postImageData = if (postImageDataResult.isFailure) {
+            snackbarManager.errorToast(
+              message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
+              screenKey = screenKey
+            )
+
+            return@PostListContent
+          } else {
+            postImageDataResult.getOrThrow()
+          }
+
           val collectedImages = popupRepliesScreenViewModel.collectCurrentImages()
           if (collectedImages.isEmpty()) {
             return@PostListContent

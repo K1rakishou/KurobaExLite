@@ -36,6 +36,8 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
@@ -332,7 +334,18 @@ class ThreadScreen(
 
         replyLayoutViewModel.quotePostWithComment(threadDescriptor, postCellData)
       },
-      onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
+      onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
+        val postImageData = if (postImageDataResult.isFailure) {
+          snackbarManager.errorToast(
+            message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
+            screenKey = screenKey
+          )
+
+          return@PostListContent
+        } else {
+          postImageDataResult.getOrThrow()
+        }
+
         val threadDescriptor = chanDescriptor as ThreadDescriptor
         clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 

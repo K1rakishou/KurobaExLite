@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -119,12 +120,13 @@ class BookmarksScreen(
     val chanTheme = LocalChanTheme.current
     val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
-    val lazyListState = rememberLazyListState()
 
     val contentPadding = remember(key1 = windowInsets) {
       PaddingValues(top = windowInsets.top, bottom = windowInsets.bottom)
     }
-    val pullToRefreshToPadding = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
+    val pullToRefreshToPadding = remember(key1 = contentPadding) {
+      contentPadding.calculateTopPadding()
+    }
 
     val bookmarkList = bookmarksScreenViewModel.bookmarksList
     val canUseFancyAnimations by bookmarksScreenViewModel.canUseFancyAnimations
@@ -151,6 +153,7 @@ class BookmarksScreen(
         }
       })
 
+    val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderState(lazyListState = lazyListState)
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -302,7 +305,7 @@ class BookmarksScreen(
         .height(itemHeight)
         .draggedItem(reorderableState.offsetByKey(threadBookmarkUi.threadDescriptor))
         .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
-        .background(bookmarkBgColor)
+        .drawBehind { drawRect(bookmarkBgColor) }
         .animateItemPlacement(),
       verticalAlignment = Alignment.CenterVertically
     ) {

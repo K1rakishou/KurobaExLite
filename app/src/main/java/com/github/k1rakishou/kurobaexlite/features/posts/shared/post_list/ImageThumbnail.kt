@@ -1,11 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 
 @Composable
@@ -36,14 +41,29 @@ fun ImageThumbnail(
   showShimmerEffectWhenLoading: Boolean = false,
   contentScale: ContentScale = ContentScale.Fit,
   postImage: IPostImage,
+  onClick: (Result<IPostImage>) -> Unit
 ) {
   val context = LocalContext.current
   val chanTheme = LocalChanTheme.current
+
+  var loadErrorMut by remember { mutableStateOf<Throwable?>(null) }
+  val loadError = loadErrorMut
 
   BoxWithConstraints(
     modifier = Modifier
       .background(bgColor)
       .then(modifier)
+      .kurobaClickable(
+        onClick = {
+          val result = if (loadError != null) {
+            Result.failure(loadError)
+          } else {
+            Result.success(postImage)
+          }
+
+          onClick(result)
+        }
+      )
   ) {
     val density = LocalDensity.current
     val desiredSizePx = with(density) { remember { 24.dp.roundToPx() } }
@@ -68,6 +88,13 @@ fun ImageThumbnail(
         .build(),
       contentDescription = null,
       contentScale = contentScale,
+      onState = { state ->
+        loadErrorMut = if (state is AsyncImagePainter.State.Error) {
+          state.result.throwable
+        } else {
+          null
+        }
+      },
       content = {
         val state = painter.state
 
@@ -78,34 +105,35 @@ fun ImageThumbnail(
           Shimmer(shimmerState = rememberShimmerState(bgColor = chanTheme.backColorCompose))
         }
 
-        if (state is AsyncImagePainter.State.Error) {
-          logcatError {
-            "PostCellTitle() url=${postImage.thumbnailAsUrl}, " +
-              "postDescriptor=${postImage.ownerPostDescriptor}, " +
-              "error=${state.result.throwable.errorMessageOrClassName()}"
-          }
-
-          KurobaComposeIcon(
-            modifier = Modifier
-              .size(iconWidthDp, iconHeightDp)
-              .align(Alignment.Center),
-            drawableId = R.drawable.ic_baseline_warning_24
-          )
-
-          return@SubcomposeAsyncImage
+        if (state !is AsyncImagePainter.State.Error) {
+          SubcomposeAsyncImageContent()
         }
 
-        SubcomposeAsyncImageContent()
+        Box(
+          modifier = Modifier.fillMaxSize(),
+          contentAlignment = Alignment.Center
+        ) {
+          if (state is AsyncImagePainter.State.Error) {
+            logcatError {
+              "PostCellTitle() url=${postImage.thumbnailAsUrl}, " +
+                "postDescriptor=${postImage.ownerPostDescriptor}, " +
+                "error=${state.result.throwable.errorMessageOrClassName()}"
+            }
+
+            KurobaComposeIcon(
+              modifier = Modifier.size(iconWidthDp, iconHeightDp),
+              drawableId = R.drawable.ic_baseline_warning_24
+            )
+          } else {
+            if (postImage.imageType() == ImageType.Video) {
+              KurobaComposeIcon(
+                modifier = Modifier.size(iconWidthDp, iconHeightDp),
+                drawableId = R.drawable.ic_play_circle_outline_white_24dp
+              )
+            }
+          }
+        }
       }
     )
-
-    if (postImage.imageType() == ImageType.Video) {
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(iconWidthDp, iconHeightDp)
-          .align(Alignment.Center),
-        drawableId = R.drawable.ic_play_circle_outline_white_24dp
-      )
-    }
   }
 }

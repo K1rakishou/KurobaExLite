@@ -122,8 +122,8 @@ fun PullToRefresh(
 
       override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
         if (pullToRefreshPulledPx > pullThresholdPx) {
-          animatingRefresh = true
           animatingBack = false
+          animatingRefresh = true
         } else {
           animatingBack = true
           animatingRefresh = false

@@ -31,6 +31,7 @@ import androidx.compose.ui.util.fastForEachIndexed
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
+import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
@@ -40,6 +41,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.ImageT
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -56,7 +58,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScr
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -281,23 +282,32 @@ class AlbumScreen(
                   .fillMaxWidth()
                   .height(160.dp)
                   .padding(1.dp)
-                  .onGloballyPositioned { layoutCoordinates ->
-                    boundsInWindowMut = layoutCoordinates.boundsInWindow()
-                  }
-                  .kurobaClickable(
-                    onClick = {
-                      val boundsInWindow = boundsInWindowMut
-                      if (boundsInWindow == null) {
-                        return@kurobaClickable
-                      }
-
-                      clickedThumbnailBoundsStorage.storeBounds(postImage, boundsInWindow)
-                      onThumbnailClicked(postImage)
-                    }
-                  ),
+                  .onGloballyPositioned { layoutCoordinates -> boundsInWindowMut = layoutCoordinates.boundsInWindow() },
                 showShimmerEffectWhenLoading = true,
                 postImage = postImage,
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                onClick = { clickedImageResult ->
+                  if (clickedImageResult.isFailure) {
+                    val error = clickedImageResult.exceptionOrThrow()
+
+                    snackbarManager.errorToast(
+                      message = error.errorMessageOrClassName(),
+                      screenKey = MainScreen.SCREEN_KEY
+                    )
+
+                    return@ImageThumbnail
+                  }
+
+                  val clickedPostImage = clickedImageResult.getOrThrow()
+
+                  val boundsInWindow = boundsInWindowMut
+                  if (boundsInWindow == null) {
+                    return@ImageThumbnail
+                  }
+
+                  clickedThumbnailBoundsStorage.storeBounds(clickedPostImage, boundsInWindow)
+                  onThumbnailClicked(clickedPostImage)
+                }
               )
             }
           )

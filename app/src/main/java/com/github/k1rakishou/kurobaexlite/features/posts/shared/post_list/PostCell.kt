@@ -38,8 +38,8 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
-import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
@@ -67,7 +67,7 @@ fun PostCell(
   onPostRepliesClicked: (PostCellData) -> Unit,
   onQuotePostClicked: (PostCellData) -> Unit,
   onQuotePostWithCommentClicked: (PostCellData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val postComment = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostComment }
@@ -188,7 +188,7 @@ private fun PostCellTitle(
   postCellData: PostCellData,
   postSubject: AnnotatedString?,
   postCellSubjectTextSizeSp: TextUnit,
-  onPostImageClicked: (ChanDescriptor, PostCellImageData, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
   val chanTheme = LocalChanTheme.current
@@ -209,20 +209,16 @@ private fun PostCellTitle(
           .onGloballyPositioned { layoutCoordinates ->
             boundsInWindowMut = layoutCoordinates.boundsInWindow()
           }
-          .kurobaClickable(
-            onClick = {
-              val boundsInWindow = boundsInWindowMut
-              if (boundsInWindow == null) {
-                return@kurobaClickable
-              }
-
-              onPostImageClicked(chanDescriptor, postImage, boundsInWindow)
-            }
-          )
       ) {
         ImageThumbnail(
           modifier = Modifier.size(70.dp),
           postImage = postImage,
+          onClick = { clickedImageResult ->
+            val boundsInWindow = boundsInWindowMut
+              ?: return@ImageThumbnail
+
+            onPostImageClicked(chanDescriptor, clickedImageResult, boundsInWindow)
+          }
         )
       }
 
