@@ -55,7 +55,7 @@ open class NavigationRouter(
 
     _navigationScreensStack.add(newComposeScreen)
     logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${newComposeScreen.screenKey.key})" }
-    newComposeScreen.onCreated()
+    newComposeScreen.onStartCreating()
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -141,33 +141,6 @@ open class NavigationRouter(
     )
   }
 
-  fun getRouterByKey(screenKey: ScreenKey): NavigationRouter {
-    if (routerKey == screenKey) {
-      return this
-    }
-
-    if (parentRouter != null) {
-      val router = parentRouter.getRouterByKeyOrNull(screenKey)
-      if (router != null) {
-        return router
-      }
-    }
-
-    error("NavigationRouter with key \'${screenKey.key}\' not found")
-  }
-
-  fun getRouterByKeyOrNull(screenKey: ScreenKey): NavigationRouter? {
-    if (routerKey == screenKey) {
-      return this
-    }
-
-    if (parentRouter != null) {
-      return parentRouter.getRouterByKeyOrNull(screenKey)
-    }
-
-    return null
-  }
-
   fun getScreenByKey(screenKey: ScreenKey): ComposeScreen? {
     val rootRouter = getRootRouter()
     return getScreenByKeyInternal(rootRouter, screenKey)
@@ -221,6 +194,7 @@ open class NavigationRouter(
 
   open suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
     if (!screenUpdate.isScreenBeingRemoved()) {
+      screenUpdate.screen.onCreated()
       return
     }
 

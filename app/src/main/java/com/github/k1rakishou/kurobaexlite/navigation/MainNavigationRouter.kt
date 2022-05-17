@@ -53,7 +53,7 @@ class MainNavigationRouter : NavigationRouter(
 
     _navigationScreensStack.add(newComposeScreen)
     logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${newComposeScreen.screenKey.key})" }
-    newComposeScreen.onCreated()
+    newComposeScreen.onStartCreating()
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -131,7 +131,7 @@ class MainNavigationRouter : NavigationRouter(
 
     _floatingScreensStack.add(floatingComposeScreen)
     logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
-    floatingComposeScreen.onCreated()
+    floatingComposeScreen.onStartCreating()
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,

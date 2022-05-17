@@ -42,16 +42,35 @@ abstract class ComposeScreen(
     )
   }
 
+  /**
+   * [onStartCreating] is called when the screen is added to the stack before the animation started
+   * playing
+   * */
   @CallSuper
-  open fun onCreated() {
-    logcat(TAG, LogPriority.VERBOSE) { "onCreate(${screenKey.key})" }
+  open fun onStartCreating() {
+    logcat(TAG, LogPriority.VERBOSE) { "onStartCreating(${screenKey.key})" }
   }
 
+  /**
+   * [onCreated] is called after the creation animation finished playing
+   * */
+  @CallSuper
+  open fun onCreated() {
+    logcat(TAG, LogPriority.VERBOSE) { "onCreated(${screenKey.key})" }
+  }
+
+  /**
+   * [onStartDisposing] is called when the screen is removed from the stack before the animation
+   * started playing
+   * */
   @CallSuper
   open fun onStartDisposing() {
     logcat(TAG, LogPriority.VERBOSE) { "onStartDisposing(${screenKey.key})" }
   }
 
+  /**
+   * [onCreated] is called after the disposing animation finished playing
+   * */
   @CallSuper
   open fun onDisposed() {
     logcat(TAG, LogPriority.VERBOSE) { "onDisposed(${screenKey.key})" }

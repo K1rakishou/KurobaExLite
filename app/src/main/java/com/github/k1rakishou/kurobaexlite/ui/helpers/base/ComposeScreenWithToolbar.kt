@@ -18,8 +18,8 @@ abstract class ComposeScreenWithToolbar(
   abstract val hasFab: Boolean
   protected abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<*>
 
-  override fun onDisposed() {
-    super.onDisposed()
+  override fun onStartDisposing() {
+    super.onStartDisposing()
 
     kurobaToolbarContainerState.popChildToolbars()
   }
