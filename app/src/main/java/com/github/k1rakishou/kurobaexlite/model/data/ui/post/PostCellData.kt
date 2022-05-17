@@ -5,6 +5,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.helpers.hash.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
+import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -16,14 +17,20 @@ data class PostCellData(
   val postSubjectUnparsed: String,
   val postCommentUnparsed: String,
   val timeMs: Long?,
+  val name: String?,
+  val tripcode: String?,
+  val posterId: String?,
+  val countryFlag: PostIcon?,
+  val boardFlag: PostIcon?,
   val images: List<PostCellImageData>?,
   val threadRepliesTotal: Int? = null,
   val threadImagesTotal: Int? = null,
   val threadPostersTotal: Int? = null,
   val lastModified: Long? = null,
-  val archived: Boolean?,
-  val closed: Boolean?,
-  val sticky: Boolean?,
+  val archived: Boolean,
+  val deleted: Boolean,
+  val closed: Boolean,
+  val sticky: Boolean,
   val bumpLimit: Boolean?,
   val imageLimit: Boolean?,
   val parsedPostData: ParsedPostData?,
@@ -63,12 +70,18 @@ data class PostCellData(
         postSubjectUnparsed = postData.postSubjectUnparsed,
         postCommentUnparsed = postData.postCommentUnparsed,
         timeMs = postData.timeMs,
+        name = postData.name,
+        tripcode = postData.tripcode,
+        posterId = postData.posterId,
+        countryFlag = postData.countryFlag,
+        boardFlag = postData.boardFlag,
         images = postData.images?.map { PostCellImageData.fromPostImageData(it) },
         threadRepliesTotal = postData.threadRepliesTotal,
         threadImagesTotal = postData.threadImagesTotal,
         threadPostersTotal = postData.threadPostersTotal,
         lastModified = postData.lastModified,
         archived = postData.archived,
+        deleted = postData.deleted,
         closed = postData.closed,
         sticky = postData.sticky,
         bumpLimit = postData.bumpLimit,

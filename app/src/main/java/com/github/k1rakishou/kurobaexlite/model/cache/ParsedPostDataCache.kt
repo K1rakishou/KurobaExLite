@@ -3,9 +3,13 @@ package com.github.k1rakishou.kurobaexlite.model.cache
 import android.content.Context
 import android.text.format.DateUtils
 import androidx.annotation.GuardedBy
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
@@ -23,8 +27,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
+import com.github.k1rakishou.kurobaexlite.model.data.BoardFlag
+import com.github.k1rakishou.kurobaexlite.model.data.CountryFlag
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
@@ -36,6 +43,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
@@ -264,10 +272,19 @@ class ParsedPostDataCache(
       postCommentUnparsed = postData.postCommentUnparsed,
       postSubjectUnparsed = postData.postSubjectUnparsed,
       timeMs = postData.timeMs,
+      name = postData.name,
+      tripcode = postData.tripcode,
+      posterId = postData.posterId,
+      countryFlag = postData.countryFlag,
+      boardFlag = postData.boardFlag,
       threadRepliesTotal = postData.threadRepliesTotal,
       threadImagesTotal = postData.threadImagesTotal,
       threadPostersTotal = postData.threadPostersTotal,
       images = postData.images,
+      archived = postData.archived,
+      deleted = postData.deleted,
+      closed = postData.closed,
+      sticky = postData.sticky,
       postDescriptor = postData.postDescriptor,
       parsedPostDataContext = parsedPostDataContext,
       chanTheme = chanTheme,
@@ -284,10 +301,19 @@ class ParsedPostDataCache(
       postCommentUnparsed = postCellData.postCommentUnparsed,
       postSubjectUnparsed = postCellData.postSubjectUnparsed,
       timeMs = postCellData.timeMs,
+      name = postCellData.name,
+      tripcode = postCellData.tripcode,
+      posterId = postCellData.posterId,
+      countryFlag = postCellData.countryFlag,
+      boardFlag = postCellData.boardFlag,
       threadRepliesTotal = postCellData.threadRepliesTotal,
       threadImagesTotal = postCellData.threadImagesTotal,
       threadPostersTotal = postCellData.threadPostersTotal,
       images = postCellData.images,
+      archived = postCellData.archived,
+      deleted = postCellData.deleted,
+      closed = postCellData.closed,
+      sticky = postCellData.sticky,
       postDescriptor = postCellData.postDescriptor,
       parsedPostDataContext = parsedPostDataContext,
       chanTheme = chanTheme,
@@ -299,10 +325,19 @@ class ParsedPostDataCache(
     postCommentUnparsed: String,
     postSubjectUnparsed: String,
     timeMs: Long?,
+    name: String?,
+    tripcode: String?,
+    posterId: String?,
+    countryFlag: PostIcon?,
+    boardFlag: PostIcon?,
     threadRepliesTotal: Int?,
     threadImagesTotal: Int?,
     threadPostersTotal: Int?,
     images: List<IPostImage>?,
+    archived: Boolean,
+    deleted: Boolean,
+    closed: Boolean,
+    sticky: Boolean,
     postDescriptor: PostDescriptor,
     parsedPostDataContext: ParsedPostDataContext,
     chanTheme: ChanTheme,
@@ -354,8 +389,16 @@ class ParsedPostDataCache(
           postIndex = originalPostOrder,
           postDescriptor = postDescriptor,
           postTimeMs = timeMs,
+          posterName = name,
+          posterTripcode = tripcode,
+          posterId = posterId,
+          postIcons = arrayOf(countryFlag, boardFlag).filterNotNull(),
           postImages = images,
           postSubjectParsed = postSubjectParsed,
+          archived = archived,
+          deleted = deleted,
+          closed = closed,
+          sticky = sticky,
           parsedPostDataContext = parsedPostDataContext
         ),
         postFooterText = formatFooterText(
@@ -447,8 +490,16 @@ class ParsedPostDataCache(
     postIndex: Int,
     postDescriptor: PostDescriptor,
     postTimeMs: Long?,
+    posterName: String?,
+    posterTripcode: String?,
+    posterId: String?,
+    postIcons: List<PostIcon>,
     postImages: List<IPostImage>?,
     postSubjectParsed: String,
+    archived: Boolean,
+    deleted: Boolean,
+    closed: Boolean,
+    sticky: Boolean,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
     val hasImages = postImages?.isNotNullNorEmpty() ?: false
@@ -467,53 +518,77 @@ class ParsedPostDataCache(
         append("\n")
       }
 
-      val postInfoPart = buildString(capacity = 32) {
-        if (parsedPostDataContext.isParsingThread) {
-          append("#")
-          append(postIndex + 1)
-          append(AppConstants.TEXT_SEPARATOR)
-        }
+      if (posterName.isNotNullNorBlank() || posterTripcode.isNotNullNorBlank() || posterId.isNotNullNorBlank()) {
+        append(
+          buildAnnotatedString(capacity = 32) {
+            pushStyle(SpanStyle(color = chanTheme.postNameColorCompose))
 
-        append("No. ")
-        append(postDescriptor.postNo)
+            if (posterId.isNotNullNorBlank()) {
+              withStyle(SpanStyle(color = calculatePosterIdTextColor(chanTheme, posterId))) {
+                append(posterId)
+              }
+            }
+
+            if (posterName.isNotNullNorBlank()) {
+              if (length > 0) {
+                append(" ")
+              }
+
+              append(posterName)
+            }
+
+            if (posterTripcode.isNotNullNorBlank()) {
+              if (length > 0) {
+                append(" ")
+              }
+
+              append(posterTripcode)
+            }
+          }
+        )
+
+        append("\n")
       }
 
-      val postInfoPartAnnotatedString = AnnotatedString(
-        text = postInfoPart,
-        spanStyle = SpanStyle(
-          color = chanTheme.textColorHintCompose,
-        )
+      append(
+        buildAnnotatedString(capacity = 32) {
+          pushStyle(SpanStyle(color = chanTheme.postDetailsColorCompose))
+
+          if (parsedPostDataContext.isParsingThread) {
+            append("#")
+            append((postIndex + 1).toString())
+            append(AppConstants.TEXT_SEPARATOR)
+          }
+
+          append("No. ")
+          append(postDescriptor.postNo.toString())
+        }
       )
 
-      append(postInfoPartAnnotatedString)
-
       if (postTimeMs != null) {
-        val relativeTime = buildString {
-          val timeString = DateUtils.getRelativeTimeSpanString(
-            postTimeMs,
-            System.currentTimeMillis(),
-            DateUtils.SECOND_IN_MILLIS,
-            0
-          ).toString()
+        append(
+          buildAnnotatedString(capacity = 32) {
+            pushStyle(SpanStyle(color = chanTheme.postDetailsColorCompose))
 
-          append(AppConstants.TEXT_SEPARATOR)
-          append(timeString)
-        }
+            val timeString = DateUtils.getRelativeTimeSpanString(
+              postTimeMs,
+              System.currentTimeMillis(),
+              DateUtils.SECOND_IN_MILLIS,
+              0
+            ).toString()
 
-        val relativeTimeAnnotatedString = AnnotatedString(
-          text = relativeTime,
-          spanStyle = SpanStyle(
-            color = chanTheme.textColorHintCompose,
-          )
+            append(AppConstants.TEXT_SEPARATOR)
+            append(timeString)
+          }
         )
-
-        append(relativeTimeAnnotatedString)
       }
 
       if (hasImages) {
         append("\n")
 
         val imagesInfoAnnotatedString = buildAnnotatedString(capacity = 64) {
+          pushStyle(SpanStyle(color = chanTheme.postDetailsColorCompose))
+
           if (postImages!!.size > 1) {
             val imagesCount = postImages.size
             val totalFileSize = postImages.sumOf { it.fileSize }
@@ -526,12 +601,10 @@ class ParsedPostDataCache(
           } else {
             val postImage = postImages.first()
 
-            append(
-              AnnotatedString(
-                text = postImage.originalFileNameForPostCell(),
-                spanStyle = SpanStyle(textDecoration = TextDecoration.Underline)
-              )
-            )
+            withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+              append(postImage.originalFileNameForPostCell())
+            }
+
             append(" ")
             append(postImage.ext.uppercase(Locale.ENGLISH))
             append(" ")
@@ -541,17 +614,115 @@ class ParsedPostDataCache(
             append(" ")
             append(postImage.fileSize.asReadableFileSize())
           }
-
-          addStyle(
-            style = SpanStyle(color = chanTheme.textColorHintCompose),
-            start = 0,
-            end = length
-          )
         }
 
         append(imagesInfoAnnotatedString)
       }
+
+      if (postIcons.isNotEmpty() || archived || deleted || closed || sticky) {
+        append("\n")
+
+        append(
+          buildAnnotatedString(capacity = 16) {
+            if (archived) {
+              appendInlineContent(id = PostCellIcon.Archived.id)
+            }
+
+            if (deleted) {
+              if (length > 0) {
+                append("  ")
+              }
+
+              appendInlineContent(id = PostCellIcon.Deleted.id)
+            }
+
+            if (closed) {
+              if (length > 0) {
+                append("  ")
+              }
+
+              appendInlineContent(id = PostCellIcon.Closed.id)
+            }
+
+            if (sticky) {
+              if (length > 0) {
+                append("  ")
+              }
+
+              appendInlineContent(id = PostCellIcon.Sticky.id)
+            }
+
+            if (postIcons.isNotEmpty()) {
+              postIcons.forEach { flag ->
+                if (length > 0) {
+                  append("  ")
+                }
+
+                when (flag) {
+                  is CountryFlag -> {
+                    appendInlineContent(id = PostCellIcon.CountryFlag.id)
+
+                    if (flag.flagName.isNotNullNorBlank()) {
+                      append("  ")
+
+                      withStyle(
+                        SpanStyle(
+                          color = chanTheme.postDetailsColorCompose,
+                          fontStyle = FontStyle.Italic
+                        )
+                      ) {
+                        append(flag.flagName)
+                      }
+                    }
+                  }
+                  is BoardFlag -> {
+                    appendInlineContent(id = PostCellIcon.BoardFlag.id)
+
+                    if (flag.flagName.isNotNullNorBlank()) {
+                      append("  ")
+
+                      withStyle(
+                        SpanStyle(
+                          color = chanTheme.postDetailsColorCompose,
+                          fontStyle = FontStyle.Italic
+                        )
+                      ) {
+                        append(flag.flagName)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        )
+      }
     }
+  }
+
+  private fun calculatePosterIdTextColor(
+    chanTheme: ChanTheme,
+    posterId: String
+  ): Color {
+    // Stolen from the 4chan extension
+    val hash: Int = posterId.hashCode()
+
+    val r = hash shr 24 and 0xff
+    val g = hash shr 16 and 0xff
+    val b = hash shr 8 and 0xff
+    val posterIdTextColor = (0xff shl 24) + (r shl 16) + (g shl 8) + b
+
+    val posterIdColorHSL = ThemeEngine.colorToHsl(posterIdTextColor)
+
+    // Make the posterId text color darker if it's too light and the current theme's back color is
+    // also light and vice versa
+    if (chanTheme.isBackColorDark && posterIdColorHSL.lightness < 0.5) {
+      posterIdColorHSL.lightness = .7f
+    } else if (chanTheme.isBackColorLight && posterIdColorHSL.lightness > 0.5) {
+      posterIdColorHSL.lightness = .3f
+    }
+
+    return Color(ThemeEngine.hslToColor(posterIdColorHSL))
   }
 
   private suspend fun formatFooterText(
@@ -628,6 +799,15 @@ class ParsedPostDataCache(
     }
 
     return null
+  }
+
+  enum class PostCellIcon(val id: String) {
+    Deleted("id_post_deleted"),
+    Closed("id_post_deleted"),
+    Archived("id_post_archived"),
+    Sticky("id_post_sticky"),
+    CountryFlag("id_post_country_flag"),
+    BoardFlag("id_post_board_flag")
   }
 
 }

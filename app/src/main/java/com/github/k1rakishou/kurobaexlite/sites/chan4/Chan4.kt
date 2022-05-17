@@ -33,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.sites.SiteCaptcha
 import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
 import com.github.k1rakishou.kurobaexlite.sites.settings.SiteSettings
 import com.squareup.moshi.Moshi
+import java.util.Locale
 import logcat.logcat
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -138,6 +139,33 @@ class Chan4(
       if (postNo != null && postNo > 0) {
         append("#p")
         append(postNo)
+      }
+    }
+  }
+
+  override fun iconUrl(iconId: String, params: Map<String, String>): String? {
+    return buildString {
+      when (iconId) {
+        "country" -> {
+          val countryCode = requireNotNull(params.get("country_code")) { "Bad params map: ${params}" }
+
+          append("https://s.4cdn.org/image/country/")
+          append(countryCode.lowercase(Locale.ENGLISH))
+          append(".gif")
+        }
+        "board_flag" -> {
+          val boardFlagCode = requireNotNull(params.get("board_flag_code")) { "Bad params map: ${params}" }
+          val boardCode = requireNotNull(params.get("board_code")) { "Bad params map: ${params}" }
+
+          append("https://s.4cdn.org/image/flags/")
+          append(boardCode)
+          append("/")
+          append(boardFlagCode.lowercase(Locale.ENGLISH))
+          append(".gif")
+        }
+        "since4pass" -> {
+          append("https://s.4cdn.org/image/minileaf.gif")
+        }
       }
     }
   }

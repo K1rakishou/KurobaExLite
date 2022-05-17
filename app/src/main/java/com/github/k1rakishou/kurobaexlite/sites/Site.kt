@@ -44,6 +44,7 @@ interface Site {
   fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor?
   fun requestModifier(): RequestModifier<Site>
   fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String?
+  fun iconUrl(iconId: String, params: Map<String, String>): String?
 
   interface CatalogInfo  {
     fun catalogUrl(boardCode: String): String

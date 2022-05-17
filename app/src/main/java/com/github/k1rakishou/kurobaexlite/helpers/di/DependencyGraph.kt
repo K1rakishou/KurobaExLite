@@ -23,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreenViewM
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.search.GlobalSearchScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostCellIconViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
@@ -269,6 +270,7 @@ object DependencyGraph {
     viewModel { AnimateableStackContainerViewModel() }
     viewModel { KurobaToolbarContainerViewModel() }
     viewModel { GlobalSearchScreenViewModel() }
+    viewModel { PostCellIconViewModel(siteManager = get()) }
   }
 
   private fun Module.repositories() {

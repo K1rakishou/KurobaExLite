@@ -1,23 +1,32 @@
 package com.github.k1rakishou.kurobaexlite.model.data.local
 
+import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
+@Immutable
 data class OriginalPostData(
   override val originalPostOrder: Int,
   override val postDescriptor: PostDescriptor,
   override val postSubjectUnparsed: String,
   override val postCommentUnparsed: String,
+  override val name: String?,
+  override val tripcode: String?,
+  override val posterId: String?,
+  override val countryFlag: PostIcon?,
+  override val boardFlag: PostIcon?,
   override val timeMs: Long?,
   override val images: List<PostImageData>?,
   override val threadRepliesTotal: Int?,
   override val threadImagesTotal: Int?,
   override val threadPostersTotal: Int?,
   override val lastModified: Long?,
-  override val archived: Boolean?,
-  override val closed: Boolean?,
-  override val sticky: Boolean?,
+  override val archived: Boolean,
+  override val deleted: Boolean,
+  override val closed: Boolean,
+  override val sticky: Boolean,
   override val bumpLimit: Boolean?,
   override val imageLimit: Boolean?,
 ) : IPostData {
@@ -28,14 +37,20 @@ data class OriginalPostData(
     postSubjectUnparsed: String,
     postCommentUnparsed: String,
     timeMs: Long?,
+    name: String?,
+    tripcode: String?,
+    posterId: String?,
+    countryFlag: PostIcon?,
+    boardFlag: PostIcon?,
     images: List<IPostImage>?,
     threadRepliesTotal: Int?,
     threadImagesTotal: Int?,
     threadPostersTotal: Int?,
     lastModified: Long?,
-    archived: Boolean?,
-    closed: Boolean?,
-    sticky: Boolean?,
+    archived: Boolean,
+    deleted: Boolean,
+    closed: Boolean,
+    sticky: Boolean,
     bumpLimit: Boolean?,
     imageLimit: Boolean?,
   ): IPostData {
@@ -45,12 +60,18 @@ data class OriginalPostData(
       postSubjectUnparsed = postSubjectUnparsed,
       postCommentUnparsed = postCommentUnparsed,
       timeMs = timeMs,
+      name = name,
+      tripcode = tripcode,
+      countryFlag = countryFlag,
+      boardFlag = boardFlag,
+      posterId = posterId,
       images = images as List<PostImageData>,
       threadRepliesTotal = threadRepliesTotal,
       threadImagesTotal = threadImagesTotal,
       threadPostersTotal = threadPostersTotal,
       lastModified = lastModified,
       archived = archived,
+      deleted = deleted,
       closed = closed,
       sticky = sticky,
       bumpLimit = bumpLimit,

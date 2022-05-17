@@ -302,8 +302,16 @@ abstract class PostScreenViewModel(
         postIndex = postCellData.originalPostOrder,
         postDescriptor = postCellData.postDescriptor,
         postTimeMs = postCellData.timeMs,
+        posterName = postCellData.name,
+        posterTripcode = postCellData.tripcode,
+        posterId = postCellData.posterId,
+        postIcons = arrayOf(postCellData.countryFlag, postCellData.boardFlag).filterNotNull(),
         postImages = postCellData.images,
         postSubjectParsed = parsedPostData.parsedPostSubject,
+        archived = postCellData.archived,
+        deleted = postCellData.deleted,
+        closed = postCellData.closed,
+        sticky = postCellData.sticky,
         parsedPostDataContext = parsedPostData.parsedPostDataContext
       )
     }

@@ -39,13 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -54,8 +53,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.res.ResourcesCompat
-import androidx.core.graphics.drawable.toBitmap
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
@@ -95,10 +92,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.rememberRe
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.reorderable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.withContext
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class BookmarksScreen(
@@ -710,37 +705,23 @@ class BookmarksScreen(
     companion object {
       @Composable
       fun Content(bookmarkAnnotatedContent: BookmarkAnnotatedContent, isDead: Boolean) {
-        val context = LocalContext.current
-
-        var imageBitmapMut by remember { mutableStateOf<ImageBitmap?>(null) }
-        val imageBitmap = imageBitmapMut
-
-        LaunchedEffect(
-          key1 = this,
-          block = {
-            val drawableId = when (bookmarkAnnotatedContent) {
-              ThreadDeleted -> R.drawable.trash_icon
-              ThreadArchived -> R.drawable.archived_icon
-              ThreadError -> R.drawable.error_icon
-            }
-
-            val drawable = ResourcesCompat.getDrawable(context.resources, drawableId, null)
-              ?: return@LaunchedEffect
-
-            imageBitmapMut = withContext(Dispatchers.IO) { drawable.toBitmap().asImageBitmap() }
-          })
-
         val iconAlpha = remember(key1 = isDead) { if (isDead) 0.5f else 1f }
 
-        if (imageBitmap != null) {
-          Image(
-            modifier = Modifier
-              .fillMaxSize()
-              .graphicsLayer { alpha = iconAlpha },
-            bitmap = imageBitmap,
-            contentDescription = null
-          )
+        val drawableId = remember(key1 = bookmarkAnnotatedContent) {
+          when (bookmarkAnnotatedContent) {
+            ThreadDeleted -> R.drawable.trash_icon
+            ThreadArchived -> R.drawable.archived_icon
+            ThreadError -> R.drawable.error_icon
+          }
         }
+
+        Image(
+          modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer { alpha = iconAlpha },
+          painter = painterResource(id = drawableId),
+          contentDescription = null
+        )
       }
     }
   }

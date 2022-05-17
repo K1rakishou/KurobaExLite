@@ -1,11 +1,13 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,21 +32,33 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.rememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
+import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
@@ -257,10 +272,139 @@ private fun PostCellTitle(
       Text(
         modifier = Modifier.weight(1f),
         text = actualPostSubject,
-        fontSize = postCellSubjectTextSizeSp
+        fontSize = postCellSubjectTextSizeSp,
+        inlineContent = inlinedContentForPostCell(
+          postCellData = postCellData,
+          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
+        )
       )
     }
   }
+}
+
+@Composable
+fun inlinedContentForPostCell(
+  postCellData: PostCellData,
+  postCellSubjectTextSizeSp: TextUnit
+): Map<String, InlineTextContent> {
+  return remember(
+    postCellData.archived,
+    postCellData.deleted,
+    postCellData.closed,
+    postCellData.countryFlag,
+    postCellData.boardFlag,
+  ) {
+    val resultMap = mutableMapOf<String, InlineTextContent>()
+
+    ParsedPostDataCache.PostCellIcon.values().forEach { postCellAnnotatedContent ->
+      resultMap[postCellAnnotatedContent.id] = InlineTextContent(
+        placeholder = Placeholder(
+          width = postCellSubjectTextSizeSp,
+          height = postCellSubjectTextSizeSp,
+          placeholderVerticalAlign = PlaceholderVerticalAlign.Center
+        ),
+        children = {
+          when (postCellAnnotatedContent) {
+            ParsedPostDataCache.PostCellIcon.Deleted,
+            ParsedPostDataCache.PostCellIcon.Closed,
+            ParsedPostDataCache.PostCellIcon.Archived,
+            ParsedPostDataCache.PostCellIcon.Sticky -> {
+              PostCellIcon(postCellAnnotatedContent)
+            }
+            ParsedPostDataCache.PostCellIcon.CountryFlag -> {
+              if (postCellData.countryFlag != null) {
+                PostCellIcon(
+                  postDescriptor = postCellData.postDescriptor,
+                  flag = postCellData.countryFlag,
+                  postCellAnnotatedContent = postCellAnnotatedContent
+                )
+              }
+            }
+            ParsedPostDataCache.PostCellIcon.BoardFlag -> {
+              if (postCellData.boardFlag != null) {
+                PostCellIcon(
+                  postDescriptor = postCellData.postDescriptor,
+                  flag = postCellData.boardFlag,
+                  postCellAnnotatedContent = postCellAnnotatedContent
+                )
+              }
+            }
+          }
+        }
+      )
+    }
+
+    return@remember resultMap
+  }
+}
+
+@Composable
+private fun PostCellIcon(
+  postDescriptor: PostDescriptor,
+  flag: PostIcon,
+  postCellAnnotatedContent: ParsedPostDataCache.PostCellIcon
+) {
+  val context = LocalContext.current
+  val componentActivity = LocalComponentActivity.current
+  val postCellIconViewModel = componentActivity.rememberViewModel<PostCellIconViewModel>()
+
+  var iconUrl by remember { mutableStateOf<String?>(null) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      when (postCellAnnotatedContent) {
+        ParsedPostDataCache.PostCellIcon.Deleted,
+        ParsedPostDataCache.PostCellIcon.Closed,
+        ParsedPostDataCache.PostCellIcon.Archived,
+        ParsedPostDataCache.PostCellIcon.Sticky -> {
+          error("Expected CountryFlag or BoardFlag but got ${postCellAnnotatedContent}")
+        }
+        ParsedPostDataCache.PostCellIcon.CountryFlag,
+        ParsedPostDataCache.PostCellIcon.BoardFlag -> {
+          // no-op
+        }
+      }
+
+      iconUrl = postCellIconViewModel.formatIconUrl(
+        postDescriptor = postDescriptor,
+        postIcon = flag
+      )
+    }
+  )
+
+  if (iconUrl == null) {
+    return
+  }
+
+  AsyncImage(
+    modifier = Modifier.fillMaxSize(),
+    model = ImageRequest.Builder(context)
+      .data(iconUrl)
+      .crossfade(true)
+      .size(Size.ORIGINAL)
+      .build(),
+    contentDescription = "poster flag"
+  )
+}
+
+@Composable
+private fun PostCellIcon(postCellIcon: ParsedPostDataCache.PostCellIcon) {
+  val drawableId = remember(key1 = postCellIcon) {
+    when (postCellIcon) {
+      ParsedPostDataCache.PostCellIcon.Deleted -> R.drawable.trash_icon
+      ParsedPostDataCache.PostCellIcon.Archived -> R.drawable.archived_icon
+      ParsedPostDataCache.PostCellIcon.Closed -> R.drawable.closed_icon
+      ParsedPostDataCache.PostCellIcon.Sticky -> R.drawable.sticky_icon
+      else -> error("Unexpected postCellIcon: ${postCellIcon}")
+    }
+  }
+
+  Image(
+    modifier = Modifier.fillMaxSize(),
+    painter = painterResource(id = drawableId),
+    contentDescription = null
+  )
 }
 
 @Composable
@@ -307,10 +451,6 @@ private fun PostCellComment(
   }
 }
 
-/**
- * This wrapper changes the default long tap to start text selection gesture to tap + long tap one.
- * This is needed because the regular long tap is used to show the content menu.
- * */
 @Composable
 private fun PostCellCommentSelectionWrapper(
   isCatalogMode: Boolean,

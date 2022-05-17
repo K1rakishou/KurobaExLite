@@ -1,5 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.model.data.remote.chan4
 
+import com.github.k1rakishou.kurobaexlite.model.data.BoardFlag
+import com.github.k1rakishou.kurobaexlite.model.data.CountryFlag
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
@@ -14,13 +16,40 @@ data class ThreadDataJson(
   val posts: List<ThreadPostDataJson>
 )
 
-interface PostImageDataJson {
-  val filename: String?
-  val ext: String?
-  val tim: Long?
-  val w: Int?
-  val h: Int?
-  val fsize: Int?
+abstract class PostImageDataJson {
+  abstract val filename: String?
+  abstract val ext: String?
+  abstract val tim: Long?
+  abstract val w: Int?
+  abstract val h: Int?
+  abstract val fsize: Int?
+
+  abstract val country: String?
+  abstract val countryName: String?
+  abstract val boardFlag: String?
+  abstract val boardFlagName: String?
+
+  fun countryFlag(): CountryFlag? {
+    if (country.isNullOrEmpty()) {
+      return null
+    }
+
+    return CountryFlag(
+      flagId = country!!,
+      flagName = countryName
+    )
+  }
+
+  fun boardFlag(): BoardFlag? {
+    if (boardFlag.isNullOrEmpty()) {
+      return null
+    }
+
+    return BoardFlag(
+      flagId = boardFlag!!,
+      flagName = boardFlagName
+    )
+  }
 
   fun hasImage(): Boolean {
     return tim != null
@@ -28,6 +57,7 @@ interface PostImageDataJson {
       && h != null
       && fsize != null
   }
+
 }
 
 @JsonClass(generateAdapter = true)
@@ -46,6 +76,15 @@ data class ThreadPostDataJson(
   @Json(name = "bumplimit") val bumpLimit: Int?,
   @Json(name = "imagelimit") val imageLimit: Int?,
 
+  val name: String?,
+  val trip: String?,
+  val id: String?,
+
+  @Json(name = "country") override val country: String? = null,
+  @Json(name = "country_name") override val countryName: String? = null,
+  @Json(name = "board_flag") override val boardFlag: String? = null,
+  @Json(name = "flag_name") override val boardFlagName: String? = null,
+
   // image info
   override val filename: String?,
   override val ext: String?,
@@ -53,7 +92,7 @@ data class ThreadPostDataJson(
   override val w: Int?,
   override val h: Int?,
   override val fsize: Int?
-) : PostImageDataJson
+) : PostImageDataJson()
 
 @JsonClass(generateAdapter = true)
 data class CatalogThreadDataJson(
@@ -71,6 +110,15 @@ data class CatalogThreadDataJson(
   @Json(name = "bumplimit") val bumpLimit: Int?,
   @Json(name = "imagelimit") val imageLimit: Int?,
 
+  val name: String?,
+  val trip: String?,
+  val id: String?,
+
+  @Json(name = "country") override val country: String? = null,
+  @Json(name = "country_name") override val countryName: String? = null,
+  @Json(name = "board_flag") override val boardFlag: String? = null,
+  @Json(name = "flag_name") override val boardFlagName: String? = null,
+
   // image info
   override val filename: String?,
   override val ext: String?,
@@ -78,7 +126,7 @@ data class CatalogThreadDataJson(
   override val w: Int?,
   override val h: Int?,
   override val fsize: Int?
-) : PostImageDataJson
+) : PostImageDataJson()
 
 @JsonClass(generateAdapter = true)
 data class ThreadBookmarkInfoJson(
