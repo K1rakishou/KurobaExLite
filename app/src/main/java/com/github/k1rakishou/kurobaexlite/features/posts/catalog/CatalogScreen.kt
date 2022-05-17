@@ -453,7 +453,9 @@ class CatalogScreen(
           }
           ReplyLayoutVisibility.Opened,
           ReplyLayoutVisibility.Expanded -> {
-            kurobaToolbarContainerState.fadeInToolbar(replyToolbar)
+            if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
+              kurobaToolbarContainerState.fadeInToolbar(replyToolbar)
+            }
           }
         }
       }

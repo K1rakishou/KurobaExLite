@@ -31,6 +31,25 @@ class AnimateableStackContainerState<T : DisposableElement>(
   val addedElementsCount: Int
     get() = _addedElements.size
 
+  fun contains(elementKey: String): Boolean {
+    val containsInAdded = addedElements.indexOfFirst { it.elementKey == elementKey } >= 0
+    if (containsInAdded) {
+      return true
+    }
+
+    val indexInAnimating = animatingElements.indexOfFirst { it.elementKey == elementKey }
+    if (indexInAnimating < 0) {
+      return false
+    }
+
+    val stackContainerChange = animatingElements[indexInAnimating]
+    if (stackContainerChange.animation.isDisposing) {
+      return false
+    }
+
+    return true
+  }
+
   fun setIfEmpty(stackContainerElement: SimpleStackContainerElement<T>) {
     if (_addedElements.isNotEmpty()) {
       return

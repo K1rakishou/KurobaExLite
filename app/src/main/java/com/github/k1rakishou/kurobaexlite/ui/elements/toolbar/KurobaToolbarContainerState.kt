@@ -46,6 +46,14 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
     }
   }
 
+  fun contains(toolbarKey: String): Boolean {
+    if (!::_stackContainerState.isInitialized) {
+      return false
+    }
+
+    return _stackContainerState.contains(toolbarKey)
+  }
+
   fun popChildToolbars() {
     if (!::_stackContainerState.isInitialized) {
       return
