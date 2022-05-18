@@ -451,6 +451,7 @@ class ThreadScreen(
   }
 
   companion object {
+    private const val TAG = "ThreadScreen"
     val SCREEN_KEY = ScreenKey("ThreadScreen")
   }
 }

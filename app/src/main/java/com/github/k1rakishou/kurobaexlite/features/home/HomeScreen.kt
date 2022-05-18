@@ -505,7 +505,7 @@ class HomeScreen(
       if (drawerWidth > 0) {
         HomeScreenDrawerLayout(
           drawerWidth = drawerWidth,
-          navigationRouter = navigationRouter,
+          navigationRouterProvider = { navigationRouter },
         )
       }
     }

@@ -546,6 +546,7 @@ class HistoryScreen(
   }
 
   companion object {
+    private const val TAG = "HistoryScreen"
     val SCREEN_KEY = ScreenKey("HistoryScreen")
   }
 

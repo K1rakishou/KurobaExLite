@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,9 +41,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 
+@Stable
 class PullToRefreshState {
-  internal val animatingRefreshState = mutableStateOf(false)
-  internal val animatingBackState = mutableStateOf(false)
+  val animatingRefreshState = mutableStateOf(false)
+  val animatingBackState = mutableStateOf(false)
 
   fun stopRefreshing() {
     animatingRefreshState.value = false

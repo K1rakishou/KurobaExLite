@@ -511,6 +511,7 @@ class CatalogScreen(
   }
 
   companion object {
+    private const val TAG = "CatalogScreen"
     val SCREEN_KEY = ScreenKey("CatalogScreen")
   }
 

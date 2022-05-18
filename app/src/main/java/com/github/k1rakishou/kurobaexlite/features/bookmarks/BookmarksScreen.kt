@@ -82,6 +82,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
+import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -112,19 +113,7 @@ class BookmarksScreen(
 
   @Composable
   override fun Content() {
-    val chanTheme = LocalChanTheme.current
-    val windowInsets = LocalWindowInsets.current
     val context = LocalContext.current
-
-    val contentPadding = remember(key1 = windowInsets) {
-      PaddingValues(top = windowInsets.top, bottom = windowInsets.bottom)
-    }
-    val pullToRefreshToPadding = remember(key1 = contentPadding) {
-      contentPadding.calculateTopPadding()
-    }
-
-    val bookmarkList = bookmarksScreenViewModel.bookmarksList
-    val canUseFancyAnimations by bookmarksScreenViewModel.canUseFancyAnimations
 
     LaunchedEffect(
       key1 = Unit,
@@ -160,6 +149,32 @@ class BookmarksScreen(
         }
       }
     )
+
+    BookmarksList(
+      pullToRefreshState = pullToRefreshState,
+      context = context,
+      reorderableState = reorderableState,
+    )
+  }
+
+  @Composable
+  private fun BookmarksList(
+    pullToRefreshState: PullToRefreshState,
+    context: Context,
+    reorderableState: ReorderableState,
+  ) {
+    val chanTheme = LocalChanTheme.current
+
+    val windowInsets = LocalWindowInsets.current
+    val contentPadding = remember(key1 = windowInsets) {
+      PaddingValues(top = windowInsets.top, bottom = windowInsets.bottom)
+    }
+    val pullToRefreshToPadding = remember(key1 = contentPadding) {
+      contentPadding.calculateTopPadding()
+    }
+
+    val bookmarkList = bookmarksScreenViewModel.bookmarksList
+    val canUseFancyAnimations by bookmarksScreenViewModel.canUseFancyAnimations
 
     PullToRefresh(
       pullToRefreshState = pullToRefreshState,
@@ -360,7 +375,7 @@ class BookmarksScreen(
             .weight(0.5f),
           threadDescriptor = threadBookmarkUi.threadDescriptor,
           threadBookmarkStatsUi = threadBookmarkStatsUi,
-          textAnimationSpec = textAnimationSpec,
+          textAnimationSpecProvider = { textAnimationSpec },
         )
       }
 
@@ -389,7 +404,7 @@ class BookmarksScreen(
     modifier: Modifier,
     threadDescriptor: ThreadDescriptor,
     threadBookmarkStatsUi: ThreadBookmarkStatsUi,
-    textAnimationSpec: FiniteAnimationSpec<Int>
+    textAnimationSpecProvider: () -> FiniteAnimationSpec<Int>
   ) {
     val context = LocalContext.current
     val chanTheme = LocalChanTheme.current
@@ -402,17 +417,17 @@ class BookmarksScreen(
 
     val newPostsAnimated by transition.animateInt(
       label = "New posts text animation",
-      transitionSpec = { textAnimationSpec },
+      transitionSpec = { textAnimationSpecProvider() },
       targetValueByState = { state -> state.newPosts.value }
     )
     val newQuotesAnimated by transition.animateInt(
       label = "New quotes text animation",
-      transitionSpec = { textAnimationSpec },
+      transitionSpec = { textAnimationSpecProvider() },
       targetValueByState = { state -> state.newQuotes.value }
     )
     val totalPostsAnimated by transition.animateInt(
       label = "Total posts text textAnimationSpec",
-      transitionSpec = { textAnimationSpec },
+      transitionSpec = { textAnimationSpecProvider() },
       targetValueByState = { state -> state.totalPosts.value }
     )
 
@@ -424,7 +439,6 @@ class BookmarksScreen(
     val isArchived by threadBookmarkStatsUi.isArchived
     val isDeleted by threadBookmarkStatsUi.isDeleted
     val isError by threadBookmarkStatsUi.isError
-
     val isDead = isArchived || isDeleted
 
     val bookmarkAdditionalInfoText = remember(

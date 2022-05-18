@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,11 +12,13 @@ import androidx.compose.material.SwipeableDefaults
 import androidx.compose.material.ThresholdConfig
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -115,13 +116,13 @@ class DrawerSwipeState(
 @Composable
 fun HomeScreenDrawerLayout(
   drawerWidth: Int,
-  navigationRouter: NavigationRouter
+  navigationRouterProvider: () -> NavigationRouter
 ) {
   val componentActivity = LocalComponentActivity.current
   val density = LocalDensity.current
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
-  val drawerScreen = remember { BookmarksScreen(componentActivity, navigationRouter) }
+  val drawerScreen = remember { BookmarksScreen(componentActivity, navigationRouterProvider()) }
   val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
 
   val dragEventsCombined = remember { mutableListOf<DrawerVisibility.Drag>() }
@@ -152,14 +153,33 @@ fun HomeScreenDrawerLayout(
 
   drawerSwipeState.InitDrawerState(drawerWidth, density)
 
-  val clickable = remember(key1 = drawerVisibility) {
-    when (drawerVisibility) {
-      DrawerVisibility.Closed -> false
-      DrawerVisibility.Closing,
-      is DrawerVisibility.Fling,
-      is DrawerVisibility.Drag,
-      DrawerVisibility.Opened,
-      DrawerVisibility.Opening -> true
+  val isFullyClosed by remember(key1 = drawerVisibility) {
+    derivedStateOf {
+      when (drawerVisibility) {
+        DrawerVisibility.Closed -> true
+        DrawerVisibility.Closing,
+        is DrawerVisibility.Fling,
+        is DrawerVisibility.Drag,
+        DrawerVisibility.Opened,
+        DrawerVisibility.Opening -> false
+      }
+    }
+  }
+
+  if (isFullyClosed) {
+    return
+  }
+
+  val clickable by remember(key1 = drawerVisibility) {
+    derivedStateOf {
+      when (drawerVisibility) {
+        DrawerVisibility.Closed -> false
+        DrawerVisibility.Closing,
+        is DrawerVisibility.Fling,
+        is DrawerVisibility.Drag,
+        DrawerVisibility.Opened,
+        DrawerVisibility.Opening -> true
+      }
     }
   }
 
@@ -243,7 +263,7 @@ fun HomeScreenDrawerLayout(
   Box(
     modifier = Modifier
       .fillMaxSize()
-      .background(bgColorWithAlpha)
+      .drawBehind { drawRect(bgColorWithAlpha) }
       .then(clickableModifier)
   ) {
     Box(
@@ -252,8 +272,10 @@ fun HomeScreenDrawerLayout(
         .fillMaxHeight()
         .absoluteOffset { IntOffset(drawerOffset, 0) }
     ) {
+      val router = remember { navigationRouterProvider() }
+
       RouterHost(
-        navigationRouter = navigationRouter,
+        navigationRouter = router,
         defaultScreenFunc = { drawerScreen }
       )
     }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,7 @@ fun rememberReorderState(
   lazyListState: LazyListState = rememberLazyListState(),
 ) = remember { ReorderableState(lazyListState) }
 
+@Stable
 class ReorderableState(val lazyListState: LazyListState) {
   var draggedIndex by mutableStateOf<Int?>(null)
     internal set
