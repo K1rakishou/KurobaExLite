@@ -519,35 +519,12 @@ class ParsedPostDataCache(
       }
 
       if (posterName.isNotNullNorBlank() || posterTripcode.isNotNullNorBlank() || posterId.isNotNullNorBlank()) {
-        append(
-          buildAnnotatedString(capacity = 32) {
-            pushStyle(SpanStyle(color = chanTheme.postNameColorCompose))
-
-            if (posterId.isNotNullNorBlank()) {
-              withStyle(SpanStyle(color = calculatePosterIdTextColor(chanTheme, posterId))) {
-                append(posterId)
-              }
-            }
-
-            if (posterName.isNotNullNorBlank()) {
-              if (length > 0) {
-                append(" ")
-              }
-
-              append(posterName)
-            }
-
-            if (posterTripcode.isNotNullNorBlank()) {
-              if (length > 0) {
-                append(" ")
-              }
-
-              append(posterTripcode)
-            }
-          }
+        appendNameTripcodeId(
+          chanTheme = chanTheme,
+          posterName = posterName,
+          posterTripcode = posterTripcode,
+          posterId = posterId
         )
-
-        append("\n")
       }
 
       append(
@@ -584,120 +561,189 @@ class ParsedPostDataCache(
       }
 
       if (hasImages) {
-        append("\n")
-
-        val imagesInfoAnnotatedString = buildAnnotatedString(capacity = 64) {
-          pushStyle(SpanStyle(color = chanTheme.postDetailsColorCompose))
-
-          if (postImages!!.size > 1) {
-            val imagesCount = postImages.size
-            val totalFileSize = postImages.sumOf { it.fileSize }
-
-            append(imagesCount.toString())
-            append(" ")
-            append("files")
-            append(", ")
-            append(totalFileSize.asReadableFileSize())
-          } else {
-            val postImage = postImages.first()
-
-            withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
-              append(postImage.originalFileNameForPostCell())
-            }
-
-            append(" ")
-            append(postImage.ext.uppercase(Locale.ENGLISH))
-            append(" ")
-            append(postImage.width.toString())
-            append("x")
-            append(postImage.height.toString())
-            append(" ")
-            append(postImage.fileSize.asReadableFileSize())
-          }
-        }
-
-        append(imagesInfoAnnotatedString)
+        appendImagesInfo(
+          chanTheme = chanTheme,
+          postImages = postImages
+        )
       }
 
       if (postIcons.isNotEmpty() || archived || deleted || closed || sticky) {
-        append("\n")
+        appendPostIcons(
+          archived = archived,
+          deleted = deleted,
+          closed = closed,
+          sticky = sticky,
+          postIcons = postIcons,
+          chanTheme = chanTheme
+        )
+      }
+    }
+  }
 
-        append(
-          buildAnnotatedString(capacity = 16) {
-            if (archived) {
-              appendInlineContent(id = PostCellIcon.Archived.id)
+  private fun AnnotatedString.Builder.appendPostIcons(
+    archived: Boolean,
+    deleted: Boolean,
+    closed: Boolean,
+    sticky: Boolean,
+    postIcons: List<PostIcon>,
+    chanTheme: ChanTheme
+  ) {
+    append("\n")
+
+    append(
+      buildAnnotatedString(capacity = 16) {
+        if (archived) {
+          appendInlineContent(id = PostCellIcon.Archived.id)
+        }
+
+        if (deleted) {
+          if (length > 0) {
+            append("  ")
+          }
+
+          appendInlineContent(id = PostCellIcon.Deleted.id)
+        }
+
+        if (closed) {
+          if (length > 0) {
+            append("  ")
+          }
+
+          appendInlineContent(id = PostCellIcon.Closed.id)
+        }
+
+        if (sticky) {
+          if (length > 0) {
+            append("  ")
+          }
+
+          appendInlineContent(id = PostCellIcon.Sticky.id)
+        }
+
+        if (postIcons.isNotEmpty()) {
+          postIcons.forEach { flag ->
+            if (length > 0) {
+              append("  ")
             }
 
-            if (deleted) {
-              if (length > 0) {
-                append("  ")
-              }
+            when (flag) {
+              is CountryFlag -> {
+                appendInlineContent(id = PostCellIcon.CountryFlag.id)
 
-              appendInlineContent(id = PostCellIcon.Deleted.id)
-            }
-
-            if (closed) {
-              if (length > 0) {
-                append("  ")
-              }
-
-              appendInlineContent(id = PostCellIcon.Closed.id)
-            }
-
-            if (sticky) {
-              if (length > 0) {
-                append("  ")
-              }
-
-              appendInlineContent(id = PostCellIcon.Sticky.id)
-            }
-
-            if (postIcons.isNotEmpty()) {
-              postIcons.forEach { flag ->
-                if (length > 0) {
+                if (flag.flagName.isNotNullNorBlank()) {
                   append("  ")
-                }
 
-                when (flag) {
-                  is CountryFlag -> {
-                    appendInlineContent(id = PostCellIcon.CountryFlag.id)
-
-                    if (flag.flagName.isNotNullNorBlank()) {
-                      append("  ")
-
-                      withStyle(
-                        SpanStyle(
-                          color = chanTheme.postDetailsColorCompose,
-                          fontStyle = FontStyle.Italic
-                        )
-                      ) {
-                        append(flag.flagName)
-                      }
-                    }
+                  withStyle(
+                    SpanStyle(
+                      color = chanTheme.postDetailsColorCompose,
+                      fontStyle = FontStyle.Italic
+                    )
+                  ) {
+                    append(flag.flagName)
                   }
-                  is BoardFlag -> {
-                    appendInlineContent(id = PostCellIcon.BoardFlag.id)
+                }
+              }
+              is BoardFlag -> {
+                appendInlineContent(id = PostCellIcon.BoardFlag.id)
 
-                    if (flag.flagName.isNotNullNorBlank()) {
-                      append("  ")
+                if (flag.flagName.isNotNullNorBlank()) {
+                  append("  ")
 
-                      withStyle(
-                        SpanStyle(
-                          color = chanTheme.postDetailsColorCompose,
-                          fontStyle = FontStyle.Italic
-                        )
-                      ) {
-                        append(flag.flagName)
-                      }
-                    }
+                  withStyle(
+                    SpanStyle(
+                      color = chanTheme.postDetailsColorCompose,
+                      fontStyle = FontStyle.Italic
+                    )
+                  ) {
+                    append(flag.flagName)
                   }
                 }
               }
             }
           }
-        )
+        }
+      }
+    )
+  }
+
+  private fun AnnotatedString.Builder.appendImagesInfo(
+    chanTheme: ChanTheme,
+    postImages: List<IPostImage>?
+  ) {
+    append("\n")
+
+    val imagesInfoAnnotatedString = buildAnnotatedString(capacity = 64) {
+      pushStyle(SpanStyle(color = chanTheme.postDetailsColorCompose))
+
+      if (postImages!!.size > 1) {
+        val imagesCount = postImages.size
+        val totalFileSize = postImages.sumOf { it.fileSize }
+
+        append(imagesCount.toString())
+        append(" ")
+        append("files")
+        append(", ")
+        append(totalFileSize.asReadableFileSize())
+      } else {
+        val postImage = postImages.first()
+
+        withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) {
+          append(postImage.originalFileNameForPostCell())
+        }
+
+        append(" ")
+        append(postImage.ext.uppercase(Locale.ENGLISH))
+        append(" ")
+        append(postImage.width.toString())
+        append("x")
+        append(postImage.height.toString())
+        append(" ")
+        append(postImage.fileSize.asReadableFileSize())
       }
     }
+
+    append(imagesInfoAnnotatedString)
+  }
+
+  private fun AnnotatedString.Builder.appendNameTripcodeId(
+    chanTheme: ChanTheme,
+    posterName: String?,
+    posterTripcode: String?,
+    posterId: String?
+  ) {
+    append(
+      buildAnnotatedString(capacity = 32) {
+        pushStyle(SpanStyle(color = chanTheme.postNameColorCompose))
+
+        if (posterName.isNotNullNorBlank()) {
+          if (length > 0) {
+            append(" ")
+          }
+
+          append(posterName)
+        }
+
+        if (posterTripcode.isNotNullNorBlank()) {
+          if (length > 0) {
+            append(" ")
+          }
+
+          append(posterTripcode)
+        }
+
+        if (posterId.isNotNullNorBlank()) {
+          if (length > 0) {
+            append(" ")
+          }
+
+          withStyle(SpanStyle(color = calculatePosterIdTextColor(chanTheme, posterId))) {
+            append(posterId)
+          }
+        }
+      }
+    )
+
+    append("\n")
   }
 
   private fun calculatePosterIdTextColor(
