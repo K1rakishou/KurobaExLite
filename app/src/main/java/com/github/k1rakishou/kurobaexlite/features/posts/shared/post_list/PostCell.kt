@@ -248,7 +248,7 @@ private fun PostCellTitle(
         shimmerState = rememberShimmerState(bgColor = chanTheme.backColorCompose)
       )
     } else {
-      var actualPostSubject by remember { mutableStateOf(postSubject) }
+      var actualPostSubject by remember(key1 = postSubject) { mutableStateOf(postSubject) }
 
       LaunchedEffect(
         key1 = postCellData,

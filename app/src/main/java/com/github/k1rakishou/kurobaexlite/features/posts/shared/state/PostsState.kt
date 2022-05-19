@@ -5,13 +5,25 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.util.fastForEachIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.findAllOccurrences
 import com.github.k1rakishou.kurobaexlite.helpers.linkedMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.toHashSetByKey
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import org.koin.java.KoinJavaComponent.inject
 
 @Stable
@@ -19,17 +31,28 @@ class PostsState(
   val chanDescriptor: ChanDescriptor
 ) {
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
+  private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
 
   @Volatile private var _lastUpdatedOn: Long = 0
   val lastUpdatedOn: Long
     get() = _lastUpdatedOn
 
   private val postIndexes = linkedMapWithCap<PostDescriptor, Int>(128)
-  private val allPosts = mutableListWithCap<PostCellData>(128)
 
-  private val postsProcessed = mutableStateListOf<PostCellData>()
+  private val _posts = mutableStateListOf<PostCellData>()
   val posts: List<PostCellData>
-    get() = postsProcessed
+    get() = _posts
+
+  private val _postsMatchedBySearchQuery = LinkedHashSet<PostDescriptor>()
+  val postsMatchedBySearchQuery: Set<PostDescriptor>
+    get() = _postsMatchedBySearchQuery
+
+  private val _searchQueryUpdatedFlow = MutableSharedFlow<Unit>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+  )
+  val searchQueryUpdatedFlow: SharedFlow<Unit>
+    get() = _searchQueryUpdatedFlow.asSharedFlow()
 
   val postListAnimationInfoMap = mutableStateMapOf<PostDescriptor, PreviousPostDataInfo>()
 
@@ -43,7 +66,7 @@ class PostsState(
     postDescriptors.forEach { postDescriptor ->
       val postIndex = postIndexes[postDescriptor]
         ?: return@forEach
-      val postCellData = allPosts.getOrNull(postIndex)
+      val postCellData = _posts.getOrNull(postIndex)
         ?: return@forEach
 
       resultList += postCellData
@@ -53,36 +76,67 @@ class PostsState(
   }
 
   fun onSearchQueryUpdated(searchQuery: String?) {
-    val matchedPostCellDataStates = allPosts.mapNotNull { postCellData ->
-      if (searchQuery == null || searchQuery.isEmpty()) {
-        return@mapNotNull postCellData
+    val chanTheme = themeEngine.chanTheme
+    val modifyQueryMap = mutableMapOf<PostDescriptor, PostCellData>()
+    _postsMatchedBySearchQuery.clear()
+
+    posts.fastForEachIndexed { index, postCellData ->
+      val parsedPostData = postCellData.parsedPostData
+        ?: return@fastForEachIndexed
+
+      val foundOccurrencesInComment = parsedPostData
+        .processedPostComment
+        .text
+        .findAllOccurrences(query = searchQuery, minQueryLength = MIN_SEARCH_QUERY_LENGTH)
+
+      val foundOccurrencesInSubject = parsedPostData
+        .processedPostSubject
+        .text
+        .findAllOccurrences(query = searchQuery, minQueryLength = MIN_SEARCH_QUERY_LENGTH)
+
+      val prevPost = _posts[index]
+
+      val newProcessedPostComment = markOrUnmarkSearchQuery(
+        chanTheme = chanTheme,
+        string = postCellData.parsedPostData.processedPostComment,
+        occurrences = foundOccurrencesInComment
+      )
+
+      val newProcessedPostSubject = markOrUnmarkSearchQuery(
+        chanTheme = chanTheme,
+        string = postCellData.parsedPostData.processedPostSubject,
+        occurrences = foundOccurrencesInSubject
+      )
+
+      if (foundOccurrencesInComment.isNotEmpty() || foundOccurrencesInSubject.isNotEmpty()) {
+        _postsMatchedBySearchQuery += postCellData.postDescriptor
       }
 
-      val commentMatchesQuery = postCellData.parsedPostData
-        ?.processedPostComment
-        ?.text
-        ?.contains(other = searchQuery, ignoreCase = true)
-        ?: false
-
-      if (commentMatchesQuery) {
-        return@mapNotNull postCellData
+      if (
+        prevPost.parsedPostData?.processedPostComment == newProcessedPostComment &&
+        prevPost.parsedPostData.processedPostSubject == newProcessedPostSubject
+      ) {
+        return@fastForEachIndexed
       }
 
-      val subjectMatchesQuery = postCellData.parsedPostData
-        ?.processedPostSubject
-        ?.text
-        ?.contains(other = searchQuery, ignoreCase = true)
-        ?: false
-
-      if (subjectMatchesQuery) {
-        return@mapNotNull postCellData
-      }
-
-      return@mapNotNull null
+      modifyQueryMap[postCellData.postDescriptor] = prevPost.copy(
+        parsedPostData = parsedPostData.copy(
+          processedPostComment = newProcessedPostComment,
+          processedPostSubject = newProcessedPostSubject,
+        )
+      )
     }
 
-    postsProcessed.clear()
-    postsProcessed.addAll(matchedPostCellDataStates)
+    if (modifyQueryMap.isNotEmpty()) {
+      modifyQueryMap.entries.forEach { (postDescriptor, postCellData) ->
+        val postIndex = postIndexes[postDescriptor]
+          ?: return@forEach
+
+        _posts[postIndex] = postCellData
+      }
+
+      _searchQueryUpdatedFlow.tryEmit(Unit)
+    }
   }
 
   /**
@@ -90,7 +144,6 @@ class PostsState(
    * */
   fun insertOrUpdate(
     postCellData: PostCellData,
-    searchQuery: String?,
     checkFirstPostIsOriginal: Boolean
   ) {
     Snapshot.withMutableSnapshot {
@@ -100,37 +153,36 @@ class PostsState(
         postIndexes[postCellData.postDescriptor] = nextPostIndex
 
         // We assume that posts can only be inserted at the end of the post list
-        allPosts += postCellData
+        _posts += postCellData
       } else {
         _lastUpdatedOn = SystemClock.elapsedRealtime()
-        allPosts[index] = postCellData
+        _posts[index] = postCellData
       }
 
       if (androidHelpers.isDevFlavor()) {
         if (checkFirstPostIsOriginal) {
-          val originalPost = allPosts.firstOrNull()
+          val originalPost = _posts.firstOrNull()
           if (originalPost != null) {
             check(originalPost.isOP) { "First post is not OP" }
           }
         }
 
-        check(postIndexes.size == allPosts.size) {
-          "postIndexes.size (${postIndexes.size}) != postsMutable.size (${allPosts.size})"
+        check(postIndexes.size == _posts.size) {
+          "postIndexes.size (${postIndexes.size}) != postsMutable.size (${_posts.size})"
         }
 
-        val postMutableDeduplicated = allPosts.toHashSetByKey { postCellDataState ->
+        val postMutableDeduplicated = _posts.toHashSetByKey { postCellDataState ->
           postCellDataState.postDescriptor
         }
 
-        check(postMutableDeduplicated.size == allPosts.size) {
+        check(postMutableDeduplicated.size == _posts.size) {
           "Duplicates found in postsMutable " +
             "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
-            "postsMutable.size=${allPosts.size})"
+            "postsMutable.size=${_posts.size})"
         }
       }
 
       updatePostListAnimationInfoMap(listOf(postCellData))
-      onSearchQueryUpdated(searchQuery)
     }
   }
 
@@ -139,7 +191,6 @@ class PostsState(
    * */
   fun insertOrUpdateMany(
     postCellDataCollection: Collection<PostCellData>,
-    searchQuery: String?,
     checkFirstPostIsOriginal: Boolean
   ) {
     if (postCellDataCollection.isEmpty()) {
@@ -157,39 +208,95 @@ class PostsState(
           postIndexes[postDescriptor] = initialIndex++
 
           // We assume that posts can only be inserted at the end of the post list
-          allPosts += postCellData
+          _posts += postCellData
         } else {
-          allPosts[index] = postCellData
+          _posts[index] = postCellData
         }
       }
 
       if (androidHelpers.isDevFlavor()) {
         if (checkFirstPostIsOriginal) {
-          val originalPost = allPosts.firstOrNull()
+          val originalPost = _posts.firstOrNull()
           if (originalPost != null) {
             check(originalPost.isOP) { "First post is not OP" }
           }
         }
 
-        check(postIndexes.size == allPosts.size) {
-          "postIndexes.size (${postIndexes.size}) != postsMutable.size (${allPosts.size})"
+        check(postIndexes.size == _posts.size) {
+          "postIndexes.size (${postIndexes.size}) != postsMutable.size (${_posts.size})"
         }
 
-        val postMutableDeduplicated = allPosts.toHashSetByKey { postCellDataState ->
+        val postMutableDeduplicated = _posts.toHashSetByKey { postCellDataState ->
           postCellDataState.postDescriptor
         }
 
-        check(postMutableDeduplicated.size == allPosts.size) {
+        check(postMutableDeduplicated.size == _posts.size) {
           "Duplicates found in postsMutable " +
             "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
-            "postsMutable.size=${allPosts.size})"
+            "postsMutable.size=${_posts.size})"
         }
       }
 
       _lastUpdatedOn = SystemClock.elapsedRealtime()
       updatePostListAnimationInfoMap(postCellDataCollection)
-      onSearchQueryUpdated(searchQuery)
     }
+  }
+
+  private fun markOrUnmarkSearchQuery(
+    chanTheme: ChanTheme,
+    string: AnnotatedString,
+    occurrences: List<IntRange>
+  ): AnnotatedString {
+    if (occurrences.isEmpty()) {
+      return removeSearchQuery(string)
+    }
+
+    val oldSpanStyles = string.spanStyles
+      .filter { spanStyle -> spanStyle.tag != SEARCH_QUERY_SPAN }
+
+    val newSpanStyles = mutableListWithCap<AnnotatedString.Range<SpanStyle>>(oldSpanStyles.size + occurrences.size)
+    newSpanStyles.addAll(oldSpanStyles)
+
+    val bgColor = chanTheme.accentColorCompose
+    val fgColor = if (ThemeEngine.isDarkColor(bgColor)) {
+      Color.White
+    } else {
+      Color.Black
+    }
+
+    occurrences.forEach { range ->
+      newSpanStyles += AnnotatedString.Range<SpanStyle>(
+        item = SpanStyle(
+          color = fgColor,
+          background = bgColor,
+          fontWeight = FontWeight.Bold
+        ),
+        start = range.first,
+        end = range.last,
+        tag = SEARCH_QUERY_SPAN
+      )
+    }
+
+    return AnnotatedString(
+      text = string.text,
+      spanStyles = newSpanStyles,
+      paragraphStyles = string.paragraphStyles
+    )
+  }
+
+  private fun removeSearchQuery(string: AnnotatedString): AnnotatedString {
+    val newSpanStyles = string.spanStyles
+      .filter { spanStyle -> spanStyle.tag != SEARCH_QUERY_SPAN }
+
+    if (newSpanStyles.size == string.spanStyles.size) {
+      return string
+    }
+
+    return AnnotatedString(
+      text = string.text,
+      spanStyles = newSpanStyles,
+      paragraphStyles = string.paragraphStyles
+    )
   }
 
   private fun updatePostListAnimationInfoMap(postDataList: Collection<PostCellData>) {
@@ -214,15 +321,21 @@ class PostsState(
     other as PostsState
 
     if (chanDescriptor != other.chanDescriptor) return false
-    if (allPosts != other.allPosts) return false
+    if (_posts != other._posts) return false
 
     return true
   }
 
   override fun hashCode(): Int {
     var result = chanDescriptor.hashCode()
-    result = 31 * result + allPosts.hashCode()
+    result = 31 * result + _posts.hashCode()
     return result
+  }
+
+  companion object {
+    const val MIN_SEARCH_QUERY_LENGTH = 2
+
+    private const val SEARCH_QUERY_SPAN = "search_query_span"
   }
 
 }

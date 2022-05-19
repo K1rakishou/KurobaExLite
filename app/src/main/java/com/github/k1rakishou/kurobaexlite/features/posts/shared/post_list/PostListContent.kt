@@ -47,7 +47,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -141,11 +140,22 @@ internal fun PostListContent(
     LaunchedEffect(
       key1 = chanDescriptor,
       block = {
-        postsScreenViewModel.toolbarScrollEventFlow.collect { scrollDown ->
-          val positionToScroll = if (scrollDown) {
-            lazyListState.layoutInfo.totalItemsCount
-          } else {
-            0
+        postsScreenViewModel.postListScrollEventFlow.collect { toolbarScrollEvent ->
+          val positionToScroll = when (toolbarScrollEvent) {
+            PostScreenViewModel.ToolbarScrollEvent.ScrollBottom -> {
+              lazyListState.layoutInfo.totalItemsCount
+            }
+            PostScreenViewModel.ToolbarScrollEvent.ScrollTop -> {
+              0
+            }
+            is PostScreenViewModel.ToolbarScrollEvent.ScrollToItem -> {
+              val postState = (postListAsync as AsyncData.Data).data
+              postState.postIndexByPostDescriptor(toolbarScrollEvent.postDescriptor)
+            }
+          }
+
+          if (positionToScroll == null) {
+            return@collect
           }
 
           lazyListState.scrollToItem(
@@ -343,17 +353,17 @@ private fun PostListInternal(
   val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
 
   val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostDescriptorForIndicator.collectAsState()
-  val searchQueryMut by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
   val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
+  val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
 
-  val contentPadding = remember(key1 = searchQueryMut, key2 = postListOptions.contentPadding) {
-    if (searchQueryMut.isNullOrEmpty()) {
+  val contentPadding = remember(key1 = searchQuery, key2 = postListOptions.contentPadding) {
+    if (searchQuery.isNullOrEmpty()) {
       postListOptions.contentPadding
     } else {
       PaddingValues(
         start = postListOptions.contentPadding.calculateStartPadding(LayoutDirection.Ltr),
         end = postListOptions.contentPadding.calculateEndPadding(LayoutDirection.Ltr),
-        top = postListOptions.contentPadding.calculateTopPadding() + searchInfoCellHeight,
+        top = postListOptions.contentPadding.calculateTopPadding(),
         bottom = postListOptions.contentPadding.calculateBottomPadding(),
       )
     }
@@ -364,7 +374,7 @@ private fun PostListInternal(
 
   val buildThreadStatusCellFunc: @Composable ((LazyItemScope) -> Unit)? = if (
     !isCatalogMode &&
-    searchQueryMut == null &&
+    searchQuery == null &&
     postsScreenViewModel is ThreadScreenViewModel
   ) {
     { lazyItemScope: LazyItemScope ->
@@ -385,7 +395,7 @@ private fun PostListInternal(
       pullToRefreshEnabled = pullToRefreshEnabled,
       topPadding = pullToRefreshTopPaddingDp,
       pullToRefreshState = pullToRefreshState,
-      canPull = { searchQueryMut == null },
+      canPull = { searchQuery == null },
       onTriggered = remember {
         {
           postsScreenViewModel.reload(
@@ -474,15 +484,6 @@ private fun PostListInternal(
           )
         }
       )
-
-      if (searchQueryMut.isNotNullNorEmpty()) {
-        SearchInfoCell(
-          cellsPadding = cellsPadding,
-          contentPadding = postListOptions.contentPadding,
-          postsScreenViewModel = postsScreenViewModel,
-          searchQuery = searchQueryMut
-        )
-      }
     }
   }
 }

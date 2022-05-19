@@ -88,9 +88,9 @@ abstract class PostScreenViewModel(
   val scrollRestorationEventFlow: SharedFlow<LazyColumnRememberedPosition>
     get() = _scrollRestorationEventFlow.asSharedFlow()
 
-  private val _toolbarScrollEventFlow = MutableSharedFlow<Boolean>(extraBufferCapacity = Channel.UNLIMITED)
-  val toolbarScrollEventFlow: SharedFlow<Boolean>
-    get() = _toolbarScrollEventFlow.asSharedFlow()
+  private val _postListScrollEventFlow = MutableSharedFlow<ToolbarScrollEvent>(extraBufferCapacity = Channel.UNLIMITED)
+  val postListScrollEventFlow: SharedFlow<ToolbarScrollEvent>
+    get() = _postListScrollEventFlow.asSharedFlow()
 
   val mediaViewerScrollEvents: SharedFlow<MediaViewerPostListScroller.ScrollInfo>
     get() = mediaViewerPostListScroller.scrollEventFlow
@@ -656,13 +656,19 @@ abstract class PostScreenViewModel(
 
   fun scrollTop() {
     viewModelScope.launch {
-      _toolbarScrollEventFlow.emit(false)
+      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollTop)
     }
   }
 
   fun scrollBottom() {
     viewModelScope.launch {
-      _toolbarScrollEventFlow.emit(true)
+      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollBottom)
+    }
+  }
+
+  fun scrollToPost(postDescriptor: PostDescriptor) {
+    viewModelScope.launch {
+      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollToItem(postDescriptor))
     }
   }
 
@@ -731,6 +737,12 @@ abstract class PostScreenViewModel(
     val loadFromNetwork: Boolean = true,
     val scrollToPost: PostDescriptor? = null
   )
+
+  sealed class ToolbarScrollEvent {
+    object ScrollTop : ToolbarScrollEvent()
+    object ScrollBottom : ToolbarScrollEvent()
+    data class ScrollToItem(val postDescriptor: PostDescriptor) : ToolbarScrollEvent()
+  }
 
   companion object {
     private const val TAG = "PostScreenViewModel"

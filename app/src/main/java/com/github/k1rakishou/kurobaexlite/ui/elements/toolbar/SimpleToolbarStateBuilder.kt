@@ -271,6 +271,7 @@ class SimpleSearchToolbar(
           value = searchQuery,
           labelText = stringResource(R.string.toolbar_type_to_search_hint),
           singleLine = true,
+          maxLines = 1,
           parentBackgroundColor = parentBgColor,
           keyboardActions = KeyboardActions(onDone = { onSearchQueryUpdated.invoke(searchQuery.text) }),
           onValueChange = { updatedQuery ->

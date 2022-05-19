@@ -126,7 +126,7 @@ class ThreadScreen(
     )
   }
 
-  private val localSearchToolbar: KurobaChildToolbar by lazy {
+  private val localSearchToolbar: PostsScreenLocalSearchToolbar by lazy {
     PostsScreenLocalSearchToolbar(
       screenKey = screenKey,
       onToolbarCreated = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, true) },
@@ -427,6 +427,13 @@ class ThreadScreen(
             replyLayoutState.openReplyLayout()
           }
         }
+      )
+    }
+
+    if (!postListOptions.isInPopup) {
+      PostListSearchButtons(
+        postsScreenViewModel = threadScreenViewModel,
+        searchToolbar = localSearchToolbar
       )
     }
 

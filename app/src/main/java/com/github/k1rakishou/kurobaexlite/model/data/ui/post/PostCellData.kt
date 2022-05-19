@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.model.data.ui.post
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.helpers.hash.MurmurHashUtils
@@ -45,6 +46,23 @@ data class PostCellData(
     get() = postNo == postDescriptor.threadNo
   val parsedPostDataContext: ParsedPostDataContext?
     get() = parsedPostData?.parsedPostDataContext
+
+  fun hasSearchQuerySpans(): Boolean {
+    if (parsedPostData == null) {
+      return false
+    }
+
+    return hasSearchQuery(parsedPostData.processedPostComment) ||
+      hasSearchQuery(parsedPostData.processedPostSubject)
+  }
+
+  private fun hasSearchQuery(string: AnnotatedString?): Boolean {
+    if (string == null) {
+      return false
+    }
+
+    return string.spanStyles.any { it.item.fontWeight != null }
+  }
 
   companion object {
     fun fromPostData(

@@ -536,6 +536,7 @@ fun KurobaComposeIcon(
   modifier: Modifier = Modifier,
   @DrawableRes drawableId: Int,
   colorBehindIcon: Color? = null,
+  iconColor: Color? = null,
   enabled: Boolean = true
 ) {
   val chanTheme = LocalChanTheme.current
@@ -543,8 +544,13 @@ fun KurobaComposeIcon(
 
   val tintColor = remember(
     key1 = chanTheme.backColor,
-    key2 = colorBehindIcon
+    key2 = colorBehindIcon,
+    key3 = iconColor
   ) {
+    if (iconColor != null) {
+      return@remember iconColor
+    }
+
     if (colorBehindIcon == null) {
       Color(ThemeEngine.resolveDrawableTintColor(chanTheme))
     } else {

@@ -489,6 +489,13 @@ class CatalogScreen(
       )
     }
 
+    if (!postListOptions.isInPopup) {
+      PostListSearchButtons(
+        postsScreenViewModel = catalogScreenViewModel,
+        searchToolbar = localSearchToolbar
+      )
+    }
+
     ReplyLayoutContainer(
       chanDescriptor = catalogScreenViewModel.catalogDescriptor,
       replyLayoutState = replyLayoutState,

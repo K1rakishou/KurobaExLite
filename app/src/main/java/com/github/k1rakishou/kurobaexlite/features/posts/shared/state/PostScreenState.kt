@@ -37,9 +37,6 @@ abstract class PostScreenState(
   val chanDescriptor: ChanDescriptor?
     get() = _chanDescriptorFlow.value
 
-  val displayingPostsCount: Int?
-    get() = doWithDataState { abstractPostsState -> abstractPostsState.posts.size }
-
   private val _contentLoaded = MutableStateFlow(false)
   val contentLoaded: StateFlow<Boolean>
     get() = _contentLoaded.asStateFlow()
@@ -58,7 +55,6 @@ abstract class PostScreenState(
     doWithDataState { postsState ->
       postsState.insertOrUpdate(
         postCellData = postCellData,
-        searchQuery = currentSearchQuery,
         checkFirstPostIsOriginal = checkFirstPostIsOriginal
       )
     }
@@ -69,7 +65,6 @@ abstract class PostScreenState(
     doWithDataState { postsState ->
       postsState.insertOrUpdateMany(
         postCellDataCollection = postCellDataCollection,
-        searchQuery = currentSearchQuery,
         checkFirstPostIsOriginal = checkFirstPostIsOriginal
       )
     }

@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
+import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
 import okhttp3.HttpUrl
@@ -119,7 +120,7 @@ class MediaViewerScreenViewModel(
 
       var initialPage = images.indexOfFirst { it.fullImageAsUrl == initialImageUrl }
       if (initialPage < 0) {
-        logcatError { "Failed to find post image with url: \'${initialImageUrl}\', resetting it" }
+        logcatError(TAG) { "Failed to find post image with url: \'${initialImageUrl}\', resetting it" }
         initialPage = 0
       }
 
@@ -147,20 +148,20 @@ class MediaViewerScreenViewModel(
 
       val loadImageResult = withContext(Dispatchers.IO) {
         try {
-          logcat { "loadFullImageInternal(${fullImageUrl}) start" }
+          logcat(TAG, LogPriority.VERBOSE) { "loadFullImageInternal(${fullImageUrl}) start" }
           Result.Try { loadFullImageInternal(postImageData, this@channelFlow) }
         } finally {
-          logcat { "loadFullImageInternal(${fullImageUrl}) end" }
+          logcat(TAG, LogPriority.VERBOSE) { "loadFullImageInternal(${fullImageUrl}) end" }
         }
       }
 
       if (loadImageResult.isSuccess) {
         val resultFile = loadImageResult.getOrThrow()
-        logcat(tag = TAG) { "loadFullImageAndGetFile() Successfully loaded \'$fullImageUrl\'" }
+        logcat(TAG, LogPriority.VERBOSE) { "loadFullImageAndGetFile() Successfully loaded \'$fullImageUrl\'" }
         send(ImageLoadState.Ready(postImageData, resultFile))
       } else {
         val error = loadImageResult.exceptionOrNull()!!
-        logcatError(tag = TAG) { "loadFullImageAndGetFile() Failed to load \'$fullImageUrl\', error=${error.asLog()}" }
+        logcatError(TAG) { "loadFullImageAndGetFile() Failed to load \'$fullImageUrl\', error=${error.asLog()}" }
 
         send(ImageLoadState.Error(postImageData, error))
       }
@@ -178,7 +179,7 @@ class MediaViewerScreenViewModel(
 
     val cachedFile = kurobaLruDiskCache.getCacheFileOrNull(cacheFileType, fullImageUrl)
     if (cachedFile != null) {
-      logcat(tag = TAG) { "loadFullImage($fullImageUrl) got image from disk cache (${cachedFile.absolutePath})" }
+      logcat(TAG, LogPriority.VERBOSE) { "loadFullImage($fullImageUrl) got image from disk cache (${cachedFile.absolutePath})" }
       return cachedFile
     }
 
@@ -267,7 +268,7 @@ class MediaViewerScreenViewModel(
   }
 
   suspend fun loadThumbnailBitmap(context: Context, postImage: IPostImage): Bitmap? {
-    logcat(TAG) { "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl} start" }
+    logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl} start" }
 
     val imageRequest = ImageRequest.Builder(context)
       .data(postImage.thumbnailAsUrl)
@@ -287,7 +288,7 @@ class MediaViewerScreenViewModel(
 
     imageResult as SuccessResult
 
-    logcat(TAG) { "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl} end" }
+    logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl} end" }
     return (imageResult.drawable as BitmapDrawable).bitmap
   }
 

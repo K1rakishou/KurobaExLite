@@ -27,8 +27,10 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
@@ -69,6 +71,22 @@ class PostsScreenLocalSearchToolbar(
 
     state.reset()
     onSearchQueryUpdated.invoke(null)
+  }
+
+  fun onSearchUpdated(postsMatchedBySearchQuery: Set<PostDescriptor>) {
+    state.onSearchUpdated(postsMatchedBySearchQuery)
+  }
+
+  fun firstEntry(): PostDescriptor? {
+    return state.firstEntry()
+  }
+
+  fun prevEntry(): PostDescriptor? {
+    return state.prevEntry()
+  }
+
+  fun nextEntry(): PostDescriptor? {
+    return state.nextEntry()
   }
 
   @OptIn(ExperimentalComposeUiApi::class)
@@ -126,6 +144,8 @@ class PostsScreenLocalSearchToolbar(
             .focusable(),
           value = searchQuery,
           labelText = stringResource(R.string.toolbar_type_to_search_hint),
+          singleLine = true,
+          maxLines = 1,
           parentBackgroundColor = parentBgColor,
           onValueChange = { updatedQuery ->
             if (searchQuery != updatedQuery) {
@@ -142,28 +162,53 @@ class PostsScreenLocalSearchToolbar(
     )
   }
 
-  private fun buildRightPart(): @Composable (RowScope.() -> Unit)? {
-    if (screenKey == ThreadScreen.SCREEN_KEY) {
-      return null
-    }
-
+  private fun buildRightPart(): @Composable (RowScope.() -> Unit) {
     val func: @Composable (RowScope.() -> Unit) = {
+      val searchQuery by state.searchQuery
+      val foundEntries by state.foundEntriesState
+      val currentScrolledEntryIndex by state.currentScrolledEntryIndexState
+
       Box(
         modifier = Modifier
           .fillMaxHeight()
           .wrapContentWidth(),
         contentAlignment = Alignment.Center
       ) {
-        KurobaComposeText(
-          modifier = Modifier
-            .wrapContentSize()
-            .padding(horizontal = 12.dp)
-            .kurobaClickable(
-              bounded = false,
-              onClick = { onGlobalSearchIconClicked(state.searchQuery.value.text) }
-            ),
-          text = stringResource(id = R.string.posts_screen_search_toolbar_global_search),
-        )
+        val isSearchQueryLengthGood = searchQuery.text.length >= PostsState.MIN_SEARCH_QUERY_LENGTH
+
+        if (!isSearchQueryLengthGood && screenKey == CatalogScreen.SCREEN_KEY) {
+          KurobaComposeText(
+            modifier = Modifier
+              .wrapContentSize()
+              .padding(horizontal = 12.dp)
+              .kurobaClickable(
+                bounded = false,
+                onClick = { onGlobalSearchIconClicked(state.searchQuery.value.text) }
+              ),
+            text = stringResource(id = R.string.posts_screen_search_toolbar_global_search),
+          )
+        } else if (isSearchQueryLengthGood) {
+          val current = currentScrolledEntryIndex?.plus(1) ?: "?"
+
+          val totalFoundText = if (foundEntries.isEmpty()) {
+            "---"
+          } else {
+            "${current} / ${foundEntries.size}"
+          }
+
+          KurobaComposeText(
+            modifier = Modifier
+              .wrapContentSize()
+              .padding(horizontal = 12.dp)
+              .kurobaClickable(
+                bounded = false,
+                onClick = {
+                  // TODO(KurobaEx): show all found posts in popup?
+                }
+              ),
+            text = totalFoundText,
+          )
+        }
       }
     }
 
@@ -174,6 +219,9 @@ class PostsScreenLocalSearchToolbar(
     override val saveableComponentKey: String
   ) : ToolbarState {
     val searchQuery = mutableStateOf(TextFieldValue())
+
+    val foundEntriesState = mutableStateOf<List<PostDescriptor>>(emptyList())
+    val currentScrolledEntryIndexState = mutableStateOf<Int?>(null)
 
     override fun saveState(): Bundle {
       return Bundle().apply {
@@ -187,6 +235,60 @@ class PostsScreenLocalSearchToolbar(
 
     fun reset() {
       searchQuery.value = TextFieldValue()
+    }
+
+    fun onSearchUpdated(postsMatchedBySearchQuery: Set<PostDescriptor>) {
+      foundEntriesState.value = postsMatchedBySearchQuery.toList()
+
+      if (postsMatchedBySearchQuery.isEmpty()) {
+        currentScrolledEntryIndexState.value = null
+      } else {
+        currentScrolledEntryIndexState.value = 0
+      }
+    }
+
+    fun firstEntry(): PostDescriptor? {
+      val foundEntries = foundEntriesState.value
+      if (foundEntries.isEmpty()) {
+        currentScrolledEntryIndexState.value = null
+        return null
+      }
+
+      return foundEntries.getOrNull(0)
+    }
+
+    fun prevEntry(): PostDescriptor? {
+      val foundEntries = foundEntriesState.value
+      if (foundEntries.isEmpty()) {
+        currentScrolledEntryIndexState.value = null
+        return null
+      }
+
+      var prevIndex = currentScrolledEntryIndexState.value?.minus(1) ?: 0
+      if (prevIndex < 0) {
+        prevIndex = foundEntries.lastIndex
+      }
+
+      currentScrolledEntryIndexState.value = prevIndex
+
+      return foundEntries.getOrNull(prevIndex)
+    }
+
+    fun nextEntry(): PostDescriptor? {
+      val foundEntries = foundEntriesState.value
+      if (foundEntries.isEmpty()) {
+        currentScrolledEntryIndexState.value = null
+        return null
+      }
+
+      var nextIndex = currentScrolledEntryIndexState.value?.plus(1) ?: 0
+      if (nextIndex > foundEntries.lastIndex) {
+        nextIndex = 0
+      }
+
+      currentScrolledEntryIndexState.value = nextIndex
+
+      return foundEntries.getOrNull(nextIndex)
     }
 
     companion object {

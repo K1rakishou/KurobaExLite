@@ -420,6 +420,19 @@ inline fun <E> MutableCollection<E>.mutableIteration(func: (MutableIterator<E>, 
   }
 }
 
+inline fun <E> MutableCollection<E>.mutableIndexedIteration(func: (Int, MutableIterator<E>, E) -> Boolean) {
+  val iterator = this.iterator()
+  var index = 0
+
+  while (iterator.hasNext()) {
+    if (!func(index, iterator, iterator.next())) {
+      return
+    }
+
+    ++index
+  }
+}
+
 inline fun <K, V> MutableMap<K, V>.mutableIteration(func: (MutableIterator<Map.Entry<K, V>>, Map.Entry<K, V>) -> Boolean) {
   val iterator = this.iterator()
 
@@ -715,4 +728,45 @@ fun String.extractFileNameExtension(): String? {
   } else {
     this.substring(index + 1)
   }
+}
+
+fun String.findAllOccurrences(query: String?, minQueryLength: Int): List<IntRange> {
+  if (this.isEmpty() || (query == null || query.length < minQueryLength)) {
+    return emptyList()
+  }
+
+  check(query.isNotEmpty()) { "query must not be empty" }
+
+  val resultList = mutableListWithCap<IntRange>(16)
+  var index = 0
+
+  while (index < this.length) {
+    val ch = this.getOrNull(index)
+      ?: break
+
+    if (ch.equals(other = query[0], ignoreCase = true)) {
+      var found = true
+
+      for (queryOffset in 1 until query.length) {
+        val innerCh = this.getOrNull(index + queryOffset)
+
+        if (innerCh == null || !innerCh.equals(other = query[queryOffset], ignoreCase = true)) {
+          found = false
+          index += queryOffset
+          break
+        }
+      }
+
+      if (!found) {
+        continue
+      }
+
+      resultList += IntRange(index, index + query.length)
+      index += query.length
+    }
+
+    ++index
+  }
+
+  return resultList
 }
