@@ -36,7 +36,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.collectLatest
 
 abstract class PostsScreen(
   componentActivity: ComponentActivity,
@@ -112,11 +111,11 @@ abstract class PostsScreen(
     }
 
     LaunchedEffect(
-      key1 = Unit,
+      key1 = postsAsyncData,
       block = {
-        postsState.searchQueryUpdatedFlow.collectLatest {
+        postsState.searchQueryUpdatedFlow.collect {
           if (!kurobaToolbarContainerState.contains(searchToolbar.toolbarKey)) {
-            return@collectLatest
+            return@collect
           }
 
           searchToolbar.onSearchUpdated(postsState.postsMatchedBySearchQuery)

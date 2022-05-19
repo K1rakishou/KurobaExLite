@@ -73,8 +73,10 @@ abstract class PostScreenState(
   fun onSearchQueryUpdated(searchQuery: String?) {
     doWithDataState { postsState ->
       Snapshot.withMutableSnapshot {
-        postsState.onSearchQueryUpdated(searchQuery)
-        _searchQueryFlow.value = searchQuery
+        if (_searchQueryFlow.value != searchQuery) {
+          postsState.onSearchQueryUpdated(searchQuery)
+          _searchQueryFlow.value = searchQuery
+        }
       }
     }
   }
