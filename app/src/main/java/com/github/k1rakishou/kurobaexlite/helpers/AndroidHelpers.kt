@@ -75,6 +75,10 @@ class AndroidHelpers(
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
   }
 
+  fun getApplicationLabel(): String {
+    return application.packageManager.getApplicationLabel(application.applicationInfo).toString()
+  }
+
   fun setClipboardContent(label: String, content: String) {
     clipboardManager.setPrimaryClip(ClipData.newPlainText(label, content))
   }

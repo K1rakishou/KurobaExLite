@@ -44,6 +44,9 @@
         <receiver
             android:name=".helpers.picker.SelectedFilePickerBroadcastReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".helpers.notifications.ReplyNotificationDeleteIntentBroadcastReceiver"
+            android:exported="false" />
 
     </application>
 

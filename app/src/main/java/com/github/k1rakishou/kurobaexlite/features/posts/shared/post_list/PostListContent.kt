@@ -352,7 +352,7 @@ private fun PostListInternal(
   val isCatalogMode = postListOptions.isCatalogMode
   val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
 
-  val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostDescriptorForIndicator.collectAsState()
+  val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostForIndicator.collectAsState()
   val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
   val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
 

@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
+import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmarkReply
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.CompletableDeferred
@@ -39,6 +40,7 @@ class BookmarksManager {
         }
       }
     } finally {
+      _bookmarkEventsFlow.emit(Event.Loaded)
       initializationFlag.complete(Unit)
     }
   }
@@ -81,6 +83,26 @@ class BookmarksManager {
     }
   }
 
+  suspend fun getActiveThreadBookmarkReplies(): Map<ThreadDescriptor, Set<ThreadBookmarkReply>> {
+    return mutex.withLock {
+      val resultMap = mutableMapOf<ThreadDescriptor, Set<ThreadBookmarkReply>>()
+
+      threadBookmarks.entries.forEach { (threadDescriptor, threadBookmark) ->
+        val unreadThreadBookmarkReplySet = threadBookmark.threadBookmarkReplies.values
+          .filter { threadBookmarkReply -> !threadBookmarkReply.alreadyRead }
+          .toSet()
+
+        if (unreadThreadBookmarkReplySet.isEmpty()) {
+          return@forEach
+        }
+
+        resultMap[threadDescriptor] = unreadThreadBookmarkReplySet
+      }
+
+      return@withLock resultMap
+    }
+  }
+
   suspend fun putBookmark(threadBookmark: ThreadBookmark, index: Int? = null) {
     val created = mutex.withLock {
       val created = !threadBookmarks.containsKey(threadBookmark.threadDescriptor)
@@ -94,6 +116,54 @@ class BookmarksManager {
     } else {
       _bookmarkEventsFlow.emit(Event.Updated(listOf(threadBookmark.threadDescriptor)))
     }
+  }
+
+  suspend fun updateBookmark(
+    threadDescriptor: ThreadDescriptor,
+    updater: (ThreadBookmark) -> Unit
+  ): Boolean {
+    val updated = mutex.withLock {
+      val threadBookmark = threadBookmarks[threadDescriptor]
+        ?: return@withLock false
+
+      updater(threadBookmark)
+      threadBookmarks[threadDescriptor] = threadBookmark
+
+      return@withLock true
+    }
+
+    if (updated) {
+      _bookmarkEventsFlow.emit(Event.Updated(listOf(threadDescriptor)))
+    }
+
+    return updated
+  }
+
+  suspend fun updateBookmarks(
+    threadDescriptors: Collection<ThreadDescriptor>,
+    updater: (ThreadBookmark) -> Boolean
+  ): List<ThreadDescriptor> {
+    val updated = mutex.withLock {
+      val updated = mutableListOf<ThreadDescriptor>()
+
+      threadDescriptors.forEach { threadDescriptor ->
+        val threadBookmark = threadBookmarks[threadDescriptor]
+          ?: return@forEach
+
+        if (updater(threadBookmark)) {
+          threadBookmarks[threadDescriptor] = threadBookmark
+          updated += threadDescriptor
+        }
+      }
+
+      return@withLock updated
+    }
+
+    if (updated.isNotEmpty()) {
+      _bookmarkEventsFlow.emit(Event.Updated(updated))
+    }
+
+    return updated
   }
 
   suspend fun removeBookmark(threadDescriptor: ThreadDescriptor): ThreadBookmark? {
@@ -135,6 +205,7 @@ class BookmarksManager {
   }
 
   sealed class Event(val threadDescriptors: List<ThreadDescriptor>) {
+    object Loaded : Event(emptyList())
     class Created(val index: Int?, threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
     class Updated(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
     class Deleted(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)

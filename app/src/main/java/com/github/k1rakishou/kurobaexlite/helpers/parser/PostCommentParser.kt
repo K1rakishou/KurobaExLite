@@ -16,6 +16,30 @@ class PostCommentParser(
 ) {
   private val htmlParser = HtmlParser()
 
+  fun parsePostCommentAsText(
+    postCommentUnparsed: String,
+    postDescriptor: PostDescriptor
+  ): String? {
+    val site = siteManager.bySiteKey(postDescriptor.siteKey)
+      ?: throw SiteIsNotSupported(postDescriptor.siteKey)
+
+    val postParser = site.parser()
+
+    return Result.Try {
+      val textParts = parsePostComment(postParser, postCommentUnparsed, postDescriptor)
+      val totalTextLength = textParts.sumOf { textPart -> textPart.text.length }
+      val stringBuilder = StringBuilder(totalTextLength)
+
+      textParts.joinTo(
+        buffer = stringBuilder,
+        separator = "",
+        transform = { textPart -> textPart.text }
+      )
+
+      return@Try stringBuilder.toString()
+    }.getOrNull()
+  }
+
   fun parsePostComment(
     postCommentUnparsed: String,
     postDescriptor: PostDescriptor

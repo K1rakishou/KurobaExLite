@@ -26,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.Catalog
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.search.GlobalSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
@@ -170,7 +171,13 @@ class CatalogScreen(
               animate = true
             )
             
-            threadScreenViewModel.loadThread(postDescriptor.threadDescriptor)
+            threadScreenViewModel.loadThread(
+              threadDescriptor = postDescriptor.threadDescriptor,
+              loadOptions = PostScreenViewModel.LoadOptions(
+                forced = true,
+                scrollToPost = postDescriptor
+              )
+            )
           },
           closeCatalogSearchToolbar = {
             if (localSearchToolbar.searchQuery.isNotEmpty()) {

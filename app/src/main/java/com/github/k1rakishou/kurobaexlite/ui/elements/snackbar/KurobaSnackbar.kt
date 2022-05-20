@@ -267,11 +267,11 @@ private fun RowScope.KurobaSnackbarContent(
   val textSize = if (isTablet) 18.sp else 16.sp
 
   if (!snackbarType.isToast && hasClickableItems && aliveUntil != null) {
-    val startTime = remember { SystemClock.elapsedRealtime() }
-    var progress by remember { mutableStateOf(1f) }
+    val startTime = remember(key1 = snackbarId) { SystemClock.elapsedRealtime() }
+    var progress by remember(key1 = snackbarId) { mutableStateOf(1f) }
 
     LaunchedEffect(
-      key1 = Unit,
+      key1 = snackbarId,
       block = {
         val timeDelta = aliveUntil - startTime
 

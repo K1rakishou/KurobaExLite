@@ -1,7 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.helpers.di
 
 import android.app.Application
+import android.app.NotificationManager
 import android.content.Context
+import androidx.core.app.NotificationManagerCompat
 import coil.Coil
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
@@ -29,10 +31,11 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.MainActivityIntentHandler
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
-import com.github.k1rakishou.kurobaexlite.helpers.notification.ReplyNotificationsHelper
+import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
@@ -45,6 +48,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ExtractRepliesToMyPosts
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.PersistBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.CatalogGlobalSearch
@@ -103,7 +107,7 @@ object DependencyGraph {
 
     modules += module(createdAtStart = createAtStart) {
       system(application, appCoroutineScope)
-      generic()
+      misc()
       kurobaDiskLruCache()
       coilMediaDiskCache()
       coilImageLoader()
@@ -122,11 +126,13 @@ object DependencyGraph {
   ) {
     single<Context> { application.applicationContext }
     single<Application> { application }
+    single<NotificationManagerCompat> { NotificationManagerCompat.from(get()) }
+    single<NotificationManager> { get<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager }
     single<KurobaExLiteApplication> { application }
     single<CoroutineScope> { appCoroutineScope }
   }
 
-  private fun Module.generic() {
+  private fun Module.misc() {
     single { KurobaExLiteDatabase.buildDatabase(application = get()) }
     single { ProxiedOkHttpClient() }
     single { GlobalConstants(get()) }
@@ -143,7 +149,6 @@ object DependencyGraph {
     single { MediaViewerPostListScroller() }
     single { CrossThreadFollowHistory() }
     single { ClickedThumbnailBoundsStorage() }
-    single { ReplyNotificationsHelper() }
     single {
       ParsedPostDataCache(
         appContext = get(),
@@ -172,6 +177,28 @@ object DependencyGraph {
         appSettings = get(),
         androidHelpers = get(),
         appResources = get(),
+      )
+    }
+
+    single {
+      ReplyNotificationsHelper(
+        appContext = get(),
+        appScope = get(),
+        appSettings = get(),
+        androidHelpers = get(),
+        imageLoader = get(),
+        notificationManagerCompat = get(),
+        notificationManager = get(),
+        chanThreadManager = get(),
+        bookmarksManager = get(),
+        themeEngine = get(),
+        postCommentParser = get(),
+        persistBookmarks = get(),
+      )
+    }
+    single {
+      MainActivityIntentHandler(
+        globalUiInfoManager = get()
       )
     }
   }
@@ -325,10 +352,10 @@ object DependencyGraph {
       FetchThreadBookmarkInfo(
         siteManager = get(),
         bookmarksManager = get(),
-        kurobaExLiteDatabase = get(),
         replyNotificationsHelper = get(),
         loadChanThreadView = get(),
         extractRepliesToMyPosts = get(),
+        persistBookmarks = get(),
         appSettings = get(),
         androidHelpers = get(),
       )
@@ -395,6 +422,7 @@ object DependencyGraph {
       ModifyMarkedPosts(markedPostManager = get(), kurobaExLiteDatabase = get())
     }
     single { CatalogGlobalSearch(globalSearchRepository = get(), parsedPostDataCache = get(), themeEngine = get()) }
+    single { PersistBookmarks(bookmarksManager = get(), kurobaExLiteDatabase = get()) }
   }
 
   private fun Module.coilMediaDiskCache() {

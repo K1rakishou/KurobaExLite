@@ -5,6 +5,7 @@ import android.util.Log
 import com.github.k1rakishou.kurobaexlite.helpers.di.DependencyGraph
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import kotlin.system.exitProcess
 import logcat.LogPriority
@@ -15,6 +16,7 @@ import org.koin.java.KoinJavaComponent.inject
 
 class KurobaExLiteApplication : Application() {
   private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
+  private val replyNotificationsHelper: ReplyNotificationsHelper by inject(ReplyNotificationsHelper::class.java)
 
   private val appCoroutineScope = KurobaCoroutineScope()
 
@@ -35,6 +37,7 @@ class KurobaExLiteApplication : Application() {
     }
 
     registerActivityLifecycleCallbacks(applicationVisibilityManager)
+    replyNotificationsHelper.init()
 
     Thread.setDefaultUncaughtExceptionHandler { thread, e ->
       // if there's any uncaught crash stuff, just dump them to the log and exit immediately

@@ -27,8 +27,8 @@ abstract class PostScreenState(
   val currentSearchQuery: String?
     get() = searchQueryFlow.value
 
-  val lastViewedPostDescriptorForScrollRestoration = MutableStateFlow<PostDescriptor?>(null)
-  val lastViewedPostDescriptorForIndicator = MutableStateFlow<PostDescriptor?>(null)
+  val lastViewedPostForScrollRestoration = MutableStateFlow<PostDescriptor?>(null)
+  val lastViewedPostForIndicator = MutableStateFlow<PostDescriptor?>(null)
   val lastLoadErrorState = MutableStateFlow<Throwable?>(null)
 
   private val _chanDescriptorFlow = MutableStateFlow<ChanDescriptor?>(null)

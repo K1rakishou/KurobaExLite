@@ -608,7 +608,7 @@ abstract class PostScreenViewModel(
     }
 
     val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
-    val lastViewedPostDescriptor = postScreenState.lastViewedPostDescriptorForScrollRestoration.value
+    val lastViewedPostDescriptor = postScreenState.lastViewedPostForScrollRestoration.value
 
     if (posts != null && lastViewedPostDescriptor != null) {
       val index = posts

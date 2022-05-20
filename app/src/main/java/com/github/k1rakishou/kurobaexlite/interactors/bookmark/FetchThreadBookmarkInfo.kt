@@ -4,10 +4,9 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.ignore
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.notification.ReplyNotificationsHelper
+import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.processDataCollectionConcurrently
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
@@ -19,7 +18,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmarkReply
-import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlin.time.ExperimentalTime
@@ -32,10 +30,10 @@ import org.joda.time.DateTime
 class FetchThreadBookmarkInfo(
   private val siteManager: SiteManager,
   private val bookmarksManager: BookmarksManager,
-  private val kurobaExLiteDatabase: KurobaExLiteDatabase,
   private val replyNotificationsHelper: ReplyNotificationsHelper,
   private val loadChanThreadView: LoadChanThreadView,
   private val extractRepliesToMyPosts: ExtractRepliesToMyPosts,
+  private val persistBookmarks: PersistBookmarks,
   private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers
 ) {
@@ -122,14 +120,7 @@ class FetchThreadBookmarkInfo(
       return
     }
 
-    try {
-      replyNotificationsHelper.showOrUpdateNotifications()
-    } catch (error: Throwable) {
-      logcatError(TAG) {
-        "replyNotificationsHelper.showOrUpdateNotifications() crashed! " +
-          "error=${error.asLogIfImportantOrErrorMessage()}"
-      }
-    }
+    replyNotificationsHelper.showOrUpdateNotifications()
   }
 
   private suspend fun processResultsInternal(fetchResults: List<ThreadBookmarkFetchResult>) {
@@ -222,28 +213,7 @@ class FetchThreadBookmarkInfo(
       threadBookmarkDescriptorsToPersist.addAll(updatedBookmarkDescriptors)
     }
 
-    if (threadBookmarkDescriptorsToPersist.isEmpty()) {
-      logcat(TAG) { "threadBookmarkDescriptorsToPersist isEmpty" }
-      return
-    }
-
-    val threadBookmarksToPersist = bookmarksManager.getBookmarks(threadBookmarkDescriptorsToPersist)
-    if (threadBookmarksToPersist.isEmpty()) {
-      logcat(TAG) { "threadBookmarksToPersist isEmpty" }
-      return
-    }
-
-    logcat(TAG) { "persisting ${threadBookmarksToPersist.size} bookmarks" }
-
-    kurobaExLiteDatabase
-      .transaction { threadBookmarkDao.insertOrUpdateManyBookmarks(threadBookmarksToPersist) }
-      .onFailure { error ->
-        logcatError(TAG) {
-          "insertOrUpdateManyBookmarks(${threadBookmarksToPersist.size}) " +
-            "error: ${error.asLogIfImportantOrErrorMessage()}"
-        }
-      }
-      .ignore()
+    persistBookmarks.await(threadBookmarkDescriptorsToPersist)
   }
 
   private suspend fun updateSingleBookmark(

@@ -16,7 +16,10 @@ import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.MainActivityIntentHandler
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
@@ -25,14 +28,14 @@ import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
-import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainerViewModel
 import kotlin.time.Duration.Companion.seconds
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
   private val mainActivityViewModel: MainActivityViewModel by viewModel()
-  private val animateableStackContainerViewModel: AnimateableStackContainerViewModel by viewModel()
+  private val threadScreenViewModel: ThreadScreenViewModel by viewModel()
+  private val catalogScreenViewModel: CatalogScreenViewModel by viewModel()
 
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
@@ -40,6 +43,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val fullScreenHelpers: FullScreenHelpers by inject(FullScreenHelpers::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
   private val localFilePicker: LocalFilePicker by inject(LocalFilePicker::class.java)
+  private val mainActivityIntentHandler: MainActivityIntentHandler by inject(MainActivityIntentHandler::class.java)
 
   private var backPressedOnce = false
 
@@ -57,6 +61,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     super.onCreate(savedInstanceState)
 
     localFilePicker.attachActivity(this)
+    mainActivityIntentHandler.onCreate(threadScreenViewModel, catalogScreenViewModel)
 
     WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
@@ -87,14 +92,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     coroutineScope.cancelChildren()
     clickedThumbnailBoundsStorage.clear()
     localFilePicker.detachActivity()
+    mainActivityIntentHandler.onDestroy()
 
     super.onDestroy()
   }
 
   override fun onNewIntent(intent: Intent?) {
-    if (intent != null) {
-      mainActivityViewModel.rootNavigationRouter.onNewIntent(intent)
+    if (intent == null) {
+      return
     }
+
+    mainActivityIntentHandler.onNewIntent(intent)
   }
 
   override fun onBackPressed() {
@@ -181,6 +189,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   }
 
   companion object {
+    private const val TAG = "MainActivity"
     private val pressBackFlagResetDuration = 1.seconds
 
     private const val pressBackMessageToastId = "press_back_to_exit_message_toast"

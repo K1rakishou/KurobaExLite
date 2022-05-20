@@ -287,7 +287,7 @@ class ThreadScreenViewModel(
       val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)?.lastViewedPDForScroll
 
       resetPosition(threadDescriptor)
-      threadScreenState.lastViewedPostDescriptorForScrollRestoration.value = lastViewedPostDescriptor
+      threadScreenState.lastViewedPostForScrollRestoration.value = lastViewedPostDescriptor
     }
 
     if (loadOptions.deleteCached && threadDescriptor != null) {
@@ -342,8 +342,14 @@ class ThreadScreenViewModel(
     val cachedThreadPostsState = (threadScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data
     val allCombinedPosts = postLoadResult.allCombinedForThread()
 
-    val startParsePost = loadOptions.scrollToPost
-      ?: threadScreenState.lastViewedPostDescriptorForScrollRestoration.value
+    val startParsePost = if (loadOptions.scrollToPost != null) {
+      // Set the lastViewedPostForScrollRestoration to scrollToPost so that we can actually start from
+      // there
+      threadScreenState.lastViewedPostForScrollRestoration.value = loadOptions.scrollToPost
+      loadOptions.scrollToPost
+    } else {
+      threadScreenState.lastViewedPostForScrollRestoration.value
+    }
 
     if (cachedThreadPostsState != null && cachedThreadPostsState.chanDescriptor == chanDescriptor) {
       logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${postLoadResult.info()}" }
@@ -502,7 +508,7 @@ class ThreadScreenViewModel(
         postListTouchingBottom = postListTouchingBottom
       )
 
-      threadScreenState.lastViewedPostDescriptorForIndicator.value =
+      threadScreenState.lastViewedPostForIndicator.value =
         updatedChanThreadView?.lastViewedPDForIndicator
     }
   }

@@ -49,6 +49,7 @@ data class ThreadBookmarkEntity(
 
 @Entity(
   tableName = ThreadBookmarkReplyEntity.TABLE_NAME,
+  primaryKeys = ["owner_database_id", "reply_post_post_no", "reply_post_post_sub_no"],
   foreignKeys = [
     ForeignKey(
       entity = ThreadBookmarkEntity::class,
@@ -57,10 +58,13 @@ data class ThreadBookmarkEntity(
       onDelete = ForeignKey.CASCADE,
       onUpdate = ForeignKey.CASCADE
     )
+  ],
+  indices = [
+    Index(value = ["owner_database_id"])
   ]
 )
 data class ThreadBookmarkReplyEntity(
-  @PrimaryKey(autoGenerate = false) @ColumnInfo(name = "owner_database_id") val ownerDatabaseId: Long = 0L,
+  @ColumnInfo(name = "owner_database_id") val ownerDatabaseId: Long = 0L,
   @Embedded(prefix = "reply_post_") val replyPostKey: ThreadLocalPostKey,
   @Embedded(prefix = "reply_to_post_") val repliesToPostKey: ThreadLocalPostKey,
   @ColumnInfo(name = "already_seen") val alreadySeen: Boolean = false,

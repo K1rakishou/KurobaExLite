@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "6bce5484b739bd170964b439b90ac025",
+    "identityHash": "a91b1d4532416eb6675c3500a1752e5c",
     "entities": [
       {
         "tableName": "chan_thread_views",
@@ -403,7 +403,7 @@
       },
       {
         "tableName": "thread_bookmark_replies",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_database_id` INTEGER NOT NULL, `already_seen` INTEGER NOT NULL, `already_notified` INTEGER NOT NULL, `already_read` INTEGER NOT NULL, `time` INTEGER NOT NULL, `comment_raw` TEXT, `reply_post_post_no` INTEGER NOT NULL, `reply_post_post_sub_no` INTEGER NOT NULL, `reply_to_post_post_no` INTEGER NOT NULL, `reply_to_post_post_sub_no` INTEGER NOT NULL, PRIMARY KEY(`owner_database_id`), FOREIGN KEY(`owner_database_id`) REFERENCES `thread_bookmarks`(`database_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_database_id` INTEGER NOT NULL, `already_seen` INTEGER NOT NULL, `already_notified` INTEGER NOT NULL, `already_read` INTEGER NOT NULL, `time` INTEGER NOT NULL, `comment_raw` TEXT, `reply_post_post_no` INTEGER NOT NULL, `reply_post_post_sub_no` INTEGER NOT NULL, `reply_to_post_post_no` INTEGER NOT NULL, `reply_to_post_post_sub_no` INTEGER NOT NULL, PRIMARY KEY(`owner_database_id`, `reply_post_post_no`, `reply_post_post_sub_no`), FOREIGN KEY(`owner_database_id`) REFERENCES `thread_bookmarks`(`database_id`) ON UPDATE CASCADE ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "ownerDatabaseId",
@@ -468,11 +468,23 @@
         ],
         "primaryKey": {
           "columnNames": [
-            "owner_database_id"
+            "owner_database_id",
+            "reply_post_post_no",
+            "reply_post_post_sub_no"
           ],
           "autoGenerate": false
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_thread_bookmark_replies_owner_database_id",
+            "unique": false,
+            "columnNames": [
+              "owner_database_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_thread_bookmark_replies_owner_database_id` ON `${TABLE_NAME}` (`owner_database_id`)"
+          }
+        ],
         "foreignKeys": [
           {
             "table": "thread_bookmarks",
@@ -557,7 +569,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6bce5484b739bd170964b439b90ac025')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'a91b1d4532416eb6675c3500a1752e5c')"
     ]
   }
 }

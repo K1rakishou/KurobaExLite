@@ -145,6 +145,7 @@ fun PostCell(
 
     if (columnSize != null) {
       PostCellMarks(columnSize, postCellData)
+      Spacer(modifier = Modifier.width(4.dp))
     }
   }
 }

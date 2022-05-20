@@ -1,18 +1,13 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
-import android.content.Intent
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import logcat.LogPriority
 import logcat.logcat
@@ -30,10 +25,6 @@ open class NavigationRouter(
   protected val _screenUpdatesFlow = MutableStateFlow<ScreenUpdateTransaction?>(null)
   val screenUpdatesFlow: StateFlow<ScreenUpdateTransaction?>
     get() = _screenUpdatesFlow.asStateFlow()
-
-  private val _intentsFlow = MutableSharedFlow<Intent>(extraBufferCapacity = Channel.UNLIMITED)
-  val intentsFlow: SharedFlow<Intent>
-    get() = _intentsFlow.asSharedFlow()
 
   open fun pushScreen(newComposeScreen: ComposeScreen): Boolean {
     if (newComposeScreen is FloatingComposeScreen) {
@@ -182,14 +173,6 @@ open class NavigationRouter(
     }
 
     return parentRouter.getRootRouter()
-  }
-
-  fun onNewIntent(intent: Intent) {
-    _intentsFlow.tryEmit(intent)
-
-    for (childRouter in childRouters.values) {
-      childRouter.onNewIntent(intent)
-    }
   }
 
   open suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
