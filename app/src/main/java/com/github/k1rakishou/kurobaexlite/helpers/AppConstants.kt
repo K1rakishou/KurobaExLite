@@ -73,6 +73,14 @@ object AppConstants {
       const val R_NOTIFICATION_CLICK_POST_DESCRIPTORS_KEY = "reply_notification_click_post_descriptors"
       const val R_NOTIFICATION_DELETE_THREAD_DESCRIPTORS_KEY = "reply_notification_deleted_thread_descriptors"
     }
+
+    object Update {
+      const val UPDATE_NOTIFICATION_TAG = "${BuildConfig.APPLICATION_ID}_UPDATE_NOTIFICATION_TAG"
+      const val UPDATE_NOTIFICATION_ID = 3
+
+      const val UPDATE_NOTIFICATION_CHANNEL_ID = "${BuildConfig.APPLICATION_ID}_update_notification_channel"
+      const val UPDATE_NOTIFICATION_NAME = "Notification channel for apk updates notification"
+    }
   }
 
 }

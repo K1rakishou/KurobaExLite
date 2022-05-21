@@ -63,7 +63,9 @@ class AppSettings(
   val drawerDragGestureTutorialShown by lazy { BooleanSetting(false, "drawer_drag_gesture_tutorial_shown", dataStore) }
 
   val replyNotifications by lazy { BooleanSetting(true, "reply_notifications_enabled", dataStore) }
-  val useSoundForReplyNotifications by lazy { BooleanSetting(true, "use_sound_for_reply_notifications", dataStore) }
+  val lastUpdateCheckTime by lazy { NumberSetting<Long>(0L, "last_update_check_time", dataStore) }
+  val lastCheckedVersionCode by lazy { NumberSetting<Long>(0L, "last_checked_version_code", dataStore) }
+  val notifyAboutBetaUpdates by lazy { BooleanSetting(true, "notify_about_beta_updates", dataStore) }
 
   val userAgent by lazy {
     val userAgent = try {

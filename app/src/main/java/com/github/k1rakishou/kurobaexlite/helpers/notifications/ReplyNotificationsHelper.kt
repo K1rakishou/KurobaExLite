@@ -7,10 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.BitmapDrawable
-import android.media.AudioAttributes
-import android.media.AudioManager
 import android.os.Build
-import android.provider.Settings
 import android.service.notification.StatusBarNotification
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -268,11 +265,8 @@ class ReplyNotificationsHelper(
       currentlyOpenedThread = currentlyOpenedThread
     )
 
-    val useSoundForReplyNotifications = appSettings.useSoundForReplyNotifications.read()
-
     logcat(TAG) {
       "showNotificationsForAndroidNougatAndBelow() " +
-        "useSoundForReplyNotifications: $useSoundForReplyNotifications, " +
         "onlyHasNewRepliesFromCurrentThread: $onlyHasNewRepliesFromCurrentThread, " +
         "unreadNotificationsGrouped: ${unreadNotificationsGrouped.size}, " +
         "unseenRepliesCount: $unseenRepliesCount, " +
@@ -287,7 +281,7 @@ class ReplyNotificationsHelper(
       R.drawable.ic_stat_notify
     }
 
-    val notificationPriority = if (hasNewReplies && useSoundForReplyNotifications && !onlyHasNewRepliesFromCurrentThread) {
+    val notificationPriority = if (hasNewReplies && !onlyHasNewRepliesFromCurrentThread) {
       logcat(TAG) { "showNotificationsForAndroidNougatAndBelow() Using NotificationCompat.PRIORITY_MAX" }
       NotificationCompat.PRIORITY_MAX
     } else {
@@ -339,7 +333,6 @@ class ReplyNotificationsHelper(
       .setPriority(notificationPriority)
       .setupSoundAndVibration(
         hasNewReplies = hasNewReplies,
-        useSoundForReplyNotifications = useSoundForReplyNotifications,
         onlyHasNewRepliesFromCurrentThread = onlyHasNewRepliesFromCurrentThread
       )
       .setupReplyNotificationsStyle(titleText, unseenThreadBookmarkReplies)
@@ -382,11 +375,8 @@ class ReplyNotificationsHelper(
       currentlyOpenedThread = currentlyOpenedThread
     )
 
-    val useSoundForReplyNotifications = appSettings.useSoundForReplyNotifications.read()
-
     logcat(TAG) {
       "showSummaryNotification() " +
-        "useSoundForReplyNotifications=$useSoundForReplyNotifications, " +
         "onlyHasNewRepliesFromCurrentThread=$onlyHasNewRepliesFromCurrentThread, " +
         "unreadNotificationsGrouped = ${unreadNotificationsGrouped.size}, " +
         "unseenRepliesCount=$unseenRepliesCount, newRepliesCount=$newRepliesCount"
@@ -400,11 +390,7 @@ class ReplyNotificationsHelper(
       R.drawable.ic_stat_notify
     }
 
-    val summaryNotificationBuilder = if (
-      hasNewReplies &&
-      useSoundForReplyNotifications &&
-      !onlyHasNewRepliesFromCurrentThread
-    ) {
+    val summaryNotificationBuilder = if (hasNewReplies && !onlyHasNewRepliesFromCurrentThread) {
       logcat(TAG) { "showSummaryNotification() Using REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID" }
 
       NotificationCompat.Builder(
@@ -440,7 +426,6 @@ class ReplyNotificationsHelper(
       .setSmallIcon(iconId)
       .setupSoundAndVibration(
         hasNewReplies = hasNewReplies,
-        useSoundForReplyNotifications = useSoundForReplyNotifications,
         onlyHasNewRepliesFromCurrentThread = onlyHasNewRepliesFromCurrentThread
       )
       .setupSummaryNotificationsStyle(titleText)
@@ -704,16 +689,14 @@ class ReplyNotificationsHelper(
 
   private fun NotificationCompat.Builder.setupSoundAndVibration(
     hasNewReplies: Boolean,
-    useSoundForReplyNotifications: Boolean,
     onlyHasNewRepliesFromCurrentThread: Boolean
   ): NotificationCompat.Builder {
     if (hasNewReplies) {
-      if (useSoundForReplyNotifications && !onlyHasNewRepliesFromCurrentThread) {
-        logcat(TAG) { "Using sound and vibration" }
-        setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
-      } else {
-        logcat(TAG) { "Only using vibration" }
+      if (!onlyHasNewRepliesFromCurrentThread) {
+        logcat(TAG) { "Using vibration" }
         setDefaults(Notification.DEFAULT_VIBRATE)
+      } else {
+        logcat(TAG) { "Not using vibration" }
       }
 
       setLights(themeEngine.chanTheme.accentColor, 1000, 1000)
@@ -843,15 +826,7 @@ class ReplyNotificationsHelper(
           NotificationManager.IMPORTANCE_HIGH
         )
 
-        summaryChannel.setSound(
-          Settings.System.DEFAULT_NOTIFICATION_URI,
-          AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-            .setLegacyStreamType(AudioManager.STREAM_NOTIFICATION)
-            .build()
-        )
-
+        summaryChannel.setSound(null, null)
         summaryChannel.enableLights(true)
         summaryChannel.lightColor = themeEngine.chanTheme.accentColor
         summaryChannel.enableVibration(true)

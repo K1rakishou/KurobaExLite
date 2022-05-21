@@ -76,6 +76,7 @@ import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
@@ -219,6 +220,18 @@ object DependencyGraph {
     single { CaptchaManager() }
     single { LastVisitedEndpointManager(appScope = get()) }
     single { BookmarksManager() }
+
+    single {
+      UpdateManager(
+        appContext = get(),
+        notificationManagerCompat = get(),
+        appScope = get(),
+        appSettings = get(),
+        androidHelpers = get(),
+        proxiedOkHttpClient = get(),
+        moshi = get()
+      )
+    }
 
     single {
       GlobalUiInfoManager(

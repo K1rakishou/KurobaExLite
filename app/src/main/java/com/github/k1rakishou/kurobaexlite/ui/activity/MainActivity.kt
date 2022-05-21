@@ -27,6 +27,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.SerializedCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
 import kotlin.time.Duration.Companion.seconds
@@ -45,8 +46,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val fullScreenHelpers: FullScreenHelpers by inject(FullScreenHelpers::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
   private val localFilePicker: LocalFilePicker by inject(LocalFilePicker::class.java)
-  private val mainActivityIntentHandler: MainActivityIntentHandler by inject(
-    MainActivityIntentHandler::class.java)
+  private val mainActivityIntentHandler: MainActivityIntentHandler by inject(MainActivityIntentHandler::class.java)
+  private val updateManager: UpdateManager by inject(UpdateManager::class.java)
 
   private var backPressedOnce = false
 
@@ -71,6 +72,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
       catalogScreenViewModel = catalogScreenViewModel,
       bookmarkScreenViewModel = bookmarksScreenViewModel
     )
+    updateManager.checkForUpdates()
 
     WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
