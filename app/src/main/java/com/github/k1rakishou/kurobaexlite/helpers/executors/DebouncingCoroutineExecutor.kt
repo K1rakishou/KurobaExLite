@@ -20,7 +20,7 @@ import logcat.asLog
 @OptIn(ExperimentalCoroutinesApi::class)
 class DebouncingCoroutineExecutor(
   private val scope: CoroutineScope,
-  private val dispatcher: CoroutineDispatcher = Dispatchers.Main
+  private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate
 ) {
   private val debouncers = mutableMapOf<String?, Debouncer>()
 

@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.managers
 
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmarkReply
-import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
@@ -120,15 +119,17 @@ class BookmarksManager {
 
   suspend fun updateBookmark(
     threadDescriptor: ThreadDescriptor,
-    updater: (ThreadBookmark) -> Unit
+    updater: (ThreadBookmark) -> Boolean
   ): Boolean {
     val updated = mutex.withLock {
       val threadBookmark = threadBookmarks[threadDescriptor]
         ?: return@withLock false
 
-      updater(threadBookmark)
-      threadBookmarks[threadDescriptor] = threadBookmark
+      if (!updater(threadBookmark)) {
+        return@withLock false
+      }
 
+      threadBookmarks[threadDescriptor] = threadBookmark
       return@withLock true
     }
 
@@ -173,31 +174,6 @@ class BookmarksManager {
     }
 
     return deletedBookmark
-  }
-
-  suspend fun onPostViewed(postDescriptor: PostDescriptor, unseenPostsCount: Int): Boolean {
-    val updated = mutex.withLock {
-      val threadBookmark = threadBookmarks[postDescriptor.threadDescriptor]
-        ?: return@withLock false
-
-      val lastViewedPostPostDescriptor = threadBookmark.lastViewedPostPostDescriptor
-
-      if (lastViewedPostPostDescriptor != null && postDescriptor < lastViewedPostPostDescriptor) {
-        return@withLock false
-      }
-
-      threadBookmark.updateSeenPostsCount(unseenPostsCount)
-      threadBookmark.updateLastViewedPostDescriptor(postDescriptor)
-      threadBookmark.readRepliesUpTo(postDescriptor)
-
-      return@withLock true
-    }
-
-    if (updated) {
-      _bookmarkEventsFlow.emit(Event.Updated(listOf(postDescriptor.threadDescriptor)))
-    }
-
-    return updated
   }
 
   suspend fun onBackgroundWatcherWorkFinished() {

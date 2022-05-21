@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import logcat.logcat
 
 class DeleteBookmark(
   private val appScope: CoroutineScope,
@@ -75,12 +76,14 @@ class DeleteBookmark(
         boardCode = threadDescriptor.boardCode,
         threadNo = threadDescriptor.threadNo
       )
-    }.onFailure { error ->
-      logcatError(TAG) {
-        "Failed to delete bookmark ${threadDescriptor} from the DB, " +
-          "error: ${error.asLogIfImportantOrErrorMessage()}"
-      }
-    }.isSuccess
+    }
+      .onSuccess { logcat(TAG) { "Deleted thread bookmark ${threadDescriptor} from the DB" } }
+      .onFailure { error ->
+        logcatError(TAG) {
+          "Failed to delete bookmark ${threadDescriptor} from the DB, " +
+            "error: ${error.asLogIfImportantOrErrorMessage()}"
+        }
+      }.isSuccess
   }
 
   companion object {

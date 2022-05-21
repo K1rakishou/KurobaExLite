@@ -109,25 +109,26 @@ class ReplyNotificationsHelper(
     bookmarksManager.awaitUntilInitialized()
 
     val currentlyOpenedThread = chanThreadManager.currentlyOpenedThread
-
     val unreadNotificationsGrouped = bookmarksManager.getActiveThreadBookmarkReplies()
-    val unreadNotificationsGroupedWithoutCurrentThread = unreadNotificationsGrouped
-      .filter { (threadDescriptor, _) -> threadDescriptor != currentlyOpenedThread }
 
     logcat(TAG, LogPriority.VERBOSE) {
       "showOrUpdateNotificationsInternal() " +
         "currentlyOpenedThread=${currentlyOpenedThread}, " +
-        "unreadNotificationsGrouped=${unreadNotificationsGrouped.size}, " +
-        "unreadNotificationsGroupedWithoutCurrentThread=${unreadNotificationsGroupedWithoutCurrentThread.size}"
+        "unreadNotificationsGrouped=${unreadNotificationsGrouped.size}"
     }
 
-    showNotificationForReplies(unreadNotificationsGroupedWithoutCurrentThread)
+    val shownNotifications = showNotificationForReplies(unreadNotificationsGrouped, currentlyOpenedThread)
+    if (shownNotifications.isEmpty()) {
+      return
+    }
+
+    val threadDescriptors = shownNotifications.keys
 
     // Mark all shown notifications as notified so we won't show them again
     val updatedBookmarkDescriptors = bookmarksManager.updateBookmarks(
-      threadDescriptors = unreadNotificationsGrouped.keys,
+      threadDescriptors = threadDescriptors,
       updater = { threadBookmark ->
-        val threadBookmarkReplies = unreadNotificationsGrouped[threadBookmark.threadDescriptor]
+        val threadBookmarkReplies = shownNotifications[threadBookmark.threadDescriptor]
         if (threadBookmarkReplies.isNullOrEmpty()) {
           return@updateBookmarks false
         }
@@ -154,20 +155,23 @@ class ReplyNotificationsHelper(
   }
 
   private suspend fun showNotificationForReplies(
-    unreadNotificationsGrouped: Map<ThreadDescriptor, Set<ThreadBookmarkReply>>
-  ) {
-    logcat(TAG) { "showNotificationForReplies(${unreadNotificationsGrouped.size})" }
+    unreadNotificationsGrouped: Map<ThreadDescriptor, Set<ThreadBookmarkReply>>,
+    currentlyOpenedThread: ThreadDescriptor?
+  ): Map<ThreadDescriptor, Set<ThreadBookmarkReply>> {
+    logcat(TAG) { "showNotificationForReplies(${unreadNotificationsGrouped.size}, $currentlyOpenedThread)" }
 
     if (unreadNotificationsGrouped.isEmpty()) {
       logcat(TAG) { "showNotificationForReplies() unreadNotificationsGrouped are empty" }
 
       closeAllNotifications()
-      return
+      return emptyMap()
     }
 
     if (!androidHelpers.isAndroidO()) {
-      showNotificationsForAndroidNougatAndBelow(unreadNotificationsGrouped)
-      return
+      return showNotificationsForAndroidNougatAndBelow(
+        unreadNotificationsGrouped = unreadNotificationsGrouped,
+        currentlyOpenedThread = currentlyOpenedThread
+      )
     }
 
     setupChannels()
@@ -180,20 +184,21 @@ class ReplyNotificationsHelper(
       ?: DateTime.now()
 
     val hasUnseenReplies = showSummaryNotification(
-      notificationTime,
-      sortedUnreadNotificationsGrouped
+      notificationTime = notificationTime,
+      unreadNotificationsGrouped = sortedUnreadNotificationsGrouped,
+      currentlyOpenedThread = currentlyOpenedThread
     )
 
     if (!hasUnseenReplies) {
       logcat(TAG) { "showNotificationForReplies() showSummaryNotification() hasUnseenReplies==false" }
 
       closeAllNotifications()
-      return
+      return emptyMap()
     }
 
-    showNotificationsForAndroidOreoAndAbove(
-      notificationTime,
-      sortedUnreadNotificationsGrouped
+    val shownNotifications = showNotificationsForAndroidOreoAndAbove(
+      notificationTime = notificationTime,
+      unreadNotificationsGrouped = sortedUnreadNotificationsGrouped
     )
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -206,6 +211,8 @@ class ReplyNotificationsHelper(
         }
       }
     }
+
+    return shownNotifications
   }
 
   private fun sortNotifications(
@@ -230,8 +237,9 @@ class ReplyNotificationsHelper(
   }
 
   private suspend fun showNotificationsForAndroidNougatAndBelow(
-    unreadNotificationsGrouped: Map<ThreadDescriptor, Set<ThreadBookmarkReply>>
-  ) {
+    unreadNotificationsGrouped: Map<ThreadDescriptor, Set<ThreadBookmarkReply>>,
+    currentlyOpenedThread: ThreadDescriptor?
+  ): Map<ThreadDescriptor, Set<ThreadBookmarkReply>> {
     val threadsWithUnseenRepliesCount = unreadNotificationsGrouped.size
     val totalUnseenRepliesCount = unreadNotificationsGrouped.values.sumOf { replies -> replies.size }
 
@@ -251,13 +259,20 @@ class ReplyNotificationsHelper(
       .count { threadBookmarkReplyView -> !threadBookmarkReplyView.alreadyNotified }
     val hasNewReplies = newRepliesCount > 0
 
+    val onlyHasNewRepliesFromCurrentThread = checkOnlyHasRepliesFromCurrentThread(
+      unreadNotificationsGrouped = unreadNotificationsGrouped,
+      currentlyOpenedThread = currentlyOpenedThread
+    )
+
     val useSoundForReplyNotifications = appSettings.useSoundForReplyNotifications.read()
 
     logcat(TAG) {
       "showNotificationsForAndroidNougatAndBelow() " +
-        "useSoundForReplyNotifications=$useSoundForReplyNotifications, " +
-        "unreadNotificationsGrouped = ${unreadNotificationsGrouped.size}, " +
-        "unseenRepliesCount=$unseenRepliesCount, newRepliesCount=$newRepliesCount"
+        "useSoundForReplyNotifications: $useSoundForReplyNotifications, " +
+        "onlyHasNewRepliesFromCurrentThread: $onlyHasNewRepliesFromCurrentThread, " +
+        "unreadNotificationsGrouped: ${unreadNotificationsGrouped.size}, " +
+        "unseenRepliesCount: $unseenRepliesCount, " +
+        "newRepliesCount: $newRepliesCount"
     }
 
     val iconId = if (hasUnseenReplies) {
@@ -268,7 +283,7 @@ class ReplyNotificationsHelper(
       R.drawable.ic_stat_notify
     }
 
-    val notificationPriority = if (hasNewReplies && useSoundForReplyNotifications) {
+    val notificationPriority = if (hasNewReplies && useSoundForReplyNotifications && !onlyHasNewRepliesFromCurrentThread) {
       logcat(TAG) { "showNotificationsForAndroidNougatAndBelow() Using NotificationCompat.PRIORITY_MAX" }
       NotificationCompat.PRIORITY_MAX
     } else {
@@ -293,7 +308,7 @@ class ReplyNotificationsHelper(
           "unseenThreadBookmarkReplies is empty, notification closed"
       }
 
-      return
+      return unreadNotificationsGrouped
     }
 
     val notificationTime = unseenThreadBookmarkReplies
@@ -318,7 +333,11 @@ class ReplyNotificationsHelper(
       .setAutoCancel(true)
       .setAllowSystemGeneratedContextualActions(false)
       .setPriority(notificationPriority)
-      .setupSoundAndVibration(hasNewReplies, useSoundForReplyNotifications)
+      .setupSoundAndVibration(
+        hasNewReplies = hasNewReplies,
+        useSoundForReplyNotifications = useSoundForReplyNotifications,
+        onlyHasNewRepliesFromCurrentThread = onlyHasNewRepliesFromCurrentThread
+      )
       .setupReplyNotificationsStyle(titleText, unseenThreadBookmarkReplies)
       .setGroup(notificationsGroup)
       .setGroupSummary(true)
@@ -330,12 +349,14 @@ class ReplyNotificationsHelper(
     )
 
     logcat(TAG) { "showNotificationsForAndroidNougatAndBelow() notificationManagerCompat.notify() called" }
+    return unreadNotificationsGrouped
   }
 
   @RequiresApi(Build.VERSION_CODES.O)
   private suspend fun showSummaryNotification(
     notificationTime: DateTime,
-    unreadNotificationsGrouped: Map<ThreadDescriptor, List<ThreadBookmarkReply>>
+    unreadNotificationsGrouped: Map<ThreadDescriptor, List<ThreadBookmarkReply>>,
+    currentlyOpenedThread: ThreadDescriptor?
   ): Boolean {
     val unseenRepliesCount = unreadNotificationsGrouped.values
       .flatten()
@@ -350,12 +371,19 @@ class ReplyNotificationsHelper(
     val newRepliesCount = unreadNotificationsGrouped.values
       .flatten()
       .count { threadBookmarkReplyView -> !threadBookmarkReplyView.alreadyNotified }
+
     val hasNewReplies = newRepliesCount > 0
+    val onlyHasNewRepliesFromCurrentThread = checkOnlyHasRepliesFromCurrentThread(
+      unreadNotificationsGrouped = unreadNotificationsGrouped,
+      currentlyOpenedThread = currentlyOpenedThread
+    )
+
     val useSoundForReplyNotifications = appSettings.useSoundForReplyNotifications.read()
 
     logcat(TAG) {
       "showSummaryNotification() " +
         "useSoundForReplyNotifications=$useSoundForReplyNotifications, " +
+        "onlyHasNewRepliesFromCurrentThread=$onlyHasNewRepliesFromCurrentThread, " +
         "unreadNotificationsGrouped = ${unreadNotificationsGrouped.size}, " +
         "unseenRepliesCount=$unseenRepliesCount, newRepliesCount=$newRepliesCount"
     }
@@ -368,7 +396,11 @@ class ReplyNotificationsHelper(
       R.drawable.ic_stat_notify
     }
 
-    val summaryNotificationBuilder = if (hasNewReplies && useSoundForReplyNotifications) {
+    val summaryNotificationBuilder = if (
+      hasNewReplies &&
+      useSoundForReplyNotifications &&
+      !onlyHasNewRepliesFromCurrentThread
+    ) {
       logcat(TAG) { "showSummaryNotification() Using REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID" }
 
       NotificationCompat.Builder(
@@ -385,8 +417,7 @@ class ReplyNotificationsHelper(
     }
 
     val threadsWithUnseenRepliesCount = unreadNotificationsGrouped.size
-    val totalUnseenRepliesCount =
-      unreadNotificationsGrouped.values.sumOf<T>({ replies -> replies.size })
+    val totalUnseenRepliesCount = unreadNotificationsGrouped.values.sumOf { replies -> replies.size }
 
     val titleText = appContext.resources.getString(
       R.string.reply_notifications_new_replies_total_stats,
@@ -403,7 +434,11 @@ class ReplyNotificationsHelper(
       .setContentTitle(androidHelpers.getApplicationLabel())
       .setContentText(titleText)
       .setSmallIcon(iconId)
-      .setupSoundAndVibration(hasNewReplies, useSoundForReplyNotifications)
+      .setupSoundAndVibration(
+        hasNewReplies = hasNewReplies,
+        useSoundForReplyNotifications = useSoundForReplyNotifications,
+        onlyHasNewRepliesFromCurrentThread = onlyHasNewRepliesFromCurrentThread
+      )
       .setupSummaryNotificationsStyle(titleText)
       .setupClickOnNotificationIntent(
         requestCode = AppConstants.RequestCodes.nextRequestCode(),
@@ -432,7 +467,7 @@ class ReplyNotificationsHelper(
   suspend fun showNotificationsForAndroidOreoAndAbove(
     notificationTime: DateTime,
     unreadNotificationsGrouped: Map<ThreadDescriptor, List<ThreadBookmarkReply>>
-  ) {
+  ): Map<ThreadDescriptor, Set<ThreadBookmarkReply>> {
     logcat(TAG) { "showNotificationsForAndroidOreoAndAbove() called" }
 
     val shownNotifications = mutableMapOf<ThreadDescriptor, HashSet<ThreadBookmarkReply>>()
@@ -520,6 +555,27 @@ class ReplyNotificationsHelper(
         break
       }
     }
+
+    return shownNotifications
+  }
+
+  private fun checkOnlyHasRepliesFromCurrentThread(
+    unreadNotificationsGrouped: Map<ThreadDescriptor, Collection<ThreadBookmarkReply>>,
+    currentlyOpenedThread: ThreadDescriptor?
+  ): Boolean {
+    if (currentlyOpenedThread == null) {
+      return false
+    }
+
+    for ((threadDescriptor, threadBookmarkReplies) in unreadNotificationsGrouped.entries) {
+      for (threadBookmarkReply in threadBookmarkReplies) {
+        if (!threadBookmarkReply.alreadyNotified && threadDescriptor != currentlyOpenedThread) {
+          return false
+        }
+      }
+    }
+
+    return true
   }
 
   private suspend fun getThreadThumbnails(
@@ -644,14 +700,15 @@ class ReplyNotificationsHelper(
 
   private fun NotificationCompat.Builder.setupSoundAndVibration(
     hasNewReplies: Boolean,
-    useSoundForReplyNotifications: Boolean
+    useSoundForReplyNotifications: Boolean,
+    onlyHasNewRepliesFromCurrentThread: Boolean
   ): NotificationCompat.Builder {
     if (hasNewReplies) {
-      logcat(TAG) { "Using sound and vibration: useSoundForReplyNotifications=${useSoundForReplyNotifications}" }
-
-      if (useSoundForReplyNotifications) {
+      if (useSoundForReplyNotifications && !onlyHasNewRepliesFromCurrentThread) {
+        logcat(TAG) { "Using sound and vibration" }
         setDefaults(Notification.DEFAULT_SOUND or Notification.DEFAULT_VIBRATE)
       } else {
+        logcat(TAG) { "Only using vibration" }
         setDefaults(Notification.DEFAULT_VIBRATE)
       }
 
@@ -681,7 +738,7 @@ class ReplyNotificationsHelper(
       .sortedWith(REPLIES_COMPARATOR)
       .takeLast(AppConstants.Notifications.MAX_LINES_IN_NOTIFICATION)
 
-    val parsedReplyComments = withContext(Dispatchers.Default) {
+    val parsedReplyComments = withContext(Dispatchers.IO) {
       return@withContext repliesSorted.map { threadBookmarkReply ->
         val commentRaw = threadBookmarkReply.commentRaw
         if (commentRaw != null) {
@@ -692,6 +749,7 @@ class ReplyNotificationsHelper(
           )
 
           if (parsedComment.isNotNullNorEmpty()) {
+            // TODO(KurobaEx): Replace all >>123 quote to your posts to just >>You to save the space
             return@map parsedComment
           }
 

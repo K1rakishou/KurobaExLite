@@ -49,22 +49,21 @@ class ReplyNotificationDeleteIntentBroadcastReceiver : BroadcastReceiver() {
       try {
         loadBookmarks.executeSuspend(restartWork = false)
 
-        replyNotificationSwipedAway(threadDescriptors)
+        markBookmarksAsSeen(threadDescriptors)
       } finally {
         pendingResult.finish()
       }
     }
   }
 
-  private suspend fun replyNotificationSwipedAway(threadDescriptors: List<ThreadDescriptor>) {
+  private suspend fun markBookmarksAsSeen(threadDescriptors: List<ThreadDescriptor>) {
     val updatedBookmarkDescriptors = bookmarksManager.updateBookmarks(threadDescriptors) { threadBookmark ->
       threadBookmark.markAsSeenAllReplies()
       return@updateBookmarks true
     }
 
     logcat(TAG) {
-      "replyNotificationSwipedAway() reply notification swiped away, " +
-        "marking as seen ${threadDescriptors.size} bookmarks " +
+      "markBookmarksAsSeen() marking as seen ${threadDescriptors.size} bookmarks " +
         "(updatedCount=${updatedBookmarkDescriptors.size})"
     }
 

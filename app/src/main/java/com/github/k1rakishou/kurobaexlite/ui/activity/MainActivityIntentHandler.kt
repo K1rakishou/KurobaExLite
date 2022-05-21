@@ -1,31 +1,45 @@
-package com.github.k1rakishou.kurobaexlite.helpers
+package com.github.k1rakishou.kurobaexlite.ui.activity
 
 import android.content.Intent
+import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.PersistBookmarks
+import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import logcat.logcat
 
 class MainActivityIntentHandler(
-  private val globalUiInfoManager: GlobalUiInfoManager
+  private val globalUiInfoManager: GlobalUiInfoManager,
+  private val bookmarksManager: BookmarksManager,
+  private val persistBookmarks: PersistBookmarks
 ) {
   private var threadScreenViewModel: ThreadScreenViewModel? = null
   private var catalogScreenViewModel: CatalogScreenViewModel? = null
+  private var bookmarkScreenViewModel: BookmarksScreenViewModel? = null
 
-  fun onCreate(threadScreenViewModel: ThreadScreenViewModel, catalogScreenViewModel: CatalogScreenViewModel) {
+  fun onCreate(
+    threadScreenViewModel: ThreadScreenViewModel,
+    catalogScreenViewModel: CatalogScreenViewModel,
+    bookmarkScreenViewModel: BookmarksScreenViewModel
+  ) {
     this.threadScreenViewModel = threadScreenViewModel
     this.catalogScreenViewModel = catalogScreenViewModel
+    this.bookmarkScreenViewModel = bookmarkScreenViewModel
   }
 
   fun onDestroy() {
     this.threadScreenViewModel = null
     this.catalogScreenViewModel = null
+    this.bookmarkScreenViewModel = null
   }
 
-  fun onNewIntent(intent: Intent) {
+  suspend fun onNewIntent(intent: Intent) {
     logcat(TAG) { "Got intent with action '${intent.action}'" }
 
     when (intent.action) {
@@ -39,6 +53,7 @@ class MainActivityIntentHandler(
         ) ?: emptyList()
 
         onReplyNotificationClicked(threadDescriptors, postDescriptors)
+        markBookmarksAsSeen(threadDescriptors)
       }
       AppConstants.Actions.REPLY_NOTIFICATION_DELETED_ACTION -> {
         // Handled in ReplyNotificationDeleteIntentBroadcastReceiver
@@ -46,7 +61,7 @@ class MainActivityIntentHandler(
     }
   }
 
-  private fun onReplyNotificationClicked(
+  private suspend fun onReplyNotificationClicked(
     threadDescriptors: List<ThreadDescriptor>,
     postDescriptors: List<PostDescriptor>
   ) {
@@ -58,8 +73,9 @@ class MainActivityIntentHandler(
     }
 
     if (threadDescriptors.size > 1) {
-      // TODO(KurobaEx): mark thread descriptors in the drawer
       logcat(TAG) { "onReplyNotificationClicked() threadDescriptors.size > 1 openDrawer()" }
+
+      bookmarkScreenViewModel?.markBookmarks(threadDescriptors)
       globalUiInfoManager.openDrawer(withAnimation = true)
       return
     }
@@ -91,6 +107,26 @@ class MainActivityIntentHandler(
 
       threadScreenViewModel?.loadThread(firstThreadDescriptors)
     }
+
+    globalUiInfoManager.waitUntilLayoutModeIsKnown()
+    globalUiInfoManager.updateCurrentPage(
+      screenKey = ThreadScreen.SCREEN_KEY,
+      animate = true
+    )
+  }
+
+  private suspend fun markBookmarksAsSeen(threadDescriptors: List<ThreadDescriptor>) {
+    val updatedBookmarkDescriptors = bookmarksManager.updateBookmarks(threadDescriptors) { threadBookmark ->
+      threadBookmark.markAsSeenAllReplies()
+      return@updateBookmarks true
+    }
+
+    logcat(TAG) {
+      "markBookmarksAsSeen() marking as seen ${threadDescriptors.size} bookmarks " +
+        "(updatedCount=${updatedBookmarkDescriptors.size})"
+    }
+
+    persistBookmarks.await(updatedBookmarkDescriptors)
   }
 
   companion object {

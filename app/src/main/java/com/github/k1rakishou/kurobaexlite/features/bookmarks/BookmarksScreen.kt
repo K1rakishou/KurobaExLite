@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -136,6 +137,13 @@ class BookmarksScreen(
           }
         }
       })
+
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        onDispose { bookmarksScreenViewModel.clearMarkedBookmarks() }
+      }
+    )
 
     val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderState(lazyListState = lazyListState)
@@ -280,12 +288,18 @@ class BookmarksScreen(
       }
     }
 
+    val defaultBgColor = if (bookmarksScreenViewModel.bookmarksToMark.containsKey(threadBookmarkUi.threadDescriptor)) {
+      chanTheme.accentColorCompose.copy(alpha = 0.3f)
+    } else {
+      chanTheme.backColorCompose
+    }
+
     val selectedOnBackColorCompose = remember(key1 = chanTheme.selectedOnBackColorCompose) {
       chanTheme.selectedOnBackColorCompose.copy(alpha = 0.5f)
     }
 
     var threadBookmarkHash by remember { mutableStateOf(threadBookmarkUi.hashCode()) }
-    val bgAnimatable = remember { Animatable(chanTheme.backColorCompose) }
+    val bgAnimatable = remember { Animatable(defaultBgColor) }
 
     LaunchedEffect(
       key1 = threadBookmarkHash,
@@ -298,9 +312,9 @@ class BookmarksScreen(
         try {
           bgAnimatable.animateTo(selectedOnBackColorCompose, tween(250))
           delay(500)
-          bgAnimatable.animateTo(chanTheme.backColorCompose, tween(250))
+          bgAnimatable.animateTo(defaultBgColor, tween(250))
         } finally {
-          bgAnimatable.snapTo(chanTheme.backColorCompose)
+          bgAnimatable.snapTo(defaultBgColor)
           threadBookmarkHash = threadBookmarkUi.hashCode()
         }
       }

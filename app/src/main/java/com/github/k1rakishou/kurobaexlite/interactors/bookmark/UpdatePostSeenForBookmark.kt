@@ -31,7 +31,19 @@ class UpdatePostSeenForBookmark(
       }
 
       val newPostsCount = chanCache.getNewPostsCount(postDescriptor)
-      val bookmarkUpdated = bookmarksManager.onPostViewed(postDescriptor, newPostsCount)
+
+      val bookmarkUpdated = bookmarksManager.updateBookmark(postDescriptor.threadDescriptor) { threadBookmark ->
+        val lastViewedPostPostDescriptor = threadBookmark.lastViewedPostPostDescriptor
+
+        if (lastViewedPostPostDescriptor != null && postDescriptor < lastViewedPostPostDescriptor) {
+          return@updateBookmark false
+        }
+
+        threadBookmark.updateSeenPostsCount(newPostsCount)
+        threadBookmark.updateLastViewedPostDescriptor(postDescriptor)
+        threadBookmark.readRepliesUpTo(postDescriptor)
+        return@updateBookmark true
+      }
 
       if (!bookmarkUpdated) {
         return@post
@@ -41,7 +53,7 @@ class UpdatePostSeenForBookmark(
         ?: return@post
 
       kurobaExLiteDatabase
-        .call { threadBookmarkDao.update(threadBookmark.toThreadBookmarkEntity()) }
+        .call { threadBookmarkDao.insertOrUpdateBookmark(threadBookmark) }
         .onFailure { error ->
           logcatError(TAG) {
             "Failed to update bookmark ${threadBookmark.threadDescriptor} in database, " +

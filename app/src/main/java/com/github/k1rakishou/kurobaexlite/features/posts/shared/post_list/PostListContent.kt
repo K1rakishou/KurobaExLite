@@ -134,6 +134,8 @@ internal fun PostListContent(
             index = lastRememberedPosition.index,
             scrollOffset = lastRememberedPosition.offset
           )
+
+          processPostListScrollEventFunc()
         }
       })
 
@@ -185,7 +187,12 @@ internal fun PostListContent(
 
           val indexToScroll = postsState.postIndexByPostDescriptor(scrollInfo.postDescriptor)
           if (indexToScroll != null) {
-            lazyListState.scrollToItem(index = indexToScroll, scrollOffset = 0)
+            lazyListState.scrollToItem(
+              index = indexToScroll,
+              scrollOffset = 0
+            )
+
+            processPostListScrollEventFunc()
           }
         }
       }

@@ -291,25 +291,6 @@ abstract class ThreadBookmarkDao {
   )
 
   @Transaction
-  open suspend fun update(threadBookmarkEntity: ThreadBookmarkEntity) {
-    updateInternal(
-      siteKey = threadBookmarkEntity.bookmarkKey.siteKey,
-      boardCode = threadBookmarkEntity.bookmarkKey.boardCode,
-      threadNo = threadBookmarkEntity.bookmarkKey.threadNo,
-      seenPostsCount = threadBookmarkEntity.seenPostsCount,
-      totalPostsCount = threadBookmarkEntity.totalPostsCount,
-      lastViewedPostNo = threadBookmarkEntity.lastViewedPostKey?.postNo ?: -1L,
-      lastViewedPostSubNo = threadBookmarkEntity.lastViewedPostKey?.postSubNo ?: -1L,
-      threadLastPostNo = threadBookmarkEntity.threadLastPostKey?.postNo ?: -1L,
-      threadLastPostSubNo = threadBookmarkEntity.threadLastPostKey?.postSubNo ?: -1L,
-      title = threadBookmarkEntity.title,
-      thumbnailUrl = threadBookmarkEntity.thumbnailUrl,
-      state = threadBookmarkEntity.state,
-      createdOn = threadBookmarkEntity.createdOn,
-    )
-  }
-
-  @Transaction
   open suspend fun updateMany(threadBookmarkEntityList: List<ThreadBookmarkEntity>) {
     threadBookmarkEntityList.forEach { threadBookmarkEntity ->
       updateInternal(

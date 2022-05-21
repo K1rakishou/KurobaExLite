@@ -28,6 +28,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.HideableUiVisibilityInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -75,6 +76,8 @@ class GlobalUiInfoManager(
 
   private val hideableUiVisibilityInfoMap = mutableMapOf<ScreenKey, HideableUiVisibilityInfo>()
   private val replyLayoutVisibilityInfoMap = mutableMapOf<ScreenKey, MutableState<ReplyLayoutVisibility>>()
+
+  private var currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
 
   val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
   val currentOrientation = MutableStateFlow<Int?>(null)
@@ -242,6 +245,14 @@ class GlobalUiInfoManager(
 
     logcat { "UiInfoManager initialization finished" }
     _initialized.value = true
+  }
+
+  suspend fun waitUntilLayoutModeIsKnown() {
+    if (currentUiLayoutModeKnownDeferred.isCompleted) {
+      return
+    }
+
+    currentUiLayoutModeKnownDeferred.await()
   }
 
   fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {
@@ -502,6 +513,7 @@ class GlobalUiInfoManager(
         _currentPageMapFlow.remove(prevLayoutMode)
       }
 
+      currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
       currentUiLayoutModeState.value = null
       return
     }
@@ -533,18 +545,19 @@ class GlobalUiInfoManager(
 
     if (totalScreenWidth <= 0) {
       currentUiLayoutModeState.value = MainUiLayoutMode.Phone
-      return
-    }
-
-    val availableWidthForCatalog = totalScreenWidth * CATALOG_SCREEN_WEIGHT
-    val minCatalogSplitModelWidth = with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
-
-    if (uiLayoutMode == MainUiLayoutMode.Split && availableWidthForCatalog < minCatalogSplitModelWidth) {
-      _notEnoughWidthForSplitLayoutFlow.tryEmit(Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth))
-      currentUiLayoutModeState.value = MainUiLayoutMode.Phone
     } else {
-      currentUiLayoutModeState.value = uiLayoutMode
+      val availableWidthForCatalog = totalScreenWidth * CATALOG_SCREEN_WEIGHT
+      val minCatalogSplitModelWidth = with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
+
+      if (uiLayoutMode == MainUiLayoutMode.Split && availableWidthForCatalog < minCatalogSplitModelWidth) {
+        _notEnoughWidthForSplitLayoutFlow.tryEmit(Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth))
+        currentUiLayoutModeState.value = MainUiLayoutMode.Phone
+      } else {
+        currentUiLayoutModeState.value = uiLayoutMode
+      }
     }
+
+    currentUiLayoutModeKnownDeferred.complete(Unit)
   }
 
   companion object {

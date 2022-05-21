@@ -14,15 +14,16 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.MainActivityIntentHandler
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.helpers.executors.SerializedCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -36,6 +37,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val mainActivityViewModel: MainActivityViewModel by viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by viewModel()
+  private val bookmarksScreenViewModel: BookmarksScreenViewModel by viewModel()
 
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
@@ -43,13 +45,15 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val fullScreenHelpers: FullScreenHelpers by inject(FullScreenHelpers::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
   private val localFilePicker: LocalFilePicker by inject(LocalFilePicker::class.java)
-  private val mainActivityIntentHandler: MainActivityIntentHandler by inject(MainActivityIntentHandler::class.java)
+  private val mainActivityIntentHandler: MainActivityIntentHandler by inject(
+    MainActivityIntentHandler::class.java)
 
   private var backPressedOnce = false
 
   private val handler = Handler(Looper.getMainLooper())
   private val coroutineScope = KurobaCoroutineScope()
   private val backPressExecutor = RendezvousCoroutineExecutor(coroutineScope)
+  private val intentExecutor = SerializedCoroutineExecutor(coroutineScope)
 
   private val runtimePermissionsHelper by lazy { RuntimePermissionsHelper(applicationContext, this) }
 
@@ -61,7 +65,12 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     super.onCreate(savedInstanceState)
 
     localFilePicker.attachActivity(this)
-    mainActivityIntentHandler.onCreate(threadScreenViewModel, catalogScreenViewModel)
+
+    mainActivityIntentHandler.onCreate(
+      threadScreenViewModel = threadScreenViewModel,
+      catalogScreenViewModel = catalogScreenViewModel,
+      bookmarkScreenViewModel = bookmarksScreenViewModel
+    )
 
     WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
@@ -102,7 +111,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
       return
     }
 
-    mainActivityIntentHandler.onNewIntent(intent)
+    intentExecutor.post { mainActivityIntentHandler.onNewIntent(intent) }
   }
 
   override fun onBackPressed() {

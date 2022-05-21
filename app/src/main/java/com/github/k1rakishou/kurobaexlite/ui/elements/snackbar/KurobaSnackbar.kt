@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -124,13 +125,15 @@ fun KurobaSnackbarContainer(
             val measurable = subcompose(
               slotId = snackbarInfo.snackbarId,
               content = {
-                KurobaSnackbarLayout(
-                  isTablet = isTablet,
-                  chanTheme = chanTheme,
-                  snackbarInfo = snackbarInfo,
-                  snackbarManager = snackbarManager,
-                  dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
-                )
+                key(snackbarInfo.snackbarId) {
+                  KurobaSnackbarLayout(
+                    isTablet = isTablet,
+                    chanTheme = chanTheme,
+                    snackbarInfo = snackbarInfo,
+                    snackbarManager = snackbarManager,
+                    dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
+                  )
+                }
               }
             ).ensureSingleElement()
 
@@ -275,7 +278,7 @@ private fun RowScope.KurobaSnackbarContent(
       block = {
         val timeDelta = aliveUntil - startTime
 
-        while (true) {
+        while (isActive) {
           val currentTimeDelta = aliveUntil - SystemClock.elapsedRealtime()
           if (currentTimeDelta < 0) {
             break

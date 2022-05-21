@@ -64,6 +64,11 @@ data class ThreadBookmarkReply(
     )
   }
 
+  override fun toString(): String {
+    return "ThreadBookmarkReply(postDescriptor=$postDescriptor, repliesTo=$repliesTo, alreadyNotified=$alreadyNotified, " +
+      "alreadySeen=$alreadySeen, alreadyRead=$alreadyRead, time=$time, commentRaw=${commentRaw?.take(32)})"
+  }
+
   companion object {
     fun fromThreadBookmarkReplyEntity(
       threadDescriptor: ThreadDescriptor,

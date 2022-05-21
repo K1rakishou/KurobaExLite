@@ -31,7 +31,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.MainActivityIntentHandler
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
@@ -84,6 +83,7 @@ import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesReposito
 import com.github.k1rakishou.kurobaexlite.model.repoository.GlobalSearchRepository
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityIntentHandler
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainerViewModel
@@ -198,7 +198,9 @@ object DependencyGraph {
     }
     single {
       MainActivityIntentHandler(
-        globalUiInfoManager = get()
+        globalUiInfoManager = get(),
+        bookmarksManager = get(),
+        persistBookmarks = get(),
       )
     }
   }

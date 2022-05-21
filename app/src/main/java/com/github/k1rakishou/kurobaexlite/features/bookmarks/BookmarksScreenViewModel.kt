@@ -3,12 +3,15 @@ package com.github.k1rakishou.kurobaexlite.features.bookmarks
 import android.content.Context
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.move
+import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
@@ -29,6 +32,10 @@ class BookmarksScreenViewModel : BaseViewModel() {
   private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
   private val reorderBookmarks: ReorderBookmarks by inject(ReorderBookmarks::class.java)
   private val deleteBookmark: DeleteBookmark by inject(DeleteBookmark::class.java)
+
+  private val _bookmarksToMark = mutableStateMapOf<ThreadDescriptor, Unit>()
+  val bookmarksToMark: Map<ThreadDescriptor, Unit>
+    get() = _bookmarksToMark
 
   private val _bookmarksList = mutableStateListOf<ThreadBookmarkUi>()
   val bookmarksList: List<ThreadBookmarkUi>
@@ -127,6 +134,18 @@ class BookmarksScreenViewModel : BaseViewModel() {
     }
   }
 
+  fun markBookmarks(threadDescriptors: List<ThreadDescriptor>) {
+    val resultMap = mutableMapWithCap<ThreadDescriptor, Unit>(threadDescriptors.size)
+    threadDescriptors.fastForEach { resultMap.put(it, Unit) }
+
+    _bookmarksToMark.clear()
+    _bookmarksToMark.putAll(resultMap)
+  }
+
+  fun clearMarkedBookmarks() {
+    _bookmarksToMark.clear()
+  }
+
   private suspend fun processCatalogPageEvent(catalogDescriptor: CatalogDescriptor) {
     bookmarksList.forEach { threadBookmarkUi ->
       if (threadBookmarkUi.threadBookmarkStatsUi.isDeadOrNotWatching()) {
@@ -147,6 +166,9 @@ class BookmarksScreenViewModel : BaseViewModel() {
 
   private suspend fun processBookmarkEvent(event: BookmarksManager.Event) {
     when (event) {
+      BookmarksManager.Event.Loaded -> {
+        // no-op
+      }
       is BookmarksManager.Event.Created -> {
         val newBookmarks = event.threadDescriptors.mapNotNull { threadDescriptor ->
           val threadBookmark = bookmarksManager.getBookmark(threadDescriptor)

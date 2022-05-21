@@ -454,7 +454,7 @@ class ThreadScreenViewModel(
     )
 
     val originalPost = postLoadResult.firstOrNull { postData -> postData is OriginalPostData }
-    if (originalPost != null && (originalPost.archived == true || originalPost.closed == true)) {
+    if (originalPost != null && (originalPost.archived || originalPost.closed)) {
       logcat {
         "refresh($threadDescriptor) stopping auto-updater " +
           "(archived=${originalPost.archived}, closed=${originalPost.closed})"

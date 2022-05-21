@@ -16,7 +16,7 @@ import logcat.asLog
 @OptIn(ExperimentalCoroutinesApi::class)
 class RendezvousCoroutineExecutor(
   private val scope: CoroutineScope,
-  private val dispatcher: CoroutineDispatcher = Dispatchers.Main
+  private val dispatcher: CoroutineDispatcher = Dispatchers.Main.immediate
 ) {
   private val coroutineExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
     logcatError(tag = TAG) { "serializedAction unhandled exception, ${throwable.asLog()}" }
