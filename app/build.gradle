@@ -42,11 +42,10 @@ android {
     flavorDimensions "default"
 
     productFlavors {
-        // FLAVOR_TYPE 0 - release (stable) build
-        // FLAVOR_TYPE 1 - beta build
-        // FLAVOR_TYPE 2 - dev build
+        // FLAVOR_TYPE 0 - production build
+        // FLAVOR_TYPE 1 - development build
 
-        stable {
+        production {
             dimension "default"
             applicationIdSuffix ""
             apkVersionNameSuffix = ""
@@ -59,30 +58,14 @@ android {
                     fileProviderAuthority: "${defaultConfig.applicationId}${applicationIdSuffix}.fileprovider"
             ]
         }
-        beta {
-            dimension "default"
-            // Different app ids for different flavors so that the users are able to install both
-            // of them without deleting anything
-            applicationIdSuffix ".beta"
-            apkVersionNameSuffix = "-beta"
-
-            buildConfigField "int", "FLAVOR_TYPE", "1"
-
-            // The same as in stable flavor
-            manifestPlaceholders = [
-                    appName              : "KurobaExLite-beta",
-                    iconLoc              : "@mipmap/ic_launcher_beta",
-                    fileProviderAuthority: "${defaultConfig.applicationId}${applicationIdSuffix}.fileprovider"
-            ]
-        }
-        dev {
+        development {
             dimension "default"
             // Different app ids for different flavors so that the users are able to install both
             // of them without deleting anything
             applicationIdSuffix ".dev"
             apkVersionNameSuffix = "-dev"
 
-            buildConfigField "int", "FLAVOR_TYPE", "2"
+            buildConfigField "int", "FLAVOR_TYPE", "1"
 
             // The same as in stable flavor
             manifestPlaceholders = [

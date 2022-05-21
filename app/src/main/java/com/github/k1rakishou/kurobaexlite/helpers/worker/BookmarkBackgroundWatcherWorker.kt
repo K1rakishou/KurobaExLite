@@ -109,7 +109,7 @@ class BookmarkBackgroundWatcherWorker(
         if (isInForeground) {
           30L * 1000L // 30 seconds
         } else {
-          if (flavorType == AndroidHelpers.FlavorType.Dev) {
+          if (flavorType == AndroidHelpers.FlavorType.Development) {
             1 * 60L * 1000L // 1 minute
           } else {
             15 * 60L * 1000L // 15 minutes

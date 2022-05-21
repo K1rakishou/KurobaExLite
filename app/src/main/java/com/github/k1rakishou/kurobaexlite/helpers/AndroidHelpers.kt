@@ -85,14 +85,13 @@ class AndroidHelpers(
 
   fun getFlavorType(): FlavorType {
     return when (BuildConfig.FLAVOR_TYPE) {
-      0 -> FlavorType.Stable
-      1 -> FlavorType.Beta
-      2 -> FlavorType.Dev
+      0 -> FlavorType.Production
+      1 -> FlavorType.Development
       else -> throw RuntimeException("Unknown flavor type " + BuildConfig.FLAVOR_TYPE)
     }
   }
 
-  fun isDevFlavor(): Boolean = getFlavorType() == FlavorType.Dev
+  fun isDevFlavor(): Boolean = getFlavorType() == FlavorType.Development
 
   fun File.availableSpaceInBytes(): Long {
     val stat = StatFs(this.path)
@@ -226,9 +225,8 @@ class AndroidHelpers(
   }
 
   enum class FlavorType {
-    Stable,
-    Beta,
-    Dev
+    Production,
+    Development
   }
 
   companion object {
