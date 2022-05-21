@@ -42,8 +42,10 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivity
+import java.util.EnumSet
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.regex.Pattern
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filter
@@ -53,6 +55,8 @@ import logcat.LogPriority
 import logcat.logcat
 import okhttp3.HttpUrl
 import org.joda.time.DateTime
+import org.nibor.autolink.LinkExtractor
+import org.nibor.autolink.LinkType
 
 class ReplyNotificationsHelper(
   private val appContext: Context,
@@ -295,7 +299,7 @@ class ReplyNotificationsHelper(
       .flatMap { (_, replies) -> replies }
       .filter { threadBookmarkReplyView -> !threadBookmarkReplyView.alreadySeen }
       .sortedWith(REPLIES_COMPARATOR)
-      .takeLast(AppConstants.Notifications.MAX_LINES_IN_NOTIFICATION)
+      .take(AppConstants.Notifications.MAX_LINES_IN_NOTIFICATION)
 
     if (unseenThreadBookmarkReplies.isEmpty()) {
       notificationManagerCompat.cancel(
@@ -736,11 +740,13 @@ class ReplyNotificationsHelper(
     val repliesSorted = threadBookmarkReplySet
       .filter { threadBookmarkReplyView -> !threadBookmarkReplyView.alreadySeen }
       .sortedWith(REPLIES_COMPARATOR)
-      .takeLast(AppConstants.Notifications.MAX_LINES_IN_NOTIFICATION)
+      .take(AppConstants.Notifications.MAX_LINES_IN_NOTIFICATION)
 
     val parsedReplyComments = withContext(Dispatchers.IO) {
       return@withContext repliesSorted.map { threadBookmarkReply ->
         val commentRaw = threadBookmarkReply.commentRaw
+        val yourPostNo = threadBookmarkReply.repliesTo.postNo
+
         if (commentRaw != null) {
           // Convert to string to get rid of spans
           val parsedComment = postCommentParser.parsePostCommentAsText(
@@ -749,8 +755,7 @@ class ReplyNotificationsHelper(
           )
 
           if (parsedComment.isNotNullNorEmpty()) {
-            // TODO(KurobaEx): Replace all >>123 quote to your posts to just >>You to save the space
-            return@map parsedComment
+            return@map postProcessComment(parsedComment, yourPostNo)
           }
 
           // fallthrough
@@ -760,7 +765,7 @@ class ReplyNotificationsHelper(
         return@map appContext.resources.getString(
           R.string.reply_notifications_reply_format,
           threadBookmarkReply.postDescriptor.postNo,
-          threadBookmarkReply.repliesTo.postNo
+          yourPostNo
         )
       }
     }
@@ -788,6 +793,36 @@ class ReplyNotificationsHelper(
     }
 
     return this
+  }
+
+  private fun postProcessComment(
+    parsedComment: String,
+    yourPostNo: Long
+  ): String {
+    val postCommentBuilder = StringBuilder(parsedComment)
+
+    val quoteMatcher = QUOTE_REGEX.matcher(postCommentBuilder)
+    while (quoteMatcher.find()) {
+      val postNo = quoteMatcher.group(1)?.toLongOrNull()
+        ?: continue
+
+      val startIndex = quoteMatcher.start(1)
+      val endIndex = quoteMatcher.end(1)
+
+      if (postNo == yourPostNo) {
+        postCommentBuilder.replace(startIndex, endIndex, "(You)")
+      } else {
+        val shortPostNo = postNo % 10000
+        postCommentBuilder.replace(startIndex, endIndex, "$shortPostNo")
+      }
+    }
+
+    val links = LINK_EXTRACTOR.extractLinks(postCommentBuilder)
+    for (link in links) {
+      postCommentBuilder.replace(link.beginIndex, link.endIndex, "*Link*")
+    }
+
+    return postCommentBuilder.toString()
   }
 
   private fun setupChannels() {
@@ -954,9 +989,14 @@ class ReplyNotificationsHelper(
     private val notificationsGroup by lazy { "${TAG}_${BuildConfig.APPLICATION_ID}" }
 
     private val REPLIES_COMPARATOR = Comparator<ThreadBookmarkReply> { o1, o2 ->
-      o1.postDescriptor.postNo.compareTo(o2.postDescriptor.postNo)
+      o1.postDescriptor.compareTo(o2.postDescriptor)
     }
 
     private val CIRCLE_CROP = listOf<Transformation>(CircleCropTransformation())
+
+    private val QUOTE_REGEX = Pattern.compile(">>(\\d+)")
+    private val LINK_EXTRACTOR = LinkExtractor.builder()
+      .linkTypes(EnumSet.of(LinkType.URL))
+      .build()
   }
 }
