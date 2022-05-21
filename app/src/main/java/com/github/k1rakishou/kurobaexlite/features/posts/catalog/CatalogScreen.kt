@@ -509,6 +509,10 @@ class CatalogScreen(
       replyLayoutViewModel = replyLayoutViewModel,
       onAttachedMediaClicked = { attachedMedia ->
         // TODO(KurobaEx): show options
+        snackbarManager.toast(
+          message = "Media editor is not implemented yet",
+          screenKey = CatalogScreen.SCREEN_KEY
+        )
       },
       onPostedSuccessfully = { postDescriptor ->
         threadScreenViewModel.loadThread(postDescriptor.threadDescriptor)

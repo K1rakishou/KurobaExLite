@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="toolbar_height">40dp</dimen>
-    <dimen name="reply_layout_container_opened_height">160dp</dimen>
+    <dimen name="reply_layout_container_opened_height">120dp</dimen>
     <dimen name="fab_size">56dp</dimen>
     <dimen name="post_list_fab_end_offset">24dp</dimen>
     <dimen name="post_list_fab_bottom_offset">16dp</dimen>

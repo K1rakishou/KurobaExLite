@@ -443,6 +443,10 @@ class ThreadScreen(
       replyLayoutViewModel = replyLayoutViewModel,
       onAttachedMediaClicked = { attachedMedia ->
         // TODO(KurobaEx): show options
+        snackbarManager.toast(
+          message = "Media editor is not implemented yet",
+          screenKey = ThreadScreen.SCREEN_KEY
+        )
       },
       onPostedSuccessfully = { postDescriptor ->
         // no-op
