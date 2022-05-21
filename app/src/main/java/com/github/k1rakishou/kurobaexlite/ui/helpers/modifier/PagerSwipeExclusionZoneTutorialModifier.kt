@@ -115,12 +115,12 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
     val chanTheme = LocalChanTheme.current
     val text = stringResource(id = R.string.pager_exclusion_zone_drag)
     val textSize = with(density) { 18.sp.toPx() }
-    val textTopPadding = with(density) { 16.dp.toPx() }
+    val textTopPadding = with(density) { 28.dp.toPx() }
 
     val arrowWidth = with(density) { 12.dp.toPx() }
     val arrowHeight = with(density) { 24.dp.toPx() }
     val horizPadding = with(density) { 8.dp.toPx() }
-    val arrowsTopOffset = with(density) { 24.dp.toPx() }
+    val arrowsTopOffset = with(density) { textTopPadding + 12.dp.toPx() }
     val arrowStrokeWidth = with(density) { 4.dp.toPx() }
     val arrowsPadding = with(density) { 4.dp.toPx() }
     val alphaAnimationProgress by animatable.asState()

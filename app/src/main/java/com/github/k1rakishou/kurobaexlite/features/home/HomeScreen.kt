@@ -375,7 +375,7 @@ class HomeScreen(
     val density = LocalDensity.current
     val view = LocalView.current
     // TODO(KurobaEx): extract into settings
-    val draggableAreaSize = remember { with(density) { Size(width = 130.dp.toPx(), height = 60.dp.toPx()) } }
+    val draggableAreaSize = remember { with(density) { Size(width = 150.dp.toPx(), height = 80.dp.toPx()) } }
     val coroutineScope = rememberCoroutineScope()
 
     var drawerWidth by remember { mutableStateOf(0) }
