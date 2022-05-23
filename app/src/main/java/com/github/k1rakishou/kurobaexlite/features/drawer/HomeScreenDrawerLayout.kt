@@ -199,6 +199,8 @@ fun HomeScreenDrawerLayout(
     return@remember lerpFloat(0f, .8f, animationProgress)
   }
 
+  var currentPrevDragX by remember { mutableStateOf<Float>(Float.NaN) }
+
   LaunchedEffect(
     key1 = drawerVisibility,
     block = {
@@ -214,11 +216,14 @@ fun HomeScreenDrawerLayout(
             drawerSwipeState = drawerSwipeState,
             offsetAnimated = drawerOffsetFloat,
             drawerWidth = drawerWidth,
-            globalUiInfoManager = globalUiInfoManager
+            globalUiInfoManager = globalUiInfoManager,
+            getCurrentPrevDragX = { currentPrevDragX },
+            updateCurrentPrevDragX = { dragx -> currentPrevDragX = dragx }
           )
         }
         is DrawerVisibility.Fling -> {
           velocityTracker.resetTracking()
+          currentPrevDragX = Float.NaN
 
           val velocityX = drawerVisibility.velocity.x
           val opening = velocityX >= 0f
@@ -287,9 +292,10 @@ private suspend fun processDragEvents(
   drawerSwipeState: DrawerSwipeState,
   offsetAnimated: Float,
   drawerWidth: Int,
-  globalUiInfoManager: GlobalUiInfoManager
+  globalUiInfoManager: GlobalUiInfoManager,
+  getCurrentPrevDragX: () -> Float,
+  updateCurrentPrevDragX: (Float) -> Unit
 ) {
-  var currentPrevDragX = Float.NaN
   var endedNormally = false
 
   try {
@@ -297,11 +303,12 @@ private suspend fun processDragEvents(
       mutableIterator.remove()
 
       if (dragEvent.isDragging) {
-        if (currentPrevDragX.isNaN()) {
-          currentPrevDragX = dragEvent.dragX
+        if (getCurrentPrevDragX().isNaN()) {
+          updateCurrentPrevDragX(dragEvent.dragX)
+          return@mutableIteration true
         }
 
-        val dragDelta = dragEvent.dragX - currentPrevDragX
+        val dragDelta = dragEvent.dragX - getCurrentPrevDragX()
 
         velocityTracker.addPosition(
           timeMillis = dragEvent.time,
@@ -309,7 +316,7 @@ private suspend fun processDragEvents(
         )
 
         drawerSwipeState.performDrag(dragDelta)
-        currentPrevDragX = dragEvent.dragX
+        updateCurrentPrevDragX(dragEvent.dragX)
 
         return@mutableIteration true
       } else {
@@ -338,6 +345,7 @@ private suspend fun processDragEvents(
     }
   } finally {
     if (endedNormally) {
+      updateCurrentPrevDragX(Float.NaN)
       dragEventsCombined.clear()
     }
   }
