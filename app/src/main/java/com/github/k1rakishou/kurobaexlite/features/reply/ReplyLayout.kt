@@ -38,6 +38,7 @@ fun ReplyLayoutContainer(
   chanDescriptor: ChanDescriptor?,
   replyLayoutState: IReplyLayoutState,
   replyLayoutViewModel: ReplyLayoutViewModel,
+  onReplayLayoutHeightChanged: (Dp) -> Unit,
   onPostedSuccessfully: (PostDescriptor) -> Unit,
   onAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
@@ -49,8 +50,19 @@ fun ReplyLayoutContainer(
   val density = LocalDensity.current
   val windowInsets = LocalWindowInsets.current
   val sendReplyState by replyLayoutState.sendReplyState
-  val replyLayoutContainerOpenedHeightDefault = dimensionResource(id = R.dimen.reply_layout_container_opened_height)
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+  val attachedMediaList = replyLayoutState.attachedMediaList
+
+  val replyLayoutContainerOpenedHeightDefault = if (attachedMediaList.isEmpty()) {
+    dimensionResource(id = R.dimen.reply_layout_container_opened_height_no_attachments)
+  } else {
+    dimensionResource(id = R.dimen.reply_layout_container_opened_height_with_attachments)
+  }
+
+  LaunchedEffect(
+    key1 = replyLayoutContainerOpenedHeightDefault,
+    block = { onReplayLayoutHeightChanged(replyLayoutContainerOpenedHeightDefault) }
+  )
 
   var maxAvailableHeight by remember { mutableStateOf<Int>(0) }
 
@@ -115,7 +127,6 @@ fun ReplyLayoutContainer(
     contentAlignment = Alignment.BottomCenter
   ) {
     val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
-    val attachedMediaList = replyLayoutState.attachedMediaList
 
     val replyLayoutContainerTransition = updateTransition(
       targetState = replyLayoutVisibility,
@@ -178,9 +189,7 @@ fun ReplyLayoutContainer(
         onCancelReplySendClicked = { replyLayoutViewModel.cancelSendReply(replyLayoutState) },
         onSendReplyClicked = { replyLayoutViewModel.sendReply(chanDescriptor, replyLayoutState) },
         onAttachedMediaClicked = onAttachedMediaClicked,
-        onRemoveAttachedMediaClicked = { attachedMedia ->
-          replyLayoutState.detachMedia(attachedMedia)
-        }
+        onRemoveAttachedMediaClicked = { attachedMedia -> replyLayoutState.detachMedia(attachedMedia) }
       )
 
       if (replyLayoutVisibility != ReplyLayoutVisibility.Closed) {
@@ -222,7 +231,7 @@ private fun ReplyLayout(
     val replyInputHeightPercentage = if (attachedMediaList.isEmpty()) {
       100f
     } else {
-      70f
+      60f
     }
 
     val replyLayoutHeightExcludingSpacer = replyLayoutHeight - spacerHeight

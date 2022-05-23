@@ -10,10 +10,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
@@ -309,19 +311,23 @@ class CatalogScreen(
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val fabSize = dimensionResource(id = R.dimen.fab_size)
     val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
-    val replyLayoutContainerOpenedHeight = dimensionResource(id = R.dimen.reply_layout_container_opened_height)
+    var replyLayoutContainerHeight by remember { mutableStateOf(0.dp) }
 
     val kurobaSnackbarState = rememberKurobaSnackbarState()
     val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
     val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
 
-    val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
+    val postListOptions by remember(
+      windowInsets,
+      replyLayoutVisibilityInfoStateForScreen,
+      replyLayoutContainerHeight
+    ) {
       derivedStateOf {
         val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
           ReplyLayoutVisibility.Closed -> windowInsets.bottom
           ReplyLayoutVisibility.Opened,
-          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerOpenedHeight
+          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerHeight
         }
 
         PostListOptions(
@@ -341,8 +347,6 @@ class CatalogScreen(
         )
       }
     }
-
-    val coroutineScope = rememberCoroutineScope()
 
     PostListContent(
       modifier = Modifier.fillMaxSize(),
@@ -507,6 +511,7 @@ class CatalogScreen(
       chanDescriptor = catalogScreenViewModel.catalogDescriptor,
       replyLayoutState = replyLayoutState,
       replyLayoutViewModel = replyLayoutViewModel,
+      onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
       onAttachedMediaClicked = { attachedMedia ->
         // TODO(KurobaEx): show options
         snackbarManager.toast(

@@ -511,7 +511,7 @@ class HistoryScreen(
           val state = painter.state
 
           if (state is AsyncImagePainter.State.Error) {
-            logcatError {
+            logcatError(TAG) {
               "NavigationIcon() url=${iconUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
             }
 

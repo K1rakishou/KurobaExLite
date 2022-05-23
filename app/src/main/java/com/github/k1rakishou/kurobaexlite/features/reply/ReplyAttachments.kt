@@ -123,27 +123,25 @@ private fun AttachedMediaThumbnail(
       }
     )
 
-    if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
-      val iconBgColor = remember { Color.Black.copy(alpha = 0.5f) }
+    val iconBgColor = remember { Color.Black.copy(alpha = 0.5f) }
 
-      Row(
+    Row(
+      modifier = Modifier
+        .align(Alignment.TopEnd)
+        .padding(end = 4.dp, top = 4.dp)
+    ) {
+      KurobaComposeIcon(
         modifier = Modifier
-          .align(Alignment.TopEnd)
-          .padding(end = 4.dp, top = 4.dp)
-      ) {
-        KurobaComposeIcon(
-          modifier = Modifier
-            .background(
-              color = iconBgColor,
-              shape = CircleShape
-            )
-            .kurobaClickable(
-              bounded = false,
-              onClick = { onRemoveAttachedMediaClicked(attachedMedia) }
-            ),
-          drawableId = R.drawable.ic_baseline_close_24
-        )
-      }
+          .background(
+            color = iconBgColor,
+            shape = CircleShape
+          )
+          .kurobaClickable(
+            bounded = false,
+            onClick = { onRemoveAttachedMediaClicked(attachedMedia) }
+          ),
+        drawableId = R.drawable.ic_baseline_close_24
+      )
     }
   }
 }

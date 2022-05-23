@@ -439,7 +439,7 @@ class HomeScreen(
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = {
                 isDrawerDragGestureCurrentlyAllowed(
-                  currentPage = currentPage,
+                  currentPage = currentPageUpdated,
                   isFromNestedScroll = false
                 )
               },

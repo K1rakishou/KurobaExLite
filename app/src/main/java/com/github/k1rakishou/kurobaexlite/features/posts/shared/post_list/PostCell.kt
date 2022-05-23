@@ -295,6 +295,16 @@ fun inlinedContentForPostCell(
     postCellData.countryFlag,
     postCellData.boardFlag,
   ) {
+    if (
+      !postCellData.archived &&
+      !postCellData.deleted &&
+      !postCellData.closed &&
+      postCellData.countryFlag == null &&
+      postCellData.boardFlag == null
+    ) {
+      return@remember emptyMap<String, InlineTextContent>()
+    }
+
     val resultMap = mutableMapOf<String, InlineTextContent>()
 
     ParsedPostDataCache.PostCellIcon.values().forEach { postCellAnnotatedContent ->
