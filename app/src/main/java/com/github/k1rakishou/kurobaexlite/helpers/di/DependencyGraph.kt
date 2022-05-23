@@ -43,6 +43,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ExtractRepliesToMyPosts
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
@@ -438,6 +439,19 @@ object DependencyGraph {
     }
     single { CatalogGlobalSearch(globalSearchRepository = get(), parsedPostDataCache = get(), themeEngine = get()) }
     single { PersistBookmarks(bookmarksManager = get(), kurobaExLiteDatabase = get()) }
+
+    single {
+      BookmarkAllCatalogThreads(
+        appContext = get(),
+        appScope = get(),
+        androidHelpers = get(),
+        applicationVisibilityManager = get(),
+        chanCache = get(),
+        bookmarksManager = get(),
+        kurobaExLiteDatabase = get(),
+        parsedPostDataCache = get(),
+      )
+    }
   }
 
   private fun Module.coilMediaDiskCache() {

@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -31,6 +32,7 @@ class CatalogScreenToolbarActionHandler(
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
+  private val bookmarkAllCatalogThreads: BookmarkAllCatalogThreads by inject(BookmarkAllCatalogThreads::class.java)
 
   private lateinit var catalogScreenViewModel: CatalogScreenViewModel
   private lateinit var threadScreenViewModel: ThreadScreenViewModel
@@ -46,11 +48,11 @@ class CatalogScreenToolbarActionHandler(
 
     logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
-    when (menuItem.menuItemKey) {
-      ACTION_RELOAD -> {
+    when (menuItem.menuItemKey as ToolbarMenuItems) {
+      ToolbarMenuItems.Reload -> {
         catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
       }
-      ACTION_LAYOUT_MODE -> {
+      ToolbarMenuItems.LayoutMode -> {
         screenCoroutineScope.launch {
           handleLayoutMode(
             componentActivity = componentActivity,
@@ -58,18 +60,18 @@ class CatalogScreenToolbarActionHandler(
           )
         }
       }
-      ACTION_HISTORY_SCREEN_POSITION -> {
+      ToolbarMenuItems.HistoryScreenPosition -> {
         screenCoroutineScope.launch {
           appSettings.historyScreenOnLeftSide.toggle()
         }
       }
-      ACTION_OPEN_THREAD_BY_IDENTIFIER -> {
+      ToolbarMenuItems.OpenThreadByIdentifier -> {
         handleOpenThreadByIdentifier(
           componentActivity = componentActivity,
           navigationRouter = navigationRouter
         )
       }
-      ACTION_CATALOG_ALBUM -> {
+      ToolbarMenuItems.CatalogAlbum -> {
         val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
           ?: return
 
@@ -81,9 +83,46 @@ class CatalogScreenToolbarActionHandler(
 
         navigationRouter.pushScreen(albumScreen)
       }
-      ACTION_SCROLL_TOP -> catalogScreenViewModel.scrollTop()
-      ACTION_SCROLL_BOTTOM -> catalogScreenViewModel.scrollBottom()
+      ToolbarMenuItems.CatalogDevMenu -> {
+        handleDevMenu(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+        )
+      }
+      ToolbarMenuItems.ScrollTop -> catalogScreenViewModel.scrollTop()
+      ToolbarMenuItems.ScrollBottom -> catalogScreenViewModel.scrollBottom()
     }
+  }
+
+  private fun handleDevMenu(
+    componentActivity: ComponentActivity,
+    navigationRouter: NavigationRouter
+  ) {
+    val floatingMenuItems = mutableListOf<FloatingMenuItem>()
+
+    floatingMenuItems += FloatingMenuItem.Text(
+      menuItemKey = DevMenuItems.BookmarkAllCatalogThreads,
+      text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_bookmark_all_catalog_threads)
+    )
+
+    navigationRouter.presentScreen(
+      FloatingMenuScreen(
+        floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW_LAYOUT_TYPE,
+        componentActivity = componentActivity,
+        navigationRouter = navigationRouter,
+        menuItems = floatingMenuItems,
+        onMenuItemClicked = { clickedMenuItem ->
+          when (clickedMenuItem.menuItemKey as DevMenuItems) {
+            DevMenuItems.BookmarkAllCatalogThreads -> {
+              val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+                ?: return@FloatingMenuScreen
+
+              bookmarkAllCatalogThreads.await(catalogDescriptor)
+            }
+          }
+        }
+      )
+    )
   }
 
   private suspend fun handleLayoutMode(
@@ -180,14 +219,19 @@ class CatalogScreenToolbarActionHandler(
     )
   }
 
-  companion object {
-    const val ACTION_OPEN_THREAD_BY_IDENTIFIER = 0
-    const val ACTION_RELOAD = 1
-    const val ACTION_SCROLL_TOP = 2
-    const val ACTION_SCROLL_BOTTOM = 3
-    const val ACTION_LAYOUT_MODE = 4
-    const val ACTION_CATALOG_ALBUM = 5
-    const val ACTION_HISTORY_SCREEN_POSITION = 6
+  enum class ToolbarMenuItems {
+    OpenThreadByIdentifier,
+    Reload,
+    ScrollTop,
+    ScrollBottom,
+    LayoutMode,
+    CatalogAlbum,
+    HistoryScreenPosition,
+    CatalogDevMenu,
+  }
+
+  enum class DevMenuItems {
+    BookmarkAllCatalogThreads
   }
 
 }

@@ -85,6 +85,8 @@
     <string name="catalog_toolbar_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_toolbar_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
     <string name="catalog_toolbar_album">Album</string>
+    <string name="catalog_toolbar_dev_menu">Dev menu</string>
+    <string name="catalog_toolbar_bookmark_all_catalog_threads">Bookmark all catalog threads</string>
 
     <string name="thread_toolbar_open_external_thread_dialog_title">Open external thread?</string>
     <string name="thread_toolbar_open_external_thread_dialog_description">Open \'%1$s\'?</string>

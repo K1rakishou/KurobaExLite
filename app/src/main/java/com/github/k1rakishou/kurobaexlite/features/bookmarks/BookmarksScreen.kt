@@ -277,7 +277,6 @@ class BookmarksScreen(
     val chanTheme = LocalChanTheme.current
     val itemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
     val animationDurationMs = 500
-
     val isDrawerCurrentlyOpened by listenForDrawerVisibilityEvents()
 
     val textAnimationSpec = remember(key1 = isDrawerCurrentlyOpened) {

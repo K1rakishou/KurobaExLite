@@ -118,16 +118,12 @@ fun HomeScreenDrawerLayout(
   drawerWidth: Int,
   navigationRouterProvider: () -> NavigationRouter
 ) {
-  val componentActivity = LocalComponentActivity.current
-  val density = LocalDensity.current
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
-  val drawerScreen = remember { BookmarksScreen(componentActivity, navigationRouterProvider()) }
-  val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
-
-  val dragEventsCombined = remember { mutableListOf<DrawerVisibility.Drag>() }
   var drawerVisibilityMut by remember { mutableStateOf<DrawerVisibility>(globalUiInfoManager.currentDrawerVisibility) }
   val drawerVisibility = drawerVisibilityMut
+
+  val dragEventsCombined = remember { mutableListOf<DrawerVisibility.Drag>() }
 
   LaunchedEffect(
     key1 = Unit,
@@ -141,17 +137,6 @@ fun HomeScreenDrawerLayout(
       }
     }
   )
-
-  val drawerSwipeState = remember {
-    DrawerSwipeState(
-      initialValue = DrawerSwipeState.State.fromDrawerVisibility(
-        drawerWidth = drawerWidth,
-        drawerVisibility = drawerVisibility
-      )
-    )
-  }
-
-  drawerSwipeState.InitDrawerState(drawerWidth, density)
 
   val isFullyClosed by remember(key1 = drawerVisibility) {
     derivedStateOf {
@@ -169,6 +154,23 @@ fun HomeScreenDrawerLayout(
   if (isFullyClosed) {
     return
   }
+
+  val componentActivity = LocalComponentActivity.current
+  val density = LocalDensity.current
+
+  val drawerScreen = remember { BookmarksScreen(componentActivity, navigationRouterProvider()) }
+  val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
+
+  val drawerSwipeState = remember {
+    DrawerSwipeState(
+      initialValue = DrawerSwipeState.State.fromDrawerVisibility(
+        drawerWidth = drawerWidth,
+        drawerVisibility = drawerVisibility
+      )
+    )
+  }
+
+  drawerSwipeState.InitDrawerState(drawerWidth, density)
 
   val clickable by remember(key1 = drawerVisibility) {
     derivedStateOf {

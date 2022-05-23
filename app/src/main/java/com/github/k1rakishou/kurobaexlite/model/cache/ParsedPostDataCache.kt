@@ -250,16 +250,14 @@ class ParsedPostDataCache(
   }
 
   suspend fun formatThreadToolbarTitle(postDescriptor: PostDescriptor): String? {
-    return mutex.withLockNonCancellable {
-      val parsedPostData = threadParsedPostDataMap[postDescriptor]
-        ?: return@withLockNonCancellable null
+    val parsedPostData = getParsedPostData(postDescriptor)
+      ?: return null
 
-      if (parsedPostData.parsedPostSubject.isNotNullNorBlank()) {
-        return@withLockNonCancellable parsedPostData.parsedPostSubject
-      }
-
-      return@withLockNonCancellable parsedPostData.parsedPostComment.take(64)
+    if (parsedPostData.parsedPostSubject.isNotNullNorBlank()) {
+      return parsedPostData.parsedPostSubject
     }
+
+    return parsedPostData.parsedPostComment.take(64)
   }
 
   suspend fun calculateParsedPostData(

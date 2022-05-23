@@ -202,35 +202,39 @@ class CatalogScreen(
   private val floatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
       FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_RELOAD,
+        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.Reload,
         text = FloatingMenuItem.MenuItemText.Id(R.string.reload)
       ),
       FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_LAYOUT_MODE,
+        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.LayoutMode,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_layout_mode)
       ),
       FloatingMenuItem.Check(
-        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_HISTORY_SCREEN_POSITION,
+        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.HistoryScreenPosition,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_history_on_left_side),
         isChecked = { appSettings.historyScreenOnLeftSide.read() }
       ),
       FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_OPEN_THREAD_BY_IDENTIFIER,
+        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.OpenThreadByIdentifier,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier),
         subText = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier_subtitle)
       ),
       FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ACTION_CATALOG_ALBUM,
+        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.CatalogAlbum,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_album),
+      ),
+      FloatingMenuItem.Text(
+        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.CatalogDevMenu,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_dev_menu),
       ),
       FloatingMenuItem.Footer(
         items = listOf(
           FloatingMenuItem.Icon(
-            menuItemKey = CatalogScreenToolbarActionHandler.ACTION_SCROLL_TOP,
+            menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.ScrollTop,
             iconId = R.drawable.ic_baseline_arrow_upward_24
           ),
           FloatingMenuItem.Icon(
-            menuItemKey = CatalogScreenToolbarActionHandler.ACTION_SCROLL_BOTTOM,
+            menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.ScrollBottom,
             iconId = R.drawable.ic_baseline_arrow_downward_24
           )
         )

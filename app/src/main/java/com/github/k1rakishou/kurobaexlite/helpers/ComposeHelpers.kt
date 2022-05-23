@@ -5,6 +5,9 @@ import androidx.compose.foundation.gestures.PressGestureScope
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
@@ -14,9 +17,22 @@ import androidx.compose.ui.unit.Density
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import logcat.LogPriority
+import logcat.logcat
+
+class Ref(var value: Int)
+
+// Note the inline function below which ensures that this function is essentially
+// copied at the call site to ensure that its logging only recompositions from the
+// original call site.
+@Composable
+inline fun LogCompositions(tag: String, msg: String) {
+  val ref = remember { Ref(0) }
+  SideEffect { ref.value++ }
+  logcat(tag, LogPriority.VERBOSE) { "Compositions: $msg ${ref.value}" }
+}
 
 private val NoPressGesture: suspend PressGestureScope.(Offset) -> Unit = { }
-
 
 suspend fun PointerInputScope.detectTapGesturesWithFilter(
   processDownEvent: (Offset) -> Boolean,
