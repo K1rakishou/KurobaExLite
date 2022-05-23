@@ -406,11 +406,19 @@ class HomeScreen(
     }
 
     val currentPageUpdated by rememberUpdatedState(newValue = currentPage)
+    val currentPageIndexUpdated by rememberUpdatedState(newValue = pagerState.currentPage)
 
     val nestedScrollConnection = remember(key1 = drawerWidth) {
       HomePagerNestedScrollConnection(
         currentPagerPage = { pagerState.currentPage },
-        isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentPageUpdated, true) },
+        isGestureCurrentlyAllowed = {
+          isDrawerDragGestureCurrentlyAllowed(
+            currentPageIndex = currentPageIndexUpdated,
+            currentPage = currentPageUpdated,
+            isFromNestedScroll = true,
+            isInsideSpecialZone = false
+          )
+        },
         shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
         onDragging = { dragging, time, progress -> globalUiInfoManager.dragDrawer(dragging, time, progress) },
         onFling = { velocity -> globalUiInfoManager.flingDrawer(velocity) }
@@ -437,10 +445,12 @@ class HomeScreen(
               currentPagerPage = { pagerState.currentPage },
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
-              isGestureCurrentlyAllowed = {
+              isGestureCurrentlyAllowed = { insideSpecialZone ->
                 isDrawerDragGestureCurrentlyAllowed(
+                  currentPageIndex = currentPageIndexUpdated,
                   currentPage = currentPageUpdated,
-                  isFromNestedScroll = false
+                  isFromNestedScroll = false,
+                  isInsideSpecialZone = insideSpecialZone
                 )
               },
               onLongtapDragGestureDetected = {
@@ -527,9 +537,15 @@ class HomeScreen(
   }
 
   private fun isDrawerDragGestureCurrentlyAllowed(
+    currentPageIndex: Int,
     currentPage: AbstractPage<ComposeScreenWithToolbar>?,
-    isFromNestedScroll: Boolean
+    isFromNestedScroll: Boolean,
+    isInsideSpecialZone: Boolean
   ): Boolean {
+    if (currentPageIndex == 0 && isInsideSpecialZone) {
+      return false
+    }
+
     if (currentPage is SplitPage) {
       if (isFromNestedScroll) {
         if (!currentPage.canDragPager()) {

@@ -33,7 +33,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   currentPagerPage: () -> Int,
   isDrawerOpened: () -> Boolean,
   onStopConsumingScrollEvents: () -> Unit,
-  isGestureCurrentlyAllowed: () -> Boolean,
+  isGestureCurrentlyAllowed: (insideSpecialZone: Boolean) -> Boolean,
   onLongtapDragGestureDetected: () -> Unit,
   onFailedDrawerDragGestureDetected: () -> Unit,
   onDraggingDrawer: (dragging: Boolean, time: Long, current: Float) -> Unit
@@ -54,12 +54,15 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           return@awaitPointerEventScope null
         }
 
-        if (!isGestureCurrentlyAllowed()) {
+        val downEvent = firstEvent.changes.firstOrNull()
+          ?: return@awaitPointerEventScope null
+
+        val insideSpecialZone = pagerSwipeExclusionZone.contains(downEvent.position)
+
+        if (!isGestureCurrentlyAllowed(insideSpecialZone)) {
           return@awaitPointerEventScope null
         }
 
-        val downEvent = firstEvent.changes.firstOrNull()
-          ?: return@awaitPointerEventScope null
         dragDownEvent = downEvent
 
         if (isDrawerOpened()) {
@@ -86,7 +89,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             return@awaitPointerEventScope null
           }
         } else {
-          if (pagerSwipeExclusionZone.contains(downEvent.position)) {
+          if (insideSpecialZone) {
             for (change in firstEvent.changes) {
               change.consume()
             }
