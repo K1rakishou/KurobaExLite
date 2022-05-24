@@ -5,7 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Velocity
-import kotlin.math.absoluteValue
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 
 class HomePagerNestedScrollConnection(
   private val currentPagerPage: () -> Int,
@@ -50,7 +50,7 @@ class HomePagerNestedScrollConnection(
   }
 
   override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-    if (currentPagerPage() == 0 && available.x.absoluteValue > 1000f) {
+    if (currentPagerPage() == 0 && available.x > AppConstants.minFlingVelocityPx) {
       onFling(available)
     }
 

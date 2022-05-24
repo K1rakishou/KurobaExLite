@@ -8,6 +8,7 @@ object AppConstants {
   const val TEXT_SEPARATOR = " • "
   const val deleteNavHistoryTimeoutMs = 5000L
   const val deleteBookmarkTimeoutMs = 5000L
+  const val minFlingVelocityPx = 5000f
 
   object Transition {
     val HideableElementTransitionFps = 1f / 16f

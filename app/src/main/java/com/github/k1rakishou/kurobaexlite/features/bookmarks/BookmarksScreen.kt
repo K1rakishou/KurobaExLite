@@ -172,8 +172,8 @@ class BookmarksScreen(
     reorderableState: ReorderableState,
   ) {
     val chanTheme = LocalChanTheme.current
-
     val windowInsets = LocalWindowInsets.current
+
     val contentPadding = remember(key1 = windowInsets) {
       PaddingValues(top = windowInsets.top, bottom = windowInsets.bottom)
     }
@@ -238,33 +238,6 @@ class BookmarksScreen(
     }
   }
 
-  private fun showRevertBookmarkDeletion(
-    context: Context,
-    deletedBookmark: ThreadBookmark,
-    oldPosition: Int
-  ) {
-    val title = deletedBookmark.title ?: deletedBookmark.threadDescriptor.asReadableString()
-
-    snackbarManager.pushSnackbar(
-      SnackbarInfo(
-        snackbarId = SnackbarId.ThreadBookmarkRemoved,
-        aliveUntil = SnackbarInfo.snackbarDuration(AppConstants.deleteBookmarkTimeoutMs.milliseconds),
-        content = listOf(
-          SnackbarContentItem.Text(
-            context.getString(R.string.thread_bookmarks_screen_removed_bookmark_item_text, title)
-          ),
-          SnackbarContentItem.Spacer(space = 8.dp),
-          SnackbarContentItem.Button(
-            key = SnackbarButton.UndoThreadBookmarkDeletion,
-            text = context.getString(R.string.undo),
-            data = Pair(oldPosition, deletedBookmark)
-          ),
-          SnackbarContentItem.Spacer(space = 8.dp),
-        )
-      )
-    )
-  }
-
   @OptIn(ExperimentalFoundationApi::class)
   @Composable
   private fun LazyItemScope.ThreadBookmarkItem(
@@ -320,13 +293,18 @@ class BookmarksScreen(
     )
 
     val bookmarkBgColor by bgAnimatable.asState()
+    val offset by remember(key1 = threadBookmarkUi.threadDescriptor) {
+      derivedStateOf {
+        reorderableState.offsetByKey(threadBookmarkUi.threadDescriptor)
+      }
+    }
 
     Row(
       modifier = Modifier
         .fillMaxWidth()
         .padding(vertical = 2.dp)
         .height(itemHeight)
-        .draggedItem(reorderableState.offsetByKey(threadBookmarkUi.threadDescriptor))
+        .draggedItem(offset)
         .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
         .drawBehind { drawRect(bookmarkBgColor) }
         .animateItemPlacement(),
@@ -454,7 +432,7 @@ class BookmarksScreen(
     val isError by threadBookmarkStatsUi.isError
     val isDead = isArchived || isDeleted
 
-    val bookmarkAdditionalInfoText = remember(
+    val threadBookmarkStatsCombined by remember(
       newPostsAnimated,
       newQuotesAnimated,
       totalPostsAnimated,
@@ -466,23 +444,32 @@ class BookmarksScreen(
       isArchived,
       isDeleted,
       isError,
+      isDead,
     ) {
+      derivedStateOf {
+        ThreadBookmarkStatsCombined(
+          newPostsAnimated = newPostsAnimated,
+          newQuotesAnimated = newQuotesAnimated,
+          totalPostsAnimated = totalPostsAnimated,
+          isFirstFetch = isFirstFetch,
+          totalPages = totalPages,
+          currentPage = currentPage,
+          isBumpLimit = isBumpLimit,
+          isImageLimit = isImageLimit,
+          isArchived = isArchived,
+          isDeleted = isDeleted,
+          isError = isError,
+          isDead = isDead
+        )
+      }
+    }
+
+    val bookmarkAdditionalInfoText = remember(threadBookmarkStatsCombined) {
       convertBookmarkStateToText(
         context = context,
         chanTheme = chanTheme,
         threadDescriptor = threadDescriptor,
-        newPostsAnimated = newPostsAnimated,
-        totalPostsAnimated = totalPostsAnimated,
-        newQuotesAnimated = newQuotesAnimated,
-        totalPages = totalPages,
-        currentPage = currentPage,
-        isBumpLimit = isBumpLimit,
-        isImageLimit = isImageLimit,
-        isDeleted = isDeleted,
-        isArchived = isArchived,
-        isError = isError,
-        isDead = isDead,
-        isFirstFetch = isFirstFetch,
+        threadBookmarkStatsCombined = threadBookmarkStatsCombined
       )
     }
 
@@ -573,23 +560,52 @@ class BookmarksScreen(
     }
   }
 
+  private fun showRevertBookmarkDeletion(
+    context: Context,
+    deletedBookmark: ThreadBookmark,
+    oldPosition: Int
+  ) {
+    val title = deletedBookmark.title ?: deletedBookmark.threadDescriptor.asReadableString()
+
+    snackbarManager.pushSnackbar(
+      SnackbarInfo(
+        snackbarId = SnackbarId.ThreadBookmarkRemoved,
+        aliveUntil = SnackbarInfo.snackbarDuration(AppConstants.deleteBookmarkTimeoutMs.milliseconds),
+        content = listOf(
+          SnackbarContentItem.Text(
+            context.getString(R.string.thread_bookmarks_screen_removed_bookmark_item_text, title)
+          ),
+          SnackbarContentItem.Spacer(space = 8.dp),
+          SnackbarContentItem.Button(
+            key = SnackbarButton.UndoThreadBookmarkDeletion,
+            text = context.getString(R.string.undo),
+            data = Pair(oldPosition, deletedBookmark)
+          ),
+          SnackbarContentItem.Spacer(space = 8.dp),
+        )
+      )
+    )
+  }
+
   private fun convertBookmarkStateToText(
     context: Context,
     chanTheme: ChanTheme,
     threadDescriptor: ThreadDescriptor,
-    newPostsAnimated: Int,
-    totalPostsAnimated: Int,
-    newQuotesAnimated: Int,
-    totalPages: Int,
-    currentPage: Int,
-    isBumpLimit: Boolean,
-    isImageLimit: Boolean,
-    isDeleted: Boolean,
-    isArchived: Boolean,
-    isError: Boolean,
-    isDead: Boolean,
-    isFirstFetch: Boolean
+    threadBookmarkStatsCombined: ThreadBookmarkStatsCombined
   ): AnnotatedString {
+    val newPostsAnimated = threadBookmarkStatsCombined.newPostsAnimated
+    val totalPostsAnimated = threadBookmarkStatsCombined.totalPostsAnimated
+    val newQuotesAnimated = threadBookmarkStatsCombined.newQuotesAnimated
+    val totalPages = threadBookmarkStatsCombined.totalPages
+    val currentPage = threadBookmarkStatsCombined.currentPage
+    val isBumpLimit = threadBookmarkStatsCombined.isBumpLimit
+    val isImageLimit = threadBookmarkStatsCombined.isImageLimit
+    val isDeleted = threadBookmarkStatsCombined.isDeleted
+    val isArchived = threadBookmarkStatsCombined.isArchived
+    val isError = threadBookmarkStatsCombined.isError
+    val isDead = threadBookmarkStatsCombined.isDead
+    val isFirstFetch = threadBookmarkStatsCombined.isFirstFetch
+
     val defaultTextColor = if (isDead) {
       chanTheme.textColorHintCompose
     } else {
@@ -719,6 +735,21 @@ class BookmarksScreen(
       }
     }
   }
+
+  data class ThreadBookmarkStatsCombined(
+    val newPostsAnimated: Int,
+    val newQuotesAnimated: Int,
+    val totalPostsAnimated: Int,
+    val isFirstFetch: Boolean,
+    val totalPages: Int,
+    val currentPage: Int,
+    val isBumpLimit: Boolean,
+    val isImageLimit: Boolean,
+    val isArchived: Boolean,
+    val isDeleted: Boolean,
+    val isError: Boolean,
+    val isDead: Boolean
+  )
 
   enum class SnackbarButton {
     UndoThreadBookmarkDeletion

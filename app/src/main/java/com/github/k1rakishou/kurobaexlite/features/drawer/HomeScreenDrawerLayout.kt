@@ -27,9 +27,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
+import com.github.k1rakishou.kurobaexlite.helpers.quantize
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
@@ -42,7 +44,6 @@ import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 
 private val bgColor = Color.Black
-private val flingVelocity = 5000f
 private val velocityTracker = VelocityTracker()
 
 @OptIn(ExperimentalMaterialApi::class)
@@ -194,11 +195,20 @@ fun HomeScreenDrawerLayout(
   }
 
   val drawerOffsetFloat by drawerSwipeState.offset
-  val drawerOffset = drawerOffsetFloat.roundToInt()
+  val drawerOffset by remember { derivedStateOf { drawerOffsetFloat.roundToInt() } }
 
-  val bgAlphaAnimated = remember(key1 = drawerOffset, key2 = drawerWidth) {
-    val animationProgress = (1f - (drawerOffset.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
-    return@remember lerpFloat(0f, .8f, animationProgress)
+  val bgAlphaAnimated by remember(key1 = drawerOffset, key2 = drawerWidth) {
+    return@remember derivedStateOf {
+      val animationProgress = (1f - (drawerOffset.absoluteValue / drawerWidth.toFloat()))
+        .coerceIn(0f, 1f)
+        .quantize(AppConstants.Transition.HideableElementTransitionFps)
+
+      return@derivedStateOf lerpFloat(0f, .8f, animationProgress)
+    }
+  }
+
+  val bgColorWithAlpha = remember(key1 = bgAlphaAnimated) {
+    bgColor.copy(alpha = bgAlphaAnimated)
   }
 
   var currentPrevDragX by remember { mutableStateOf<Float>(Float.NaN) }
@@ -229,7 +239,7 @@ fun HomeScreenDrawerLayout(
 
           val velocityX = drawerVisibility.velocity.x
           val opening = velocityX >= 0f
-          val canPerformFling = velocityX.absoluteValue > flingVelocity
+          val canPerformFling = velocityX.absoluteValue > AppConstants.minFlingVelocityPx.absoluteValue
           val animationProgress = (1f - (drawerOffset.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
 
           endDragWithFling(
@@ -264,8 +274,6 @@ fun HomeScreenDrawerLayout(
       }
     }
   )
-
-  val bgColorWithAlpha = remember(key1 = bgAlphaAnimated) { bgColor.copy(alpha = bgAlphaAnimated) }
 
   Box(
     modifier = Modifier
@@ -329,7 +337,7 @@ private suspend fun processDragEvents(
 
         velocityTracker.resetTracking()
         val opening = velocityX >= 0f
-        val canPerformFling = velocityX.absoluteValue > flingVelocity
+        val canPerformFling = velocityX.absoluteValue > AppConstants.minFlingVelocityPx.absoluteValue
         val animationProgress = (1f - (offsetAnimated.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
 
         endDragWithFling(

@@ -774,12 +774,19 @@ fun String.findAllOccurrences(query: String?, minQueryLength: Int): List<IntRang
 }
 
 fun Float.quantize(precision: Float): Float {
-  require(this in -1f..1f) { "Value must be within -1f..1f bounds" }
-  require(precision in 0f..1f) { "precision must be within 0f..1f bounds" }
+  val additionalPrecision = if (this >= -1f && this <= 1f) {
+    if (this >= 0f) {
+      precision * 1f
+    } else {
+      precision * -1f
+    }
+  } else {
+    0f
+  }
 
   return if (this >= 0f) {
-    (floor((this.toDouble() / precision.toDouble()) + (precision * 1f)) * precision).toFloat()
+    (floor((this.toDouble() / precision.toDouble()) + additionalPrecision) * precision).toFloat()
   } else {
-    (ceil((this.toDouble() / precision.toDouble()) + (precision * -1f)) * precision).toFloat()
+    (ceil((this.toDouble() / precision.toDouble()) + additionalPrecision) * precision).toFloat()
   }
 }
