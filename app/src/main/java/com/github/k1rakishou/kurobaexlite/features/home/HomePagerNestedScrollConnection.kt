@@ -52,6 +52,8 @@ class HomePagerNestedScrollConnection(
   override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
     if (currentPagerPage() == 0 && available.x > AppConstants.minFlingVelocityPx) {
       onFling(available)
+    } else if (pointerDown && scrolled != 0f) {
+      onDragging(false, SystemClock.elapsedRealtime(), scrolled)
     }
 
     scrolled = 0f
