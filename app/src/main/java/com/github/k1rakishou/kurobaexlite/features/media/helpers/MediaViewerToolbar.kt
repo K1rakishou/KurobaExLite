@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -56,8 +58,8 @@ internal fun MediaViewerToolbar(
   val kurobaToolbarContainerViewModel = componentActivity.rememberViewModel<KurobaToolbarContainerViewModel>()
 
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
-  val currentImageIndex = pagerState.currentPage
-  val targetImageIndex = pagerState.targetPage
+  val currentImageIndex by remember { derivedStateOf { pagerState.currentPage } }
+  val targetImageIndex by remember { derivedStateOf { pagerState.targetPage } }
 
   val kurobaToolbarContainerState = remember {
     kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcons>>(screenKey)

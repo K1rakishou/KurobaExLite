@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,7 +45,8 @@ fun MediaViewerPreviewStrip(
   onPreviewClicked: (IPostImage) -> Unit
 ) {
   val density = LocalDensity.current
-  val currentPage = pagerState.currentPage
+  val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
+
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val lazyListState = rememberLazyListState()
 
@@ -73,12 +75,12 @@ fun MediaViewerPreviewStrip(
   if (stripWidth != null) {
     LaunchedEffect(
       key1 = Unit,
-      block = { lazyListState.scrollToItem(currentPage, -scrollOffset) }
+      block = { lazyListState.scrollToItem(currentPageIndex, -scrollOffset) }
     )
 
     LaunchedEffect(
-      key1 = currentPage,
-      block = { lazyListState.animateScrollToItem(currentPage, -scrollOffset) }
+      key1 = currentPageIndex,
+      block = { lazyListState.animateScrollToItem(currentPageIndex, -scrollOffset) }
     )
   }
 
@@ -117,7 +119,7 @@ fun MediaViewerPreviewStrip(
             itemSize = itemSizeDp,
             padding = padding,
             postImage = postImage,
-            isCurrentImage = index == currentPage,
+            isCurrentImage = index == currentPageIndex,
             onPreviewClicked = onPreviewClicked
           )
         }

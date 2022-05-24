@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -114,7 +115,7 @@ class HomeScreen(
     }
 
     val historyScreenOnLeftSide by globalUiInfoManager.historyScreenOnLeftSide.collectAsState()
-    val currentPage by globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
+    val currentScreenPage by globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
 
     val pagesWrapper = remember(
       key1 = historyScreenOnLeftSide,
@@ -127,10 +128,10 @@ class HomeScreen(
     }
 
     val initialScreenIndexMut = remember(
-      key1 = currentPage.screenKey,
+      key1 = currentScreenPage.screenKey,
       key2 = pagesWrapper
     ) {
-      return@remember pagesWrapper.screenIndexByScreenKey(currentPage.screenKey)
+      return@remember pagesWrapper.screenIndexByScreenKey(currentScreenPage.screenKey)
     }
 
     val initialScreenIndex = initialScreenIndexMut
@@ -152,6 +153,9 @@ class HomeScreen(
       key1 = orientation,
       initialPage = initialScreenIndex
     )
+
+    val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
+    val pageCount by remember { derivedStateOf { pagerState.pageCount } }
 
     LaunchedEffect(
       key1 = Unit,
@@ -178,9 +182,9 @@ class HomeScreen(
     LaunchedEffect(
       key1 = mainUiLayoutMode,
       key2 = historyScreenOnLeftSide,
-      key3 = pagerState.pageCount,
+      key3 = pageCount,
       block = {
-        if (pagerState.pageCount <= 0) {
+        if (pageCount <= 0) {
           return@LaunchedEffect
         }
 
@@ -196,15 +200,15 @@ class HomeScreen(
     )
 
     LaunchedEffect(
-      key1 = pagerState.currentPage,
+      key1 = currentPageIndex,
       key2 = mainUiLayoutMode,
-      key3 = pagerState.pageCount,
+      key3 = pageCount,
       block = {
-        if (pagerState.pageCount <= 0) {
+        if (pageCount <= 0) {
           return@LaunchedEffect
         }
 
-        val screenKey = pagesWrapper.screenKeyByPageIndex(pagerState.currentPage)
+        val screenKey = pagesWrapper.screenKeyByPageIndex(currentPageIndex)
           ?: return@LaunchedEffect
 
         globalUiInfoManager.updateCurrentPageForLayoutMode(
@@ -397,20 +401,24 @@ class HomeScreen(
       }
     }
 
-    val currentPageMut = remember(key1 = pagerState.currentPage, key2 = pagesWrapper) {
-      pagesWrapper.pageByIndex(pagerState.currentPage)
+    val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
+    val targetPageIndex by remember { derivedStateOf { pagerState.targetPage } }
+
+    val currentPageMut = remember(key1 = currentPageIndex, key2 = pagesWrapper) {
+      pagesWrapper.pageByIndex(currentPageIndex)
     }
+
     val currentPage = currentPageMut
     if (currentPage == null) {
       return
     }
 
     val currentPageUpdated by rememberUpdatedState(newValue = currentPage)
-    val currentPageIndexUpdated by rememberUpdatedState(newValue = pagerState.currentPage)
+    val currentPageIndexUpdated by rememberUpdatedState(newValue = currentPageIndex)
 
     val nestedScrollConnection = remember(key1 = drawerWidth) {
       HomePagerNestedScrollConnection(
-        currentPagerPage = { pagerState.currentPage },
+        currentPagerPage = { currentPageIndex },
         isGestureCurrentlyAllowed = {
           isDrawerDragGestureCurrentlyAllowed(
             currentPageIndex = currentPageIndexUpdated,
@@ -442,7 +450,7 @@ class HomeScreen(
               drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
               pagerSwipeExclusionZone = pagerSwipeExclusionZone,
-              currentPagerPage = { pagerState.currentPage },
+              currentPagerPage = { currentPageIndex },
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = { insideSpecialZone ->
@@ -483,9 +491,10 @@ class HomeScreen(
         count = pagesWrapper.pagesCount,
         key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey() }
       ) { page ->
-        val childPage = pagesWrapper.pageByIndex(page)
+        val childPage = remember(key1 = page) { pagesWrapper.pageByIndex(page) }
           ?: return@HorizontalPager
-        val transitionIsProgress = pagerState.currentPage != pagerState.targetPage
+
+        val transitionIsProgress by remember { derivedStateOf { currentPageIndex != targetPageIndex } }
 
         Box(
           modifier = Modifier

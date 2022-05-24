@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -818,8 +819,10 @@ private fun RestoreScrollPosition(
     return
   }
 
-  val firstPostDrawn = remember(key1 = lazyListState.layoutInfo, key2 = orientation) {
-    val firstVisibleElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
+  val layoutInfo by remember(key1 = lazyListState) { derivedStateOf { lazyListState.layoutInfo } }
+
+  val firstPostDrawn = remember(key1 = layoutInfo, key2 = orientation) {
+    val firstVisibleElement = layoutInfo.visibleItemsInfo.firstOrNull()
       ?: return@remember false
 
     return@remember (firstVisibleElement.key as? String)

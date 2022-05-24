@@ -49,11 +49,23 @@ fun HomeScreenToolbarContainer(
 ) {
   require(pagesWrapper.pagesCount >= 0) { "pagesWrapper is empty!" }
 
-  val currentScreen = pagesWrapper.pageByIndex(pagerState.currentPage)
-    ?.childScreens
-    ?.firstOrNull()
-    ?.composeScreen
-    ?: return
+  val currentPage by remember { derivedStateOf { pagerState.currentPage } }
+  val targetPage by remember { derivedStateOf { pagerState.targetPage } }
+  val animationProgress by remember { derivedStateOf { pagerState.currentPageOffset.coerceIn(-1f, 1f) } }
+
+  val currentScreenMut by remember(key1 = currentPage) {
+    derivedStateOf {
+      pagesWrapper.pageByIndex(currentPage)
+        ?.childScreens
+        ?.firstOrNull()
+        ?.composeScreen
+    }
+  }
+
+  val currentScreen = currentScreenMut
+  if (currentScreen == null) {
+    return
+  }
 
   val currentScreenKey = currentScreen.screenKey
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
@@ -62,9 +74,8 @@ fun HomeScreenToolbarContainer(
     globalUiInfoManager.getOrCreateHideableUiVisibilityInfo(currentScreenKey)
   }
 
-  val currentPageIndex = pagerState.currentPage.coerceIn(0, pagesWrapper.pagesCount - 1)
-  val targetPageIndex = pagerState.targetPage.coerceIn(0, pagesWrapper.pagesCount - 1)
-  val animationProgress = pagerState.currentPageOffset
+  val currentPageIndex = currentPage.coerceIn(0, pagesWrapper.pagesCount - 1)
+  val targetPageIndex = targetPage.coerceIn(0, pagesWrapper.pagesCount - 1)
 
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }

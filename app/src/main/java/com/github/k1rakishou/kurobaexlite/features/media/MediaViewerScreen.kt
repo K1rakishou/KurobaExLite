@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateListOf
@@ -288,9 +289,10 @@ class MediaViewerScreen(
       )
     }
 
-    val currentPage = pagerStateHolder.currentPage
-    val currentlyLoadedMediaMap = mediaViewerScreenState.currentlyLoadedMediaMap
-    val currentLoadedMedia = currentlyLoadedMediaMap[currentPage]
+    val currentPageIndex by remember { derivedStateOf { pagerStateHolder.currentPage } }
+    val currentLoadedMedia = remember(key1 = currentPageIndex) {
+      mediaViewerScreenState.currentlyLoadedMediaMap[currentPageIndex]
+    }
 
     val targetAlpha = if (
       mediaViewerScreenViewModel.mpvInitialized &&
@@ -642,6 +644,7 @@ class MediaViewerScreen(
 
     var initialScrollHappened by remember { mutableStateOf(false) }
     val pagerState = rememberPagerState()
+    val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
 
     LaunchedEffect(
       key1 = Unit,
@@ -661,13 +664,13 @@ class MediaViewerScreen(
     )
 
     LaunchedEffect(
-      key1 = pagerState.currentPage,
+      key1 = currentPageIndex,
       block = {
         if (!initialScrollHappened) {
           return@LaunchedEffect
         }
 
-        val postImageData = images.getOrNull(pagerState.currentPage)?.postImage
+        val postImageData = images.getOrNull(currentPageIndex)?.postImage
           ?: return@LaunchedEffect
 
         mediaViewerPostListScroller.onSwipedTo(

@@ -45,14 +45,22 @@ fun BoxScope.HomeScreenFloatingActionButton(
     return
   }
 
-  val currentScreen = pagesWrapper.pageByIndex(pagerState.currentPage)
-    ?.childScreens
-    ?.firstOrNull()
-    ?.composeScreen
-    ?.topChildScreen()
-    ?: return
+  val currentPage by remember { derivedStateOf { pagerState.currentPage } }
 
-  val currentScreenKey = currentScreen.screenKey
+  val currentScreenMut by remember(key1 = currentPage) {
+    derivedStateOf {
+      pagesWrapper.pageByIndex(currentPage)
+        ?.childScreens
+        ?.firstOrNull()
+        ?.composeScreen
+        ?.topChildScreen()
+    }
+  }
+
+  val currentScreen = currentScreenMut
+  if (currentScreen == null) {
+    return
+  }
 
   if (currentScreen !is HomeNavigationScreen) {
     return
@@ -60,6 +68,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
 
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val snackbarManager = koinRemember<SnackbarManager>()
+  val currentScreenKey = currentScreen.screenKey
 
   val hideableUiVisibilityInfo = remember(key1 = currentScreenKey) {
     globalUiInfoManager.getOrCreateHideableUiVisibilityInfo(currentScreenKey)

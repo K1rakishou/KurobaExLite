@@ -79,7 +79,6 @@ internal class ReorderLogic(
           onMove(draggedItem, targetIdx)
           state.draggedIndex = targetIdx
           state.lazyListState.scrollToItem(state.lazyListState.firstVisibleItemIndex, state.lazyListState.firstVisibleItemScrollOffset)
-
         }
       }
     }
