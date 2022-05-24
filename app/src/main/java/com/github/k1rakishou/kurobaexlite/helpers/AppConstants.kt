@@ -9,6 +9,10 @@ object AppConstants {
   const val deleteNavHistoryTimeoutMs = 5000L
   const val deleteBookmarkTimeoutMs = 5000L
 
+  object Transition {
+    val HideableElementTransitionFps = 1f / 16f
+  }
+
   object Actions {
     const val REPLY_NOTIFICATION_CLICKED_ACTION = "${BuildConfig.APPLICATION_ID}_reply_notification_clicked_action"
     const val REPLY_NOTIFICATION_DELETED_ACTION = "${BuildConfig.APPLICATION_ID}_reply_notification_deleted_action"

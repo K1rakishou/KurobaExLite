@@ -19,6 +19,8 @@ import kotlin.contracts.contract
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -769,4 +771,15 @@ fun String.findAllOccurrences(query: String?, minQueryLength: Int): List<IntRang
   }
 
   return resultList
+}
+
+fun Float.quantize(precision: Float): Float {
+  require(this in -1f..1f) { "Value must be within -1f..1f bounds" }
+  require(precision in 0f..1f) { "precision must be within 0f..1f bounds" }
+
+  return if (this >= 0f) {
+    (floor((this.toDouble() / precision.toDouble()) + (precision * 1f)) * precision).toFloat()
+  } else {
+    (ceil((this.toDouble() / precision.toDouble()) + (precision * -1f)) * precision).toFloat()
+  }
 }

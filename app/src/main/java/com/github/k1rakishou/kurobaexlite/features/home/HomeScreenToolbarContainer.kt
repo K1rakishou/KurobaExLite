@@ -24,8 +24,10 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.zIndex
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.FAB_TRANSITION_ANIMATION_DURATION_MS
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.quantize
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -51,7 +53,13 @@ fun HomeScreenToolbarContainer(
 
   val currentPage by remember { derivedStateOf { pagerState.currentPage } }
   val targetPage by remember { derivedStateOf { pagerState.targetPage } }
-  val animationProgress by remember { derivedStateOf { pagerState.currentPageOffset.coerceIn(-1f, 1f) } }
+
+  val animationProgress by remember {
+    derivedStateOf {
+      pagerState.currentPageOffset.coerceIn(-1f, 1f)
+        .quantize(AppConstants.Transition.HideableElementTransitionFps)
+    }
+  }
 
   val currentScreenMut by remember(key1 = currentPage) {
     derivedStateOf {
