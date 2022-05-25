@@ -22,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -58,8 +57,6 @@ internal fun LazyItemScope.ThreadStatusCell(
     return
   }
 
-  val fabSize = dimensionResource(id = R.dimen.fab_size)
-  val fabEndOffset = dimensionResource(id = R.dimen.post_list_fab_end_offset)
   var timeUntilNextUpdateSeconds by remember { mutableStateOf(0L) }
 
   LaunchedEffect(
@@ -197,16 +194,10 @@ internal fun LazyItemScope.ThreadStatusCell(
       }
     }
 
-    val combinedPaddings = remember(key1 = lastLoadError) {
-      val endPadding = if (lastLoadError != null) {
-        fabSize + fabEndOffset
-      } else {
-        0.dp
-      }
-
+    val combinedPaddings = remember {
       PaddingValues(
         start = padding.calculateStartPadding(LayoutDirection.Ltr),
-        end = padding.calculateEndPadding(LayoutDirection.Ltr) + endPadding,
+        end = padding.calculateEndPadding(LayoutDirection.Ltr),
         top = 16.dp,
         bottom = 16.dp
       )

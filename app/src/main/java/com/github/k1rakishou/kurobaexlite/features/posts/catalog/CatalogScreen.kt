@@ -477,9 +477,14 @@ class CatalogScreen(
     )
 
     if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+      val lastLoadError by catalogScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
+      val screenContentLoaded by screenContentLoadedFlow.collectAsState()
+      val lastLoadedEndedWithError by remember { derivedStateOf { lastLoadError != null } }
+
       PostsScreenFloatingActionButton(
         screenKey = screenKey,
-        screenContentLoadedFlow = screenContentLoadedFlow,
+        screenContentLoaded = screenContentLoaded,
+        lastLoadedEndedWithError = lastLoadedEndedWithError,
         mainUiLayoutMode = mainUiLayoutMode,
         onFabClicked = { clickedFabScreenKey ->
           if (screenKey != clickedFabScreenKey) {

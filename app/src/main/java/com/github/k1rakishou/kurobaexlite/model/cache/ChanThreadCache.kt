@@ -78,7 +78,9 @@ class ChanThreadCache(
       logcat(tag = TAG) {
         "insert() insertedPosts=${insertedPosts.size}, " +
           "updatedPosts=${updatedPosts.size}, " +
-          "total=${postCellDataCollection.size}"
+          "unchangedPosts=${unchangedPosts.size}, " +
+          "totalFromServer=${postCellDataCollection.size}, " +
+          "totalCached=${postsMap.size}"
       }
 
       return@withLockNonCancellable PostsLoadResult(

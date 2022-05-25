@@ -4,6 +4,9 @@ import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
+/**
+ * Don't forget to update PostDiffer.postsDiffer() when adding new fields here
+ * */
 @Immutable
 interface IPostData {
   val originalPostOrder: Int

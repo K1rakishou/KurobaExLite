@@ -21,20 +21,18 @@ import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaFloatingActionButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
-import kotlinx.coroutines.flow.StateFlow
 
 const val FAB_TRANSITION_ANIMATION_DURATION_MS = 200
 
-@OptIn(ExperimentalPagerApi::class)
 @Composable
 fun BoxScope.PostsScreenFloatingActionButton(
   screenKey: ScreenKey,
-  screenContentLoadedFlow: StateFlow<Boolean>,
+  screenContentLoaded: Boolean,
+  lastLoadedEndedWithError: Boolean,
   mainUiLayoutMode: MainUiLayoutMode,
   onFabClicked: (ScreenKey) -> Unit
 ) {
@@ -53,7 +51,6 @@ fun BoxScope.PostsScreenFloatingActionButton(
   var activeSnackbarsCount by remember { mutableStateOf(0) }
   val screensUsingSearch by hideableUiVisibilityInfo.childScreensUsingSearch.collectAsState()
   val replyLayoutOpened by hideableUiVisibilityInfo.replyLayoutOpened.collectAsState()
-  val screenContentLoaded by screenContentLoadedFlow.collectAsState()
 
   LaunchedEffect(
     key1 = screenKey,
@@ -69,6 +66,7 @@ fun BoxScope.PostsScreenFloatingActionButton(
         activeSnackbarsCount = activeSnackbarsCount,
         screenContentLoaded = screenContentLoaded,
         replyLayoutOpened = replyLayoutOpened,
+        lastLoadedEndedWithError = lastLoadedEndedWithError,
         screensUsingSearch = screensUsingSearch
       )
     }
@@ -87,6 +85,7 @@ fun BoxScope.PostsScreenFloatingActionButton(
         !state.screenContentLoaded -> 0f
         state.activeSnackbarsCount > 0 -> 0f
         state.replyLayoutOpened -> 0f
+        state.lastLoadedEndedWithError -> 0f
         state.screensUsingSearch.isNotEmpty() -> 0f
         else -> 1f
       }
@@ -112,5 +111,6 @@ private data class CombinedFabState(
   val activeSnackbarsCount: Int,
   val screenContentLoaded: Boolean,
   val replyLayoutOpened: Boolean,
+  val lastLoadedEndedWithError: Boolean,
   val screensUsingSearch: Set<ScreenKey>
 )
