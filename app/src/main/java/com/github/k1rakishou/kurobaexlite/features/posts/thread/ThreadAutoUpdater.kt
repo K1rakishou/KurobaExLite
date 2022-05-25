@@ -4,15 +4,19 @@ import android.os.SystemClock
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibility
+import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import logcat.LogPriority
 import logcat.logcat
 
 class ThreadAutoUpdater(
+  private val applicationVisibilityManager: ApplicationVisibilityManager,
   private val executeUpdate: suspend () -> Unit,
   private val canUpdate: suspend () -> Boolean
 ) {
@@ -34,13 +38,49 @@ class ThreadAutoUpdater(
       return delta
     }
 
+  init {
+    applicationVisibilityManager.addListener { applicationVisibility ->
+      when (applicationVisibility) {
+        ApplicationVisibility.Background -> pause()
+        ApplicationVisibility.Foreground -> resume()
+      }
+    }
+  }
+
   fun resetTimer() {
     updateIndex = 0
     nextRunTime = SystemClock.elapsedRealtime() + (DELAYS.first() * 1000L)
   }
 
-  fun runAutoUpdaterLoop(threadDescriptor: ThreadDescriptor) {
-    if (currentThreadDescriptor == threadDescriptor) {
+  private fun pause() {
+    autoUpdaterJob?.cancel()
+    autoUpdaterJob = null
+
+    logcat(TAG) { "Thread auto-updater paused, currentThreadDescriptor=${currentThreadDescriptor}" }
+  }
+
+  private fun resume() {
+    val threadDescriptor = currentThreadDescriptor
+    if (threadDescriptor == null) {
+      logcat(TAG) { "Thread auto-updater cannot be resumed because currentThreadDescriptor is null" }
+      return
+    }
+
+    logcat(TAG) { "Thread auto-updater resumed, threadDescriptor=${threadDescriptor}" }
+
+    runAutoUpdaterLoop(
+      threadDescriptor = threadDescriptor,
+      resuming = true
+    )
+  }
+
+  fun runAutoUpdaterLoop(threadDescriptor: ThreadDescriptor, resuming: Boolean = false) {
+    if (currentThreadDescriptor == threadDescriptor && !resuming) {
+      logcat(TAG, LogPriority.VERBOSE) {
+        "runAutoUpdaterLoop() skip because currentThreadDescriptor " +
+          "($currentThreadDescriptor) == threadDescriptor ($threadDescriptor)"
+      }
+
       return
     }
 
@@ -50,7 +90,7 @@ class ThreadAutoUpdater(
     currentThreadDescriptor = threadDescriptor
 
     autoUpdaterJob = coroutineScope.launch {
-      logcat(tag = TAG) { "runAutoUpdaterLoop($threadDescriptor) start" }
+      logcat(tag = TAG) { "runAutoUpdaterLoop() start threadDescriptor=${threadDescriptor}" }
 
       while (isActive) {
         delay(1000L)
@@ -80,7 +120,7 @@ class ThreadAutoUpdater(
   }
 
   fun stopAutoUpdaterLoop() {
-    logcat(tag = TAG) { "stopAutoUpdaterLoop()" }
+    logcat(tag = TAG) { "stopAutoUpdaterLoop() currentThreadDescriptor=${currentThreadDescriptor}" }
 
     autoUpdaterJob?.cancel()
     autoUpdaterJob = null

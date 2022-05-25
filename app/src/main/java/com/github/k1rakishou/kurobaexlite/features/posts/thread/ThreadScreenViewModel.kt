@@ -20,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenFor
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
+import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
@@ -53,8 +54,10 @@ class ThreadScreenViewModel(
   private val addOrRemoveBookmark: AddOrRemoveBookmark by inject(AddOrRemoveBookmark::class.java)
   private val updatePostSeenForBookmark: UpdatePostSeenForBookmark by inject(UpdatePostSeenForBookmark::class.java)
   private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
+  private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
+    applicationVisibilityManager = applicationVisibilityManager,
     executeUpdate = { refresh() },
     canUpdate = {
       return@ThreadAutoUpdater threadScreenState.postsAsyncDataState.value is AsyncData.Data &&
@@ -454,10 +457,12 @@ class ThreadScreenViewModel(
     )
 
     val originalPost = postLoadResult.firstOrNull { postData -> postData is OriginalPostData }
-    if (originalPost != null && (originalPost.archived || originalPost.closed)) {
+    if (originalPost != null && (originalPost.archived || originalPost.closed || originalPost.deleted)) {
       logcat {
-        "refresh($threadDescriptor) stopping auto-updater " +
-          "(archived=${originalPost.archived}, closed=${originalPost.closed})"
+        "refresh($threadDescriptor) stopping auto-updater, " +
+          "archived=${originalPost.archived}, " +
+          "closed=${originalPost.closed}, " +
+          "deleted=${originalPost.deleted}"
       }
 
       threadAutoUpdater.stopAutoUpdaterLoop()
