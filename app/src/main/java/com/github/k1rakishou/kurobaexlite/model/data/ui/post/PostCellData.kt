@@ -31,7 +31,7 @@ data class PostCellData(
   val archived: Boolean,
   val deleted: Boolean,
   val closed: Boolean,
-  val sticky: Boolean,
+  val sticky: Sticky?,
   val bumpLimit: Boolean?,
   val imageLimit: Boolean?,
   val parsedPostData: ParsedPostData?,
@@ -63,6 +63,9 @@ data class PostCellData(
 
     return string.spanStyles.any { it.item.fontWeight != null }
   }
+
+  @Immutable
+  data class Sticky(val capacity: Int?)
 
   companion object {
     fun fromPostData(
@@ -101,7 +104,7 @@ data class PostCellData(
         archived = postData.archived,
         deleted = postData.deleted,
         closed = postData.closed,
-        sticky = postData.sticky,
+        sticky = postData.sticky?.toPostCellDataSticky(),
         bumpLimit = postData.bumpLimit,
         imageLimit = postData.imageLimit,
         parsedPostData = parsedPostData,

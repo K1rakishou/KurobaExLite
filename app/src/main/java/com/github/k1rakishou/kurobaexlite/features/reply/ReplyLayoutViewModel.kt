@@ -358,6 +358,8 @@ class ReplyLayoutViewModel(
           val postDescriptor = replyResponse.postDescriptor
           modifyMarkedPosts.markPostAsMine(postDescriptor)
 
+          // TODO(KurobaEx): bookmark thread
+
           showToast(chanDescriptor, appResources.string(R.string.reply_view_model_reply_sent_successfully))
           replyLayoutState.onReplySendEndedSuccessfully(postDescriptor)
           logcat(TAG) { "sendReply($screenKey) success postDescriptor: ${postDescriptor}" }

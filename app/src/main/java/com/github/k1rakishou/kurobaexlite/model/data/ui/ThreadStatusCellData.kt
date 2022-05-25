@@ -5,6 +5,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.JsonEncodingException
@@ -22,7 +23,7 @@ data class ThreadStatusCellData(
   val threadPage: CatalogPagesRepository.ThreadPage?,
   val archived: Boolean? = null,
   val closed: Boolean? = null,
-  val sticky: Boolean? = null,
+  val sticky: PostCellData.Sticky? = null,
   val bumpLimit: Boolean? = null,
   val imageLimit: Boolean? = null
 ) {

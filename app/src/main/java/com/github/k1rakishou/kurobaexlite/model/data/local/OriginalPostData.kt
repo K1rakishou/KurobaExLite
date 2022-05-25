@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.PostDataSticky
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
@@ -26,7 +27,7 @@ data class OriginalPostData(
   override val archived: Boolean,
   override val deleted: Boolean,
   override val closed: Boolean,
-  override val sticky: Boolean,
+  override val sticky: PostDataSticky?,
   override val bumpLimit: Boolean?,
   override val imageLimit: Boolean?,
 ) : IPostData {
@@ -50,7 +51,7 @@ data class OriginalPostData(
     archived: Boolean,
     deleted: Boolean,
     closed: Boolean,
-    sticky: Boolean,
+    sticky: PostDataSticky?,
     bumpLimit: Boolean?,
     imageLimit: Boolean?,
   ): IPostData {

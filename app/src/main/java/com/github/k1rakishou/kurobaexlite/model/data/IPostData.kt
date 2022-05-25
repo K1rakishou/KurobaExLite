@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.model.data
 
 import androidx.compose.runtime.Immutable
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 @Immutable
@@ -23,7 +24,7 @@ interface IPostData {
   val archived: Boolean
   val deleted: Boolean
   val closed: Boolean
-  val sticky: Boolean
+  val sticky: PostDataSticky?
   val bumpLimit: Boolean?
   val imageLimit: Boolean?
 
@@ -53,10 +54,16 @@ interface IPostData {
     archived: Boolean = this.archived,
     deleted: Boolean = this.deleted,
     closed: Boolean = this.closed,
-    sticky: Boolean = this.sticky,
+    sticky: PostDataSticky? = this.sticky,
     bumpLimit: Boolean? = this.bumpLimit,
     imageLimit: Boolean? = this.imageLimit,
   ): IPostData
+}
+
+data class PostDataSticky(val capacity: Int?) {
+  fun toPostCellDataSticky(): PostCellData.Sticky {
+    return PostCellData.Sticky(capacity = capacity)
+  }
 }
 
 @Immutable

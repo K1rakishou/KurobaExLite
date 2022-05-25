@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.remote.chan4
 
 import com.github.k1rakishou.kurobaexlite.model.data.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.CountryFlag
+import com.github.k1rakishou.kurobaexlite.model.data.PostDataSticky
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
@@ -24,10 +25,21 @@ abstract class PostImageDataJson {
   abstract val h: Int?
   abstract val fsize: Int?
 
+  abstract val sticky: Int?
+  abstract val stickyCap: Int?
+
   abstract val country: String?
   abstract val countryName: String?
   abstract val boardFlag: String?
   abstract val boardFlagName: String?
+
+  fun sticky(): PostDataSticky? {
+    if (sticky == null || sticky != 1) {
+      return null
+    }
+
+    return PostDataSticky(capacity = stickyCap)
+  }
 
   fun countryFlag(): CountryFlag? {
     if (country.isNullOrEmpty()) {
@@ -72,7 +84,8 @@ data class ThreadPostDataJson(
   @Json(name = "unique_ips") val posters: Int?,
   @Json(name = "archived") val archived: Int?,
   @Json(name = "closed") val closed: Int?,
-  @Json(name = "sticky") val sticky: Int?,
+  @Json(name = "sticky") override val sticky: Int?,
+  @Json(name = "sticky_cap") override val stickyCap: Int?,
   @Json(name = "bumplimit") val bumpLimit: Int?,
   @Json(name = "imagelimit") val imageLimit: Int?,
 
@@ -106,7 +119,8 @@ data class CatalogThreadDataJson(
   @Json(name = "unique_ips") val posters: Int?,
   @Json(name = "archived") val archived: Int?,
   @Json(name = "closed") val closed: Int?,
-  @Json(name = "sticky") val sticky: Int?,
+  @Json(name = "sticky") override val sticky: Int?,
+  @Json(name = "sticky_cap") override val stickyCap: Int?,
   @Json(name = "bumplimit") val bumpLimit: Int?,
   @Json(name = "imagelimit") val imageLimit: Int?,
 

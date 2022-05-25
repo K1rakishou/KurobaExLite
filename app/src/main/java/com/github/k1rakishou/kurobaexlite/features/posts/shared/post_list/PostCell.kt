@@ -292,6 +292,7 @@ fun inlinedContentForPostCell(
     postCellData.archived,
     postCellData.deleted,
     postCellData.closed,
+    postCellData.sticky,
     postCellData.countryFlag,
     postCellData.boardFlag,
   ) {
@@ -299,6 +300,7 @@ fun inlinedContentForPostCell(
       !postCellData.archived &&
       !postCellData.deleted &&
       !postCellData.closed &&
+      postCellData.sticky == null &&
       postCellData.countryFlag == null &&
       postCellData.boardFlag == null
     ) {
@@ -319,6 +321,7 @@ fun inlinedContentForPostCell(
             ParsedPostDataCache.PostCellIcon.Deleted,
             ParsedPostDataCache.PostCellIcon.Closed,
             ParsedPostDataCache.PostCellIcon.Archived,
+            ParsedPostDataCache.PostCellIcon.RollingSticky,
             ParsedPostDataCache.PostCellIcon.Sticky -> {
               PostCellIcon(postCellAnnotatedContent)
             }
@@ -407,6 +410,7 @@ private fun PostCellIcon(postCellIcon: ParsedPostDataCache.PostCellIcon) {
       ParsedPostDataCache.PostCellIcon.Archived -> R.drawable.archived_icon
       ParsedPostDataCache.PostCellIcon.Closed -> R.drawable.closed_icon
       ParsedPostDataCache.PostCellIcon.Sticky -> R.drawable.sticky_icon
+      ParsedPostDataCache.PostCellIcon.RollingSticky -> R.drawable.cyclic_icon
       else -> error("Unexpected postCellIcon: ${postCellIcon}")
     }
   }

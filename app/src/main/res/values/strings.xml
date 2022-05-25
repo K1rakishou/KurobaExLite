@@ -124,6 +124,7 @@
     <string name="thread_status_archived">Archived</string>
     <string name="thread_status_closed">Closed</string>
     <string name="thread_status_pinned">Pinned</string>
+    <string name="thread_status_pinned_with_cap">Pinned (%1$d cap)</string>
 
     <string name="catalog_sort_order_bump">Bump</string>
     <string name="catalog_sort_order_thread_reply_count">Thread reply count</string>

@@ -154,12 +154,17 @@ internal fun LazyItemScope.ThreadStatusCell(
             append(context.getString(R.string.thread_status_closed))
           }
 
-          if (threadStatusCellDataUpdated.sticky == true) {
+          if (threadStatusCellDataUpdated.sticky != null) {
             if (length > 0) {
               append(", ")
             }
 
-            append(context.getString(R.string.thread_status_pinned))
+            val capacity = threadStatusCellDataUpdated.sticky.capacity
+            if (capacity != null && capacity > 0) {
+              append(context.getString(R.string.thread_status_pinned_with_cap, capacity))
+            } else {
+              append(context.getString(R.string.thread_status_pinned))
+            }
           }
         }
 

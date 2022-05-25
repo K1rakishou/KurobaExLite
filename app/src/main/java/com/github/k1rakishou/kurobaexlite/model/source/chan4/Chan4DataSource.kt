@@ -132,7 +132,7 @@ class Chan4DataSource(
               archived = threadPost.archived == 1,
               closed = threadPost.closed == 1,
               deleted = false,
-              sticky = threadPost.sticky == 1,
+              sticky = threadPost.sticky(),
               bumpLimit = threadPost.bumpLimit?.let { bumpLimit -> bumpLimit == 1 },
               imageLimit = threadPost.imageLimit?.let { imageLimit -> imageLimit == 1 },
             )
@@ -158,7 +158,7 @@ class Chan4DataSource(
               archived = false,
               closed = false,
               deleted = false,
-              sticky = false,
+              sticky = null,
               bumpLimit = null,
               imageLimit = null,
             )
@@ -242,7 +242,7 @@ class Chan4DataSource(
               archived = catalogThread.archived == 1,
               closed = catalogThread.closed == 1,
               deleted = false,
-              sticky = catalogThread.sticky == 1,
+              sticky = catalogThread.sticky(),
               bumpLimit = catalogThread.bumpLimit?.let { bumpLimit -> bumpLimit == 1 },
               imageLimit = catalogThread.imageLimit?.let { imageLimit -> imageLimit == 1 },
             )

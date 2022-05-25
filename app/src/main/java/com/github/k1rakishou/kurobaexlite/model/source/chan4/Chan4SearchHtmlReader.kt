@@ -96,7 +96,7 @@ class Chan4SearchHtmlReader(
             archived = false,
             deleted = false,
             closed = false,
-            sticky = false,
+            sticky = null,
             bumpLimit = null,
             imageLimit = null,
           )
@@ -121,7 +121,7 @@ class Chan4SearchHtmlReader(
             archived = false,
             deleted = false,
             closed = false,
-            sticky = false,
+            sticky = null,
             bumpLimit = null,
             imageLimit = null,
           )

@@ -282,7 +282,7 @@ class ParsedPostDataCache(
       archived = postData.archived,
       deleted = postData.deleted,
       closed = postData.closed,
-      sticky = postData.sticky,
+      sticky = postData.sticky?.toPostCellDataSticky(),
       postDescriptor = postData.postDescriptor,
       parsedPostDataContext = parsedPostDataContext,
       chanTheme = chanTheme,
@@ -335,7 +335,7 @@ class ParsedPostDataCache(
     archived: Boolean,
     deleted: Boolean,
     closed: Boolean,
-    sticky: Boolean,
+    sticky: PostCellData.Sticky?,
     postDescriptor: PostDescriptor,
     parsedPostDataContext: ParsedPostDataContext,
     chanTheme: ChanTheme,
@@ -497,7 +497,7 @@ class ParsedPostDataCache(
     archived: Boolean,
     deleted: Boolean,
     closed: Boolean,
-    sticky: Boolean,
+    sticky: PostCellData.Sticky?,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
     val hasImages = postImages?.isNotNullNorEmpty() ?: false
@@ -565,7 +565,7 @@ class ParsedPostDataCache(
         )
       }
 
-      if (postIcons.isNotEmpty() || archived || deleted || closed || sticky) {
+      if (postIcons.isNotEmpty() || archived || deleted || closed || sticky != null) {
         appendPostIcons(
           archived = archived,
           deleted = deleted,
@@ -582,7 +582,7 @@ class ParsedPostDataCache(
     archived: Boolean,
     deleted: Boolean,
     closed: Boolean,
-    sticky: Boolean,
+    sticky: PostCellData.Sticky?,
     postIcons: List<PostIcon>,
     chanTheme: ChanTheme
   ) {
@@ -610,12 +610,17 @@ class ParsedPostDataCache(
           appendInlineContent(id = PostCellIcon.Closed.id)
         }
 
-        if (sticky) {
+        if (sticky != null) {
           if (length > 0) {
             append("  ")
           }
 
           appendInlineContent(id = PostCellIcon.Sticky.id)
+
+          if (sticky.capacity != null) {
+            append("  ")
+            appendInlineContent(id = PostCellIcon.RollingSticky.id)
+          }
         }
 
         if (postIcons.isNotEmpty()) {
@@ -850,6 +855,7 @@ class ParsedPostDataCache(
     Closed("id_post_deleted"),
     Archived("id_post_archived"),
     Sticky("id_post_sticky"),
+    RollingSticky("id_post_rolling_sticky"),
     CountryFlag("id_post_country_flag"),
     BoardFlag("id_post_board_flag")
   }

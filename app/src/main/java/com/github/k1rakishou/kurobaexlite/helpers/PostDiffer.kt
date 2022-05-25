@@ -14,6 +14,21 @@ object PostDiffer {
     if (one.threadRepliesTotal != other.threadRepliesTotal) {
       return true
     }
+    if (one.name != other.name) {
+      return true
+    }
+    if (one.tripcode != other.tripcode) {
+      return true
+    }
+    if (one.posterId != other.posterId) {
+      return true
+    }
+    if (one.countryFlag != other.countryFlag) {
+      return true
+    }
+    if (one.boardFlag != other.boardFlag) {
+      return true
+    }
     if (one.timeMs != other.timeMs) {
       return true
     }
@@ -33,6 +48,9 @@ object PostDiffer {
       return true
     }
     if (one.sticky != other.sticky) {
+      return true
+    }
+    if (one.deleted != other.deleted) {
       return true
     }
     if (one.bumpLimit != other.bumpLimit) {

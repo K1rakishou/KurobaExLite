@@ -525,7 +525,7 @@ class ThreadScreenViewModel(
     val totalPosters = originalPostData?.threadPostersTotal ?: prevThreadStatusCellData?.totalPosters ?: 0
     val archived = originalPostData?.archived ?: prevThreadStatusCellData?.archived
     val closed = originalPostData?.closed ?: prevThreadStatusCellData?.closed
-    val sticky = originalPostData?.sticky ?: prevThreadStatusCellData?.sticky
+    val sticky = originalPostData?.sticky?.toPostCellDataSticky() ?: prevThreadStatusCellData?.sticky
     val bumpLimit = originalPostData?.bumpLimit ?: prevThreadStatusCellData?.bumpLimit
     val imageLimit = originalPostData?.imageLimit ?: prevThreadStatusCellData?.imageLimit
 
