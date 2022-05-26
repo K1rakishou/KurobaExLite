@@ -63,6 +63,10 @@ class ChanCatalogCache(
     return mutex.withLockNonCancellable { threads.toList() }
   }
 
+  suspend fun getPostDescriptorList(): List<PostDescriptor> {
+    return mutex.withLockNonCancellable { threads.map { it.postDescriptor } }
+  }
+
   companion object {
     private const val TAG = "ChanCatalogCache"
   }

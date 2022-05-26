@@ -36,7 +36,7 @@ class ChanCache(
     catalogDescriptor: CatalogDescriptor,
     catalogThreads: Collection<IPostData>
   ): PostsLoadResult {
-    return withContext(Dispatchers.Default) {
+    return withContext(Dispatchers.IO) {
       if (catalogThreads.isEmpty()) {
         return@withContext PostsLoadResult.EMPTY
       }
@@ -65,7 +65,7 @@ class ChanCache(
     threadDescriptor: ThreadDescriptor,
     threadPostCells: Collection<IPostData>
   ): PostsLoadResult {
-    return withContext(Dispatchers.Default) {
+    return withContext(Dispatchers.IO) {
       if (threadPostCells.isEmpty()) {
         return@withContext PostsLoadResult.EMPTY
       }
@@ -84,6 +84,13 @@ class ChanCache(
       }
 
       return@withContext postsMergeResult
+    }
+  }
+
+  suspend fun getPostDescriptors(chanDescriptor: ChanDescriptor): List<PostDescriptor> {
+    return when (chanDescriptor) {
+      is CatalogDescriptor -> catalogs[chanDescriptor]?.getPostDescriptorList() ?: emptyList()
+      is ThreadDescriptor -> threads[chanDescriptor]?.getPostDescriptorList() ?: emptyList()
     }
   }
 

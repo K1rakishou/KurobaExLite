@@ -124,6 +124,25 @@ class ParsedPostDataCache(
       }
   }
 
+  suspend fun delete(chanDescriptor: ChanDescriptor, postDescriptors: Collection<PostDescriptor>) {
+    mutex.withLock {
+      when (chanDescriptor) {
+        is CatalogDescriptor -> {
+          postDescriptors.forEach { postDescriptor ->
+            catalogParsedPostDataMap.remove(postDescriptor)
+            catalogPendingUpdates.remove(postDescriptor)
+          }
+        }
+        is ThreadDescriptor -> {
+          postDescriptors.forEach { postDescriptor ->
+            threadParsedPostDataMap.remove(postDescriptor)
+            threadPendingUpdates.remove(postDescriptor)
+          }
+        }
+      }
+    }
+  }
+
   suspend fun getManyParsedPostData(
     chanDescriptor: ChanDescriptor,
     postDescriptors: List<PostDescriptor>

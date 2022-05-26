@@ -212,7 +212,6 @@ object DependencyGraph {
     single<ISiteManager> { get<SiteManager>() }
     single { ApplicationVisibilityManager() }
     single { CatalogManager() }
-    single { ChanThreadManager(siteManager = get(), chanCache = get()) }
     single { PostReplyChainManager() }
     single { ChanViewManager() }
     single { SnackbarManager(appContext = get()) }
@@ -221,6 +220,14 @@ object DependencyGraph {
     single { CaptchaManager() }
     single { LastVisitedEndpointManager(appScope = get()) }
     single { BookmarksManager() }
+
+    single {
+      ChanThreadManager(
+        siteManager = get(),
+        chanCache = get(),
+        parsedPostDataCache = get()
+      )
+    }
 
     single {
       UpdateManager(

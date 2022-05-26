@@ -82,7 +82,7 @@ data class PostsLoadResult(
     resultList.addAll(unchangedPosts)
     resultList.addAll(updatedPosts)
     resultList.addAll(newPosts)
-    resultList.sortBy { postData -> postData.originalPostOrder }
+    resultList.sortBy { postData -> postData.postDescriptor }
 
     return resultList
   }

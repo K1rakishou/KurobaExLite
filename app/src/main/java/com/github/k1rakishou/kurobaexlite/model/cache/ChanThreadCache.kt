@@ -97,6 +97,10 @@ class ChanThreadCache(
     }
   }
 
+  suspend fun getPostDescriptorList(): List<PostDescriptor> {
+    return mutex.withLockNonCancellable { posts.map { post -> post.postDescriptor } }
+  }
+
   suspend fun getAll(): List<IPostData> {
     return mutex.withLockNonCancellable { posts.toList() }
   }
@@ -129,8 +133,7 @@ class ChanThreadCache(
   companion object {
     private const val TAG = "ChanThreadCache"
 
-    private val POSTS_SUB_NO_COMPARATOR = compareBy<IPostData> { it.postSubNo }
-    private val POSTS_COMPARATOR = compareBy<IPostData> { it.postNo }.then(POSTS_SUB_NO_COMPARATOR)
+    private val POSTS_COMPARATOR = compareBy<IPostData> { postData -> postData.postDescriptor }
   }
 
 }

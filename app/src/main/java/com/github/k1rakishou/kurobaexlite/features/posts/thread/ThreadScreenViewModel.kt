@@ -391,7 +391,7 @@ class ThreadScreenViewModel(
 
     parseRemainingPostsAsync(
       chanDescriptor = threadDescriptor,
-      postDataList =  allCombinedPosts,
+      postDataList = allCombinedPosts,
       parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
       sorter = { postCellData -> ThreadPostSorter.sortThreadPostCellData(postCellData) },
       onStartParsingPosts = {

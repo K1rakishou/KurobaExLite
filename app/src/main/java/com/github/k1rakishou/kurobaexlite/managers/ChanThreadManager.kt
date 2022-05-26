@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.managers
 
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -13,7 +14,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class ChanThreadManager(
   private val siteManager: SiteManager,
-  private val chanCache: ChanCache
+  private val chanCache: ChanCache,
+  private val parsedPostDataCache: ParsedPostDataCache
 ) {
   private val _currentlyOpenedCatalogFlow = MutableStateFlow<CatalogDescriptor?>(null)
   val currentlyOpenedCatalogFlow: StateFlow<CatalogDescriptor?>
@@ -28,6 +30,9 @@ class ChanThreadManager(
     get() = _currentlyOpenedThreadFlow.value
 
   suspend fun delete(chanDescriptor: ChanDescriptor) {
+    val postDescriptors = chanCache.getPostDescriptors(chanDescriptor)
+    parsedPostDataCache.delete(chanDescriptor, postDescriptors)
+
     chanCache.delete(chanDescriptor)
   }
 
