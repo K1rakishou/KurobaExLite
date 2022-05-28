@@ -27,7 +27,7 @@ Right now you can:
 - Reply to posts.
 - View albums.
 - Track navigation history (for now it's always enabled).
-- Bookmark threads (everything works except reply notifications).
+- Bookmark threads (+ reply notifications).
 
 What you can't do which will be implemented in the future:
 - Navigate other sites (maybe?).
