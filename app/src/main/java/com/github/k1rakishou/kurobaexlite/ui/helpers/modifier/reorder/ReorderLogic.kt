@@ -16,7 +16,7 @@ import kotlin.math.sign
 internal class ReorderLogic(
   private val state: ReorderableState,
   private val onMove: suspend (fromIndex: Int, toIndex: Int) -> (Unit),
-  private val canDragOver: (suspend (index: Int) -> Boolean)? = null,
+  private val canDragOver: (suspend (key: Any, index: Int) -> Boolean)? = null,
   private val onDragEnd: (suspend (startIndex: Int, endIndex: Int) -> (Unit))? = null,
 ) {
   fun startDrag(key: Any) =
@@ -72,7 +72,7 @@ internal class ReorderLogic(
         chooseDropIndex(
           state.lazyListState.layoutInfo.visibleItemsInfo
             .filterNot { it.offsetEnd() < start || it.offset > end || it.index == draggedItem }
-            .filter { canDragOver?.invoke(it.index) != false },
+            .filter { canDragOver?.invoke(it.key, it.index) != false },
           start,
           end
         )?.also { targetIdx ->

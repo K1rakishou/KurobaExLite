@@ -11,6 +11,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,8 +23,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.Composable
@@ -34,7 +38,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,11 +52,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,10 +70,13 @@ import coil.request.ImageRequest
 import coil.size.Size
 import coil.transform.CircleCropTransformation
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.settings.AppSettingsScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.image.GrayscaleTransformation
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
@@ -74,9 +86,11 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -86,7 +100,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.LayoutOrientation
+import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SlotLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.ReorderableState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.detectReorder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.draggedItem
@@ -109,12 +127,50 @@ class BookmarksScreen(
   private val grayscaleTransformation = GrayscaleTransformation()
 
   private val deleteBookmarkIconWidth = 40.dp
+  private val searchInputItemKey = "search_input"
+  private val noBookmarksMessageItemKey = "no_bookmarks_message"
+  private val bookmarkItemKey = "thread_bookmark"
+
+  private val floatingMenuItems: List<FloatingMenuItem> by lazy {
+    listOf(
+      FloatingMenuItem.Text(
+        menuItemKey = ToolbarMenuItems.PruneInactiveBookmarks,
+        text = FloatingMenuItem.MenuItemText.Id(R.string.bookmark_screen_toolbar_prune_inactive)
+      ),
+    )
+  }
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable
   override fun Content() {
     val context = LocalContext.current
+    val windowInsets = LocalWindowInsets.current
+    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+
+    val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow
+      .collectAsState(initial = DrawerVisibility.Closed)
+
+    val isFullyClosed by remember(key1 = drawerVisibility) {
+      derivedStateOf {
+        when (drawerVisibility) {
+          DrawerVisibility.Closed -> true
+          DrawerVisibility.Closing,
+          is DrawerVisibility.Fling,
+          is DrawerVisibility.Drag,
+          DrawerVisibility.Opened,
+          DrawerVisibility.Opening -> false
+        }
+      }
+    }
+
+    if (isFullyClosed) {
+      return
+    }
+
+    val lazyListState = rememberLazyListState()
+    val reorderableState = rememberReorderState(lazyListState = lazyListState)
+    val pullToRefreshState = rememberPullToRefreshState()
 
     LaunchedEffect(
       key1 = Unit,
@@ -145,10 +201,6 @@ class BookmarksScreen(
       }
     )
 
-    val lazyListState = rememberLazyListState()
-    val reorderableState = rememberReorderState(lazyListState = lazyListState)
-    val pullToRefreshState = rememberPullToRefreshState()
-
     LaunchedEffect(
       key1 = Unit,
       block = {
@@ -158,11 +210,31 @@ class BookmarksScreen(
       }
     )
 
-    BookmarksList(
-      pullToRefreshState = pullToRefreshState,
-      context = context,
-      reorderableState = reorderableState,
-    )
+    SlotLayout(
+      modifier = Modifier.fillMaxSize(),
+      layoutOrientation = LayoutOrientation.Vertical,
+      builder = {
+        fixed(
+          size = toolbarHeight + windowInsets.top,
+          key = "DrawerHeader",
+          content = {
+            ThreadBookmarkHeader(
+              onShowAppSettingsClicked = { openAppSettings() },
+              onShowBookmarkOptionsClicked = { showBookmarkOptions(context) },
+            )
+          })
+
+        dynamic(
+          weight = 1f,
+          key = "BookmarksList",
+          content = {
+            BookmarksList(
+              pullToRefreshState = pullToRefreshState,
+              context = context,
+              reorderableState = reorderableState,
+            )
+          })
+      })
   }
 
   @Composable
@@ -174,15 +246,34 @@ class BookmarksScreen(
     val chanTheme = LocalChanTheme.current
     val windowInsets = LocalWindowInsets.current
 
-    val contentPadding = remember(key1 = windowInsets) {
-      PaddingValues(top = windowInsets.top, bottom = windowInsets.bottom)
-    }
-    val pullToRefreshToPadding = remember(key1 = contentPadding) {
-      contentPadding.calculateTopPadding()
-    }
+    val contentPadding = remember(key1 = windowInsets) { PaddingValues(bottom = windowInsets.bottom) }
+    val pullToRefreshToPadding = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
 
-    val bookmarkList = bookmarksScreenViewModel.bookmarksList
+    val bookmarkListBeforeFiltering = bookmarksScreenViewModel.bookmarksList
     val canUseFancyAnimations by bookmarksScreenViewModel.canUseFancyAnimations
+
+    var searchQuery by rememberSaveable(
+      key = "bookmarks_search_query",
+      stateSaver = TextFieldValue.Saver
+    ) { mutableStateOf<TextFieldValue>(TextFieldValue()) }
+
+    val isInSearchMode by remember { derivedStateOf { searchQuery.text.isNotEmpty() } }
+
+    val bookmarkList by produceState(
+      initialValue = bookmarkListBeforeFiltering,
+      key1 = searchQuery,
+      key2 = bookmarkListBeforeFiltering,
+      producer = {
+        if (searchQuery.text.isEmpty()) {
+          value = bookmarkListBeforeFiltering
+          return@produceState
+        }
+
+        delay(250L)
+
+        value = bookmarkListBeforeFiltering
+          .filter { threadBookmarkUi -> threadBookmarkUi.matchesQuery(searchQuery.text) }
+      })
 
     PullToRefresh(
       pullToRefreshState = pullToRefreshState,
@@ -197,50 +288,167 @@ class BookmarksScreen(
           .fillMaxSize()
           .reorderable(
             state = reorderableState,
-            onMove = { from, to -> bookmarksScreenViewModel.onMove(from, to) },
-            onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from, to) }
+            canDragOver = { key, _ -> (key as? String)?.startsWith(bookmarkItemKey) == true },
+            // "idx - 1" because we have the SearchInput as the first item of the list
+            onMove = { from, to -> bookmarksScreenViewModel.onMove(from - 1, to - 1) },
+            onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from - 1, to - 1) }
           ),
         lazyListState = reorderableState.lazyListState,
         contentPadding = contentPadding,
         content = {
-          items(
-            count = bookmarkList.size,
-            key = { index -> bookmarkList[index].threadDescriptor },
-            itemContent = { index ->
-              val threadBookmarkUi = bookmarkList[index]
+          if (bookmarkList.isEmpty()) {
+            item(
+              key = noBookmarksMessageItemKey,
+              contentType = "no_bookmarks_message_item",
+              content = {
+                KurobaComposeText(
+                  modifier = Modifier
+                    .fillParentMaxSize()
+                    .padding(8.dp),
+                  text = stringResource(id = R.string.bookmark_screen_bookmarks_added),
+                  textAlign = TextAlign.Center,
+                  fontSize = 16.sp
+                )
+              }
+            )
+          } else {
+            item(
+              key = searchInputItemKey,
+              contentType = "search_input_item",
+              content = {
+                SearchInput(
+                  searchQuery = searchQuery,
+                  onSearchQueryChanged = { query -> searchQuery = query }
+                )
+              }
+            )
 
-              ThreadBookmarkItem(
-                canUseFancyAnimations = canUseFancyAnimations,
-                threadBookmarkUi = threadBookmarkUi,
-                reorderableState = reorderableState,
-                onBookmarkClicked = { clickedThreadBookmarkUi ->
-                  threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
-                  globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
-                  globalUiInfoManager.closeDrawer(withAnimation = true)
-                },
-                onBookmarkDeleted = { clickedThreadBookmarkUi ->
-                  bookmarksScreenViewModel.deleteBookmark(
-                    threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
-                    onBookmarkDeleted = { deletedBookmark, oldPosition ->
-                      showRevertBookmarkDeletion(
-                        context = context,
-                        deletedBookmark = deletedBookmark,
-                        oldPosition = oldPosition
-                      )
-                    }
-                  )
-                },
-              )
-            }
-          )
+            items(
+              count = bookmarkList.size,
+              key = { index -> dragKey(bookmarkList[index].threadDescriptor) },
+              contentType = { "thread_bookmark_item" },
+              itemContent = { index ->
+                val threadBookmarkUi = bookmarkList[index]
+
+                ThreadBookmarkItem(
+                  isInSearchMode = isInSearchMode,
+                  canUseFancyAnimations = canUseFancyAnimations,
+                  threadBookmarkUi = threadBookmarkUi,
+                  reorderableState = reorderableState,
+                  onBookmarkClicked = { clickedThreadBookmarkUi ->
+                    threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
+                    globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
+                    globalUiInfoManager.closeDrawer(withAnimation = true)
+                  },
+                  onBookmarkDeleted = { clickedThreadBookmarkUi ->
+                    bookmarksScreenViewModel.deleteBookmark(
+                      threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
+                      onBookmarkDeleted = { deletedBookmark, oldPosition ->
+                        showRevertBookmarkDeletion(
+                          context = context,
+                          deletedBookmark = deletedBookmark,
+                          oldPosition = oldPosition
+                        )
+                      }
+                    )
+                  },
+                )
+              }
+            )
+          }
         }
       )
+    }
+  }
+
+  @Composable
+  private fun SearchInput(
+    searchQuery: TextFieldValue,
+    onSearchQueryChanged: (TextFieldValue) -> Unit
+  ) {
+    val chanTheme = LocalChanTheme.current
+
+    val bgColor = remember(key1 = chanTheme.backColorCompose) {
+      return@remember if (ThemeEngine.isDarkColor(chanTheme.backColorCompose)) {
+        ThemeEngine.manipulateColor(chanTheme.backColorCompose, 1.3f)
+      } else {
+        ThemeEngine.manipulateColor(chanTheme.backColorCompose, 0.7f)
+      }
+    }
+
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+    ) {
+      Spacer(modifier = Modifier.height(4.dp))
+
+      KurobaComposeCustomTextField(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight()
+          .padding(horizontal = 4.dp)
+          .background(color = bgColor, shape = RoundedCornerShape(corner = CornerSize(size = 4.dp))),
+        value = searchQuery,
+        parentBackgroundColor = chanTheme.backColorCompose,
+        drawBottomIndicator = false,
+        singleLine = true,
+        maxLines = 1,
+        fontSize = 18.sp,
+        textFieldPadding = remember { PaddingValues(vertical = 4.dp, horizontal = 4.dp) },
+        labelText = stringResource(id = R.string.type_to_search_hint),
+        onValueChange = { newValue -> onSearchQueryChanged(newValue) }
+      )
+
+      Spacer(modifier = Modifier.height(4.dp))
+    }
+  }
+
+  @Composable
+  private fun ThreadBookmarkHeader(
+    onShowAppSettingsClicked: () -> Unit,
+    onShowBookmarkOptionsClicked: () -> Unit
+  ) {
+    val chanTheme = LocalChanTheme.current
+    val windowInsets = LocalWindowInsets.current
+
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(chanTheme.backColorSecondaryCompose)
+    ) {
+      Spacer(modifier = Modifier.height(windowInsets.top))
+
+      Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.End
+      ) {
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(28.dp)
+            .kurobaClickable(bounded = false, onClick = { onShowAppSettingsClicked() }),
+          drawableId = R.drawable.ic_baseline_settings_24
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(28.dp)
+            .kurobaClickable(bounded = false, onClick = { onShowBookmarkOptionsClicked() }),
+          drawableId = R.drawable.ic_baseline_more_vert_24
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+      }
     }
   }
 
   @OptIn(ExperimentalFoundationApi::class)
   @Composable
   private fun LazyItemScope.ThreadBookmarkItem(
+    isInSearchMode: Boolean,
     canUseFancyAnimations: Boolean,
     threadBookmarkUi: ThreadBookmarkUi,
     reorderableState: ReorderableState,
@@ -295,7 +503,7 @@ class BookmarksScreen(
     val bookmarkBgColor by bgAnimatable.asState()
     val offset by remember(key1 = threadBookmarkUi.threadDescriptor) {
       derivedStateOf {
-        reorderableState.offsetByKey(threadBookmarkUi.threadDescriptor)
+        reorderableState.offsetByKey(dragKey(threadBookmarkUi.threadDescriptor))
       }
     }
 
@@ -310,16 +518,18 @@ class BookmarksScreen(
         .animateItemPlacement(),
       verticalAlignment = Alignment.CenterVertically
     ) {
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(deleteBookmarkIconWidth)
-          .padding(2.dp)
-          .kurobaClickable(
-            bounded = false,
-            onClick = { onBookmarkDeleted(threadBookmarkUi) }
-          ),
-        drawableId = R.drawable.ic_baseline_close_24
-      )
+      if (!isInSearchMode) {
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(deleteBookmarkIconWidth)
+            .padding(2.dp)
+            .kurobaClickable(
+              bounded = false,
+              onClick = { onBookmarkDeleted(threadBookmarkUi) }
+            ),
+          drawableId = R.drawable.ic_baseline_close_24
+        )
+      }
 
       Spacer(modifier = Modifier.width(4.dp))
 
@@ -370,13 +580,15 @@ class BookmarksScreen(
         )
       }
 
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(32.dp)
-          .padding(all = 4.dp)
-          .detectReorder(reorderableState),
-        drawableId = R.drawable.ic_baseline_reorder_24
-      )
+      if (!isInSearchMode) {
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(32.dp)
+            .padding(all = 4.dp)
+            .detectReorder(reorderableState),
+          drawableId = R.drawable.ic_baseline_reorder_24
+        )
+      }
 
       Spacer(modifier = Modifier.width(4.dp))
     }
@@ -560,6 +772,8 @@ class BookmarksScreen(
     }
   }
 
+  private fun dragKey(threadDescriptor: ThreadDescriptor) = "${bookmarkItemKey}_${threadDescriptor.asKey()}"
+
   private fun showRevertBookmarkDeletion(
     context: Context,
     deletedBookmark: ThreadBookmark,
@@ -736,6 +950,73 @@ class BookmarksScreen(
     }
   }
 
+  private fun showBookmarkOptions(context: Context) {
+    navigationRouter.presentScreen(
+      FloatingMenuScreen(
+        floatingMenuKey = FloatingMenuScreen.BOOKMARKS_OVERFLOW,
+        componentActivity = componentActivity,
+        navigationRouter = navigationRouter,
+        menuItems = floatingMenuItems,
+        onMenuItemClicked = { menuItem ->
+          when (menuItem.menuItemKey as ToolbarMenuItems) {
+            ToolbarMenuItems.PruneInactiveBookmarks -> {
+              // TODO(KurobaEx): show additional dialog?
+              bookmarksScreenViewModel.pruneInactiveBookmarks(
+                onFinished = { deleteResult ->
+                  if (deleteResult.isFailure) {
+                    val errorMessage = deleteResult.exceptionOrThrow().errorMessageOrClassName()
+
+                    snackbarManager.errorToast(
+                      message = context.resources.getString(
+                        R.string.bookmark_screen_failed_to_delete_inactive,
+                        errorMessage
+                      ),
+                      screenKey = MainScreen.SCREEN_KEY
+                    )
+                  } else {
+                    val deletedCount = deleteResult.getOrThrow()
+
+                    if (deletedCount > 0) {
+                      snackbarManager.toast(
+                        message = context.resources.getString(
+                          R.string.bookmark_screen_deleted_n_inactive,
+                          deletedCount
+                        ),
+                        screenKey = MainScreen.SCREEN_KEY
+                      )
+                    } else {
+                      snackbarManager.toast(
+                        message = context.resources.getString(R.string.bookmark_screen_no_inactive_to_delete),
+                        screenKey = MainScreen.SCREEN_KEY
+                      )
+                    }
+                  }
+                }
+              )
+            }
+          }
+        }
+      )
+    )
+  }
+
+  private fun openAppSettings() {
+    val currentPagerPageScreenKey = globalUiInfoManager.currentPage()?.screenKey
+      ?: return
+
+    val currentChildRouter = navigationRouter.getChildRouterByKeyOrNull(currentPagerPageScreenKey)
+      ?: return
+
+    globalUiInfoManager.closeDrawer()
+
+    val appSettingsScreen = AppSettingsScreen(
+      componentActivity = componentActivity,
+      navigationRouter = currentChildRouter
+    )
+
+    currentChildRouter.pushScreen(appSettingsScreen)
+  }
+
   data class ThreadBookmarkStatsCombined(
     val newPostsAnimated: Int,
     val newQuotesAnimated: Int,
@@ -750,6 +1031,10 @@ class BookmarksScreen(
     val isError: Boolean,
     val isDead: Boolean
   )
+
+  enum class ToolbarMenuItems {
+    PruneInactiveBookmarks
+  }
 
   enum class SnackbarButton {
     UndoThreadBookmarkDeletion

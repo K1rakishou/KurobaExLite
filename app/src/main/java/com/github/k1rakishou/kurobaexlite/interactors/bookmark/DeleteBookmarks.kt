@@ -16,7 +16,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.logcat
 
-class DeleteBookmark(
+class DeleteBookmarks(
   private val appScope: CoroutineScope,
   private val bookmarksManager: BookmarksManager,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase
@@ -84,6 +84,40 @@ class DeleteBookmark(
             "error: ${error.asLogIfImportantOrErrorMessage()}"
         }
       }.isSuccess
+  }
+
+  suspend fun deleteManyBookmarks(threadDescriptors: List<ThreadDescriptor>): Result<Int> {
+    val deletedBookmarks = bookmarksManager.removeBookmarks(threadDescriptors)
+    if (deletedBookmarks.isEmpty()) {
+      return Result.success(0)
+    }
+
+    return kurobaExLiteDatabase.transaction {
+      deletedBookmarks.forEach { threadBookmark ->
+        val threadDescriptor = threadBookmark.threadDescriptor
+
+        threadBookmarkDao.deleteBookmark(
+          siteKey = threadDescriptor.siteKeyActual,
+          boardCode = threadDescriptor.boardCode,
+          threadNo = threadDescriptor.threadNo
+        )
+
+        threadBookmarkDao.deleteThreadBookmarkSortOrderEntity(
+          siteKey = threadDescriptor.siteKeyActual,
+          boardCode = threadDescriptor.boardCode,
+          threadNo = threadDescriptor.threadNo
+        )
+      }
+
+      return@transaction deletedBookmarks.size
+    }
+      .onSuccess { logcat(TAG) { "Deleted ${deletedBookmarks.size} bookmarks" } }
+      .onFailure { error ->
+        logcatError(TAG) {
+          "Failed to delete ${deletedBookmarks.size} bookmarks from the DB, " +
+            "error: ${error.asLogIfImportantOrErrorMessage()}"
+        }
+      }
   }
 
   companion object {

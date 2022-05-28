@@ -435,6 +435,8 @@ class FloatingMenuScreen(
     const val CATALOG_OVERFLOW_LAYOUT_TYPE = "catalog_overflow_layout_type_menu"
 
     const val THREAD_OVERFLOW = "thread_overflow_menu"
+
+    const val BOOKMARKS_OVERFLOW = "bookmarks_overflow_menu"
   }
 }
 

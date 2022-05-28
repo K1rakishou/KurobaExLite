@@ -45,11 +45,12 @@ abstract class HomeNavigationScreen(
 
     BoxWithConstraints {
       val currentUiLayoutMode by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
+      val currentDragToCloseEnabled by dragToCloseEnabledState
       val topHomeNavigationScreen = topHomeNavigationScreenExceptDefault()
       val screenWidth = constraints.maxWidth
 
       val modifier = if (
-        dragToCloseEnabled &&
+        currentDragToCloseEnabled &&
         currentUiLayoutMode == MainUiLayoutMode.Phone &&
         topHomeNavigationScreen != null &&
         topHomeNavigationScreen.screenKey == screenKey

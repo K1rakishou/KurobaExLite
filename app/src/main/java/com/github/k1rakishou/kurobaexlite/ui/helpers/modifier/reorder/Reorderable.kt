@@ -80,7 +80,7 @@ class ReorderableState(val lazyListState: LazyListState) {
 fun Modifier.reorderable(
   state: ReorderableState,
   onMove: suspend (fromPos: Int, toPos: Int) -> (Unit),
-  canDragOver: (suspend (index: Int) -> Boolean)? = null,
+  canDragOver: (suspend (key: Any, index: Int) -> Boolean)? = null,
   onDragEnd: (suspend (startIndex: Int, endIndex: Int) -> (Unit))? = null,
   orientation: Orientation = Orientation.Vertical,
   maxScrollPerFrame: Dp = 20.dp,

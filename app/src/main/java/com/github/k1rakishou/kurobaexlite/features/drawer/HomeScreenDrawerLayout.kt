@@ -139,23 +139,6 @@ fun HomeScreenDrawerLayout(
     }
   )
 
-  val isFullyClosed by remember(key1 = drawerVisibility) {
-    derivedStateOf {
-      when (drawerVisibility) {
-        DrawerVisibility.Closed -> true
-        DrawerVisibility.Closing,
-        is DrawerVisibility.Fling,
-        is DrawerVisibility.Drag,
-        DrawerVisibility.Opened,
-        DrawerVisibility.Opening -> false
-      }
-    }
-  }
-
-  if (isFullyClosed) {
-    return
-  }
-
   val componentActivity = LocalComponentActivity.current
   val density = LocalDensity.current
 

@@ -44,7 +44,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ExtractRepliesToMyPosts
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
@@ -422,7 +422,7 @@ object DependencyGraph {
       ReorderBookmarks(kurobaExLiteDatabase = get())
     }
     single {
-      DeleteBookmark(
+      DeleteBookmarks(
         appScope = get(),
         bookmarksManager = get(),
         kurobaExLiteDatabase = get()

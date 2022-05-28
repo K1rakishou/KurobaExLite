@@ -23,6 +23,10 @@ class ThreadBookmarkUi(
   val highlighted: State<Boolean>
     get() = _highlighted
 
+  fun matchesQuery(searchQuery: String): Boolean {
+    return title.contains(other = searchQuery, ignoreCase = true)
+  }
+
   fun updateStatsFrom(
     threadBookmark: ThreadBookmark,
     threadPage: CatalogPagesRepository.ThreadPage?
@@ -62,7 +66,6 @@ class ThreadBookmarkUi(
     result = 31 * result + createdOn.hashCode()
     return result
   }
-
 
   companion object {
     fun fromThreadBookmark(

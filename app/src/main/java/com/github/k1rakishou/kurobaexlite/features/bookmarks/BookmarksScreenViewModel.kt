@@ -13,7 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.move
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
@@ -31,7 +31,7 @@ class BookmarksScreenViewModel : BaseViewModel() {
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
   private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
   private val reorderBookmarks: ReorderBookmarks by inject(ReorderBookmarks::class.java)
-  private val deleteBookmark: DeleteBookmark by inject(DeleteBookmark::class.java)
+  private val deleteBookmarks: DeleteBookmarks by inject(DeleteBookmarks::class.java)
 
   private val _bookmarksToMark = mutableStateMapOf<ThreadDescriptor, Unit>()
   val bookmarksToMark: Map<ThreadDescriptor, Unit>
@@ -85,7 +85,7 @@ class BookmarksScreenViewModel : BaseViewModel() {
         .takeIf { position -> position >= 0 }
         ?: 0
 
-      val deletedBookmark = deleteBookmark.deleteFrom(threadDescriptor, oldPosition)
+      val deletedBookmark = deleteBookmarks.deleteFrom(threadDescriptor, oldPosition)
       if (deletedBookmark != null) {
         onBookmarkDeleted(deletedBookmark, oldPosition)
       }
@@ -94,7 +94,7 @@ class BookmarksScreenViewModel : BaseViewModel() {
 
   fun undoBookmarkDeletion(threadBookmark: ThreadBookmark, index: Int) {
     viewModelScope.launch {
-      deleteBookmark.undoDeletion(threadBookmark, index)
+      deleteBookmarks.undoDeletion(threadBookmark, index)
     }
   }
 
@@ -144,6 +144,14 @@ class BookmarksScreenViewModel : BaseViewModel() {
 
   fun clearMarkedBookmarks() {
     _bookmarksToMark.clear()
+  }
+
+  fun pruneInactiveBookmarks(onFinished: (Result<Int>) -> Unit) {
+    viewModelScope.launch {
+      val inactiveBookmarks = bookmarksManager.getInactiveBookmarkDescriptors()
+      val deleteResult = deleteBookmarks.deleteManyBookmarks(inactiveBookmarks)
+      onFinished(deleteResult)
+    }
   }
 
   private suspend fun processCatalogPageEvent(catalogDescriptor: CatalogDescriptor) {

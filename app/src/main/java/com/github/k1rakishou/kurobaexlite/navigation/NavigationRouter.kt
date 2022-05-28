@@ -132,6 +132,63 @@ open class NavigationRouter(
     )
   }
 
+  fun getParentRouterByKey(screenKey: ScreenKey): NavigationRouter {
+    if (routerKey == screenKey) {
+      return this
+    }
+
+    if (parentRouter != null) {
+      val router = parentRouter.getParentRouterByKeyOrNull(screenKey)
+      if (router != null) {
+        return router
+      }
+    }
+
+    error("getParentRouterByKey() NavigationRouter with key \'${screenKey.key}\' not found")
+  }
+
+  fun getParentRouterByKeyOrNull(screenKey: ScreenKey): NavigationRouter? {
+    if (routerKey == screenKey) {
+      return this
+    }
+
+    if (parentRouter != null) {
+      return parentRouter.getParentRouterByKeyOrNull(screenKey)
+    }
+
+    return null
+  }
+
+  fun getChildRouterByKey(screenKey: ScreenKey): NavigationRouter {
+    if (routerKey == screenKey) {
+      return this
+    }
+
+    for (childRouter in childRouters.values) {
+      val router = childRouter.getChildRouterByKeyOrNull(screenKey)
+      if (router != null) {
+        return router
+      }
+    }
+
+    error("getChildRouterByKey() NavigationRouter with key \'${screenKey.key}\' not found")
+  }
+
+  fun getChildRouterByKeyOrNull(screenKey: ScreenKey): NavigationRouter? {
+    if (routerKey == screenKey) {
+      return this
+    }
+
+    for (childRouter in childRouters.values) {
+      val router = childRouter.getParentRouterByKeyOrNull(screenKey)
+      if (router != null) {
+        return router
+      }
+    }
+
+    return null
+  }
+
   fun getScreenByKey(screenKey: ScreenKey): ComposeScreen? {
     val rootRouter = getRootRouter()
     return getScreenByKeyInternal(rootRouter, screenKey)

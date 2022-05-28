@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -57,6 +58,7 @@ fun KurobaComposeCustomTextField(
   labelText: String? = null,
   maxTextLength: Int = Int.MAX_VALUE,
   visualTransformation: VisualTransformation = VisualTransformation.None,
+  textFieldPadding: PaddingValues = remember { PaddingValues() },
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
   keyboardActions: KeyboardActions = KeyboardActions(),
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
@@ -145,6 +147,7 @@ fun KurobaComposeCustomTextField(
         }
 
         Text(
+          modifier = Modifier.padding(textFieldPadding),
           text = labelText!!,
           fontSize = fontSize,
           color = hintColor
@@ -155,7 +158,8 @@ fun KurobaComposeCustomTextField(
       CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
         BasicTextField(
           modifier = indicatorLineModifier
-            .padding(bottom = lineTotalHeight),
+            .padding(bottom = lineTotalHeight)
+            .then(Modifier.padding(textFieldPadding)),
           enabled = enabled,
           textStyle = textStyle,
           singleLine = singleLine,

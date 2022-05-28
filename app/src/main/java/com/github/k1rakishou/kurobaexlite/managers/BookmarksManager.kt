@@ -167,6 +167,14 @@ class BookmarksManager {
     return updated
   }
 
+  suspend fun getInactiveBookmarkDescriptors(): List<ThreadDescriptor> {
+    return mutex.withLock {
+      threadBookmarks.values
+        .filter { threadBookmark -> !threadBookmark.isActive() }
+        .map { threadBookmark -> threadBookmark.threadDescriptor }
+    }
+  }
+
   suspend fun removeBookmark(threadDescriptor: ThreadDescriptor): ThreadBookmark? {
     val deletedBookmark = mutex.withLock { threadBookmarks.remove(threadDescriptor) }
     if (deletedBookmark != null) {
@@ -174,6 +182,32 @@ class BookmarksManager {
     }
 
     return deletedBookmark
+  }
+
+  suspend fun removeBookmarks(threadDescriptors: List<ThreadDescriptor>): List<ThreadBookmark> {
+    if (threadDescriptors.isEmpty()) {
+      return emptyList()
+    }
+
+    val actuallyDeleted = mutex.withLock {
+      val actuallyDeleted = mutableListOf<ThreadBookmark>()
+
+      threadDescriptors.forEach { threadDescriptor ->
+        val deletedBookmark = threadBookmarks.remove(threadDescriptor)
+        if (deletedBookmark != null) {
+          actuallyDeleted += deletedBookmark
+        }
+      }
+
+      return@withLock actuallyDeleted
+    }
+
+    if (actuallyDeleted.isNotEmpty()) {
+      val descriptors = actuallyDeleted.map { it.threadDescriptor }
+      _bookmarkEventsFlow.emit(Event.Deleted(descriptors))
+    }
+
+    return actuallyDeleted
   }
 
   suspend fun onBackgroundWatcherWorkFinished() {

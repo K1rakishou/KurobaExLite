@@ -217,7 +217,6 @@ class CatalogScreen(
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.OpenThreadByIdentifier,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier),
-        subText = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier_subtitle)
       ),
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.CatalogAlbum,

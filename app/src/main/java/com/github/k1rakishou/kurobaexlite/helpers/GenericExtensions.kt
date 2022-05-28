@@ -94,9 +94,13 @@ fun safeCapacity(initialCapacity: Int): Int {
   }
 }
 
-fun <T> List<T>.ensureSingleElement(): T {
+fun <T> List<T>.ensureSingleMeasurableReturned(): T {
   if (size != 1) {
-    error("Expected list to have only one element but got ${size}")
+    error(
+      "Expected subcompose() to have only return a single measurable but got ${size} instead. " +
+        "Most likely you are trying to emit multiple composables inside of the content() lambda. " +
+        "Wrap those composables into any container (Box/Column/Row/etc.) and this crash should go away."
+    )
   }
 
   return first()
