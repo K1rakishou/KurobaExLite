@@ -212,5 +212,6 @@
     <string name="bookmark_screen_deleted_n_inactive">Deleted %1$d inactive bookmarks</string>
     <string name="bookmark_screen_no_inactive_to_delete">No inactive bookmarks found</string>
     <string name="bookmark_screen_bookmarks_added">No bookmarks added yet</string>
+    <string name="bookmark_screen_found_by_query">No bookmarks found by query \'%1$s\'</string>
 
 </resources>

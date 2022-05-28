@@ -296,7 +296,7 @@ class BookmarksScreen(
         lazyListState = reorderableState.lazyListState,
         contentPadding = contentPadding,
         content = {
-          if (bookmarkList.isEmpty()) {
+          if (bookmarkList.isEmpty() && !isInSearchMode) {
             item(
               key = noBookmarksMessageItemKey,
               contentType = "no_bookmarks_message_item",
@@ -323,38 +323,55 @@ class BookmarksScreen(
               }
             )
 
-            items(
-              count = bookmarkList.size,
-              key = { index -> dragKey(bookmarkList[index].threadDescriptor) },
-              contentType = { "thread_bookmark_item" },
-              itemContent = { index ->
-                val threadBookmarkUi = bookmarkList[index]
+            if (bookmarkList.isEmpty() && isInSearchMode) {
+              item(
+                key = noBookmarksMessageItemKey,
+                contentType = "no_bookmarks_message_found_by_query_item",
+                content = {
+                  KurobaComposeText(
+                    modifier = Modifier
+                      .fillParentMaxSize()
+                      .padding(8.dp),
+                    text = stringResource(id = R.string.bookmark_screen_found_by_query, searchQuery.text),
+                    textAlign = TextAlign.Center,
+                    fontSize = 16.sp
+                  )
+                }
+              )
+            } else {
+              items(
+                count = bookmarkList.size,
+                key = { index -> dragKey(bookmarkList[index].threadDescriptor) },
+                contentType = { "thread_bookmark_item" },
+                itemContent = { index ->
+                  val threadBookmarkUi = bookmarkList[index]
 
-                ThreadBookmarkItem(
-                  isInSearchMode = isInSearchMode,
-                  canUseFancyAnimations = canUseFancyAnimations,
-                  threadBookmarkUi = threadBookmarkUi,
-                  reorderableState = reorderableState,
-                  onBookmarkClicked = { clickedThreadBookmarkUi ->
-                    threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
-                    globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
-                    globalUiInfoManager.closeDrawer(withAnimation = true)
-                  },
-                  onBookmarkDeleted = { clickedThreadBookmarkUi ->
-                    bookmarksScreenViewModel.deleteBookmark(
-                      threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
-                      onBookmarkDeleted = { deletedBookmark, oldPosition ->
-                        showRevertBookmarkDeletion(
-                          context = context,
-                          deletedBookmark = deletedBookmark,
-                          oldPosition = oldPosition
-                        )
-                      }
-                    )
-                  },
-                )
-              }
-            )
+                  ThreadBookmarkItem(
+                    isInSearchMode = isInSearchMode,
+                    canUseFancyAnimations = canUseFancyAnimations,
+                    threadBookmarkUi = threadBookmarkUi,
+                    reorderableState = reorderableState,
+                    onBookmarkClicked = { clickedThreadBookmarkUi ->
+                      threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
+                      globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
+                      globalUiInfoManager.closeDrawer(withAnimation = true)
+                    },
+                    onBookmarkDeleted = { clickedThreadBookmarkUi ->
+                      bookmarksScreenViewModel.deleteBookmark(
+                        threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
+                        onBookmarkDeleted = { deletedBookmark, oldPosition ->
+                          showRevertBookmarkDeletion(
+                            context = context,
+                            deletedBookmark = deletedBookmark,
+                            oldPosition = oldPosition
+                          )
+                        }
+                      )
+                    },
+                  )
+                }
+              )
+            }
           }
         }
       )
