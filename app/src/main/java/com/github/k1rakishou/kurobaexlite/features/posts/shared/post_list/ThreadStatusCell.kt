@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,14 +58,14 @@ internal fun LazyItemScope.ThreadStatusCell(
     return
   }
 
-  var timeUntilNextUpdateSeconds by remember { mutableStateOf(0L) }
+  var timeUntilNextUpdateSeconds by rememberSaveable(key = "time_until_next_update_seconds") { mutableStateOf(0L) }
 
   LaunchedEffect(
     key1 = Unit,
     block = {
       while (isActive) {
-        delay(1000L)
         timeUntilNextUpdateSeconds = threadScreenViewModel.timeUntilNextUpdateMs / 1000L
+        delay(1000L)
       }
     })
 
