@@ -19,11 +19,11 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
-import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenDefaultToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.search.GlobalSearchScreen
@@ -204,15 +204,6 @@ class CatalogScreen(
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.Reload,
         text = FloatingMenuItem.MenuItemText.Id(R.string.reload)
-      ),
-      FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.LayoutMode,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_layout_mode)
-      ),
-      FloatingMenuItem.Check(
-        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.HistoryScreenPosition,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_history_on_left_side),
-        isChecked = { appSettings.historyScreenOnLeftSide.read() }
       ),
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.OpenThreadByIdentifier,

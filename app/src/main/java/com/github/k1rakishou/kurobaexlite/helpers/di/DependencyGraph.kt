@@ -17,11 +17,11 @@ import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaViewModel
+import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
-import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.search.GlobalSearchScreenViewModel
@@ -29,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostCe
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
+import com.github.k1rakishou.kurobaexlite.features.settings.AppSettingsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
@@ -321,6 +322,7 @@ object DependencyGraph {
     viewModel { KurobaToolbarContainerViewModel() }
     viewModel { GlobalSearchScreenViewModel() }
     viewModel { PostCellIconViewModel(siteManager = get()) }
+    viewModel { AppSettingsScreenViewModel() }
   }
 
   private fun Module.repositories() {
@@ -432,7 +434,12 @@ object DependencyGraph {
       LoadNavigationHistory(navigationHistoryManager = get(), kurobaExLiteDatabase = get())
     }
     single {
-      ModifyNavigationHistory(navigationHistoryManager = get(), chanCache = get(), parsedPostDataCache = get())
+      ModifyNavigationHistory(
+        navigationHistoryManager = get(),
+        chanCache = get(),
+        parsedPostDataCache = get(),
+        appSettings = get()
+      )
     }
     single {
       PersistNavigationHistory(navigationHistoryManager = get(), kurobaExLiteDatabase = get())

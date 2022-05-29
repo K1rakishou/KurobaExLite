@@ -17,4 +17,19 @@ abstract class AbstractSetting<T>(
   abstract suspend fun remove()
   abstract fun listen(): Flow<T>
 
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as AbstractSetting<*>
+
+    if (settingKey != other.settingKey) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return settingKey.hashCode()
+  }
+
 }

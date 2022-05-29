@@ -35,6 +35,8 @@ class AppSettings(
   }
 
   val layoutType by lazy { EnumSetting<LayoutType>(LayoutType.Auto, "layout_type", LayoutType::class.java, dataStore) }
+
+  val historyEnabled by lazy { BooleanSetting(false, "history_enabled", dataStore) }
   val historyScreenOnLeftSide by lazy { BooleanSetting(true, "history_screen_on_left_side", dataStore) }
 
   val textTitleSizeSp by lazy {

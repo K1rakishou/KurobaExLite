@@ -114,15 +114,18 @@ class HomeScreen(
       return
     }
 
+    val historyEnabled by globalUiInfoManager.historyEnabled.collectAsState()
     val historyScreenOnLeftSide by globalUiInfoManager.historyScreenOnLeftSide.collectAsState()
     val currentScreenPage by globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
 
     val pagesWrapper = remember(
       key1 = historyScreenOnLeftSide,
-      key2 = mainUiLayoutMode
+      key2 = mainUiLayoutMode,
+      key3 = historyEnabled
     ) {
       return@remember homeScreenPageConverter.convertScreensToPages(
         uiLayoutMode = mainUiLayoutMode,
+        historyEnabled = historyEnabled,
         historyScreenOnLeftSide = historyScreenOnLeftSide
       )
     }

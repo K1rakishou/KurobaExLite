@@ -2,10 +2,10 @@ package com.github.k1rakishou.kurobaexlite.features.home
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Stable
+import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreen
 import com.github.k1rakishou.kurobaexlite.features.home.pages.AbstractPage
 import com.github.k1rakishou.kurobaexlite.features.home.pages.SinglePage
 import com.github.k1rakishou.kurobaexlite.features.home.pages.SplitPage
-import com.github.k1rakishou.kurobaexlite.features.navigation.HistoryScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -44,25 +44,26 @@ class HomeScreenPageConverter(
 
   fun convertScreensToPages(
     uiLayoutMode: MainUiLayoutMode,
-    historyScreenOnLeftSide: Boolean
+    historyEnabled: Boolean,
+    historyScreenOnLeftSide: Boolean,
   ): PagesWrapper {
     val pages = mutableListOf<AbstractPage<ComposeScreenWithToolbar>>()
 
     when (uiLayoutMode) {
       MainUiLayoutMode.Phone -> {
-        if (historyScreenOnLeftSide) {
+        if (historyEnabled && historyScreenOnLeftSide) {
           pages += SinglePage.of(historyScreen)
         }
 
         pages += SinglePage.of(catalogScreen)
         pages += SinglePage.of(threadScreen)
 
-        if (!historyScreenOnLeftSide) {
+        if (historyEnabled && !historyScreenOnLeftSide) {
           pages += SinglePage.of(historyScreen)
         }
       }
       MainUiLayoutMode.Split -> {
-        if (historyScreenOnLeftSide) {
+        if (historyEnabled && historyScreenOnLeftSide) {
           pages += SinglePage.of(historyScreen)
         }
 
@@ -71,7 +72,7 @@ class HomeScreenPageConverter(
           Pair(threadScreen, GlobalUiInfoManager.THREAD_SCREEN_WEIGHT)
         )
 
-        if (!historyScreenOnLeftSide) {
+        if (historyEnabled && !historyScreenOnLeftSide) {
           pages += SinglePage.of(historyScreen)
         }
       }

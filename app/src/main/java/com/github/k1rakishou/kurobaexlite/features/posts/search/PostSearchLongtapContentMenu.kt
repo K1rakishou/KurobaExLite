@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.posts.search
 
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -18,17 +19,20 @@ class PostSearchLongtapContentMenu(
   private val screenCoroutineScope: CoroutineScope
 ) {
   private val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
+  private val appSettings: AppSettings by inject(AppSettings::class.java)
 
   fun showMenu(
     postCellData: PostCellData,
   ) {
     screenCoroutineScope.launch {
       val floatingMenuItems = mutableListOf<FloatingMenuItem>().apply {
-        this += FloatingMenuItem.Text(
-          menuItemKey = ADD_TO_HISTORY,
-          menuItemData = postCellData.postDescriptor,
-          text = FloatingMenuItem.MenuItemText.Id(R.string.post_search_longtap_menu_add_to_history)
-        )
+        if (appSettings.historyEnabled.read()) {
+          this += FloatingMenuItem.Text(
+            menuItemKey = ADD_TO_HISTORY,
+            menuItemData = postCellData.postDescriptor,
+            text = FloatingMenuItem.MenuItemText.Id(R.string.post_search_longtap_menu_add_to_history)
+          )
+        }
       }
 
       if (floatingMenuItems.isEmpty()) {
@@ -37,7 +41,7 @@ class PostSearchLongtapContentMenu(
 
       navigationRouter.presentScreen(
         FloatingMenuScreen(
-          floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
+          floatingMenuKey = FloatingMenuScreen.POST_SEARCH_LONGTAP_MENU,
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
           menuItems = floatingMenuItems,

@@ -7,7 +7,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
@@ -43,6 +42,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import logcat.logcat
@@ -89,13 +89,13 @@ class GlobalUiInfoManager(
   val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>>
     get() = _notEnoughWidthForSplitLayoutFlow.asSharedFlow()
 
-  private var _totalScreenWidthState = mutableStateOf(0)
-  val totalScreenWidthState: State<Int>
-    get() = _totalScreenWidthState
+  private var _totalScreenWidthState = MutableStateFlow(0)
+  val totalScreenWidthState: StateFlow<Int>
+    get() = _totalScreenWidthState.asStateFlow()
 
-  private var _totalScreenHeightState = mutableStateOf(0)
-  val totalScreenHeightState: State<Int>
-    get() = _totalScreenHeightState
+  private var _totalScreenHeightState = MutableStateFlow(0)
+  val totalScreenHeightState: StateFlow<Int>
+    get() = _totalScreenHeightState.asStateFlow()
 
   private var _currentDrawerVisibility: DrawerVisibility = DrawerVisibility.Closed
   val currentDrawerVisibility: DrawerVisibility
@@ -121,6 +121,10 @@ class GlobalUiInfoManager(
   private val _postCellSubjectTextSizeSp = MutableStateFlow(0.sp)
   val postCellSubjectTextSizeSp: StateFlow<TextUnit>
     get() = _postCellSubjectTextSizeSp.asStateFlow()
+
+  private val _historyEnabled = MutableStateFlow(true)
+  val historyEnabled: StateFlow<Boolean>
+    get() = _historyEnabled.asStateFlow()
 
   private val _historyScreenOnLeftSide = MutableStateFlow(false)
   val historyScreenOnLeftSide: StateFlow<Boolean>
@@ -197,15 +201,14 @@ class GlobalUiInfoManager(
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
+    _historyEnabled.value = appSettings.historyEnabled.read()
     _historyScreenOnLeftSide.value = appSettings.historyScreenOnLeftSide.read()
 
     coroutineScope.launch {
-      val totalScreenWidthFlow = snapshotFlow { totalScreenWidthState.value }
-
       combine(
         flow = appSettings.layoutType.listen(),
         flow2 = currentOrientation,
-        flow3 = totalScreenWidthFlow,
+        flow3 = totalScreenWidthState,
         transform = { homeScreenLayout, orientation, totalScreenWidth ->
           return@combine LayoutChangingSettings(
             orientation = orientation,
@@ -213,9 +216,15 @@ class GlobalUiInfoManager(
             totalScreenWidth = totalScreenWidth
           )
         }
-      ).collectLatest { (orientation, layoutType, totalScreenWidth) ->
-        updateLayoutModeAndCurrentPage(layoutType, orientation, totalScreenWidth)
-      }
+      )
+        .distinctUntilChanged()
+        .collectLatest { (orientation, layoutType, totalScreenWidth) ->
+          updateLayoutModeAndCurrentPage(
+            layoutType = layoutType,
+            orientation = orientation,
+            totalScreenWidth = totalScreenWidth
+          )
+        }
     }
 
     coroutineScope.launch {
@@ -241,6 +250,11 @@ class GlobalUiInfoManager(
     coroutineScope.launch {
       appSettings.historyScreenOnLeftSide.listen()
         .collectLatest { value -> _historyScreenOnLeftSide.value = value }
+    }
+
+    coroutineScope.launch {
+      appSettings.historyEnabled.listen()
+        .collectLatest { value -> _historyEnabled.value = value }
     }
 
     logcat { "UiInfoManager initialization finished" }

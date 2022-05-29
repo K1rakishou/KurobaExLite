@@ -15,7 +15,7 @@ class EnumSetting<T : Enum<T>>(
   private val enumClazz: Class<T>,
   dataStore: DataStore<Preferences>
 ) : AbstractSetting<T>(dataStore) {
-  private val enumValues by lazy { enumClazz.enumConstants }
+  val enumValues by lazy { enumClazz.enumConstants }
   private val prefsKey: Preferences.Key<String> = stringPreferencesKey(settingKey)
 
   override suspend fun read(): T {

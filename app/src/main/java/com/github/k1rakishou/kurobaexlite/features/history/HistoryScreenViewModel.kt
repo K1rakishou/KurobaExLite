@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.navigation
+package com.github.k1rakishou.kurobaexlite.features.history
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.viewModelScope

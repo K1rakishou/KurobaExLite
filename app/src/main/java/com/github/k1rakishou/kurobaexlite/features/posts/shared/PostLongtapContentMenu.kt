@@ -54,7 +54,7 @@ class PostLongtapContentMenu(
 
       navigationRouter.presentScreen(
         FloatingMenuScreen(
-          floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
+          floatingMenuKey = FloatingMenuScreen.POST_LONGTAP_MENU,
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
           menuItems = floatingMenuItems,

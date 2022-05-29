@@ -80,8 +80,6 @@
     <string name="not_enough_with_for_split_layout_mode">Not enough width for Split layout mode. Required at least %1$d px but actual is %2$d px. Resetting to Phone layout mode.</string>
 
     <string name="catalog_toolbar_open_thread_by_identifier">Open thread by any identifier</string>
-    <string name="catalog_toolbar_layout_mode">Layout mode</string>
-    <string name="catalog_toolbar_history_on_left_side">History screen on left side</string>
     <string name="catalog_toolbar_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_toolbar_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
     <string name="catalog_toolbar_album">Album</string>
@@ -213,5 +211,12 @@
     <string name="bookmark_screen_no_inactive_to_delete">No inactive bookmarks found</string>
     <string name="bookmark_screen_bookmarks_added">No bookmarks added yet</string>
     <string name="bookmark_screen_found_by_query">No bookmarks found by query \'%1$s\'</string>
+
+    <string name="settings_screen_history_group">History</string>
+    <string name="settings_screen_history_enabled">Track navigation history</string>
+    <string name="settings_screen_history_on_left_side">History screen on left side</string>
+    <string name="settings_screen_history_on_left_side_description">Allows changing the screen setting\'s position</string>
+    <string name="settings_screen_ui_layout_group">UI Layout</string>
+    <string name="settings_screen_layout_mode">Layout mode</string>
 
 </resources>

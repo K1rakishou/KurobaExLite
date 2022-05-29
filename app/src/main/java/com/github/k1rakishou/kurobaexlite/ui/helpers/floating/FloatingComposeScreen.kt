@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -120,7 +121,7 @@ abstract class FloatingComposeScreen(
   @Composable
   open fun maxAvailableHeight(): Dp {
     val isTablet = globalUiInfoManager.isTablet
-    val maxParentHeight by globalUiInfoManager.totalScreenHeightState
+    val maxParentHeight by globalUiInfoManager.totalScreenHeightState.collectAsState()
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {
@@ -143,7 +144,7 @@ abstract class FloatingComposeScreen(
   @Composable
   open fun maxAvailableWidth(): Dp {
     val isTablet = globalUiInfoManager.isTablet
-    val maxParentWidth by globalUiInfoManager.totalScreenHeightState
+    val maxParentWidth by globalUiInfoManager.totalScreenHeightState.collectAsState()
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {

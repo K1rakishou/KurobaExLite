@@ -9,7 +9,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewMo
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -21,7 +20,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
@@ -51,19 +49,6 @@ class CatalogScreenToolbarActionHandler(
     when (menuItem.menuItemKey as ToolbarMenuItems) {
       ToolbarMenuItems.Reload -> {
         catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
-      }
-      ToolbarMenuItems.LayoutMode -> {
-        screenCoroutineScope.launch {
-          handleLayoutMode(
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter
-          )
-        }
-      }
-      ToolbarMenuItems.HistoryScreenPosition -> {
-        screenCoroutineScope.launch {
-          appSettings.historyScreenOnLeftSide.toggle()
-        }
       }
       ToolbarMenuItems.OpenThreadByIdentifier -> {
         handleOpenThreadByIdentifier(
@@ -118,40 +103,6 @@ class CatalogScreenToolbarActionHandler(
                 ?: return@FloatingMenuScreen
 
               bookmarkAllCatalogThreads.await(catalogDescriptor)
-            }
-          }
-        }
-      )
-    )
-  }
-
-  private suspend fun handleLayoutMode(
-    componentActivity: ComponentActivity,
-    navigationRouter: NavigationRouter,
-  ) {
-    val floatingMenuItems = mutableListOf<FloatingMenuItem>()
-
-    floatingMenuItems += FloatingMenuItem.Group(
-      checkedMenuItemKey = appSettings.layoutType.read(),
-      groupItems = LayoutType.values().map { layoutType ->
-        FloatingMenuItem.Text(
-          menuItemKey = layoutType,
-          text = FloatingMenuItem.MenuItemText.String(layoutType.name)
-        )
-      }
-    )
-
-    navigationRouter.presentScreen(
-      FloatingMenuScreen(
-        floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW_LAYOUT_TYPE,
-        componentActivity = componentActivity,
-        navigationRouter = navigationRouter,
-        menuItems = floatingMenuItems,
-        onMenuItemClicked = { clickedMenuItem ->
-          screenCoroutineScope.launch {
-            if (clickedMenuItem.menuItemKey is LayoutType) {
-              val layoutType = (clickedMenuItem.menuItemKey as LayoutType)
-              appSettings.layoutType.write(layoutType)
             }
           }
         }
@@ -224,9 +175,7 @@ class CatalogScreenToolbarActionHandler(
     Reload,
     ScrollTop,
     ScrollBottom,
-    LayoutMode,
     CatalogAlbum,
-    HistoryScreenPosition,
     CatalogDevMenu,
   }
 

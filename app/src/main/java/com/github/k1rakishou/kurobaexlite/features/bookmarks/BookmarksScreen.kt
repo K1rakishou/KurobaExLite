@@ -100,6 +100,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -433,6 +434,7 @@ class BookmarksScreen(
       modifier = Modifier
         .fillMaxSize()
         .background(chanTheme.backColorSecondaryCompose)
+        .consumeClicks(enabled = true)
     ) {
       Spacer(modifier = Modifier.height(windowInsets.top))
 

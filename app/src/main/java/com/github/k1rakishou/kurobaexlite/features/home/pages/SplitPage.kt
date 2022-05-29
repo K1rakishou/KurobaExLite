@@ -21,9 +21,7 @@ class SplitPage private constructor(
   override val childScreens: List<ChildScreen<ComposeScreenWithToolbar>>
 ) : AbstractPage<ComposeScreenWithToolbar>() {
 
-  override fun screenKey(): ScreenKey {
-    return childScreens.first().composeScreen.screenKey
-  }
+  override fun screenKey(): ScreenKey = SCREEN_KEY
 
   override fun hasScreen(screenKey: ScreenKey): Boolean {
     return childScreens
@@ -149,6 +147,8 @@ class SplitPage private constructor(
   }
 
   companion object {
+    val SCREEN_KEY = ScreenKey("SplitPage")
+
     fun of(vararg composeScreenWithWeight: Pair<ComposeScreenWithToolbar, Float>): SplitPage {
       check(composeScreenWithWeight.isNotEmpty()) { "input is empty" }
 

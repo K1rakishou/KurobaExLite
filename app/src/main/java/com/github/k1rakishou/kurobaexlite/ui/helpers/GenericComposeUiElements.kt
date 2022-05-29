@@ -38,6 +38,7 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.LocalTextStyle
+import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.ripple.rememberRipple
@@ -734,4 +735,22 @@ fun KurobaFloatingActionButton(
   ) {
     KurobaComposeIcon(drawableId = iconDrawableId)
   }
+}
+
+@Composable
+fun KurobaComposeSwitch(
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  checked: Boolean,
+  onCheckedChange: (Boolean) -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+
+  Switch(
+    modifier = modifier,
+    enabled = enabled,
+    checked = checked,
+    onCheckedChange = onCheckedChange,
+    colors = chanTheme.switchColors()
+  )
 }

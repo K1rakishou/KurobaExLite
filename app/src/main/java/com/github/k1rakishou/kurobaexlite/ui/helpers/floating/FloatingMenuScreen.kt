@@ -432,11 +432,12 @@ class FloatingMenuScreen(
 
   companion object {
     const val CATALOG_OVERFLOW = "catalog_overflow_menu"
+    const val POST_SEARCH_LONGTAP_MENU = "post_search_longtap_menu"
+    const val POST_LONGTAP_MENU = "post_longtap_menu"
     const val CATALOG_OVERFLOW_LAYOUT_TYPE = "catalog_overflow_layout_type_menu"
-
     const val THREAD_OVERFLOW = "thread_overflow_menu"
-
     const val BOOKMARKS_OVERFLOW = "bookmarks_overflow_menu"
+    const val APP_SETTINGS_LIST_OPTION_MENU = "app_settings_list_option_menu"
   }
 }
 
