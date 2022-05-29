@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PopupPosts
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.helpers.flatMapNotNull
+import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -108,8 +109,10 @@ class PopupRepliesScreenViewModel(savedStateHandle: SavedStateHandle) : PostScre
       postCellDataList = chanCache.getManyForDescriptor(postDescriptor.threadDescriptor, repliesFrom)
     )
 
+    val sortedPosts = ThreadPostSorter.sortThreadPostCellData(posts)
+
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(postDescriptor.threadDescriptor))
-    postScreenState.insertOrUpdateMany(posts)
+    postScreenState.insertOrUpdateMany(sortedPosts)
 
     return true
   }
@@ -122,8 +125,10 @@ class PopupRepliesScreenViewModel(savedStateHandle: SavedStateHandle) : PostScre
       ?.let { postData -> parsePostData(replyViewMode, postDescriptor, postData) }
       ?: emptyList()
 
+    val sortedPosts = ThreadPostSorter.sortThreadPostCellData(threadPosts)
+
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(postDescriptor.threadDescriptor))
-    postScreenState.insertOrUpdateMany(threadPosts)
+    postScreenState.insertOrUpdateMany(sortedPosts)
 
     return true
   }

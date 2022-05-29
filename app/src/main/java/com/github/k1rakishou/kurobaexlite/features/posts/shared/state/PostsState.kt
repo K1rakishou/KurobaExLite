@@ -260,7 +260,7 @@ class PostsState(
 
         if (prevPostDescriptor != null) {
           check(prevPostDescriptor < currentPostDescriptor) {
-            "Post incorrect ordering detected at ${index}/${_posts.size}! " +
+            "Post incorrect ordering detected at ${index}/${_posts.lastIndex}! " +
               "prevPostDescriptor=${prevPostDescriptor}, " +
               "currentPostDescriptor=${currentPostDescriptor}, " +
               "inputPostsCount=${inputPostsCount}"
