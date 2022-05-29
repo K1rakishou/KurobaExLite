@@ -7,6 +7,8 @@ import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CheckboxColors
 import androidx.compose.material.CheckboxDefaults
 import androidx.compose.material.ContentAlpha
+import androidx.compose.material.RadioButtonColors
+import androidx.compose.material.RadioButtonDefaults
 import androidx.compose.material.SliderColors
 import androidx.compose.material.SliderDefaults
 import androidx.compose.material.SliderDefaults.DisabledTickAlpha
@@ -162,6 +164,15 @@ abstract class ChanTheme {
       checkmarkColor = backColorCompose,
       disabledColor = accentColorCompose.copy(alpha = ContentAlpha.disabled),
       disabledIndeterminateColor = accentColorCompose.copy(alpha = ContentAlpha.disabled)
+    )
+  }
+
+  @Composable
+  fun radioButtonColors(): RadioButtonColors {
+    return RadioButtonDefaults.colors(
+      selectedColor = accentColorCompose,
+      unselectedColor = accentColorCompose.copy(alpha = 0.6f),
+      disabledColor = accentColorCompose.copy(alpha = ContentAlpha.disabled),
     )
   }
 

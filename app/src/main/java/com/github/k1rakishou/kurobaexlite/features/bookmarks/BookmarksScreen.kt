@@ -136,7 +136,8 @@ class BookmarksScreen(
     listOf(
       FloatingMenuItem.Text(
         menuItemKey = ToolbarMenuItems.PruneInactiveBookmarks,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.bookmark_screen_toolbar_prune_inactive)
+        text = FloatingMenuItem.MenuItemText.Id(R.string.bookmark_screen_toolbar_prune_inactive),
+        subText = FloatingMenuItem.MenuItemText.Id(R.string.bookmark_screen_toolbar_prune_inactive_description)
       ),
     )
   }

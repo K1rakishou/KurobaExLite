@@ -31,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeRadioButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -146,7 +147,7 @@ class FloatingMenuScreen(
             BuildIconMenuItem(item = menuItem, onItemClicked = onItemClicked)
           }
           is FloatingMenuItem.Group -> {
-            BuildCheckboxGroup(
+            BuildRadioButtonGroup(
               itemGroup = menuItem,
               onItemClicked = { invokeCallback, clickedItem ->
                 if (invokeCallback) {
@@ -259,7 +260,7 @@ class FloatingMenuScreen(
   }
 
   @Composable
-  private fun BuildCheckboxGroup(
+  private fun BuildRadioButtonGroup(
     itemGroup: FloatingMenuItem.Group,
     onItemClicked: (Boolean, FloatingMenuItem) -> Unit
   ) {
@@ -298,11 +299,10 @@ class FloatingMenuScreen(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // TODO(KurobaEx): change to GroupBoxItem or whatever once it's implemented
-            KurobaComposeCheckbox(
+            KurobaComposeRadioButton(
               modifier = Modifier.wrapContentSize(),
-              currentlyChecked = currentlyCheckedItemKey == groupItem.menuItemKey,
-              onCheckChanged = { applyChecks(groupItem) }
+              currentlySelected = currentlyCheckedItemKey == groupItem.menuItemKey,
+              onSelectionChanged = { applyChecks(groupItem) }
             )
 
             Spacer(modifier = Modifier.width(8.dp))

@@ -38,6 +38,7 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ContentAlpha
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.LocalTextStyle
+import androidx.compose.material.RadioButton
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -691,6 +692,62 @@ fun KurobaComposeCheckbox(
         onCheckChanged(isChecked)
       },
       colors = chanTheme.checkBoxColors()
+    )
+
+    if (text != null) {
+      Spacer(modifier = Modifier.width(8.dp))
+
+      KurobaComposeText(
+        modifier = Modifier.align(Alignment.CenterVertically),
+        text = text,
+        enabled = enabled
+      )
+    }
+  }
+}
+
+@Composable
+fun KurobaComposeRadioButton(
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  text: String? = null,
+  currentlySelected: Boolean,
+  onSelectionChanged: (Boolean) -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  var selected by remember(key1 = currentlySelected) { mutableStateOf(currentlySelected) }
+
+  val color = remember(key1 = chanTheme) {
+    if (chanTheme.isLightTheme) {
+      Color(0x40000000)
+    } else {
+      Color(0x40ffffff)
+    }
+  }
+
+  Row(
+    modifier = Modifier
+      .clickable(
+        enabled = enabled,
+        interactionSource = remember { MutableInteractionSource() },
+        indication = rememberRipple(bounded = true, color = color),
+        onClick = {
+          selected = selected.not()
+          onSelectionChanged(selected)
+        }
+      )
+      .padding(vertical = 4.dp)
+      .then(modifier)
+  ) {
+    RadioButton(
+      modifier = Modifier.align(Alignment.CenterVertically),
+      selected = selected,
+      enabled = enabled,
+      colors = chanTheme.radioButtonColors(),
+      onClick = {
+        selected = selected.not()
+        onSelectionChanged(selected)
+      }
     )
 
     if (text != null) {
