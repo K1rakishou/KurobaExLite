@@ -36,6 +36,8 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -405,6 +407,7 @@ abstract class PostScreenViewModel(
     }
   }
 
+  @OptIn(ExperimentalTime::class)
   fun parseRemainingPostsAsync(
     chanDescriptor: ChanDescriptor,
     postDataList: List<IPostData>,
@@ -438,7 +441,7 @@ abstract class PostScreenViewModel(
       try {
         val startTime = SystemClock.elapsedRealtime()
         logcat(TAG) {
-          "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts... " +
+          "parseRemainingPostsAsync() starting parsing ${postDataList.size} posts, " +
             "(chunksCount=$chunksCount, chunkSize=$chunkSize)"
         }
 
@@ -485,6 +488,10 @@ abstract class PostScreenViewModel(
             .awaitAll()
         }
 
+        logcat(TAG) {
+          "parseRemainingPostsAsync() finished parsing ${postDataList.size} posts"
+        }
+
         if (parsePostsOptions.parseRepliesTo) {
           val postDescriptors = postDataList.map { postData -> postData.postDescriptor }
           val postDataMap = postDataList.associateBy { postData -> postData.postDescriptor }
@@ -499,7 +506,7 @@ abstract class PostScreenViewModel(
 
           if (repliesToPostDataSet.isNotEmpty()) {
             logcat(TAG, LogPriority.VERBOSE) {
-              "parseRemainingPostsAsyncReplies() starting parsing ${repliesToPostDataSet.size} posts... " +
+              "parseRemainingPostsAsyncReplies() starting parsing ${repliesToPostDataSet.size} posts, " +
                 "(repliesToPostDescriptorSet=${repliesToPostDescriptorSet.size}, " +
                 "chunksCount=$chunksCount, chunkSize=$repliesToChunkSize)"
             }
@@ -543,10 +550,21 @@ abstract class PostScreenViewModel(
                 .toList()
                 .awaitAll()
             }
+
+            logcat(TAG, LogPriority.VERBOSE) {
+              "parseRemainingPostsAsyncReplies() finished parsing ${repliesToPostDataSet.size} posts"
+            }
           }
         }
 
-        val postCellDataListSorted = sorter(resultMap.values)
+        ensureActive()
+        val postsToSort = resultMap.values.toList()
+
+        logcat(TAG) { "parseRemainingPostsAsync() sorting ${postsToSort.size} posts..." }
+        val (postCellDataListSorted, time) = measureTimedValue { sorter(postsToSort) }
+        logcat(TAG) { "parseRemainingPostsAsync() sorting ${postsToSort.size} done! Took $time" }
+
+        ensureActive()
         showPostsLoadingSnackbarJob.cancel()
         withContext(NonCancellable) { onPostsParsed(postCellDataListSorted) }
 
@@ -555,8 +573,10 @@ abstract class PostScreenViewModel(
           "parseRemainingPostsAsync() parsing ${postDataList.size} posts... done! Took ${deltaTime} ms"
         }
       } catch (error: Throwable) {
-        logcat(TAG) {
-          "parseRemainingPostsAsync() error: ${error.asLog()}"
+        logcat(TAG) { "parseRemainingPostsAsync() error: ${error.asLog()}" }
+
+        if (error is RuntimeException) {
+          throw error
         }
       } finally {
         showPostsLoadingSnackbarJob.cancel()

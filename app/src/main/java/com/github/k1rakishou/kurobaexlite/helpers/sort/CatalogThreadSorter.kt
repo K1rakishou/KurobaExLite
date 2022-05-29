@@ -20,8 +20,9 @@ object CatalogThreadSorter : PostSorter() {
           // first when sorting order is descending.
           sortPostCellData(
             ascending = !catalogSortSetting.ascending,
-            posts = catalogThreads
-          ) { postDataState -> postDataState.originalPostOrder }
+            posts = catalogThreads,
+            selector = { postDataState -> postDataState.originalPostOrder }
+          )
         }
         CatalogSort.ACTIVITY -> {
           // Reverse the "ascending" flag for ACTIVITY sorting. The same reasoning as for BUMP.
@@ -30,26 +31,30 @@ object CatalogThreadSorter : PostSorter() {
         CatalogSort.REPLY -> {
           sortPostCellData(
             ascending = catalogSortSetting.ascending,
-            posts = catalogThreads
-          ) { postDataState -> postDataState.threadRepliesTotal ?: 0 }
+            posts = catalogThreads,
+            selector = { postDataState -> postDataState.threadRepliesTotal ?: 0 }
+          )
         }
         CatalogSort.IMAGE -> {
           sortPostCellData(
             ascending = catalogSortSetting.ascending,
-            posts = catalogThreads
-          ) { postDataState -> postDataState.threadImagesTotal ?: 0 }
+            posts = catalogThreads,
+            selector = { postDataState -> postDataState.threadImagesTotal ?: 0 }
+          )
         }
         CatalogSort.CREATION_TIME -> {
           sortPostCellData(
             ascending = catalogSortSetting.ascending,
-            posts = catalogThreads
-          ) { postDataState -> postDataState.timeMs ?: 0 }
+            posts = catalogThreads,
+            selector = { postDataState -> postDataState.timeMs ?: 0 }
+          )
         }
         CatalogSort.MODIFIED -> {
           sortPostCellData(
             ascending = catalogSortSetting.ascending,
-            posts = catalogThreads
-          ) { postDataState -> postDataState.lastModified ?: 0 }
+            posts = catalogThreads,
+            selector = { postDataState -> postDataState.lastModified ?: 0 }
+          )
         }
       }
     }

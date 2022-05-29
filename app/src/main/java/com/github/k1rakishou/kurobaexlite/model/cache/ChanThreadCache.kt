@@ -45,7 +45,10 @@ class ChanThreadCache(
       val insertedPosts = mutableListOf<IPostData>()
       val updatedPosts = mutableListOf<IPostData>()
       val unchangedPosts = mutableListOf<IPostData>()
+      val deletedPosts = mutableListOf<IPostData>()
       var needSorting = false
+
+      val allPostDescriptorsFromServer = postCellDataCollection.associateBy { it.postDescriptor }
 
       postCellDataCollection.forEach { postData ->
         val prevPostData = postsMap[postData.postDescriptor]
@@ -71,6 +74,12 @@ class ChanThreadCache(
         }
       }
 
+      posts.forEach { postData ->
+        if (!allPostDescriptorsFromServer.containsKey(postData.postDescriptor)) {
+          deletedPosts += postData
+        }
+      }
+
       if (needSorting) {
         posts.sortWith(POSTS_COMPARATOR)
       }
@@ -86,7 +95,8 @@ class ChanThreadCache(
       return@withLockNonCancellable PostsLoadResult(
         newPosts = insertedPosts,
         updatedPosts = updatedPosts,
-        unchangedPosts = unchangedPosts
+        unchangedPosts = unchangedPosts,
+        deletedPosts = deletedPosts
       )
     }
   }

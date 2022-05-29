@@ -186,7 +186,7 @@ class ThreadScreenViewModel(
           forced = true,
           parseRepliesTo = true
         ),
-        sorter = { postCellData -> ThreadPostSorter.sortThreadPostCellData(postCellData) },
+        sorter = { postCellDataCollection -> ThreadPostSorter.sortThreadPostCellData(postCellDataCollection) },
         onStartParsingPosts = {
           snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
             postsCount = postLoadResult.newOrUpdatedCount,
@@ -300,7 +300,7 @@ class ThreadScreenViewModel(
     val postLoadResultMaybe = chanThreadManager.loadThread(threadDescriptor)
     if (postLoadResultMaybe.isFailure) {
       val error = postLoadResultMaybe.exceptionOrThrow()
-      logcatError { "loadCatalog() error=${error.asLog()}" }
+      logcatError { "loadThreadInternal() error=${error.asLog()}" }
 
       threadAutoUpdater.stopAutoUpdaterLoop()
       threadScreenState.lastLoadErrorState.value = error
@@ -355,7 +355,9 @@ class ThreadScreenViewModel(
     }
 
     if (cachedThreadPostsState != null && cachedThreadPostsState.chanDescriptor == chanDescriptor) {
-      logcat(tag = "loadThreadInternal") { "Merging cached posts with new posts. Info=${postLoadResult.info()}" }
+      logcat(TAG) {
+        "loadThreadInternal() Merging cached posts with new posts. Info: ${postLoadResult.info()}"
+      }
 
       val initiallyParsedPosts = parseInitialBatchOfPosts(
         startPostDescriptor = startParsePost,
@@ -366,7 +368,9 @@ class ThreadScreenViewModel(
 
       threadScreenState.insertOrUpdateMany(initiallyParsedPosts)
     } else {
-      logcat(tag = "loadThreadInternal") { "No cached posts, using posts from the server." }
+      logcat(TAG) {
+        "loadThreadInternal() No cached posts, using posts from the server. Info: ${postLoadResult.info()}"
+      }
 
       val initiallyParsedPosts = parseInitialBatchOfPosts(
         startPostDescriptor = startParsePost,
@@ -393,7 +397,7 @@ class ThreadScreenViewModel(
       chanDescriptor = threadDescriptor,
       postDataList = allCombinedPosts,
       parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
-      sorter = { postCellData -> ThreadPostSorter.sortThreadPostCellData(postCellData) },
+      sorter = { postCellDataCollection -> ThreadPostSorter.sortThreadPostCellData(postCellDataCollection) },
       onStartParsingPosts = {
         snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
           postsCount = postLoadResult.newPostsCount,
@@ -402,8 +406,8 @@ class ThreadScreenViewModel(
       },
       onPostsParsed = { postDataList ->
         logcat {
-          "loadThread($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
-            "newAndUpdatedPosts=${allCombinedPosts.size}, postDataList=${postDataList.size}"
+          "loadThreadInternal($threadDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+            "allCombinedPosts=${allCombinedPosts.size}, postDataList=${postDataList.size}"
         }
 
         try {
@@ -442,7 +446,11 @@ class ThreadScreenViewModel(
             lastViewedOrLoadedPostDescriptor = lastViewedOrLoadedPostDescriptor
           ),
           updatedPostsCount = postLoadResult.updatePostsCountExcludingOriginalPost,
-          deletedPostsCount = postLoadResult.deletedPostsCount,
+          // TODO(KurobaEx): for now we can't use this because it will show "N deleted posts" snackbar
+          //  on each refresh. We need to somehow check that we have already notified the user about
+          //  these deleted posts so that we don't notify him on every thread update.
+//          deletedPostsCount = postLoadResult.deletedPostsCount,
+          deletedPostsCount = 0,
           screenKey = screenKey
         )
       }

@@ -148,7 +148,7 @@ class CatalogScreenViewModel(
 
     if (postsLoadResultMaybe.isFailure) {
       val error = postsLoadResultMaybe.exceptionOrThrow()
-      logcatError { "loadCatalog() error=${error.asLog()}" }
+      logcatError { "loadCatalogInternal() error=${error.asLog()}" }
 
       catalogScreenState.lastLoadErrorState.value = error
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)
@@ -219,7 +219,7 @@ class CatalogScreenViewModel(
       },
       onPostsParsed = { postCellDataList ->
         logcat {
-          "loadCatalog($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
+          "loadCatalogInternal($catalogDescriptor) took ${SystemClock.elapsedRealtime() - startTime} ms, " +
             "catalogThreads=${sortedThreads.size}"
         }
 

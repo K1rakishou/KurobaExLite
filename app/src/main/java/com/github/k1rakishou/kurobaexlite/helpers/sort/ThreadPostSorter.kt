@@ -12,8 +12,9 @@ object ThreadPostSorter : PostSorter() {
     return withContext(Dispatchers.Default) {
       sortPostCellData(
         ascending = true,
-        posts = threadPosts
-      ) { postDataState -> postDataState.originalPostOrder }
+        posts = threadPosts,
+        selector = { postDataState -> postDataState.postDescriptor }
+      )
     }
   }
 

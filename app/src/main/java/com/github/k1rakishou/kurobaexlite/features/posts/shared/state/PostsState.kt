@@ -16,8 +16,10 @@ import com.github.k1rakishou.kurobaexlite.helpers.linkedMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.toHashSetByKey
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import kotlinx.coroutines.channels.BufferOverflow
@@ -146,6 +148,15 @@ class PostsState(
     postCellData: PostCellData,
     checkFirstPostIsOriginal: Boolean
   ) {
+    val descriptorsMatch = when (chanDescriptor) {
+      is CatalogDescriptor -> postCellData.postDescriptor.catalogDescriptor == chanDescriptor
+      is ThreadDescriptor -> postCellData.postDescriptor.threadDescriptor == chanDescriptor
+    }
+
+    if (!descriptorsMatch) {
+      return
+    }
+
     Snapshot.withMutableSnapshot {
       val index = postIndexes[postCellData.postDescriptor]
       if (index == null) {
@@ -160,26 +171,10 @@ class PostsState(
       }
 
       if (androidHelpers.isDevFlavor()) {
-        if (checkFirstPostIsOriginal) {
-          val originalPost = _posts.firstOrNull()
-          if (originalPost != null) {
-            check(originalPost.isOP) { "First post is not OP" }
-          }
-        }
-
-        check(postIndexes.size == _posts.size) {
-          "postIndexes.size (${postIndexes.size}) != postsMutable.size (${_posts.size})"
-        }
-
-        val postMutableDeduplicated = _posts.toHashSetByKey { postCellDataState ->
-          postCellDataState.postDescriptor
-        }
-
-        check(postMutableDeduplicated.size == _posts.size) {
-          "Duplicates found in postsMutable " +
-            "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
-            "postsMutable.size=${_posts.size})"
-        }
+        checkPostsCorrectness(
+          checkFirstPostIsOriginal = checkFirstPostIsOriginal,
+          inputPostsCount = 1
+        )
       }
 
       updatePostListAnimationInfoMap(listOf(postCellData))
@@ -203,6 +198,15 @@ class PostsState(
       for (postCellData in postCellDataCollection) {
         val postDescriptor = postCellData.postDescriptor
 
+        val descriptorsMatch = when (chanDescriptor) {
+          is CatalogDescriptor -> postDescriptor.catalogDescriptor == chanDescriptor
+          is ThreadDescriptor -> postDescriptor.threadDescriptor == chanDescriptor
+        }
+
+        if (!descriptorsMatch) {
+          continue
+        }
+
         val index = postIndexes[postDescriptor]
         if (index == null) {
           postIndexes[postDescriptor] = initialIndex++
@@ -215,30 +219,56 @@ class PostsState(
       }
 
       if (androidHelpers.isDevFlavor()) {
-        if (checkFirstPostIsOriginal) {
-          val originalPost = _posts.firstOrNull()
-          if (originalPost != null) {
-            check(originalPost.isOP) { "First post is not OP" }
-          }
-        }
-
-        check(postIndexes.size == _posts.size) {
-          "postIndexes.size (${postIndexes.size}) != postsMutable.size (${_posts.size})"
-        }
-
-        val postMutableDeduplicated = _posts.toHashSetByKey { postCellDataState ->
-          postCellDataState.postDescriptor
-        }
-
-        check(postMutableDeduplicated.size == _posts.size) {
-          "Duplicates found in postsMutable " +
-            "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
-            "postsMutable.size=${_posts.size})"
-        }
+        checkPostsCorrectness(
+          checkFirstPostIsOriginal = checkFirstPostIsOriginal,
+          inputPostsCount = postCellDataCollection.size
+        )
       }
 
       _lastUpdatedOn = SystemClock.elapsedRealtime()
       updatePostListAnimationInfoMap(postCellDataCollection)
+    }
+  }
+
+  private fun checkPostsCorrectness(checkFirstPostIsOriginal: Boolean, inputPostsCount: Int) {
+    if (checkFirstPostIsOriginal) {
+      val originalPost = _posts.firstOrNull()
+      if (originalPost != null) {
+        check(originalPost.isOP) { "First post is not OP" }
+      }
+    }
+
+    check(postIndexes.size == _posts.size) {
+      "postIndexes.size (${postIndexes.size}) != postsMutable.size (${_posts.size})"
+    }
+
+    val postMutableDeduplicated = _posts.toHashSetByKey { postCellDataState ->
+      postCellDataState.postDescriptor
+    }
+
+    check(postMutableDeduplicated.size == _posts.size) {
+      "Duplicates found in postsMutable " +
+        "postMutableDeduplicated.size=${postMutableDeduplicated.size}, " +
+        "postsMutable.size=${_posts.size})"
+    }
+
+    if (chanDescriptor is ThreadDescriptor) {
+      var prevPostDescriptor: PostDescriptor? = null
+
+      for ((index, postCellData) in _posts.withIndex()) {
+        val currentPostDescriptor = postCellData.postDescriptor
+
+        if (prevPostDescriptor != null) {
+          check(prevPostDescriptor < currentPostDescriptor) {
+            "Post incorrect ordering detected at ${index}/${_posts.size}! " +
+              "prevPostDescriptor=${prevPostDescriptor}, " +
+              "currentPostDescriptor=${currentPostDescriptor}, " +
+              "inputPostsCount=${inputPostsCount}"
+          }
+        }
+
+        prevPostDescriptor = currentPostDescriptor
+      }
     }
   }
 

@@ -55,6 +55,12 @@ data class PostsLoadResult(
         return
       }
     }
+
+    for (newPost in deletedPosts) {
+      if (!iterator(newPost)) {
+        return
+      }
+    }
   }
 
   fun newAndUpdatedCombined(): List<IPostData> {
@@ -77,8 +83,9 @@ data class PostsLoadResult(
   }
 
   fun allCombinedForThread(): List<IPostData> {
-    val resultList = mutableListWithCap<IPostData>(newPosts.size + updatedPosts.size + unchangedPosts.size)
+    val resultList = mutableListWithCap<IPostData>(deletedPosts.size + newPosts.size + updatedPosts.size + unchangedPosts.size)
 
+    resultList.addAll(deletedPosts)
     resultList.addAll(unchangedPosts)
     resultList.addAll(updatedPosts)
     resultList.addAll(newPosts)
@@ -88,11 +95,11 @@ data class PostsLoadResult(
   }
 
   fun newPostsCountSinceLastViewedOrLoaded(lastViewedOrLoadedPostDescriptor: PostDescriptor): Int {
-    return newPosts.count { postData -> postData.postNo > lastViewedOrLoadedPostDescriptor.postNo }
+    return newPosts.count { postData -> postData.postDescriptor > lastViewedOrLoadedPostDescriptor }
   }
 
   fun isEmpty(): Boolean {
-    return newPosts.isEmpty() && updatedPosts.isEmpty() && unchangedPosts.isEmpty()
+    return deletedPosts.isEmpty() && newPosts.isEmpty() && updatedPosts.isEmpty() && unchangedPosts.isEmpty()
   }
 
   fun isNotEmpty(): Boolean {
