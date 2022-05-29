@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -45,7 +44,12 @@ abstract class FloatingComposeScreen(
   open val presentAnimation: NavigationRouter.ScreenAddAnimation = NavigationRouter.ScreenAddAnimation.FadeIn
   open val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.FadeOut
 
-  protected val touchPositionDependantAlignment by lazy { TouchPositionDependantAlignment(globalUiInfoManager) }
+  protected val touchPositionDependantAlignment by lazy {
+    TouchPositionDependantAlignment(
+      lastTouchPositionX = globalUiInfoManager.lastTouchPosition.x.toFloat(),
+      lastTouchPositionY = globalUiInfoManager.lastTouchPosition.y.toFloat(),
+    )
+  }
 
   @Composable
   override fun Content() {
@@ -95,7 +99,7 @@ abstract class FloatingComposeScreen(
             top = insets.top + vertPaddingDp,
             bottom = insets.bottom + vertPaddingDp,
           ),
-        contentAlignment = contentAlignment,
+        contentAlignment = remember { contentAlignment },
       ) {
         val maxWidthDp = maxAvailableWidth()
         val maxHeightDp = maxAvailableHeight()
@@ -177,7 +181,8 @@ abstract class FloatingComposeScreen(
   }
 
   protected class TouchPositionDependantAlignment(
-    private val globalUiInfoManager: GlobalUiInfoManager
+    private val lastTouchPositionX: Float,
+    private val lastTouchPositionY: Float,
   ) : Alignment {
     override fun align(size: IntSize, space: IntSize, layoutDirection: LayoutDirection): IntOffset {
       val availableWidth = space.width
@@ -187,8 +192,8 @@ abstract class FloatingComposeScreen(
         return IntOffset.Zero
       }
 
-      val biasX = (globalUiInfoManager.lastTouchPosition.x.toFloat() / availableWidth.toFloat()).coerceIn(0f, 1f)
-      val biasY = (globalUiInfoManager.lastTouchPosition.y.toFloat() / availableHeight.toFloat()).coerceIn(0f, 1f)
+      val biasX = (lastTouchPositionX / availableWidth.toFloat()).coerceIn(0f, 1f)
+      val biasY = (lastTouchPositionY / availableHeight.toFloat()).coerceIn(0f, 1f)
 
       val offsetX = ((availableWidth - (size.width)).toFloat() * biasX).toInt()
       val offsetY = ((availableHeight - (size.height)).toFloat() * biasY).toInt()

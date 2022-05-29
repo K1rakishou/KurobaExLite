@@ -216,7 +216,7 @@
     <string name="settings_screen_history_group">History</string>
     <string name="settings_screen_history_enabled">Track navigation history</string>
     <string name="settings_screen_history_on_left_side">History screen on left side</string>
-    <string name="settings_screen_history_on_left_side_description">Allows changing the screen setting\'s position</string>
+    <string name="settings_screen_history_on_left_side_description">When enabled, the history screen will be inserted as the first page (leftmost) of the ViewPager otherwise as the last page (rightmost)</string>
     <string name="settings_screen_ui_layout_group">UI Layout</string>
     <string name="settings_screen_layout_mode">Layout mode</string>
 
