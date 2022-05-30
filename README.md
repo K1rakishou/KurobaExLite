@@ -26,7 +26,7 @@ Right now you can:
 - View media. ComposeSubsamplingScaleImage for static images, mpv (downloadable) for gifs/videos.
 - Reply to posts.
 - View albums.
-- Track navigation history (for now it's always enabled).
+- Track navigation history (disabled by default, can be enabled in the settings).
 - Bookmark threads (+ reply notifications).
 
 What you can't do which will be implemented in the future:
