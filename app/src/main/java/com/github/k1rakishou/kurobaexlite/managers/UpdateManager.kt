@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
@@ -135,9 +136,12 @@ class UpdateManager(
     }
 
     val lastCheckedVersionCode = appSettings.lastCheckedVersionCode.read()
+      .takeIf { versionCode -> versionCode > 0 }
+      ?: BuildConfig.VERSION_CODE.toLong()
+
     if (versionCode <= lastCheckedVersionCode) {
       logcat(TAG) { "versionCode ($versionCode) <= lastCheckedVersionCode ($lastCheckedVersionCode)" }
-      return UpdateCheckResult.AlreadyOnTheLatestVersion(tagName)
+      return UpdateCheckResult.AlreadyOnTheLatestVersion
     }
 
     logcat(TAG) {
@@ -266,7 +270,7 @@ class UpdateManager(
   sealed class UpdateCheckResult {
     object Success : UpdateCheckResult()
     object AlreadyCheckedRecently : UpdateCheckResult()
-    data class AlreadyOnTheLatestVersion(val latestVersion: String) : UpdateCheckResult()
+    object AlreadyOnTheLatestVersion : UpdateCheckResult()
     data class Error(val message: String) : UpdateCheckResult()
   }
 

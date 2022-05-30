@@ -193,7 +193,7 @@ class AppSettingsScreenViewModel : BaseViewModel() {
       is UpdateManager.UpdateCheckResult.AlreadyOnTheLatestVersion -> {
         snackbarManager.toast(
           toastId = toastId,
-          message = "Already on the latest version: '${updateCheckResult.latestVersion}'",
+          message = "Already on the latest version",
           screenKey = MainScreen.SCREEN_KEY
         )
       }
