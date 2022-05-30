@@ -23,13 +23,15 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.launch
 
-class ListSettingItem<T : Enum<T>>(
+class EnumSettingItem<T : Enum<T>>(
   title: String,
   subtitle: String?,
   dependencies: List<BooleanSetting>,
   val enabled: Boolean,
   val delegate: EnumSetting<T>,
-  val showOptionsScreen: suspend (List<FloatingMenuItem>) -> String?
+  val settingNameMapper: (Enum<T>) -> String,
+  val showOptionsScreen: suspend (List<FloatingMenuItem>) -> String?,
+  val onSettingUpdated: (suspend () -> Unit)?
 ) : SettingItem(delegate.settingKey, title, subtitle, dependencies) {
 
   @Composable
@@ -58,7 +60,7 @@ class ListSettingItem<T : Enum<T>>(
                 groupItems = delegate.enumValues.map { value ->
                   FloatingMenuItem.Text(
                     menuItemKey = value.name,
-                    text = FloatingMenuItem.MenuItemText.String(value.name),
+                    text = FloatingMenuItem.MenuItemText.String(settingNameMapper(value)),
                   )
                 }
               )
@@ -70,6 +72,7 @@ class ListSettingItem<T : Enum<T>>(
                 ?: return@launch
 
               delegate.write(selectedEnumItem)
+              onSettingUpdated?.invoke()
             }
           }
         )
@@ -105,7 +108,7 @@ class ListSettingItem<T : Enum<T>>(
             .wrapContentHeight(),
           fontSize = 14.sp,
           color = chanTheme.textColorSecondaryCompose,
-          text = value.name
+          text = settingNameMapper(value)
         )
       }
     }

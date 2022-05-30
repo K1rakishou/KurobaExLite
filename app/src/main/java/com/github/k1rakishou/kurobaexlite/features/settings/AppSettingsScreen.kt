@@ -130,7 +130,7 @@ class AppSettingsScreen(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(chanTheme.backColorCompose)
+        .background(chanTheme.backColorSecondaryCompose)
         .consumeClicks()
     ) {
       val currentScreen by appSettingsScreenViewModel.currentScreen.collectAsState()
@@ -185,6 +185,7 @@ class AppSettingsScreen(
       modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()
+        .padding(vertical = 8.dp, horizontal = 4.dp)
     ) {
       Column(
         modifier = Modifier
@@ -201,6 +202,18 @@ class AppSettingsScreen(
             color = chanTheme.accentColorCompose,
             fontWeight = FontWeight.SemiBold,
             fontSize = 18.sp
+          )
+        }
+
+        if (group.groupDescription != null) {
+          Text(
+            modifier = Modifier
+              .fillMaxWidth()
+              .wrapContentHeight()
+              .padding(vertical = 4.dp, horizontal = 8.dp),
+            text = group.groupDescription,
+            color = chanTheme.textColorSecondaryCompose,
+            fontSize = 14.sp
           )
         }
 

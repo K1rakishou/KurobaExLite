@@ -397,6 +397,7 @@ object DependencyGraph {
       AddOrRemoveBookmark(
         appContext = get(),
         androidHelpers = get(),
+        appSettings = get(),
         bookmarksManager = get(),
         applicationVisibilityManager = get(),
         kurobaExLiteDatabase = get()
@@ -407,6 +408,7 @@ object DependencyGraph {
         appContext = get(),
         appScope = get(),
         androidHelpers = get(),
+        appSettings = get(),
         applicationVisibilityManager = get(),
         bookmarksManager = get(),
         kurobaExLiteDatabase = get()
@@ -459,6 +461,7 @@ object DependencyGraph {
         appContext = get(),
         appScope = get(),
         androidHelpers = get(),
+        appSettings = get(),
         applicationVisibilityManager = get(),
         chanCache = get(),
         bookmarksManager = get(),

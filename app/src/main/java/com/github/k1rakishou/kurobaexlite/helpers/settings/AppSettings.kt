@@ -64,6 +64,8 @@ class AppSettings(
 
   val drawerDragGestureTutorialShown by lazy { BooleanSetting(false, "drawer_drag_gesture_tutorial_shown", dataStore) }
 
+  val watcherIntervalForegroundSeconds by lazy { EnumSetting(WatcherFg.SEC_30, "watcher_interval_foreground_seconds", WatcherFg::class.java, dataStore) }
+  val watcherIntervalBackgroundSeconds by lazy { EnumSetting(WatcherBg.MIN_30, "watcher_interval_background_seconds", WatcherBg::class.java, dataStore) }
   val replyNotifications by lazy { BooleanSetting(true, "reply_notifications_enabled", dataStore) }
   val lastUpdateCheckTime by lazy { NumberSetting<Long>(0L, "last_update_check_time", dataStore) }
   val lastCheckedVersionCode by lazy { NumberSetting<Long>(0L, "last_checked_version_code", dataStore) }
@@ -89,6 +91,23 @@ class AppSettings(
       "Mozilla/5.0 (Linux; Android %s; %s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.127 Mobile Safari/537.36"
   }
 
+}
+
+enum class WatcherFg(val seconds: Int) {
+  SEC_30(30),
+  SEC_60(60),
+  SEC_90(90),
+  SEC_120(120),
+  SEC_240(240),
+  SEC_300(300),
+}
+
+enum class WatcherBg(val seconds: Int) {
+  MIN_15(15 * 60),
+  MIN_30(30 * 60),
+  MIN_45(45 * 60),
+  MIN_60(60 * 60),
+  MIN_120(120 * 60),
 }
 
 enum class LayoutType {

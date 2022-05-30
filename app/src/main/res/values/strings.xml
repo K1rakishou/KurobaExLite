@@ -213,11 +213,24 @@
     <string name="bookmark_screen_bookmarks_added">No bookmarks added yet</string>
     <string name="bookmark_screen_found_by_query">No bookmarks found by query \'%1$s\'</string>
 
+    <string name="settings_screen_thread_watcher_group">Thread watcher</string>
+    <string name="settings_screen_thread_watcher_group_description">Foreground update interval is used when the app is in foreground (currently visible), otherwise when the app is not visible or killed by the user or the OS the background update interval is used</string>
+    <string name="settings_screen_foreground_watcher_update_interval">Thread watcher foreground update interval</string>
+    <string name="settings_screen_background_watcher_update_interval">Thread watcher background update interval</string>
+    <string name="settings_screen_reply_notifications">Show reply notification</string>
+
     <string name="settings_screen_history_group">History</string>
     <string name="settings_screen_history_enabled">Track navigation history</string>
     <string name="settings_screen_history_on_left_side">History screen on left side</string>
     <string name="settings_screen_history_on_left_side_description">When enabled, the history screen will be inserted as the first page (leftmost) of the ViewPager otherwise as the last page (rightmost)</string>
-    <string name="settings_screen_ui_layout_group">UI Layout</string>
+
+    <string name="settings_screen_ui_group">Interface</string>
     <string name="settings_screen_layout_mode">Layout mode</string>
+
+    <string name="settings_screen_about_layout_group">About</string>
+    <string name="settings_screen_check_for_updates">Current version: %1$s-%2$s-%3$s</string>
+    <string name="settings_screen_check_for_updates_description">Click to check for updates</string>
+    <string name="settings_screen_notify_about_beta_versions">Notify about new beta versions</string>
+    <string name="settings_screen_open_github_repository">Open github repository</string>
 
 </resources>

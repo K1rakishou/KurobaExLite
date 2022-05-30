@@ -18,9 +18,10 @@ class SettingScreenBuilder(
   fun group(
     groupKey: String,
     groupName: String?,
+    groupDescription: String? = null,
     builder: SettingGroupBuilder.() -> Unit
   ): SettingScreenBuilder {
-    val settingGroupBuilder = SettingGroupBuilder(groupKey, groupName)
+    val settingGroupBuilder = SettingGroupBuilder(groupKey, groupName, groupDescription)
     builder(settingGroupBuilder)
     groups += settingGroupBuilder.build()
 

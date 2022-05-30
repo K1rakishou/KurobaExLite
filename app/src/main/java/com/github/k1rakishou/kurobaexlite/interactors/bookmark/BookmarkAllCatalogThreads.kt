@@ -4,6 +4,7 @@ import android.content.Context
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
@@ -26,6 +27,7 @@ import org.joda.time.DateTime
 class BookmarkAllCatalogThreads(
   private val appContext: Context,
   private val appScope: CoroutineScope,
+  private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers,
   private val applicationVisibilityManager: ApplicationVisibilityManager,
   private val chanCache: ChanCache,
@@ -133,6 +135,7 @@ class BookmarkAllCatalogThreads(
       BookmarkBackgroundWatcherWorker.restartBackgroundWork(
         appContext = appContext,
         flavorType = androidHelpers.getFlavorType(),
+        appSettings = appSettings,
         isInForeground = applicationVisibilityManager.isAppInForeground(),
         addInitialDelay = false
       )

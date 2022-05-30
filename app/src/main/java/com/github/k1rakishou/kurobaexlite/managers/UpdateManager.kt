@@ -47,25 +47,29 @@ class UpdateManager(
 ) {
   private val checking = AtomicBoolean(false)
 
-  fun checkForUpdates() {
+  fun checkForUpdates(
+    forced: Boolean = false,
+    onFinished: ((UpdateCheckResult) -> Unit)? = null
+  ) {
     appScope.launch {
       if (!checking.compareAndSet(false, true)) {
         return@launch
       }
 
       try {
-        checkForUpdatesInternal()
+        val result = checkForUpdatesInternal(forced)
+        onFinished?.invoke(result)
       } finally {
         checking.set(false)
       }
     }
   }
 
-  private suspend fun checkForUpdatesInternal() {
+  private suspend fun checkForUpdatesInternal(forced: Boolean): UpdateCheckResult {
     val currentTime = System.currentTimeMillis()
     val lastUpdateCheckTime = appSettings.lastUpdateCheckTime.read()
 
-    if (lastUpdateCheckTime + UPDATE_CHECK_INTERVAL_MS > currentTime) {
+    if (!forced && (lastUpdateCheckTime + UPDATE_CHECK_INTERVAL_MS > currentTime)) {
       val deltaTime = currentTime - (lastUpdateCheckTime + UPDATE_CHECK_INTERVAL_MS)
       val timePeriod = Period(deltaTime.absoluteValue.coerceAtLeast(0))
 
@@ -73,7 +77,8 @@ class UpdateManager(
         "Can't check updates, last check was not too long ago, " +
           "time until next check: ${periodFormat.print(timePeriod)}"
       }
-      return
+
+      return UpdateCheckResult.AlreadyCheckedRecently
     }
 
     appSettings.lastUpdateCheckTime.write(currentTime)
@@ -98,14 +103,17 @@ class UpdateManager(
       ?.firstOrNull()
 
     if (latestRelease == null) {
-      return
+      return UpdateCheckResult.Error("Failed to load latest release info from Github")
     }
 
     logcat(TAG) { "latestRelease: ${latestRelease}" }
 
-    val tagName = latestRelease.tagName ?: return
-    val releaseUrl = latestRelease.releaseUrl ?: return
-    val title = latestRelease.title ?: return
+    val tagName = latestRelease.tagName
+      ?: return UpdateCheckResult.Error("Failed to find \'tagName\' in response from Github")
+    val releaseUrl = latestRelease.releaseUrl
+      ?: return UpdateCheckResult.Error("Failed to find \'releaseUrl\' in response from Github")
+    val title = latestRelease.title
+      ?: return UpdateCheckResult.Error("Failed to find \'title\' in response from Github")
 
     if (latestRelease.prerelease) {
       val notifyAboutBetaUpdates = appSettings.notifyAboutBetaUpdates.read()
@@ -114,20 +122,22 @@ class UpdateManager(
           "prerelease: ${latestRelease.prerelease}, " +
             "notifyAboutBetaUpdates: ${notifyAboutBetaUpdates}"
         }
-        return
+
+        return UpdateCheckResult.Error("Latest release is a pre-release and updating to " +
+          "pre-releases is disabled in the settings")
       }
     }
 
 
     val versionCode = extractVersionCodeFromTag(latestRelease)
     if (versionCode == null) {
-      return
+      return UpdateCheckResult.Error("Failed to extract versionCode from latestRelease object")
     }
 
     val lastCheckedVersionCode = appSettings.lastCheckedVersionCode.read()
     if (versionCode <= lastCheckedVersionCode) {
       logcat(TAG) { "versionCode ($versionCode) <= lastCheckedVersionCode ($lastCheckedVersionCode)" }
-      return
+      return UpdateCheckResult.AlreadyOnTheLatestVersion(tagName)
     }
 
     logcat(TAG) {
@@ -143,6 +153,7 @@ class UpdateManager(
     )
 
     appSettings.lastCheckedVersionCode.write(versionCode)
+    return UpdateCheckResult.Success
   }
 
   private fun showNotification(
@@ -250,6 +261,13 @@ class UpdateManager(
     val major = versionMatcher.groupOrNull(1)?.toIntOrNull()?.times(10000) ?: return null
 
     return major + minor + patch
+  }
+
+  sealed class UpdateCheckResult {
+    object Success : UpdateCheckResult()
+    object AlreadyCheckedRecently : UpdateCheckResult()
+    data class AlreadyOnTheLatestVersion(val latestVersion: String) : UpdateCheckResult()
+    data class Error(val message: String) : UpdateCheckResult()
   }
 
   @JsonClass(generateAdapter = true)

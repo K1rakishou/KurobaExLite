@@ -473,7 +473,7 @@ sealed class FloatingMenuItem {
   ) : FloatingMenuItem()
 
   data class Group(
-    override val menuItemKey: Long = keyCounter.getAndDecrement(),
+    override val menuItemKey: Any = keyCounter.getAndDecrement(),
     val checkedMenuItemKey: Any,
     val groupItems: List<Text>
   ) : FloatingMenuItem()

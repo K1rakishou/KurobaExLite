@@ -7,12 +7,14 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 class SettingGroup(
   val groupKey: String,
   val groupName: String?,
+  val groupDescription: String?,
   val settingItems: List<SettingItem>
 )
 
 class SettingGroupBuilder(
   private val groupKey: String,
-  private val groupName: String?
+  private val groupName: String?,
+  private val groupDescription: String?
 ) {
   private val settings = mutableListOf<SettingItem>()
 
@@ -34,21 +36,43 @@ class SettingGroupBuilder(
     return this
   }
 
-  fun <T : Enum<T>> list(
+  fun <T : Enum<T>> enum(
     title: String,
     delegate: EnumSetting<T>,
     showOptionsScreen: suspend (List<FloatingMenuItem>) -> String?,
+    onSettingUpdated: (suspend () -> Unit)? = null,
+    settingNameMapper: (Enum<T>) -> String = { enum -> enum.name },
     subtitle: String? = null,
     dependencies: List<BooleanSetting> = emptyList(),
     enabled: Boolean = true
   ): SettingGroupBuilder {
-    settings += ListSettingItem(
+    settings += EnumSettingItem(
       title = title,
       subtitle = subtitle,
       dependencies = dependencies,
       enabled = enabled,
       delegate = delegate,
-      showOptionsScreen = showOptionsScreen
+      settingNameMapper = settingNameMapper,
+      showOptionsScreen = showOptionsScreen,
+      onSettingUpdated = onSettingUpdated
+    )
+
+    return this
+  }
+
+  fun link(
+    key: String,
+    title: String,
+    enabled: Boolean = true,
+    subtitle: String? = null,
+    onClicked: () -> Unit
+  ): SettingGroupBuilder {
+    settings += LinkSettingItem(
+      key = key,
+      title = title,
+      subtitle = subtitle,
+      enabled = enabled,
+      onClicked = onClicked,
     )
 
     return this
@@ -58,6 +82,7 @@ class SettingGroupBuilder(
     return SettingGroup(
       groupKey = groupKey,
       groupName = groupName,
+      groupDescription = groupDescription,
       settingItems = settings
     )
   }

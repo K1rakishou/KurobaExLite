@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
@@ -31,6 +32,7 @@ class BookmarkBackgroundWatcherWorker(
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
   private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
   private val fetchThreadBookmarkInfo: FetchThreadBookmarkInfo by inject(FetchThreadBookmarkInfo::class.java)
+  private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val loadBookmarks: LoadBookmarks by inject(LoadBookmarks::class.java)
 
@@ -77,6 +79,7 @@ class BookmarkBackgroundWatcherWorker(
         restartBackgroundWork(
           appContext = applicationContext,
           flavorType = androidHelpers.getFlavorType(),
+          appSettings = appSettings,
           isInForeground = applicationVisibilityManager.isAppInForeground(),
           addInitialDelay = true
         )
@@ -95,6 +98,7 @@ class BookmarkBackgroundWatcherWorker(
     suspend fun restartBackgroundWork(
       appContext: Context,
       flavorType: AndroidHelpers.FlavorType,
+      appSettings: AppSettings,
       isInForeground: Boolean,
       addInitialDelay: Boolean,
     ) {
@@ -107,13 +111,9 @@ class BookmarkBackgroundWatcherWorker(
 
       val backgroundIntervalMillis = if (addInitialDelay) {
         if (isInForeground) {
-          30L * 1000L // 30 seconds
+          appSettings.watcherIntervalForegroundSeconds.read().seconds * 1000L
         } else {
-          if (flavorType == AndroidHelpers.FlavorType.Development) {
-            1 * 60L * 1000L // 1 minute
-          } else {
-            15 * 60L * 1000L // 15 minutes
-          }
+          appSettings.watcherIntervalBackgroundSeconds.read().seconds * 1000L
         }
       } else {
         1000L

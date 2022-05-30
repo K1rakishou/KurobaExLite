@@ -12,6 +12,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.move
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
@@ -27,6 +28,7 @@ import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 class BookmarksScreenViewModel : BaseViewModel() {
+  private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
   private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
@@ -128,6 +130,7 @@ class BookmarksScreenViewModel : BaseViewModel() {
       BookmarkBackgroundWatcherWorker.restartBackgroundWork(
         appContext = appContext,
         flavorType = androidHelpers.getFlavorType(),
+        appSettings = appSettings,
         isInForeground = true,
         addInitialDelay = false
       )

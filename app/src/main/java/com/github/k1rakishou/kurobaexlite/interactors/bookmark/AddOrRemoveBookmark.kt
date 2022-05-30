@@ -4,6 +4,7 @@ import android.content.Context
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
@@ -17,6 +18,7 @@ import org.joda.time.DateTime
 
 class AddOrRemoveBookmark(
   private val appContext: Context,
+  private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers,
   private val bookmarksManager: BookmarksManager,
   private val applicationVisibilityManager: ApplicationVisibilityManager,
@@ -74,6 +76,7 @@ class AddOrRemoveBookmark(
       BookmarkBackgroundWatcherWorker.restartBackgroundWork(
         appContext = appContext,
         flavorType = androidHelpers.getFlavorType(),
+        appSettings = appSettings,
         isInForeground = applicationVisibilityManager.isAppInForeground(),
         addInitialDelay = false
       )
