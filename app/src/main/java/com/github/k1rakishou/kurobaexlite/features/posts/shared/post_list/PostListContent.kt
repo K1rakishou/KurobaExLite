@@ -112,7 +112,9 @@ internal fun PostListContent(
   }
 
   val openedFromScreenKey = postListOptions.ownerScreenKey
-  val postListAsync by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+  val postListAsyncMut by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+  val postListAsync = postListAsyncMut
+
   val lazyListState = rememberLazyListState()
 
   fun processPostListScrollEventFunc() {
@@ -152,7 +154,7 @@ internal fun PostListContent(
               0
             }
             is PostScreenViewModel.ToolbarScrollEvent.ScrollToItem -> {
-              val postState = (postListAsync as AsyncData.Data).data
+              val postState = postListAsync.data
               postState.postIndexByPostDescriptor(toolbarScrollEvent.postDescriptor)
             }
           }
@@ -178,7 +180,7 @@ internal fun PostListContent(
         val postsState = if (postListAsync !is AsyncData.Data) {
           return@LaunchedEffect
         } else {
-          (postListAsync as AsyncData.Data).data
+          postListAsync.data
         }
 
         postsScreenViewModel.mediaViewerScrollEvents.collect { scrollInfo ->
@@ -259,6 +261,17 @@ internal fun PostListContent(
   )
 
   if (postListAsync is AsyncData.Data) {
+    // Call processPostListScrollEventFunc() as soon as we get the actual post data so that we can
+    // reset the last seen post indicator in threads with few posts that fit the whole screen without
+    // having to scroll it. Otherwise the indicator will stay (since we can't scroll the thread and
+    // we only ever update it on scroll events).
+    LaunchedEffect(
+      key1 = postListAsync.data.chanDescriptor,
+      block = {
+        processPostListScrollEventFunc()
+      }
+    )
+
     RestoreScrollPosition(
       lazyListState = lazyListState,
       chanDescriptor = chanDescriptor,
