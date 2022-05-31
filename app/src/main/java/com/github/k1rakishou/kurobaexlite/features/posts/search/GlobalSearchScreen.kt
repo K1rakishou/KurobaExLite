@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -302,8 +303,9 @@ class GlobalSearchScreen(
 
     KurobaComposeErrorWithButton(
       modifier = Modifier
-        .fillParentMaxSize()
-        .padding(8.dp),
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .padding(horizontal = 8.dp, vertical = 12.dp),
       errorMessage = errorMessage,
       buttonText = stringResource(R.string.reload),
       onButtonClicked = { globalSearchScreenViewModel.reloadCurrentPage(currentPage) }
