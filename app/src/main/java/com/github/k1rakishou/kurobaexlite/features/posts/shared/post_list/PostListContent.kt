@@ -28,6 +28,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,13 +115,14 @@ internal fun PostListContent(
   val openedFromScreenKey = postListOptions.ownerScreenKey
   val postListAsyncMut by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
   val postListAsync = postListAsyncMut
+  val postListAsyncUpdated by rememberUpdatedState(newValue = postListAsync)
 
   val lazyListState = rememberLazyListState()
 
   fun processPostListScrollEventFunc() {
     processPostListScrollEvent(
       postsScreenViewModel = postsScreenViewModel,
-      postListAsync = postListAsync,
+      postListAsync = postListAsyncUpdated,
       lazyListState = lazyListState,
       chanDescriptor = chanDescriptor,
       orientation = postListOptions.orientation,
