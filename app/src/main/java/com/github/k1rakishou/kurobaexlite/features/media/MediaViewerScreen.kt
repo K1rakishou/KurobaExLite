@@ -1061,7 +1061,6 @@ class MediaViewerScreen(
       modifier = Modifier.fillMaxSize(),
       additionalPaddings = additionalPaddings
     ) {
-      // TODO(KurobaEx):
       KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName()}")
     }
   }
