@@ -48,6 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.core.graphics.withTranslation
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
@@ -148,11 +149,15 @@ class MediaViewerScreen(
       MediaViewerScreenState(appSettings)
     }
 
+    var availableSizeMut by remember { mutableStateOf<IntSize>(IntSize.Zero) }
+    val availableSize = availableSizeMut
+
     Box(
       modifier = Modifier
         .fillMaxSize()
         .graphicsLayer { alpha = animationProgress }
         .background(Color.Black)
+        .onSizeChanged { newSize -> availableSizeMut = newSize }
     ) {
       InitMediaViewerData(
         mediaViewerScreenState = mediaViewerScreenState,
@@ -160,32 +165,36 @@ class MediaViewerScreen(
       )
 
       Box(
-        modifier = Modifier.graphicsLayer {
-          alpha = if (transitionFinished && previewLoadingFinished) 1f else 0f
-        }
-      ) {
-        ContentAfterTransition(
-          mediaViewerScreenState = mediaViewerScreenState,
-          chanTheme = chanTheme,
-          toolbarHeight = toolbarHeight,
-          coroutineScope = coroutineScope,
-          insets = insets,
-          onPreviewLoadingFinished = { postImage ->
-            val previewLoadingFinishedForOutThumbnail = clickedThumbnailBounds == null
-              || postImage == clickedThumbnailBounds?.postImage
-
-            logcat(TAG, LogPriority.VERBOSE) {
-              "onPreviewLoadingFinished() " +
-                "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
-                "got '${postImage.fullImageAsString}', " +
-                "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
-            }
-
-            if (previewLoadingFinishedForOutThumbnail) {
-              previewLoadingFinished = true
-            }
+        modifier = Modifier
+          .graphicsLayer {
+            alpha = if (transitionFinished && previewLoadingFinished) 1f else 0f
           }
-        )
+      ) {
+        if (availableSize.width > 0 && availableSize.height > 0) {
+          ContentAfterTransition(
+            mediaViewerScreenState = mediaViewerScreenState,
+            chanTheme = chanTheme,
+            availableSize = availableSize,
+            toolbarHeight = toolbarHeight,
+            coroutineScope = coroutineScope,
+            insets = insets,
+            onPreviewLoadingFinished = { postImage ->
+              val previewLoadingFinishedForOutThumbnail = clickedThumbnailBounds == null
+                || postImage == clickedThumbnailBounds?.postImage
+
+              logcat(TAG, LogPriority.VERBOSE) {
+                "onPreviewLoadingFinished() " +
+                  "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
+                  "got '${postImage.fullImageAsString}', " +
+                  "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
+              }
+
+              if (previewLoadingFinishedForOutThumbnail) {
+                previewLoadingFinished = true
+              }
+            }
+          )
+        }
       }
 
       TransitionPreview(
@@ -221,6 +230,7 @@ class MediaViewerScreen(
   private fun BoxScope.ContentAfterTransition(
     mediaViewerScreenState: MediaViewerScreenState,
     chanTheme: ChanTheme,
+    availableSize: IntSize,
     toolbarHeight: Dp,
     coroutineScope: CoroutineScope,
     insets: Insets,
@@ -245,6 +255,7 @@ class MediaViewerScreen(
     )
 
     MediaViewerPager(
+      availableSize = availableSize,
       toolbarHeight = toolbarHeight,
       mediaViewerScreenState = mediaViewerScreenState,
       onViewPagerInitialized = { pagerState -> pagerStateHolderMut = pagerState },
@@ -600,6 +611,7 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun MediaViewerPager(
+    availableSize: IntSize,
     toolbarHeight: Dp,
     mediaViewerScreenState: MediaViewerScreenState,
     onViewPagerInitialized: (PagerState) -> Unit,
@@ -720,6 +732,7 @@ class MediaViewerScreen(
         mediaViewerScreenState = mediaViewerScreenState,
         pagerState = pagerState,
         toolbarHeight = toolbarHeight,
+        availableSize = availableSize,
         mpvSettings = mpvSettings,
         mediaState = mediaState,
         checkLibrariesInstalledAndLoaded = { mpvLibsInstalledAndLoaded.value },
@@ -737,6 +750,7 @@ class MediaViewerScreen(
     mediaViewerScreenState: MediaViewerScreenState,
     pagerState: PagerState,
     toolbarHeight: Dp,
+    availableSize: IntSize,
     mpvSettings: MpvSettings,
     mediaState: MediaState,
     checkLibrariesInstalledAndLoaded: () -> Boolean,
@@ -827,6 +841,7 @@ class MediaViewerScreen(
               val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
 
               DisplayFullImage(
+                availableSize = availableSize,
                 postImageDataLoadState = postImageDataLoadState,
                 imageFile = imageFile,
                 setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },

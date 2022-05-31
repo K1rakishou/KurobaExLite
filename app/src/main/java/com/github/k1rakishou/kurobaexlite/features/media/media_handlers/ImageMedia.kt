@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.IntSize
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImage
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageDecoder
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageEventListener
@@ -28,6 +29,7 @@ import java.io.File
 
 @Composable
 fun DisplayFullImage(
+  availableSize: IntSize,
   postImageDataLoadState: ImageLoadState.Ready,
   imageFile: File,
   setIsDragGestureAllowedFunc: ((currPosition: Offset, startPosition: Offset) -> Boolean) -> Unit,
@@ -95,12 +97,27 @@ fun DisplayFullImage(
     }
   }
 
+  val maxScale = remember(key1 = postImageDataLoadState.postImage) {
+    val postImage = postImageDataLoadState.postImage
+
+    var scale = Math.min(
+      availableSize.width.toFloat() / postImage.width.toFloat(),
+      availableSize.height.toFloat() / postImage.height.toFloat()
+    )
+
+    if (scale < 2f) {
+      scale += 2f
+    }
+
+    return@remember scale
+  }
+
   val state = rememberComposeSubsamplingScaleImageState(
     scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
     doubleTapZoom = 2f,
-    maxScale = 3f,
+    maxScale = maxScale,
     maxMaxTileSize = { MaxTileSize.Auto() },
-    minimumScaleType = { MinimumScaleType.ScaleTypeCenterInside },
+    minimumScaleType = { MinimumScaleType.ScaleTypeCustom },
     imageDecoderProvider = imageDecoderProvider
   )
   val stateUpdated by rememberUpdatedState(newValue = state)
