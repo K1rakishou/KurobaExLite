@@ -69,6 +69,7 @@ class CatalogScreenViewModel(
       return
     }
 
+    // TODO(KurobaEx): check whether the navigation history is enabled
     val lastVisitedCatalog = loadNavigationHistory.lastVisitedCatalog()
     if (lastVisitedCatalog != null) {
       logcat(tag = TAG) { "loadPrevVisitedCatalog() got ${lastVisitedCatalog} from loadNavigationHistory" }

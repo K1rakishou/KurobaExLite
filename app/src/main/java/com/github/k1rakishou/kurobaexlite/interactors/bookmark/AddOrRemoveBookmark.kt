@@ -96,6 +96,54 @@ class AddOrRemoveBookmark(
     return true
   }
 
+  suspend fun addBookmarkIfNotExists(
+    threadDescriptor: ThreadDescriptor,
+    bookmarkTitle: String?,
+    bookmarkThumbnail: HttpUrl?
+  ): Boolean {
+    val created = kurobaExLiteDatabase.call {
+      if (bookmarksManager.contains(threadDescriptor)) {
+        logcat(TAG) { "Bookmark \'${threadDescriptor}\' already exists" }
+        return@call false
+      }
+
+      val threadBookmark = ThreadBookmark.create(
+        threadDescriptor = threadDescriptor,
+        createdOn = DateTime.now(),
+        title = bookmarkTitle,
+        thumbnailUrl = bookmarkThumbnail
+      )
+
+      threadBookmarkDao.insertOrUpdateBookmark(threadBookmark)
+      bookmarksManager.putBookmark(threadBookmark)
+
+      logcat(TAG) { "Bookmark \'${threadDescriptor}\' created" }
+      return@call true
+    }
+      .onFailure { error ->
+        logcatError(TAG) {
+          "Failed to add or remove bookmark error: ${error.asLogIfImportantOrErrorMessage()}"
+        }
+      }
+      .getOrNull() ?: false
+
+    if (!created) {
+      return false
+    }
+
+    logcat(TAG) { "Bookmark created. Restarting the work" }
+
+    BookmarkBackgroundWatcherWorker.restartBackgroundWork(
+      appContext = appContext,
+      flavorType = androidHelpers.getFlavorType(),
+      appSettings = appSettings,
+      isInForeground = applicationVisibilityManager.isAppInForeground(),
+      addInitialDelay = false
+    )
+
+    return true
+  }
+
   companion object {
     private const val TAG = "AddOrRemoveBookmark"
   }

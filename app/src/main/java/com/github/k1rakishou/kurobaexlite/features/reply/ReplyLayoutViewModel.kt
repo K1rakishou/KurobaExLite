@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -41,6 +42,7 @@ class ReplyLayoutViewModel(
   private val siteManager: SiteManager,
   private val snackbarManager: SnackbarManager,
   private val modifyMarkedPosts: ModifyMarkedPosts,
+  private val addOrRemoveBookmark: AddOrRemoveBookmark,
   private val localFilePicker: LocalFilePicker,
   private val appResources: AppResources,
   private val savedStateHandle: SavedStateHandle
@@ -358,7 +360,11 @@ class ReplyLayoutViewModel(
           val postDescriptor = replyResponse.postDescriptor
           modifyMarkedPosts.markPostAsMine(postDescriptor)
 
-          // TODO(KurobaEx): bookmark thread
+          addOrRemoveBookmark.addBookmarkIfNotExists(
+            threadDescriptor = postDescriptor.threadDescriptor,
+            bookmarkTitle = null,
+            bookmarkThumbnail = null
+          )
 
           showToast(chanDescriptor, appResources.string(R.string.reply_view_model_reply_sent_successfully))
           replyLayoutState.onReplySendEndedSuccessfully(postDescriptor)

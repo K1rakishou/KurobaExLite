@@ -218,12 +218,24 @@ class BookmarksScreenViewModel : BaseViewModel() {
           }
 
           if (index >= 0) {
+            // Bookmark exists, update it
             val threadPage = catalogPagesRepository.getThreadPage(threadDescriptor)
 
             _bookmarksList[index].updateStatsFrom(
               threadBookmark = threadBookmark,
               threadPage = threadPage
             )
+          } else {
+            // Bookmark does not exist, create it
+            val threadPage = catalogPagesRepository.getThreadPage(threadDescriptor)
+            val threadBookmarkUi = ThreadBookmarkUi.fromThreadBookmark(
+              threadBookmark = threadBookmark,
+              threadPage = threadPage
+            )
+
+            if (threadBookmarkUi != null) {
+              _bookmarksList.add(0, threadBookmarkUi)
+            }
           }
         }
       }

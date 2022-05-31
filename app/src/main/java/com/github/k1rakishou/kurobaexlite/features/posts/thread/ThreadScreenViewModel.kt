@@ -97,6 +97,7 @@ class ThreadScreenViewModel(
       return
     }
 
+    // TODO(KurobaEx): check whether the navigation history is enabled
     val lastVisitedThread = loadNavigationHistory.loadLastVisitedThread()
     if (lastVisitedThread != null) {
       logcat(tag = TAG) { "loadPrevVisitedThread() got ${lastVisitedThread} from loadNavigationHistory" }

@@ -51,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookma
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.PersistBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdateBookmarkInfoUponThreadOpen
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.CatalogGlobalSearch
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
@@ -303,6 +304,7 @@ object DependencyGraph {
         siteManager = get(),
         snackbarManager = get(),
         modifyMarkedPosts = get(),
+        addOrRemoveBookmark = get(),
         localFilePicker = get(),
         appResources = get(),
         savedStateHandle = get()
@@ -456,6 +458,15 @@ object DependencyGraph {
     }
     single { CatalogGlobalSearch(globalSearchRepository = get(), parsedPostDataCache = get(), themeEngine = get()) }
     single { PersistBookmarks(bookmarksManager = get(), kurobaExLiteDatabase = get()) }
+    single {
+      UpdateBookmarkInfoUponThreadOpen(
+        appScope = get(),
+        bookmarksManager = get(),
+        chanCache = get(),
+        parsedPostDataCache = get(),
+        kurobaExLiteDatabase = get(),
+      )
+    }
 
     single {
       BookmarkAllCatalogThreads(

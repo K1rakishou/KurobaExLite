@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdateBookmarkInfoUponThreadOpen
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
@@ -78,6 +79,7 @@ abstract class PostScreenViewModel(
   protected val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
   protected val loadMarkedPosts: LoadMarkedPosts by inject(LoadMarkedPosts::class.java)
   protected val loadChanCatalog: LoadChanCatalog by inject(LoadChanCatalog::class.java)
+  protected val updateBookmarkInfoUponThreadOpen: UpdateBookmarkInfoUponThreadOpen by inject(UpdateBookmarkInfoUponThreadOpen::class.java)
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
@@ -163,6 +165,7 @@ abstract class PostScreenViewModel(
     if (threadDescriptor != null) {
       chanCache.onCatalogOrThreadAccessed(threadDescriptor)
       modifyNavigationHistory.addThread(threadDescriptor)
+      updateBookmarkInfoUponThreadOpen.await(threadDescriptor)
 
       updatePostsParsedOnceJob = viewModelScope.launch {
         delay(250L)
