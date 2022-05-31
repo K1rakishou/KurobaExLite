@@ -220,7 +220,7 @@ object DependencyGraph {
     single { NavigationHistoryManager() }
     single { MarkedPostManager() }
     single { CaptchaManager() }
-    single { LastVisitedEndpointManager(appScope = get()) }
+    single { LastVisitedEndpointManager(appScope = get(), appSettings = get()) }
     single { BookmarksManager() }
 
     single {
