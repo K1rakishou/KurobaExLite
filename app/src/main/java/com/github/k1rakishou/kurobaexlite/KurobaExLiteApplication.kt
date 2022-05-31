@@ -20,10 +20,6 @@ class KurobaExLiteApplication : Application() {
 
   private val appCoroutineScope = KurobaCoroutineScope()
 
-  // TODO(KurobaEx): PullToRefresh in catalog scrolls to the middle of the catalog
-  // TODO(KurobaEx): When using search on CatalogSelectionScreen and then navigating to a board without
-  //  closing the search first will keep the search toolbar but loose the search query.
-
   override fun onCreate() {
     super.onCreate()
 

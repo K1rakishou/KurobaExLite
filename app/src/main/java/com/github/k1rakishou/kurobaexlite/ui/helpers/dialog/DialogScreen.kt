@@ -34,6 +34,7 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
@@ -59,6 +60,7 @@ class DialogScreen(
   @Composable
   override fun FloatingContent() {
     val insets = LocalWindowInsets.current
+    val chanTheme = LocalChanTheme.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     DisposableEffect(
@@ -172,12 +174,19 @@ class DialogScreen(
           Spacer(modifier = Modifier.height(8.dp))
         }
 
+        val buttonTextColor = if (params.positiveButton.isActionDangerous) {
+          chanTheme.accentColorCompose
+        } else {
+          null
+        }
+
         KurobaComposeTextBarButton(
           modifier = Modifier.wrapContentSize(),
           onClick = {
             params.positiveButton.onClick?.invoke(inputValueState?.value)
             stopPresenting()
           },
+          customTextColor = buttonTextColor,
           text = stringResource(id = params.positiveButton.buttonText)
         )
       }
@@ -237,8 +246,15 @@ class DialogScreen(
       return DialogButton(buttonText = R.string.cancel, onClick = onClick)
     }
 
-    fun okButton(isActionDangerous: Boolean = false, onClick: ((result: String?) -> Unit)? = null): PositiveDialogButton {
-      return PositiveDialogButton(buttonText = R.string.ok, isActionDangerous = isActionDangerous, onClick = onClick)
+    fun okButton(
+      isActionDangerous: Boolean = false,
+      onClick: ((result: String?) -> Unit)? = null
+    ): PositiveDialogButton {
+      return PositiveDialogButton(
+        buttonText = R.string.ok,
+        isActionDangerous = isActionDangerous,
+        onClick = onClick
+      )
     }
   }
 

@@ -101,6 +101,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -980,7 +981,28 @@ class BookmarksScreen(
         onMenuItemClicked = { menuItem ->
           when (menuItem.menuItemKey as ToolbarMenuItems) {
             ToolbarMenuItems.PruneInactiveBookmarks -> {
-              // TODO(KurobaEx): show additional dialog?
+              onPruneInactiveBookmarksItemClicked(context)
+            }
+          }
+        }
+      )
+    )
+  }
+
+  private fun onPruneInactiveBookmarksItemClicked(context: Context) {
+    navigationRouter.presentScreen(
+      DialogScreen(
+        componentActivity = componentActivity,
+        navigationRouter = navigationRouter,
+        params = DialogScreen.Params(
+          title = DialogScreen.Text.Id(R.string.bookmark_screen_prune_inactive_bookmarks_dialog),
+          negativeButton = DialogScreen.DialogButton(
+            buttonText = R.string.bookmark_screen_prune_inactive_bookmarks_dialog_negative_button
+          ),
+          positiveButton = DialogScreen.PositiveDialogButton(
+            buttonText = R.string.bookmark_screen_prune_inactive_bookmarks_dialog_positive_button,
+            isActionDangerous = true,
+            onClick = {
               bookmarksScreenViewModel.pruneInactiveBookmarks(
                 onFinished = { deleteResult ->
                   if (deleteResult.isFailure) {
@@ -1014,8 +1036,9 @@ class BookmarksScreen(
                 }
               )
             }
-          }
-        }
+          )
+        ),
+        canDismissByClickingOutside = false
       )
     )
   }

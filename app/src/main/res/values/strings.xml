@@ -212,6 +212,9 @@
     <string name="bookmark_screen_no_inactive_to_delete">No inactive bookmarks found</string>
     <string name="bookmark_screen_bookmarks_added">No bookmarks added yet</string>
     <string name="bookmark_screen_found_by_query">No bookmarks found by query \'%1$s\'</string>
+    <string name="bookmark_screen_prune_inactive_bookmarks_dialog">Prune inactive bookmarks?</string>
+    <string name="bookmark_screen_prune_inactive_bookmarks_dialog_negative_button">Do not</string>
+    <string name="bookmark_screen_prune_inactive_bookmarks_dialog_positive_button">Prune</string>
 
     <string name="settings_screen_thread_watcher_group">Thread watcher</string>
     <string name="settings_screen_thread_watcher_group_description">Foreground update interval is used when the app is in foreground (currently visible), otherwise when the app is not visible or killed by the user or the OS the background update interval is used</string>
