@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
+import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -38,7 +39,8 @@ import okhttp3.Request
 class Chan4CaptchaViewModel(
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val siteManager: SiteManager,
-  private val moshi: Moshi
+  private val moshi: Moshi,
+  private val catalogManager: CatalogManager
 ) : BaseViewModel() {
   private var activeJob: Job? = null
   private var captchaTtlUpdateJob: Job? = null
@@ -286,17 +288,14 @@ class Chan4CaptchaViewModel(
     )
   }
 
-  private fun formatCaptchaUrl(chanDescriptor: ChanDescriptor, boardCode: String): String {
-    // TODO(KurobaEx): it's impossible to figure out which boards are workSafe and which are not
-//    val chanBoard = boardManager.byBoardDescriptor(chanDescriptor.boardDescriptor())
+  private suspend fun formatCaptchaUrl(chanDescriptor: ChanDescriptor, boardCode: String): String {
+    val chanCatalog = catalogManager.byCatalogDescriptor(chanDescriptor.catalogDescriptor())
 
-//    val host = if (chanBoard == null || chanBoard.workSafe) {
-//      "4channel"
-//    } else {
-//      "4chan"
-//    }
-
-    val host = "4channel"
+    val host = if (chanCatalog == null || chanCatalog.workSafe) {
+      "4channel"
+    } else {
+      "4chan"
+    }
 
     return when (chanDescriptor) {
       is CatalogDescriptor -> {

@@ -22,6 +22,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClien
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
 import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
+import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
@@ -188,7 +189,10 @@ class MediaViewerScreenViewModel(
       .get()
       .build()
 
-    val response = proxiedOkHttpClient.okHttpClient().suspendCall(request)
+    val response = proxiedOkHttpClient.okHttpClient()
+      .suspendCall(request)
+      .unwrap()
+
     if (!response.isSuccessful) {
       throw BadStatusResponseException(response.code)
     }

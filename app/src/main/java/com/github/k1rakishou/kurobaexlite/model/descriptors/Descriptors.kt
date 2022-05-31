@@ -20,6 +20,7 @@ sealed class ChanDescriptor {
   abstract val siteKey: SiteKey
   abstract val boardCode: String
 
+  abstract fun catalogDescriptor(): CatalogDescriptor
   abstract fun asKey(): String
   abstract fun asReadableString(): String
 }
@@ -40,6 +41,10 @@ data class CatalogDescriptor(
     buffer.writeUtfString(boardCode)
 
     return buffer
+  }
+
+  override fun catalogDescriptor(): CatalogDescriptor {
+    return this
   }
 
   override fun asKey(): String {
@@ -112,6 +117,9 @@ data class ThreadDescriptor(
     return buffer
   }
 
+  override fun catalogDescriptor(): CatalogDescriptor {
+    return catalogDescriptor
+  }
 
   override fun asKey(): String {
     return buildString(capacity = 32) {

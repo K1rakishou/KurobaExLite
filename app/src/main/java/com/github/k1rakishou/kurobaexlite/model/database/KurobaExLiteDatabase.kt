@@ -82,8 +82,6 @@ abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
         DATABASE_NAME
       )
         .fallbackToDestructiveMigrationOnDowngrade()
-        // TODO(KurobaEx): remove me once we hit the first alpha or something like that
-        .fallbackToDestructiveMigration()
         .build()
     }
   }

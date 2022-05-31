@@ -35,7 +35,9 @@ class MediaSaver(
           .get()
           .build()
 
-        val response = proxiedOkHttpClient.okHttpClient().suspendCall(request)
+        val response = proxiedOkHttpClient.okHttpClient()
+          .suspendCall(request)
+          .unwrap()
 
         if (!response.isSuccessful) {
           if (response.code == 404) {

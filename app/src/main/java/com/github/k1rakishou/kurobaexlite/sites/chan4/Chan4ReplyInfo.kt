@@ -1,12 +1,13 @@
 package com.github.k1rakishou.kurobaexlite.sites.chan4
 
 import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
+import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.helpers.groupOrNull
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressRequestBody
-import com.github.k1rakishou.kurobaexlite.helpers.suspendCallConvertToString
+import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
@@ -17,10 +18,13 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.ReplyEvent
 import com.github.k1rakishou.kurobaexlite.sites.ReplyResponse
 import com.github.k1rakishou.kurobaexlite.sites.Site
+import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import logcat.logcat
+import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.Request
@@ -57,13 +61,15 @@ class Chan4ReplyInfo(
         site.requestModifier().modifyReplyRequest(site, requestBuilder)
 
         val request = requestBuilder.build()
-        val responseString = proxiedOkHttpClient.okHttpClient()
-          .suspendCallConvertToString(request)
+        val response = proxiedOkHttpClient.okHttpClient()
+          .suspendCall(request)
           .unwrap()
+
+        setChan4CaptchaHeader(response.headers)
 
         val replyResponse = processResponse(
           chanDescriptor = replyData.chanDescriptor,
-          responseString = responseString
+          responseString = response.body!!.string()
         )
 
         send(ReplyEvent.Success(replyResponse))
@@ -172,7 +178,7 @@ class Chan4ReplyInfo(
 
     if (replyData.options.isNotEmpty()) {
       // TODO(KurobaEx):
-      //          formBuilder.addFormDataPart("email", replyData.options)
+      //  formBuilder.addFormDataPart("email", replyData.options)
     }
 
     if (chanDescriptor is CatalogDescriptor && replyData.subject.isNotNullNorEmpty()) {
@@ -195,17 +201,17 @@ class Chan4ReplyInfo(
       formBuilder.addFormDataPart("flag", replyData.flag)
     } else {
       // TODO(KurobaEx):
-      //          val lastUsedCountryFlagPerBoardString =
-      //            site.getSettingBySettingId<StringSetting>(SiteSetting.SiteSettingId.LastUsedCountryFlagPerBoard)?.get()
+      //  val lastUsedCountryFlagPerBoardString =
+      //    site.getSettingBySettingId<StringSetting>(SiteSetting.SiteSettingId.LastUsedCountryFlagPerBoard)?.get()
       //
-      //          if (lastUsedCountryFlagPerBoardString != null) {
-      //            val lastUsedFlag = staticBoardFlagInfoRepository.get().extractFlagCodeOrDefault(
-      //              lastUsedCountryFlagPerBoardString,
-      //              replyChanDescriptor.boardCode()
-      //            )
+      //  if (lastUsedCountryFlagPerBoardString != null) {
+      //    val lastUsedFlag = staticBoardFlagInfoRepository.get().extractFlagCodeOrDefault(
+      //      lastUsedCountryFlagPerBoardString,
+      //      replyChanDescriptor.boardCode()
+      //    )
       //
-      //            formBuilder.addFormDataPart("flag", lastUsedFlag)
-      //          }
+      //    formBuilder.addFormDataPart("flag", lastUsedFlag)
+      //  }
     }
 
     val attachedMedia = replyData.attachedMediaList.firstOrNull()
@@ -216,9 +222,10 @@ class Chan4ReplyInfo(
         progressListener = { progress -> onProgress(progress) }
       )
 
-//          if (replyFileMetaInfo.spoiler) {
-//            formBuilder.addFormDataPart("spoiler", "on")
-//          }
+      // TODO(KurobaEx):
+      //  if (replyFileMetaInfo.spoiler) {
+      //    formBuilder.addFormDataPart("spoiler", "on")
+      //  }
     }
 
     return formBuilder.build()
@@ -244,6 +251,71 @@ class Chan4ReplyInfo(
       attachedMedia.actualFileName,
       progressRequestBody
     )
+  }
+
+  private suspend fun setChan4CaptchaHeader(headers: Headers) {
+    val chan4Settings = site.siteSettings as Chan4SiteSettings
+
+    if (!chan4Settings.rememberCaptchaCookies.read()) {
+      logcat(TAG) { "setChan4CaptchaHeader() rememberCaptchaCookies is false" }
+      return
+    }
+
+    val wholeCookieHeader = headers
+      .filter { (key, _) -> key.contains(SET_COOKIE_HEADER, ignoreCase = true) }
+      .firstOrNull { (_, value) -> value.startsWith(CAPTCHA_COOKIE_PREFIX) }
+      ?.second
+
+    val newCookie = wholeCookieHeader
+      ?.substringAfter(CAPTCHA_COOKIE_PREFIX)
+      ?.substringBefore(';')
+
+    val domain = wholeCookieHeader
+      ?.substringAfter(DOMAIN_PREFIX)
+      ?.substringBefore(';')
+
+    logcat(TAG) { "setChan4CaptchaHeader() newCookie='${newCookie.asFormattedToken()}', " +
+      "domain='${domain}', wholeCookieHeader='${wholeCookieHeader}'" }
+
+    if (domain == null) {
+      logcat(TAG) { "setChan4CaptchaHeader() domain is null" }
+      return
+    }
+
+    val oldCookie = when {
+      domain.contains("4channel") -> chan4Settings.channel4CaptchaCookie.read()
+      domain.contains("4chan") -> chan4Settings.chan4CaptchaCookie.read()
+      else -> {
+        logcatError(TAG) { "setChan4CaptchaHeader() unexpected domain: '$domain'" }
+        null
+      }
+    }
+
+    logcat(TAG) {
+      "oldCookie='${oldCookie.asFormattedToken()}', " +
+        "newCookie='${newCookie.asFormattedToken()}', " +
+        "domain='${domain}'"
+    }
+
+    if (oldCookie != null && oldCookie.isNotEmpty()) {
+      logcat(TAG) { "setChan4CaptchaHeader() cookie is still ok. oldCookie='${oldCookie.asFormattedToken()}'" }
+      return
+    }
+
+    logcat(TAG) { "setChan4CaptchaHeader() cookie needs to be updated. " +
+      "oldCookie='${oldCookie.asFormattedToken()}', domain='${domain}'" }
+
+    if (domain.isNullOrEmpty() || newCookie.isNullOrEmpty()) {
+      logcat(TAG) { "setChan4CaptchaHeader() failed to parse 4chan_pass " +
+        "cookie (${newCookie.asFormattedToken()}) or domain (${domain})" }
+      return
+    }
+
+    when {
+      domain.contains("4channel") -> chan4Settings.channel4CaptchaCookie.write(newCookie)
+      domain.contains("4chan") -> chan4Settings.chan4CaptchaCookie.write(newCookie)
+      else -> logcatError(TAG) { "setChan4CaptchaHeader() unexpected domain: '$domain'" }
+    }
   }
 
   private fun extractTimeToWait(rateLimitMatcher: Matcher): Long {
@@ -281,6 +353,10 @@ class Chan4ReplyInfo(
     // Error: You must wait 2 minutes 1 second before posting a duplicate reply.
     // Error: You must wait 17 seconds before posting a duplicate reply.
     private val RATE_LIMITED_PATTERN = Pattern.compile("must wait (?:(\\d+)\\s+minutes?)?.*?(?:(\\d+)\\s+seconds?)")
+
+    private const val SET_COOKIE_HEADER = "set-cookie"
+    private const val CAPTCHA_COOKIE_PREFIX = "4chan_pass="
+    private const val DOMAIN_PREFIX = "domain="
   }
 
 }

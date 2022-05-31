@@ -95,7 +95,9 @@ class InstallMpvNativeLibrariesFromGithub(
       .url(downloadUrl)
       .build()
 
-    val response = proxiedOkHttpClient.okHttpClient().suspendCall(downloadRequest)
+    val response = proxiedOkHttpClient.okHttpClient()
+      .suspendCall(downloadRequest)
+      .unwrap()
 
     if (!response.isSuccessful) {
       throw BadStatusResponseException(response.code)

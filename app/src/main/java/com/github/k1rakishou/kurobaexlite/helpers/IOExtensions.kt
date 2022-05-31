@@ -25,8 +25,8 @@ import okio.buffer
 import okio.sink
 import okio.source
 
-suspend fun OkHttpClient.suspendCall(request: Request): Response {
-  return suspendCancellableCoroutine { continuation ->
+suspend fun OkHttpClient.suspendCall(request: Request): Result<Response> {
+  val responseResult = suspendCancellableCoroutine<Result<Response>> { continuation ->
     val call = newCall(request)
 
     continuation.invokeOnCancellation {
@@ -37,14 +37,30 @@ suspend fun OkHttpClient.suspendCall(request: Request): Response {
 
     call.enqueue(object : Callback {
       override fun onFailure(call: Call, e: IOException) {
-        continuation.resumeErrorSafe(e)
+        continuation.resumeValueSafe(Result.failure(e))
       }
 
       override fun onResponse(call: Call, response: Response) {
-        continuation.resumeValueSafe(response)
+        continuation.resumeValueSafe(Result.success(response))
       }
     })
   }
+
+  val response = if (responseResult.isFailure) {
+    return responseResult
+  } else {
+    responseResult.getOrThrow()
+  }
+
+  if (!response.isSuccessful) {
+    return Result.failure(BadStatusResponseException(response.code))
+  }
+
+  if (response.body == null) {
+    return Result.failure(EmptyBodyResponseException())
+  }
+
+  return Result.success(response)
 }
 
 suspend fun OkHttpClient.suspendCallConvertToString(
@@ -53,7 +69,7 @@ suspend fun OkHttpClient.suspendCallConvertToString(
   return withContext(Dispatchers.IO) {
     return@withContext Result.Try {
       logcat(priority = LogPriority.VERBOSE) { "suspendCallConvertToString() url='${request.url}' start" }
-      val response = suspendCall(request)
+      val response = suspendCall(request).unwrap()
       logcat(priority = LogPriority.VERBOSE) { "suspendCallConvertToString() url='${request.url}' end" }
 
       if (!response.isSuccessful) {
@@ -77,7 +93,7 @@ suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertWithJsonAdapter
   return withContext(Dispatchers.IO) {
     return@withContext Result.Try {
       logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithJsonAdapter() url='${request.url}' start" }
-      val response = suspendCall(request)
+      val response = suspendCall(request).unwrap()
       logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithJsonAdapter() url='${request.url}' end" }
 
       if (!response.isSuccessful) {
@@ -101,7 +117,7 @@ suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertWithHtmlReader(
   return withContext(Dispatchers.IO) {
     return@withContext Result.Try {
       logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithHtmlReader() url='${request.url}' start" }
-      val response = suspendCall(request)
+      val response = suspendCall(request).unwrap()
       logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithHtmlReader() url='${request.url}' end" }
 
       if (!response.isSuccessful) {
