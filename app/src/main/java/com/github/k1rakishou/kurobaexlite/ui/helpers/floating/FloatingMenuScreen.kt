@@ -43,7 +43,7 @@ class FloatingMenuScreen(
   floatingMenuKey: String,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  private val menuItems: List<FloatingMenuItem>,
+  menuItems: List<FloatingMenuItem>,
   private val onMenuItemClicked: (FloatingMenuItem) -> Unit,
   private val onDismiss: () -> Unit = {}
 ) : FloatingComposeScreen(componentActivity, navigationRouter) {
@@ -51,6 +51,7 @@ class FloatingMenuScreen(
 
   private val callbacksToInvokeMap = mutableMapOf<Any, FloatingMenuItem>()
   private val coroutineScope = KurobaCoroutineScope()
+  private val menuItems by lazy { menuItems.filter { it.visible } }
   private var shouldCallOnDismiss = true
 
   override val screenKey: ScreenKey = floatingMenuScreenKey
@@ -443,6 +444,7 @@ class FloatingMenuScreen(
 
 sealed class FloatingMenuItem {
   abstract val menuItemKey: Any
+  open val visible: Boolean = true
 
   val data: Any?
     get() {
@@ -455,6 +457,7 @@ sealed class FloatingMenuItem {
 
   data class Text(
     override val menuItemKey: Any,
+    override val visible: Boolean = true,
     val menuItemData: Any? = null,
     val text: MenuItemText,
     val subText: MenuItemText? = null

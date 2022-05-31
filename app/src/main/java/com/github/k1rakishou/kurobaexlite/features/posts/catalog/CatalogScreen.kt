@@ -41,6 +41,7 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.forceInit
@@ -74,6 +75,7 @@ class CatalogScreen(
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
+  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
@@ -216,6 +218,7 @@ class CatalogScreen(
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.CatalogDevMenu,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_dev_menu),
+        visible = androidHelpers.isDevFlavor()
       ),
       FloatingMenuItem.Footer(
         items = listOf(
