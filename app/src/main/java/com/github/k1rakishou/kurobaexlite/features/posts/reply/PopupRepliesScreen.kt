@@ -1,31 +1,49 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.reply
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.FractionalThreshold
+import androidx.compose.material.SwipeableDefaults
+import androidx.compose.material.SwipeableState
+import androidx.compose.material.Text
+import androidx.compose.material.swipeable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMaxBy
@@ -51,6 +69,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -79,6 +98,81 @@ class PopupRepliesScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.Pop
+
+  @OptIn(ExperimentalMaterialApi::class)
+  private val swipeableState = SwipeableState(
+    initialValue = Anchors.Visible,
+    animationSpec = SwipeableDefaults.AnimationSpec,
+    confirmStateChange = { true }
+  )
+
+  @OptIn(ExperimentalMaterialApi::class)
+  @Composable
+  override fun CardContent() {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    val coroutineScope = rememberCoroutineScope()
+
+    val swipeDistance = remember(key1 = size) {
+      if (size.width > 0) size.width.toFloat() else 1f
+    }
+
+    val anchors = remember(key1 = swipeDistance) {
+      mapOf(
+        -(swipeDistance) to Anchors.SwipedLeft,
+        0f to Anchors.Visible,
+        swipeDistance to Anchors.SwipedRight
+      )
+    }
+
+    val currentValue = swipeableState.currentValue
+    val currentOffset by swipeableState.offset
+    val progress = currentOffset / swipeDistance
+
+    LaunchedEffect(
+      key1 = currentValue,
+      block = {
+        if (currentValue != Anchors.Visible) {
+          coroutineScope.launch { onBackPressed() }
+        }
+      }
+    )
+
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .onSizeChanged { newSize -> size = newSize }
+    ) {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .graphicsLayer { alpha = progress.absoluteValue },
+        contentAlignment = Alignment.Center
+      ) {
+        Text(
+          modifier = Modifier,
+          text = stringResource(id = R.string.close),
+          color = Color.White,
+          fontWeight = FontWeight.SemiBold,
+          fontSize = 30.sp
+        )
+      }
+
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .swipeable(
+            state = swipeableState,
+            anchors = anchors,
+            orientation = Orientation.Horizontal,
+            thresholds = { _, _ -> FractionalThreshold(0.5f) }
+          )
+          .absoluteOffset { IntOffset(x = currentOffset.toInt(), y = 0) }
+          .graphicsLayer { alpha = (1f - progress.absoluteValue) }
+      ) {
+        super.CardContent()
+      }
+    }
+  }
 
   @Composable
   override fun FloatingContent() {
@@ -113,38 +207,9 @@ class PopupRepliesScreen(
     val buttonsHeightPx = with(density) { remember(key1 = buttonsHeight) { buttonsHeight.toPx().toInt() } }
 
     if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
-      Layout(
-        content = { BuildPopupRepliesScreenContent(postListOptions) },
-        measurePolicy = { measurables, constraints ->
-          val placeables = measurables.map { measurable ->
-            when (measurable.layoutId) {
-              postListLayoutId -> {
-                measurable.measure(constraints.offset(vertical = -buttonsHeightPx))
-              }
-              buttonsLayoutId -> {
-                measurable.measure(
-                  constraints.copy(
-                    minHeight = buttonsHeightPx,
-                    maxHeight = buttonsHeightPx
-                  )
-                )
-              }
-              else -> error("Unexpected layoutId: \'${measurable.layoutId}\'")
-            }
-          }
-
-          val width = placeables.fastMap { it.width }.fastMaxBy { it } ?: 0
-          val height = placeables.fastSumBy { it.height }
-
-          layout(width, height) {
-            var takenHeight = 0
-
-            placeables.fastForEach {
-              it.placeRelative(0, takenHeight)
-              takenHeight += it.height
-            }
-          }
-        }
+      PopupRepliesScreenContentLayout(
+        postListOptions = postListOptions,
+        buttonsHeightPx = buttonsHeightPx
       )
     }
 
@@ -155,7 +220,47 @@ class PopupRepliesScreen(
   }
 
   @Composable
-  private fun BuildPopupRepliesScreenContent(
+  private fun PopupRepliesScreenContentLayout(
+    postListOptions: PostListOptions,
+    buttonsHeightPx: Int
+  ) {
+    Layout(
+      content = { PopupRepliesScreenContent(postListOptions) },
+      measurePolicy = { measurables, constraints ->
+        val placeables = measurables.map { measurable ->
+          when (measurable.layoutId) {
+            postListLayoutId -> {
+              measurable.measure(constraints.offset(vertical = -buttonsHeightPx))
+            }
+            buttonsLayoutId -> {
+              measurable.measure(
+                constraints.copy(
+                  minHeight = buttonsHeightPx,
+                  maxHeight = buttonsHeightPx
+                )
+              )
+            }
+            else -> error("Unexpected layoutId: \'${measurable.layoutId}\'")
+          }
+        }
+
+        val width = placeables.fastMap { it.width }.fastMaxBy { it } ?: 0
+        val height = placeables.fastSumBy { it.height }
+
+        layout(width, height) {
+          var takenHeight = 0
+
+          placeables.fastForEach {
+            it.placeRelative(0, takenHeight)
+            takenHeight += it.height
+          }
+        }
+      }
+    )
+  }
+
+  @Composable
+  private fun PopupRepliesScreenContent(
     postListOptions: PostListOptions
   ) {
     val chanTheme = LocalChanTheme.current
@@ -295,8 +400,10 @@ class PopupRepliesScreen(
     }
   }
 
+  @OptIn(ExperimentalMaterialApi::class)
   override suspend fun onFloatingControllerBackPressed(): Boolean {
     if (popupRepliesScreenViewModel.popReplyChain()) {
+      swipeableState.snapTo(Anchors.Visible)
       return true
     }
 
@@ -309,13 +416,21 @@ class PopupRepliesScreen(
     popupRepliesScreenViewModel.clearPostReplyChainStack()
   }
 
+  enum class Anchors {
+    Visible,
+    SwipedLeft,
+    SwipedRight
+  }
+
   sealed class ReplyViewMode {
+    abstract val postDescriptor: PostDescriptor
+
     data class ReplyTo(
-      val postDescriptor: PostDescriptor
+      override val postDescriptor: PostDescriptor
     ) : ReplyViewMode()
 
     data class RepliesFrom(
-      val postDescriptor: PostDescriptor
+      override val postDescriptor: PostDescriptor
     ) : ReplyViewMode()
   }
 
