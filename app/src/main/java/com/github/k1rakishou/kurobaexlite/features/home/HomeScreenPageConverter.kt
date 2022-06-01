@@ -136,17 +136,19 @@ class HomeScreenPageConverter(
       return foundScreenKey
     }
 
-    fun iterateScreens(iterator: (Int, ComposeScreenWithToolbar) -> Unit) {
+    private fun iterateScreens(iterator: (Int, ComposeScreenWithToolbar) -> Unit) {
       var index = 0
 
       for (page in pages) {
         when (page) {
           is SinglePage -> {
-            iterator(index++, page.screen.composeScreen)
+            iterator(index, page.screen.composeScreen)
+            ++index
           }
           is SplitPage -> {
-            iterator(index++, page.childScreens[0].composeScreen)
-            iterator(index++, page.childScreens[1].composeScreen)
+            iterator(index, page.childScreens[0].composeScreen)
+            iterator(index, page.childScreens[1].composeScreen)
+            ++index
           }
         }
       }

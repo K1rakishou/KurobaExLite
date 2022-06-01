@@ -492,7 +492,7 @@ class HomeScreen(
         modifier = Modifier.fillMaxSize(),
         state = pagerState,
         count = pagesWrapper.pagesCount,
-        key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey() }
+        key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey()}
       ) { page ->
         val childPage = remember(key1 = page) { pagesWrapper.pageByIndex(page) }
           ?: return@HorizontalPager
