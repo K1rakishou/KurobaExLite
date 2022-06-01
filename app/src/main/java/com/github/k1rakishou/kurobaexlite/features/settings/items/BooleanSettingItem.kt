@@ -30,9 +30,9 @@ import kotlinx.coroutines.launch
 
 class BooleanSettingItem(
   title: String,
-  subtitle: String?,
-  enabled: Boolean,
-  dependencies: List<BooleanSetting>,
+  subtitle: String? = null,
+  enabled: Boolean = true,
+  dependencies: List<BooleanSetting> = emptyList(),
   val delegate: BooleanSetting
 ) : SettingItem(delegate.settingKey, title, subtitle, dependencies) {
   private val settingEnabledState = mutableStateOf(enabled)

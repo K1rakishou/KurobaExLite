@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.settings
+package com.github.k1rakishou.kurobaexlite.features.settings.application
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
@@ -41,6 +41,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -60,10 +61,10 @@ class AppSettingsScreen(
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
 
   private val defaultToolbarState by lazy {
-    SimpleToolbarStateBuilder.Builder<ToolbarIcon>(componentActivity)
+    SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
       .titleId(R.string.settings_screen_toolbar_title)
-      .leftIcon(KurobaToolbarIcon(key = ToolbarIcon.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
-      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcon.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
       .build(defaultToolbarStateKey)
   }
 
@@ -75,7 +76,7 @@ class AppSettingsScreen(
   }
 
   override val kurobaToolbarContainerState by lazy {
-    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcon>>(screenKey)
+    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcons>>(screenKey)
   }
 
   @Composable
@@ -85,8 +86,8 @@ class AppSettingsScreen(
       block = {
         defaultToolbarState.iconClickEvents.collect { icon ->
           when (icon) {
-            ToolbarIcon.Back -> { onBackPressed() }
-            ToolbarIcon.Overflow -> {
+            ToolbarIcons.Back -> { onBackPressed() }
+            ToolbarIcons.Overflow -> {
               // no-op
             }
           }
@@ -140,7 +141,9 @@ class AppSettingsScreen(
       if (settingScreen == null) {
         KurobaComposeLoadingIndicator()
       } else {
-        SettingScreen(settingScreen)
+        KurobaComposeFadeIn {
+          SettingScreen(settingScreen)
+        }
       }
     }
   }
@@ -253,7 +256,7 @@ class AppSettingsScreen(
     navigationRouter.presentScreen(floatingMenuScreen)
   }
 
-  enum class ToolbarIcon {
+  enum class ToolbarIcons {
     Back,
     Overflow
   }

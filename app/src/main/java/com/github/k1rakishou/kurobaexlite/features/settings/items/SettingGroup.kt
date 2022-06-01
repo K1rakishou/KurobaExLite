@@ -2,6 +2,8 @@ package com.github.k1rakishou.kurobaexlite.features.settings.items
 
 import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.EnumSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.StringSetting
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 
 class SettingGroup(
@@ -73,6 +75,30 @@ class SettingGroupBuilder(
       subtitle = subtitle,
       enabled = enabled,
       onClicked = onClicked,
+    )
+
+    return this
+  }
+
+  fun string(
+    title: String,
+    enabled: Boolean,
+    delegate: StringSetting,
+    subtitle: String? = null,
+    showDialogScreen: suspend (DialogScreen.Params) -> Unit,
+    dependencies: List<BooleanSetting> = emptyList(),
+    settingNameMapper: (String) -> String = { it },
+    onSettingUpdated: (suspend () -> Unit)? = null
+  ): SettingGroupBuilder {
+    settings += StringSettingItem(
+      title = title,
+      subtitle = subtitle,
+      dependencies = dependencies,
+      enabled = enabled,
+      delegate = delegate,
+      showDialogScreen = showDialogScreen,
+      settingValueMapper = settingNameMapper,
+      onSettingUpdated = onSettingUpdated
     )
 
     return this

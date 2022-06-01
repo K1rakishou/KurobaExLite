@@ -664,7 +664,6 @@ fun String?.asFormattedToken(): String {
   }
 
   val tokenPartLength = (this.length.toFloat() * 0.2f).toInt() / 2
-
   val startTokenPart = this.substring(0, tokenPartLength)
   val endTokenPart = this.substring(this.length - tokenPartLength)
 

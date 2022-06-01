@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.settings
+package com.github.k1rakishou.kurobaexlite.features.settings.application
 
 import android.content.Context
 import android.os.Build

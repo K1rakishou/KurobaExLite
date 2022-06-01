@@ -130,23 +130,29 @@ class UpdateManager(
     }
 
 
-    val versionCode = extractVersionCodeFromTag(latestRelease)
-    if (versionCode == null) {
+    val versionCodeFromServer = extractVersionCodeFromTag(latestRelease)
+    if (versionCodeFromServer == null) {
       return UpdateCheckResult.Error("Failed to extract versionCode from latestRelease object")
     }
 
-    val lastCheckedVersionCode = appSettings.lastCheckedVersionCode.read()
-      .takeIf { versionCode -> versionCode > 0 }
-      ?: BuildConfig.VERSION_CODE.toLong()
+    val currentVersionCode = BuildConfig.VERSION_CODE
 
-    if (versionCode <= lastCheckedVersionCode) {
-      logcat(TAG) { "versionCode ($versionCode) <= lastCheckedVersionCode ($lastCheckedVersionCode)" }
+    val lastCheckedVersionCode = appSettings.lastCheckedVersionCode.read()
+      .takeIf { lastVersionCode -> lastVersionCode > currentVersionCode }
+      ?: currentVersionCode.toLong()
+
+    if (versionCodeFromServer <= lastCheckedVersionCode) {
+      logcat(TAG) {
+        "versionCode ($versionCodeFromServer) <= lastCheckedVersionCode ($lastCheckedVersionCode), " +
+          "currentVersionCode=${currentVersionCode}"
+      }
+
       return UpdateCheckResult.AlreadyOnTheLatestVersion
     }
 
     logcat(TAG) {
       "lastCheckedVersionCode: ${lastCheckedVersionCode}, " +
-        "newVersionCode: ${versionCode}, " +
+        "newVersionCode: ${versionCodeFromServer}, " +
         "releaseUrl=${releaseUrl}"
     }
 
@@ -156,7 +162,7 @@ class UpdateManager(
       title = title
     )
 
-    appSettings.lastCheckedVersionCode.write(versionCode)
+    appSettings.lastCheckedVersionCode.write(versionCodeFromServer)
     return UpdateCheckResult.Success
   }
 

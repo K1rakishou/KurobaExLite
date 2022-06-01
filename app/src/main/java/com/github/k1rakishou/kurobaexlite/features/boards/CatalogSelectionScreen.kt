@@ -31,10 +31,12 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.settings.site.SiteSettingsScreen
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.sort.WeightedSorter
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
@@ -71,6 +73,10 @@ class CatalogSelectionScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
+  // TODO(KurobaEx): use "lastUsedSite" from the settings and update it too (once there are have multiple sites)
+  private val siteKey: SiteKey
+    get() = catalogDescriptor?.siteKey ?: Chan4.SITE_KEY
+
   private val defaultToolbarKey = "${screenKey.key}_default"
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
   private val searchToolbarKey = "${screenKey.key}_search"
@@ -80,6 +86,7 @@ class CatalogSelectionScreen(
       .titleId(R.string.board_selection_screen_toolbar_title)
       .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Search, drawableId = R.drawable.ic_baseline_search_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.SiteOptions, drawableId = R.drawable.ic_baseline_settings_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
       .build(defaultToolbarStateKey)
   }
@@ -113,6 +120,15 @@ class CatalogSelectionScreen(
           when (key) {
             ToolbarIcons.Search -> {
               kurobaToolbarContainerState.fadeInToolbar(searchToolbar)
+            }
+            ToolbarIcons.SiteOptions -> {
+              val siteSettingsScreen = SiteSettingsScreen(
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter,
+                siteKey = siteKey
+              )
+
+              navigationRouter.pushScreen(siteSettingsScreen)
             }
             ToolbarIcons.Back -> { onBackPressed() }
             ToolbarIcons.Overflow -> {
@@ -156,9 +172,6 @@ class CatalogSelectionScreen(
       key1 = Unit,
       block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
     )
-
-    val siteKey = catalogDescriptor?.siteKey
-      ?: Chan4.SITE_KEY
 
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
@@ -404,6 +417,7 @@ class CatalogSelectionScreen(
   enum class ToolbarIcons {
     Back,
     Search,
+    SiteOptions,
     Overflow
   }
 

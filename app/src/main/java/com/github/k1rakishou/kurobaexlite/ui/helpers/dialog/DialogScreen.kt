@@ -46,7 +46,8 @@ class DialogScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   canDismissByClickingOutside: Boolean = true,
-  private val params: Params
+  private val params: Params,
+  private val onDismissed: (() -> Unit)? = null
 ) : FloatingComposeScreen(
   componentActivity = componentActivity,
   navigationRouter = navigationRouter,
@@ -55,6 +56,12 @@ class DialogScreen(
   private val dialogScreeKey = ScreenKey("DialogScreen_${dialogKey}")
 
   override val screenKey: ScreenKey = dialogScreeKey
+
+  override fun onDisposed() {
+    super.onDisposed()
+
+    onDismissed?.invoke()
+  }
 
   @OptIn(ExperimentalComposeUiApi::class)
   @Composable
