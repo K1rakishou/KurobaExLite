@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.SaveableComponent
 import com.github.k1rakishou.kurobaexlite.helpers.getParcelableMap
@@ -168,6 +169,7 @@ class GlobalUiInfoManager(
       mapper = { bundle ->
         val mainUiLayoutMode = MainUiLayoutMode.fromRawValue(bundle.getInt(MAIN_UI_LAYOUT_MODE, 0))
         val currentPage = bundle.getParcelable<CurrentPage>(CURRENT_PAGE)
+          ?.let { page -> layoutModeDependantPage(mainUiLayoutMode, page) }
 
         return@getSerializableMap Pair(mainUiLayoutMode, currentPage)
       }
@@ -179,7 +181,7 @@ class GlobalUiInfoManager(
           return@forEach
         }
 
-        _currentPageMapFlow[mainUiLayoutMode] = MutableStateFlow(currentPage)
+        _currentPageMapFlow[mainUiLayoutMode] = MutableStateFlow(layoutModeDependantPage(mainUiLayoutMode, currentPage))
       }
     }
 
@@ -335,7 +337,11 @@ class GlobalUiInfoManager(
       return
     }
 
-    val newCurrentPage = CurrentPage(screenKey, false)
+    val newCurrentPage = layoutModeDependantPage(
+      mainUiLayoutMode = currentUiLayoutMode,
+      currentPage = CurrentPage(screenKey, false)
+    )
+
     _currentPageMapFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
@@ -357,7 +363,11 @@ class GlobalUiInfoManager(
       return
     }
 
-    val newCurrentPage = CurrentPage(screenKey, animate)
+    val newCurrentPage = layoutModeDependantPage(
+      mainUiLayoutMode = currentUiLayoutMode,
+      currentPage = CurrentPage(screenKey, animate)
+    )
+
     _currentPageMapFlow[currentUiLayoutMode]?.tryEmit(newCurrentPage)
 
     val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
@@ -553,7 +563,12 @@ class GlobalUiInfoManager(
           MainUiLayoutMode.Split -> CatalogScreen.SCREEN_KEY
         }
 
-        _currentPageMapFlow[layoutMode] = MutableStateFlow(CurrentPage(screenKey, false))
+        val newCurrentPage = layoutModeDependantPage(
+          mainUiLayoutMode = layoutMode,
+          currentPage = CurrentPage(screenKey, false)
+        )
+
+        _currentPageMapFlow[layoutMode] = MutableStateFlow(newCurrentPage)
       }
     }
 
@@ -572,6 +587,26 @@ class GlobalUiInfoManager(
     }
 
     currentUiLayoutModeKnownDeferred.complete(Unit)
+  }
+
+  private fun layoutModeDependantPage(
+    mainUiLayoutMode: MainUiLayoutMode,
+    currentPage: CurrentPage
+  ): CurrentPage {
+    return when (mainUiLayoutMode) {
+      MainUiLayoutMode.Phone -> {
+        currentPage
+      }
+      MainUiLayoutMode.Split -> {
+        // When in SPLIT layout we always want to have the "current page" to be the CatalogScreen's
+        // page so that stuff like pushing new screens works correctly
+        if (currentPage.screenKey == ThreadScreen.SCREEN_KEY) {
+          return currentPage.copy(screenKey = CatalogScreen.SCREEN_KEY)
+        }
+
+        return currentPage
+      }
+    }
   }
 
   companion object {
