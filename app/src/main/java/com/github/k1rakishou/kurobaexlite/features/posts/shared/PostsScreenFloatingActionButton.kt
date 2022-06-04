@@ -60,7 +60,7 @@ fun BoxScope.PostsScreenFloatingActionButton(
         .collect { activeSnackbars -> activeSnackbarsCount = activeSnackbars.size }
     })
 
-  val combinedFabState by remember(key1 = screenKey) {
+  val combinedFabState by remember(screenKey, screenContentLoaded, lastLoadedEndedWithError) {
     derivedStateOf {
       CombinedFabState(
         activeSnackbarsCount = activeSnackbarsCount,

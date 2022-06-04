@@ -111,7 +111,7 @@ class StringSettingItem(
       }
 
       if (value != null) {
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
           modifier = Modifier
