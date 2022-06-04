@@ -15,10 +15,12 @@ class HomePagerNestedScrollConnection(
   private val onFling: (Velocity) -> Unit
 ) : NestedScrollConnection {
   private var scrolled = 0f
+  private var currentPageWhenScrollStarted = -1
   private var pointerDown = false
 
   override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
     pointerDown = true
+    currentPageWhenScrollStarted = currentPagerPage()
 
     if (shouldConsumeAllScrollEvents()) {
       return available
@@ -28,7 +30,7 @@ class HomePagerNestedScrollConnection(
       return available.copy(y = 0f)
     }
 
-    if (available.x < 0f && scrolled > 0f && currentPagerPage() == 0) {
+    if (available.x < 0f && scrolled > 0f && currentPageWhenScrollStarted == 0) {
       dragDrawerLayout(available)
       return available
     }
@@ -41,7 +43,7 @@ class HomePagerNestedScrollConnection(
     available: Offset,
     source: NestedScrollSource
   ): Offset {
-    if (available.x > 0f && pointerDown && currentPagerPage() == 0) {
+    if (available.x > 0f && pointerDown && currentPageWhenScrollStarted == 0) {
       dragDrawerLayout(available)
       return available
     }
@@ -50,7 +52,7 @@ class HomePagerNestedScrollConnection(
   }
 
   override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-    if (currentPagerPage() == 0 && available.x > AppConstants.minFlingVelocityPx) {
+    if (currentPageWhenScrollStarted == 0 && available.x > AppConstants.minFlingVelocityPx) {
       onFling(available)
     } else if (pointerDown && scrolled != 0f) {
       onDragging(false, SystemClock.elapsedRealtime(), scrolled)
@@ -58,6 +60,7 @@ class HomePagerNestedScrollConnection(
 
     scrolled = 0f
     pointerDown = false
+    currentPageWhenScrollStarted = -1
 
     return super.onPostFling(consumed, available)
   }

@@ -16,6 +16,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -120,16 +121,29 @@ fun HomeScreenDrawerLayout(
   navigationRouterProvider: () -> NavigationRouter
 ) {
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
-
   var drawerVisibilityMut by remember { mutableStateOf<DrawerVisibility>(globalUiInfoManager.currentDrawerVisibility) }
   val drawerVisibility = drawerVisibilityMut
-
   val dragEventsCombined = remember { mutableListOf<DrawerVisibility.Drag>() }
+
+  val drawerSwipeState = remember {
+    DrawerSwipeState(
+      initialValue = DrawerSwipeState.State.fromDrawerVisibility(
+        drawerWidth = drawerWidth,
+        drawerVisibility = drawerVisibility
+      )
+    )
+  }
+  val drawerSwipeStateUpdated by rememberUpdatedState(newValue = drawerSwipeState)
 
   LaunchedEffect(
     key1 = Unit,
     block = {
       globalUiInfoManager.drawerVisibilityFlow.collect { event ->
+        if (drawerSwipeStateUpdated.isAnimationRunning) {
+          dragEventsCombined.clear()
+          return@collect
+        }
+
         if (event is DrawerVisibility.Drag) {
           dragEventsCombined += event
         }
@@ -144,15 +158,6 @@ fun HomeScreenDrawerLayout(
 
   val drawerScreen = remember { BookmarksScreen(componentActivity, navigationRouterProvider()) }
   val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
-
-  val drawerSwipeState = remember {
-    DrawerSwipeState(
-      initialValue = DrawerSwipeState.State.fromDrawerVisibility(
-        drawerWidth = drawerWidth,
-        drawerVisibility = drawerVisibility
-      )
-    )
-  }
 
   drawerSwipeState.InitDrawerState(drawerWidth, density)
 
@@ -199,7 +204,7 @@ fun HomeScreenDrawerLayout(
   LaunchedEffect(
     key1 = drawerVisibility,
     block = {
-      if (drawerSwipeState.isAnimationRunning) {
+      if (drawerSwipeStateUpdated.isAnimationRunning) {
         dragEventsCombined.clear()
         return@LaunchedEffect
       }
@@ -208,7 +213,7 @@ fun HomeScreenDrawerLayout(
         is DrawerVisibility.Drag -> {
           processDragEvents(
             dragEventsCombined = dragEventsCombined,
-            drawerSwipeState = drawerSwipeState,
+            drawerSwipeState = drawerSwipeStateUpdated,
             offsetAnimated = drawerOffsetFloat,
             drawerWidth = drawerWidth,
             globalUiInfoManager = globalUiInfoManager,
@@ -221,14 +226,12 @@ fun HomeScreenDrawerLayout(
           currentPrevDragX = Float.NaN
 
           val velocityX = drawerVisibility.velocity.x
-          val opening = velocityX >= 0f
           val canPerformFling = velocityX.absoluteValue > AppConstants.minFlingVelocityPx.absoluteValue
           val animationProgress = (1f - (drawerOffset.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
 
           endDragWithFling(
-            opening = opening,
             canPerformFling = canPerformFling,
-            drawerSwipeState = drawerSwipeState,
+            drawerSwipeState = drawerSwipeStateUpdated,
             velocityX = velocityX,
             globalUiInfoManager = globalUiInfoManager,
             animationProgress = animationProgress
@@ -314,17 +317,12 @@ private suspend fun processDragEvents(
         return@mutableIteration true
       } else {
         val velocityX = velocityTracker.calculateVelocity().x
-        if (velocityX == 0f) {
-          velocityTracker.calculateVelocity()
-        }
-
         velocityTracker.resetTracking()
-        val opening = velocityX >= 0f
+
         val canPerformFling = velocityX.absoluteValue > AppConstants.minFlingVelocityPx.absoluteValue
         val animationProgress = (1f - (offsetAnimated.absoluteValue / drawerWidth.toFloat())).coerceIn(0f, 1f)
 
         endDragWithFling(
-          opening = opening,
           canPerformFling = canPerformFling,
           drawerSwipeState = drawerSwipeState,
           velocityX = velocityX,
@@ -345,34 +343,28 @@ private suspend fun processDragEvents(
 }
 
 private suspend fun endDragWithFling(
-  opening: Boolean,
   canPerformFling: Boolean,
   drawerSwipeState: DrawerSwipeState,
   velocityX: Float,
   globalUiInfoManager: GlobalUiInfoManager,
   animationProgress: Float
 ) {
-  if (opening) {
-    if (canPerformFling) {
-      drawerSwipeState.performFling(velocityX)
-      globalUiInfoManager.openDrawer(withAnimation = false)
-    } else {
-      if (animationProgress > 0.5f) {
-        globalUiInfoManager.openDrawer(withAnimation = true)
-      } else {
-        globalUiInfoManager.closeDrawer(withAnimation = true)
+  if (canPerformFling) {
+    drawerSwipeState.performFling(velocityX)
+
+    when (drawerSwipeState.currentValue) {
+      DrawerSwipeState.State.Closed -> {
+        globalUiInfoManager.closeDrawer(withAnimation = false)
+      }
+      DrawerSwipeState.State.Opened -> {
+        globalUiInfoManager.openDrawer(withAnimation = false)
       }
     }
   } else {
-    if (canPerformFling) {
-      drawerSwipeState.performFling(velocityX)
-      globalUiInfoManager.closeDrawer(withAnimation = false)
+    if (animationProgress > 0.5f) {
+      globalUiInfoManager.openDrawer(withAnimation = true)
     } else {
-      if (animationProgress > 0.5f) {
-        globalUiInfoManager.openDrawer(withAnimation = true)
-      } else {
-        globalUiInfoManager.closeDrawer(withAnimation = true)
-      }
+      globalUiInfoManager.closeDrawer(withAnimation = true)
     }
   }
 }

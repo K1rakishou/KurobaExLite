@@ -442,7 +442,7 @@ class HomeScreen(
 
     val nestedScrollConnection = remember(key1 = drawerWidth) {
       HomePagerNestedScrollConnection(
-        currentPagerPage = { currentPageIndex },
+        currentPagerPage = { currentPageIndexUpdated },
         isGestureCurrentlyAllowed = {
           isDrawerDragGestureCurrentlyAllowed(
             currentPageIndex = currentPageIndexUpdated,

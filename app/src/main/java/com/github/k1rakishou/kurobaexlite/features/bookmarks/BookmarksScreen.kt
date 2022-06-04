@@ -151,21 +151,26 @@ class BookmarksScreen(
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
-    val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow
-      .collectAsState(initial = DrawerVisibility.Closed)
+    var isFullyClosed by remember { mutableStateOf(true) }
 
-    val isFullyClosed by remember(key1 = drawerVisibility) {
-      derivedStateOf {
-        when (drawerVisibility) {
-          DrawerVisibility.Closed -> true
-          DrawerVisibility.Closing,
-          is DrawerVisibility.Fling,
-          is DrawerVisibility.Drag,
-          DrawerVisibility.Opened,
-          DrawerVisibility.Opening -> false
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        globalUiInfoManager.drawerVisibilityFlow.collectLatest { drawerVisibility ->
+          val newIsFullyClosed = when (drawerVisibility) {
+            DrawerVisibility.Closed -> true
+            DrawerVisibility.Closing,
+            is DrawerVisibility.Fling,
+            is DrawerVisibility.Drag,
+            DrawerVisibility.Opened,
+            DrawerVisibility.Opening -> false
+          }
+
+          if (isFullyClosed != newIsFullyClosed) {
+            isFullyClosed = newIsFullyClosed
+          }
         }
-      }
-    }
+      })
 
     if (isFullyClosed) {
       return
