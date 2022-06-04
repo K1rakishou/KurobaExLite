@@ -170,8 +170,14 @@ class HomeScreen(
       key1 = Unit,
       block = {
         globalUiInfoManager.notEnoughWidthForSplitLayoutFlow
-          .debounce(250.milliseconds)
-          .collect { (minCatalogSplitModelWidth, availableWidthForCatalog) ->
+          .debounce(500.milliseconds)
+          .collect { info ->
+            if (info == null) {
+              return@collect
+            }
+
+            val (minCatalogSplitModelWidth, availableWidthForCatalog) = info
+
             val errorMessage = context.resources.getString(
               R.string.not_enough_with_for_split_layout_mode,
               minCatalogSplitModelWidth,

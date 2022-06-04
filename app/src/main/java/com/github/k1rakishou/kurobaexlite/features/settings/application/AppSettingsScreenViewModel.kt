@@ -2,8 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.settings.application
 
 import android.content.Context
 import android.os.Build
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
@@ -13,7 +11,6 @@ import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreenBuilder
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreens
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherBg
@@ -21,7 +18,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherFg
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CompletableDeferred
@@ -43,8 +39,6 @@ class AppSettingsScreenViewModel : BaseViewModel() {
   private val appResources: AppResources by inject(AppResources::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val updateManager: UpdateManager by inject(UpdateManager::class.java)
-  private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
-  private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
 
   private val _builtSettings = ConcurrentHashMap<SettingScreens, MutableStateFlow<SettingScreen?>>()
 
@@ -136,22 +130,7 @@ class AppSettingsScreenViewModel : BaseViewModel() {
       builder = {
         boolean(
           title = appResources.string(R.string.settings_screen_history_enabled),
-          subtitleBuilder = {
-            withStyle(
-              style = SpanStyle(color = themeEngine.chanTheme.accentColorCompose),
-              block = { append(appResources.string(R.string.settings_screen_requires_app_restart)) }
-            )
-          },
-          delegate = appSettings.historyEnabled,
-          // TODO(KurobaEx):
-          //  We need to restart the activity because this is a hack around a weird bug where after
-          //  changing the amount of pages in PageWrapper the HorizontalPager still thinks we have more
-          //  pages than we actually have so when we attempt to get the page by it's index we get null
-          //  so we can't render anything and we just return from the composable function that draws
-          //  the HomeScreen content thus not drawing anything. I tried various hack, like, scrolling
-          //  to 0th page when PagerWrapper changes but it doesn't scroll for some reason
-          //  (the page stays at the previous index).
-          onSettingUpdated = { appRestarter.restart() }
+          delegate = appSettings.historyEnabled
         )
 
         boolean(

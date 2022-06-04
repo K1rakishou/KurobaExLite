@@ -86,8 +86,8 @@ class GlobalUiInfoManager(
   val currentUiLayoutMode: MainUiLayoutMode?
     get() = currentUiLayoutModeState.value
 
-  private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>>(Channel.UNLIMITED)
-  val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>>
+  private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>?>(Channel.RENDEZVOUS)
+  val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>?>
     get() = _notEnoughWidthForSplitLayoutFlow.asSharedFlow()
 
   private var _totalScreenWidthState = MutableStateFlow(0)
@@ -587,6 +587,7 @@ class GlobalUiInfoManager(
         _notEnoughWidthForSplitLayoutFlow.tryEmit(pair)
         currentUiLayoutModeState.value = MainUiLayoutMode.Phone
       } else {
+        _notEnoughWidthForSplitLayoutFlow.tryEmit(null)
         currentUiLayoutModeState.value = uiLayoutMode
       }
     }

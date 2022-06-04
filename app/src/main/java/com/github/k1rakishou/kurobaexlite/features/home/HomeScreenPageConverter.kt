@@ -104,10 +104,15 @@ class HomeScreenPageConverter(
     fun isEmpty(): Boolean = pages.isEmpty()
 
     fun pageByIndex(index: Int): AbstractPage<ComposeScreenWithToolbar>? {
+      if (pages.isEmpty()) {
+        return null
+      }
+
       var foundScreenKey: ScreenKey? = null
+      val correctedIndex = index.coerceIn(0, pages.lastIndex)
 
       iterateScreens { screenIndex, screen ->
-        if (screenIndex == index) {
+        if (screenIndex == correctedIndex) {
           foundScreenKey = screen.screenKey
         }
       }
