@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -493,7 +494,8 @@ private fun PostCellFooter(
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .wrapContentHeight(),
+      .wrapContentHeight()
+      .animateContentSize(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (postFooterText.isNotNullNorEmpty()) {
