@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    compileSdk 31
+    compileSdk 32
 
     productFlavors.all {
         ext.apkVersionNameSuffix = null

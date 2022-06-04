@@ -4,7 +4,7 @@ buildscript {
         kotlin_version = "1.6.21"
         ksp = "1.6.21-1.0.5"
         kotlin_coroutines_version = "1.6.1"
-        compose_version = "1.2.0-beta02"
+        compose_version = "1.2.0-beta03"
         koin_version = "3.2.0-beta-1"
         okhttp = "4.9.2"
         moshi = "1.13.0"
