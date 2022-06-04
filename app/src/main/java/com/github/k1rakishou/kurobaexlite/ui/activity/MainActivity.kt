@@ -19,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
@@ -48,6 +49,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val localFilePicker: LocalFilePicker by inject(LocalFilePicker::class.java)
   private val mainActivityIntentHandler: MainActivityIntentHandler by inject(MainActivityIntentHandler::class.java)
   private val updateManager: UpdateManager by inject(UpdateManager::class.java)
+  private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
 
   private var backPressedOnce = false
 
@@ -77,6 +79,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
     fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
+    appRestarter.attachActivity(this)
 
     clickedThumbnailBoundsStorage.clear()
 
@@ -104,6 +107,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     clickedThumbnailBoundsStorage.clear()
     localFilePicker.detachActivity()
     mainActivityIntentHandler.onDestroy()
+    appRestarter.detachActivity()
 
     super.onDestroy()
   }

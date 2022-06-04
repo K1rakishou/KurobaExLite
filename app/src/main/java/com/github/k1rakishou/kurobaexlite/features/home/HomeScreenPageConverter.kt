@@ -154,6 +154,30 @@ class HomeScreenPageConverter(
       }
     }
 
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (javaClass != other?.javaClass) return false
+
+      other as PagesWrapper
+
+      if (pages.size != other.pages.size) return false
+
+      for (index in pages.indices) {
+        val thisPage = pages[index]
+        val otherPage = other.pages[index]
+
+        if (thisPage != otherPage) {
+          return false
+        }
+      }
+
+      return true
+    }
+
+    override fun hashCode(): Int {
+      return pages.hashCode()
+    }
+
   }
 
 }

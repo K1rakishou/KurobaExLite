@@ -105,6 +105,7 @@
     <string name="album_screen_album_empty">Album is empty</string>
 
     <string name="settings_screen_toolbar_title">Settings</string>
+    <string name="settings_screen_requires_app_restart">Requires app restart!</string>
 
     <string name="empty_setup_feature" translatable="false">&#128564;</string>
     <string name="empty_setup_no_catalog_selected">No catalog selected</string>

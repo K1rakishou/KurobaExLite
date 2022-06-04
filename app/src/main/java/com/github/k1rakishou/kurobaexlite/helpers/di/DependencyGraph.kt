@@ -31,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
@@ -153,6 +154,7 @@ object DependencyGraph {
     single { MediaViewerPostListScroller() }
     single { CrossThreadFollowHistory() }
     single { ClickedThumbnailBoundsStorage() }
+    single { AppRestarter() }
     single {
       ParsedPostDataCache(
         appContext = get(),

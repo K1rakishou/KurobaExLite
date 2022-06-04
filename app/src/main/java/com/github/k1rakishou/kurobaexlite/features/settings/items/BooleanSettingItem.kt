@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
@@ -30,10 +31,11 @@ import kotlinx.coroutines.launch
 
 class BooleanSettingItem(
   title: String,
-  subtitle: String? = null,
+  subtitle: AnnotatedString? = null,
   enabled: Boolean = true,
   dependencies: List<BooleanSetting> = emptyList(),
-  val delegate: BooleanSetting
+  val delegate: BooleanSetting,
+  val onSettingUpdated: (suspend () -> Unit)? = null
 ) : SettingItem(delegate.settingKey, title, subtitle, dependencies) {
   private val settingEnabledState = mutableStateOf(enabled)
 
@@ -59,7 +61,12 @@ class BooleanSettingItem(
         .wrapContentHeight()
         .kurobaClickable(
           enabled = isSettingEnabled,
-          onClick = { coroutineScope.launch { delegate.toggle() } }
+          onClick = {
+            coroutineScope.launch {
+              delegate.toggle()
+              onSettingUpdated?.invoke()
+            }
+          }
         )
         .graphicsLayer { alpha = if (isSettingEnabled) 1f else disabledAlpha }
         .padding(vertical = 12.dp, horizontal = 8.dp)
@@ -96,7 +103,12 @@ class BooleanSettingItem(
             .width(64.dp),
           enabled = isSettingEnabled,
           checked = dependenciesEnabled && value,
-          onCheckedChange = { newValue -> coroutineScope.launch { delegate.write(newValue) } }
+          onCheckedChange = { newValue ->
+            coroutineScope.launch {
+              delegate.write(newValue)
+              onSettingUpdated?.invoke()
+            }
+          }
         )
       } else {
         Spacer(modifier = Modifier.width(64.dp))

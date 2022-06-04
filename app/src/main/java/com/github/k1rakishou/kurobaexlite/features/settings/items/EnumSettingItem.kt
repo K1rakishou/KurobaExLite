@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
@@ -25,7 +26,7 @@ import kotlinx.coroutines.launch
 
 class EnumSettingItem<T : Enum<T>>(
   title: String,
-  subtitle: String?,
+  subtitle: AnnotatedString?,
   dependencies: List<BooleanSetting>,
   val enabled: Boolean,
   val delegate: EnumSetting<T>,

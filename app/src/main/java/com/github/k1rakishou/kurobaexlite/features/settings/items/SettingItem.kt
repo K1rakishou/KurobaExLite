@@ -4,13 +4,14 @@ import androidx.annotation.CallSuper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
 import kotlinx.coroutines.flow.combine
 
 abstract class SettingItem(
   val key: String,
   val title: String,
-  val subtitle: String?,
+  val subtitle: AnnotatedString?,
   val dependencies: List<BooleanSetting>
 ) {
   protected val dependenciesEnabledState = mutableStateOf(false)
@@ -41,7 +42,7 @@ abstract class SettingItem(
     }
 
     return title.contains(other = searchQuery, ignoreCase = true) ||
-      (subtitle?.contains(other = searchQuery, ignoreCase = true) == true)
+      (subtitle?.text?.contains(other = searchQuery, ignoreCase = true) == true)
   }
 
 }

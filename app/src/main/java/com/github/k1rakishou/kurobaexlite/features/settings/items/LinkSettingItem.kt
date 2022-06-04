@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -18,7 +19,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 class LinkSettingItem(
   key: String,
   title: String,
-  subtitle: String?,
+  subtitle: AnnotatedString?,
   val enabled: Boolean,
   val onClicked: () -> Unit
 ) : SettingItem(key, title, subtitle, emptyList()) {

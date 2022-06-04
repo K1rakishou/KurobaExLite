@@ -86,7 +86,7 @@ class GlobalUiInfoManager(
   val currentUiLayoutMode: MainUiLayoutMode?
     get() = currentUiLayoutModeState.value
 
-  private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>>(extraBufferCapacity = Channel.UNLIMITED)
+  private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>>(Channel.UNLIMITED)
   val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>>
     get() = _notEnoughWidthForSplitLayoutFlow.asSharedFlow()
 
@@ -102,7 +102,7 @@ class GlobalUiInfoManager(
   val currentDrawerVisibility: DrawerVisibility
     get() = _currentDrawerVisibility
 
-  private val _drawerVisibilityFlow = MutableSharedFlow<DrawerVisibility>(extraBufferCapacity = Channel.UNLIMITED)
+  private val _drawerVisibilityFlow = MutableSharedFlow<DrawerVisibility>(Channel.UNLIMITED)
   val drawerVisibilityFlow: SharedFlow<DrawerVisibility>
     get() = _drawerVisibilityFlow.asSharedFlow()
 
@@ -576,10 +576,15 @@ class GlobalUiInfoManager(
       currentUiLayoutModeState.value = MainUiLayoutMode.Phone
     } else {
       val availableWidthForCatalog = totalScreenWidth * CATALOG_SCREEN_WEIGHT
-      val minCatalogSplitModelWidth = with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
+      val minCatalogSplitModelWidth =
+        with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
 
-      if (uiLayoutMode == MainUiLayoutMode.Split && availableWidthForCatalog < minCatalogSplitModelWidth) {
-        _notEnoughWidthForSplitLayoutFlow.tryEmit(Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth))
+      if (
+        uiLayoutMode == MainUiLayoutMode.Split &&
+        availableWidthForCatalog < minCatalogSplitModelWidth
+      ) {
+        val pair = Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth)
+        _notEnoughWidthForSplitLayoutFlow.tryEmit(pair)
         currentUiLayoutModeState.value = MainUiLayoutMode.Phone
       } else {
         currentUiLayoutModeState.value = uiLayoutMode

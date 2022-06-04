@@ -46,6 +46,17 @@ fun rememberPagerState(
 @ExperimentalPagerApi
 @Composable
 fun rememberPagerState(
+  vararg keys: Any,
+  @IntRange(from = 0) initialPage: Int = 0,
+): PagerState {
+  return rememberSaveable(keys, saver = PagerState.Saver) {
+    PagerState(currentPage = initialPage)
+  }
+}
+
+@ExperimentalPagerApi
+@Composable
+fun rememberPagerState(
   @IntRange(from = 0) initialPage: Int = 0,
 ): PagerState {
   return rememberSaveable(saver = PagerState.Saver) {

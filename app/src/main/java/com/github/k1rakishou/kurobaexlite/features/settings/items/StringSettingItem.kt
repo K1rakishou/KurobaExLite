@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
@@ -26,7 +27,7 @@ import kotlinx.coroutines.launch
 
 class StringSettingItem(
   title: String,
-  subtitle: String? = null,
+  subtitle: AnnotatedString? = null,
   dependencies: List<BooleanSetting> = emptyList(),
   val delegate: StringSetting,
   val enabled: Boolean = true,
@@ -74,7 +75,9 @@ class StringSettingItem(
                       return@PositiveDialogButton
                     }
 
-                    coroutineScope.launch { delegate.write(input) }
+                    coroutineScope.launch {
+                      delegate.write(input)
+                    }
                   }
                 )
               )

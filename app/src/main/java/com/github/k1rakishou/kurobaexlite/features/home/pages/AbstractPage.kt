@@ -42,4 +42,5 @@ abstract class AbstractPage<T : ComposeScreen> {
 
   @Composable
   abstract fun Content()
+
 }

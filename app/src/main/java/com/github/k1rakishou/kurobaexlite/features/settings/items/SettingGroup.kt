@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.settings.items
 
+import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.EnumSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.StringSetting
@@ -23,16 +24,18 @@ class SettingGroupBuilder(
   fun boolean(
     title: String,
     delegate: BooleanSetting,
-    subtitle: String? = null,
+    subtitleBuilder: (AnnotatedString.Builder.() -> Unit)? = null,
     enabled: Boolean = true,
-    dependencies: List<BooleanSetting> = emptyList()
+    dependencies: List<BooleanSetting> = emptyList(),
+    onSettingUpdated: (suspend () -> Unit)? = null
   ): SettingGroupBuilder {
     settings += BooleanSettingItem(
       title = title,
-      subtitle = subtitle,
+      subtitle = buildSubtitle(subtitleBuilder),
       enabled = enabled,
       dependencies = dependencies,
-      delegate = delegate
+      delegate = delegate,
+      onSettingUpdated = onSettingUpdated
     )
 
     return this
@@ -44,13 +47,13 @@ class SettingGroupBuilder(
     showOptionsScreen: suspend (List<FloatingMenuItem>) -> String?,
     onSettingUpdated: (suspend () -> Unit)? = null,
     settingNameMapper: (Enum<T>) -> String = { enum -> enum.name },
-    subtitle: String? = null,
+    subtitleBuilder: (AnnotatedString.Builder.() -> Unit)? = null,
     dependencies: List<BooleanSetting> = emptyList(),
     enabled: Boolean = true
   ): SettingGroupBuilder {
     settings += EnumSettingItem(
       title = title,
-      subtitle = subtitle,
+      subtitle = buildSubtitle(subtitleBuilder),
       dependencies = dependencies,
       enabled = enabled,
       delegate = delegate,
@@ -66,13 +69,13 @@ class SettingGroupBuilder(
     key: String,
     title: String,
     enabled: Boolean = true,
-    subtitle: String? = null,
+    subtitleBuilder: (AnnotatedString.Builder.() -> Unit)? = null,
     onClicked: () -> Unit
   ): SettingGroupBuilder {
     settings += LinkSettingItem(
       key = key,
       title = title,
-      subtitle = subtitle,
+      subtitle = buildSubtitle(subtitleBuilder),
       enabled = enabled,
       onClicked = onClicked,
     )
@@ -84,7 +87,7 @@ class SettingGroupBuilder(
     title: String,
     enabled: Boolean,
     delegate: StringSetting,
-    subtitle: String? = null,
+    subtitleBuilder: (AnnotatedString.Builder.() -> Unit)? = null,
     showDialogScreen: suspend (DialogScreen.Params) -> Unit,
     dependencies: List<BooleanSetting> = emptyList(),
     settingNameMapper: (String) -> String = { it },
@@ -92,7 +95,7 @@ class SettingGroupBuilder(
   ): SettingGroupBuilder {
     settings += StringSettingItem(
       title = title,
-      subtitle = subtitle,
+      subtitle = buildSubtitle(subtitleBuilder),
       dependencies = dependencies,
       enabled = enabled,
       delegate = delegate,
@@ -102,6 +105,18 @@ class SettingGroupBuilder(
     )
 
     return this
+  }
+
+  private fun buildSubtitle(
+    subtitleBuilder: (AnnotatedString.Builder.() -> Unit)?
+  ): AnnotatedString? {
+    if (subtitleBuilder == null) {
+      return null
+    }
+
+    val annotatedStringBuilder = AnnotatedString.Builder()
+    subtitleBuilder(annotatedStringBuilder)
+    return annotatedStringBuilder.toAnnotatedString()
   }
 
   fun build(): SettingGroup {

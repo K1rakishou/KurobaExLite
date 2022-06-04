@@ -66,6 +66,8 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import logcat.LogPriority
+import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -129,6 +131,7 @@ class HomeScreen(
         historyScreenOnLeftSide = historyScreenOnLeftSide
       )
     }
+    val pagesWrapperUpdated by rememberUpdatedState(newValue = pagesWrapper)
 
     val initialScreenIndexMut = remember(
       key1 = currentScreenPage.screenKey,
@@ -139,6 +142,12 @@ class HomeScreen(
 
     val initialScreenIndex = initialScreenIndexMut
     if (initialScreenIndex == null) {
+      logcat(TAG, LogPriority.WARN) {
+        "initialScreenIndex is null. " +
+          "currentScreenPage.screenKey=${currentScreenPage.screenKey}, " +
+          "pagesWrapper.pagesCount=${pagesWrapper.pagesCount}"
+      }
+
       return
     }
 
@@ -156,9 +165,6 @@ class HomeScreen(
       key1 = orientation,
       initialPage = initialScreenIndex
     )
-
-    val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
-    val pageCount by remember { derivedStateOf { pagerState.pageCount } }
 
     LaunchedEffect(
       key1 = Unit,
@@ -181,6 +187,10 @@ class HomeScreen(
           }
       }
     )
+
+    val pageCount by remember { derivedStateOf { pagerState.pageCount } }
+    val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
+    val targetPageIndex by remember { derivedStateOf { pagerState.targetPage } }
 
     LaunchedEffect(
       key1 = mainUiLayoutMode,
@@ -221,8 +231,6 @@ class HomeScreen(
       }
     )
 
-    val pagesWrapperUpdated by rememberUpdatedState(newValue = pagesWrapper)
-
     HandleBackPresses {
       if (globalUiInfoManager.isDrawerOpenedOrOpening()) {
         globalUiInfoManager.closeDrawer()
@@ -256,6 +264,8 @@ class HomeScreen(
 
     HomeScreenContentActual(
       maxDrawerWidth = maxDrawerWidth,
+      currentPageIndex = currentPageIndex,
+      targetPageIndex = targetPageIndex,
       mainUiLayoutMode = mainUiLayoutMode,
       drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
       drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
@@ -370,6 +380,8 @@ class HomeScreen(
   @Composable
   private fun HomeScreenContentActual(
     maxDrawerWidth: Int,
+    currentPageIndex: Int,
+    targetPageIndex: Int,
     mainUiLayoutMode: MainUiLayoutMode,
     drawerPhoneVisibleWindowWidth: Int,
     drawerLongtapGestureWidthZonePx: Float,
@@ -404,15 +416,18 @@ class HomeScreen(
       }
     }
 
-    val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
-    val targetPageIndex by remember { derivedStateOf { pagerState.targetPage } }
-
     val currentPageMut = remember(key1 = currentPageIndex, key2 = pagesWrapper) {
       pagesWrapper.pageByIndex(currentPageIndex)
     }
 
     val currentPage = currentPageMut
     if (currentPage == null) {
+      logcat(TAG, LogPriority.WARN) {
+        "currentPage is null. " +
+          "currentPageIndex=${currentPageIndex}, " +
+          "pagesWrapper.pagesCount=${pagesWrapper.pagesCount}"
+      }
+
       return
     }
 
@@ -619,6 +634,7 @@ class HomeScreen(
   }
 
   companion object {
+    private const val TAG = "HomeScreen"
     val SCREEN_KEY = ScreenKey("HomeScreen")
   }
 }

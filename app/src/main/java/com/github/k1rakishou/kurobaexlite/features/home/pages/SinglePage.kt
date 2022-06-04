@@ -48,6 +48,24 @@ class SinglePage private constructor(
     )
   }
 
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+    if (!super.equals(other)) return false
+
+    other as SinglePage
+
+    if (screen.screenKey != other.screen.screenKey) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = super.hashCode()
+    result = 31 * result + screen.screenKey.hashCode()
+    return result
+  }
+
   companion object {
     fun of(composeScreen: ComposeScreenWithToolbar): SinglePage {
       return SinglePage(listOf(ChildScreen(composeScreen)))

@@ -20,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 class SplitPage private constructor(
   override val childScreens: List<ChildScreen<ComposeScreenWithToolbar>>
 ) : AbstractPage<ComposeScreenWithToolbar>() {
+  private val childScreenKeys by lazy { childScreens.map { it.screenKey } }
 
   override fun screenKey(): ScreenKey = SCREEN_KEY
 
@@ -144,6 +145,33 @@ class SplitPage private constructor(
     }
 
     return weights
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+    if (!super.equals(other)) return false
+
+    other as SplitPage
+
+    if (childScreenKeys.size != other.childScreenKeys.size) return false
+
+    for (index in childScreenKeys.indices) {
+      val thisScreenKey = childScreenKeys[index]
+      val otherScreenKey = other.childScreenKeys[index]
+
+      if (thisScreenKey != otherScreenKey) {
+        return false
+      }
+    }
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = super.hashCode()
+    result = 31 * result + childScreenKeys.hashCode()
+    return result
   }
 
   companion object {
