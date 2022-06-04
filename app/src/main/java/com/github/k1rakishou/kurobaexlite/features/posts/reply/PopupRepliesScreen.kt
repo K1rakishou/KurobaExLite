@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.posts.reply
 
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -143,10 +144,13 @@ class PopupRepliesScreen(
         .fillMaxSize()
         .onSizeChanged { newSize -> size = newSize }
     ) {
+      val targetValue = if (currentOffset.absoluteValue > 0f) 1f else 0f
+      val bgContentAlphaAnimation by animateFloatAsState(targetValue = targetValue)
+
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .graphicsLayer { alpha = progress.absoluteValue },
+          .graphicsLayer { alpha = bgContentAlphaAnimation },
         contentAlignment = Alignment.Center
       ) {
         Text(
