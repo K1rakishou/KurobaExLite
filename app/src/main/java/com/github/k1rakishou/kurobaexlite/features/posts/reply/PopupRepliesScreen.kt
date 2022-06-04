@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.reply
 
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -270,6 +271,7 @@ class PopupRepliesScreen(
     Box(
       modifier = Modifier
         .layoutId(postListLayoutId)
+        .animateContentSize()
     ) {
       PostListContent(
         postListOptions = postListOptions,
