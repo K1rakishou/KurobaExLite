@@ -120,21 +120,26 @@ class PopupRepliesScreen(
 
     val anchors = remember(key1 = swipeDistance) {
       mapOf(
-        -(swipeDistance) to Anchors.SwipedLeft,
+        -(swipeDistance) to Anchors.Back,
         0f to Anchors.Visible,
-        swipeDistance to Anchors.SwipedRight
+        swipeDistance to Anchors.Close
       )
     }
 
     val currentValue = swipeableState.currentValue
+    val targetValue = swipeableState.targetValue
     val currentOffset by swipeableState.offset
     val progress = currentOffset / swipeDistance
 
     LaunchedEffect(
       key1 = currentValue,
       block = {
-        if (currentValue != Anchors.Visible) {
-          coroutineScope.launch { onBackPressed() }
+        when (currentValue) {
+          Anchors.Visible -> {
+            // no-op
+          }
+          Anchors.Back -> onBackPressed()
+          Anchors.Close -> stopPresenting()
         }
       }
     )
@@ -144,8 +149,8 @@ class PopupRepliesScreen(
         .fillMaxSize()
         .onSizeChanged { newSize -> size = newSize }
     ) {
-      val targetValue = if (currentOffset.absoluteValue > 0f) 1f else 0f
-      val bgContentAlphaAnimation by animateFloatAsState(targetValue = targetValue)
+      val animationTargetValue = if (currentOffset.absoluteValue > 0f) 1f else 0f
+      val bgContentAlphaAnimation by animateFloatAsState(targetValue = animationTargetValue)
 
       Box(
         modifier = Modifier
@@ -153,13 +158,21 @@ class PopupRepliesScreen(
           .graphicsLayer { alpha = bgContentAlphaAnimation },
         contentAlignment = Alignment.Center
       ) {
-        Text(
-          modifier = Modifier,
-          text = stringResource(id = R.string.close),
-          color = Color.White,
-          fontWeight = FontWeight.SemiBold,
-          fontSize = 30.sp
-        )
+        val textId = when (targetValue) {
+          Anchors.Visible -> null
+          Anchors.Back ->  R.string.back
+          Anchors.Close ->  R.string.close
+        }
+
+        if (textId != null) {
+          Text(
+            modifier = Modifier,
+            text = stringResource(id = textId),
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 30.sp
+          )
+        }
       }
 
       Box(
@@ -424,8 +437,8 @@ class PopupRepliesScreen(
 
   enum class Anchors {
     Visible,
-    SwipedLeft,
-    SwipedRight
+    Back,
+    Close
   }
 
   sealed class ReplyViewMode {

@@ -34,7 +34,7 @@ abstract class HomeNavigationScreen(
 ) : ComposeScreenWithToolbar(componentActivity, navigationRouter) {
   abstract val screenContentLoadedFlow: StateFlow<Boolean>
 
-  open val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(true)
+  protected open val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(true)
   val dragToCloseEnabled: Boolean
     get() = dragToCloseEnabledState.value
 
