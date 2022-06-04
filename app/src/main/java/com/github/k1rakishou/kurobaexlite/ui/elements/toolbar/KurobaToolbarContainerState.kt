@@ -22,9 +22,9 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
     callbacksToInvoke.clear()
   }
 
-  fun setToolbar(childToolbar: T) {
+  fun setDefaultToolbar(childToolbar: T) {
     val func = { containerState: AnimateableStackContainerState<T> ->
-      containerState.setIfEmpty(SimpleStackContainerElement(childToolbar))
+      containerState.set(SimpleStackContainerElement(childToolbar), onlyIfEmpty = true)
     }
 
     if (!::_stackContainerState.isInitialized) {
@@ -34,9 +34,9 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
     }
   }
 
-  fun fadeInToolbar(childToolbar: T) {
+  fun setToolbar(childToolbar: T) {
     val func = { containerState: AnimateableStackContainerState<T> ->
-      containerState.fadeIn(SimpleStackContainerElement(childToolbar))
+      containerState.set(SimpleStackContainerElement(childToolbar), onlyIfEmpty = false)
     }
 
     if (!::_stackContainerState.isInitialized) {

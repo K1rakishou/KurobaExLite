@@ -123,7 +123,7 @@ class GlobalSearchScreen(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        kurobaToolbarContainerState.setToolbar(searchToolbar)
+        kurobaToolbarContainerState.setDefaultToolbar(searchToolbar)
       }
     )
 

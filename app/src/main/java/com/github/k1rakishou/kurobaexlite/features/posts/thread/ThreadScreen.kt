@@ -94,7 +94,7 @@ class ThreadScreen(
       globalUiInfoManager = globalUiInfoManager,
       onBackPressed = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY, true) },
       toggleBookmarkState = { threadScreenViewModel.bookmarkOrUnbookmarkThread() },
-      showLocalSearchToolbar = { kurobaToolbarContainerState.fadeInToolbar(localSearchToolbar) },
+      showLocalSearchToolbar = { kurobaToolbarContainerState.setToolbar(localSearchToolbar) },
       showOverflowMenu = {
         navigationRouter.presentScreen(
           FloatingMenuScreen(
@@ -377,7 +377,7 @@ class ThreadScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
+      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
     )
 
     val currentThreadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
@@ -395,7 +395,7 @@ class ThreadScreen(
           ReplyLayoutVisibility.Opened,
           ReplyLayoutVisibility.Expanded -> {
             if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
-              kurobaToolbarContainerState.fadeInToolbar(replyToolbar)
+              kurobaToolbarContainerState.setToolbar(replyToolbar)
             }
           }
         }

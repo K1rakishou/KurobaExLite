@@ -50,8 +50,8 @@ class AnimateableStackContainerState<T : DisposableElement>(
     return true
   }
 
-  fun setIfEmpty(stackContainerElement: SimpleStackContainerElement<T>) {
-    if (_addedElements.isNotEmpty()) {
+  fun set(stackContainerElement: SimpleStackContainerElement<T>, onlyIfEmpty: Boolean) {
+    if (onlyIfEmpty && _addedElements.isNotEmpty()) {
       return
     }
 
@@ -168,8 +168,14 @@ class AnimateableStackContainerState<T : DisposableElement>(
         return false
       }
       is StackContainerAnimation.Set -> {
-        _addedElements
-          .removeIfKt { it.elementKey == stackContainerChange.elementKey }
+        val indexOfElement = _addedElements
+          .indexOfFirst { it.elementKey == stackContainerChange.elementKey }
+
+        if (indexOfElement >= 0) {
+          val stackContainerChange = _addedElements.removeAt(indexOfElement)
+          stackContainerChange.stackContainerElement.element.onDispose()
+        }
+
         return true
       }
       is StackContainerAnimation.Fade -> {

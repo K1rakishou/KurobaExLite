@@ -137,7 +137,7 @@ class CatalogScreen(
         )
       },
       showLocalSearchToolbar = {
-        kurobaToolbarContainerState.fadeInToolbar(localSearchToolbar)
+        kurobaToolbarContainerState.setToolbar(localSearchToolbar)
       }
     )
   }
@@ -426,7 +426,7 @@ class CatalogScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
+      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
     )
 
     LaunchedEffect(
@@ -462,7 +462,7 @@ class CatalogScreen(
           ReplyLayoutVisibility.Opened,
           ReplyLayoutVisibility.Expanded -> {
             if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
-              kurobaToolbarContainerState.fadeInToolbar(replyToolbar)
+              kurobaToolbarContainerState.setToolbar(replyToolbar)
             }
           }
         }

@@ -158,7 +158,7 @@ class HistoryScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
+      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
     )
 
     LaunchedEffect(

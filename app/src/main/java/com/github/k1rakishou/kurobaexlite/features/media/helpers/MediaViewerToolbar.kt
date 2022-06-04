@@ -186,7 +186,7 @@ private fun MediaToolbar(
   DisposableEffect(
     key1 = Unit,
     effect = {
-      kurobaToolbarContainerState.setToolbar(childToolbar = defaultToolbar)
+      kurobaToolbarContainerState.setDefaultToolbar(childToolbar = defaultToolbar)
 
       onDispose {
         kurobaToolbarContainerState.removeToolbar(

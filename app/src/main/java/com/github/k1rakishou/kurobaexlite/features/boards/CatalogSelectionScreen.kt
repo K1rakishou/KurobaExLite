@@ -119,7 +119,7 @@ class CatalogSelectionScreen(
         defaultToolbarState.iconClickEvents.collect { key ->
           when (key) {
             ToolbarIcons.Search -> {
-              kurobaToolbarContainerState.fadeInToolbar(searchToolbar)
+              kurobaToolbarContainerState.setToolbar(searchToolbar)
             }
             ToolbarIcons.SiteOptions -> {
               val siteSettingsScreen = SiteSettingsScreen(
@@ -170,7 +170,7 @@ class CatalogSelectionScreen(
 
     LaunchedEffect(
       key1 = Unit,
-      block = { kurobaToolbarContainerState.setToolbar(defaultToolbar) }
+      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
     )
 
     val windowInsets = LocalWindowInsets.current
