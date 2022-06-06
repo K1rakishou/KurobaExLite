@@ -327,6 +327,7 @@ abstract class PostScreenViewModel(
     chanDescriptor: ChanDescriptor,
     postDataList: List<IPostData>,
     isCatalogMode: Boolean,
+    forced: Boolean
   ): List<PostCellData> {
     if (postDataList.isEmpty()) {
       return emptyList()
@@ -364,7 +365,8 @@ abstract class PostScreenViewModel(
             chanTheme = chanTheme,
             parsedPostDataContext = ParsedPostDataContext(
               isParsingCatalog = isCatalogMode
-            )
+            ),
+            forced = forced
           )
         } else {
           null
@@ -471,7 +473,7 @@ abstract class PostScreenViewModel(
                     parsedPostDataContext = ParsedPostDataContext(
                       isParsingCatalog = isParsingCatalog
                     ),
-                    force = parsePostsOptions.forced
+                    forced = parsePostsOptions.forced
                   )
 
                   mutex.withLock {
@@ -534,7 +536,7 @@ abstract class PostScreenViewModel(
                         parsedPostDataContext = ParsedPostDataContext(
                           isParsingCatalog = isParsingCatalog
                         ),
-                        force = true
+                        forced = true
                       )
 
                       mutex.withLock {
@@ -666,14 +668,14 @@ abstract class PostScreenViewModel(
     postData: IPostData,
     chanTheme: ChanTheme,
     parsedPostDataContext: ParsedPostDataContext,
-    force: Boolean = false
+    forced: Boolean = false
   ): ParsedPostData {
     return parsedPostDataCache.getOrCalculateParsedPostData(
       chanDescriptor = chanDescriptor,
       postData = postData,
       parsedPostDataContext = parsedPostDataContext,
       chanTheme = chanTheme,
-      force = force
+      forced = forced
     )
   }
 

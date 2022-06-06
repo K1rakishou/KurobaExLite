@@ -192,7 +192,8 @@ class CatalogScreenViewModel(
       startPostDescriptor = null,
       chanDescriptor = catalogDescriptor,
       postDataList = sortedThreads,
-      isCatalogMode = true
+      isCatalogMode = true,
+      forced = true
     )
 
     val catalogThreadsState = PostsState(catalogDescriptor)
@@ -205,6 +206,7 @@ class CatalogScreenViewModel(
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,
       postDataList = sortedThreads,
+      parsePostsOptions = ParsePostsOptions(forced = true),
       sorter = { postCellData ->
         CatalogThreadSorter.sortCatalogPostCellData(
           catalogThreads = postCellData,

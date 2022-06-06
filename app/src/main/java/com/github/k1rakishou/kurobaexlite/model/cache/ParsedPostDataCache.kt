@@ -194,7 +194,7 @@ class ParsedPostDataCache(
     postData: IPostData,
     parsedPostDataContext: ParsedPostDataContext,
     chanTheme: ChanTheme,
-    force: Boolean
+    forced: Boolean
   ): ParsedPostData {
     val postDescriptor = postData.postDescriptor
 
@@ -205,7 +205,7 @@ class ParsedPostDataCache(
       }
     }
 
-    if (!force && oldParsedPostData != null) {
+    if (!forced && oldParsedPostData != null) {
       notifyListenersPostDataUpdated(chanDescriptor, postData.postDescriptor)
       return oldParsedPostData
     }

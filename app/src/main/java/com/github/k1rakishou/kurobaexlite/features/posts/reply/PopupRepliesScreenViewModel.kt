@@ -184,7 +184,7 @@ class PopupRepliesScreenViewModel(savedStateHandle: SavedStateHandle) : PostScre
           postData = oldPostData,
           parsedPostDataContext = newParsedPostDataContext,
           chanTheme = chanTheme,
-          force = true
+          forced = true
         )
 
         return@map PostCellData.fromPostData(

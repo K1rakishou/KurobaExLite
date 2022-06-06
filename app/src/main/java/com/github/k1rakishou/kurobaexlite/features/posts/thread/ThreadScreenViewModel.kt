@@ -363,7 +363,8 @@ class ThreadScreenViewModel(
         startPostDescriptor = startParsePost,
         chanDescriptor = threadDescriptor,
         postDataList = allCombinedPosts,
-        isCatalogMode = false
+        isCatalogMode = false,
+        forced = false
       )
 
       threadScreenState.insertOrUpdateMany(initiallyParsedPosts)
@@ -376,7 +377,8 @@ class ThreadScreenViewModel(
         startPostDescriptor = startParsePost,
         chanDescriptor = threadDescriptor,
         postDataList = allCombinedPosts,
-        isCatalogMode = false
+        isCatalogMode = false,
+        forced = false
       )
 
       val threadPostsState = PostsState(threadDescriptor)
