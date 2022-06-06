@@ -68,7 +68,7 @@ class AlbumScreen(
   private val chanDescriptor: ChanDescriptor,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcon>>(componentActivity, navigationRouter) {
   private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
@@ -89,7 +89,7 @@ class AlbumScreen(
       .build(defaultToolbarStateKey)
   }
 
-  private val defaultToolbar by lazy {
+  override val defaultToolbar by lazy {
     SimpleToolbar(
       toolbarKey = defaultToolbarKey,
       simpleToolbarState = defaultToolbarState
@@ -142,11 +142,6 @@ class AlbumScreen(
         newTop = windowInsets.top + toolbarHeight
       ).asPaddingValues()
     }
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
-    )
 
     HandleBackPresses {
       if (kurobaToolbarContainerState.onBackPressed()) {

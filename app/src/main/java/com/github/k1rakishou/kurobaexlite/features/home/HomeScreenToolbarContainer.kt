@@ -230,7 +230,7 @@ fun HomeScreenToolbarContainer(
 
 @Composable
 private fun BuildChildToolbar(
-  composeScreenWithToolbar: ComposeScreenWithToolbar,
+  composeScreenWithToolbar: ComposeScreenWithToolbar<*>,
   zOrder: Int,
   toolbarContainerAlpha: Float,
   targetToolbarAlpha: Float,

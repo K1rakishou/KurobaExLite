@@ -62,7 +62,7 @@ import org.koin.java.KoinJavaComponent.inject
 class ThreadScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : PostsScreen(componentActivity, navigationRouter) {
+) : PostsScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
@@ -86,7 +86,7 @@ class ThreadScreen(
   private val replyLayoutState: IReplyLayoutState
     get() = replyLayoutViewModel.getOrCreateReplyLayoutState(threadScreenViewModel.chanDescriptor)
 
-  private val defaultToolbar: KurobaChildToolbar by lazy {
+  override val defaultToolbar: KurobaChildToolbar by lazy {
     ThreadScreenDefaultToolbar(
       bookmarksManager = bookmarksManager,
       threadScreenViewModel = threadScreenViewModel,
@@ -373,11 +373,6 @@ class ThreadScreen(
       onFastScrollerDragStateChanged = { dragging ->
         globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
       }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
     )
 
     val currentThreadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()

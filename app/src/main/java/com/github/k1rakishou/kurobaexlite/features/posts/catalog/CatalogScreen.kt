@@ -70,7 +70,7 @@ import org.koin.java.KoinJavaComponent.inject
 class CatalogScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : PostsScreen(componentActivity, navigationRouter) {
+) : PostsScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
@@ -98,7 +98,7 @@ class CatalogScreen(
     kurobaToolbarContainerViewModel.getOrCreate<KurobaChildToolbar>(screenKey)
   }
 
-  private val defaultToolbar: KurobaChildToolbar by lazy {
+  override val defaultToolbar: KurobaChildToolbar by lazy {
     CatalogScreenDefaultToolbar(
       catalogScreenViewModel = catalogScreenViewModel,
       parsedPostDataCache = parsedPostDataCache,
@@ -109,6 +109,7 @@ class CatalogScreen(
           navigationRouter = navigationRouter,
           catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
         )
+
         navigationRouter.pushScreen(catalogSelectionScreen)
       },
       showSortCatalogThreadsScreen = {
@@ -422,11 +423,6 @@ class CatalogScreen(
       onFastScrollerDragStateChanged = { dragging ->
         globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
       }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
     )
 
     LaunchedEffect(

@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -63,6 +64,20 @@ fun RouterHost(
   val defaultScreen = defaultScreenFunc()
 
   saveableStateHolder.SaveableStateProvider(key = "primary_${defaultScreen.screenKey.key}") {
+    // Hack for default screen lifecycle since we never add it into the navigation router.
+    DisposableEffect(
+      key1 = Unit,
+      effect = {
+        defaultScreen.onStartCreating()
+        defaultScreen.onCreated()
+
+        onDispose {
+          defaultScreen.onStartDisposing()
+          defaultScreen.onDisposed()
+        }
+      }
+    )
+
     defaultScreen.Content()
   }
 

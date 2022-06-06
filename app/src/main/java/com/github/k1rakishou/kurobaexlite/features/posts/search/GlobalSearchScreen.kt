@@ -59,7 +59,7 @@ class GlobalSearchScreen(
   private val catalogDescriptor: CatalogDescriptor,
   private val onPostClicked: (PostDescriptor) -> Unit,
   private val closeCatalogSearchToolbar: () -> Unit
-) : HomeNavigationScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
   private val globalSearchScreenViewModel: GlobalSearchScreenViewModel by componentActivity.viewModel()
 
   private val postSearchLongtapContentMenu by lazy {
@@ -71,17 +71,17 @@ class GlobalSearchScreen(
   override val hasFab: Boolean = false
   override val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(false)
 
-  private val searchToolbarKey = "${screenKey.key}_search"
+  private val defaultToolbarKey = "${screenKey.key}_search"
 
-  private val searchToolbar: KurobaChildToolbar by lazy {
+  override val defaultToolbar: KurobaChildToolbar by lazy {
     SimpleSearchToolbar(
       initialSearchQuery = globalSearchScreenViewModel.searchQueryState.value,
-      toolbarKey = searchToolbarKey,
+      toolbarKey = defaultToolbarKey,
       onSearchQueryUpdated = { searchQuery ->
         globalSearchScreenViewModel.updateSearchQuery(searchQuery, catalogDescriptor)
       },
       closeSearch = {
-        kurobaToolbarContainerState.popToolbar(searchToolbarKey)
+        kurobaToolbarContainerState.popToolbar(defaultToolbarKey)
         popScreen()
       }
     )
@@ -119,13 +119,6 @@ class GlobalSearchScreen(
 
       return@HandleBackPresses popScreen()
     }
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        kurobaToolbarContainerState.setDefaultToolbar(searchToolbar)
-      }
-    )
 
     val lazyListState = rememberLazyListState()
     val paddingValues = remember(key1 = windowInsets) {

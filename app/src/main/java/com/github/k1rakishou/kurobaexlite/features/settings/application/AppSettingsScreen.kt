@@ -50,7 +50,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 class AppSettingsScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<AppSettingsScreen.ToolbarIcons>>(componentActivity, navigationRouter) {
   private val appSettingsScreenViewModel by componentActivity.viewModel<AppSettingsScreenViewModel>()
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -68,7 +68,7 @@ class AppSettingsScreen(
       .build(defaultToolbarStateKey)
   }
 
-  private val defaultToolbar by lazy {
+  override val defaultToolbar by lazy {
     SimpleToolbar(
       toolbarKey = defaultToolbarKey,
       simpleToolbarState = defaultToolbarState
@@ -105,11 +105,6 @@ class AppSettingsScreen(
   @Composable
   override fun HomeNavigationScreenContent() {
     val chanTheme = LocalChanTheme.current
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
-    )
 
     LaunchedEffect(
       key1 = Unit,

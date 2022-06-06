@@ -7,10 +7,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
 class SinglePage private constructor(
-  override val childScreens: List<ChildScreen<ComposeScreenWithToolbar>>
-) : AbstractPage<ComposeScreenWithToolbar>() {
+  override val childScreens: List<ChildScreen<ComposeScreenWithToolbar<*>>>
+) : AbstractPage<ComposeScreenWithToolbar<*>>() {
 
-  val screen: ChildScreen<ComposeScreenWithToolbar>
+  val screen: ChildScreen<ComposeScreenWithToolbar<*>>
     get() = childScreens.first()
 
   override fun screenKey(): ScreenKey {
@@ -67,7 +67,7 @@ class SinglePage private constructor(
   }
 
   companion object {
-    fun of(composeScreen: ComposeScreenWithToolbar): SinglePage {
+    fun of(composeScreen: ComposeScreenWithToolbar<*>): SinglePage {
       return SinglePage(listOf(ChildScreen(composeScreen)))
     }
   }

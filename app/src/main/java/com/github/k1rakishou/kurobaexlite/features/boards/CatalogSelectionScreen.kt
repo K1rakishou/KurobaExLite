@@ -66,7 +66,7 @@ class CatalogSelectionScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val catalogDescriptor: CatalogDescriptor?
-) : HomeNavigationScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
   private val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
 
@@ -91,7 +91,7 @@ class CatalogSelectionScreen(
       .build(defaultToolbarStateKey)
   }
 
-  private val defaultToolbar: KurobaChildToolbar by lazy {
+  override val defaultToolbar: KurobaChildToolbar by lazy {
     SimpleToolbar(
       toolbarKey = defaultToolbarKey,
       simpleToolbarState = defaultToolbarState
@@ -166,11 +166,6 @@ class CatalogSelectionScreen(
         snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
         snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
       }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
     )
 
     val windowInsets = LocalWindowInsets.current

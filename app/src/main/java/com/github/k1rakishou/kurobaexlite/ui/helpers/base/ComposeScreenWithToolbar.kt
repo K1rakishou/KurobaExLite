@@ -5,18 +5,27 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-abstract class ComposeScreenWithToolbar(
+abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar>(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(componentActivity, navigationRouter) {
   protected val kurobaToolbarContainerViewModel: KurobaToolbarContainerViewModel by componentActivity.viewModel()
 
   abstract val hasFab: Boolean
-  protected abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<*>
+  abstract val defaultToolbar: ToolbarType
+
+  protected abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<ToolbarType>
+
+  override fun onStartCreating() {
+    super.onStartCreating()
+
+    kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar)
+  }
 
   override fun onStartDisposing() {
     super.onStartDisposing()
@@ -27,13 +36,13 @@ abstract class ComposeScreenWithToolbar(
   @Composable
   abstract fun Toolbar(boxScope: BoxScope)
 
-  fun topChildScreen(): ComposeScreenWithToolbar {
+  fun topChildScreen(): ComposeScreenWithToolbar<ToolbarType> {
     val navigationScreensStack = navigationRouter.navigationScreensStack
     if (navigationScreensStack.isEmpty()) {
       return this
     }
 
-    return navigationScreensStack.last() as ComposeScreenWithToolbar
+    return navigationScreensStack.last() as ComposeScreenWithToolbar<ToolbarType>
   }
 
   fun isScreenAtTop(screenKey: ScreenKey): Boolean {
@@ -55,7 +64,7 @@ abstract class ComposeScreenWithToolbar(
     }
 
     val topScreen = navigationRouter.navigationScreensStack.last()
-    if (topScreen is HomeNavigationScreen) {
+    if (topScreen is HomeNavigationScreen<*>) {
       return !topScreen.dragToCloseEnabled
     }
 

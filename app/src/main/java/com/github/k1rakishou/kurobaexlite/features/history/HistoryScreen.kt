@@ -78,7 +78,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 class HistoryScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<HistoryScreen.ToolbarIcons>>(componentActivity, navigationRouter) {
   private val historyScreenViewModel: HistoryScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
@@ -100,7 +100,7 @@ class HistoryScreen(
       .build(defaultToolbarStateKey)
   }
 
-  private val defaultToolbar by lazy {
+  override val defaultToolbar by lazy {
     SimpleToolbar(
       toolbarKey = defaultToolbarKey,
       simpleToolbarState = defaultToolbarState
@@ -155,11 +155,6 @@ class HistoryScreen(
     val navigationHistoryList = historyScreenViewModel.navigationHistoryList
     val circleCropTransformation = remember { CircleCropTransformation() }
     val lazyListState = rememberLazyListState()
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar) }
-    )
 
     LaunchedEffect(
       key1 = Unit,

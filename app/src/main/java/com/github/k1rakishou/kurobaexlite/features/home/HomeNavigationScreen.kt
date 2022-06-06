@@ -24,14 +24,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import kotlinx.coroutines.flow.StateFlow
 
-abstract class HomeNavigationScreen(
+abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreenWithToolbar(componentActivity, navigationRouter) {
+) : ComposeScreenWithToolbar<ToolbarType>(componentActivity, navigationRouter) {
   abstract val screenContentLoadedFlow: StateFlow<Boolean>
 
   protected open val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(true)
@@ -117,13 +118,13 @@ abstract class HomeNavigationScreen(
   @Composable
   abstract fun HomeNavigationScreenContent()
 
-  private fun topHomeNavigationScreenExceptDefault(): HomeNavigationScreen? {
+  private fun topHomeNavigationScreenExceptDefault(): HomeNavigationScreen<ToolbarType>? {
     val navigationScreensStack = navigationRouter.navigationScreensStack
     if (navigationScreensStack.isEmpty()) {
       return null
     }
 
-    return navigationScreensStack.last() as? HomeNavigationScreen
+    return navigationScreensStack.last() as? HomeNavigationScreen<ToolbarType>
   }
 
   private enum class Anchors {

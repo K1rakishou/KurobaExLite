@@ -571,7 +571,7 @@ class HomeScreen(
 
   private fun isDrawerDragGestureCurrentlyAllowed(
     currentPageIndex: Int,
-    currentPage: AbstractPage<ComposeScreenWithToolbar>?,
+    currentPage: AbstractPage<ComposeScreenWithToolbar<*>>?,
     isFromNestedScroll: Boolean,
     isInsideSpecialZone: Boolean
   ): Boolean {

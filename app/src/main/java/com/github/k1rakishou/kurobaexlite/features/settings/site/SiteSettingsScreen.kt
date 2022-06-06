@@ -46,7 +46,7 @@ class SiteSettingsScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   val siteKey: SiteKey
-) : HomeNavigationScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
   private val siteManager: SiteManager by inject(SiteManager::class.java)
 
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
@@ -64,7 +64,7 @@ class SiteSettingsScreen(
       .build(defaultToolbarStateKey)
   }
 
-  private val defaultToolbar: KurobaChildToolbar by lazy {
+  override val defaultToolbar: KurobaChildToolbar by lazy {
     SimpleToolbar(
       toolbarKey = defaultToolbarKey,
       simpleToolbarState = defaultToolbarState

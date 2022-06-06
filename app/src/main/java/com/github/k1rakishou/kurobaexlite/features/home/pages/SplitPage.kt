@@ -18,8 +18,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
 class SplitPage private constructor(
-  override val childScreens: List<ChildScreen<ComposeScreenWithToolbar>>
-) : AbstractPage<ComposeScreenWithToolbar>() {
+  override val childScreens: List<ChildScreen<ComposeScreenWithToolbar<*>>>
+) : AbstractPage<ComposeScreenWithToolbar<*>>() {
   private val childScreenKeys by lazy { childScreens.map { it.screenKey } }
 
   override fun screenKey(): ScreenKey = SCREEN_KEY
@@ -105,7 +105,7 @@ class SplitPage private constructor(
     }
   }
 
-  private fun calculateWeights(childScreens: List<ChildScreen<ComposeScreenWithToolbar>>): FloatArray {
+  private fun calculateWeights(childScreens: List<ChildScreen<ComposeScreenWithToolbar<*>>>): FloatArray {
     val allNulls = childScreens.all { it.weight == null }
     if (allNulls) {
       return FloatArray(childScreens.size) { 1f / childScreens.size.toFloat() }
@@ -177,7 +177,7 @@ class SplitPage private constructor(
   companion object {
     val SCREEN_KEY = ScreenKey("SplitPage")
 
-    fun of(vararg composeScreenWithWeight: Pair<ComposeScreenWithToolbar, Float>): SplitPage {
+    fun of(vararg composeScreenWithWeight: Pair<ComposeScreenWithToolbar<*>, Float>): SplitPage {
       check(composeScreenWithWeight.isNotEmpty()) { "input is empty" }
 
       val childScreens = composeScreenWithWeight.map { (screen, weight) -> ChildScreen(screen, weight) }

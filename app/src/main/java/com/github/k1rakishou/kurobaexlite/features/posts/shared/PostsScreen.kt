@@ -32,15 +32,16 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScr
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.SiteCaptcha
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.CancellationException
 
-abstract class PostsScreen(
+abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<ToolbarType>(componentActivity, navigationRouter) {
   abstract val isCatalogScreen: Boolean
 
   override val hasFab: Boolean = true

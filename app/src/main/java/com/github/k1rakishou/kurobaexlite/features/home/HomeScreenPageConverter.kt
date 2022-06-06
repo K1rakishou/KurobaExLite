@@ -47,7 +47,7 @@ class HomeScreenPageConverter(
     historyEnabled: Boolean,
     historyScreenOnLeftSide: Boolean,
   ): PagesWrapper {
-    val pages = mutableListOf<AbstractPage<ComposeScreenWithToolbar>>()
+    val pages = mutableListOf<AbstractPage<ComposeScreenWithToolbar<*>>>()
 
     when (uiLayoutMode) {
       MainUiLayoutMode.Phone -> {
@@ -95,7 +95,7 @@ class HomeScreenPageConverter(
 
   @Stable
   data class PagesWrapper(
-    val pages: List<AbstractPage<ComposeScreenWithToolbar>>
+    val pages: List<AbstractPage<ComposeScreenWithToolbar<*>>>
   ) {
 
     val pagesCount: Int
@@ -103,7 +103,7 @@ class HomeScreenPageConverter(
 
     fun isEmpty(): Boolean = pages.isEmpty()
 
-    fun pageByIndex(index: Int): AbstractPage<ComposeScreenWithToolbar>? {
+    fun pageByIndex(index: Int): AbstractPage<ComposeScreenWithToolbar<*>>? {
       if (pages.isEmpty()) {
         return null
       }
@@ -141,7 +141,7 @@ class HomeScreenPageConverter(
       return foundScreenKey
     }
 
-    private fun iterateScreens(iterator: (Int, ComposeScreenWithToolbar) -> Unit) {
+    private fun iterateScreens(iterator: (Int, ComposeScreenWithToolbar<*>) -> Unit) {
       var index = 0
 
       for (page in pages) {
