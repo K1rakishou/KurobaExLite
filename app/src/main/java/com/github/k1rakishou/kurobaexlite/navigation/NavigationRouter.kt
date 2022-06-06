@@ -26,13 +26,15 @@ open class NavigationRouter(
   val screenUpdatesFlow: StateFlow<ScreenUpdateTransaction?>
     get() = _screenUpdatesFlow.asStateFlow()
 
-  open fun pushScreen(newComposeScreen: ComposeScreen): Boolean {
-    if (newComposeScreen is FloatingComposeScreen) {
+  protected val removingScreens = mutableSetOf<ScreenKey>()
+
+  open fun pushScreen(composeScreen: ComposeScreen): Boolean {
+    if (composeScreen is FloatingComposeScreen) {
       error("FloatingComposeScreens must be added via presentScreen() function!")
     }
 
     val indexOfPrev = _navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
+      .indexOfFirst { screen -> screen.screenKey == composeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
       // Already added
@@ -41,12 +43,12 @@ open class NavigationRouter(
 
     val navigationScreenUpdates = combineScreenUpdates(
       oldScreens = _navigationScreensStack,
-      newScreenUpdate = ScreenUpdate.Push(newComposeScreen)
+      newScreenUpdate = ScreenUpdate.Push(composeScreen)
     )
 
-    _navigationScreensStack.add(newComposeScreen)
-    logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${newComposeScreen.screenKey.key})" }
-    newComposeScreen.onStartCreating()
+    _navigationScreensStack.add(composeScreen)
+    logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${composeScreen.screenKey.key})" }
+    composeScreen.onStartCreating()
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -56,34 +58,39 @@ open class NavigationRouter(
     return true
   }
 
-  open fun popScreen(newComposeScreen: ComposeScreen): Boolean {
-    return popScreen(newComposeScreen, true)
+  open fun popScreen(composeScreen: ComposeScreen): Boolean {
+    return popScreen(composeScreen, true)
   }
 
-  open fun popScreen(newComposeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
+  open fun popScreen(composeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
     val indexOfPrev = _navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
+      .indexOfFirst { screen -> screen.screenKey == composeScreen.screenKey }
 
     if (indexOfPrev < 0) {
       // Already removed
       return false
     }
 
-    _navigationScreensStack.removeAt(indexOfPrev)
-
-    val newScreenUpdate = if (withAnimation) {
-      ScreenUpdate.Pop(newComposeScreen)
-    } else {
-      ScreenUpdate.Remove(newComposeScreen)
+    if (!removingScreens.add(composeScreen.screenKey)) {
+      return false
     }
 
+    val newScreenUpdate = if (withAnimation) {
+      ScreenUpdate.Pop(composeScreen)
+    } else {
+      ScreenUpdate.Remove(composeScreen)
+    }
+
+    val oldScreens = _navigationScreensStack
+      .filter { screen -> screen.screenKey != composeScreen.screenKey }
+
     val navigationScreenUpdates = combineScreenUpdates(
-      oldScreens = _navigationScreensStack,
+      oldScreens = oldScreens,
       newScreenUpdate = newScreenUpdate
     )
 
-    logcat(TAG, LogPriority.VERBOSE) { "popScreen(${newComposeScreen.screenKey.key})" }
-    newComposeScreen.onStartDisposing()
+    logcat(TAG, LogPriority.VERBOSE) { "popScreen(${composeScreen.screenKey.key})" }
+    composeScreen.onStartDisposing()
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -239,6 +246,14 @@ open class NavigationRouter(
     }
 
     screenUpdate.screen.onDisposed()
+
+    _navigationScreensStack
+      .indexOfFirst { screen -> screen.screenKey == screenUpdate.screen.screenKey }
+      .takeIf { index -> index >= 0 }
+      ?.let { indexOfRemovedScreen ->
+        removingScreens.remove(screenUpdate.screen.screenKey)
+        _navigationScreensStack.removeAt(indexOfRemovedScreen)
+      }
 
     if (_navigationScreensStack.isEmpty()) {
       _screenUpdatesFlow.value = null

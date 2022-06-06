@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 
@@ -65,6 +66,8 @@ fun ScreenTransition(
   LaunchedEffect(
     key1 = screenUpdate,
     block = {
+      val homeNavigationScreen = screenUpdate.screen as? HomeNavigationScreen<*>
+
       when (screenUpdate) {
         is NavigationRouter.ScreenUpdate.Push -> {
           val scaleStart = .9f
@@ -84,6 +87,8 @@ fun ScreenTransition(
             ) { animationProgress, _ ->
               scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
               alphaAnimated = animationProgress
+
+              homeNavigationScreen?.updateAnimationProgress(animationProgress)
             }
           } finally {
             onScreenUpdateFinished(screenUpdate)
@@ -106,6 +111,8 @@ fun ScreenTransition(
             ) { animationProgress, _ ->
               scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
               alphaAnimated = 1f - animationProgress
+
+              homeNavigationScreen?.updateAnimationProgress(1f - animationProgress)
             }
           } finally {
             onScreenUpdateFinished(screenUpdate)
@@ -140,6 +147,7 @@ fun ScreenTransition(
               )
             ) { animationProgress, _ ->
               alphaAnimated = animationProgress
+              homeNavigationScreen?.updateAnimationProgress(animationProgress)
             }
           } finally {
             onScreenUpdateFinished(screenUpdate)
@@ -153,12 +161,14 @@ fun ScreenTransition(
         is NavigationRouter.ScreenUpdate.Set -> {
           scaleAnimated = 1f
           alphaAnimated = 1f
+          homeNavigationScreen?.updateAnimationProgress(1f)
           onScreenUpdateFinished(screenUpdate)
           canRender = true
         }
         is NavigationRouter.ScreenUpdate.Remove -> {
           scaleAnimated = 0f
           alphaAnimated = 0f
+          homeNavigationScreen?.updateAnimationProgress(0f)
           onScreenUpdateFinished(screenUpdate)
           canRender = false
         }

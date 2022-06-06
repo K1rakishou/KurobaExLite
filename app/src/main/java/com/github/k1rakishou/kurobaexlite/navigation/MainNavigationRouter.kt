@@ -31,13 +31,13 @@ class MainNavigationRouter : NavigationRouter(
     )
   }
 
-  override fun pushScreen(newComposeScreen: ComposeScreen): Boolean {
-    if (newComposeScreen is FloatingComposeScreen) {
+  override fun pushScreen(composeScreen: ComposeScreen): Boolean {
+    if (composeScreen is FloatingComposeScreen) {
       error("FloatingComposeScreens must be added via presentScreen() function!")
     }
 
     val indexOfPrev = navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
+      .indexOfFirst { screen -> screen.screenKey == composeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
       // Already added
@@ -46,14 +46,14 @@ class MainNavigationRouter : NavigationRouter(
 
     val navigationScreenUpdates = combineScreenUpdates(
       oldScreens = navigationScreensStack,
-      newScreenUpdate = ScreenUpdate.Push(newComposeScreen)
+      newScreenUpdate = ScreenUpdate.Push(composeScreen)
     )
     val floatingScreenUpdates = _floatingScreensStack
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
 
-    _navigationScreensStack.add(newComposeScreen)
-    logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${newComposeScreen.screenKey.key})" }
-    newComposeScreen.onStartCreating()
+    _navigationScreensStack.add(composeScreen)
+    logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${composeScreen.screenKey.key})" }
+    composeScreen.onStartCreating()
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -63,35 +63,41 @@ class MainNavigationRouter : NavigationRouter(
     return true
   }
 
-  override fun popScreen(newComposeScreen: ComposeScreen): Boolean {
-    return popScreen(newComposeScreen, true)
+  override fun popScreen(composeScreen: ComposeScreen): Boolean {
+    return popScreen(composeScreen, true)
   }
 
-  override fun popScreen(newComposeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
+  override fun popScreen(composeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
     val indexOfPrev = navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == newComposeScreen.screenKey }
+      .indexOfFirst { screen -> screen.screenKey == composeScreen.screenKey }
 
     if (indexOfPrev < 0) {
       // Already removed
       return false
     }
 
-    _navigationScreensStack.removeAt(indexOfPrev)
-
-    val newScreenUpdate = if (withAnimation) {
-      ScreenUpdate.Pop(newComposeScreen)
-    } else {
-      ScreenUpdate.Remove(newComposeScreen)
+    if (!removingScreens.add(composeScreen.screenKey)) {
+      return false
     }
 
+    val newScreenUpdate = if (withAnimation) {
+      ScreenUpdate.Pop(composeScreen)
+    } else {
+      ScreenUpdate.Remove(composeScreen)
+    }
+
+    val oldScreens = navigationScreensStack
+      .filter { screen -> screen.screenKey != composeScreen.screenKey }
+
     val navigationScreenUpdates = combineScreenUpdates(
-      oldScreens = navigationScreensStack,
+      oldScreens = oldScreens,
       newScreenUpdate = newScreenUpdate
     )
+
     val floatingScreenUpdates = _floatingScreensStack
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
 
-    logcat(TAG, LogPriority.VERBOSE) { "popScreen(${newComposeScreen.screenKey.key})" }
+    logcat(TAG, LogPriority.VERBOSE) { "popScreen(${composeScreen.screenKey.key})" }
 
     _screenUpdatesFlow.value = ScreenUpdateTransaction(
       navigationScreenUpdates = navigationScreenUpdates,
@@ -197,6 +203,14 @@ class MainNavigationRouter : NavigationRouter(
     }
 
     screenUpdate.screen.onDisposed()
+
+    _navigationScreensStack
+      .indexOfFirst { screen -> screen.screenKey == screenUpdate.screen.screenKey }
+      .takeIf { index -> index >= 0 }
+      ?.let { indexOfRemovedScreen ->
+        removingScreens.remove(screenUpdate.screen.screenKey)
+        _navigationScreensStack.removeAt(indexOfRemovedScreen)
+      }
 
     if (navigationScreensStack.isEmpty() && floatingScreensStack.isEmpty()) {
       _screenUpdatesFlow.value = null

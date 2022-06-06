@@ -47,6 +47,12 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
   val animationProgress: State<Float>
     get() = _animationProgress
 
+  fun updateAnimationProgress(progress: Float) {
+    _animationProgress.value = progress
+      .coerceIn(0f, 1f)
+      .quantize(AppConstants.Transition.TransitionFps)
+  }
+
   @Composable
   final override fun Content() {
     SwipeableScreen {
@@ -91,7 +97,7 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
           block = {
             if (currentValue == Anchors.Hidden) {
               navigationRouter.popScreen(
-                newComposeScreen = this@HomeNavigationScreen,
+                composeScreen = this@HomeNavigationScreen,
                 withAnimation = false
               )
             }

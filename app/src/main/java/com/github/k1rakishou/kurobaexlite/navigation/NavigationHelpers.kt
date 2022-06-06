@@ -30,7 +30,7 @@ fun RootRouterHost(
             screenUpdate = primaryScreenUpdate,
             onScreenUpdateFinished = { screenUpdate ->
               rootNavigationRouter.onScreenUpdateFinished(screenUpdate)
-                                     },
+            },
             content = { primaryScreenUpdate.screen.Content() }
           )
         }

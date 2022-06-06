@@ -28,8 +28,8 @@ abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar>(
     kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar)
   }
 
-  override fun onStartDisposing() {
-    super.onStartDisposing()
+  override fun onDisposed() {
+    super.onDisposed()
 
     kurobaToolbarContainerState.popChildToolbars()
   }
