@@ -57,7 +57,7 @@ fun HomeScreenToolbarContainer(
   val animationProgress by remember {
     derivedStateOf {
       pagerState.currentPageOffset.coerceIn(-1f, 1f)
-        .quantize(AppConstants.Transition.TransitionDesireableFps)
+        .quantize(AppConstants.Transition.TransitionFps)
     }
   }
 

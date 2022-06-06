@@ -99,7 +99,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
       CombinedFabState(
         mainUiLayoutMode = mainUiLayoutMode,
         postListScrollPosition = postListScrollPosition
-          .quantize(AppConstants.Transition.TransitionDesireableFps),
+          .quantize(AppConstants.Transition.TransitionFps),
         touchingTopOrBottomOfList = touchingTopOrBottomOfList,
         isDraggingPostList = isDraggingPostList,
         isDraggingFastScroller = isDraggingFastScroller,

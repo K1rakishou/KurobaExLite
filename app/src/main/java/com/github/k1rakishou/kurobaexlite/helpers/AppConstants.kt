@@ -11,7 +11,7 @@ object AppConstants {
   const val minFlingVelocityPx = 5000f
 
   object Transition {
-    val TransitionDesireableFps = 1f / 16f
+    val TransitionFps = 1f / 16f
   }
 
   object Actions {

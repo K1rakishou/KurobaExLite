@@ -189,7 +189,7 @@ fun HomeScreenDrawerLayout(
     return@remember derivedStateOf {
       val animationProgress = (1f - (drawerOffset.absoluteValue / drawerWidth.toFloat()))
         .coerceIn(0f, 1f)
-        .quantize(AppConstants.Transition.TransitionDesireableFps)
+        .quantize(AppConstants.Transition.TransitionFps)
 
       return@derivedStateOf lerpFloat(0f, .8f, animationProgress)
     }

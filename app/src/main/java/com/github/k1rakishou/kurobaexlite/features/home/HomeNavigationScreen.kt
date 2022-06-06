@@ -104,7 +104,7 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
           block = {
             val progress = 1f - ((currentOffset / screenWidth.toFloat())
               .coerceIn(-1f, 1f))
-              .quantize(AppConstants.Transition.TransitionDesireableFps)
+              .quantize(AppConstants.Transition.TransitionFps)
 
             _animationProgress.value = progress
 
