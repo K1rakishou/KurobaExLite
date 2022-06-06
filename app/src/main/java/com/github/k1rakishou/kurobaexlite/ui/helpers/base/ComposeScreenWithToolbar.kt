@@ -45,6 +45,18 @@ abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar>(
     return navigationScreensStack.last() as ComposeScreenWithToolbar<ToolbarType>
   }
 
+  fun topChildScreenWithIndex(): Pair<ComposeScreenWithToolbar<ToolbarType>, Int> {
+    val navigationScreensStack = navigationRouter.navigationScreensStack
+    if (navigationScreensStack.isEmpty()) {
+      return Pair(this, 0)
+    }
+
+    val lastScreen = navigationScreensStack.last() as ComposeScreenWithToolbar<ToolbarType>
+    val lastScreenIndex = navigationScreensStack.lastIndex
+
+    return Pair(lastScreen, lastScreenIndex)
+  }
+
   fun isScreenAtTop(screenKey: ScreenKey): Boolean {
     val topScreen = navigationRouter.navigationScreensStack.lastOrNull()
       ?: return false

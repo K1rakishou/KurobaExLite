@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
+import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
@@ -39,12 +40,22 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
   val dragToCloseEnabled: Boolean
     get() = dragToCloseEnabledState.value
 
-  @OptIn(ExperimentalMaterialApi::class)
   @Composable
   final override fun Content() {
-    var bgColor by remember { mutableStateOf(Color.Unspecified) }
+    SwipeableScreen {
+      HomeNavigationScreenContent()
+    }
+  }
 
+  @Composable
+  abstract fun HomeNavigationScreenContent()
+
+  @OptIn(ExperimentalMaterialApi::class)
+  @Composable
+  private fun SwipeableScreen(content: @Composable () -> Unit) {
     BoxWithConstraints {
+      var bgColor by remember { mutableStateOf(Color.Unspecified) }
+
       val currentUiLayoutMode by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
       val currentDragToCloseEnabled by dragToCloseEnabledState
       val topHomeNavigationScreen = topHomeNavigationScreenExceptDefault()
@@ -84,7 +95,9 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
           key1 = currentOffset.toInt(),
           key2 = screenWidth,
           block = {
-            val alpha = (1f - (currentOffset / screenWidth.toFloat())).coerceIn(0f, 1f)
+            val animationProgress = 1f - ((currentOffset / screenWidth.toFloat()).coerceIn(0f, 1f))
+            val alpha = lerpFloat(0f, .8f, animationProgress)
+
             bgColor = Color.Black.copy(alpha = alpha)
           }
         )
@@ -109,14 +122,11 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
 
       Box(modifier = Modifier.background(bgColor)) {
         Box(modifier = modifier) {
-          HomeNavigationScreenContent()
+          content()
         }
       }
     }
   }
-
-  @Composable
-  abstract fun HomeNavigationScreenContent()
 
   private fun topHomeNavigationScreenExceptDefault(): HomeNavigationScreen<ToolbarType>? {
     val navigationScreensStack = navigationRouter.navigationScreensStack
