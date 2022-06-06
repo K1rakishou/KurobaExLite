@@ -100,6 +100,7 @@
 
     <string name="board_selection_screen_toolbar_title">Boards list</string>
     <string name="board_selection_screen_no_boards_loaded">No boards loaded</string>
+    <string name="board_selection_screen_nothing_found_by_query">No boards were found by query \'%1$s\'</string>
 
     <string name="album_screen_toolbar_title">Album</string>
     <string name="album_screen_album_empty">Album is empty</string>

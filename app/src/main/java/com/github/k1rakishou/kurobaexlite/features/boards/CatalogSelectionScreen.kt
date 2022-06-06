@@ -315,13 +315,27 @@ class CatalogSelectionScreen(
           is AsyncData.Data -> {
             val siteBoards = loadBoardsForSiteAsyncData.data
             if (siteBoards.isEmpty()) {
-              item(key = "no_boards_indicator") {
-                KurobaComposeText(
-                  modifier = Modifier
-                    .fillParentMaxSize()
-                    .padding(8.dp),
-                  text = stringResource(id = R.string.board_selection_screen_no_boards_loaded)
-                )
+              if (searchQuery == null) {
+                item(key = "no_boards_indicator") {
+                  KurobaComposeText(
+                    modifier = Modifier
+                      .fillParentMaxSize()
+                      .padding(8.dp),
+                    text = stringResource(id = R.string.board_selection_screen_no_boards_loaded)
+                  )
+                }
+              } else {
+                item(key = "nothing_found_indicator") {
+                  KurobaComposeText(
+                    modifier = Modifier
+                      .fillParentMaxSize()
+                      .padding(8.dp),
+                    text = stringResource(
+                      id = R.string.board_selection_screen_nothing_found_by_query,
+                      searchQuery
+                    )
+                  )
+                }
               }
             } else {
               buildChanBoardsList(
