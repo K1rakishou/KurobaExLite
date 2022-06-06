@@ -37,7 +37,8 @@ class SinglePage private constructor(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    screen.composeScreen.topChildScreen().Toolbar(boxScope)
+    val composeScreen = screen.composeScreen
+    DisplayTopToolbarsWithTransition(composeScreen, boxScope)
   }
 
   @Composable

@@ -94,7 +94,7 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
 
   @PublishedApi
   internal fun <T : KurobaChildToolbar> topChildToolbarInternal(clazz: Class<T>): T? {
-    val added = _stackContainerState.addedElements.lastOrNull() as? T
+    val added = _stackContainerState.addedElements.lastOrNull()?.stackContainerElement as? T
     if (added != null) {
       return added
     }
@@ -110,6 +110,7 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
   @PublishedApi
   internal fun <T : KurobaChildToolbar> childToolbarInternal(key: String, clazz: Class<T>): T? {
     val added = _stackContainerState.addedElements
+      .map { it.stackContainerElement }
       .lastOrNull { element ->
         return@lastOrNull element.elementKey == key &&
           element.element.javaClass == clazz

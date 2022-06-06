@@ -14,7 +14,7 @@ fun <T : DisposableElement> AnimateableStackContainer(
 
   // First iterate and draw all fixed in place elements which are not currently being animated
   for (stackContainerElement in state.addedElements) {
-    val element = stackContainerElement.element
+    val element = stackContainerElement.stackContainerElement.element
 
     key(stackContainerElement.elementKey) {
       val movableContent = composedItems.getOrPut(

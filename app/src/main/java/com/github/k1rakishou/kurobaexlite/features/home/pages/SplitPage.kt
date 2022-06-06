@@ -57,7 +57,8 @@ class SplitPage private constructor(
               .fillMaxHeight()
               .weight(weight = weight)
           ) {
-            childScreen.composeScreen.topChildScreen().Toolbar(this)
+            val composeScreen = childScreen.composeScreen
+            DisplayTopToolbarsWithTransition(composeScreen, boxScope)
 
             if (index >= 0 && index < childScreens.size) {
               Divider(

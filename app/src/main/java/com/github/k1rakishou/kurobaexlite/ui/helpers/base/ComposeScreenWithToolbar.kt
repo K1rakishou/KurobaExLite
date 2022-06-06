@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
+import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
@@ -45,16 +46,21 @@ abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar>(
     return navigationScreensStack.last() as ComposeScreenWithToolbar<ToolbarType>
   }
 
-  fun topChildScreenWithIndex(): Pair<ComposeScreenWithToolbar<ToolbarType>, Int> {
+  fun lastTwoChildScreens(): List<ComposeScreenWithToolbar<ToolbarType>> {
     val navigationScreensStack = navigationRouter.navigationScreensStack
     if (navigationScreensStack.isEmpty()) {
-      return Pair(this, 0)
+      return listOf(this)
     }
 
-    val lastScreen = navigationScreensStack.last() as ComposeScreenWithToolbar<ToolbarType>
-    val lastScreenIndex = navigationScreensStack.lastIndex
+    if (navigationScreensStack.size >= 2) {
+      return navigationScreensStack.takeLast(2) as List<ComposeScreenWithToolbar<ToolbarType>>
+    }
 
-    return Pair(lastScreen, lastScreenIndex)
+    val resultList = mutableListWithCap<ComposeScreenWithToolbar<ToolbarType>>(2)
+    resultList.add(this)
+    resultList.add(navigationScreensStack.last() as ComposeScreenWithToolbar<ToolbarType>)
+
+    return resultList
   }
 
   fun isScreenAtTop(screenKey: ScreenKey): Boolean {

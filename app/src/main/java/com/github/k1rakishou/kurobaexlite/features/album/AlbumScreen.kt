@@ -78,7 +78,14 @@ class AlbumScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-  private val defaultToolbarKey = "${screenKey.key}_toolbar"
+  private val keySuffix = when (chanDescriptor) {
+    is CatalogDescriptor -> "catalog"
+    is ThreadDescriptor -> "thread"
+  }
+
+  private val kurobaToolbarContainerViewModelKey = "${screenKey.key}_${keySuffix}"
+
+  private val defaultToolbarKey = "${screenKey.key}_${keySuffix}_toolbar"
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
 
   private val defaultToolbarState by lazy {
@@ -97,7 +104,7 @@ class AlbumScreen(
   }
 
   override val kurobaToolbarContainerState by lazy {
-    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcon>>(screenKey)
+    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcon>>(kurobaToolbarContainerViewModelKey)
   }
 
   @Composable
@@ -116,13 +123,10 @@ class AlbumScreen(
       }
     )
 
-    val keySuffix = when (chanDescriptor) {
-      is CatalogDescriptor -> "catalog"
-      is ThreadDescriptor -> "thread"
-    }
+    val toolbarContainerKey = "${screenKey.key}_${keySuffix}"
 
     KurobaToolbarContainer(
-      toolbarContainerKey = "${screenKey.key}_${keySuffix}",
+      toolbarContainerKey = toolbarContainerKey,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = { true }
     )

@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,7 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.quantize
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
@@ -39,6 +42,10 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
   protected open val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(true)
   val dragToCloseEnabled: Boolean
     get() = dragToCloseEnabledState.value
+
+  private val _animationProgress = mutableStateOf<Float>(0f)
+  val animationProgress: State<Float>
+    get() = _animationProgress
 
   @Composable
   final override fun Content() {
@@ -95,9 +102,13 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
           key1 = currentOffset.toInt(),
           key2 = screenWidth,
           block = {
-            val animationProgress = 1f - ((currentOffset / screenWidth.toFloat()).coerceIn(0f, 1f))
-            val alpha = lerpFloat(0f, .8f, animationProgress)
+            val progress = 1f - ((currentOffset / screenWidth.toFloat())
+              .coerceIn(-1f, 1f))
+              .quantize(AppConstants.Transition.TransitionDesireableFps)
 
+            _animationProgress.value = progress
+
+            val alpha = lerpFloat(0f, .8f, progress)
             bgColor = Color.Black.copy(alpha = alpha)
           }
         )
@@ -117,6 +128,17 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
           .absoluteOffset { IntOffset(currentOffset.toInt(), 0) }
           .consumeClicks(enabled = isAnimationRunning)
       } else {
+        if (
+          currentUiLayoutMode == MainUiLayoutMode.Split &&
+          topHomeNavigationScreen != null &&
+          topHomeNavigationScreen.screenKey == screenKey
+        ) {
+          LaunchedEffect(
+            key1 = Unit,
+            block = { _animationProgress.value = 1f }
+          )
+        }
+
         Modifier
       }
 

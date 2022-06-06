@@ -24,8 +24,8 @@ class AnimateableStackContainerState<T : DisposableElement>(
   private val _addedElements: SnapshotStateList<StackContainerChange<T>> = mutableStateListOf(),
   private val _animatingElements: SnapshotStateList<StackContainerChange<T>> = mutableStateListOf()
 ) {
-  val addedElements: List<SimpleStackContainerElement<T>>
-    get() = _addedElements.map { it.stackContainerElement }
+  val addedElements: List<StackContainerChange<T>>
+    get() = _addedElements
   val animatingElements: List<StackContainerChange<T>>
     get() = _animatingElements
   val addedElementsCount: Int
