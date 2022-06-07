@@ -2,6 +2,10 @@ package com.github.k1rakishou.kurobaexlite.features.media.media_handlers
 
 import android.content.Context
 import android.view.View
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -10,7 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -26,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -48,10 +56,18 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import logcat.asLog
 import logcat.logcat
+import org.joda.time.Period
+import org.joda.time.format.PeriodFormatterBuilder
 
 private const val TAG = "DisplayVideo"
 private const val MPV_TAG = "mpv"
 private const val MPV_OPTION_CHANGE_TOAST = "mpv_option_change_toast"
+
+private val durationFormatter = PeriodFormatterBuilder()
+  .printZeroAlways().minimumPrintedDigits(2).appendMinutes()
+  .appendSeparator(":")
+  .printZeroAlways().minimumPrintedDigits(2).appendSeconds()
+  .toFormatter()
 
 @Suppress("UnnecessaryVariable", "FoldInitializerAndIfToElvis")
 @OptIn(ExperimentalPagerApi::class)
@@ -102,6 +118,11 @@ fun DisplayVideo(
   }
 
   var mpvViewMut by remember(key1 = videoMediaState) { mutableStateOf<MPVView?>(null) }
+  val mpvView = mpvViewMut
+
+  var seekingToHintMut by remember { mutableStateOf<Int?>(null) }
+  val seekingToHint = seekingToHintMut
+
   val videoStartedPlaying by videoMediaState.videoStartedPlayingState
 
   val videoMediaStateSaveable = rememberSaveable(
@@ -213,6 +234,15 @@ fun DisplayVideo(
   LaunchedEffect(
     key1 = videoMediaState,
     block = {
+      videoMediaState.seekHintEventFlow.collect { position ->
+        seekingToHintMut = position
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = videoMediaState,
+    block = {
       videoMediaState.seekEventFlow.collect { position ->
         mpvViewMut?.timePos = position
       }
@@ -227,27 +257,32 @@ fun DisplayVideo(
 
   val logObserver = rememberLogObserver(snackbarManager)
 
-  AndroidView(
-    modifier = Modifier
-      .fillMaxSize()
-      .kurobaClickable(
-        hasClickIndication = false,
-        onClick = { onVideoTapped() }
-      ),
-    factory = { viewContext ->
-      val view = MPVView(viewContext, null)
-      view.visibility = View.GONE
+  Box(
+    modifier = Modifier.fillMaxSize()
+  ) {
+    AndroidView(
+      modifier = Modifier
+        .fillMaxSize()
+        .kurobaClickable(
+          hasClickIndication = false,
+          onClick = { onVideoTapped() }
+        ),
+      factory = { viewContext ->
+        val view = MPVView(viewContext, null)
+        view.visibility = View.GONE
 
-      mpvViewMut = view
-      return@AndroidView view
-    }
-  )
+        mpvViewMut = view
+        return@AndroidView view
+      }
+    )
+
+    SeekToHint(seekingToHint, mpvView)
+  }
 
   if (videoStartedPlaying) {
     LaunchedEffect(key1 = Unit, block = { onPlayerLoaded() })
   }
 
-  val mpvView = mpvViewMut
   if (mpvView != null) {
     DisposableEffect(
       key1 = videoMediaState,
@@ -273,6 +308,58 @@ fun DisplayVideo(
         }
       }
     )
+  }
+}
+
+@Composable
+private fun SeekToHint(
+  seekingToHint: Int?,
+  mpvView: MPVView?
+) {
+  val targetValue = if (
+    seekingToHint != null &&
+    mpvView != null &&
+    mpvView.duration != null
+  ) {
+    1f
+  } else {
+    0f
+  }
+
+  val alphaAnimation by animateFloatAsState(
+    targetValue = targetValue,
+    animationSpec = tween(durationMillis = 350)
+  )
+
+  Box(
+    modifier = Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+  ) {
+    val bgColor = remember { Color.White.copy(alpha = 0.7f) }
+    val roundRect = remember { RoundedCornerShape(CornerSize(4.dp)) }
+
+    Box(
+      modifier = Modifier
+        .wrapContentSize()
+        .graphicsLayer { alpha = alphaAnimation }
+        .background(color = bgColor, shape = roundRect),
+    ) {
+      val textFormatted = remember(key1 = seekingToHint, key2 = mpvView?.duration) {
+        val currentPosFormatted = durationFormatter.print(Period.seconds(seekingToHint ?: 0).normalizedStandard())
+        val durationFormatted = durationFormatter.print(Period.seconds(mpvView?.duration ?: 0).normalizedStandard())
+
+        return@remember "${currentPosFormatted} / ${durationFormatted}"
+      }
+
+      Text(
+        modifier = Modifier
+          .wrapContentSize()
+          .padding(horizontal = 24.dp, vertical = 12.dp),
+        text = textFormatted,
+        color = Color.Black,
+        fontSize = 26.sp
+      )
+    }
   }
 }
 

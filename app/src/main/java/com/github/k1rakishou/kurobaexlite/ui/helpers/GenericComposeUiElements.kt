@@ -516,7 +516,7 @@ fun Modifier.kurobaClickable(
 }
 
 @Composable
-fun KurobaComposeCardView(
+fun KurobaComposeCard(
   modifier: Modifier = Modifier,
   backgroundColor: Color? = null,
   shape: Shape = RoundedCornerShape(2.dp),

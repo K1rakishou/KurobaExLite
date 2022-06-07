@@ -32,7 +32,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarConta
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -179,7 +179,7 @@ class AppSettingsScreen(
   private fun SettingGroup(group: SettingGroup) {
     val chanTheme = LocalChanTheme.current
 
-    KurobaComposeCardView(
+    KurobaComposeCard(
       modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()

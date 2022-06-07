@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
@@ -104,7 +104,7 @@ abstract class FloatingComposeScreen(
         val maxWidthDp = maxAvailableWidth()
         val maxHeightDp = maxAvailableHeight()
 
-        KurobaComposeCardView(
+        KurobaComposeCard(
           modifier = Modifier
             .wrapContentSize()
             .widthIn(max = maxWidthDp)

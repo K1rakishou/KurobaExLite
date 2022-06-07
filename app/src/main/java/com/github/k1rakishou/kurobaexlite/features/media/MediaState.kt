@@ -40,6 +40,7 @@ sealed class MediaState {
     val playPauseEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
     val hwDecEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
     val seekEventFlow = MutableSharedFlow<Int>(extraBufferCapacity = Channel.UNLIMITED)
+    val seekHintEventFlow = MutableSharedFlow<Int?>(extraBufferCapacity = Channel.UNLIMITED)
 
     fun toggleMute() {
       muteEventFlow.tryEmit(Unit)
@@ -51,6 +52,10 @@ sealed class MediaState {
 
     fun toggleHwDec() {
       hwDecEventFlow.tryEmit(Unit)
+    }
+
+    fun updateSeekToHint(position: Int?) {
+      seekHintEventFlow.tryEmit(position)
     }
 
     fun seekTo(position: Int) {

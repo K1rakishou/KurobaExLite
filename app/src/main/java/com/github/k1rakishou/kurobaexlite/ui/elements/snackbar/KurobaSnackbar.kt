@@ -41,7 +41,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -211,7 +211,7 @@ private fun KurobaSnackbarLayout(
     SnackbarType.ErrorToast -> chanTheme.errorColorCompose
   }
 
-  KurobaComposeCardView(
+  KurobaComposeCard(
     modifier = Modifier
       .padding(
         horizontal = containerHorizPadding,

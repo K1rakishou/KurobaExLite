@@ -113,6 +113,7 @@ internal fun MediaViewerScreenVideoControls(
                 lastSlideOffset = { lastSlideOffsetUpdated },
                 blockAutoPositionUpdateState = { videoMediaState.blockAutoPositionUpdateState.value = true },
                 unBlockAutoPositionUpdateState = { videoMediaState.blockAutoPositionUpdateState.value = false },
+                updateSeekHint = { newPosition -> videoMediaState.updateSeekToHint(newPosition) },
                 seekTo = { newPosition -> videoMediaState.seekTo(newPosition) },
               )
             }
@@ -240,6 +241,7 @@ private suspend fun PointerInputScope.processTapToSeekGesture(
   lastSlideOffset: () -> Float,
   blockAutoPositionUpdateState: () -> Unit,
   unBlockAutoPositionUpdateState: () -> Unit,
+  updateSeekHint: (Int?) -> Unit,
   seekTo: (Int) -> Unit
 ) {
   forEachGesture {
@@ -257,8 +259,16 @@ private suspend fun PointerInputScope.processTapToSeekGesture(
         if (event.changes.fastAll { !it.pressed }) {
           break
         }
+
+        val duration = videoDuration()
+        if (duration != null) {
+          val newPosition = (duration.toFloat() * lastSlideOffset()).toInt()
+          updateSeekHint(newPosition)
+        }
       }
     } finally {
+      updateSeekHint(null)
+
       val duration = videoDuration()
       if (duration != null) {
         val newPosition = (duration.toFloat() * lastSlideOffset()).toInt()
