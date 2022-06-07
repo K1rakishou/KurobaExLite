@@ -35,7 +35,6 @@ class AppSettings(
   }
 
   val layoutType by lazy { EnumSetting<LayoutType>(LayoutType.Auto, "layout_type", LayoutType::class.java, dataStore) }
-
   val historyEnabled by lazy { BooleanSetting(true, "history_enabled", dataStore) }
   val historyScreenOnLeftSide by lazy { BooleanSetting(true, "history_screen_on_left_side", dataStore) }
 
@@ -55,15 +54,11 @@ class AppSettings(
     val defaultValue = if (isTablet) 16 else 14
     NumberSetting(defaultValue, "post_subject_comment_text_size_sp", dataStore)
   }
-  val catalogSort by lazy {
-    JsonSetting(moshi.adapter(CatalogSortSetting::class.java), CatalogSortSetting(), "catalog_sort_setting", dataStore)
-  }
+  val catalogSort by lazy { JsonSetting(moshi.adapter(CatalogSortSetting::class.java), CatalogSortSetting(), "catalog_sort_setting", dataStore) }
   val navigationHistoryMaxSize by lazy { NumberSetting(256, "navigation_history_max_size", dataStore) }
   val lastRememberedFilePicker by lazy { StringSetting("", "last_remembered_file_picker", dataStore) }
   val mediaViewerUiVisible by lazy { BooleanSetting(true, "media_viewer_ui_visible", dataStore) }
-
   val drawerDragGestureTutorialShown by lazy { BooleanSetting(false, "drawer_drag_gesture_tutorial_shown", dataStore) }
-
   val watcherIntervalForegroundSeconds by lazy { EnumSetting(WatcherFg.SEC_30, "watcher_interval_foreground_seconds", WatcherFg::class.java, dataStore) }
   val watcherIntervalBackgroundSeconds by lazy { EnumSetting(WatcherBg.MIN_30, "watcher_interval_background_seconds", WatcherBg::class.java, dataStore) }
   val replyNotifications by lazy { BooleanSetting(true, "reply_notifications_enabled", dataStore) }

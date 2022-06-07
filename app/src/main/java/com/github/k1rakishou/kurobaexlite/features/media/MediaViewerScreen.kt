@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -73,6 +72,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayV
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
@@ -124,6 +124,7 @@ class MediaViewerScreen(
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
+  private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val defaultIsDragGestureAllowedFunc: (currPosition: Offset, startPosition: Offset) -> Boolean = { _, _ -> true }
@@ -955,7 +956,7 @@ class MediaViewerScreen(
             title = DialogScreen.Text.Id(R.string.media_viewer_plugins_libs_installation_success),
             description = DialogScreen.Text.Id(R.string.media_viewer_plugins_libs_installation_description_success),
             positiveButton = DialogScreen.okButton(
-              onClick = { androidHelpers.restartApp(context as Activity) }
+              onClick = { appRestarter.restart() }
             )
           )
         )

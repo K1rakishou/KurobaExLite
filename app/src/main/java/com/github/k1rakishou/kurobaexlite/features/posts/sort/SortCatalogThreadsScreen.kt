@@ -86,16 +86,15 @@ class SortCatalogThreadsScreen(
                 .padding(horizontal = 8.dp, vertical = 4.dp)
                 .kurobaClickable(
                   onClick = {
-                    if (currentCatalogSortSetting.sort.orderName.equals(
-                        catalogSort.orderName,
-                        ignoreCase = true
-                      )
-                    ) {
-                      currentCatalogSortSettingState =
-                        currentCatalogSortSetting.copy(ascending = !currentCatalogSortSetting.ascending)
+                    val equal = currentCatalogSortSetting.sort.orderName.equals(
+                      other = catalogSort.orderName,
+                      ignoreCase = true
+                    )
+
+                    currentCatalogSortSettingState = if (equal) {
+                      currentCatalogSortSetting.copy(ascending = !currentCatalogSortSetting.ascending)
                     } else {
-                      currentCatalogSortSettingState =
-                        CatalogSortSetting(sort = catalogSort, ascending = false)
+                      CatalogSortSetting(sort = catalogSort, ascending = false)
                     }
                   }
                 ),

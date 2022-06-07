@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
-import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
 import android.content.ClipData
@@ -16,7 +15,6 @@ import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import java.io.File
-import kotlin.system.exitProcess
 import logcat.logcat
 
 class AndroidHelpers(
@@ -96,15 +94,6 @@ class AndroidHelpers(
   fun File.availableSpaceInBytes(): Long {
     val stat = StatFs(this.path)
     return stat.availableBlocksLong * stat.blockSizeLong
-  }
-
-  fun restartApp(activity: Activity) {
-    with(activity) {
-      val intent = packageManager.getLaunchIntentForPackage(packageName)
-      finishAffinity()
-      startActivity(intent)
-      exitProcess(0)
-    }
   }
 
   fun openLink(context: Context, link: String): Boolean {

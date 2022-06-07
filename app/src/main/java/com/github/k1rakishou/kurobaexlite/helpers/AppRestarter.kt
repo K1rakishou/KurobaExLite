@@ -17,6 +17,8 @@ class AppRestarter {
   fun restart() {
     activity?.let { componentActivity ->
       val intent = componentActivity.packageManager.getLaunchIntentForPackage(componentActivity.packageName)
+        ?: return@let
+
       componentActivity.finishAffinity()
       componentActivity.startActivity(intent)
       exitProcess(0)
