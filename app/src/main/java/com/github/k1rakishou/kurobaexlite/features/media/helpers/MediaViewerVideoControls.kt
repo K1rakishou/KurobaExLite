@@ -260,22 +260,37 @@ private suspend fun PointerInputScope.processTapToSeekGesture(
           break
         }
 
-        val duration = videoDuration()
-        if (duration != null) {
-          val newPosition = (duration.toFloat() * lastSlideOffset()).toInt()
-          updateSeekHint(newPosition)
-        }
+        updateHint(videoDuration, lastSlideOffset, updateSeekHint)
       }
     } finally {
       updateSeekHint(null)
-
-      val duration = videoDuration()
-      if (duration != null) {
-        val newPosition = (duration.toFloat() * lastSlideOffset()).toInt()
-        seekTo(newPosition)
-      }
+      seek(videoDuration, lastSlideOffset, seekTo)
 
       unBlockAutoPositionUpdateState()
     }
+  }
+}
+
+private fun seek(
+  videoDuration: () -> Long?,
+  lastSlideOffset: () -> Float,
+  seekTo: (Int) -> Unit
+) {
+  val duration = videoDuration()
+  if (duration != null) {
+    val newPosition = (duration.toFloat() * lastSlideOffset()).toInt()
+    seekTo(newPosition)
+  }
+}
+
+private fun updateHint(
+  videoDuration: () -> Long?,
+  lastSlideOffset: () -> Float,
+  updateSeekHint: (Int?) -> Unit
+) {
+  val duration = videoDuration()
+  if (duration != null) {
+    val newPosition = (duration.toFloat() * lastSlideOffset()).toInt()
+    updateSeekHint(newPosition)
   }
 }
