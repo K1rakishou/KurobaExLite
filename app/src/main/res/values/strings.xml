@@ -246,4 +246,16 @@
     <string name="chan4_setting_4chan_cookie">4chan captcha cookie</string>
     <string name="chan4_setting_4channel_cookie">4channel captcha cookie</string>
 
+    <string name="crash_report_activity_title">The application has crashed!</string>
+    <string name="crash_report_activity_crash_message_section">Crash message</string>
+    <string name="crash_report_activity_crash_stacktrace_section">Crash stacktrace</string>
+    <string name="crash_report_activity_crash_logs_section">Last logs before the crash</string>
+    <string name="crash_report_activity_additional_info_section">Additional information</string>
+    <string name="crash_report_activity_loading_logs">Loading logs…</string>
+    <string name="crash_report_activity_copy_for_github">Copy formatted for Github</string>
+    <string name="crash_report_activity_open_issue_tracker">Open the issue tracker</string>
+    <string name="crash_report_activity_restart_the_app">Restart the app</string>
+    <string name="crash_report_activity_restart_the_app_not_my_problem">Not my problem, restart the app</string>
+    <string name="crash_report_activity_copied_to_clipboard">Report copied to clipboard</string>
+
 </resources>

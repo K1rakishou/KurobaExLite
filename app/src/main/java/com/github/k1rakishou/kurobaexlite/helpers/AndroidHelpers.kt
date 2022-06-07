@@ -9,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.StatFs
+import android.os.SystemClock
 import android.text.TextUtils
 import android.view.WindowManager
 import com.github.k1rakishou.kurobaexlite.BuildConfig
@@ -21,6 +22,8 @@ class AndroidHelpers(
   private val application: Application,
   private val snackbarManager: SnackbarManager
 ) {
+  private var startTime = SystemClock.elapsedRealtime()
+
   private val applicationContext: Context
     get() = application.applicationContext
 
@@ -28,6 +31,11 @@ class AndroidHelpers(
   private val activityManager by lazy { application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager }
 
   val isSlowDevice by lazy { activityManager.isLowRamDevice || !isAndroidM() }
+
+  val appRunningTime: Long
+    get() {
+      return SystemClock.elapsedRealtime() - startTime
+    }
 
   fun getApiLevel(): Int {
     return Build.VERSION.SDK_INT

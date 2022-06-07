@@ -1,12 +1,14 @@
 package com.github.k1rakishou.kurobaexlite
 
 import android.app.Application
+import android.content.Intent
 import android.util.Log
 import com.github.k1rakishou.kurobaexlite.helpers.di.DependencyGraph
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
+import com.github.k1rakishou.kurobaexlite.ui.activity.CrashReportActivity
 import kotlin.system.exitProcess
 import logcat.LogPriority
 import logcat.LogcatLogger
@@ -38,6 +40,12 @@ class KurobaExLiteApplication : Application() {
     Thread.setDefaultUncaughtExceptionHandler { thread, e ->
       // if there's any uncaught crash stuff, just dump them to the log and exit immediately
       logcatError { "Unhandled exception in thread: ${thread.name}, error: ${e.asLog()}" }
+
+      val intent = Intent(this, CrashReportActivity::class.java)
+      intent.putExtra(CrashReportActivity.EXCEPTION_KEY, e)
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      startActivity(intent)
+
       exitProcess(-1)
     }
 

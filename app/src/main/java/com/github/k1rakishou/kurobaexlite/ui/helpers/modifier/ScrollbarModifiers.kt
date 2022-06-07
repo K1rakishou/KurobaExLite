@@ -3,10 +3,12 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.modifier
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -155,6 +157,9 @@ fun Modifier.scrollbar(
   }
 }
 
+/**
+ * scrollbar for LazyLists that use ScrollState (like verticalScroll())
+ * */
 fun Modifier.scrollbar(
   lazyStateWrapper: LazyStateWrapper,
   scrollbarDimens: ScrollbarDimens,
@@ -345,6 +350,71 @@ fun Modifier.scrollbar(
       )
     }
   )
+}
+
+/**
+ * Vertical scrollbar for Composables that use ScrollState (like verticalScroll())
+ * */
+fun Modifier.verticalScrollbar(
+  contentPadding: PaddingValues,
+  scrollState: ScrollState
+): Modifier {
+  return composed {
+    val density = LocalDensity.current
+    val chanTheme = LocalChanTheme.current
+
+    val scrollbarWidth = with(density) { 4.dp.toPx() }
+    val scrollbarHeight = with(density) { 16.dp.toPx() }
+    val thumbColor = chanTheme.scrollbarThumbColorDraggedCompose
+
+    val currentValue by remember { derivedStateOf { scrollState.value } }
+    val maxValue by remember { derivedStateOf {  scrollState.maxValue } }
+
+    val topPaddingPx = with(density) {
+      remember(key1 = contentPadding) { contentPadding.calculateTopPadding().toPx() }
+    }
+    val bottomPaddingPx = with(density) {
+      remember(key1 = contentPadding) { contentPadding.calculateBottomPadding().toPx() }
+    }
+
+    val duration = if (scrollState.isScrollInProgress) 150 else 1000
+    val delay = if (scrollState.isScrollInProgress) 0 else 1000
+    val targetThumbAlpha = if (scrollState.isScrollInProgress) 0.8f else 0f
+
+    val thumbAlphaAnimated by animateFloatAsState(
+      targetValue = targetThumbAlpha,
+      animationSpec = tween(
+        durationMillis = duration,
+        delayMillis = delay
+      )
+    )
+
+    return@composed Modifier.drawWithContent {
+      drawContent()
+
+      if (maxValue == Int.MAX_VALUE || maxValue == 0) {
+        return@drawWithContent
+      }
+
+      val availableHeight = this.size.height - scrollbarHeight - topPaddingPx - bottomPaddingPx
+      if (availableHeight > maxValue) {
+        return@drawWithContent
+      }
+
+      val unit = availableHeight / maxValue.toFloat()
+      val scrollPosition = currentValue * unit
+
+      val offsetX = this.size.width - scrollbarWidth
+      val offsetY = topPaddingPx + scrollPosition
+
+      drawRect(
+        color = thumbColor,
+        topLeft = Offset(offsetX, offsetY),
+        size = Size(scrollbarWidth, scrollbarHeight),
+        alpha = thumbAlphaAnimated
+      )
+    }
+  }
 }
 
 private fun ContentDrawScope.calculateDynamicScrollbarWidth(

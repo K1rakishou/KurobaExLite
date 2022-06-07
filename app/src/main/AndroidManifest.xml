@@ -41,6 +41,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.activity.CrashReportActivity"
+            android:process=":crashReportProcess"
+            android:launchMode="singleTask" />
+
         <receiver
             android:name=".helpers.picker.SelectedFilePickerBroadcastReceiver"
             android:exported="false" />

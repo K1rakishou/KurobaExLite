@@ -39,7 +39,7 @@ fun ProvideAllTheStuff(
   componentActivity: ComponentActivity,
   window: Window,
   themeEngine: ThemeEngine,
-  runtimePermissionsHelper: RuntimePermissionsHelper,
+  runtimePermissionsHelper: RuntimePermissionsHelper?,
   content: @Composable () -> Unit
 ) {
   ProvideComponentActivity(componentActivity) {
@@ -105,9 +105,14 @@ fun ProvideKurobaViewConfiguration(
 
 @Composable
 fun ProvideLocalRuntimePermissionsHelper(
-  runtimePermissionsHelper: RuntimePermissionsHelper,
+  runtimePermissionsHelper: RuntimePermissionsHelper?,
   content: @Composable () -> Unit
 ) {
+  if (runtimePermissionsHelper == null) {
+    content()
+    return
+  }
+
   CompositionLocalProvider(LocalRuntimePermissionsHelper provides runtimePermissionsHelper) {
     content()
   }

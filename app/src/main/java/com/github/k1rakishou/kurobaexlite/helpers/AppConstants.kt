@@ -10,6 +10,8 @@ object AppConstants {
   const val deleteBookmarkTimeoutMs = 5000L
   const val minFlingVelocityPx = 5000f
 
+  const val CREATE_NEW_ISSUE_URL = "https://github.com/K1rakishou/KurobaExLite/issues/new"
+
   object Transition {
     val TransitionFps = 1f / 16f
   }

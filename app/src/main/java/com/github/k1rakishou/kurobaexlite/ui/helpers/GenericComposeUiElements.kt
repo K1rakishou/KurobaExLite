@@ -380,7 +380,7 @@ fun KurobaComposeTextButton(
     buttonContent = {
       Text(
         text = text,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.wrapContentSize(),
         textAlign = TextAlign.Center
       )
     }
