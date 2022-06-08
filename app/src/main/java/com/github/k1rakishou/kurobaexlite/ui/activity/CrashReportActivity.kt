@@ -10,7 +10,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,10 +47,13 @@ import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -64,6 +68,7 @@ import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import logcat.logcat
 import okio.buffer
 import okio.source
 import org.joda.time.Duration
@@ -84,6 +89,8 @@ class CrashReportActivity : ComponentActivity() {
       finish()
       return
     }
+
+    logcat(TAG) { "Got new throwable: ${throwable.errorMessageOrClassName()}" }
 
     WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
@@ -126,7 +133,9 @@ class CrashReportActivity : ComponentActivity() {
       insets.asPaddingValues(consumeLeft = true, consumeRight = true)
     }
 
-    var reportHandled by remember { mutableStateOf(false) }
+    var reportHandled by rememberSaveable { mutableStateOf(false) }
+    var attachVerboseLogs by rememberSaveable { mutableStateOf(false) }
+    var attachMpvLogs by rememberSaveable { mutableStateOf(false) }
 
     InsetsAwareBox(
       modifier = Modifier
@@ -159,7 +168,21 @@ class CrashReportActivity : ComponentActivity() {
           title = stringResource(id = R.string.crash_report_activity_crash_message_section),
           collapsedByDefault = false
         ) {
-          val errorMessage = remember(key1 = throwable) { throwable.message ?: "<No error message>" }
+          val errorMessage = remember(key1 = throwable) {
+            val exceptionClassName = throwable.javaClass.name
+
+            var message = if (throwable.cause?.message?.isNotNullNorBlank() == true) {
+              throwable.cause!!.message
+            } else {
+              throwable.message
+            }
+
+            if (message.isNullOrEmpty()) {
+              message = "<No error message>"
+            }
+
+            return@remember "Exception: ${exceptionClassName}\nMessage: ${message}"
+          }
 
           SelectionContainer {
             KurobaComposeText(
@@ -187,13 +210,15 @@ class CrashReportActivity : ComponentActivity() {
         Spacer(modifier = Modifier.height(4.dp))
 
         Collapsable(title = stringResource(id = R.string.crash_report_activity_crash_logs_section)) {
-          var logsMut by remember { mutableStateOf<String?>(null) }
+          var logsMut by rememberSaveable(attachVerboseLogs) { mutableStateOf<String?>(null) }
           val logs = logsMut
 
           LaunchedEffect(
             key1 = Unit,
             block = {
-              logsMut = withContext(Dispatchers.IO) { loadLogs() }
+              logsMut = withContext(Dispatchers.IO) {
+                loadLogs(attachVerboseLogs = attachVerboseLogs, attachMpvLogs = attachMpvLogs)
+              }
             }
           )
 
@@ -232,6 +257,28 @@ class CrashReportActivity : ComponentActivity() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        KurobaComposeCheckbox(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp, horizontal = 8.dp),
+          text = stringResource(id = R.string.crash_report_activity_verbose_logs),
+          currentlyChecked = attachVerboseLogs,
+          onCheckChanged = { newValue -> attachVerboseLogs = newValue }
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        KurobaComposeCheckbox(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp, horizontal = 8.dp),
+          text = stringResource(id = R.string.crash_report_activity_mpv_logs),
+          currentlyChecked = attachMpvLogs,
+          onCheckChanged = { newValue -> attachMpvLogs = newValue }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Column(
           modifier = Modifier
             .fillMaxWidth()
@@ -239,18 +286,25 @@ class CrashReportActivity : ComponentActivity() {
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
           KurobaComposeTextButton(
-            modifier = Modifier.width(IntrinsicSize.Max),
+            modifier = Modifier.wrapContentWidth(),
             text = stringResource(id = R.string.crash_report_activity_copy_for_github),
             onClick = {
               reportHandled = true
-              coroutineScope.launch { copyLogsFormattedToClipboard(throwable) }
+
+              coroutineScope.launch {
+                copyLogsFormattedToClipboard(
+                  throwable = throwable,
+                  attachVerboseLogs = attachVerboseLogs,
+                  attachMpvLogs = attachMpvLogs
+                )
+              }
             }
           )
 
           Spacer(modifier = Modifier.height(8.dp))
 
           KurobaComposeTextButton(
-            modifier = Modifier.width(IntrinsicSize.Max),
+            modifier = Modifier.wrapContentWidth(),
             text = stringResource(id = R.string.crash_report_activity_open_issue_tracker),
             onClick = {
               reportHandled = true
@@ -271,7 +325,7 @@ class CrashReportActivity : ComponentActivity() {
           }
 
           KurobaComposeTextButton(
-            modifier = Modifier.width(IntrinsicSize.Max),
+            modifier = Modifier.wrapContentWidth(),
             text = buttonText,
             onClick = { appRestarter.restart() }
           )
@@ -288,7 +342,7 @@ class CrashReportActivity : ComponentActivity() {
     collapsedByDefault: Boolean = true,
     content: @Composable () -> Unit
   ) {
-    var collapsed by remember { mutableStateOf(collapsedByDefault) }
+    var collapsed by rememberSaveable { mutableStateOf(collapsedByDefault) }
 
     Column(
       modifier = Modifier
@@ -328,12 +382,16 @@ class CrashReportActivity : ComponentActivity() {
     }
   }
 
-  private suspend fun copyLogsFormattedToClipboard(throwable: Throwable) {
-    val logs = withContext(Dispatchers.IO) { loadLogs() }
+  private suspend fun copyLogsFormattedToClipboard(
+    throwable: Throwable,
+    attachVerboseLogs: Boolean,
+    attachMpvLogs: Boolean
+  ) {
+    val logs = withContext(Dispatchers.IO) { loadLogs(attachVerboseLogs, attachMpvLogs) }
     val reportFooter = getReportFooter()
 
     val resultString = buildString(16000) {
-      appendLine("Title (put this into Github title)")
+      appendLine("Title (put this into the Github issue title)")
       appendLine(throwable.message)
       appendLine()
 
@@ -368,7 +426,7 @@ class CrashReportActivity : ComponentActivity() {
   private fun getReportFooter(): String {
     val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
 
-    return buildString(capacity = 2048) {
+    return buildString(capacity = 128) {
       appendLine("Android API Level: " + Build.VERSION.SDK_INT)
       appendLine("App Version: " + BuildConfig.VERSION_NAME)
       appendLine("Phone Model: " + Build.MANUFACTURER + " " + Build.MODEL)
@@ -390,7 +448,6 @@ class CrashReportActivity : ComponentActivity() {
 
   companion object {
     private const val TAG = "CrashReportActivity"
-    private const val LINES_COUNT = 500
 
     const val EXCEPTION_KEY = "exception"
 
@@ -406,10 +463,16 @@ class CrashReportActivity : ComponentActivity() {
       .appendMillis3Digit()
       .toFormatter()
 
-    fun loadLogs(): String? {
+    fun loadLogs(attachVerboseLogs: Boolean, attachMpvLogs: Boolean): String? {
+      val linesCount = if (attachVerboseLogs) {
+        1000
+      } else {
+        500
+      }
+
       val process = try {
         ProcessBuilder()
-          .command("logcat", "-v", "tag", "-t", LINES_COUNT.toString(), "StrictMode:S")
+          .command("logcat", "-v", "tag", "-t", linesCount.toString(), "StrictMode:S")
           .start()
       } catch (e: IOException) {
         logcatError(TAG) { "Error starting logcat: ${e.asLogIfImportantOrErrorMessage()}" }
@@ -418,11 +481,25 @@ class CrashReportActivity : ComponentActivity() {
 
       val outputStream = process.inputStream
       val fullLogsString = StringBuilder(16000)
-      val lookupTag = "${KurobaExLiteApplication.GLOBAL_TAG} |"
       val logsAsString = outputStream.use { it.source().buffer().readString(StandardCharsets.UTF_8) }
 
       for (line in logsAsString.split("\n").toTypedArray()) {
-        if (line.contains(lookupTag, ignoreCase = true)) {
+        if (line.contains("${KurobaExLiteApplication.GLOBAL_TAG} |", ignoreCase = true)) {
+          val logType = line.getOrNull(0)?.uppercaseChar() ?: continue
+
+          when (logType) {
+            'V' -> {
+              if (!attachVerboseLogs) {
+                continue
+              }
+            }
+            else -> {
+              // no-op
+            }
+          }
+
+          fullLogsString.appendLine(line)
+        } else if (attachMpvLogs && line.contains("mpv", ignoreCase = true)) {
           fullLogsString.appendLine(line)
         }
       }
