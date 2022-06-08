@@ -84,7 +84,7 @@ class CrashReportActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    val throwable = intent.getSerializableExtra(EXCEPTION_KEY) as? Throwable
+    val throwable = rootCause(intent.getSerializableExtra(EXCEPTION_KEY) as? Throwable)
     if (throwable == null) {
       finish()
       return
@@ -114,6 +114,26 @@ class CrashReportActivity : ComponentActivity() {
         }
       }
     }
+  }
+
+  private fun rootCause(inputThrowable: Throwable?): Throwable? {
+    var depth = 0
+    var throwable = inputThrowable
+
+    while (true) {
+      val cause = throwable?.cause
+        ?: break
+
+      throwable = cause
+      ++depth
+
+      if (depth > 32) {
+        logcatError(TAG) { "Depth of throwable.cause exceeds the max allowed (32)" }
+        break
+      }
+    }
+
+    return throwable
   }
 
   override fun onDestroy() {
