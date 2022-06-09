@@ -76,7 +76,7 @@ fun Shimmer(
     LaunchedEffect(
       maxWidth,
       maxHeight,
-      chanTheme.selectedOnBackColorCompose,
+      chanTheme.selectedOnBackColor,
       block = {
         shimmerState.start(maxWidth.toFloat(), maxHeight.toFloat(), chanTheme)
       }
@@ -146,9 +146,9 @@ class ShimmerState(
     pivotPoint = -Offset(0f, 0f) + Rect(0f, 0f, maxWidth, maxHeight).center
 
     val colors = listOf(
-      chanTheme.selectedOnBackColorCompose.copy(alpha = 0.25f),
-      chanTheme.selectedOnBackColorCompose.copy(alpha = 1.00f),
-      chanTheme.selectedOnBackColorCompose.copy(alpha = 0.25f),
+      chanTheme.selectedOnBackColor.copy(alpha = 0.25f),
+      chanTheme.selectedOnBackColor.copy(alpha = 1.00f),
+      chanTheme.selectedOnBackColor.copy(alpha = 0.25f),
     )
     val colorStops = listOf(0.0f, 0.5f, 1.0f)
 

@@ -404,7 +404,7 @@ class FloatingMenuScreen(
             .fillMaxHeight()
             .align(Alignment.CenterStart),
           text = title,
-          color = chanTheme.textColorPrimaryCompose,
+          color = chanTheme.textColorPrimary,
           fontSize = titleTextSize
         )
       } else {
@@ -414,7 +414,7 @@ class FloatingMenuScreen(
           Text(
             modifier = Modifier.wrapContentHeight(),
             text = title,
-            color = chanTheme.textColorPrimaryCompose,
+            color = chanTheme.textColorPrimary,
             fontSize = titleTextSize
           )
 
@@ -423,7 +423,7 @@ class FloatingMenuScreen(
           Text(
             modifier = Modifier.wrapContentHeight(),
             text = subtitle,
-            color = chanTheme.textColorSecondaryCompose,
+            color = chanTheme.textColorSecondary,
             fontSize = subtitleTextSize
           )
         }

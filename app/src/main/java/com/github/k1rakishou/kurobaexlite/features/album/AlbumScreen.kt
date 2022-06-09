@@ -1,8 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.album
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,6 +49,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarConta
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
+import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -160,10 +159,8 @@ class AlbumScreen(
       is ThreadDescriptor -> threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
     }
 
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .background(chanTheme.backColorCompose)
+    GradientBackground(
+      modifier = Modifier.fillMaxSize()
     ) {
       ContentInternal(
         postsAsyncData = postsAsyncData,

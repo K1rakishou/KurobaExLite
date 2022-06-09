@@ -176,7 +176,7 @@ private fun RowScope.PostCellMarks(columnSize: IntSize, postCellData: PostCellDa
       when {
         parsedPostData.isPostMarkedAsMine -> {
           drawLine(
-            color = chanTheme.postSavedReplyColorCompose,
+            color = chanTheme.postSavedReplyColor,
             strokeWidth = lineWidthPx,
             start = Offset.Zero,
             end = Offset(0f, size.height)
@@ -184,7 +184,7 @@ private fun RowScope.PostCellMarks(columnSize: IntSize, postCellData: PostCellDa
         }
         parsedPostData.isReplyToPostMarkedAsMine -> {
           drawLine(
-            color = chanTheme.postSavedReplyColorCompose,
+            color = chanTheme.postSavedReplyColor,
             strokeWidth = lineWidthPx,
             start = Offset.Zero,
             end = Offset(0f, size.height),
@@ -247,7 +247,7 @@ private fun PostCellTitle(
         modifier = Modifier
           .weight(1f)
           .height(42.dp),
-        shimmerState = rememberShimmerState(bgColor = chanTheme.backColorCompose)
+        shimmerState = rememberShimmerState(bgColor = chanTheme.backColor)
       )
     } else {
       var actualPostSubject by remember(key1 = postSubject) { mutableStateOf(postSubject) }
@@ -462,7 +462,7 @@ private fun PostCellComment(
       modifier = Modifier
         .fillMaxWidth()
         .height(80.dp),
-      shimmerState = rememberShimmerState(bgColor = chanTheme.backColorCompose)
+      shimmerState = rememberShimmerState(bgColor = chanTheme.backColor)
     )
   }
 }
@@ -505,7 +505,7 @@ private fun PostCellFooter(
           .wrapContentHeight()
           .kurobaClickable(onClick = { onPostRepliesClicked(postCellData) })
           .padding(vertical = 4.dp),
-        color = chanTheme.textColorSecondaryCompose,
+        color = chanTheme.textColorSecondary,
         fontSize = postCellCommentTextSizeSp,
         text = postFooterText
       )

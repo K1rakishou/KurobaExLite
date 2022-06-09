@@ -54,7 +54,7 @@ fun ReplyInputWithButtons(
 
         if (text.text.isNotEmpty()) {
           addStyle(
-            SpanStyle(color = chanTheme.textColorPrimaryCompose),
+            style = SpanStyle(color = chanTheme.textColorPrimary),
             start = 0,
             end = text.length
           )

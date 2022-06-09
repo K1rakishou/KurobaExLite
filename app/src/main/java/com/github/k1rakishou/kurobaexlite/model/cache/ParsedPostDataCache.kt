@@ -268,7 +268,7 @@ class ParsedPostDataCache(
     return "${catalogDescriptor.siteKeyActual}/${catalogDescriptor.boardCode}/"
   }
 
-  suspend fun formatThreadToolbarTitle(postDescriptor: PostDescriptor): String? {
+  suspend fun formatThreadToolbarTitle(postDescriptor: PostDescriptor, maxLength: Int = 64): String? {
     val parsedPostData = getParsedPostData(postDescriptor)
       ?: return null
 
@@ -276,7 +276,7 @@ class ParsedPostDataCache(
       return parsedPostData.parsedPostSubject
     }
 
-    return parsedPostData.parsedPostComment.take(64)
+    return parsedPostData.parsedPostComment.take(maxLength)
   }
 
   suspend fun calculateParsedPostData(
@@ -527,7 +527,7 @@ class ParsedPostDataCache(
         val subjectAnnotatedString = AnnotatedString(
           text = postSubjectParsed,
           spanStyle = SpanStyle(
-            color = chanTheme.postSubjectColorCompose,
+            color = chanTheme.postSubjectColor,
           )
         )
 
@@ -546,7 +546,7 @@ class ParsedPostDataCache(
 
       append(
         buildAnnotatedString(capacity = 32) {
-          pushStyle(SpanStyle(color = chanTheme.postDetailsColorCompose))
+          pushStyle(SpanStyle(color = chanTheme.postDetailsColor))
 
           if (parsedPostDataContext.isParsingThread) {
             append("#")
@@ -562,7 +562,7 @@ class ParsedPostDataCache(
       if (postTimeMs != null) {
         append(
           buildAnnotatedString(capacity = 32) {
-            pushStyle(SpanStyle(color = chanTheme.postDetailsColorCompose))
+            pushStyle(SpanStyle(color = chanTheme.postDetailsColor))
 
             val timeString = DateUtils.getRelativeTimeSpanString(
               postTimeMs,
@@ -657,7 +657,7 @@ class ParsedPostDataCache(
 
                   withStyle(
                     SpanStyle(
-                      color = chanTheme.postDetailsColorCompose,
+                      color = chanTheme.postDetailsColor,
                       fontStyle = FontStyle.Italic
                     )
                   ) {
@@ -673,7 +673,7 @@ class ParsedPostDataCache(
 
                   withStyle(
                     SpanStyle(
-                      color = chanTheme.postDetailsColorCompose,
+                      color = chanTheme.postDetailsColor,
                       fontStyle = FontStyle.Italic
                     )
                   ) {
@@ -695,7 +695,7 @@ class ParsedPostDataCache(
     append("\n")
 
     val imagesInfoAnnotatedString = buildAnnotatedString(capacity = 64) {
-      pushStyle(SpanStyle(color = chanTheme.postDetailsColorCompose))
+      pushStyle(SpanStyle(color = chanTheme.postDetailsColor))
 
       if (postImages!!.size > 1) {
         val imagesCount = postImages.size
@@ -735,7 +735,7 @@ class ParsedPostDataCache(
   ) {
     append(
       buildAnnotatedString(capacity = 32) {
-        pushStyle(SpanStyle(color = chanTheme.postNameColorCompose))
+        pushStyle(SpanStyle(color = chanTheme.postNameColor))
 
         if (posterName.isNotNullNorBlank()) {
           if (length > 0) {

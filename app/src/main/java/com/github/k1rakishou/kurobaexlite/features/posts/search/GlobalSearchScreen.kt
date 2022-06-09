@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.search
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -39,12 +38,12 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleSearchToolbar
+import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
@@ -109,7 +108,6 @@ class GlobalSearchScreen(
   @Composable
   override fun HomeNavigationScreenContent() {
     val windowInsets = LocalWindowInsets.current
-    val chanTheme = LocalChanTheme.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
     HandleBackPresses {
@@ -129,10 +127,9 @@ class GlobalSearchScreen(
       ).asPaddingValues()
     }
 
-    Box(
+    GradientBackground(
       modifier = Modifier
         .fillMaxSize()
-        .background(chanTheme.backColorCompose)
         .consumeClicks()
     ) {
       GlobalSearchList(

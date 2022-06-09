@@ -45,7 +45,7 @@ fun Modifier.drawDragLongtapDragGestureZone(
 
       if (dragGestureZoneAlpha > 0f) {
         drawRect(
-          color = chanTheme.accentColorCompose,
+          color = chanTheme.accentColor,
           topLeft = Offset.Zero,
           size = Size(
             width = drawerLongtapGestureWidthZonePx,

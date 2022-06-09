@@ -191,7 +191,7 @@ class UpdateManager(
 
     notificationManagerCompat.notify(
       AppConstants.Notifications.Update.UPDATE_NOTIFICATION_TAG,
-      AppConstants.Notifications.Update.UPDATE_NOTIFICATION_ID,
+      AppConstants.Notifications.UPDATE_NOTIFICATION_ID,
       notificationBuilder.build()
     )
   }

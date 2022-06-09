@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.navigation
 
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
@@ -29,7 +30,10 @@ class ModifyNavigationHistory(
       return
     }
 
-    val title = parsedPostDataCache.formatThreadToolbarTitle(threadDescriptor.toOriginalPostDescriptor())
+    val title = parsedPostDataCache.formatThreadToolbarTitle(
+      postDescriptor = threadDescriptor.toOriginalPostDescriptor(),
+      maxLength = AppConstants.navHistoryMaxTitleLength
+    )
     val firstImageThumbnailUrl = chanCache.getOriginalPost(threadDescriptor)?.images?.firstOrNull()?.thumbnailAsString
 
     val navigationElement = NavigationElement.Thread(

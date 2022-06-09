@@ -1,8 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.settings.application
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,6 +30,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarConta
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
+import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -104,8 +103,6 @@ class AppSettingsScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
-    val chanTheme = LocalChanTheme.current
-
     LaunchedEffect(
       key1 = Unit,
       block = {
@@ -123,10 +120,9 @@ class AppSettingsScreen(
       return@HandleBackPresses popScreen()
     }
 
-    Box(
+    GradientBackground(
       modifier = Modifier
         .fillMaxSize()
-        .background(chanTheme.backColorSecondaryCompose)
         .consumeClicks()
     ) {
       val currentScreen by appSettingsScreenViewModel.currentScreen.collectAsState()
@@ -197,7 +193,7 @@ class AppSettingsScreen(
               .wrapContentHeight()
               .padding(vertical = 8.dp, horizontal = 8.dp),
             text = group.groupName,
-            color = chanTheme.accentColorCompose,
+            color = chanTheme.accentColor,
             fontWeight = FontWeight.SemiBold,
             fontSize = 18.sp
           )
@@ -210,7 +206,7 @@ class AppSettingsScreen(
               .wrapContentHeight()
               .padding(vertical = 4.dp, horizontal = 8.dp),
             text = group.groupDescription,
-            color = chanTheme.textColorSecondaryCompose,
+            color = chanTheme.textColorSecondary,
             fontSize = 14.sp
           )
         }

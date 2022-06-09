@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -271,7 +272,7 @@ fun DraggableArea(
         val textPaint = remember {
           TextPaint().apply {
             this.textSize = textSize
-            this.color = chanTheme.accentColor
+            this.color = chanTheme.accentColor.toArgb()
             this.style = Paint.Style.FILL
             this.typeface = boldTypeface
             this.setShadowLayer(4f, 0f, 0f, Color.BLACK)

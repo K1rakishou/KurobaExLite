@@ -48,7 +48,7 @@ class LinkSettingItem(
           .fillMaxWidth()
           .wrapContentHeight(),
         fontSize = 16.sp,
-        color = chanTheme.textColorPrimaryCompose,
+        color = chanTheme.textColorPrimary,
         text = title
       )
 
@@ -58,7 +58,7 @@ class LinkSettingItem(
             .fillMaxWidth()
             .wrapContentHeight(),
           fontSize = 14.sp,
-          color = chanTheme.textColorSecondaryCompose,
+          color = chanTheme.textColorSecondary,
           text = subtitle
         )
       }

@@ -287,7 +287,7 @@ class PostsState(
     val newSpanStyles = mutableListWithCap<AnnotatedString.Range<SpanStyle>>(oldSpanStyles.size + occurrences.size)
     newSpanStyles.addAll(oldSpanStyles)
 
-    val bgColor = chanTheme.accentColorCompose
+    val bgColor = chanTheme.accentColor
     val fgColor = if (ThemeEngine.isDarkColor(bgColor)) {
       Color.White
     } else {

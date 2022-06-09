@@ -114,7 +114,7 @@ class PostCommentApplier {
 
           when (span.linkSpan) {
             is TextPartSpan.Linkable.Url -> {
-              fgColor = chanTheme.postLinkColorCompose
+              fgColor = chanTheme.postLinkColor
             }
             is TextPartSpan.BgColor,
             is TextPartSpan.BgColorId,
@@ -142,13 +142,13 @@ class PostCommentApplier {
           fgColor = Color(span.color)
         }
         is TextPartSpan.BgColorId -> {
-          bgColor = Color(chanTheme.getColorByColorId(span.colorId))
+          bgColor = chanTheme.getColorByColorId(span.colorId)
         }
         is TextPartSpan.FgColorId -> {
-          fgColor = Color(chanTheme.getColorByColorId(span.colorId))
+          fgColor = chanTheme.getColorByColorId(span.colorId)
         }
         is TextPartSpan.Spoiler -> {
-          bgColor = chanTheme.postSpoilerColorCompose
+          bgColor = chanTheme.postSpoilerColor
 
           val shouldRevealSpoiler = matchesOpenedSpoilerPosition(
             startPos = totalLength,
@@ -157,9 +157,9 @@ class PostCommentApplier {
           )
 
           fgColor = if (shouldRevealSpoiler) {
-            chanTheme.postSpoilerRevealTextColorCompose
+            chanTheme.postSpoilerRevealTextColor
           } else {
-            chanTheme.postSpoilerColorCompose
+            chanTheme.postSpoilerColor
           }
 
           annotationTag = ANNOTATION_POST_SPOILER_TEXT
@@ -206,14 +206,14 @@ class PostCommentApplier {
               }
 
               fgColor = if (span is TextPartSpan.Linkable.Url) {
-                chanTheme.postLinkColorCompose
+                chanTheme.postLinkColor
               } else if (
                 span is TextPartSpan.Linkable.Quote
                 && parsedPostDataContext.highlightedPostDescriptor == span.postDescriptor
               ) {
-                ThemeEngine.manipulateColor(chanTheme.postQuoteColorCompose, 0.7f)
+                ThemeEngine.manipulateColor(chanTheme.postQuoteColor, 0.7f)
               } else {
-                chanTheme.postQuoteColorCompose
+                chanTheme.postQuoteColor
               }
             }
           }
@@ -318,7 +318,7 @@ class PostCommentApplier {
 
       addStyle(
         style = SpanStyle(
-          color = chanTheme.postLinkColorCompose,
+          color = chanTheme.postLinkColor,
           textDecoration = TextDecoration.Underline
         ),
         start = 0,

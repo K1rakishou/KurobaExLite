@@ -9,6 +9,8 @@ object AppConstants {
   const val deleteNavHistoryTimeoutMs = 5000L
   const val deleteBookmarkTimeoutMs = 5000L
   const val minFlingVelocityPx = 5000f
+  const val bookmarkMaxTitleLength = 120
+  const val navHistoryMaxTitleLength = 180
 
   const val CREATE_NEW_ISSUE_URL = "https://github.com/K1rakishou/KurobaExLite/issues"
 
@@ -41,6 +43,7 @@ object AppConstants {
   object Notifications {
     const val REPLIES_SUMMARY_NOTIFICATION_ID = 0
     const val REPLIES_PRE_OREO_NOTIFICATION_ID = 1
+    const val UPDATE_NOTIFICATION_ID = 2
 
     const val MAX_LINES_IN_NOTIFICATION = 5
     // Android limitations
@@ -83,10 +86,9 @@ object AppConstants {
 
     object Update {
       const val UPDATE_NOTIFICATION_TAG = "${BuildConfig.APPLICATION_ID}_UPDATE_NOTIFICATION_TAG"
-      const val UPDATE_NOTIFICATION_ID = 3
 
       const val UPDATE_NOTIFICATION_CHANNEL_ID = "${BuildConfig.APPLICATION_ID}_update_notification_channel"
-      const val UPDATE_NOTIFICATION_NAME = "Notification channel for apk updates notification"
+      const val UPDATE_NOTIFICATION_NAME = "Notification channel for apk updates"
     }
   }
 

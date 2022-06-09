@@ -163,7 +163,7 @@ fun Modifier.drawPagerSwipeExclusionZoneTutorial(
         top = pagerSwipeExclusionZone.topLeft.y
       ) {
         drawRect(
-          color = chanTheme.accentColorCompose,
+          color = chanTheme.accentColor,
           topLeft = Offset.Zero,
           size = pagerSwipeExclusionZone.size,
           alpha = lerpFloat(0f, .6f, alphaAnimationProgress)

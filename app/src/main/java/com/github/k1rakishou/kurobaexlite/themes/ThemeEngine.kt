@@ -40,31 +40,19 @@ class ThemeEngine {
   companion object {
     private const val TAG = "ThemeEngine"
 
-    val LIGHT_DRAWABLE_TINT = Color.parseColor("#EEEEEE")
-    val DARK_DRAWABLE_TINT = Color.parseColor("#7E7E7E")
-
     val LIGHT_DRAWABLE_TINT_COMPOSE = ComposeColor(Color.parseColor("#EEEEEE"))
     val DARK_DRAWABLE_TINT_COMPOSE = ComposeColor(Color.parseColor("#7E7E7E"))
 
     @JvmStatic
-    fun resolveDrawableTintColor(chanTheme: ChanTheme): Int {
+    fun resolveDrawableTintColor(chanTheme: ChanTheme): ComposeColor {
       return if (chanTheme.isBackColorDark) {
-        LIGHT_DRAWABLE_TINT
+        LIGHT_DRAWABLE_TINT_COMPOSE
       } else {
-        DARK_DRAWABLE_TINT
+        DARK_DRAWABLE_TINT_COMPOSE
       }
     }
 
-    @JvmStatic
-    fun resolveDrawableTintColor(isCurrentColorDark: Boolean): Int {
-      return if (isCurrentColorDark) {
-        LIGHT_DRAWABLE_TINT
-      } else {
-        DARK_DRAWABLE_TINT
-      }
-    }
-
-    fun resolveDrawableTintColorCompose(isCurrentColorDark: Boolean): ComposeColor {
+    fun resolveDrawableTintColor(isCurrentColorDark: Boolean): ComposeColor {
       return if (isCurrentColorDark) {
         LIGHT_DRAWABLE_TINT_COMPOSE
       } else {

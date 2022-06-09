@@ -60,7 +60,7 @@ fun KurobaComposeSnappingSlider(
           .height(32.dp)
       )
   ) {
-    val trackColor = chanTheme.accentColorCompose
+    val trackColor = chanTheme.accentColor
     val thumbColorNormal = remember(key1 = backgroundColor) {
       if (ThemeEngine.isDarkColor(trackColor)) {
         Color.LightGray

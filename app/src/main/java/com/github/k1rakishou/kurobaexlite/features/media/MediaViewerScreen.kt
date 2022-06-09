@@ -244,8 +244,8 @@ class MediaViewerScreen(
     val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
     val images = mediaViewerScreenState.images
 
-    val bgColor = remember(chanTheme.primaryColorCompose) {
-      chanTheme.primaryColorCompose.copy(alpha = 0.5f)
+    val bgColor = remember(chanTheme.backColor) {
+      chanTheme.backColor.copy(alpha = 0.5f)
     }
 
     DisposableEffect(

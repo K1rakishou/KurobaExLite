@@ -41,7 +41,7 @@ fun <T : KurobaChildToolbar> KurobaToolbarContainer(
   val bgColor = if (stackContainerState.addedElementsCount <= 1) {
     Color.Unspecified
   } else {
-    backgroundColor ?: chanTheme.primaryColorCompose
+    backgroundColor ?: chanTheme.backColor
   }
 
   AnimateableStackContainer<T>(stackContainerState) { childToolbar ->

@@ -248,7 +248,7 @@ fun PullToRefresh(
           trianglePath.close()
 
           val circleColor = if (pullToRefreshPulledPx > pullThresholdPx) {
-            chanTheme.accentColorCompose
+            chanTheme.accentColor
           } else {
             Color.White
           }
@@ -256,7 +256,7 @@ fun PullToRefresh(
           val progressIndicatorColor = if (pullToRefreshPulledPx > pullThresholdPx) {
             Color.White
           } else {
-            chanTheme.accentColorCompose
+            chanTheme.accentColor
           }
 
           drawCircle(

@@ -95,7 +95,7 @@ fun KurobaComposeLoadingIndicator(
   Box(modifier = modifier) {
     val color = if (overrideColor == null) {
       val chanTheme = LocalChanTheme.current
-      remember(key1 = chanTheme.accentColor) { Color(chanTheme.accentColor) }
+      chanTheme.accentColor
     } else {
       overrideColor
     }
@@ -119,7 +119,7 @@ fun KurobaComposeLoadingIndicator(
   Box(modifier = modifier) {
     val color = if (overrideColor == null) {
       val chanTheme = LocalChanTheme.current
-      remember(key1 = chanTheme.accentColor) { Color(chanTheme.accentColor) }
+      chanTheme.accentColor
     } else {
       overrideColor
     }
@@ -232,10 +232,7 @@ fun KurobaComposeText(
 ) {
   val textColorPrimary = if (color == null) {
     val chanTheme = LocalChanTheme.current
-
-    remember(key1 = chanTheme.textColorPrimary) {
-      Color(chanTheme.textColorPrimary)
-    }
+    chanTheme.textColorPrimary
   } else {
     color
   }
@@ -424,7 +421,7 @@ fun KurobaComposeTextBarButton(
     modifier = modifier,
     content = {
       val textColor = customTextColor
-        ?: chanTheme.textColorPrimaryCompose
+        ?: chanTheme.textColorPrimary
 
       val modifiedTextColor = if (enabled) {
         textColor
@@ -466,11 +463,15 @@ fun KurobaComposeDivider(
     thickness
   }
 
+  val dividerColorWithAlpha = remember(key1 = chanTheme.dividerColor) {
+    chanTheme.dividerColor.copy(alpha = 0.1f)
+  }
+
   Box(
     modifier
       .then(indentMod)
       .height(targetThickness)
-      .background(color = chanTheme.dividerColorCompose)
+      .background(color = dividerColorWithAlpha)
   )
 }
 
@@ -527,7 +528,7 @@ fun KurobaComposeCard(
   Card(
     modifier = modifier,
     shape = shape,
-    backgroundColor = backgroundColor ?: chanTheme.backColorCompose
+    backgroundColor = backgroundColor ?: chanTheme.backColor
   ) {
     content()
   }
@@ -554,9 +555,9 @@ fun KurobaComposeIcon(
     }
 
     if (colorBehindIcon == null) {
-      Color(ThemeEngine.resolveDrawableTintColor(chanTheme))
+      ThemeEngine.resolveDrawableTintColor(chanTheme)
     } else {
-      Color(ThemeEngine.resolveDrawableTintColor(ThemeEngine.isDarkColor(colorBehindIcon.value)))
+      ThemeEngine.resolveDrawableTintColor(ThemeEngine.isDarkColor(colorBehindIcon.value))
     }
   }
 
@@ -626,10 +627,10 @@ fun KurobaComposeTextField(
     }
   )
 
-  val textSelectionColors = remember(key1 = chanTheme.accentColorCompose) {
+  val textSelectionColors = remember(key1 = chanTheme.accentColor) {
     TextSelectionColors(
-      handleColor = chanTheme.accentColorCompose,
-      backgroundColor = chanTheme.accentColorCompose.copy(alpha = 0.4f)
+      handleColor = chanTheme.accentColor,
+      backgroundColor = chanTheme.accentColor.copy(alpha = 0.4f)
     )
   }
 
@@ -786,7 +787,7 @@ fun KurobaFloatingActionButton(
         .size(actualFabSize)
         .then(offsetModifier)
     ),
-    backgroundColor = chanTheme.accentColorCompose,
+    backgroundColor = chanTheme.accentColor,
     contentColor = Color.White,
     onClick = onClick
   ) {

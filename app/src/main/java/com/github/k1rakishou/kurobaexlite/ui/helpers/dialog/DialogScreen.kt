@@ -182,7 +182,7 @@ class DialogScreen(
         }
 
         val buttonTextColor = if (params.positiveButton.isActionDangerous) {
-          chanTheme.accentColorCompose
+          chanTheme.accentColor
         } else {
           null
         }

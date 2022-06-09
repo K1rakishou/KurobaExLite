@@ -210,7 +210,7 @@ internal fun LazyItemScope.ThreadStatusCell(
         .padding(combinedPaddings)
         .align(Alignment.Center),
       text = threadStatusCellText,
-      color = chanTheme.textColorSecondaryCompose,
+      color = chanTheme.textColorSecondary,
       textAlign = TextAlign.Center
     )
   }

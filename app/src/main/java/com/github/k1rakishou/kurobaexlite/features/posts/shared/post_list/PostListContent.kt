@@ -811,7 +811,7 @@ private fun LazyItemScope.PostCellContainer(
           modifier = Modifier
             .height(4.dp)
             .fillMaxWidth()
-            .background(color = chanTheme.accentColorCompose)
+            .background(color = chanTheme.accentColor)
         )
       } else if (index < (totalCount - 1)) {
         KurobaComposeDivider(

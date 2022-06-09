@@ -90,6 +90,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
+import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -218,31 +219,33 @@ class BookmarksScreen(
       }
     )
 
-    SlotLayout(
-      modifier = Modifier.fillMaxSize(),
-      layoutOrientation = LayoutOrientation.Vertical,
-      builder = {
-        fixed(
-          size = toolbarHeight + windowInsets.top,
-          key = "DrawerHeader",
-          content = {
-            ThreadBookmarkHeader(
-              onShowAppSettingsClicked = { openAppSettings() },
-              onShowBookmarkOptionsClicked = { showBookmarkOptions(context) },
-            )
-          })
+    GradientBackground {
+      SlotLayout(
+        modifier = Modifier.fillMaxSize(),
+        layoutOrientation = LayoutOrientation.Vertical,
+        builder = {
+          fixed(
+            size = toolbarHeight + windowInsets.top,
+            key = "DrawerHeader",
+            content = {
+              ThreadBookmarkHeader(
+                onShowAppSettingsClicked = { openAppSettings() },
+                onShowBookmarkOptionsClicked = { showBookmarkOptions(context) },
+              )
+            })
 
-        dynamic(
-          weight = 1f,
-          key = "BookmarksList",
-          content = {
-            BookmarksList(
-              pullToRefreshState = pullToRefreshState,
-              context = context,
-              reorderableState = reorderableState,
-            )
-          })
-      })
+          dynamic(
+            weight = 1f,
+            key = "BookmarksList",
+            content = {
+              BookmarksList(
+                pullToRefreshState = pullToRefreshState,
+                context = context,
+                reorderableState = reorderableState,
+              )
+            })
+        })
+    }
   }
 
   @Composable
@@ -251,7 +254,6 @@ class BookmarksScreen(
     context: Context,
     reorderableState: ReorderableState,
   ) {
-    val chanTheme = LocalChanTheme.current
     val windowInsets = LocalWindowInsets.current
 
     val contentPadding = remember(key1 = windowInsets) { PaddingValues(bottom = windowInsets.bottom) }
@@ -290,8 +292,7 @@ class BookmarksScreen(
     ) {
       LazyColumnWithFastScroller(
         lazyListContainerModifier = Modifier
-          .fillMaxSize()
-          .background(chanTheme.backColorCompose),
+          .fillMaxSize(),
         lazyListModifier = Modifier
           .fillMaxSize()
           .reorderable(
@@ -393,11 +394,11 @@ class BookmarksScreen(
   ) {
     val chanTheme = LocalChanTheme.current
 
-    val bgColor = remember(key1 = chanTheme.backColorCompose) {
-      return@remember if (ThemeEngine.isDarkColor(chanTheme.backColorCompose)) {
-        ThemeEngine.manipulateColor(chanTheme.backColorCompose, 1.3f)
+    val bgColor = remember(key1 = chanTheme.backColor) {
+      return@remember if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
+        ThemeEngine.manipulateColor(chanTheme.backColor, 1.3f)
       } else {
-        ThemeEngine.manipulateColor(chanTheme.backColorCompose, 0.7f)
+        ThemeEngine.manipulateColor(chanTheme.backColor, 0.7f)
       }
     }
 
@@ -415,7 +416,7 @@ class BookmarksScreen(
           .padding(horizontal = 4.dp)
           .background(color = bgColor, shape = RoundedCornerShape(corner = CornerSize(size = 4.dp))),
         value = searchQuery,
-        parentBackgroundColor = chanTheme.backColorCompose,
+        parentBackgroundColor = chanTheme.backColor,
         drawBottomIndicator = false,
         singleLine = true,
         maxLines = 1,
@@ -440,7 +441,7 @@ class BookmarksScreen(
     Column(
       modifier = Modifier
         .fillMaxSize()
-        .background(chanTheme.backColorSecondaryCompose)
+        .background(chanTheme.backColor)
         .consumeClicks(enabled = true)
     ) {
       Spacer(modifier = Modifier.height(windowInsets.top))
@@ -495,13 +496,13 @@ class BookmarksScreen(
     }
 
     val defaultBgColor = if (bookmarksScreenViewModel.bookmarksToMark.containsKey(threadBookmarkUi.threadDescriptor)) {
-      chanTheme.accentColorCompose.copy(alpha = 0.3f)
+      chanTheme.accentColor.copy(alpha = 0.3f)
     } else {
-      chanTheme.backColorCompose
+      chanTheme.backColor
     }
 
-    val selectedOnBackColorCompose = remember(key1 = chanTheme.selectedOnBackColorCompose) {
-      chanTheme.selectedOnBackColorCompose.copy(alpha = 0.5f)
+    val selectedOnBackColor = remember(key1 = chanTheme.selectedOnBackColor) {
+      chanTheme.selectedOnBackColor.copy(alpha = 0.5f)
     }
 
     var threadBookmarkHash by remember { mutableStateOf(threadBookmarkUi.hashCode()) }
@@ -516,7 +517,7 @@ class BookmarksScreen(
         }
 
         try {
-          bgAnimatable.animateTo(selectedOnBackColorCompose, tween(250))
+          bgAnimatable.animateTo(selectedOnBackColor, tween(250))
           delay(500)
           bgAnimatable.animateTo(defaultBgColor, tween(250))
         } finally {
@@ -540,7 +541,11 @@ class BookmarksScreen(
         .height(itemHeight)
         .draggedItem(offset)
         .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
-        .drawBehind { drawRect(bookmarkBgColor) }
+        .drawBehind {
+          if (reorderableState.draggedKey == dragKey(threadBookmarkUi.threadDescriptor)) {
+            drawRect(bookmarkBgColor)
+          }
+        }
         .animateItemPlacement(),
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -580,9 +585,9 @@ class BookmarksScreen(
 
       Column(modifier = Modifier.weight(1f)) {
         val textColor = if (isDead) {
-          chanTheme.textColorHintCompose
+          chanTheme.textColorHint
         } else {
-          chanTheme.textColorPrimaryCompose
+          chanTheme.textColorPrimary
         }
 
         KurobaComposeText(
@@ -847,9 +852,9 @@ class BookmarksScreen(
     val isFirstFetch = threadBookmarkStatsCombined.isFirstFetch
 
     val defaultTextColor = if (isDead) {
-      chanTheme.textColorHintCompose
+      chanTheme.textColorHint
     } else {
-      chanTheme.textColorSecondaryCompose
+      chanTheme.textColorSecondary
     }
 
     return buildAnnotatedString {
@@ -870,7 +875,7 @@ class BookmarksScreen(
           append(
             buildAnnotatedString {
               if (!isDead && newPostsAnimated > 0) {
-                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor))
               } else {
                 pushStyle(SpanStyle(color = defaultTextColor))
               }
@@ -886,7 +891,7 @@ class BookmarksScreen(
             append(
               buildAnnotatedString {
                 if (!isDead && newQuotesAnimated > 0) {
-                  pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColorCompose))
+                  pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColor))
                 } else {
                   pushStyle(SpanStyle(color = defaultTextColor))
                 }
@@ -908,7 +913,7 @@ class BookmarksScreen(
         append(
           buildAnnotatedString {
             if (!isDead && currentPage >= totalPages) {
-              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor))
             } else {
               pushStyle(SpanStyle(color = defaultTextColor))
             }
@@ -928,7 +933,7 @@ class BookmarksScreen(
         append(
           buildAnnotatedString {
             if (!isDead) {
-              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor))
             }
 
             append("BL")
@@ -944,7 +949,7 @@ class BookmarksScreen(
         append(
           buildAnnotatedString {
             if (!isDead) {
-              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColorCompose))
+              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor))
             }
 
             append("IL")

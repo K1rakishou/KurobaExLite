@@ -120,9 +120,9 @@ fun Modifier.scrollbar(
     return@composed scrollbar(
       lazyStateWrapper = lazyListStateWrapper,
       scrollbarDimens = scrollbarDimens,
-      scrollbarTrackColor = scrollbarTrackColor ?: chanTheme.scrollbarTrackColorCompose,
-      scrollbarThumbColorNormal = scrollbarThumbColorNormal ?: chanTheme.scrollbarThumbColorNormalCompose,
-      scrollbarThumbColorDragged = scrollbarThumbColorDragged ?: chanTheme.scrollbarThumbColorDraggedCompose,
+      scrollbarTrackColor = scrollbarTrackColor ?: chanTheme.scrollbarTrackColor,
+      scrollbarThumbColorNormal = scrollbarThumbColorNormal ?: chanTheme.scrollbarThumbColorNormal,
+      scrollbarThumbColorDragged = scrollbarThumbColorDragged ?: chanTheme.scrollbarThumbColorDragged,
       contentPadding = contentPadding,
       scrollbarManualDragProgress = scrollbarManualDragProgress,
       isScrollInProgress = isScrollInProgress
@@ -147,9 +147,9 @@ fun Modifier.scrollbar(
     return@composed scrollbar(
       lazyStateWrapper = lazyListStateWrapper,
       scrollbarDimens = scrollbarDimens,
-      scrollbarTrackColor = scrollbarTrackColor ?: chanTheme.scrollbarTrackColorCompose,
-      scrollbarThumbColorNormal = scrollbarThumbColorNormal ?: chanTheme.scrollbarThumbColorNormalCompose,
-      scrollbarThumbColorDragged = scrollbarThumbColorDragged ?: chanTheme.scrollbarThumbColorDraggedCompose,
+      scrollbarTrackColor = scrollbarTrackColor ?: chanTheme.scrollbarTrackColor,
+      scrollbarThumbColorNormal = scrollbarThumbColorNormal ?: chanTheme.scrollbarThumbColorNormal,
+      scrollbarThumbColorDragged = scrollbarThumbColorDragged ?: chanTheme.scrollbarThumbColorDragged,
       contentPadding = contentPadding,
       scrollbarManualDragProgress = scrollbarManualDragProgress,
       isScrollInProgress = isScrollInProgress
@@ -365,7 +365,7 @@ fun Modifier.verticalScrollbar(
 
     val scrollbarWidth = with(density) { 4.dp.toPx() }
     val scrollbarHeight = with(density) { 16.dp.toPx() }
-    val thumbColor = chanTheme.scrollbarThumbColorDraggedCompose
+    val thumbColor = chanTheme.scrollbarThumbColorDragged
 
     val currentValue by remember { derivedStateOf { scrollState.value } }
     val maxValue by remember { derivedStateOf {  scrollState.maxValue } }

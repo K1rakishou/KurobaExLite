@@ -3,9 +3,11 @@ package com.github.k1rakishou.kurobaexlite.ui.elements.snackbar
 import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.size
@@ -25,9 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Measurable
-import androidx.compose.ui.layout.Placeable
-import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,7 +35,6 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
-import com.github.k1rakishou.kurobaexlite.helpers.ensureSingleMeasurableReturned
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -112,57 +110,24 @@ fun KurobaSnackbarContainer(
     ) {
       val activeSnackbars = kurobaSnackbarState.activeSnackbars
 
-      SubcomposeLayout(
-        measurePolicy = { constraints ->
-          if (activeSnackbars.isEmpty()) {
-            return@SubcomposeLayout layout(0, 0) { /*no-op*/ }
-          }
-
-          val measurables = arrayOfNulls<Measurable>(activeSnackbars.size)
-          val placeables = arrayOfNulls<Placeable>(activeSnackbars.size)
-
-          for ((index, snackbarInfo) in activeSnackbars.withIndex()) {
-            val measurable = subcompose(
-              slotId = snackbarInfo.snackbarId,
-              content = {
-                key(snackbarInfo.snackbarId) {
-                  KurobaSnackbarLayout(
-                    isTablet = isTablet,
-                    chanTheme = chanTheme,
-                    snackbarInfo = snackbarInfo,
-                    snackbarManager = snackbarManager,
-                    dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
-                  )
-                }
-              }
-            ).ensureSingleMeasurableReturned()
-
-            measurables[index] = measurable
-          }
-
-          for ((index, measurable) in measurables.withIndex()) {
-            val placeable = measurable!!.measure(constraints)
-            placeables[index] = placeable
-          }
-
-          val maxWidth = placeables.fold(0f) { acc, placeable -> Math.max(acc, placeable!!.width.toFloat()) }
-          val totalHeight = placeables.fold(0f) { acc, placeable -> acc + placeable!!.height.toFloat() }
-
-          return@SubcomposeLayout layout(maxWidth.toInt(), totalHeight.toInt()) {
-            var takenHeight = 0
-
-            for (placeable in placeables) {
-              if (placeable == null) {
-                continue
-              }
-
-              placeable.placeRelative(0, takenHeight)
-
-              takenHeight += placeable.height
-            }
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight(),
+        horizontalAlignment = Alignment.CenterHorizontally
+      ) {
+        for (snackbarInfo in activeSnackbars) {
+          key(snackbarInfo.snackbarId) {
+            KurobaSnackbarLayout(
+              isTablet = isTablet,
+              chanTheme = chanTheme,
+              snackbarInfo = snackbarInfo,
+              snackbarManager = snackbarManager,
+              dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
+            )
           }
         }
-      )
+      }
     }
   }
 }
@@ -206,9 +171,9 @@ private fun KurobaSnackbarLayout(
   }
 
   val backgroundColor = when (snackbarInfo.snackbarType) {
-    SnackbarType.Default -> chanTheme.backColorSecondaryCompose
+    SnackbarType.Default -> chanTheme.backColorSecondary
     SnackbarType.Toast -> Color.White
-    SnackbarType.ErrorToast -> chanTheme.errorColorCompose
+    SnackbarType.ErrorToast -> chanTheme.errorColor
   }
 
   KurobaComposeCard(
@@ -356,7 +321,7 @@ private fun RowScope.KurobaSnackbarContent(
         KurobaComposeTextBarButton(
           modifier = Modifier.wrapContentSize(),
           text = snackbarContentItem.formattedText,
-          customTextColor = snackbarContentItem.textColor ?: chanTheme.accentColorCompose,
+          customTextColor = snackbarContentItem.textColor ?: chanTheme.accentColor,
           onClick = { onSnackbarClicked(snackbarContentItem, snackbarId) }
         )
       }

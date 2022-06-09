@@ -1,19 +1,17 @@
 package com.github.k1rakishou.kurobaexlite.features.home.pages
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.Divider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
@@ -44,7 +42,6 @@ class SplitPage private constructor(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val chanTheme = LocalChanTheme.current
     val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 
     with(boxScope) {
@@ -61,11 +58,10 @@ class SplitPage private constructor(
             DisplayTopToolbarsWithTransition(composeScreen, boxScope)
 
             if (index >= 0 && index < childScreens.size) {
-              Divider(
+              KurobaComposeDivider(
                 modifier = Modifier
                   .fillMaxHeight()
                   .width(1.dp)
-                  .background(chanTheme.dividerColorCompose)
               )
             }
           }
@@ -76,7 +72,6 @@ class SplitPage private constructor(
 
   @Composable
   override fun Content() {
-    val chanTheme = LocalChanTheme.current
     val weights = remember(key1 = childScreens) { calculateWeights(childScreens) }
 
     Row(modifier = Modifier.fillMaxSize()) {
@@ -94,11 +89,10 @@ class SplitPage private constructor(
           )
 
           if (index >= 0 && index < childScreens.size) {
-            Divider(
+            KurobaComposeDivider(
               modifier = Modifier
                 .fillMaxHeight()
                 .width(1.dp)
-                .background(chanTheme.dividerColorCompose)
             )
           }
         }

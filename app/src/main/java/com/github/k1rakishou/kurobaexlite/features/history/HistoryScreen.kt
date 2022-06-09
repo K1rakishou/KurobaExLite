@@ -2,8 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.history
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -66,7 +64,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.detectListScrollEvents
 import kotlin.time.Duration.Companion.milliseconds
@@ -228,69 +225,63 @@ class HistoryScreen(
         }
       })
 
-    Box(
-      modifier = Modifier
-        .background(chanTheme.backColorCompose)
-        .consumeClicks(enabled = true)
-    ) {
-      val contentPadding = remember(key1 = windowInsets) {
-        PaddingValues(top = toolbarHeight + windowInsets.top, bottom = windowInsets.bottom)
-      }
-
-      LazyColumnWithFastScroller(
-        lazyListContainerModifier = Modifier
-          .fillMaxSize()
-          .detectListScrollEvents(
-            token = "onHistoryListScrolled",
-            onListScrolled = { delta ->
-              globalUiInfoManager.onContentListScrolling(screenKey, delta)
-
-              detectTouchingTopOrBottomOfList(
-                lazyListState = lazyListState,
-                onListTouchingTopOrBottomStateChanged = { touching ->
-                  globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(
-                    screenKey = screenKey,
-                    touching = touching
-                  )
-                }
-              )
-            }
-          )
-          .pointerInput(
-            key1 = Unit,
-            block = {
-              detectTouches { touching ->
-                globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
-              }
-            }
-          ),
-        onFastScrollerDragStateChanged = { dragging ->
-          globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
-        },
-        lazyListState = lazyListState,
-        contentPadding = contentPadding,
-        content = {
-          items(
-            count = navigationHistoryList.size,
-            key = { index -> navigationHistoryList[index].key },
-            contentType = { index ->
-              return@items when (navigationHistoryList[index]) {
-                is UiNavigationElement.Catalog -> ContentType.Catalog
-                is UiNavigationElement.Thread -> ContentType.Thread
-              }
-            },
-            itemContent = { index ->
-              val navigationElement = navigationHistoryList[index]
-
-              NavigationElement(
-                navigationElement = navigationElement,
-                circleCropTransformation = circleCropTransformation
-              )
-            }
-          )
-        }
-      )
+    val contentPadding = remember(key1 = windowInsets) {
+      PaddingValues(top = toolbarHeight + windowInsets.top, bottom = windowInsets.bottom)
     }
+
+    LazyColumnWithFastScroller(
+      lazyListContainerModifier = Modifier
+        .fillMaxSize()
+        .detectListScrollEvents(
+          token = "onHistoryListScrolled",
+          onListScrolled = { delta ->
+            globalUiInfoManager.onContentListScrolling(screenKey, delta)
+
+            detectTouchingTopOrBottomOfList(
+              lazyListState = lazyListState,
+              onListTouchingTopOrBottomStateChanged = { touching ->
+                globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(
+                  screenKey = screenKey,
+                  touching = touching
+                )
+              }
+            )
+          }
+        )
+        .pointerInput(
+          key1 = Unit,
+          block = {
+            detectTouches { touching ->
+              globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
+            }
+          }
+        ),
+      onFastScrollerDragStateChanged = { dragging ->
+        globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
+      },
+      lazyListState = lazyListState,
+      contentPadding = contentPadding,
+      content = {
+        items(
+          count = navigationHistoryList.size,
+          key = { index -> navigationHistoryList[index].key },
+          contentType = { index ->
+            return@items when (navigationHistoryList[index]) {
+              is UiNavigationElement.Catalog -> ContentType.Catalog
+              is UiNavigationElement.Thread -> ContentType.Thread
+            }
+          },
+          itemContent = { index ->
+            val navigationElement = navigationHistoryList[index]
+
+            NavigationElement(
+              navigationElement = navigationElement,
+              circleCropTransformation = circleCropTransformation
+            )
+          }
+        )
+      }
+    )
   }
 
   private fun detectTouchingTopOrBottomOfList(

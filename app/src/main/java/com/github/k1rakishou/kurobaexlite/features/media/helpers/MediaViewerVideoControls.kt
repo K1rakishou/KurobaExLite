@@ -120,7 +120,7 @@ internal fun MediaViewerScreenVideoControls(
           ),
         enabled = videoStartedPlayingUpdated,
         trackColor = Color.White,
-        thumbColorNormal = chanTheme.accentColorCompose,
+        thumbColorNormal = chanTheme.accentColor,
         thumbColorPressed = Color.White,
         thumbRadiusNormalDp = 8.dp,
         thumbRadiusPressedDp = 10.dp,

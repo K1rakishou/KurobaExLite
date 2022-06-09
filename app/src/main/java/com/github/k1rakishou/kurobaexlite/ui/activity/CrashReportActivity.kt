@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -53,6 +52,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
+import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
@@ -104,11 +104,8 @@ class CrashReportActivity : ComponentActivity() {
         themeEngine = themeEngine,
         runtimePermissionsHelper = null
       ) {
-        val chanTheme = LocalChanTheme.current
-
-        Surface(
-          modifier = Modifier.fillMaxSize(),
-          color = chanTheme.backColorCompose
+        GradientBackground(
+          modifier = Modifier.fillMaxSize()
         ) {
           Content(throwable)
         }
@@ -177,7 +174,7 @@ class CrashReportActivity : ComponentActivity() {
         ) {
           KurobaComposeText(
             text = stringResource(id = R.string.crash_report_activity_title),
-            color = chanTheme.accentColorCompose,
+            color = chanTheme.accentColor,
             fontSize = 18.sp
           )
         }
@@ -207,7 +204,7 @@ class CrashReportActivity : ComponentActivity() {
           SelectionContainer {
             KurobaComposeText(
               modifier = Modifier.fillMaxSize(),
-              color = chanTheme.textColorSecondaryCompose,
+              color = chanTheme.textColorSecondary,
               text = errorMessage
             )
           }
@@ -221,7 +218,7 @@ class CrashReportActivity : ComponentActivity() {
           SelectionContainer {
             KurobaComposeText(
               modifier = Modifier.fillMaxSize(),
-              color = chanTheme.textColorSecondaryCompose,
+              color = chanTheme.textColorSecondary,
               text = stacktrace
             )
           }
@@ -247,14 +244,14 @@ class CrashReportActivity : ComponentActivity() {
               modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-              color = chanTheme.textColorSecondaryCompose,
+              color = chanTheme.textColorSecondary,
               text = stringResource(id = R.string.crash_report_activity_loading_logs)
             )
           } else {
             SelectionContainer {
               KurobaComposeText(
                 modifier = Modifier.fillMaxSize(),
-                color = chanTheme.textColorSecondaryCompose,
+                color = chanTheme.textColorSecondary,
                 text = logs
               )
             }
@@ -269,7 +266,7 @@ class CrashReportActivity : ComponentActivity() {
           SelectionContainer {
             KurobaComposeText(
               modifier = Modifier.fillMaxSize(),
-              color = chanTheme.textColorSecondaryCompose,
+              color = chanTheme.textColorSecondary,
               text = footer
             )
           }

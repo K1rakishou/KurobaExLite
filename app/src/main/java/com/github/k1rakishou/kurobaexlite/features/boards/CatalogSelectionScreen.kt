@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.boards
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,6 +45,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleSearchToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
+import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -192,10 +192,9 @@ class CatalogSelectionScreen(
       }
     )
 
-    Box(
+    GradientBackground(
       modifier = Modifier
         .fillMaxSize()
-        .background(chanTheme.backColorCompose)
         .consumeClicks()
     ) {
       val pullToRefreshToPadding = remember(key1 = paddingValues) { paddingValues.calculateTopPadding() }
@@ -387,8 +386,8 @@ class CatalogSelectionScreen(
     onBoardClicked: (CatalogDescriptor) -> Unit
   ) {
     val chanTheme = LocalChanTheme.current
-    val bgColorWithAlpha = remember(key1 = chanTheme.highlighterColorCompose) {
-      chanTheme.highlighterColorCompose.copy(alpha = 0.3f)
+    val bgColorWithAlpha = remember(key1 = chanTheme.highlighterColor) {
+      chanTheme.highlighterColor.copy(alpha = 0.3f)
     }
 
     val backgroundColorModifier = if (chanBoardUiData.catalogDescriptor == catalogDescriptor) {
@@ -407,7 +406,7 @@ class CatalogSelectionScreen(
     ) {
       KurobaComposeText(
         text = chanBoardUiData.title,
-        color = chanTheme.textColorPrimaryCompose,
+        color = chanTheme.textColorPrimary,
         fontSize = titleTextSize,
         maxLines = 1
       )
@@ -415,7 +414,7 @@ class CatalogSelectionScreen(
       if (chanBoardUiData.subtitle.isNotNullNorEmpty()) {
         KurobaComposeText(
           text = chanBoardUiData.subtitle,
-          color = chanTheme.textColorSecondaryCompose,
+          color = chanTheme.textColorSecondary,
           fontSize = subtitleTextSize,
           maxLines = 3
         )

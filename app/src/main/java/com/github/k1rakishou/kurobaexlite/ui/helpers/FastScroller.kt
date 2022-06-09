@@ -107,9 +107,9 @@ fun LazyColumnWithFastScroller(
               width = scrollbarWidth,
               height = scrollbarHeight
             ),
-            scrollbarTrackColor = chanTheme.scrollbarTrackColorCompose,
-            scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormalCompose,
-            scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDraggedCompose,
+            scrollbarTrackColor = chanTheme.scrollbarTrackColor,
+            scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormal,
+            scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDragged,
             contentPadding = contentPadding,
             scrollbarManualDragProgress = scrollbarDragProgress
           ),
@@ -181,9 +181,9 @@ fun LazyVerticalGridWithFastScroller(
               width = scrollbarWidth,
               height = scrollbarHeight
             ),
-            scrollbarTrackColor = chanTheme.scrollbarTrackColorCompose,
-            scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormalCompose,
-            scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDraggedCompose,
+            scrollbarTrackColor = chanTheme.scrollbarTrackColor,
+            scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormal,
+            scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDragged,
             contentPadding = contentPadding,
             scrollbarManualDragProgress = scrollbarManualDragProgress
           ),

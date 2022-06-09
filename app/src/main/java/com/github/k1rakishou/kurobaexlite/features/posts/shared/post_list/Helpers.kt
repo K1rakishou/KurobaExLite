@@ -134,10 +134,10 @@ internal fun processClickedAnnotation(
 
 internal fun createClickableTextColorMap(chanTheme: ChanTheme): Map<String, Color> {
   val postLinkColor = run {
-    val resultColor = if (ThemeEngine.isDarkColor(chanTheme.postLinkColorCompose)) {
-      ThemeEngine.manipulateColor(chanTheme.postLinkColorCompose, 1.2f)
+    val resultColor = if (ThemeEngine.isDarkColor(chanTheme.postLinkColor)) {
+      ThemeEngine.manipulateColor(chanTheme.postLinkColor, 1.2f)
     } else {
-      ThemeEngine.manipulateColor(chanTheme.postLinkColorCompose, 0.8f)
+      ThemeEngine.manipulateColor(chanTheme.postLinkColor, 0.8f)
     }
 
     return@run resultColor.copy(alpha = .4f)

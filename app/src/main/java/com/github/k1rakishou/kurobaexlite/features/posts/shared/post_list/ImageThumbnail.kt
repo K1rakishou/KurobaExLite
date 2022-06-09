@@ -37,7 +37,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 @Composable
 fun ImageThumbnail(
   modifier: Modifier = Modifier,
-  bgColor: Color = LocalChanTheme.current.backColorSecondaryCompose,
+  bgColor: Color = LocalChanTheme.current.backColorSecondary,
   showShimmerEffectWhenLoading: Boolean = false,
   contentScale: ContentScale = ContentScale.Fit,
   postImage: IPostImage,
@@ -102,7 +102,7 @@ fun ImageThumbnail(
           (state is AsyncImagePainter.State.Empty || state is AsyncImagePainter.State.Loading)
           && showShimmerEffectWhenLoading
         ) {
-          Shimmer(shimmerState = rememberShimmerState(bgColor = chanTheme.backColorCompose))
+          Shimmer(shimmerState = rememberShimmerState(bgColor = chanTheme.backColor))
         }
 
         if (state !is AsyncImagePainter.State.Error) {

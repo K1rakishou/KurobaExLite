@@ -137,7 +137,7 @@ private fun DisplayImagePreview(
   onPreviewClicked: (IPostImage) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val highlightColor = chanTheme.accentColorCompose
+  val highlightColor = chanTheme.accentColor
 
   val highlightModifier = if (isCurrentImage) {
     Modifier.background(highlightColor)

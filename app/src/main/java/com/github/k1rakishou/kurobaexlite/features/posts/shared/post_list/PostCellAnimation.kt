@@ -77,7 +77,7 @@ internal fun PostCellContainerAnimated(
     key3 = postCellData.postDescriptor
   ) {
     if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
-      chanTheme.highlighterColorCompose.copy(alpha = 0.3f)
+      chanTheme.highlighterColor.copy(alpha = 0.3f)
     } else {
       Color.Unspecified
     }
@@ -96,8 +96,8 @@ internal fun PostCellContainerUpdateAnimation(
   val chanTheme = LocalChanTheme.current
   val bgColorAnimatable = remember { Animatable(Color.Unspecified) }
 
-  val startColor = remember(key1 = chanTheme.backColorCompose) { chanTheme.backColorCompose }
-  val endColor = remember(key1 = chanTheme.selectedOnBackColorCompose) { chanTheme.selectedOnBackColorCompose.copy(alpha = 0.5f) }
+  val startColor = remember(key1 = chanTheme.backColor) { chanTheme.backColor }
+  val endColor = remember(key1 = chanTheme.selectedOnBackColor) { chanTheme.selectedOnBackColor.copy(alpha = 0.5f) }
 
   LaunchedEffect(
     key1 = Unit,
@@ -131,8 +131,8 @@ internal fun PostCellContainerInsertAnimation(
   }
 
   val chanTheme = LocalChanTheme.current
-  val startColor = remember(key1 = chanTheme.selectedOnBackColorCompose) { chanTheme.selectedOnBackColorCompose.copy(alpha = 0.5f) }
-  val endColor = remember(key1 = chanTheme.backColorCompose) { chanTheme.backColorCompose }
+  val startColor = remember(key1 = chanTheme.selectedOnBackColor) { chanTheme.selectedOnBackColor.copy(alpha = 0.5f) }
+  val endColor = remember(key1 = chanTheme.backColor) { chanTheme.backColor }
 
   val translationAnimatable = remember { Animatable(animationTranslationDeltaPx, Float.VectorConverter) }
   val alphaAnimatable = remember { Animatable(0.5f, Float.VectorConverter) }

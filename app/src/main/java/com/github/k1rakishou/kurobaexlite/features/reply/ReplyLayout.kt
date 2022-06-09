@@ -159,11 +159,11 @@ fun ReplyLayoutContainer(
       modifier = Modifier
         .offset(y = offsetYAnimated)
         .consumeClicks(enabled = true)
-        .background(chanTheme.backColorCompose)
+        .background(chanTheme.backColor)
     ) {
       if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
         Spacer(modifier = Modifier.height(windowInsets.top + toolbarHeight))
-      } else {
+      } else if (replyLayoutVisibility == ReplyLayoutVisibility.Opened) {
         KurobaComposeDivider(modifier = Modifier.fillMaxWidth())
       }
 

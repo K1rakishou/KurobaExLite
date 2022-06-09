@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.ignore
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
@@ -33,8 +34,10 @@ class UpdateBookmarkInfoUponThreadOpen(
         return@launch
       }
 
-      val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(threadDescriptor.toOriginalPostDescriptor())
-        ?: return@launch
+      val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(
+        postDescriptor = threadDescriptor.toOriginalPostDescriptor(),
+        maxLength = AppConstants.bookmarkMaxTitleLength
+      ) ?: return@launch
 
       val bookmarkThumbnail = chanCache.getOriginalPost(threadDescriptor)
         ?.images

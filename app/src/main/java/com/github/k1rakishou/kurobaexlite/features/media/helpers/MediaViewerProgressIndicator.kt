@@ -79,7 +79,7 @@ internal fun DisplayLoadingProgressIndicator(restartIndex: Int, progress: Float)
 
       rotate(degrees = rotation * 360f, pivot = center) {
         drawArc(
-          color = chanTheme.accentColorCompose,
+          color = chanTheme.accentColor,
           startAngle = 0f,
           sweepAngle = 360f * progress,
           useCenter = false,

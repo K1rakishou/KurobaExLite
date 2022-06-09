@@ -85,7 +85,7 @@ class EnumSettingItem<T : Enum<T>>(
           .fillMaxWidth()
           .wrapContentHeight(),
         fontSize = 16.sp,
-        color = chanTheme.textColorPrimaryCompose,
+        color = chanTheme.textColorPrimary,
         text = title
       )
 
@@ -95,7 +95,7 @@ class EnumSettingItem<T : Enum<T>>(
             .fillMaxWidth()
             .wrapContentHeight(),
           fontSize = 14.sp,
-          color = chanTheme.textColorSecondaryCompose,
+          color = chanTheme.textColorSecondary,
           text = subtitle
         )
       }
@@ -108,7 +108,7 @@ class EnumSettingItem<T : Enum<T>>(
             .fillMaxWidth()
             .wrapContentHeight(),
           fontSize = 14.sp,
-          color = chanTheme.textColorSecondaryCompose,
+          color = chanTheme.textColorSecondary,
           text = settingNameMapper(value)
         )
       }

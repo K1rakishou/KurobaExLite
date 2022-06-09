@@ -34,33 +34,35 @@ abstract class ChanTheme {
   abstract val isLightTheme: Boolean
   abstract val lightStatusBar: Boolean
   abstract val lightNavBar: Boolean
-  abstract val accentColor: Int
-  abstract val primaryColor: Int
-  abstract val backColor: Int
-  abstract val backColorSecondary: Int
-  abstract val selectedOnBackColor: Int
-  abstract val highlighterColor: Int
-  abstract val errorColor: Int
-  abstract val textColorPrimary: Int
-  abstract val textColorSecondary: Int
-  abstract val textColorHint: Int
-  abstract val postSavedReplyColor: Int
-  abstract val postSubjectColor: Int
-  abstract val postDetailsColor: Int
-  abstract val postNameColor: Int
-  abstract val postInlineQuoteColor: Int
-  abstract val postQuoteColor: Int
-  abstract val postHighlightQuoteColor: Int
-  abstract val postLinkColor: Int
-  abstract val postSpoilerColor: Int
-  abstract val postSpoilerRevealTextColor: Int
-  abstract val postUnseenLabelColor: Int
-  abstract val dividerColor: Int
-  abstract val scrollbarTrackColor: Int
-  abstract val scrollbarThumbColorNormal: Int
-  abstract val scrollbarThumbColorDragged: Int
-  abstract val bookmarkCounterHasRepliesColor: Int
-  abstract val bookmarkCounterNormalColor: Int
+  abstract val accentColor: Color
+  abstract val gradientTopColor: Color
+  abstract val gradientBottomColor: Color
+  abstract val behindGradientColor: Color
+  abstract val backColor: Color
+  abstract val backColorSecondary: Color
+  abstract val selectedOnBackColor: Color
+  abstract val highlighterColor: Color
+  abstract val errorColor: Color
+  abstract val textColorPrimary: Color
+  abstract val textColorSecondary: Color
+  abstract val textColorHint: Color
+  abstract val postSavedReplyColor: Color
+  abstract val postSubjectColor: Color
+  abstract val postDetailsColor: Color
+  abstract val postNameColor: Color
+  abstract val postInlineQuoteColor: Color
+  abstract val postQuoteColor: Color
+  abstract val postHighlightQuoteColor: Color
+  abstract val postLinkColor: Color
+  abstract val postSpoilerColor: Color
+  abstract val postSpoilerRevealTextColor: Color
+  abstract val postUnseenLabelColor: Color
+  abstract val dividerColor: Color
+  abstract val scrollbarTrackColor: Color
+  abstract val scrollbarThumbColorNormal: Color
+  abstract val scrollbarThumbColorDragged: Color
+  abstract val bookmarkCounterHasRepliesColor: Color
+  abstract val bookmarkCounterNormalColor: Color
 
   abstract fun fullCopy(): ChanTheme
 
@@ -71,35 +73,6 @@ abstract class ChanTheme {
     get() = ThemeEngine.isDarkColor(backColor)
   val isBackColorLight: Boolean
     get() = !isBackColorDark
-
-  val accentColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(accentColor) }
-  val primaryColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(primaryColor) }
-  val backColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(backColor) }
-  val backColorSecondaryCompose by lazy(LazyThreadSafetyMode.NONE) { Color(backColorSecondary) }
-  val selectedOnBackColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(selectedOnBackColor) }
-  val highlighterColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(highlighterColor) }
-  val errorColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(errorColor) }
-
-  val textColorPrimaryCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorPrimary) }
-  val textColorSecondaryCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorSecondary) }
-  val textColorHintCompose by lazy(LazyThreadSafetyMode.NONE) { Color(textColorHint) }
-
-  val scrollbarTrackColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(scrollbarTrackColor) }
-  val scrollbarThumbColorNormalCompose by lazy(LazyThreadSafetyMode.NONE) { Color(scrollbarThumbColorNormal) }
-  val scrollbarThumbColorDraggedCompose by lazy(LazyThreadSafetyMode.NONE) { Color(scrollbarThumbColorDragged) }
-
-  val dividerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(dividerColor) }
-  val postSubjectColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSubjectColor) }
-  val postDetailsColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postDetailsColor) }
-  val postNameColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postNameColor) }
-  val postSavedReplyColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSavedReplyColor) }
-  val postLinkColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postLinkColor) }
-  val postSpoilerColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerColor) }
-  val postSpoilerRevealTextColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postSpoilerRevealTextColor) }
-  val postQuoteColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(postQuoteColor) }
-
-  val bookmarkCounterHasRepliesColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterHasRepliesColor) }
-  val bookmarkCounterNormalColorCompose by lazy(LazyThreadSafetyMode.NONE) { Color(bookmarkCounterNormalColor) }
 
   open val mainFont: Typeface = ROBOTO_MEDIUM
 
@@ -117,8 +90,7 @@ abstract class ChanTheme {
 
     return DefaultColors(
       disabledControlAlpha = disabledControlAlpha,
-      controlNormalColor = controlNormalColor,
-      controlNormalColorCompose = Color(controlNormalColor)
+      controlNormalColor = Color(controlNormalColor)
     )
   }
 
@@ -127,21 +99,21 @@ abstract class ChanTheme {
     val disabledAlpha = ContentAlpha.disabled
 
     val backColorDisabled =
-      remember(key1 = backColorCompose) { backColorCompose.copy(alpha = disabledAlpha) }
+      remember(key1 = backColor) { backColor.copy(alpha = disabledAlpha) }
     val iconColor =
-      remember(key1 = backColorCompose) { backColorCompose.copy(alpha = TextFieldDefaults.IconOpacity) }
+      remember(key1 = backColor) { backColor.copy(alpha = TextFieldDefaults.IconOpacity) }
 
     return TextFieldDefaults.outlinedTextFieldColors(
-      textColor = textColorPrimaryCompose,
-      disabledTextColor = textColorPrimaryCompose.copy(ContentAlpha.disabled),
+      textColor = textColorPrimary,
+      disabledTextColor = textColorPrimary.copy(ContentAlpha.disabled),
       backgroundColor = Color.Transparent,
-      cursorColor = accentColorCompose,
-      focusedBorderColor = accentColorCompose.copy(alpha = ContentAlpha.high),
-      unfocusedBorderColor = defaultColors.controlNormalColorCompose.copy(alpha = ContentAlpha.medium),
-      disabledBorderColor = defaultColors.controlNormalColorCompose.copy(alpha = ContentAlpha.disabled),
-      focusedLabelColor = accentColorCompose.copy(alpha = ContentAlpha.high),
-      unfocusedLabelColor = defaultColors.controlNormalColorCompose.copy(alpha = ContentAlpha.medium),
-      disabledLabelColor = defaultColors.controlNormalColorCompose.copy(ContentAlpha.disabled),
+      cursorColor = accentColor,
+      focusedBorderColor = accentColor.copy(alpha = ContentAlpha.high),
+      unfocusedBorderColor = defaultColors.controlNormalColor.copy(alpha = ContentAlpha.medium),
+      disabledBorderColor = defaultColors.controlNormalColor.copy(alpha = ContentAlpha.disabled),
+      focusedLabelColor = accentColor.copy(alpha = ContentAlpha.high),
+      unfocusedLabelColor = defaultColors.controlNormalColor.copy(alpha = ContentAlpha.medium),
+      disabledLabelColor = defaultColors.controlNormalColor.copy(ContentAlpha.disabled),
       leadingIconColor = iconColor,
       disabledLeadingIconColor = iconColor.copy(alpha = ContentAlpha.disabled),
       errorLeadingIconColor = iconColor,
@@ -149,40 +121,40 @@ abstract class ChanTheme {
       disabledTrailingIconColor = iconColor.copy(alpha = ContentAlpha.disabled),
       placeholderColor = backColorDisabled.copy(ContentAlpha.medium),
       disabledPlaceholderColor = backColorDisabled.copy(ContentAlpha.disabled),
-      errorBorderColor = errorColorCompose,
-      errorTrailingIconColor = errorColorCompose,
-      errorCursorColor = errorColorCompose,
-      errorLabelColor = errorColorCompose,
+      errorBorderColor = errorColor,
+      errorTrailingIconColor = errorColor,
+      errorCursorColor = errorColor,
+      errorLabelColor = errorColor,
     )
   }
 
   @Composable
   fun checkBoxColors(): CheckboxColors {
     return CheckboxDefaults.colors(
-      checkedColor = accentColorCompose,
-      uncheckedColor = accentColorCompose.copy(alpha = 0.6f),
-      checkmarkColor = backColorCompose,
-      disabledColor = accentColorCompose.copy(alpha = ContentAlpha.disabled),
-      disabledIndeterminateColor = accentColorCompose.copy(alpha = ContentAlpha.disabled)
+      checkedColor = accentColor,
+      uncheckedColor = accentColor.copy(alpha = 0.6f),
+      checkmarkColor = backColor,
+      disabledColor = accentColor.copy(alpha = ContentAlpha.disabled),
+      disabledIndeterminateColor = accentColor.copy(alpha = ContentAlpha.disabled)
     )
   }
 
   @Composable
   fun radioButtonColors(): RadioButtonColors {
     return RadioButtonDefaults.colors(
-      selectedColor = accentColorCompose,
-      unselectedColor = accentColorCompose.copy(alpha = 0.6f),
-      disabledColor = accentColorCompose.copy(alpha = ContentAlpha.disabled),
+      selectedColor = accentColor,
+      unselectedColor = accentColor.copy(alpha = 0.6f),
+      disabledColor = accentColor.copy(alpha = ContentAlpha.disabled),
     )
   }
 
   @Composable
   fun buttonColors(): ButtonColors {
     return ButtonDefaults.buttonColors(
-      backgroundColor = accentColorCompose,
-      contentColor = backColorCompose,
-      disabledBackgroundColor = accentColorCompose.copy(alpha = ContentAlpha.disabled),
-      disabledContentColor = backColorCompose.copy(alpha = ContentAlpha.disabled)
+      backgroundColor = accentColor,
+      contentColor = backColor,
+      disabledBackgroundColor = accentColor.copy(alpha = ContentAlpha.disabled),
+      disabledContentColor = backColor.copy(alpha = ContentAlpha.disabled)
     )
   }
 
@@ -190,30 +162,30 @@ abstract class ChanTheme {
   fun barButtonColors(): ButtonColors {
     return ButtonDefaults.buttonColors(
       backgroundColor = Color.Unspecified,
-      contentColor = accentColorCompose,
+      contentColor = accentColor,
       disabledBackgroundColor = Color.Unspecified,
-      disabledContentColor = accentColorCompose.copy(alpha = ContentAlpha.disabled)
+      disabledContentColor = accentColor.copy(alpha = ContentAlpha.disabled)
     )
   }
 
   @Composable
   fun sliderColors(): SliderColors {
-    val disabledThumbColor = accentColorCompose.copy(alpha = ContentAlpha.disabled)
+    val disabledThumbColor = accentColor.copy(alpha = ContentAlpha.disabled)
     val disabledActiveTrackColor =
       disabledThumbColor.copy(alpha = SliderDefaults.DisabledActiveTrackAlpha)
     val disabledInactiveTrackColor =
       disabledActiveTrackColor.copy(alpha = SliderDefaults.DisabledInactiveTrackAlpha)
-    val activeTickColor = contentColorFor(accentColorCompose).copy(alpha = TickAlpha)
+    val activeTickColor = contentColorFor(accentColor).copy(alpha = TickAlpha)
 
     return SliderDefaults.colors(
-      thumbColor = accentColorCompose,
+      thumbColor = accentColor,
       disabledThumbColor = disabledThumbColor,
-      activeTrackColor = accentColorCompose,
-      inactiveTrackColor = accentColorCompose.copy(alpha = InactiveTrackAlpha),
+      activeTrackColor = accentColor,
+      inactiveTrackColor = accentColor.copy(alpha = InactiveTrackAlpha),
       disabledActiveTrackColor = disabledActiveTrackColor,
       disabledInactiveTrackColor = disabledInactiveTrackColor,
       activeTickColor = activeTickColor,
-      inactiveTickColor = accentColorCompose.copy(alpha = TickAlpha),
+      inactiveTickColor = accentColor.copy(alpha = TickAlpha),
       disabledActiveTickColor = activeTickColor.copy(alpha = DisabledTickAlpha),
       disabledInactiveTickColor = disabledInactiveTrackColor.copy(alpha = DisabledTickAlpha)
     )
@@ -221,12 +193,12 @@ abstract class ChanTheme {
 
   @Composable
   fun switchColors(): SwitchColors {
-    val checkedThumbColor = accentColorCompose
-    val uncheckedThumbColor = remember(key1 = defaultColors.controlNormalColorCompose) {
-      manipulateColor(defaultColors.controlNormalColorCompose, 1.2f)
+    val checkedThumbColor = accentColor
+    val uncheckedThumbColor = remember(key1 = defaultColors.controlNormalColor) {
+      manipulateColor(defaultColors.controlNormalColor, 1.2f)
     }
-    val uncheckedTrackColor = remember(key1 = defaultColors.controlNormalColorCompose) {
-      manipulateColor(defaultColors.controlNormalColorCompose, .6f)
+    val uncheckedTrackColor = remember(key1 = defaultColors.controlNormalColor) {
+      manipulateColor(defaultColors.controlNormalColor, .6f)
     }
 
     return SwitchDefaults.colors(
@@ -251,14 +223,14 @@ abstract class ChanTheme {
     )
   }
 
-  fun getColorByColorId(chanThemeColorId: ChanThemeColorId): Int {
+  fun getColorByColorId(chanThemeColorId: ChanThemeColorId): Color {
     return when (chanThemeColorId) {
       ChanThemeColorId.PostSubject -> postSubjectColor
       ChanThemeColorId.PostName -> postNameColor
       ChanThemeColorId.Accent -> accentColor
       ChanThemeColorId.PostInlineQuote -> postInlineQuoteColor
       ChanThemeColorId.PostQuote -> postQuoteColor
-      ChanThemeColorId.BackColor -> backColorSecondary
+      ChanThemeColorId.BackColor -> backColor
       ChanThemeColorId.PostLink -> postLinkColor
       ChanThemeColorId.TextColor -> textColorPrimary
     }
@@ -266,8 +238,7 @@ abstract class ChanTheme {
 
   data class DefaultColors(
     val disabledControlAlpha: Int,
-    val controlNormalColor: Int,
-    val controlNormalColorCompose: Color,
+    val controlNormalColor: Color,
   ) {
 
     val disabledControlAlphaFloat: Float

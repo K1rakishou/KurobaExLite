@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
 import android.content.Context
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -61,8 +62,10 @@ class BookmarkAllCatalogThreads(
     val bookmarksToCreate = catalogThreads.mapNotNull { originalPostData ->
       val bookmarkDescriptor = originalPostData.postDescriptor.threadDescriptor
 
-      val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(bookmarkDescriptor.toOriginalPostDescriptor())
-        ?: return@mapNotNull null
+      val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(
+        postDescriptor = bookmarkDescriptor.toOriginalPostDescriptor(),
+        maxLength = AppConstants.bookmarkMaxTitleLength
+      ) ?: return@mapNotNull null
 
       val bookmarkThumbnail = originalPostData.images
         ?.firstOrNull()

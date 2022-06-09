@@ -96,7 +96,7 @@ class PostsScreenLocalSearchToolbar(
     val coroutineScope = rememberCoroutineScope()
     val searchDebouncer = remember { DebouncingCoroutineExecutor(coroutineScope) }
     val chanTheme = LocalChanTheme.current
-    val parentBgColor = chanTheme.primaryColorCompose
+    val parentBgColor = chanTheme.backColor
     var searchQuery by state.searchQuery
 
     DisposableEffect(

@@ -65,7 +65,7 @@ fun KurobaComposeCustomTextField(
 ) {
   val chanTheme = LocalChanTheme.current
   val textFieldColors = chanTheme.textFieldColors()
-  val cursorBrush = remember(key1 = chanTheme) { SolidColor(chanTheme.accentColorCompose) }
+  val cursorBrush = remember(key1 = chanTheme) { SolidColor(chanTheme.accentColor) }
   val lineTotalHeight = if (drawBottomIndicator) 4.dp else 0.dp
   val labelTextBottomOffset = if (drawBottomIndicator) 2.dp else 0.dp
   val disabledContentAlpha = ContentAlpha.disabled
@@ -106,10 +106,10 @@ fun KurobaComposeCustomTextField(
     Modifier
   }
 
-  val textSelectionColors = remember(key1 = chanTheme.accentColorCompose) {
+  val textSelectionColors = remember(key1 = chanTheme.accentColor) {
     TextSelectionColors(
-      handleColor = chanTheme.accentColorCompose,
-      backgroundColor = chanTheme.accentColorCompose.copy(alpha = 0.4f)
+      handleColor = chanTheme.accentColor,
+      backgroundColor = chanTheme.accentColor.copy(alpha = 0.4f)
     )
   }
 
@@ -182,9 +182,9 @@ fun KurobaComposeCustomTextField(
       val maxCounter = maxTextLength
       val counterText = remember(key1 = currentCounter, key2 = maxCounter) { "$currentCounter / $maxCounter" }
       val counterTextColor = if (currentCounter > maxCounter) {
-        chanTheme.errorColorCompose
+        chanTheme.errorColor
       } else {
-        chanTheme.textColorHintCompose
+        chanTheme.textColorHint
       }
 
       Column {

@@ -80,7 +80,7 @@ class BooleanSettingItem(
             .fillMaxWidth()
             .fillMaxHeight(fraction = 0.5f),
           fontSize = 16.sp,
-          color = chanTheme.textColorPrimaryCompose,
+          color = chanTheme.textColorPrimary,
           text = title
         )
 
@@ -90,7 +90,7 @@ class BooleanSettingItem(
               .fillMaxWidth()
               .fillMaxHeight(fraction = 0.5f),
             fontSize = 14.sp,
-            color = chanTheme.textColorSecondaryCompose,
+            color = chanTheme.textColorSecondary,
             text = subtitle
           )
         }

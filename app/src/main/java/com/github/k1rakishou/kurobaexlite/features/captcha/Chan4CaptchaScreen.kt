@@ -154,7 +154,7 @@ class Chan4CaptchaScreen(
           KurobaComposeSnappingSlider(
             slideOffsetState = scrollValueState,
             slideSteps = slideSteps.coerceAtLeast(MIN_SLIDE_STEPS),
-            backgroundColor = chanTheme.backColorCompose,
+            backgroundColor = chanTheme.backColor,
             modifier = Modifier
               .wrapContentHeight()
               .fillMaxWidth()

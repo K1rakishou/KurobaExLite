@@ -387,7 +387,7 @@ class PopupRepliesScreen(
         .height(buttonsHeight)
         .padding(vertical = 4.dp)
     ) {
-      val textColor = if (ThemeEngine.isDarkColor(chanTheme.backColorCompose)) {
+      val textColor = if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
         Color.LightGray
       } else {
         Color.DarkGray

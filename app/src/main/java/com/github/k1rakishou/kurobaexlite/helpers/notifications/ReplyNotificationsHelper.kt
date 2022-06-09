@@ -10,6 +10,7 @@ import android.graphics.drawable.BitmapDrawable
 import android.os.Build
 import android.service.notification.StatusBarNotification
 import androidx.annotation.RequiresApi
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import coil.ImageLoader
@@ -699,7 +700,7 @@ class ReplyNotificationsHelper(
         logcat(TAG) { "Not using vibration" }
       }
 
-      setLights(themeEngine.chanTheme.accentColor, 1000, 1000)
+      setLights(themeEngine.chanTheme.accentColor.toArgb(), 1000, 1000)
     }
 
     return this
@@ -828,7 +829,7 @@ class ReplyNotificationsHelper(
 
         summaryChannel.setSound(null, null)
         summaryChannel.enableLights(true)
-        summaryChannel.lightColor = themeEngine.chanTheme.accentColor
+        summaryChannel.lightColor = themeEngine.chanTheme.accentColor.toArgb()
         summaryChannel.enableVibration(true)
 
         notificationManagerCompat.createNotificationChannel(summaryChannel)
