@@ -52,11 +52,9 @@ abstract class ChanTheme {
   abstract val postNameColor: Color
   abstract val postInlineQuoteColor: Color
   abstract val postQuoteColor: Color
-  abstract val postHighlightQuoteColor: Color
   abstract val postLinkColor: Color
   abstract val postSpoilerColor: Color
   abstract val postSpoilerRevealTextColor: Color
-  abstract val postUnseenLabelColor: Color
   abstract val dividerColor: Color
   abstract val scrollbarTrackColor: Color
   abstract val scrollbarThumbColorNormal: Color
