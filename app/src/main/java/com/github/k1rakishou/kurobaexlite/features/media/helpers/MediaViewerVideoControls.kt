@@ -25,13 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.chan.core.mpv.MpvUtils
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
@@ -245,28 +245,30 @@ private suspend fun PointerInputScope.processTapToSeekGesture(
   seekTo: (Int) -> Unit
 ) {
   forEachGesture {
-    awaitPointerEventScope { awaitFirstDown(requireUnconsumed = false) }
+    awaitPointerEventScope {
+      awaitFirstDown(requireUnconsumed = false)
 
-    if (!videoStartedPlaying()) {
-      return@forEachGesture
-    }
-
-    try {
-      blockAutoPositionUpdateState()
-
-      while (true) {
-        val event = awaitPointerEventScope { awaitPointerEvent(PointerEventPass.Main) }
-        if (event.changes.fastAll { !it.pressed }) {
-          break
-        }
-
-        updateHint(videoDuration, lastSlideOffset, updateSeekHint)
+      if (!videoStartedPlaying()) {
+        return@awaitPointerEventScope
       }
-    } finally {
-      updateSeekHint(null)
-      seek(videoDuration, lastSlideOffset, seekTo)
 
-      unBlockAutoPositionUpdateState()
+      try {
+        blockAutoPositionUpdateState()
+
+        while (true) {
+          val event = awaitPointerEvent(PointerEventPass.Main)
+          if (event.type != PointerEventType.Move) {
+            break
+          }
+
+          updateHint(videoDuration, lastSlideOffset, updateSeekHint)
+        }
+      } finally {
+        updateSeekHint(null)
+        seek(videoDuration, lastSlideOffset, seekTo)
+
+        unBlockAutoPositionUpdateState()
+      }
     }
   }
 }

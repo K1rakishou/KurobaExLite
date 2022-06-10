@@ -179,11 +179,7 @@ internal fun PostListContent(
       key2 = postListAsync,
       key3 = openedFromScreenKey,
       block = {
-        val postsState = if (postListAsync !is AsyncData.Data) {
-          return@LaunchedEffect
-        } else {
-          postListAsync.data
-        }
+        val postsState = postListAsync.data
 
         postsScreenViewModel.mediaViewerScrollEvents.collect { scrollInfo ->
           if (openedFromScreenKey != scrollInfo.screenKey) {
@@ -787,8 +783,9 @@ private fun LazyItemScope.PostCellContainer(
         postCellData = postCellData,
         postCellControlsShown = postCellControlsShown,
         onSelectionModeChanged = { inSelectionModeNow ->
-          postCellControlsShownUntil = 0L
-          isInSelectionMode = inSelectionModeNow
+          // TODO(KurobaEx): text selection is disabled for now
+//          postCellControlsShownUntil = 0L
+//          isInSelectionMode = inSelectionModeNow
         },
         onPostBind = onPostBind,
         onPostUnbind = onPostUnbind,
