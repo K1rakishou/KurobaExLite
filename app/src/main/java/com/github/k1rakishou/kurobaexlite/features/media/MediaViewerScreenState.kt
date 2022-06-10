@@ -1,33 +1,73 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 
 class MediaViewerScreenState(
   private val appSettings: AppSettings,
-  muteByDefault: Boolean = true
+  muteByDefault: Boolean = true,
+  initialPage: Int? = null
 ) {
-  var images: SnapshotStateList<ImageLoadState>? = null
-  val initialPage = mutableStateOf<Int?>(null)
+  private var _images = mutableStateListOf<ImageLoadState>()
+  val images: List<ImageLoadState>
+    get() = _images
 
-  val currentlyLoadedMediaMap = mutableStateMapOf<Int, MediaState>()
-  val mediaViewerUiVisible = mutableStateOf(false)
+  private val _initialPage = mutableStateOf<Int?>(initialPage)
+  val initialPage: State<Int?>
+    get() = _initialPage
+
+  private val _currentlyLoadedMediaMap = mutableStateMapOf<Int, MediaState>()
+  val currentlyLoadedMediaMap: Map<Int, MediaState>
+    get() = _currentlyLoadedMediaMap
+
+  private val _mediaViewerUiVisible = mutableStateOf(false)
+  val mediaViewerUiVisible: State<Boolean>
+    get() = _mediaViewerUiVisible
 
   private val _muteByDefault = mutableStateOf(muteByDefault)
   val muteByDefault: State<Boolean>
     get() = _muteByDefault
 
-  fun isLoaded(): Boolean = initialPage.value != null && images != null
-  fun requireImages(): SnapshotStateList<ImageLoadState> = requireNotNull(images) { "images not initialized yet!" }
+  private var _lastOpenedPage: Int? = null
+
+  fun init(images: List<ImageLoadState>?, initialPage: Int?, mediaViewerUiVisible: Boolean) {
+    Snapshot.withMutableSnapshot {
+      _images.clear()
+
+      if (images != null) {
+        _images.addAll(images)
+      }
+
+      _initialPage.value = initialPage
+      _mediaViewerUiVisible.value = mediaViewerUiVisible
+    }
+  }
+
+  fun addCurrentlyLoadedMediaState(page: Int, state: MediaState) {
+    _currentlyLoadedMediaMap.put(page, state)
+  }
+
+  fun removeCurrentlyLoadedMediaState(page: Int) {
+    _currentlyLoadedMediaMap.remove(page)
+  }
+
+  fun onCurrentPagerPageChanged(page: Int) {
+    _lastOpenedPage = page
+  }
+
+  fun isLoaded(): Boolean = _initialPage.value != null && _images.isNotEmpty()
+  fun imagesMutable(): SnapshotStateList<ImageLoadState> = _images
 
   suspend fun toggleMediaViewerUiVisibility() {
-    val newValue = !mediaViewerUiVisible.value
+    val newValue = !_mediaViewerUiVisible.value
 
-    mediaViewerUiVisible.value = newValue
+    _mediaViewerUiVisible.value = newValue
     appSettings.mediaViewerUiVisible.write(newValue)
   }
 
@@ -35,19 +75,37 @@ class MediaViewerScreenState(
     _muteByDefault.value = !_muteByDefault.value
   }
 
+  fun onPageDisposed(postImageDataLoadState: ImageLoadState) {
+    val imagesMut = _images
+
+    val indexOfThisImage = imagesMut.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }
+    if (indexOfThisImage >= 0) {
+      val prevPostImageData = imagesMut[indexOfThisImage].postImage
+      imagesMut.set(indexOfThisImage, ImageLoadState.PreparingForLoading(prevPostImageData))
+    }
+  }
+
+  fun reloadImage(page: Int, postImageDataLoadState: ImageLoadState.Ready) {
+    val imagesMut = _images
+
+    imagesMut[page] = ImageLoadState.PreparingForLoading(postImageDataLoadState.postImage)
+  }
+
   companion object {
     fun Saver(
       appSettings: AppSettings
     ): Saver<MediaViewerScreenState, *> = Saver(
       save = {
-        listOf<Any>(
-          it.muteByDefault.value
+        listOf<Any?>(
+          it.muteByDefault.value,
+          it.initialPage.value
         )
       },
       restore = { list ->
         MediaViewerScreenState(
           appSettings = appSettings,
-          muteByDefault = list[0] as Boolean
+          muteByDefault = list[0] as Boolean,
+          initialPage = list[1] as Int?
         )
       }
     )

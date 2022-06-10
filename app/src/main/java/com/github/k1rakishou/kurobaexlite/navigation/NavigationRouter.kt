@@ -18,7 +18,7 @@ open class NavigationRouter(
 ) {
   protected val _navigationScreensStack = mutableStateListOf<ComposeScreen>()
   val navigationScreensStack: List<ComposeScreen>
-    get() = _navigationScreensStack.toList()
+    get() = _navigationScreensStack
 
   protected val childRouters = linkedMapOf<ScreenKey, NavigationRouter>()
 

@@ -27,13 +27,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -263,7 +261,7 @@ class MediaViewerScreen(
       onPreviewLoadingFinished = onPreviewLoadingFinished
     )
 
-    if (pagerStateHolder == null || images == null) {
+    if (pagerStateHolder == null || images.isEmpty()) {
       return
     }
 
@@ -561,11 +559,11 @@ class MediaViewerScreen(
           key1 = postCellDataList,
           block = {
             if (postCellDataList == null) {
-              Snapshot.withMutableSnapshot {
-                mediaViewerScreenState.images = null
-                mediaViewerScreenState.initialPage.value = null
-                mediaViewerScreenState.mediaViewerUiVisible.value = appSettings.mediaViewerUiVisible.read()
-              }
+              mediaViewerScreenState.init(
+                images = null,
+                initialPage = null,
+                mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
+              )
 
               return@LaunchedEffect
             }
@@ -575,14 +573,11 @@ class MediaViewerScreen(
               initialImageUrl = mediaViewerParams.initialImage
             )
 
-            Snapshot.withMutableSnapshot {
-              val images = mutableStateListOf<ImageLoadState>()
-              images.addAll(initResult.images)
-
-              mediaViewerScreenState.images = images
-              mediaViewerScreenState.initialPage.value = initResult.initialPage
-              mediaViewerScreenState.mediaViewerUiVisible.value = appSettings.mediaViewerUiVisible.read()
-            }
+            mediaViewerScreenState.init(
+              images = initResult.images,
+              initialPage = initResult.initialPage,
+              mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
+            )
           }
         )
       }
@@ -595,14 +590,11 @@ class MediaViewerScreen(
               initialImageUrl = mediaViewerParams.initialImageUrl
             )
 
-            Snapshot.withMutableSnapshot {
-              val images = mutableStateListOf<ImageLoadState>()
-              images.addAll(initResult.images)
-
-              mediaViewerScreenState.images = images
-              mediaViewerScreenState.initialPage.value = initResult.initialPage
-              mediaViewerScreenState.mediaViewerUiVisible.value = appSettings.mediaViewerUiVisible.read()
-            }
+            mediaViewerScreenState.init(
+              images = initResult.images,
+              initialPage = initResult.initialPage,
+              mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
+            )
           }
         )
       }
@@ -625,7 +617,7 @@ class MediaViewerScreen(
     val initialPage = initialPageMut
     val images = imagesMut
 
-    if (initialPage == null || images == null) {
+    if (initialPage == null || images.isEmpty()) {
       return
     }
 
@@ -660,7 +652,7 @@ class MediaViewerScreen(
     val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
 
     LaunchedEffect(
-      key1 = Unit,
+      key1 = pagerState,
       block = {
         try {
           pagerState.scrollToPage(initialPage)
@@ -683,6 +675,8 @@ class MediaViewerScreen(
           return@LaunchedEffect
         }
 
+        mediaViewerScreenState.onCurrentPagerPageChanged(currentPageIndex)
+
         val postImageData = images.getOrNull(currentPageIndex)?.postImage
           ?: return@LaunchedEffect
 
@@ -704,7 +698,7 @@ class MediaViewerScreen(
     ) { page ->
       val mediaState = remember(key1 = page) {
         val postImage = mediaViewerScreenState.images
-          ?.getOrNull(page)
+          .getOrNull(page)
           ?.postImage
           ?: return@remember null
 
@@ -722,8 +716,8 @@ class MediaViewerScreen(
       DisposableEffect(
         key1 = Unit,
         effect = {
-          mediaViewerScreenState.currentlyLoadedMediaMap.put(page, mediaState)
-          onDispose { mediaViewerScreenState.currentlyLoadedMediaMap.remove(page) }
+          mediaViewerScreenState.addCurrentlyLoadedMediaState(page, mediaState)
+          onDispose { mediaViewerScreenState.removeCurrentlyLoadedMediaState(page) }
         }
       )
 
@@ -747,7 +741,7 @@ class MediaViewerScreen(
   @Composable
   private fun PagerContent(
     page: Int,
-    images: MutableList<ImageLoadState>,
+    images: List<ImageLoadState>,
     mediaViewerScreenState: MediaViewerScreenState,
     pagerState: PagerState,
     toolbarHeight: Dp,
@@ -770,11 +764,7 @@ class MediaViewerScreen(
         // it might be set to "ImageLoadState.Ready" in reality the file on disk may long be
         // removed so it will cause a crash.
         onDispose {
-          val indexOfThisImage = images.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }
-          if (indexOfThisImage >= 0) {
-            val prevPostImageData = images[indexOfThisImage].postImage
-            images.set(indexOfThisImage, ImageLoadState.PreparingForLoading(prevPostImageData))
-          }
+          mediaViewerScreenState.onPageDisposed(postImageDataLoadState)
         }
       }
     )
@@ -852,7 +842,7 @@ class MediaViewerScreen(
                 reloadImage = {
                   coroutineScope.launch {
                     mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
-                    images[page] = ImageLoadState.PreparingForLoading(postImageDataLoadState.postImage)
+                    mediaViewerScreenState.reloadImage(page, postImageDataLoadState)
                   }
                 }
               )
@@ -1003,13 +993,13 @@ class MediaViewerScreen(
     val postImageData = postImageDataLoadState.postImage
     val fullImageUrl = postImageData.fullImageAsUrl
 
-    val index = mediaViewerScreenState.requireImages().indexOfFirst { imageLoadState ->
+    val index = mediaViewerScreenState.imagesMutable().indexOfFirst { imageLoadState ->
       imageLoadState.fullImageUrl == postImageData.fullImageAsUrl
     }
 
     // We can just stream videos without having to load them first
     if (postImageDataLoadState.postImage.imageType() == ImageType.Video) {
-      mediaViewerScreenState.requireImages().set(index, ImageLoadState.Ready(postImageData, null))
+      mediaViewerScreenState.imagesMutable().set(index, ImageLoadState.Ready(postImageData, null))
       return
     }
 
@@ -1020,7 +1010,7 @@ class MediaViewerScreen(
       )
 
       val imageLoadState = ImageLoadState.Error(postImageData, exception)
-      mediaViewerScreenState.requireImages().set(index, imageLoadState)
+      mediaViewerScreenState.imagesMutable().set(index, imageLoadState)
 
       return
     }
@@ -1056,11 +1046,11 @@ class MediaViewerScreen(
               // fallthrough
             }
 
-            mediaViewerScreenState.requireImages().set(index, imageLoadState)
+            mediaViewerScreenState.imagesMutable().set(index, imageLoadState)
           }
           is ImageLoadState.PreparingForLoading,
           is ImageLoadState.Ready -> {
-            mediaViewerScreenState.requireImages().set(index, imageLoadState)
+            mediaViewerScreenState.imagesMutable().set(index, imageLoadState)
           }
         }
       }
