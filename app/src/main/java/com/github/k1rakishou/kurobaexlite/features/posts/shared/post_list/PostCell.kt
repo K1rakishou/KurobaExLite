@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -62,6 +62,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.kurobaAnimateContentSize
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -495,7 +496,10 @@ private fun PostCellFooter(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
-      .animateContentSize(),
+      .kurobaAnimateContentSize(
+        animationSpec = tween(durationMillis = 250),
+        areEqual = { startSize, targetSize -> startSize.height == targetSize.height }
+      ),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (postFooterText.isNotNullNorEmpty()) {
