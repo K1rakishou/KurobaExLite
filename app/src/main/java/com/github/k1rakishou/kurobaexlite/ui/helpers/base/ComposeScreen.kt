@@ -4,7 +4,6 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.CallSuper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -79,17 +78,6 @@ abstract class ComposeScreen(
 
   @Composable
   abstract fun Content()
-
-  @Composable
-  protected fun PushScreen(
-    navigationRouter: NavigationRouter,
-    composeScreenBuilder: () -> ComposeScreen
-  ) {
-    LaunchedEffect(
-      key1 = Unit,
-      block = { navigationRouter.pushScreen(composeScreenBuilder()) }
-    )
-  }
 
   protected fun popScreen(): Boolean {
     if (this is FloatingComposeScreen) {

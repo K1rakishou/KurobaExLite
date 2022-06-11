@@ -66,11 +66,6 @@ class MainScreen(
           )
         }
 
-        PushScreen(
-          navigationRouter = navigationRouter,
-          composeScreenBuilder = { homeScreen }
-        )
-
         mainNavigationRouter.HandleBackPresses {
           // First, process all the floating screens
           for (floatingComposeScreen in mainNavigationRouter.floatingScreensStack.asReversed()) {
@@ -83,7 +78,10 @@ class MainScreen(
           return@HandleBackPresses homeScreen.onBackPressed()
         }
 
-        RootRouterHost(navigationRouter)
+        RootRouterHost(
+          rootNavigationRouter = navigationRouter,
+          defaultScreenFunc = { homeScreen }
+        )
 
         KurobaSnackbarContainer(
           modifier = Modifier.fillMaxSize(),

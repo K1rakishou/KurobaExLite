@@ -7,6 +7,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeBackgroundScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.MinimizableFloatingComposeScreen
 import logcat.LogPriority
 import logcat.logcat
 
@@ -32,6 +33,10 @@ class MainNavigationRouter : NavigationRouter(
   }
 
   override fun pushScreen(composeScreen: ComposeScreen): Boolean {
+    return pushScreen(composeScreen, true)
+  }
+
+  override fun pushScreen(composeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
     if (composeScreen is FloatingComposeScreen) {
       error("FloatingComposeScreens must be added via presentScreen() function!")
     }
@@ -44,9 +49,15 @@ class MainNavigationRouter : NavigationRouter(
       return false
     }
 
+    val newScreenUpdate = if (withAnimation) {
+      ScreenUpdate.Push(composeScreen)
+    } else {
+      ScreenUpdate.Set(composeScreen)
+    }
+
     val navigationScreenUpdates = combineScreenUpdates(
       oldScreens = navigationScreensStack,
-      newScreenUpdate = ScreenUpdate.Push(composeScreen)
+      newScreenUpdate = newScreenUpdate
     )
     val floatingScreenUpdates = _floatingScreensStack
       .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
@@ -112,6 +123,10 @@ class MainNavigationRouter : NavigationRouter(
       .indexOfFirst { screen -> screen.screenKey == floatingComposeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
+      if (floatingComposeScreen is MinimizableFloatingComposeScreen) {
+        floatingComposeScreen.maximize()
+      }
+
       // Already added
       return
     }
@@ -123,7 +138,10 @@ class MainNavigationRouter : NavigationRouter(
       newScreenUpdate = chooseAddAnimation(floatingComposeScreen)
     ).toMutableList()
 
-    if (_floatingScreensStack.none { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
+    if (
+      !floatingComposeScreen.customBackground &&
+      _floatingScreensStack.none { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
+    ) {
       logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key}) adding bgScreen" }
 
       val bgScreen = FloatingComposeBackgroundScreen(
@@ -163,7 +181,7 @@ class MainNavigationRouter : NavigationRouter(
       newScreenUpdate = chooseRemoveAnimation(overrideAnimation, floatingComposeScreen)
     ).toMutableList()
 
-    if (_floatingScreensStack.size <= 1 && _floatingScreensStack.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }) {
+    if (canRemoveBgScreenWhenUnpresenting()) {
       logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
 
       val indexOfPrevBg = floatingScreenUpdates
@@ -195,6 +213,25 @@ class MainNavigationRouter : NavigationRouter(
     )
 
     return true
+  }
+
+  private fun canRemoveBgScreenWhenUnpresenting(): Boolean {
+    if (_floatingScreensStack.size <= 1) {
+      return _floatingScreensStack.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
+    }
+
+    if (_floatingScreensStack.size == 2) {
+      val hasBgScreen = _floatingScreensStack
+        .indexOfFirst { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY } >= 0
+      val hasScreenWithCustomBg = _floatingScreensStack
+        .indexOfFirst { it.customBackground } >= 0
+
+      if (hasBgScreen && hasScreenWithCustomBg) {
+        return true
+      }
+    }
+
+    return false
   }
 
   override suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {

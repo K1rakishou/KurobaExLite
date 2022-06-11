@@ -19,8 +19,10 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -83,7 +85,7 @@ class HistoryScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
-
+  override val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(false)
   override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
 
   private val defaultToolbarKey = "${screenKey.key}_toolbar"

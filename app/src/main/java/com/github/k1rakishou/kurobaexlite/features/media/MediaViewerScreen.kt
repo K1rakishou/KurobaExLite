@@ -12,14 +12,17 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -39,13 +42,18 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.withTranslation
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
@@ -96,7 +104,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
-import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.MinimizableFloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import java.io.IOException
@@ -116,7 +124,7 @@ class MediaViewerScreen(
   private val openedFromScreen: ScreenKey,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+) : MinimizableFloatingComposeScreen(componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
@@ -127,11 +135,104 @@ class MediaViewerScreen(
 
   private val defaultIsDragGestureAllowedFunc: (currPosition: Offset, startPosition: Offset) -> Boolean = { _, _ -> true }
 
+  override val customBackground: Boolean = true
   override val screenKey: ScreenKey = SCREEN_KEY
   override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.Pop
 
   @Composable
   override fun CardContent() {
+    val isMinimized by isScreenMinimized
+
+    MinimizableContent(isMinimized = isMinimized) {
+      CardContentInternal(isMinimized = isMinimized)
+    }
+  }
+
+  @Composable
+  private fun MinimizableContent(
+    isMinimized: Boolean,
+    content: @Composable () -> Unit
+  ) {
+    val density = LocalDensity.current
+    val insets = LocalWindowInsets.current
+    val windowSize = remember { DpSize(width = 128.dp, 96.dp) }
+
+    var maxSize by remember { mutableStateOf(IntSize.Zero) }
+    var minimizedWindowPosition by remember { mutableStateOf(IntOffset(0, 0)) }
+    var minimizedWindowPositionCoerced by remember { mutableStateOf(IntOffset(0, 0)) }
+
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .onSizeChanged { newSize -> maxSize = newSize }
+    ) {
+      LaunchedEffect(
+        minimizedWindowPosition,
+        maxSize,
+        windowSize,
+        insets,
+        block = {
+          var resultX = minimizedWindowPosition.x
+          var resultY = minimizedWindowPosition.y
+
+          val maxWidth = maxSize.width
+          val maxHeight = maxSize.height
+
+          val windowWidth = with(density) { windowSize.width.roundToPx() }
+          val windowHeight = with(density) { windowSize.height.roundToPx() }
+
+          val leftInset = with(density) { insets.left.roundToPx() }
+          val rightInset = with(density) { insets.right.roundToPx() }
+          val topInset = with(density) { insets.top.roundToPx() }
+          val bottomInset = with(density) { insets.bottom.roundToPx() }
+
+          if (resultX <= leftInset) {
+            resultX = leftInset
+          } else if (resultX > maxWidth - windowWidth - rightInset) {
+            resultX = maxWidth - windowWidth - rightInset
+          }
+
+          if (resultY <= topInset) {
+            resultY = topInset
+          } else if (resultY > maxHeight - windowHeight - bottomInset) {
+            resultY = maxHeight - windowHeight - bottomInset
+          }
+
+          minimizedWindowPositionCoerced = IntOffset(x = resultX, y = resultY)
+        }
+      )
+
+      val sizeModifier = if (isMinimized) {
+        Modifier
+          .size(windowSize)
+          .absoluteOffset { minimizedWindowPositionCoerced }
+          .pointerInput(
+            key1 = Unit,
+            block = {
+              detectDragGestures(
+                onDrag = { _, dragAmount ->
+                  minimizedWindowPosition = IntOffset(
+                    x = minimizedWindowPosition.x + dragAmount.x.toInt(),
+                    y = minimizedWindowPosition.y + dragAmount.y.toInt()
+                  )
+                }
+              )
+            }
+          )
+      } else {
+        Modifier.fillMaxSize()
+      }
+
+      Box(
+        modifier = sizeModifier
+      ) {
+        content()
+      }
+    }
+  }
+
+  @Composable
+  private fun CardContentInternal(isMinimized: Boolean) {
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
@@ -144,18 +245,25 @@ class MediaViewerScreen(
     val animatable = remember { Animatable(0f) }
     val animationProgress by animatable.asState()
 
-    val mediaViewerScreenState = rememberSaveable(saver = MediaViewerScreenState.Saver(appSettings)) {
-      MediaViewerScreenState(appSettings)
-    }
+    val mediaViewerScreenState =
+      rememberSaveable(saver = MediaViewerScreenState.Saver(appSettings)) {
+        MediaViewerScreenState(appSettings)
+      }
 
     var availableSizeMut by remember { mutableStateOf<IntSize>(IntSize.Zero) }
     val availableSize = availableSizeMut
+
+    val bgColor = if (isMinimized) {
+      Color.Unspecified
+    } else {
+      Color.Black
+    }
 
     Box(
       modifier = Modifier
         .fillMaxSize()
         .graphicsLayer { alpha = animationProgress }
-        .background(Color.Black)
+        .background(bgColor)
         .onSizeChanged { newSize -> availableSizeMut = newSize }
     ) {
       InitMediaViewerData(
@@ -171,6 +279,7 @@ class MediaViewerScreen(
       ) {
         if (availableSize.width > 0 && availableSize.height > 0) {
           ContentAfterTransition(
+            isMinimized = isMinimized,
             mediaViewerScreenState = mediaViewerScreenState,
             chanTheme = chanTheme,
             availableSize = availableSize,
@@ -227,6 +336,7 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun BoxScope.ContentAfterTransition(
+    isMinimized: Boolean,
     mediaViewerScreenState: MediaViewerScreenState,
     chanTheme: ChanTheme,
     availableSize: IntSize,
@@ -254,6 +364,7 @@ class MediaViewerScreen(
     )
 
     MediaViewerPager(
+      isMinimized = isMinimized,
       availableSize = availableSize,
       toolbarHeight = toolbarHeight,
       mediaViewerScreenState = mediaViewerScreenState,
@@ -271,32 +382,35 @@ class MediaViewerScreen(
       animationSpec = tween(durationMillis = 300)
     )
 
-    Box(
-      modifier = Modifier.Companion
-        .align(Alignment.TopCenter)
-        .alpha(mediaViewerUiAlpha)
-        .passClicksThrough(passClicks = !mediaViewerUiVisible)
-        .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
-        .background(bgColor)
-    ) {
-      val context = LocalContext.current
-      val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
+    if (!isMinimized) {
+      Box(
+        modifier = Modifier.Companion
+          .align(Alignment.TopCenter)
+          .alpha(mediaViewerUiAlpha)
+          .passClicksThrough(passClicks = !mediaViewerUiVisible)
+          .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
+          .background(bgColor)
+      ) {
+        val context = LocalContext.current
+        val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
 
-      MediaViewerToolbar(
-        toolbarHeight = toolbarHeight,
-        backgroundColor = bgColor,
-        screenKey = screenKey,
-        mediaViewerScreenState = mediaViewerScreenState,
-        pagerState = pagerStateHolder,
-        onDownloadMediaClicked = { postImage ->
-          onDownloadButtonClicked(
-            context = context,
-            runtimePermissionsHelper = runtimePermissionsHelper,
-            postImage = postImage
-          )
-        },
-        onBackPressed = { coroutineScope.launch { onBackPressed() } }
-      )
+        MediaViewerToolbar(
+          toolbarHeight = toolbarHeight,
+          backgroundColor = bgColor,
+          screenKey = screenKey,
+          mediaViewerScreenState = mediaViewerScreenState,
+          pagerState = pagerStateHolder,
+          onDownloadMediaClicked = { postImage ->
+            onDownloadButtonClicked(
+              context = context,
+              runtimePermissionsHelper = runtimePermissionsHelper,
+              postImage = postImage
+            )
+          },
+          onMinimizeClicked = { minimize() },
+          onBackPressed = { coroutineScope.launch { onBackPressed() } }
+        )
+      }
     }
 
     val currentPageIndex by remember { derivedStateOf { pagerStateHolder.currentPage } }
@@ -319,19 +433,21 @@ class MediaViewerScreen(
       animationSpec = tween(durationMillis = 300)
     )
 
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .align(Alignment.BottomCenter)
-        .passClicksThrough(passClicks = !mediaViewerUiVisible)
-        .graphicsLayer { this.alpha = alphaAnimated }
-        .background(bgColor)
-    ) {
-      if (currentLoadedMedia is MediaState.Video) {
-        MediaViewerScreenVideoControls(currentLoadedMedia)
-      }
+    if (!isMinimized) {
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .align(Alignment.BottomCenter)
+          .passClicksThrough(passClicks = !mediaViewerUiVisible)
+          .graphicsLayer { this.alpha = alphaAnimated }
+          .background(bgColor)
+      ) {
+        if (currentLoadedMedia is MediaState.Video) {
+          MediaViewerScreenVideoControls(currentLoadedMedia)
+        }
 
-      Spacer(modifier = Modifier.height(insets.bottom))
+        Spacer(modifier = Modifier.height(insets.bottom))
+      }
     }
 
     if (images.isNotNullNorEmpty()) {
@@ -348,7 +464,7 @@ class MediaViewerScreen(
         return@remember toolbarCalculatedHeight
       }
 
-      if (toolbarCalculatedHeight != null) {
+      if (!isMinimized && toolbarCalculatedHeight != null) {
         Box(
           modifier = Modifier
             .align(Alignment.TopCenter)
@@ -604,6 +720,7 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun MediaViewerPager(
+    isMinimized: Boolean,
     availableSize: IntSize,
     toolbarHeight: Dp,
     mediaViewerScreenState: MediaViewerScreenState,
@@ -694,6 +811,7 @@ class MediaViewerScreen(
       modifier = Modifier.fillMaxSize(),
       count = images.size,
       state = pagerState,
+      userScrollEnabled = !isMinimized,
       key = { page -> images[page].fullImageUrlAsString }
     ) { page ->
       val mediaState = remember(key1 = page) {
@@ -722,6 +840,7 @@ class MediaViewerScreen(
       )
 
       PagerContent(
+        isMinimized = isMinimized,
         page = page,
         images = images,
         mediaViewerScreenState = mediaViewerScreenState,
@@ -740,6 +859,7 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun PagerContent(
+    isMinimized: Boolean,
     page: Int,
     images: List<ImageLoadState>,
     mediaViewerScreenState: MediaViewerScreenState,
@@ -783,7 +903,9 @@ class MediaViewerScreen(
 
     DraggableArea(
       closeScreen = { stopPresenting() },
-      isDragGestureAllowedFunc = { currPosition, startPosition -> isDragGestureAllowedFunc(currPosition, startPosition) }
+      isDragGestureAllowedFunc = { currPosition, startPosition ->
+        return@DraggableArea !isMinimized && isDragGestureAllowedFunc(currPosition, startPosition)
+      }
     ) {
       when (postImageDataLoadState) {
         is ImageLoadState.PreparingForLoading -> {
@@ -829,23 +951,27 @@ class MediaViewerScreen(
 
           when (mediaState) {
             is MediaState.Static -> {
-              val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
+              if (isMinimized) {
+                displayImagePreviewMovable()
+              } else {
+                val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
 
-              DisplayFullImage(
-                availableSize = availableSize,
-                postImageDataLoadState = postImageDataLoadState,
-                imageFile = imageFile,
-                setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
-                onFullImageLoaded = { fullMediaLoaded = true },
-                onFullImageFailedToLoad = { fullMediaLoaded = false },
-                onImageTapped = { onMediaTapped() },
-                reloadImage = {
-                  coroutineScope.launch {
-                    mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
-                    mediaViewerScreenState.reloadImage(page, postImageDataLoadState)
+                DisplayFullImage(
+                  availableSize = availableSize,
+                  postImageDataLoadState = postImageDataLoadState,
+                  imageFile = imageFile,
+                  setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
+                  onFullImageLoaded = { fullMediaLoaded = true },
+                  onFullImageFailedToLoad = { fullMediaLoaded = false },
+                  onImageTapped = { onMediaTapped() },
+                  reloadImage = {
+                    coroutineScope.launch {
+                      mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
+                      mediaViewerScreenState.reloadImage(page, postImageDataLoadState)
+                    }
                   }
-                }
-              )
+                )
+              }
             }
             is MediaState.Video -> {
               val muteByDefault by mediaViewerScreenState.muteByDefault

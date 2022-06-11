@@ -29,6 +29,10 @@ open class NavigationRouter(
   protected val removingScreens = mutableSetOf<ScreenKey>()
 
   open fun pushScreen(composeScreen: ComposeScreen): Boolean {
+    return pushScreen(composeScreen, true)
+  }
+
+  open fun pushScreen(composeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
     if (composeScreen is FloatingComposeScreen) {
       error("FloatingComposeScreens must be added via presentScreen() function!")
     }
@@ -41,9 +45,15 @@ open class NavigationRouter(
       return false
     }
 
+    val newScreenUpdate = if (withAnimation) {
+      ScreenUpdate.Push(composeScreen)
+    } else {
+      ScreenUpdate.Set(composeScreen)
+    }
+
     val navigationScreenUpdates = combineScreenUpdates(
       oldScreens = _navigationScreensStack,
-      newScreenUpdate = ScreenUpdate.Push(composeScreen)
+      newScreenUpdate = newScreenUpdate
     )
 
     _navigationScreensStack.add(composeScreen)

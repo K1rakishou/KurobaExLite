@@ -97,7 +97,7 @@ fun DisplayFullImage(
     }
   }
 
-  val maxScale = remember(key1 = postImageDataLoadState.postImage) {
+  val maxScale = remember(key1 = postImageDataLoadState.postImage, key2 = availableSize) {
     val postImage = postImageDataLoadState.postImage
 
     var scale = Math.min(

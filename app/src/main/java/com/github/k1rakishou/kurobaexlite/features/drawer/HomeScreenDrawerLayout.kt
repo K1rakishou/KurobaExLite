@@ -155,8 +155,6 @@ fun HomeScreenDrawerLayout(
 
   val componentActivity = LocalComponentActivity.current
   val density = LocalDensity.current
-
-  val drawerScreen = remember { BookmarksScreen(componentActivity, navigationRouterProvider()) }
   val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
 
   drawerSwipeState.InitDrawerState(drawerWidth, density)
@@ -277,7 +275,7 @@ fun HomeScreenDrawerLayout(
 
       RouterHost(
         navigationRouter = router,
-        defaultScreenFunc = { drawerScreen }
+        defaultScreenFunc = { BookmarksScreen(componentActivity, navigationRouterProvider()) }
       )
     }
   }
