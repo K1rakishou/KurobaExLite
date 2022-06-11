@@ -487,10 +487,14 @@ fun Modifier.kurobaClickable(
     error("At least one of the callbacks must be non-null")
   }
 
+  if (!enabled) {
+    return Modifier
+  }
+
   return composed {
     val chanTheme = LocalChanTheme.current
 
-    val indication = if (enabled && hasClickIndication) {
+    val indication = if (hasClickIndication) {
       val color = remember(key1 = chanTheme) {
         if (chanTheme.isLightTheme) {
           Color(0x40000000)
@@ -506,7 +510,6 @@ fun Modifier.kurobaClickable(
 
     return@composed then(
       Modifier.combinedClickable(
-        enabled = enabled,
         indication = indication,
         interactionSource = remember { MutableInteractionSource() },
         onLongClick = onLongClick,

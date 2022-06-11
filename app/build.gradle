@@ -195,7 +195,7 @@ dependencies {
     implementation "org.jsoup:jsoup:${jsoup}"
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
-    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:ca4664b676'
+    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:ae13f75ed2'
 
     implementation "com.squareup.moshi:moshi-kotlin:${moshi}"
     ksp "com.squareup.moshi:moshi-kotlin-codegen:${moshi}"

@@ -40,6 +40,7 @@ abstract class FloatingComposeScreen(
   val horizPaddingDp by lazy { if (globalUiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
   val vertPaddingDp by lazy { if (globalUiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
 
+  open val ignoreBackPresses: Boolean = false
   open val customBackground: Boolean = false
   open val contentAlignment: Alignment = Alignment.Center
   open val presentAnimation: NavigationRouter.ScreenAddAnimation = NavigationRouter.ScreenAddAnimation.FadeIn

@@ -97,7 +97,7 @@ fun DisplayFullImage(
     }
   }
 
-  val maxScale = remember(key1 = postImageDataLoadState.postImage, key2 = availableSize) {
+  val maxScale = remember(key1 = postImageDataLoadState.postImage) {
     val postImage = postImageDataLoadState.postImage
 
     var scale = Math.min(
@@ -113,6 +113,7 @@ fun DisplayFullImage(
   }
 
   val state = rememberComposeSubsamplingScaleImageState(
+    Unit,
     scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
     doubleTapZoom = 2f,
     maxScale = maxScale,

@@ -210,7 +210,7 @@ class ThreadScreen(
         return@HandleBackPresses true
       }
 
-      for (composeScreen in navigationRouter.navigationScreensStack.asReversed()) {
+      for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
         if (composeScreen.onBackPressed()) {
           return@HandleBackPresses true
         }

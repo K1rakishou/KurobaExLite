@@ -6,6 +6,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.MinimizableFloatingComposeScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,10 @@ open class NavigationRouter(
     get() = _screenUpdatesFlow.asStateFlow()
 
   protected val removingScreens = mutableSetOf<ScreenKey>()
+
+  fun navigationScreensStackExcept(thisScreen: ComposeScreen): List<ComposeScreen> {
+    return navigationScreensStack.filter { screen -> screen.screenKey != thisScreen.screenKey }
+  }
 
   open fun pushScreen(composeScreen: ComposeScreen): Boolean {
     return pushScreen(composeScreen, true)
@@ -134,7 +139,18 @@ open class NavigationRouter(
     oldScreens: List<ComposeScreen>,
     newScreenUpdate: ScreenUpdate
   ): List<ScreenUpdate> {
-    return oldScreens.map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) } + newScreenUpdate
+    val screensCombined = mutableListOf<ScreenUpdate>()
+    screensCombined.addAll(oldScreens.map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) })
+    screensCombined.add(newScreenUpdate)
+
+    // Hack for making MinimizableFloatingComposeScreen always on top of any other screen
+    // TODO(KurobaEx): Maybe I could add some kind of "zOrder" property and use it to sort screens?
+    val indexOfMinimizableScreen = screensCombined.indexOfFirst { it.screen is MinimizableFloatingComposeScreen }
+    if (indexOfMinimizableScreen >= 0 && indexOfMinimizableScreen != screensCombined.lastIndex) {
+      screensCombined.add(screensCombined.removeAt(indexOfMinimizableScreen))
+    }
+
+    return screensCombined
   }
 
   fun childRouter(screenKey: ScreenKey): NavigationRouter {

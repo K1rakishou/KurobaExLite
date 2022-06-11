@@ -12,13 +12,11 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -42,16 +41,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.withTranslation
@@ -97,6 +92,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -137,98 +133,29 @@ class MediaViewerScreen(
 
   override val customBackground: Boolean = true
   override val screenKey: ScreenKey = SCREEN_KEY
-  override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.Pop
+  override val isScreenMinimized: MutableState<Boolean> = mediaViewerScreenViewModel.isScreenMinimized
 
-  @Composable
-  override fun CardContent() {
-    val isMinimized by isScreenMinimized
-
-    MinimizableContent(isMinimized = isMinimized) {
-      CardContentInternal(isMinimized = isMinimized)
+  override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation
+    get() {
+      return if (isScreenMinimized.value) {
+        NavigationRouter.ScreenRemoveAnimation.FadeOut
+      } else {
+        NavigationRouter.ScreenRemoveAnimation.Pop
+      }
     }
+
+  override fun onDisposed() {
+    super.onDisposed()
+
+    mediaViewerScreenViewModel.destroy()
   }
 
   @Composable
-  private fun MinimizableContent(
-    isMinimized: Boolean,
-    content: @Composable () -> Unit
-  ) {
-    val density = LocalDensity.current
-    val insets = LocalWindowInsets.current
-    val windowSize = remember { DpSize(width = 128.dp, 96.dp) }
-
-    var maxSize by remember { mutableStateOf(IntSize.Zero) }
-    var minimizedWindowPosition by remember { mutableStateOf(IntOffset(0, 0)) }
-    var minimizedWindowPositionCoerced by remember { mutableStateOf(IntOffset(0, 0)) }
-
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .onSizeChanged { newSize -> maxSize = newSize }
-    ) {
-      LaunchedEffect(
-        minimizedWindowPosition,
-        maxSize,
-        windowSize,
-        insets,
-        block = {
-          var resultX = minimizedWindowPosition.x
-          var resultY = minimizedWindowPosition.y
-
-          val maxWidth = maxSize.width
-          val maxHeight = maxSize.height
-
-          val windowWidth = with(density) { windowSize.width.roundToPx() }
-          val windowHeight = with(density) { windowSize.height.roundToPx() }
-
-          val leftInset = with(density) { insets.left.roundToPx() }
-          val rightInset = with(density) { insets.right.roundToPx() }
-          val topInset = with(density) { insets.top.roundToPx() }
-          val bottomInset = with(density) { insets.bottom.roundToPx() }
-
-          if (resultX <= leftInset) {
-            resultX = leftInset
-          } else if (resultX > maxWidth - windowWidth - rightInset) {
-            resultX = maxWidth - windowWidth - rightInset
-          }
-
-          if (resultY <= topInset) {
-            resultY = topInset
-          } else if (resultY > maxHeight - windowHeight - bottomInset) {
-            resultY = maxHeight - windowHeight - bottomInset
-          }
-
-          minimizedWindowPositionCoerced = IntOffset(x = resultX, y = resultY)
-        }
-      )
-
-      val sizeModifier = if (isMinimized) {
-        Modifier
-          .size(windowSize)
-          .absoluteOffset { minimizedWindowPositionCoerced }
-          .pointerInput(
-            key1 = Unit,
-            block = {
-              detectDragGestures(
-                onDrag = { _, dragAmount ->
-                  minimizedWindowPosition = IntOffset(
-                    x = minimizedWindowPosition.x + dragAmount.x.toInt(),
-                    y = minimizedWindowPosition.y + dragAmount.y.toInt()
-                  )
-                }
-              )
-            }
-          )
-      } else {
-        Modifier.fillMaxSize()
-      }
-
-      Box(
-        modifier = sizeModifier
-      ) {
-        content()
-      }
-    }
+  override fun CardContent() {
+    MinimizableContent(
+      onCloseMediaViewerClicked = { stopPresenting() },
+      content = { isMinimized -> CardContentInternal(isMinimized = isMinimized) }
+    )
   }
 
   @Composable
@@ -250,7 +177,7 @@ class MediaViewerScreen(
         MediaViewerScreenState(appSettings)
       }
 
-    var availableSizeMut by remember { mutableStateOf<IntSize>(IntSize.Zero) }
+    var availableSizeMut by remember(key1 = isMinimized) { mutableStateOf<IntSize>(IntSize.Zero) }
     val availableSize = availableSizeMut
 
     val bgColor = if (isMinimized) {
@@ -273,6 +200,7 @@ class MediaViewerScreen(
 
       Box(
         modifier = Modifier
+          .fillMaxSize()
           .graphicsLayer {
             alpha = if (transitionFinished && previewLoadingFinished) 1f else 0f
           }
@@ -355,13 +283,6 @@ class MediaViewerScreen(
     val bgColor = remember(chanTheme.backColor) {
       chanTheme.backColor.copy(alpha = 0.5f)
     }
-
-    DisposableEffect(
-      key1 = Unit,
-      effect = {
-        onDispose { mediaViewerScreenViewModel.destroy() }
-      }
-    )
 
     MediaViewerPager(
       isMinimized = isMinimized,
@@ -827,7 +748,7 @@ class MediaViewerScreen(
         }
       }
 
-      if (mediaState == null) {
+      if (mediaState == null || !initialScrollHappened) {
         return@HorizontalPager
       }
 
@@ -986,6 +907,7 @@ class MediaViewerScreen(
               )
 
               DisplayVideo(
+                isMinimized = isMinimized,
                 pageIndex = page,
                 pagerState = pagerState,
                 toolbarHeight = toolbarHeight,
@@ -1013,6 +935,7 @@ class MediaViewerScreen(
               )
 
               DisplayUnsupportedMedia(
+                isMinimized = isMinimized,
                 toolbarHeight = toolbarHeight,
                 postImageDataLoadState = postImageDataLoadState,
                 onFullImageLoaded = { fullMediaLoaded = true },
@@ -1024,6 +947,7 @@ class MediaViewerScreen(
         }
         is ImageLoadState.Error -> {
           DisplayImageLoadError(
+            isMinimized = isMinimized,
             toolbarHeight = toolbarHeight,
             postImageDataLoadState = postImageDataLoadState
           )
@@ -1184,9 +1108,24 @@ class MediaViewerScreen(
 
   @Composable
   private fun DisplayImageLoadError(
+    isMinimized: Boolean,
     toolbarHeight: Dp,
     postImageDataLoadState: ImageLoadState.Error
   ) {
+    if (isMinimized) {
+      Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        KurobaComposeIcon(
+          modifier = Modifier.size(24.dp),
+          drawableId = R.drawable.ic_baseline_warning_24
+        )
+      }
+
+      return
+    }
+
     val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
 
     InsetsAwareBox(

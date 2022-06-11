@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.media
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import coil.request.ErrorResult
@@ -61,6 +62,7 @@ class MediaViewerScreenViewModel(
 
   val mpvInitialized: Boolean
     get() = mpvInitializer.initialized
+  val isScreenMinimized = mutableStateOf(false)
 
   suspend fun initFromPostStateList(
     postCellDataList: List<PostCellData>,
