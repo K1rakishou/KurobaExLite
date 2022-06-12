@@ -298,7 +298,7 @@ class MediaViewerScreen(
       chanTheme.backColor.copy(alpha = 0.5f)
     }
 
-    MediaViewerPager(
+    MediaViewerPagerContainer(
       isMinimized = isMinimized,
       availableSize = availableSize,
       toolbarHeight = toolbarHeight,
@@ -654,7 +654,7 @@ class MediaViewerScreen(
 
   @OptIn(ExperimentalPagerApi::class)
   @Composable
-  private fun MediaViewerPager(
+  private fun MediaViewerPagerContainer(
     isMinimized: Boolean,
     availableSize: IntSize,
     toolbarHeight: Dp,
@@ -789,7 +789,7 @@ class MediaViewerScreen(
         }
       }
 
-      if (mediaState == null || !initialScrollHappened) {
+      if (mediaState == null) {
         return@HorizontalPager
       }
 
@@ -800,6 +800,10 @@ class MediaViewerScreen(
           onDispose { mediaViewerScreenState.removeCurrentlyLoadedMediaState(page) }
         }
       )
+
+      if (!initialScrollHappened) {
+        return@HorizontalPager
+      }
 
       PagerContent(
         isMinimized = isMinimized,
