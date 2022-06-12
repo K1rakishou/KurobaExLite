@@ -74,6 +74,8 @@ abstract class MinimizableFloatingComposeScreen(
     isScreenMinimized.value = true
   }
 
+  // TODO(KurobaEx): store/restore last video position when minimizing/maximizing the player
+  // TODO(KurobaEx): togglePlayPause/isCurrentlyPaused
   @Composable
   protected fun MinimizableContent(
     onCloseMediaViewerClicked: () -> Unit,
@@ -203,91 +205,108 @@ abstract class MinimizableFloatingComposeScreen(
         content(isMinimized)
 
         if (isMinimized) {
-          val alphaAnimated by animateFloatAsState(targetValue = if (showUi) 1f else 0f)
-          val bgColor = remember { Color.Black.copy(alpha = 0.3f) }
-
-          Box(
-            modifier = Modifier
-              .fillMaxSize()
-              .graphicsLayer { alpha = alphaAnimated }
-              .background(bgColor)
-          ) {
-            val buttonsClickable = alphaAnimated > 0.99f
-
-            Row(
-              modifier = Modifier
-                .align(Alignment.TopEnd)
-            ) {
-              KurobaComposeIcon(
-                modifier = Modifier
-                  .size(24.dp)
-                  .kurobaClickable(
-                    enabled = buttonsClickable,
-                    onClick = { maximize() }
-                  ),
-                drawableId = R.drawable.ic_baseline_fullscreen_24
-              )
-
-              Spacer(modifier = Modifier.width(6.dp))
-
-              KurobaComposeIcon(
-                modifier = Modifier
-                  .size(24.dp)
-                  .kurobaClickable(
-                    enabled = buttonsClickable,
-                    onClick = { onCloseMediaViewerClicked() }
-                  ),
-                drawableId = R.drawable.ic_baseline_close_24
-              )
-            }
-
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
-              horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-              KurobaComposeIcon(
-                modifier = Modifier
-                  .size(32.dp)
-                  .kurobaClickable(
-                    enabled = buttonsClickable,
-                    onClick = {
-                      goToPreviousMedia()
-                      clicksFlow.tryEmit(Unit)
-                    }
-                  ),
-                drawableId = R.drawable.ic_baseline_skip_previous_24
-              )
-
-              KurobaComposeIcon(
-                modifier = Modifier
-                  .size(32.dp)
-                  .kurobaClickable(
-                    enabled = buttonsClickable,
-                    onClick = {
-                      /*TODO*/
-                      clicksFlow.tryEmit(Unit)
-                    }
-                  ),
-                drawableId = R.drawable.ic_baseline_pause_24
-              )
-
-              KurobaComposeIcon(
-                modifier = Modifier
-                  .size(32.dp)
-                  .kurobaClickable(
-                    enabled = buttonsClickable,
-                    onClick = {
-                      goToNextMedia()
-                      clicksFlow.tryEmit(Unit)
-                    }
-                  ),
-                drawableId = R.drawable.ic_baseline_skip_next_24
-              )
-            }
-          }
+          MiniPlayerControls(
+            showUi = showUi,
+            onCloseMediaViewerClicked = onCloseMediaViewerClicked,
+            goToPreviousMedia = goToPreviousMedia,
+            clicksFlow = clicksFlow,
+            goToNextMedia = goToNextMedia
+          )
         }
+      }
+    }
+  }
+
+  @Composable
+  private fun MiniPlayerControls(
+    showUi: Boolean,
+    onCloseMediaViewerClicked: () -> Unit,
+    goToPreviousMedia: () -> Unit,
+    clicksFlow: MutableSharedFlow<Unit>,
+    goToNextMedia: () -> Unit
+  ) {
+    val alphaAnimated by animateFloatAsState(targetValue = if (showUi) 1f else 0f)
+    val bgColor = remember { Color.Black.copy(alpha = 0.3f) }
+
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .graphicsLayer { alpha = alphaAnimated }
+        .background(bgColor)
+    ) {
+      val buttonsClickable = alphaAnimated > 0.99f
+
+      Row(
+        modifier = Modifier
+          .align(Alignment.TopEnd)
+      ) {
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(24.dp)
+            .kurobaClickable(
+              enabled = buttonsClickable,
+              onClick = { maximize() }
+            ),
+          drawableId = R.drawable.ic_baseline_fullscreen_24
+        )
+
+        Spacer(modifier = Modifier.width(6.dp))
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(24.dp)
+            .kurobaClickable(
+              enabled = buttonsClickable,
+              onClick = { onCloseMediaViewerClicked() }
+            ),
+          drawableId = R.drawable.ic_baseline_close_24
+        )
+      }
+
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .align(Alignment.Center),
+        horizontalArrangement = Arrangement.SpaceEvenly
+      ) {
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(32.dp)
+            .kurobaClickable(
+              enabled = buttonsClickable,
+              onClick = {
+                goToPreviousMedia()
+                clicksFlow.tryEmit(Unit)
+              }
+            ),
+          drawableId = R.drawable.ic_baseline_skip_previous_24
+        )
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(32.dp)
+            .kurobaClickable(
+              enabled = buttonsClickable,
+              onClick = {
+                /*TODO*/
+                clicksFlow.tryEmit(Unit)
+              }
+            ),
+          drawableId = R.drawable.ic_baseline_pause_24
+        )
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(32.dp)
+            .kurobaClickable(
+              enabled = buttonsClickable,
+              onClick = {
+                goToNextMedia()
+                clicksFlow.tryEmit(Unit)
+              }
+            ),
+          drawableId = R.drawable.ic_baseline_skip_next_24
+        )
       }
     }
   }

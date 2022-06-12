@@ -52,7 +52,10 @@ class MediaViewerScreenState(
         _images.addAll(images)
       }
 
-      _initialPage.value = initialPage
+      if (_initialPage.value == null) {
+        _initialPage.value = initialPage
+      }
+
       _mediaViewerUiVisible.value = mediaViewerUiVisible
     }
   }
@@ -119,7 +122,7 @@ class MediaViewerScreenState(
       save = {
         listOf<Any?>(
           it.muteByDefault.value,
-          it.initialPage.value
+          it._lastOpenedPage ?: it.initialPage.value
         )
       },
       restore = { list ->
