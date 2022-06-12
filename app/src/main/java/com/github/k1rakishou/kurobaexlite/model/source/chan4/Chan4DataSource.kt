@@ -496,7 +496,7 @@ class Chan4DataSource(
     val postImageData = PostImageData(
       thumbnailUrl = thumbnailUrl,
       fullImageUrl = fullUrl,
-      originalFileNameEscaped = originalFileName,
+      originalFileNameEscaped = HtmlUnescape.unescape(originalFileName),
       serverFileName = serverFileName,
       ext = extension,
       width = postImageDataJson.w!!,

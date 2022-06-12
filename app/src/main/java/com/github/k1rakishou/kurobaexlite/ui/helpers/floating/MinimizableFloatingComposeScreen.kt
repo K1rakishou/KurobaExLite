@@ -39,11 +39,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
 
 abstract class MinimizableFloatingComposeScreen(
   componentActivity: ComponentActivity,
@@ -111,24 +106,7 @@ abstract class MinimizableFloatingComposeScreen(
       }
     )
 
-    val clicksFlow = remember {
-      MutableSharedFlow<Unit>(
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-      )
-    }
-
     val isMinimized by isScreenMinimized
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        clicksFlow
-          .debounce(3000.milliseconds)
-          .collectLatest {
-            showUi = false
-          }
-      })
 
     Box(
       modifier = Modifier
@@ -196,10 +174,7 @@ abstract class MinimizableFloatingComposeScreen(
         modifier = sizeModifier
           .kurobaClickable(
             enabled = isMinimized,
-            onClick = {
-              showUi = true
-              clicksFlow.tryEmit(Unit)
-            }
+            onClick = { showUi = !showUi }
           )
       ) {
         content(isMinimized)
@@ -209,7 +184,6 @@ abstract class MinimizableFloatingComposeScreen(
             showUi = showUi,
             onCloseMediaViewerClicked = onCloseMediaViewerClicked,
             goToPreviousMedia = goToPreviousMedia,
-            clicksFlow = clicksFlow,
             goToNextMedia = goToNextMedia
           )
         }
@@ -222,7 +196,6 @@ abstract class MinimizableFloatingComposeScreen(
     showUi: Boolean,
     onCloseMediaViewerClicked: () -> Unit,
     goToPreviousMedia: () -> Unit,
-    clicksFlow: MutableSharedFlow<Unit>,
     goToNextMedia: () -> Unit
   ) {
     val alphaAnimated by animateFloatAsState(targetValue = if (showUi) 1f else 0f)
@@ -276,7 +249,6 @@ abstract class MinimizableFloatingComposeScreen(
               enabled = buttonsClickable,
               onClick = {
                 goToPreviousMedia()
-                clicksFlow.tryEmit(Unit)
               }
             ),
           drawableId = R.drawable.ic_baseline_skip_previous_24
@@ -289,7 +261,6 @@ abstract class MinimizableFloatingComposeScreen(
               enabled = buttonsClickable,
               onClick = {
                 /*TODO*/
-                clicksFlow.tryEmit(Unit)
               }
             ),
           drawableId = R.drawable.ic_baseline_pause_24
@@ -302,7 +273,6 @@ abstract class MinimizableFloatingComposeScreen(
               enabled = buttonsClickable,
               onClick = {
                 goToNextMedia()
-                clicksFlow.tryEmit(Unit)
               }
             ),
           drawableId = R.drawable.ic_baseline_skip_next_24
