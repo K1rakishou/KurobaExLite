@@ -65,6 +65,7 @@ class AppSettings(
   val lastUpdateCheckTime by lazy { NumberSetting<Long>(0L, "last_update_check_time", dataStore) }
   val lastCheckedVersionCode by lazy { NumberSetting<Long>(0L, "last_checked_version_code", dataStore) }
   val notifyAboutBetaUpdates by lazy { BooleanSetting(true, "notify_about_beta_updates", dataStore) }
+  val miniPlayerLastPosition by lazy { JsonSetting(moshi.adapter(IntPositionJson::class.java), IntPositionJson(), "mini_player_last_position", dataStore) }
 
   val userAgent by lazy {
     val userAgent = try {
@@ -115,6 +116,12 @@ enum class LayoutType {
 data class CatalogSortSetting(
   @Json (name = "sort") val sort: CatalogSort = CatalogSort.BUMP,
   @Json (name = "ascending") val ascending: Boolean = false
+)
+
+@JsonClass(generateAdapter = true)
+data class IntPositionJson(
+  val x: Int = 0,
+  val y: Int = 0
 )
 
 enum class CatalogSort(val orderName: String) {

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.settings.IntPositionJson
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -92,6 +93,22 @@ abstract class MinimizableFloatingComposeScreen(
     var minimizedWindowPositionCoerced by remember { mutableStateOf(IntOffset(0, 0)) }
     var showUi by remember { mutableStateOf(false) }
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        if (minimizedWindowPosition.x != 0 || minimizedWindowPosition.y != 0) {
+          return@LaunchedEffect
+        }
+
+        val lastPosition = appSettings.miniPlayerLastPosition.read()
+
+        minimizedWindowPosition = IntOffset(
+          x = lastPosition.x,
+          y = lastPosition.y
+        )
+      }
+    )
+
     val clicksFlow = remember {
       MutableSharedFlow<Unit>(
         extraBufferCapacity = 1,
@@ -147,6 +164,7 @@ abstract class MinimizableFloatingComposeScreen(
           }
 
           minimizedWindowPositionCoerced = IntOffset(x = resultX, y = resultY)
+          appSettings.miniPlayerLastPosition.write(IntPositionJson(x = resultX, y = resultY))
         }
       )
 
