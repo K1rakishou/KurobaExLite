@@ -202,8 +202,8 @@ abstract class PostScreenViewModel(
     index: Int,
     offset: Int
   ) {
-    val postsFullyParsedOnce = postsFullyParsedOnceFlow.value
-    if (!postsFullyParsedOnce) {
+    val contentLoaded = postScreenState.contentLoaded.value
+    if (!contentLoaded) {
       return
     }
 

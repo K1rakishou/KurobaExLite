@@ -513,13 +513,26 @@ class ThreadScreenViewModel(
     postListTouchingBottom: Boolean?
   ) {
     updateChanThreadViewExecutor.post(timeout = 200L, key = key) {
+      val contentLoaded = postScreenState.contentLoaded.value
       val lastThreadPost = chanCache.getLastPost(threadDescriptor)?.postDescriptor
+
+      val firstVisiblePost = if (contentLoaded) {
+        firstVisiblePostDescriptor
+      } else {
+        null
+      }
+
+      val lastVisiblePost = if (contentLoaded) {
+        lastVisiblePostDescriptor
+      } else {
+        null
+      }
 
       val updatedChanThreadView = updateChanThreadView.execute(
         threadDescriptor = threadDescriptor,
         threadLastPostDescriptor = lastThreadPost,
-        firstVisiblePost = firstVisiblePostDescriptor,
-        lastVisiblePost = lastVisiblePostDescriptor,
+        firstVisiblePost = firstVisiblePost,
+        lastVisiblePost = lastVisiblePost,
         postListTouchingBottom = postListTouchingBottom
       )
 
