@@ -46,8 +46,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -84,15 +82,31 @@ class CrashReportActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    val throwable = intent.getBundleExtra(EXCEPTION_BUNDLE_KEY)
-      ?.let { bundle -> bundle.getSerializable(EXCEPTION_KEY) as? Throwable }
+    val bundle = intent.getBundleExtra(EXCEPTION_BUNDLE_KEY)
+    if (bundle == null) {
+      logcatError(TAG) { "Bundle is null" }
 
-    if (throwable == null) {
       finish()
       return
     }
 
-    logcat(TAG) { "Got new throwable: ${throwable.errorMessageOrClassName()}" }
+    val className = bundle.getString(EXCEPTION_CLASS_NAME_KEY)
+    val message = bundle.getString(EXCEPTION_MESSAGE_KEY)
+    val stacktrace = bundle.getString(EXCEPTION_STACKTRACE_KEY)
+
+    if (className == null || message == null || stacktrace == null) {
+      logcatError(TAG) {
+        "Bad bundle params. " +
+          "className is null (${className == null}), " +
+          "message is null (${message == null}), " +
+          "stacktrace is null (${stacktrace == null})"
+      }
+
+      finish()
+      return
+    }
+
+    logcat(TAG) { "Got new exception: ${className}" }
 
     WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
@@ -109,7 +123,7 @@ class CrashReportActivity : ComponentActivity() {
         GradientBackground(
           modifier = Modifier.fillMaxSize()
         ) {
-          Content(throwable)
+          Content(className = className, message = message, stacktrace = stacktrace)
         }
       }
     }
@@ -122,7 +136,11 @@ class CrashReportActivity : ComponentActivity() {
   }
 
   @Composable
-  private fun Content(throwable: Throwable) {
+  private fun Content(
+    className: String,
+    message: String,
+    stacktrace: String
+  ) {
     val insets = LocalWindowInsets.current
     val chanTheme = LocalChanTheme.current
 
@@ -167,20 +185,8 @@ class CrashReportActivity : ComponentActivity() {
           title = stringResource(id = R.string.crash_report_activity_crash_message_section),
           collapsedByDefault = false
         ) {
-          val errorMessage = remember(key1 = throwable) {
-            val exceptionClassName = throwable.javaClass.name
-
-            var message = if (throwable.cause?.message?.isNotNullNorBlank() == true) {
-              throwable.cause!!.message
-            } else {
-              throwable.message
-            }
-
-            if (message.isNullOrEmpty()) {
-              message = "<No error message>"
-            }
-
-            return@remember "Exception: ${exceptionClassName}\nMessage: ${message}"
+          val errorMessage = remember(key1 = className, key2 = message) {
+            return@remember "Exception: ${className}\nMessage: ${message}"
           }
 
           SelectionContainer {
@@ -195,8 +201,6 @@ class CrashReportActivity : ComponentActivity() {
         Spacer(modifier = Modifier.height(4.dp))
 
         Collapsable(title = stringResource(id = R.string.crash_report_activity_crash_stacktrace_section)) {
-          val stacktrace = remember(key1 = throwable) { throwable.stackTraceToString() }
-
           SelectionContainer {
             KurobaComposeText(
               modifier = Modifier.fillMaxSize(),
@@ -292,7 +296,9 @@ class CrashReportActivity : ComponentActivity() {
 
               coroutineScope.launch {
                 copyLogsFormattedToClipboard(
-                  throwable = throwable,
+                  className = className,
+                  message = message,
+                  stacktrace = stacktrace,
                   attachVerboseLogs = attachVerboseLogs,
                   attachMpvLogs = attachMpvLogs
                 )
@@ -382,7 +388,9 @@ class CrashReportActivity : ComponentActivity() {
   }
 
   private suspend fun copyLogsFormattedToClipboard(
-    throwable: Throwable,
+    className: String,
+    message: String,
+    stacktrace: String,
     attachVerboseLogs: Boolean,
     attachMpvLogs: Boolean
   ) {
@@ -391,12 +399,13 @@ class CrashReportActivity : ComponentActivity() {
 
     val resultString = buildString(16000) {
       appendLine("Title (put this into the Github issue title)")
-      appendLine(throwable.message)
+      appendLine("Exception: ${className}")
+      appendLine("Message: ${message}")
       appendLine()
 
       appendLine("Stacktrace")
       appendLine("```")
-      appendLine(throwable.stackTraceToString())
+      appendLine(stacktrace)
       appendLine("```")
       appendLine()
 
@@ -449,7 +458,9 @@ class CrashReportActivity : ComponentActivity() {
     private const val TAG = "CrashReportActivity"
 
     const val EXCEPTION_BUNDLE_KEY = "exception_bundle"
-    const val EXCEPTION_KEY = "exception"
+    const val EXCEPTION_CLASS_NAME_KEY = "exception_class_name"
+    const val EXCEPTION_MESSAGE_KEY = "exception_message"
+    const val EXCEPTION_STACKTRACE_KEY = "exception_stacktrace"
 
     private val appRunningTimeFormatter = PeriodFormatterBuilder()
       .printZeroAlways()

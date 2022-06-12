@@ -60,8 +60,15 @@ class KurobaExLiteApplication : Application() {
   }
 
   private fun showCrashReportActivity(e: Throwable?) {
+    val message = e?.message ?: return
+    val stacktrace = e.stackTraceToString()
+
     val bundle = Bundle()
-      .apply { putSerializable(CrashReportActivity.EXCEPTION_KEY, rootCause(e)) }
+      .apply {
+        putString(CrashReportActivity.EXCEPTION_CLASS_NAME_KEY, e::class.java.name)
+        putString(CrashReportActivity.EXCEPTION_MESSAGE_KEY, message)
+        putString(CrashReportActivity.EXCEPTION_STACKTRACE_KEY, stacktrace)
+      }
 
     val intent = Intent(this, CrashReportActivity::class.java)
     intent.putExtra(CrashReportActivity.EXCEPTION_BUNDLE_KEY, bundle)
@@ -82,26 +89,6 @@ class KurobaExLiteApplication : Application() {
         LogPriority.ASSERT -> Log.e("$GLOBAL_TAG | $tag", message)
       }
     }
-  }
-
-  private fun rootCause(inputThrowable: Throwable?): Throwable? {
-    var depth = 0
-    var throwable = inputThrowable
-
-    while (true) {
-      val cause = throwable?.cause
-        ?: break
-
-      throwable = cause
-      ++depth
-
-      if (depth > 32) {
-        logcatError(GLOBAL_TAG) { "Depth of throwable.cause exceeds the max allowed (32)" }
-        break
-      }
-    }
-
-    return throwable
   }
 
   companion object {
