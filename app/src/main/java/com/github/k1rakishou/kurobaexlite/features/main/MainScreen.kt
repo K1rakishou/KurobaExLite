@@ -36,6 +36,7 @@ class MainScreen(
       key1 = insets.left,
       key2 = insets.right
     ) { PaddingValues(start = insets.left, end = insets.right) }
+
     var contentSize by remember { mutableStateOf(IntSize.Zero) }
     val kurobaSnackbarState = rememberKurobaSnackbarState()
 

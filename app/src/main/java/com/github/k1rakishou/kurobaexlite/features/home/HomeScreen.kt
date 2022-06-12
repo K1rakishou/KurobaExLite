@@ -91,6 +91,8 @@ class HomeScreen(
     val insets = LocalWindowInsets.current
     val context = LocalContext.current
 
+    ShowAndProcessSnackbars()
+
     val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
     if (orientation == null) {
@@ -107,8 +109,6 @@ class HomeScreen(
     if (!globalUiInfoViewModelInitialized) {
       return
     }
-
-    ShowAndProcessSnackbars()
 
     val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
     val mainUiLayoutMode = mainUiLayoutModeMut

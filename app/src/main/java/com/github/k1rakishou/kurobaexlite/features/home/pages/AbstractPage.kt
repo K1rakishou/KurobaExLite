@@ -79,11 +79,28 @@ abstract class AbstractPage<T : ComposeScreen> {
     val toolbarTranslationDistancePx = with(LocalDensity.current) { toolbarHeight.toPx() / 3f }
     val animationProgress by topScreen.animationProgress
 
-    for ((childScreenIndex, childScreen) in lastTwoChildScreens.withIndex()) {
-      key(childScreen.screenKey) {
-        val screenContentMovable = remember(key1 = childScreen.screenKey) {
-          movableContentOf { childScreen.Toolbar(boxScope) }
+    val screenMovableLambdas = remember(key1 = lastTwoChildScreens) {
+      lastTwoChildScreens.map { childScreen ->
+        val key = childScreen.screenKey
+
+        return@map movableContentOf {
+          key(key) { childScreen.Toolbar(boxScope) }
         }
+      }
+    }
+
+    if (lastTwoChildScreens.size == 1) {
+      val screenContentMovable = screenMovableLambdas.first()
+
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+      ) {
+        screenContentMovable()
+      }
+    } else {
+      for (childScreenIndex in lastTwoChildScreens.indices) {
+        val screenContentMovable = screenMovableLambdas[childScreenIndex]
 
         val toolbarAlpha = if (childScreenIndex == 0) {
           lerpFloat(1f, 0f, Math.abs(animationProgress))

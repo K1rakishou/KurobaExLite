@@ -76,6 +76,10 @@ abstract class MinimizableFloatingComposeScreen(
   @Composable
   protected fun MinimizableContent(
     onCloseMediaViewerClicked: () -> Unit,
+    goToPreviousMedia: () -> Unit,
+    goToNextMedia: () -> Unit,
+    togglePlayPause: () -> Unit,
+    isCurrentlyPaused: () -> Boolean?,
     content: @Composable (Boolean) -> Unit
   ) {
     val density = LocalDensity.current
@@ -127,15 +131,13 @@ abstract class MinimizableFloatingComposeScreen(
           val windowWidth = with(density) { windowSize.width.roundToPx() }
           val windowHeight = with(density) { windowSize.height.roundToPx() }
 
-          val leftInset = with(density) { insets.left.roundToPx() }
-          val rightInset = with(density) { insets.right.roundToPx() }
           val topInset = with(density) { insets.top.roundToPx() }
           val bottomInset = with(density) { insets.bottom.roundToPx() }
 
-          if (resultX <= leftInset) {
-            resultX = leftInset
-          } else if (resultX > maxWidth - windowWidth - rightInset) {
-            resultX = maxWidth - windowWidth - rightInset
+          if (resultX <= 0) {
+            resultX = 0
+          } else if (resultX > maxWidth - windowWidth) {
+            resultX = maxWidth - windowWidth
           }
 
           if (resultY <= topInset) {
@@ -233,7 +235,7 @@ abstract class MinimizableFloatingComposeScreen(
                   .kurobaClickable(
                     enabled = buttonsClickable,
                     onClick = {
-                      /*TODO*/
+                      goToPreviousMedia()
                       clicksFlow.tryEmit(Unit)
                     }
                   ),
@@ -259,7 +261,7 @@ abstract class MinimizableFloatingComposeScreen(
                   .kurobaClickable(
                     enabled = buttonsClickable,
                     onClick = {
-                      /*TODO*/
+                      goToNextMedia()
                       clicksFlow.tryEmit(Unit)
                     }
                   ),

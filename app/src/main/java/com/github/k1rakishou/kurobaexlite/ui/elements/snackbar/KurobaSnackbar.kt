@@ -100,8 +100,6 @@ fun KurobaSnackbarContainer(
     Box(
       modifier = modifier
         .padding(
-          start = insets.left,
-          end = insets.right,
           top = insets.top,
           bottom = insets.bottom
         )

@@ -8,6 +8,10 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 class MediaViewerScreenState(
   private val appSettings: AppSettings,
@@ -34,6 +38,10 @@ class MediaViewerScreenState(
   val muteByDefault: State<Boolean>
     get() = _muteByDefault
 
+  private val _mediaNavigationEventFlow = MutableSharedFlow<MediaNavigationEvent>(Channel.UNLIMITED)
+  val mediaNavigationEventFlow: SharedFlow<MediaNavigationEvent>
+    get() = _mediaNavigationEventFlow.asSharedFlow()
+
   private var _lastOpenedPage: Int? = null
 
   fun init(images: List<ImageLoadState>?, initialPage: Int?, mediaViewerUiVisible: Boolean) {
@@ -59,6 +67,14 @@ class MediaViewerScreenState(
 
   fun onCurrentPagerPageChanged(page: Int) {
     _lastOpenedPage = page
+  }
+
+  fun goToPrevMedia() {
+    _mediaNavigationEventFlow.tryEmit(MediaNavigationEvent.GoToPrev)
+  }
+
+  fun goToNextMedia() {
+    _mediaNavigationEventFlow.tryEmit(MediaNavigationEvent.GoToNext)
   }
 
   fun isLoaded(): Boolean = _initialPage.value != null && _images.isNotEmpty()
@@ -89,6 +105,11 @@ class MediaViewerScreenState(
     val imagesMut = _images
 
     imagesMut[page] = ImageLoadState.PreparingForLoading(postImageDataLoadState.postImage)
+  }
+
+  enum class MediaNavigationEvent {
+    GoToPrev,
+    GoToNext
   }
 
   companion object {

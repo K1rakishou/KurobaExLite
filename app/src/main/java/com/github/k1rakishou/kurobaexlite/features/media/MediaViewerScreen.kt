@@ -105,8 +105,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.absoluteValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import logcat.LogPriority
@@ -152,14 +154,31 @@ class MediaViewerScreen(
 
   @Composable
   override fun CardContent() {
+    val mediaViewerScreenState =
+      rememberSaveable(saver = MediaViewerScreenState.Saver(appSettings)) {
+        MediaViewerScreenState(appSettings)
+      }
+
     MinimizableContent(
       onCloseMediaViewerClicked = { stopPresenting() },
-      content = { isMinimized -> CardContentInternal(isMinimized = isMinimized) }
+      goToPreviousMedia = { mediaViewerScreenState.goToPrevMedia() },
+      goToNextMedia = { mediaViewerScreenState.goToNextMedia() },
+      togglePlayPause = { },
+      isCurrentlyPaused = { false },
+      content = { isMinimized ->
+        CardContentInternal(
+          isMinimized = isMinimized,
+          mediaViewerScreenState = mediaViewerScreenState
+        )
+      }
     )
   }
 
   @Composable
-  private fun CardContentInternal(isMinimized: Boolean) {
+  private fun CardContentInternal(
+    isMinimized: Boolean,
+    mediaViewerScreenState: MediaViewerScreenState
+  ) {
     val chanTheme = LocalChanTheme.current
     val insets = LocalWindowInsets.current
     val coroutineScope = rememberCoroutineScope()
@@ -171,11 +190,6 @@ class MediaViewerScreen(
 
     val animatable = remember { Animatable(0f) }
     val animationProgress by animatable.asState()
-
-    val mediaViewerScreenState =
-      rememberSaveable(saver = MediaViewerScreenState.Saver(appSettings)) {
-        MediaViewerScreenState(appSettings)
-      }
 
     var availableSizeMut by remember(key1 = isMinimized) { mutableStateOf<IntSize>(IntSize.Zero) }
     val availableSize = availableSizeMut
@@ -690,6 +704,33 @@ class MediaViewerScreen(
     val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
 
     LaunchedEffect(
+      key1 = Unit,
+      block = {
+        mediaViewerScreenState.mediaNavigationEventFlow.collectLatest { mediaNavigationEvent ->
+          val currentPage = pagerState.currentPage
+          val pageCount = pagerState.pageCount
+
+          var nextPage = when (mediaNavigationEvent) {
+            MediaViewerScreenState.MediaNavigationEvent.GoToPrev -> currentPage - 1
+            MediaViewerScreenState.MediaNavigationEvent.GoToNext -> currentPage + 1
+          }
+
+          if (nextPage < 0) {
+            nextPage = (pageCount - 1)
+          }
+
+          nextPage %= pageCount
+
+          if ((nextPage - currentPage).absoluteValue > 1) {
+            pagerState.scrollToPage(nextPage)
+          } else {
+            pagerState.animateScrollToPage(nextPage)
+          }
+        }
+      }
+    )
+
+    LaunchedEffect(
       key1 = pagerState,
       block = {
         try {
@@ -899,7 +940,8 @@ class MediaViewerScreen(
 
               LaunchedEffect(
                 key1 = muteByDefault,
-                block = { mediaState.isMutedState.value = muteByDefault })
+                block = { mediaState.isMutedState.value = muteByDefault }
+              )
 
               LaunchedEffect(
                 key1 = Unit,
