@@ -145,9 +145,17 @@ open class NavigationRouter(
 
     // Hack for making MinimizableFloatingComposeScreen always on top of any other screen
     // TODO(KurobaEx): Maybe I could add some kind of "zOrder" property and use it to sort screens?
+
     val indexOfMinimizableScreen = screensCombined.indexOfFirst { it.screen is MinimizableFloatingComposeScreen }
     if (indexOfMinimizableScreen >= 0 && indexOfMinimizableScreen != screensCombined.lastIndex) {
-      screensCombined.add(screensCombined.removeAt(indexOfMinimizableScreen))
+      val isScreenMinimized = (screensCombined.getOrNull(indexOfMinimizableScreen)?.screen as? MinimizableFloatingComposeScreen)
+        ?.isScreenMinimized
+        ?.value
+        ?: false
+
+      if (isScreenMinimized) {
+        screensCombined.add(screensCombined.removeAt(indexOfMinimizableScreen))
+      }
     }
 
     return screensCombined

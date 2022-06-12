@@ -191,7 +191,7 @@ class MediaViewerScreen(
     val animatable = remember { Animatable(0f) }
     val animationProgress by animatable.asState()
 
-    var availableSizeMut by remember(key1 = isMinimized) { mutableStateOf<IntSize>(IntSize.Zero) }
+    var availableSizeMut by remember { mutableStateOf<IntSize>(IntSize.Zero) }
     val availableSize = availableSizeMut
 
     val bgColor = if (isMinimized) {
@@ -219,32 +219,30 @@ class MediaViewerScreen(
             alpha = if (transitionFinished && previewLoadingFinished) 1f else 0f
           }
       ) {
-        if (availableSize.width > 0 && availableSize.height > 0) {
-          ContentAfterTransition(
-            isMinimized = isMinimized,
-            mediaViewerScreenState = mediaViewerScreenState,
-            chanTheme = chanTheme,
-            availableSize = availableSize,
-            toolbarHeight = toolbarHeight,
-            coroutineScope = coroutineScope,
-            insets = insets,
-            onPreviewLoadingFinished = { postImage ->
-              val previewLoadingFinishedForOutThumbnail = clickedThumbnailBounds == null
-                || postImage == clickedThumbnailBounds?.postImage
+        ContentAfterTransition(
+          isMinimized = isMinimized,
+          mediaViewerScreenState = mediaViewerScreenState,
+          chanTheme = chanTheme,
+          availableSize = availableSize,
+          toolbarHeight = toolbarHeight,
+          coroutineScope = coroutineScope,
+          insets = insets,
+          onPreviewLoadingFinished = { postImage ->
+            val previewLoadingFinishedForOutThumbnail = clickedThumbnailBounds == null
+              || postImage == clickedThumbnailBounds?.postImage
 
-              logcat(TAG, LogPriority.VERBOSE) {
-                "onPreviewLoadingFinished() " +
-                  "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
-                  "got '${postImage.fullImageAsString}', " +
-                  "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
-              }
-
-              if (previewLoadingFinishedForOutThumbnail) {
-                previewLoadingFinished = true
-              }
+            logcat(TAG, LogPriority.VERBOSE) {
+              "onPreviewLoadingFinished() " +
+                "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
+                "got '${postImage.fullImageAsString}', " +
+                "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
             }
-          )
-        }
+
+            if (previewLoadingFinishedForOutThumbnail) {
+              previewLoadingFinished = true
+            }
+          }
+        )
       }
 
       TransitionPreview(

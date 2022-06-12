@@ -83,8 +83,19 @@ abstract class MinimizableFloatingComposeScreen(
     val density = LocalDensity.current
     val insets = LocalWindowInsets.current
     val chanTheme = LocalChanTheme.current
+    val isTablet = globalUiInfoManager.isTablet
 
-    val windowSize = remember { DpSize(width = 160.dp, 112.dp) }
+    val windowSize = remember {
+      val ratio = 16f / 9f
+      val widthDp = if (isTablet) 220.dp else 160.dp
+      val heightDp = with(density) { (widthDp.roundToPx() / ratio).toDp() }
+
+      return@remember DpSize(
+        width = widthDp,
+        height = heightDp
+      )
+    }
+
     var maxSize by remember { mutableStateOf(IntSize.Zero) }
     var minimizedWindowPosition by remember { mutableStateOf(IntOffset(0, 0)) }
     var minimizedWindowPositionCoerced by remember { mutableStateOf(IntOffset(0, 0)) }

@@ -55,6 +55,8 @@ fun RootRouterHost(
           rootNavigationRouter.onScreenUpdateFinished(screenUpdate)
 
           if (screenUpdate.isScreenBeingRemoved()) {
+            val key = "primary_${screenUpdate.screen.screenKey.key}"
+
             cache.remove(key)
             saveableStateHolder.removeState(key)
           }
@@ -87,6 +89,8 @@ fun RootRouterHost(
           rootNavigationRouter.onScreenUpdateFinished(screenUpdate)
 
           if (screenUpdate.isScreenBeingRemoved()) {
+            val key = "floating_${screenUpdate.screen.screenKey.key}"
+
             cache.remove(key)
             saveableStateHolder.removeState(key)
           }
@@ -140,6 +144,8 @@ fun RouterHost(
           navigationRouter.onScreenUpdateFinished(screenUpdate)
 
           if (screenUpdate.isScreenBeingRemoved()) {
+            val key = "primary_${screenUpdate.screen.screenKey.key}"
+
             cache.remove(key)
             saveableStateHolder.removeState(key)
           }
