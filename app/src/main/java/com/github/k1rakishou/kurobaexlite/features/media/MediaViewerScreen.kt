@@ -663,13 +663,13 @@ class MediaViewerScreen(
     onPreviewLoadingFinished: (IPostImage) -> Unit
   ) {
     val context = LocalContext.current
-    val initialPageMut by mediaViewerScreenState.initialPage
+    val currentPageIndexForInitialScrollMut by mediaViewerScreenState.currentPageIndex
     val imagesMut = mediaViewerScreenState.images
 
-    val initialPage = initialPageMut
+    val currentPageIndexForInitialScroll = currentPageIndexForInitialScrollMut
     val images = imagesMut
 
-    if (initialPage == null || images.isEmpty()) {
+    if (currentPageIndexForInitialScroll == null || images.isEmpty()) {
       return
     }
 
@@ -734,7 +734,7 @@ class MediaViewerScreen(
       key1 = pagerState,
       block = {
         try {
-          pagerState.scrollToPage(initialPage)
+          pagerState.scrollToPage(currentPageIndexForInitialScroll)
           delay(250L)
         } finally {
           initialScrollHappened = true

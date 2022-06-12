@@ -22,9 +22,9 @@ class MediaViewerScreenState(
   val images: List<ImageLoadState>
     get() = _images
 
-  private val _initialPage = mutableStateOf<Int?>(initialPage)
-  val initialPage: State<Int?>
-    get() = _initialPage
+  private val _currentPageIndex = mutableStateOf<Int?>(initialPage)
+  val currentPageIndex: State<Int?>
+    get() = _currentPageIndex
 
   private val _currentlyLoadedMediaMap = mutableStateMapOf<Int, MediaState>()
   val currentlyLoadedMediaMap: Map<Int, MediaState>
@@ -42,8 +42,6 @@ class MediaViewerScreenState(
   val mediaNavigationEventFlow: SharedFlow<MediaNavigationEvent>
     get() = _mediaNavigationEventFlow.asSharedFlow()
 
-  private var _lastOpenedPage: Int? = null
-
   fun init(images: List<ImageLoadState>?, initialPage: Int?, mediaViewerUiVisible: Boolean) {
     Snapshot.withMutableSnapshot {
       _images.clear()
@@ -52,8 +50,8 @@ class MediaViewerScreenState(
         _images.addAll(images)
       }
 
-      if (_initialPage.value == null) {
-        _initialPage.value = initialPage
+      if (_currentPageIndex.value == null) {
+        _currentPageIndex.value = initialPage
       }
 
       _mediaViewerUiVisible.value = mediaViewerUiVisible
@@ -69,7 +67,7 @@ class MediaViewerScreenState(
   }
 
   fun onCurrentPagerPageChanged(page: Int) {
-    _lastOpenedPage = page
+    _currentPageIndex.value = page
   }
 
   fun goToPrevMedia() {
@@ -80,7 +78,7 @@ class MediaViewerScreenState(
     _mediaNavigationEventFlow.tryEmit(MediaNavigationEvent.GoToNext)
   }
 
-  fun isLoaded(): Boolean = _initialPage.value != null && _images.isNotEmpty()
+  fun isLoaded(): Boolean = _currentPageIndex.value != null && _images.isNotEmpty()
   fun imagesMutable(): SnapshotStateList<ImageLoadState> = _images
 
   suspend fun toggleMediaViewerUiVisibility() {
@@ -122,7 +120,7 @@ class MediaViewerScreenState(
       save = {
         listOf<Any?>(
           it.muteByDefault.value,
-          it._lastOpenedPage ?: it.initialPage.value
+          it.currentPageIndex.value
         )
       },
       restore = { list ->
