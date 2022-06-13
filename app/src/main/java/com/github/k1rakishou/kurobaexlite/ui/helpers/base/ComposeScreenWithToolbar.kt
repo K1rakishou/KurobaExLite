@@ -67,11 +67,7 @@ abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar>(
     return topScreen.screenKey == screenKey
   }
 
-  fun childScreensCount(): Int {
-    return navigationRouter.navigationScreensStack.size
-  }
-
-  fun hasChildScreens(): Boolean = navigationRouter.navigationScreensStack.isNotEmpty()
+  fun hasChildScreens(): Boolean = navigationRouter.navigationScreensStack.size > 1
 
   fun canDragPager(): Boolean {
     if (navigationRouter.navigationScreensStack.isEmpty()) {

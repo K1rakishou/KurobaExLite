@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -36,7 +35,6 @@ import com.github.k1rakishou.chan.core.mpv.MpvUtils
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
@@ -49,7 +47,6 @@ internal fun MediaViewerScreenVideoControls(
 
   val videoStartedPlayingState by videoMediaState.videoStartedPlayingState
   val videoStartedPlayingUpdated by rememberUpdatedState(newValue = videoStartedPlayingState)
-  val videoControlsVisible by videoMediaState.videoControlsVisibleState
 
   Column(
     modifier = Modifier
@@ -149,20 +146,6 @@ internal fun MediaViewerScreenVideoControls(
       val isMuted by videoMediaState.isMutedState
       val isPaused by videoMediaState.isPausedState
       val hwDecEnabled by videoMediaState.hardwareDecodingEnabledState
-
-      Box(
-        modifier = Modifier.size(42.dp),
-        contentAlignment = Alignment.Center
-      ) {
-        if (videoStartedPlayingUpdated || !videoControlsVisible) {
-          Spacer(modifier = Modifier.fillMaxSize())
-        } else {
-          KurobaComposeLoadingIndicator(
-            modifier = Modifier.size(24.dp),
-            overrideColor = Color.White
-          )
-        }
-      }
 
       val hwDecTextId = remember(key1 = hwDecEnabled) {
         if (hwDecEnabled) {

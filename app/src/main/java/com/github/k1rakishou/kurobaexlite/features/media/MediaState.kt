@@ -26,7 +26,7 @@ sealed class MediaState {
     val slideOffsetState = mutableStateOf(0f)
     val blockAutoPositionUpdateState = mutableStateOf(false)
 
-    val videoControlsVisibleState = mutableStateOf(true)
+    val playerInitializedState = mutableStateOf(true)
     val videoStartedPlayingState = mutableStateOf(false)
     val hasAudioState = mutableStateOf(false)
     val isMutedState = mutableStateOf(true)

@@ -29,6 +29,7 @@ import java.io.File
 
 @Composable
 fun DisplayFullImage(
+  isMinimized: Boolean,
   availableSize: IntSize,
   postImageDataLoadState: ImageLoadState.Ready,
   imageFile: File,
@@ -113,7 +114,7 @@ fun DisplayFullImage(
   }
 
   val state = rememberComposeSubsamplingScaleImageState(
-    Unit,
+    maxScale,
     scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
     doubleTapZoom = 2f,
     maxScale = maxScale,
@@ -145,11 +146,20 @@ fun DisplayFullImage(
     }
   )
 
+  val onImageTappedFunc = remember(key1 = isMinimized) {
+    if (isMinimized) {
+      null
+    } else {
+      { _: Offset -> onImageTapped() }
+    }
+  }
+
   ComposeSubsamplingScaleImage(
     modifier = Modifier.fillMaxSize(),
     state = state,
     imageSourceProvider = imageSourceProvider,
+    enableGestures = !isMinimized,
     eventListener = eventListener,
-    onImageTapped = { onImageTapped() }
+    onImageTapped = onImageTappedFunc
   )
 }

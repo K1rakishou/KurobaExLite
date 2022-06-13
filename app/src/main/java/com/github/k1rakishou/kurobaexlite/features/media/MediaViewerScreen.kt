@@ -32,6 +32,7 @@ import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -863,12 +864,14 @@ class MediaViewerScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
+    val isMinimizedUpdated by rememberUpdatedState(newValue = isMinimized)
     var isDragGestureAllowedFunc by remember { mutableStateOf(defaultIsDragGestureAllowedFunc) }
 
     DraggableArea(
+      availableSize = availableSize,
       closeScreen = { stopPresenting() },
       isDragGestureAllowedFunc = { currPosition, startPosition ->
-        return@DraggableArea !isMinimized && isDragGestureAllowedFunc(currPosition, startPosition)
+        return@DraggableArea !isMinimizedUpdated && isDragGestureAllowedFunc(currPosition, startPosition)
       }
     ) {
       when (postImageDataLoadState) {
@@ -915,27 +918,24 @@ class MediaViewerScreen(
 
           when (mediaState) {
             is MediaState.Static -> {
-              if (isMinimized) {
-                displayImagePreviewMovable()
-              } else {
-                val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
+              val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
 
-                DisplayFullImage(
-                  availableSize = availableSize,
-                  postImageDataLoadState = postImageDataLoadState,
-                  imageFile = imageFile,
-                  setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
-                  onFullImageLoaded = { fullMediaLoaded = true },
-                  onFullImageFailedToLoad = { fullMediaLoaded = false },
-                  onImageTapped = { onMediaTapped() },
-                  reloadImage = {
-                    coroutineScope.launch {
-                      mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
-                      mediaViewerScreenState.reloadImage(page, postImageDataLoadState)
-                    }
+              DisplayFullImage(
+                isMinimized = isMinimized,
+                availableSize = availableSize,
+                postImageDataLoadState = postImageDataLoadState,
+                imageFile = imageFile,
+                setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
+                onFullImageLoaded = { fullMediaLoaded = true },
+                onFullImageFailedToLoad = { fullMediaLoaded = false },
+                onImageTapped = { onMediaTapped() },
+                reloadImage = {
+                  coroutineScope.launch {
+                    mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
+                    mediaViewerScreenState.reloadImage(page, postImageDataLoadState)
                   }
-                )
-              }
+                }
+              )
             }
             is MediaState.Video -> {
               val muteByDefault by mediaViewerScreenState.muteByDefault

@@ -11,7 +11,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,7 +33,9 @@ import androidx.compose.ui.input.pointer.util.addPointerInputChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,6 +59,7 @@ private val boldTypeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
 @Composable
 fun DraggableArea(
+  availableSize: IntSize,
   closeScreen: () -> Unit,
   isDragGestureAllowedFunc: (currentPosition: Offset, startPosition: Offset) -> Boolean,
   content: @Composable () -> Unit
@@ -168,9 +171,18 @@ fun DraggableArea(
     }
   )
 
+  val availableSizeDp = remember(key1 = availableSize) {
+    with(density) {
+      DpSize(
+        width = availableSize.width.toDp(),
+        height = availableSize.height.toDp()
+      )
+    }
+  }
+
   Box(
     modifier = Modifier
-      .fillMaxSize()
+      .size(availableSizeDp)
       .pointerInput(
         key1 = Unit,
         block = {

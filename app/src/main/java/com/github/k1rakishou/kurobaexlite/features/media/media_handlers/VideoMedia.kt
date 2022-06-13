@@ -54,6 +54,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import logcat.asLog
@@ -292,6 +293,15 @@ fun DisplayVideo(
       }
     )
 
+    if (!videoStartedPlaying) {
+      Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        KurobaComposeLoadingIndicator()
+      }
+    }
+
     SeekToHint(seekingToHint, mpvView)
   }
 
@@ -307,14 +317,14 @@ fun DisplayVideo(
         mpvView.addObserver(eventObserver)
         MPVLib.addLogObserver(logObserver)
 
-        videoMediaState.videoControlsVisibleState.value = true
+        videoMediaState.playerInitializedState.value = true
 
         mpvView.muteUnmute(videoMediaState.isMutedState.value)
         mpvView.playFile(postImageDataLoadState.fullImageUrlAsString)
         mpvView.visibility = View.VISIBLE
 
         return@DisposableEffect onDispose {
-          videoMediaState.videoControlsVisibleState.value = false
+          videoMediaState.playerInitializedState.value = false
           videoMediaState.videoStartedPlayingState.value = false
 
           mpvView.detach()
