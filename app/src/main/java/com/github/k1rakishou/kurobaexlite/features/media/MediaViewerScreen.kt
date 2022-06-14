@@ -161,11 +161,8 @@ class MediaViewerScreen(
       }
 
     MinimizableContent(
+      mediaViewerScreenState = mediaViewerScreenState,
       onCloseMediaViewerClicked = { stopPresenting() },
-      goToPreviousMedia = { mediaViewerScreenState.goToPrevMedia() },
-      goToNextMedia = { mediaViewerScreenState.goToNextMedia() },
-      togglePlayPause = { },
-      isCurrentlyPaused = { false },
       content = { isMinimized ->
         CardContentInternal(
           isMinimized = isMinimized,
@@ -291,7 +288,7 @@ class MediaViewerScreen(
 
     val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
     val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
-    val images = mediaViewerScreenState.images
+    val images = mediaViewerScreenState.mediaList
 
     val bgColor = remember(chanTheme.backColor) {
       chanTheme.backColor.copy(alpha = 0.5f)
@@ -663,7 +660,7 @@ class MediaViewerScreen(
   ) {
     val context = LocalContext.current
     val currentPageIndexForInitialScrollMut by mediaViewerScreenState.currentPageIndex
-    val imagesMut = mediaViewerScreenState.images
+    val imagesMut = mediaViewerScreenState.mediaList
 
     val currentPageIndexForInitialScroll = currentPageIndexForInitialScrollMut
     val images = imagesMut
@@ -749,11 +746,11 @@ class MediaViewerScreen(
     LaunchedEffect(
       key1 = currentPageIndex,
       block = {
+        mediaViewerScreenState.onCurrentPagerPageChanged(currentPageIndex)
+
         if (!initialScrollHappened) {
           return@LaunchedEffect
         }
-
-        mediaViewerScreenState.onCurrentPagerPageChanged(currentPageIndex)
 
         val postImageData = images.getOrNull(currentPageIndex)?.postImage
           ?: return@LaunchedEffect
@@ -776,7 +773,7 @@ class MediaViewerScreen(
       key = { page -> images[page].fullImageUrlAsString }
     ) { page ->
       val mediaState = remember(key1 = page) {
-        val postImage = mediaViewerScreenState.images
+        val postImage = mediaViewerScreenState.mediaList
           .getOrNull(page)
           ?.postImage
           ?: return@remember null
@@ -1087,13 +1084,13 @@ class MediaViewerScreen(
     val postImageData = postImageDataLoadState.postImage
     val fullImageUrl = postImageData.fullImageAsUrl
 
-    val index = mediaViewerScreenState.imagesMutable().indexOfFirst { imageLoadState ->
+    val index = mediaViewerScreenState.mediaListMutable().indexOfFirst { imageLoadState ->
       imageLoadState.fullImageUrl == postImageData.fullImageAsUrl
     }
 
     // We can just stream videos without having to load them first
     if (postImageDataLoadState.postImage.imageType() == ImageType.Video) {
-      mediaViewerScreenState.imagesMutable().set(index, ImageLoadState.Ready(postImageData, null))
+      mediaViewerScreenState.mediaListMutable().set(index, ImageLoadState.Ready(postImageData, null))
       return
     }
 
@@ -1104,7 +1101,7 @@ class MediaViewerScreen(
       )
 
       val imageLoadState = ImageLoadState.Error(postImageData, exception)
-      mediaViewerScreenState.imagesMutable().set(index, imageLoadState)
+      mediaViewerScreenState.mediaListMutable().set(index, imageLoadState)
 
       return
     }
@@ -1140,11 +1137,11 @@ class MediaViewerScreen(
               // fallthrough
             }
 
-            mediaViewerScreenState.imagesMutable().set(index, imageLoadState)
+            mediaViewerScreenState.mediaListMutable().set(index, imageLoadState)
           }
           is ImageLoadState.PreparingForLoading,
           is ImageLoadState.Ready -> {
-            mediaViewerScreenState.imagesMutable().set(index, imageLoadState)
+            mediaViewerScreenState.mediaListMutable().set(index, imageLoadState)
           }
         }
       }

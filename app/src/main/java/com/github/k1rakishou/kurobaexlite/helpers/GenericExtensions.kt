@@ -793,3 +793,11 @@ fun Float.quantize(precision: Float): Float {
     (ceil((this.toDouble() / precision.toDouble()) + additionalPrecision) * precision).toFloat()
   }
 }
+
+fun <T> MutableList<T>.moveToEnd(index: Int) {
+  if (getOrNull(index) == null) {
+    return
+  }
+
+  this.add(this.removeAt(index))
+}

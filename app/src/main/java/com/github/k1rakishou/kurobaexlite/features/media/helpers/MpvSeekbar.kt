@@ -39,6 +39,7 @@ import kotlinx.coroutines.CancellationException
 fun MpvSeekbar(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
+  userSeekEnabled: Boolean = true,
   trackColor: Color,
   thumbColorNormal: Color,
   thumbColorPressed: Color,
@@ -92,6 +93,10 @@ fun MpvSeekbar(
 
     val draggableState = rememberDraggableState(
       onDelta = { delta ->
+        if (!userSeekEnabled) {
+          return@rememberDraggableState
+        }
+
         rawOffsetInPx = (rawOffsetInPx + delta).coerceIn(0f, maxWidthPx)
         slideOffsetState.value = rawOffsetToUserValue(rawOffsetInPx, maxWidthPx)
         onValueChange(slideOffset)
@@ -99,6 +104,10 @@ fun MpvSeekbar(
     )
 
     val gestureEndAction = rememberUpdatedState<(Float) -> Unit> {
+      if (!userSeekEnabled) {
+        return@rememberUpdatedState
+      }
+
       slideOffsetState.value = rawOffsetToUserValue(rawOffsetInPx, maxWidthPx)
       onValueChange(slideOffset)
     }

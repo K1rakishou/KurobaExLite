@@ -18,9 +18,9 @@ class MediaViewerScreenState(
   muteByDefault: Boolean = true,
   initialPage: Int? = null
 ) {
-  private var _images = mutableStateListOf<ImageLoadState>()
-  val images: List<ImageLoadState>
-    get() = _images
+  private var _mediaList = mutableStateListOf<ImageLoadState>()
+  val mediaList: List<ImageLoadState>
+    get() = _mediaList
 
   private val _currentPageIndex = mutableStateOf<Int?>(initialPage)
   val currentPageIndex: State<Int?>
@@ -44,10 +44,10 @@ class MediaViewerScreenState(
 
   fun init(images: List<ImageLoadState>?, initialPage: Int?, mediaViewerUiVisible: Boolean) {
     Snapshot.withMutableSnapshot {
-      _images.clear()
+      _mediaList.clear()
 
       if (images != null) {
-        _images.addAll(images)
+        _mediaList.addAll(images)
       }
 
       if (_currentPageIndex.value == null) {
@@ -66,6 +66,14 @@ class MediaViewerScreenState(
     _currentlyLoadedMediaMap.remove(page)
   }
 
+  fun getMediaStateByIndex(index: Int?): MediaState? {
+    if (index == null) {
+      return null
+    }
+
+    return _currentlyLoadedMediaMap[index]
+  }
+
   fun onCurrentPagerPageChanged(page: Int) {
     _currentPageIndex.value = page
   }
@@ -78,8 +86,9 @@ class MediaViewerScreenState(
     _mediaNavigationEventFlow.tryEmit(MediaNavigationEvent.GoToNext)
   }
 
-  fun isLoaded(): Boolean = _currentPageIndex.value != null && _images.isNotEmpty()
-  fun imagesMutable(): SnapshotStateList<ImageLoadState> = _images
+  fun isLoaded(): Boolean = _currentPageIndex.value != null && _mediaList.isNotEmpty()
+
+  fun mediaListMutable(): SnapshotStateList<ImageLoadState> = _mediaList
 
   suspend fun toggleMediaViewerUiVisibility() {
     val newValue = !_mediaViewerUiVisible.value
@@ -93,7 +102,7 @@ class MediaViewerScreenState(
   }
 
   fun onPageDisposed(postImageDataLoadState: ImageLoadState) {
-    val imagesMut = _images
+    val imagesMut = _mediaList
 
     val indexOfThisImage = imagesMut.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }
     if (indexOfThisImage >= 0) {
@@ -103,7 +112,7 @@ class MediaViewerScreenState(
   }
 
   fun reloadImage(page: Int, postImageDataLoadState: ImageLoadState.Ready) {
-    val imagesMut = _images
+    val imagesMut = _mediaList
 
     imagesMut[page] = ImageLoadState.PreparingForLoading(postImageDataLoadState.postImage)
   }

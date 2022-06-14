@@ -218,7 +218,7 @@ internal fun MediaViewerScreenVideoControls(
   }
 }
 
-private suspend fun PointerInputScope.processTapToSeekGesture(
+suspend fun PointerInputScope.processTapToSeekGesture(
   videoStartedPlaying: () -> Boolean,
   videoDuration: () -> Long?,
   lastSlideOffset: () -> Float,

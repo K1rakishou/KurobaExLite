@@ -173,7 +173,7 @@ private fun MediaToolbar(
             onBackPressed()
           }
           ToolbarIcons.DownloadMedia -> {
-            mediaViewerScreenState.images
+            mediaViewerScreenState.mediaList
               .takeIf { it.isNotEmpty() }
               ?.let { images ->
                 val postImageToDownload = images.getOrNull(currentPagerPage)?.postImage
@@ -226,7 +226,7 @@ private fun UpdateMediaViewerToolbarTitle(
   }
 
   val currentImageData = remember(key1 = currentPagerPage) {
-    val images = mediaViewerScreenState.images
+    val images = mediaViewerScreenState.mediaList
 
     return@remember images.getOrNull(currentPagerPage)?.postImage
   }
@@ -238,7 +238,7 @@ private fun UpdateMediaViewerToolbarTitle(
         return@LaunchedEffect
       }
 
-      val imagesCount = mediaViewerScreenState.images.size
+      val imagesCount = mediaViewerScreenState.mediaList.size
 
       toolbarState.toolbarTitleState.value = HtmlUnescape.unescape(currentImageData.originalFileNameEscaped)
       toolbarState.toolbarSubtitleState.value = formatImageInfo(

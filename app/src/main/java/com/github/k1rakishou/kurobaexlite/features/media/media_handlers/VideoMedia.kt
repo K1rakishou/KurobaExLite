@@ -302,7 +302,12 @@ fun DisplayVideo(
       }
     }
 
-    SeekToHint(seekingToHint, mpvView)
+    if (!isMinimized) {
+      SeekToHint(
+        seekingToHint = seekingToHint,
+        mpvView = mpvView
+      )
+    }
   }
 
   if (videoStartedPlaying) {

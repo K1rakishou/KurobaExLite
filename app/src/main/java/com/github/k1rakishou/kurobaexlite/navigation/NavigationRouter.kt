@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.navigation
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
+import com.github.k1rakishou.kurobaexlite.helpers.moveToEnd
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -154,7 +155,7 @@ open class NavigationRouter(
         ?: false
 
       if (isScreenMinimized) {
-        screensCombined.add(screensCombined.removeAt(indexOfMinimizableScreen))
+        screensCombined.moveToEnd(indexOfMinimizableScreen)
       }
     }
 
