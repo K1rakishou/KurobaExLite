@@ -52,7 +52,7 @@ fun HomeScreenToolbarContainer(
   require(pagesWrapper.pagesCount >= 0) { "pagesWrapper is empty!" }
 
   val currentPage by remember { derivedStateOf { pagerState.currentPage } }
-  val targetPage by remember { derivedStateOf { pagerState.currentPage } }
+  val targetPage by remember { derivedStateOf { pagerState.targetPage } }
 
   val animationProgress by remember {
     derivedStateOf {

@@ -197,7 +197,7 @@ class HomeScreen(
 
     val pageCount by remember { derivedStateOf { pagerState.pageCount } }
     val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
-    val targetPageIndex by remember { derivedStateOf { pagerState.currentPage } }
+    val targetPageIndex by remember { derivedStateOf { pagerState.targetPage } }
 
     LaunchedEffect(
       key1 = mainUiLayoutMode,
