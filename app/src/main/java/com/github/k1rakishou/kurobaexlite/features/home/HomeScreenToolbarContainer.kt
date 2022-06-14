@@ -52,7 +52,7 @@ fun HomeScreenToolbarContainer(
   require(pagesWrapper.pagesCount >= 0) { "pagesWrapper is empty!" }
 
   val currentPage by remember { derivedStateOf { pagerState.currentPage } }
-  val targetPage by remember { derivedStateOf { pagerState.targetPage } }
+  val targetPage by remember { derivedStateOf { pagerState.currentPage } }
 
   val animationProgress by remember {
     derivedStateOf {
@@ -155,6 +155,7 @@ fun HomeScreenToolbarContainer(
         .fillMaxWidth()
         .height(toolbarHeight)
     ) {
+      // We need to use zIndexes to make the correct (top one of the two) toolbar clickable.
       val zOrders = remember(key1 = pagesWrapper.pagesCount) { IntArray(pagesWrapper.pagesCount) { 0 } }
 
       for ((pageIndex, _) in pagesWrapper.pages.withIndex()) {

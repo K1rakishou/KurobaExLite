@@ -63,6 +63,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDra
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawPagerSwipeExclusionZoneTutorial
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
@@ -196,7 +197,7 @@ class HomeScreen(
 
     val pageCount by remember { derivedStateOf { pagerState.pageCount } }
     val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
-    val targetPageIndex by remember { derivedStateOf { pagerState.targetPage } }
+    val targetPageIndex by remember { derivedStateOf { pagerState.currentPage } }
 
     LaunchedEffect(
       key1 = mainUiLayoutMode,
@@ -625,12 +626,18 @@ class HomeScreen(
     animate: Boolean
   ) {
     val indexOfPage = pagesWrapper.screenIndexByScreenKey(screenKey) ?: -1
-    if (indexOfPage >= 0) {
+    if (indexOfPage < 0) {
+      return
+    }
+
+    try {
       if (animate) {
         pagerState.animateScrollToPage(page = indexOfPage)
       } else {
         pagerState.scrollToPage(page = indexOfPage)
       }
+    } catch (error: CancellationException) {
+      // consumed to avoid the flow collection cancellation
     }
   }
 

@@ -11,7 +11,6 @@ import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.rememberAnimateableStackContainerState
-import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
 @Composable
 fun <T : KurobaChildToolbar> KurobaToolbarContainer(
@@ -48,8 +47,7 @@ fun <T : KurobaChildToolbar> KurobaToolbarContainer(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(bgColor)
-        .consumeClicks(enabled = true),
+        .background(bgColor),
       contentAlignment = Alignment.Center
     ) {
       childToolbar.Content()

@@ -272,7 +272,7 @@ class GlobalUiInfoManager(
   }
 
   fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {
-    return _currentPageMapFlow[uiLayoutMode]?.asStateFlow()!!
+    return _currentPageMapFlow[uiLayoutMode]!!
   }
 
   fun currentPage(): CurrentPage? {

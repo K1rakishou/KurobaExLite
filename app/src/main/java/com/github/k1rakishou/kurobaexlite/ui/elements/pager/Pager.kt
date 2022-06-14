@@ -1,32 +1,43 @@
 @file:JvmName("Pager")
 package com.github.k1rakishou.kurobaexlite.ui.elements.pager
-
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.gestures.FlingBehavior
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import dev.chrisbanes.snapper.*
+import dev.chrisbanes.snapper.ExperimentalSnapperApi
+import dev.chrisbanes.snapper.SnapOffsets
+import dev.chrisbanes.snapper.SnapperFlingBehavior
+import dev.chrisbanes.snapper.SnapperFlingBehaviorDefaults
+import dev.chrisbanes.snapper.SnapperLayoutInfo
+import dev.chrisbanes.snapper.rememberSnapperFlingBehavior
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
-
-/**
- * Library-wide switch to turn on debug logging.
- */
-internal const val DebugLog = false
 
 @RequiresOptIn(message = "Accompanist Pager is experimental. The API may be changed in the future.")
 @Retention(AnnotationRetention.BINARY)
@@ -43,10 +54,23 @@ object PagerDefaults {
    */
   @ExperimentalSnapperApi
   @Suppress("MemberVisibilityCanBePrivate")
+  @Deprecated("MaximumFlingDistance has been deprecated in Snapper")
   val singlePageFlingDistance: (SnapperLayoutInfo) -> Float = { layoutInfo ->
     // We can scroll up to the scrollable size of the lazy layout
     layoutInfo.endScrollOffset - layoutInfo.startScrollOffset.toFloat()
   }
+
+  /**
+   * The default implementation for the `snapIndex` parameter of
+   * [flingBehavior] which limits the fling distance to a single page.
+   */
+  @ExperimentalSnapperApi
+  val singlePageSnapIndex: (SnapperLayoutInfo, startIndex: Int, targetIndex: Int) -> Int =
+    { layoutInfo, startIndex, targetIndex ->
+      targetIndex
+        .coerceIn(startIndex - 1, startIndex + 1)
+        .coerceIn(0, layoutInfo.totalItemsCount - 1)
+    }
 
   /**
    * Remember the default [FlingBehavior] that represents the scroll curve.
@@ -64,6 +88,8 @@ object PagerDefaults {
    */
   @Composable
   @ExperimentalSnapperApi
+  @Deprecated("MaximumFlingDistance has been deprecated in Snapper, replaced with snapIndex")
+  @Suppress("DEPRECATION")
   fun flingBehavior(
     state: PagerState,
     decayAnimationSpec: DecayAnimationSpec<Float> = rememberSplineBasedDecay(),
@@ -78,6 +104,75 @@ object PagerDefaults {
     maximumFlingDistance = maximumFlingDistance,
     endContentPadding = endContentPadding,
   )
+
+  /**
+   * Remember the default [FlingBehavior] that represents the scroll curve.
+   *
+   * Please remember to provide the correct [endContentPadding] if supplying your own
+   * [FlingBehavior] to [VerticalPager] or [HorizontalPager]. See those functions for how they
+   * calculate the value.
+   *
+   * @param state The [PagerState] to update.
+   * @param decayAnimationSpec The decay animation spec to use for decayed flings.
+   * @param snapAnimationSpec The animation spec to use when snapping.
+   * @param endContentPadding The amount of content padding on the end edge of the lazy list
+   * in pixels (end/bottom depending on the scrolling direction).
+   * @param snapIndex Block which returns the index to snap to. The block is provided with the
+   * [SnapperLayoutInfo], the index where the fling started, and the index which Snapper has
+   * determined is the correct target index. Callers can override this value to any valid index
+   * for the layout. Some common use cases include limiting the fling distance, and rounding up/down
+   * to achieve snapping to groups of items.
+   */
+  @Composable
+  @ExperimentalSnapperApi
+  fun flingBehavior(
+    state: PagerState,
+    decayAnimationSpec: DecayAnimationSpec<Float> = rememberSplineBasedDecay(),
+    snapAnimationSpec: AnimationSpec<Float> = SnapperFlingBehaviorDefaults.SpringAnimationSpec,
+    endContentPadding: Dp = 0.dp,
+    snapIndex: (SnapperLayoutInfo, startIndex: Int, targetIndex: Int) -> Int,
+  ): FlingBehavior = rememberSnapperFlingBehavior(
+    lazyListState = state.lazyListState,
+    snapOffsetForItem = SnapOffsets.Start, // pages are full width, so we use the simplest
+    decayAnimationSpec = decayAnimationSpec,
+    springAnimationSpec = snapAnimationSpec,
+    endContentPadding = endContentPadding,
+    snapIndex = snapIndex,
+  )
+
+  /**
+   * Remember the default [FlingBehavior] that represents the scroll curve.
+   *
+   * Please remember to provide the correct [endContentPadding] if supplying your own
+   * [FlingBehavior] to [VerticalPager] or [HorizontalPager]. See those functions for how they
+   * calculate the value.
+   *
+   * @param state The [PagerState] to update.
+   * @param decayAnimationSpec The decay animation spec to use for decayed flings.
+   * @param snapAnimationSpec The animation spec to use when snapping.
+   * @param endContentPadding The amount of content padding on the end edge of the lazy list
+   * in pixels (end/bottom depending on the scrolling direction).
+   */
+  @Composable
+  @ExperimentalSnapperApi
+  fun flingBehavior(
+    state: PagerState,
+    decayAnimationSpec: DecayAnimationSpec<Float> = rememberSplineBasedDecay(),
+    snapAnimationSpec: AnimationSpec<Float> = SnapperFlingBehaviorDefaults.SpringAnimationSpec,
+    endContentPadding: Dp = 0.dp,
+  ): FlingBehavior {
+    // You might be wondering this is function exists rather than a default value for snapIndex
+    // above. It was done to remove overload ambiguity with the maximumFlingDistance overload
+    // below. When that function is removed, we also remove this function and move to a default
+    // param value.
+    return flingBehavior(
+      state = state,
+      decayAnimationSpec = decayAnimationSpec,
+      snapAnimationSpec = snapAnimationSpec,
+      endContentPadding = endContentPadding,
+      snapIndex = singlePageSnapIndex,
+    )
+  }
 }
 
 /**
@@ -96,6 +191,8 @@ object PagerDefaults {
  * @param key the scroll position will be maintained based on the key, which means if you
  * add/remove items before the current visible item the item with the given key will be kept as the
  * first visible one.
+ * @param userScrollEnabled whether the scrolling via the user gestures or accessibility actions
+ * is allowed. You can still scroll programmatically using the state even when it is disabled.
  * @param content a block which describes the content. Inside this block you can reference
  * [PagerScope.currentPage] and other properties in [PagerScope].
  */
@@ -104,10 +201,9 @@ object PagerDefaults {
 @Composable
 fun HorizontalPager(
   count: Int,
-  state: PagerState,
   modifier: Modifier = Modifier,
+  state: PagerState = rememberPagerState(),
   reverseLayout: Boolean = false,
-  userScrollEnabled: Boolean = true,
   itemSpacing: Dp = 0.dp,
   contentPadding: PaddingValues = PaddingValues(0.dp),
   verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
@@ -116,6 +212,7 @@ fun HorizontalPager(
     endContentPadding = contentPadding.calculateEndPadding(LayoutDirection.Ltr),
   ),
   key: ((page: Int) -> Any)? = null,
+  userScrollEnabled: Boolean = true,
   content: @Composable PagerScope.(page: Int) -> Unit,
 ) {
   Pager(
@@ -124,12 +221,12 @@ fun HorizontalPager(
     modifier = modifier,
     isVertical = false,
     reverseLayout = reverseLayout,
-    userScrollEnabled = userScrollEnabled,
     itemSpacing = itemSpacing,
     verticalAlignment = verticalAlignment,
     flingBehavior = flingBehavior,
     key = key,
     contentPadding = contentPadding,
+    userScrollEnabled = userScrollEnabled,
     content = content
   )
 }
@@ -150,6 +247,8 @@ fun HorizontalPager(
  * @param key the scroll position will be maintained based on the key, which means if you
  * add/remove items before the current visible item the item with the given key will be kept as the
  * first visible one.
+ * @param userScrollEnabled whether the scrolling via the user gestures or accessibility actions
+ * is allowed. You can still scroll programmatically using the state even when it is disabled.
  * @param content a block which describes the content. Inside this block you can reference
  * [PagerScope.currentPage] and other properties in [PagerScope].
  */
@@ -158,10 +257,9 @@ fun HorizontalPager(
 @Composable
 fun VerticalPager(
   count: Int,
-  state: PagerState,
   modifier: Modifier = Modifier,
+  state: PagerState = rememberPagerState(),
   reverseLayout: Boolean = false,
-  userScrollEnabled: Boolean = true,
   itemSpacing: Dp = 0.dp,
   contentPadding: PaddingValues = PaddingValues(0.dp),
   horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
@@ -170,6 +268,7 @@ fun VerticalPager(
     endContentPadding = contentPadding.calculateBottomPadding(),
   ),
   key: ((page: Int) -> Any)? = null,
+  userScrollEnabled: Boolean = true,
   content: @Composable PagerScope.(page: Int) -> Unit,
 ) {
   Pager(
@@ -178,12 +277,12 @@ fun VerticalPager(
     modifier = modifier,
     isVertical = true,
     reverseLayout = reverseLayout,
-    userScrollEnabled = userScrollEnabled,
     itemSpacing = itemSpacing,
     horizontalAlignment = horizontalAlignment,
     flingBehavior = flingBehavior,
     key = key,
     contentPadding = contentPadding,
+    userScrollEnabled = userScrollEnabled,
     content = content
   )
 }
@@ -195,12 +294,12 @@ internal fun Pager(
   modifier: Modifier,
   state: PagerState,
   reverseLayout: Boolean,
-  userScrollEnabled: Boolean,
   itemSpacing: Dp,
   isVertical: Boolean,
   flingBehavior: FlingBehavior,
   key: ((page: Int) -> Any)?,
   contentPadding: PaddingValues,
+  userScrollEnabled: Boolean,
   verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
   horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
   content: @Composable PagerScope.(page: Int) -> Unit,
@@ -229,11 +328,29 @@ internal fun Pager(
       .collect { state.onScrollFinished() }
   }
   LaunchedEffect(state) {
-    snapshotFlow { state.currentLayoutPageInfo }
-      // we want to react on the currentLayoutPageInfo changes happened not because of the
-      // scroll. for example the current page could change because the items were reordered.
-      .filter { !state.isScrollInProgress }
+    snapshotFlow { state.mostVisiblePageLayoutInfo?.index }
+      .distinctUntilChanged()
       .collect { state.updateCurrentPageBasedOnLazyListState() }
+  }
+  val density = LocalDensity.current
+  val layoutDirection = LocalLayoutDirection.current
+  LaunchedEffect(density, contentPadding, isVertical, layoutDirection, reverseLayout, state) {
+    with(density) {
+      // this should be exposed on LazyListLayoutInfo instead. b/200920410
+      state.afterContentPadding = if (isVertical) {
+        if (!reverseLayout) {
+          contentPadding.calculateBottomPadding()
+        } else {
+          contentPadding.calculateTopPadding()
+        }
+      } else {
+        if (!reverseLayout) {
+          contentPadding.calculateEndPadding(layoutDirection)
+        } else {
+          contentPadding.calculateStartPadding(layoutDirection)
+        }
+      }.roundToPx()
+    }
   }
 
   val pagerScope = remember(state) { PagerScopeImpl(state) }
@@ -252,8 +369,8 @@ internal fun Pager(
       horizontalAlignment = horizontalAlignment,
       flingBehavior = flingBehavior,
       reverseLayout = reverseLayout,
-      userScrollEnabled = userScrollEnabled,
       contentPadding = contentPadding,
+      userScrollEnabled = userScrollEnabled,
       modifier = modifier,
     ) {
       items(
@@ -281,8 +398,8 @@ internal fun Pager(
       horizontalArrangement = Arrangement.spacedBy(itemSpacing, horizontalAlignment),
       flingBehavior = flingBehavior,
       reverseLayout = reverseLayout,
-      userScrollEnabled = userScrollEnabled,
       contentPadding = contentPadding,
+      userScrollEnabled = userScrollEnabled,
       modifier = modifier,
     ) {
       items(
@@ -380,5 +497,5 @@ private class PagerScopeImpl(
  */
 @ExperimentalPagerApi
 fun PagerScope.calculateCurrentOffsetForPage(page: Int): Float {
-  return (currentPage + currentPageOffset) - page
+  return (currentPage - page) + currentPageOffset
 }
