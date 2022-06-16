@@ -795,7 +795,10 @@ class MediaViewerScreen(
 
         val newMediaState = when (postImage.imageType()) {
           ImageType.Static -> MediaState.Static(page)
-          ImageType.Video -> MediaState.Video(page)
+          ImageType.Video -> {
+            val muteByDefault = mediaViewerScreenState.muteByDefault.value
+            MediaState.Video(page, muteByDefault)
+          }
           ImageType.Unsupported -> MediaState.Unsupported(page)
         }
 

@@ -21,7 +21,8 @@ sealed class MediaState {
 
   @Stable
   class Video(
-    override val pageIndex: Int
+    override val pageIndex: Int,
+    muteByDefault: Boolean
   ) : MediaState() {
     val slideOffsetState = mutableStateOf(0f)
     val blockAutoPositionUpdateState = mutableStateOf(false)
@@ -29,7 +30,7 @@ sealed class MediaState {
     val playerInitializedState = mutableStateOf(true)
     val videoStartedPlayingState = mutableStateOf(false)
     val hasAudioState = mutableStateOf(false)
-    val isMutedState = mutableStateOf(true)
+    val isMutedState = mutableStateOf(muteByDefault)
     val isPausedState = mutableStateOf(false)
     val hardwareDecodingEnabledState = mutableStateOf(true)
     val timePositionState = mutableStateOf<Long?>(null)
