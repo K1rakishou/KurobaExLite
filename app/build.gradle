@@ -183,7 +183,7 @@ dependencies {
     implementation "androidx.datastore:datastore-preferences:1.0.0"
     implementation "io.insert-koin:koin-core:$koin_version"
     implementation "io.insert-koin:koin-android:$koin_version"
-    implementation 'dev.chrisbanes.snapper:snapper:0.2.0'
+    implementation 'dev.chrisbanes.snapper:snapper:0.2.1'
     implementation 'com.squareup.logcat:logcat:0.1'
     implementation "com.squareup.okhttp3:okhttp:${okhttp}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlin_coroutines_version}"

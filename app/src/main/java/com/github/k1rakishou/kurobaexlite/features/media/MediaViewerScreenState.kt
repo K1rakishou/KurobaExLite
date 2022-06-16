@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -62,8 +63,19 @@ class MediaViewerScreenState(
     _currentlyLoadedMediaMap.put(page, state)
   }
 
-  fun removeCurrentlyLoadedMediaState(page: Int) {
-    _currentlyLoadedMediaMap.remove(page)
+  fun removeCurrentlyLoadedMediaState(currentPage: Int, pageCount: Int) {
+    val excludeFrom = (currentPage - MAX_VISIBLE_PAGES).coerceAtLeast(0)
+    val excludeTo = (currentPage + MAX_VISIBLE_PAGES).coerceAtMost(pageCount - 1)
+
+    _currentlyLoadedMediaMap.entries.mutableIteration { mutableIterator, mutableEntry ->
+      val page = mutableEntry.key
+
+      if (page < excludeFrom || page > excludeTo) {
+        mutableIterator.remove()
+      }
+
+      return@mutableIteration true
+    }
   }
 
   fun getMediaStateByIndex(index: Int?): MediaState? {
@@ -123,6 +135,8 @@ class MediaViewerScreenState(
   }
 
   companion object {
+    private const val MAX_VISIBLE_PAGES = 3
+
     fun Saver(
       appSettings: AppSettings
     ): Saver<MediaViewerScreenState, *> = Saver(

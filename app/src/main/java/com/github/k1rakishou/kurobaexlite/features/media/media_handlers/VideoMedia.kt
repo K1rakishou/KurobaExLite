@@ -439,6 +439,7 @@ private fun rememberEventObserver(
 
   return remember {
     object : MPVLib.EventObserver {
+      private var doAfterPlayerInitialized: ((MPVView) -> Unit)? = null
 
       private val canUpdateState: Boolean
         get() = !blockAutoPositionUpdateUpdated &&
@@ -543,13 +544,9 @@ private fun rememberEventObserver(
             videoMediaState.hasAudioState.value = mpvViewMutUpdated?.audioCodec != null
 
             mpvViewMutUpdated?.let { mpvView ->
-              if (videoMediaStateSaveableUpdated.needRestoreState) {
-                videoMediaStateSaveableUpdated.wasMuted?.let { mute -> mpvView.muteUnmute(mute) }
-                videoMediaStateSaveableUpdated.wasPaused?.let { pause -> mpvView.pauseUnpause(pause) }
-                videoMediaStateSaveableUpdated.wasHardwareDecodingEnabled?.let { enable -> mpvView.enableDisableHwDec(enable) }
-                videoMediaStateSaveableUpdated.prevTimePosition?.let { prevTime -> mpvView.timePos = prevTime }
-
-                videoMediaStateSaveableUpdated.needRestoreState = false
+              if (doAfterPlayerInitialized != null) {
+                doAfterPlayerInitialized?.invoke(mpvView)
+                doAfterPlayerInitialized = null
               }
 
               videoMediaStateUpdated.timePositionState.value = mpvView.timePos?.toLong()
@@ -565,6 +562,23 @@ private fun rememberEventObserver(
           }
           MPVLib.mpvEventId.MPV_EVENT_START_FILE -> {
             logcat(TAG) { "onEvent MPV_EVENT_START_FILE" }
+
+            // This stuff must be executed only after the player is fully initialized, otherwise the
+            // commands like timePost/pause/mute may be ignored
+            doAfterPlayerInitialized = { mpvView ->
+              if (videoMediaStateSaveableUpdated.needRestoreState) {
+                videoMediaStateSaveableUpdated.wasMuted?.let { mute -> mpvView.muteUnmute(mute) }
+                videoMediaStateSaveableUpdated.wasPaused?.let { pause -> mpvView.pauseUnpause(pause) }
+                videoMediaStateSaveableUpdated.wasHardwareDecodingEnabled?.let { enable -> mpvView.enableDisableHwDec(enable) }
+                videoMediaStateSaveableUpdated.prevTimePosition?.let { prevTime -> mpvView.timePos = prevTime }
+
+                videoMediaStateSaveableUpdated.needRestoreState = false
+              } else {
+                videoMediaStateUpdated.timePositionState.value?.let { timePos -> mpvView.timePos = timePos.toInt() }
+                mpvView.muteUnmute(videoMediaStateUpdated.isMutedState.value)
+                mpvView.pauseUnpause(videoMediaStateUpdated.isPausedState.value)
+              }
+            }
           }
           MPVLib.mpvEventId.MPV_EVENT_END_FILE -> {
             logcat(TAG) { "onEvent MPV_EVENT_END_FILE" }

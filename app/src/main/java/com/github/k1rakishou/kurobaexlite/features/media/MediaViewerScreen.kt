@@ -189,7 +189,7 @@ class MediaViewerScreen(
     val animatable = remember { Animatable(0f) }
     val animationProgress by animatable.asState()
 
-    var availableSizeMut by remember { mutableStateOf<IntSize>(IntSize.Zero) }
+    var availableSizeMut by remember(key1 = isMinimized) { mutableStateOf<IntSize>(IntSize.Zero) }
     val availableSize = availableSizeMut
 
     val bgColor = if (isMinimized) {
@@ -217,30 +217,32 @@ class MediaViewerScreen(
             alpha = if (transitionFinished && previewLoadingFinished) 1f else 0f
           }
       ) {
-        ContentAfterTransition(
-          isMinimized = isMinimized,
-          mediaViewerScreenState = mediaViewerScreenState,
-          chanTheme = chanTheme,
-          availableSize = availableSize,
-          toolbarHeight = toolbarHeight,
-          coroutineScope = coroutineScope,
-          insets = insets,
-          onPreviewLoadingFinished = { postImage ->
-            val previewLoadingFinishedForOutThumbnail = clickedThumbnailBounds == null
-              || postImage == clickedThumbnailBounds?.postImage
+        if (availableSize.width > 0 && availableSize.height > 0) {
+          ContentAfterTransition(
+            isMinimized = isMinimized,
+            mediaViewerScreenState = mediaViewerScreenState,
+            chanTheme = chanTheme,
+            availableSize = availableSize,
+            toolbarHeight = toolbarHeight,
+            coroutineScope = coroutineScope,
+            insets = insets,
+            onPreviewLoadingFinished = { postImage ->
+              val previewLoadingFinishedForOutThumbnail = clickedThumbnailBounds == null
+                || postImage == clickedThumbnailBounds?.postImage
 
-            logcat(TAG, LogPriority.VERBOSE) {
-              "onPreviewLoadingFinished() " +
-                "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
-                "got '${postImage.fullImageAsString}', " +
-                "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
-            }
+              logcat(TAG, LogPriority.VERBOSE) {
+                "onPreviewLoadingFinished() " +
+                  "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
+                  "got '${postImage.fullImageAsString}', " +
+                  "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
+              }
 
-            if (previewLoadingFinishedForOutThumbnail) {
-              previewLoadingFinished = true
+              if (previewLoadingFinishedForOutThumbnail) {
+                previewLoadingFinished = true
+              }
             }
-          }
-        )
+          )
+        }
       }
 
       TransitionPreview(
@@ -765,6 +767,14 @@ class MediaViewerScreen(
 
     val coroutineScope = rememberCoroutineScope()
 
+    LaunchedEffect(
+      key1 = currentPageIndex,
+      block = {
+        val pageCount = pagerState.pageCount
+        mediaViewerScreenState.removeCurrentlyLoadedMediaState(currentPageIndex, pageCount)
+      }
+    )
+
     HorizontalPager(
       modifier = Modifier.fillMaxSize(),
       count = images.size,
@@ -773,35 +783,35 @@ class MediaViewerScreen(
       key = { page -> images[page].fullImageUrlAsString }
     ) { page ->
       val mediaState = remember(key1 = page) {
+        val prevMediaState = mediaViewerScreenState.getMediaStateByIndex(page)
+        if (prevMediaState != null) {
+          return@remember prevMediaState
+        }
+
         val postImage = mediaViewerScreenState.mediaList
           .getOrNull(page)
           ?.postImage
           ?: return@remember null
 
-        return@remember when (postImage.imageType()) {
+        val newMediaState = when (postImage.imageType()) {
           ImageType.Static -> MediaState.Static(page)
           ImageType.Video -> MediaState.Video(page)
           ImageType.Unsupported -> MediaState.Unsupported(page)
         }
+
+        mediaViewerScreenState.addCurrentlyLoadedMediaState(page, newMediaState)
+        return@remember newMediaState
       }
 
       if (mediaState == null) {
         return@HorizontalPager
       }
 
-      DisposableEffect(
-        key1 = Unit,
-        effect = {
-          mediaViewerScreenState.addCurrentlyLoadedMediaState(page, mediaState)
-          onDispose { mediaViewerScreenState.removeCurrentlyLoadedMediaState(page) }
-        }
-      )
-
       if (!initialScrollHappened) {
         return@HorizontalPager
       }
 
-      PagerContent(
+      PageContent(
         isMinimized = isMinimized,
         page = page,
         images = images,
@@ -820,7 +830,7 @@ class MediaViewerScreen(
 
   @OptIn(ExperimentalPagerApi::class)
   @Composable
-  private fun PagerContent(
+  private fun PageContent(
     isMinimized: Boolean,
     page: Int,
     images: List<ImageLoadState>,

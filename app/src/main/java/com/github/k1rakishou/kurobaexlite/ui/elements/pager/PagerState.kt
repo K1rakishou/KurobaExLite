@@ -156,9 +156,8 @@ class PagerState(
    * Returns the current page if a scroll or animation is not currently in progress.
    */
   val targetPage: Int
-    get() = animationTargetPage
-      ?: flingAnimationTarget?.invoke()
-      ?: when {
+    get() {
+      return when {
         // If a scroll isn't in progress, return the current page
         !isScrollInProgress -> currentPage
         // If the offset is 0f (or very close), return the current page
@@ -168,6 +167,7 @@ class PagerState(
         // If we're offset towards the end, guess the next page
         else -> (currentPage + 1).coerceAtMost(pageCount - 1)
       }
+    }
 
   @Deprecated(
     "Replaced with animateScrollToPage(page, pageOffset)",
