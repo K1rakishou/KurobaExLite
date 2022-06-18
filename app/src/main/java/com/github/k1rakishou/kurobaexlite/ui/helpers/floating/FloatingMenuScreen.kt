@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.launch
 import logcat.logcat
 
+// TODO(KurobaEx): screen parameters are not persisted across process death yet!
 class FloatingMenuScreen(
   floatingMenuKey: String,
   componentActivity: ComponentActivity,
@@ -46,7 +47,7 @@ class FloatingMenuScreen(
   menuItems: List<FloatingMenuItem>,
   private val onMenuItemClicked: (FloatingMenuItem) -> Unit,
   private val onDismiss: () -> Unit = {}
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+) : FloatingComposeScreen(null, componentActivity, navigationRouter) {
   private val floatingMenuScreenKey = ScreenKey("FloatingMenuScreen_${floatingMenuKey}")
 
   private val callbacksToInvokeMap = mutableMapOf<Any, FloatingMenuItem>()

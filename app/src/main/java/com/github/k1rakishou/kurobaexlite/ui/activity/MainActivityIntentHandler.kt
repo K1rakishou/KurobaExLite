@@ -19,24 +19,24 @@ class MainActivityIntentHandler(
   private val bookmarksManager: BookmarksManager,
   private val persistBookmarks: PersistBookmarks
 ) {
-  private var threadScreenViewModel: ThreadScreenViewModel? = null
-  private var catalogScreenViewModel: CatalogScreenViewModel? = null
-  private var bookmarkScreenViewModel: BookmarksScreenViewModel? = null
+  private var threadScreenViewModelLazy: Lazy<ThreadScreenViewModel>? = null
+  private var catalogScreenViewModelLazy: Lazy<CatalogScreenViewModel>? = null
+  private var bookmarksScreenViewModelLazy: Lazy<BookmarksScreenViewModel>? = null
 
   fun onCreate(
-    threadScreenViewModel: ThreadScreenViewModel,
-    catalogScreenViewModel: CatalogScreenViewModel,
-    bookmarkScreenViewModel: BookmarksScreenViewModel
+    threadScreenViewModelLazy: Lazy<ThreadScreenViewModel>,
+    catalogScreenViewModelLazy: Lazy<CatalogScreenViewModel>,
+    bookmarksScreenViewModelLazy: Lazy<BookmarksScreenViewModel>
   ) {
-    this.threadScreenViewModel = threadScreenViewModel
-    this.catalogScreenViewModel = catalogScreenViewModel
-    this.bookmarkScreenViewModel = bookmarkScreenViewModel
+    this.threadScreenViewModelLazy = threadScreenViewModelLazy
+    this.catalogScreenViewModelLazy = catalogScreenViewModelLazy
+    this.bookmarksScreenViewModelLazy = bookmarksScreenViewModelLazy
   }
 
   fun onDestroy() {
-    this.threadScreenViewModel = null
-    this.catalogScreenViewModel = null
-    this.bookmarkScreenViewModel = null
+    this.threadScreenViewModelLazy = null
+    this.catalogScreenViewModelLazy = null
+    this.bookmarksScreenViewModelLazy = null
   }
 
   suspend fun onNewIntent(intent: Intent) {
@@ -75,7 +75,7 @@ class MainActivityIntentHandler(
     if (threadDescriptors.size > 1) {
       logcat(TAG) { "onReplyNotificationClicked() threadDescriptors.size > 1 openDrawer()" }
 
-      bookmarkScreenViewModel?.markBookmarks(threadDescriptors)
+      bookmarksScreenViewModelLazy?.value?.markBookmarks(threadDescriptors)
       globalUiInfoManager.openDrawer(withAnimation = true)
       return
     }
@@ -89,7 +89,7 @@ class MainActivityIntentHandler(
         return
       }
 
-      threadScreenViewModel?.loadThread(
+      threadScreenViewModelLazy?.value?.loadThread(
         threadDescriptor = firstPostDescriptor.threadDescriptor,
         loadOptions = PostScreenViewModel.LoadOptions(
           forced = true,
@@ -105,7 +105,7 @@ class MainActivityIntentHandler(
         return
       }
 
-      threadScreenViewModel?.loadThread(firstThreadDescriptors)
+      threadScreenViewModelLazy?.value?.loadThread(firstThreadDescriptors)
     }
 
     globalUiInfoManager.waitUntilLayoutModeIsKnown()

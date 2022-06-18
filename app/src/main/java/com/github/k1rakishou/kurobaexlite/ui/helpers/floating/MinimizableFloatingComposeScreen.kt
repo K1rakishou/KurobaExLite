@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.floating
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -50,9 +51,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
 abstract class MinimizableFloatingComposeScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
   abstract val isScreenMinimized: MutableState<Boolean>
 
   override val ignoreBackPresses: Boolean

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.home
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -33,10 +34,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import kotlinx.coroutines.flow.StateFlow
 
-abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar>(
+abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar> protected constructor(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreenWithToolbar<ToolbarType>(componentActivity, navigationRouter) {
+) : ComposeScreenWithToolbar<ToolbarType>(defaultArgs, componentActivity, navigationRouter) {
   abstract val screenContentLoadedFlow: StateFlow<Boolean>
 
   protected open val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(true)

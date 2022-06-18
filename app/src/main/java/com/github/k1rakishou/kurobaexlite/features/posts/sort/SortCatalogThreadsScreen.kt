@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.sort
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,16 +36,17 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.launch
 
 class SortCatalogThreadsScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  private val onApplied: () -> Unit
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val contentAlignment: Alignment = touchPositionDependantAlignment
@@ -125,7 +127,7 @@ class SortCatalogThreadsScreen(
           coroutineScope.launch {
             appSettings.catalogSort.write(currentCatalogSortSetting)
 
-            onApplied()
+            ScreenCallbackStorage.invokeCallback(screenKey, ON_APPLIED)
             stopPresenting()
           }
         }
@@ -183,6 +185,8 @@ class SortCatalogThreadsScreen(
   }
 
   companion object {
+    const val ON_APPLIED = "on_applied"
+
     val SCREEN_KEY = ScreenKey("SortCatalogThreadsScreen")
   }
 }

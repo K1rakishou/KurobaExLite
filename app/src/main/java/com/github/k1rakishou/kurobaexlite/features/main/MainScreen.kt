@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.main
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,10 +23,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
-class MainScreen(
+class MainScreen private constructor(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   private val mainNavigationRouter: MainNavigationRouter
-) : ComposeScreen(componentActivity, mainNavigationRouter) {
+) : ComposeScreen(defaultArgs, componentActivity, mainNavigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable
@@ -61,7 +63,7 @@ class MainScreen(
             return@remember prevHomeScreen
           }
 
-          return@remember HomeScreen(
+          return@remember ComposeScreen.createScreen<HomeScreen>(
             componentActivity = componentActivity,
             navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY)
           )

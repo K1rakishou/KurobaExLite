@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.progress
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,11 +20,13 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 
 class ProgressScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  private val title: String
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
+
+  private val title: String by requireArgument(TITLE)
 
   @Composable
   override fun FloatingContent() {
@@ -53,6 +56,8 @@ class ProgressScreen(
   }
 
   companion object {
+    const val TITLE = "title"
+
     val SCREEN_KEY = ScreenKey("ProgressScreen")
   }
 }

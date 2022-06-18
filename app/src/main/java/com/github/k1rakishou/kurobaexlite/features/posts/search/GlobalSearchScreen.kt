@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.search
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -33,7 +34,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostCe
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
@@ -45,6 +45,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -53,17 +54,17 @@ import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class GlobalSearchScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  private val catalogDescriptor: CatalogDescriptor,
-  private val onPostClicked: (PostDescriptor) -> Unit,
-  private val closeCatalogSearchToolbar: () -> Unit
-) : HomeNavigationScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<KurobaChildToolbar>(defaultArgs, componentActivity, navigationRouter) {
   private val globalSearchScreenViewModel: GlobalSearchScreenViewModel by componentActivity.viewModel()
 
   private val postSearchLongtapContentMenu by lazy {
     PostSearchLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
+
+  private val catalogDescriptor: CatalogDescriptor by requireArgument(CATALOG_DESCRIPTOR_ARG)
 
   override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -93,7 +94,10 @@ class GlobalSearchScreen(
   override fun onStartDisposing() {
     super.onStartDisposing()
 
-    closeCatalogSearchToolbar()
+    ScreenCallbackStorage.invokeCallback(
+      screenKey = screenKey,
+      callbackKey = CLOSE_CATALOG_SEARCH_TOOLBAR_CALLBACK
+    )
   }
 
   @Composable
@@ -233,7 +237,13 @@ class GlobalSearchScreen(
       modifier = Modifier
         .padding(cellsPadding)
         .kurobaClickable(
-          onClick = { onPostClicked(postCellData.postDescriptor) },
+          onClick = {
+            ScreenCallbackStorage.invokeCallback(
+              screenKey = screenKey,
+              callbackKey = ON_POST_CLICKED_CALLBACK,
+              p1 = postCellData.postDescriptor
+            )
+          },
           onLongClick = { postSearchLongtapContentMenu.showMenu(postCellData) }
         )
     ) {
@@ -403,6 +413,11 @@ class GlobalSearchScreen(
   }
 
   companion object {
+    const val CATALOG_DESCRIPTOR_ARG = "catalog_descriptor"
+
+    const val CLOSE_CATALOG_SEARCH_TOOLBAR_CALLBACK = "close_catalog_search_toolbar"
+    const val ON_POST_CLICKED_CALLBACK = "on_post_clicked"
+
     val SCREEN_KEY = ScreenKey("GlobalSearchScreen")
   }
 

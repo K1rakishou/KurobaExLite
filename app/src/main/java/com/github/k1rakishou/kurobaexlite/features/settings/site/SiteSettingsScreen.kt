@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.settings.site
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,17 +43,17 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.java.KoinJavaComponent.inject
 
 class SiteSettingsScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  val siteKey: SiteKey
-) : HomeNavigationScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<KurobaChildToolbar>(defaultArgs, componentActivity, navigationRouter) {
   private val siteManager: SiteManager by inject(SiteManager::class.java)
 
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-
+  private val siteKey: SiteKey by requireArgument(SITE_KEY_ARG)
   private val defaultToolbarKey = "${screenKey.key}_default"
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
 
@@ -214,6 +215,8 @@ class SiteSettingsScreen(
   }
 
   companion object {
+    const val SITE_KEY_ARG = "site_key"
+
     val SCREEN_KEY = ScreenKey("SiteSettingsScreen")
   }
 

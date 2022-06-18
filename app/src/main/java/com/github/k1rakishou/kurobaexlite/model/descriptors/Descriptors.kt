@@ -16,7 +16,7 @@ inline class SiteKey(val key: String) : Parcelable {
 }
 
 @Immutable
-sealed class ChanDescriptor {
+sealed class ChanDescriptor : Parcelable {
   abstract val siteKey: SiteKey
   abstract val boardCode: String
 
@@ -30,7 +30,7 @@ sealed class ChanDescriptor {
 data class CatalogDescriptor(
   override val siteKey: SiteKey,
   override val boardCode: String
-) : Parcelable, ChanDescriptor() {
+) : ChanDescriptor() {
   val siteKeyActual: String
     get() = siteKey.key
 
@@ -91,7 +91,7 @@ data class CatalogDescriptor(
 data class ThreadDescriptor(
   val catalogDescriptor: CatalogDescriptor,
   val threadNo: Long
-) : Parcelable, ChanDescriptor() {
+) : ChanDescriptor() {
 
   init {
     check(threadNo >= 0L) { "Bad threadNo: ${threadNo}" }

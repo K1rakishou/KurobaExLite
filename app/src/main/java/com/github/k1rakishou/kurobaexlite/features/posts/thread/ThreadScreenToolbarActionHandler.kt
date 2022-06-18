@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
@@ -52,10 +53,10 @@ class ThreadScreenToolbarActionHandler {
         val threadDescriptor = threadScreenViewModel.threadDescriptor
           ?: return
 
-        val albumScreen = AlbumScreen(
-          chanDescriptor = threadDescriptor,
+        val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
           componentActivity = componentActivity,
-          navigationRouter = navigationRouter
+          navigationRouter = navigationRouter,
+          args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, threadDescriptor) }
         )
 
         navigationRouter.pushScreen(albumScreen)

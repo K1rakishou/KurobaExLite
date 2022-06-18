@@ -40,6 +40,7 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaSwipeableState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
@@ -275,7 +276,7 @@ fun HomeScreenDrawerLayout(
 
       RouterHost(
         navigationRouter = router,
-        defaultScreenFunc = { BookmarksScreen(componentActivity, navigationRouterProvider()) }
+        defaultScreenFunc = { ComposeScreen.createScreen<BookmarksScreen>(componentActivity, navigationRouterProvider()) }
       )
     }
   }

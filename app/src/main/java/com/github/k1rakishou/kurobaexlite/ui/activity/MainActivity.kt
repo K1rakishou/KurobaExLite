@@ -31,15 +31,17 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import kotlin.time.Duration.Companion.seconds
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
   private val mainActivityViewModel: MainActivityViewModel by viewModel()
-  private val threadScreenViewModel: ThreadScreenViewModel by viewModel()
-  private val catalogScreenViewModel: CatalogScreenViewModel by viewModel()
-  private val bookmarksScreenViewModel: BookmarksScreenViewModel by viewModel()
+
+  private val threadScreenViewModelLazy: Lazy<ThreadScreenViewModel> = viewModel()
+  private val catalogScreenViewModelLazy: Lazy<CatalogScreenViewModel> = viewModel()
+  private val bookmarksScreenViewModelLazy: Lazy<BookmarksScreenViewModel> = viewModel()
 
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
@@ -70,9 +72,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     localFilePicker.attachActivity(this)
 
     mainActivityIntentHandler.onCreate(
-      threadScreenViewModel = threadScreenViewModel,
-      catalogScreenViewModel = catalogScreenViewModel,
-      bookmarkScreenViewModel = bookmarksScreenViewModel
+      threadScreenViewModelLazy = threadScreenViewModelLazy,
+      catalogScreenViewModelLazy = catalogScreenViewModelLazy,
+      bookmarksScreenViewModelLazy = bookmarksScreenViewModelLazy
     )
     updateManager.checkForUpdates()
 
@@ -92,7 +94,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
         themeEngine = themeEngine,
         runtimePermissionsHelper = runtimePermissionsHelper
       ) {
-        val mainScreen = remember { MainScreen(this, mainActivityViewModel.rootNavigationRouter) }
+        val mainScreen = remember {
+          ComposeScreen.createScreen<MainScreen>(
+            componentActivity = this,
+            navigationRouter = mainActivityViewModel.rootNavigationRouter
+          )
+        }
+
         mainScreen.Content()
       }
     }

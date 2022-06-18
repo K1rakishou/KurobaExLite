@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.Paint
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
@@ -99,6 +100,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.MinimizableFloatingComposeScreen
@@ -117,13 +119,14 @@ import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
-
+// TODO(KurobaEx): screen parameters are not persisted across process death yet!
 class MediaViewerScreen(
+  defaultArgs: Bundle? = null,
   private val mediaViewerParams: MediaViewerParams,
   private val openedFromScreen: ScreenKey,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : MinimizableFloatingComposeScreen(componentActivity, navigationRouter) {
+) : MinimizableFloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
@@ -1014,10 +1017,12 @@ class MediaViewerScreen(
     mpvSettings: MpvSettings,
     context: Context
   ) {
-    val progressScreen = ProgressScreen(
+    val progressScreen = ComposeScreen.createScreen<ProgressScreen>(
       componentActivity = componentActivity,
       navigationRouter = navigationRouter,
-      title = context.resources.getString(R.string.media_viewer_plugins_loading_libs)
+      args = {
+        putString(ProgressScreen.TITLE, context.resources.getString(R.string.media_viewer_plugins_loading_libs))
+      }
     )
 
     mediaViewerScreenViewModel.installMpvLibsFromGithub(

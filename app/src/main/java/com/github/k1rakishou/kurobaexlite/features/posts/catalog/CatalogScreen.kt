@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.catalog
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -49,6 +50,7 @@ import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
@@ -56,6 +58,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSna
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
@@ -68,9 +71,10 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : PostsScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
+) : PostsScreen<KurobaChildToolbar>(defaultArgs, componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
@@ -104,19 +108,29 @@ class CatalogScreen(
       parsedPostDataCache = parsedPostDataCache,
       onBackPressed = { globalUiInfoManager.openDrawer() },
       showCatalogSelectionScreen = {
-        val catalogSelectionScreen = CatalogSelectionScreen(
+        val catalogSelectionScreen = ComposeScreen.createScreen<CatalogSelectionScreen>(
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
-          catalogDescriptor = catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
+          args = {
+            putParcelable(
+              CatalogSelectionScreen.CATALOG_DESCRIPTOR_ARG,
+              catalogScreenViewModel.chanDescriptor as? CatalogDescriptor
+            )
+          }
         )
 
         navigationRouter.pushScreen(catalogSelectionScreen)
       },
       showSortCatalogThreadsScreen = {
-        val sortCatalogThreadsScreen = SortCatalogThreadsScreen(
+        val sortCatalogThreadsScreen = ComposeScreen.createScreen<SortCatalogThreadsScreen>(
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
-          onApplied = { catalogScreenViewModel.onCatalogSortChanged() }
+          callbacks = {
+            callback(
+              callbackKey = SortCatalogThreadsScreen.ON_APPLIED,
+              func = { catalogScreenViewModel.onCatalogSortChanged() }
+            )
+          }
         )
 
         navigationRouter.presentScreen(sortCatalogThreadsScreen)
@@ -166,32 +180,40 @@ class CatalogScreen(
         val descriptor = catalogScreenViewModel.catalogDescriptor
           ?: return@PostsScreenLocalSearchToolbar
 
-        val globalSearchScreen = GlobalSearchScreen(
+        val globalSearchScreen = ComposeScreen.createScreen<GlobalSearchScreen>(
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
-          catalogDescriptor = descriptor,
-          onPostClicked = { postDescriptor ->
-            globalUiInfoManager.updateCurrentPage(
-              screenKey = ThreadScreen.SCREEN_KEY,
-              animate = true
+          args = { putParcelable(GlobalSearchScreen.CATALOG_DESCRIPTOR_ARG, descriptor) },
+          callbacks = {
+            callback<PostDescriptor>(
+              callbackKey = GlobalSearchScreen.ON_POST_CLICKED_CALLBACK,
+              func = { postDescriptor ->
+                globalUiInfoManager.updateCurrentPage(
+                  screenKey = ThreadScreen.SCREEN_KEY,
+                  animate = true
+                )
+                threadScreenViewModel.loadThread(
+                  threadDescriptor = postDescriptor.threadDescriptor,
+                  loadOptions = PostScreenViewModel.LoadOptions(
+                    forced = true,
+                    scrollToPost = postDescriptor
+                  )
+                )
+              }
             )
-            
-            threadScreenViewModel.loadThread(
-              threadDescriptor = postDescriptor.threadDescriptor,
-              loadOptions = PostScreenViewModel.LoadOptions(
-                forced = true,
-                scrollToPost = postDescriptor
-              )
-            )
-          },
-          closeCatalogSearchToolbar = {
-            if (localSearchToolbar.searchQuery.isNotEmpty()) {
-              return@GlobalSearchScreen
-            }
 
-            kurobaToolbarContainerState.popToolbar(
-              expectedKey = localSearchToolbar.toolbarKey,
-              withAnimation = false
+            callback(
+              callbackKey = GlobalSearchScreen.CLOSE_CATALOG_SEARCH_TOOLBAR_CALLBACK,
+              func = {
+                if (localSearchToolbar.searchQuery.isNotEmpty()) {
+                  return@callback
+                }
+
+                kurobaToolbarContainerState.popToolbar(
+                  expectedKey = localSearchToolbar.toolbarKey,
+                  withAnimation = false
+                )
+              }
             )
           }
         )

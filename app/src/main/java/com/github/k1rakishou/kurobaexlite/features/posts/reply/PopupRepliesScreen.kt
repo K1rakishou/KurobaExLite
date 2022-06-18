@@ -1,5 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.reply
 
+import android.os.Bundle
+import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -73,18 +75,21 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class PopupRepliesScreen(
-  private val replyViewMode: ReplyViewMode,
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val popupRepliesScreenViewModel: PopupRepliesScreenViewModel by componentActivity.viewModel()
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
+
+  private val replyViewMode: ReplyViewMode by requireArgument(REPLY_VIEW_MODE)
 
   private val postListLayoutId = "PopupRepliesScreen_PostListContent"
   private val buttonsLayoutId = "PopupRepliesScreen_Buttons"
@@ -441,19 +446,23 @@ class PopupRepliesScreen(
     Close
   }
 
-  sealed class ReplyViewMode {
+  sealed class ReplyViewMode : Parcelable {
     abstract val postDescriptor: PostDescriptor
 
+    @Parcelize
     data class ReplyTo(
       override val postDescriptor: PostDescriptor
     ) : ReplyViewMode()
 
+    @Parcelize
     data class RepliesFrom(
       override val postDescriptor: PostDescriptor
     ) : ReplyViewMode()
   }
 
   companion object {
+    const val REPLY_VIEW_MODE = "reply_view_mode"
+
     private val SCREEN_KEY = ScreenKey("PopupRepliesScreen")
   }
 

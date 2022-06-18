@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.bookmarks
 
 import android.content.Context
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.Animatable
 import androidx.compose.animation.core.FiniteAnimationSpec
@@ -120,9 +121,10 @@ import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class BookmarksScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreen(componentActivity, navigationRouter) {
+) : ComposeScreen(defaultArgs, componentActivity, navigationRouter) {
   private val bookmarksScreenViewModel: BookmarksScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
 
@@ -1062,7 +1064,7 @@ class BookmarksScreen(
 
     globalUiInfoManager.closeDrawer()
 
-    val appSettingsScreen = AppSettingsScreen(
+    val appSettingsScreen = ComposeScreen.createScreen<AppSettingsScreen>(
       componentActivity = componentActivity,
       navigationRouter = currentChildRouter
     )

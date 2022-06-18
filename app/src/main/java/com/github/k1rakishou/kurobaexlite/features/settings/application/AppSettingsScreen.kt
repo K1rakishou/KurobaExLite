@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.settings.application
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -47,9 +48,10 @@ import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class AppSettingsScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<SimpleToolbar<AppSettingsScreen.ToolbarIcons>>(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<AppSettingsScreen.ToolbarIcons>>(defaultArgs, componentActivity, navigationRouter) {
   private val appSettingsScreenViewModel by componentActivity.viewModel<AppSettingsScreenViewModel>()
 
   override val screenKey: ScreenKey = SCREEN_KEY

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.floating
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,9 +13,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
 class FloatingComposeBackgroundScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
 
   private val backgroundColor = Color(
     red = 0f,

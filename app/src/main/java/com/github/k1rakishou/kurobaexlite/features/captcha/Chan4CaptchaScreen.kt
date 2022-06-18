@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.captcha
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.Orientation
@@ -57,19 +58,20 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import java.util.Locale
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class Chan4CaptchaScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  private val chanDescriptor: ChanDescriptor,
-  private val onCaptchaSolved: (Captcha) -> Unit,
-  private val onScreenDismissed: () -> Unit
-) : FloatingComposeScreen(componentActivity, navigationRouter) {
+  navigationRouter: NavigationRouter
+) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
   private val chan4CaptchaViewModel: Chan4CaptchaViewModel by componentActivity.viewModel()
+
+  private val chanDescriptor: ChanDescriptor by requireArgument(CHAN_DESCRIPTOR_ARG)
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -79,7 +81,7 @@ class Chan4CaptchaScreen(
     chan4CaptchaViewModel.resetCaptchaIfCaptchaIsAlmostDead(chanDescriptor)
     chan4CaptchaViewModel.cleanup()
 
-    onScreenDismissed()
+    ScreenCallbackStorage.invokeCallback(screenKey, ON_SCREEN_DISMISSED)
   }
 
   @Composable
@@ -359,7 +361,7 @@ class Chan4CaptchaScreen(
 
     val captcha = Captcha.newSolvedCaptcha(captchaSolution = solution, ttlMs = ttlMillis)
     chan4CaptchaViewModel.resetCaptchaForced(chanDescriptor)
-    onCaptchaSolved(captcha)
+    ScreenCallbackStorage.invokeCallback(screenKey, ON_CAPTCHA_SOLVED, captcha)
     stopPresenting()
   }
 
@@ -372,6 +374,11 @@ class Chan4CaptchaScreen(
   }
 
   companion object {
+    const val CHAN_DESCRIPTOR_ARG = "chan_descriptor"
+
+    const val ON_CAPTCHA_SOLVED = "on_captcha_solved"
+    const val ON_SCREEN_DISMISSED = "on_screen_dismissed"
+
     val SCREEN_KEY = ScreenKey("Chan4CaptchaScreen")
 
     private const val MIN_OFFSET = 100f

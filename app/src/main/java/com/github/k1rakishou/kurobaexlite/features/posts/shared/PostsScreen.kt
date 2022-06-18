@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,32 +32,35 @@ import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
+import com.github.k1rakishou.kurobaexlite.managers.Captcha
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.SiteCaptcha
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.CancellationException
 
 abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<ToolbarType>(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<ToolbarType>(defaultArgs, componentActivity, navigationRouter) {
   abstract val isCatalogScreen: Boolean
 
   override val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(false)
   override val hasFab: Boolean = true
 
   protected fun showRepliesForPost(replyViewMode: PopupRepliesScreen.ReplyViewMode) {
-    navigationRouter.presentScreen(
-      PopupRepliesScreen(
-        replyViewMode = replyViewMode,
-        componentActivity = componentActivity,
-        navigationRouter = navigationRouter
-      )
+    val popupRepliesScreen = ComposeScreen.createScreen<PopupRepliesScreen>(
+      componentActivity = componentActivity,
+      navigationRouter = navigationRouter,
+      args = { putParcelable(PopupRepliesScreen.REPLY_VIEW_MODE, replyViewMode) }
     )
+
+    navigationRouter.presentScreen(popupRepliesScreen)
   }
 
   @Composable
@@ -74,19 +78,30 @@ abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
 
           val captchaScreen = when (siteCaptcha) {
             SiteCaptcha.Chan4Captcha -> {
-              Chan4CaptchaScreen(
+              ComposeScreen.createScreen<Chan4CaptchaScreen>(
                 componentActivity = componentActivity,
                 navigationRouter = navigationRouter,
-                chanDescriptor = captchaRequest.chanDescriptor,
-                onCaptchaSolved = { captcha ->
-                  if (captchaRequest.completableDeferred.isActive) {
-                    captchaRequest.completableDeferred.complete(captcha)
-                  }
+                args = {
+                  putParcelable(Chan4CaptchaScreen.CHAN_DESCRIPTOR_ARG, captchaRequest.chanDescriptor)
                 },
-                onScreenDismissed = {
-                  if (captchaRequest.completableDeferred.isActive) {
-                    captchaRequest.completableDeferred.completeExceptionally(CancellationException())
-                  }
+                callbacks = {
+                  callback<Captcha>(
+                    callbackKey = Chan4CaptchaScreen.ON_CAPTCHA_SOLVED,
+                    func = { captcha ->
+                      if (captchaRequest.completableDeferred.isActive) {
+                        captchaRequest.completableDeferred.complete(captcha)
+                      }
+                    }
+                  )
+
+                  callback(
+                    callbackKey = Chan4CaptchaScreen.ON_SCREEN_DISMISSED,
+                    func = {
+                      if (captchaRequest.completableDeferred.isActive) {
+                        captchaRequest.completableDeferred.completeExceptionally(CancellationException())
+                      }
+                    }
+                  )
                 }
               )
             }

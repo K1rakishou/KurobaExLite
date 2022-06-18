@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.history
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxScope
@@ -75,9 +76,10 @@ import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HistoryScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<SimpleToolbar<HistoryScreen.ToolbarIcons>>(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<HistoryScreen.ToolbarIcons>>(defaultArgs, componentActivity, navigationRouter) {
   private val historyScreenViewModel: HistoryScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()

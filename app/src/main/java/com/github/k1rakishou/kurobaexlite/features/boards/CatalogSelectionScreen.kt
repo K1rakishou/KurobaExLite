@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.boards
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxScope
@@ -52,6 +53,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -63,15 +65,17 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class CatalogSelectionScreen(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  private val catalogDescriptor: CatalogDescriptor?
-) : HomeNavigationScreen<KurobaChildToolbar>(componentActivity, navigationRouter) {
+  navigationRouter: NavigationRouter
+) : HomeNavigationScreen<KurobaChildToolbar>(defaultArgs, componentActivity, navigationRouter) {
   private val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
+
+  private val catalogDescriptor: CatalogDescriptor? by argumentOrNull(CATALOG_DESCRIPTOR_ARG)
 
   // TODO(KurobaEx): use "lastUsedSite" from the settings and update it too (once there are have multiple sites)
   private val siteKey: SiteKey
@@ -122,10 +126,10 @@ class CatalogSelectionScreen(
               kurobaToolbarContainerState.setToolbar(searchToolbar)
             }
             ToolbarIcons.SiteOptions -> {
-              val siteSettingsScreen = SiteSettingsScreen(
+              val siteSettingsScreen = ComposeScreen.createScreen<SiteSettingsScreen>(
                 componentActivity = componentActivity,
                 navigationRouter = navigationRouter,
-                siteKey = siteKey
+                args = { putParcelable(SiteSettingsScreen.SITE_KEY_ARG, siteKey) }
               )
 
               navigationRouter.pushScreen(siteSettingsScreen)
@@ -430,6 +434,8 @@ class CatalogSelectionScreen(
   }
 
   companion object {
+    const val CATALOG_DESCRIPTOR_ARG = "catalog_descriptor"
+
     val SCREEN_KEY = ScreenKey("CatalogSelectionScreen")
   }
 }

@@ -16,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
@@ -60,10 +61,10 @@ class CatalogScreenToolbarActionHandler(
         val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
           ?: return
 
-        val albumScreen = AlbumScreen(
-          chanDescriptor = catalogDescriptor,
+        val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
           componentActivity = componentActivity,
-          navigationRouter = navigationRouter
+          navigationRouter = navigationRouter,
+          args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, catalogDescriptor) }
         )
 
         navigationRouter.pushScreen(albumScreen)
@@ -133,7 +134,12 @@ class CatalogScreenToolbarActionHandler(
 
               val resolvedDescriptor = homeScreenViewModel.resolveDescriptorFromRawIdentifier(value)
               if (resolvedDescriptor == null) {
-                snackbarManager.toast(screenKey = CatalogScreen.SCREEN_KEY, message = "Failed to parse \'$value'\"")
+                snackbarManager.toast(
+                  screenKey = CatalogScreen.SCREEN_KEY,
+                  // TODO(KurobaEx): strings
+                  message = "Failed to parse \'$value\'"
+                )
+
                 return@PositiveDialogButton
               }
 

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.base
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
@@ -10,10 +11,11 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarConta
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar>(
+abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar> protected constructor(
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreen(componentActivity, navigationRouter) {
+) : ComposeScreen(defaultArgs, componentActivity, navigationRouter) {
   protected val kurobaToolbarContainerViewModel: KurobaToolbarContainerViewModel by componentActivity.viewModel()
 
   abstract val hasFab: Boolean

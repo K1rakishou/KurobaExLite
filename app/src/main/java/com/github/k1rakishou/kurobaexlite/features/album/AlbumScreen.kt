@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.album
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -63,10 +64,10 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class AlbumScreen(
-  private val chanDescriptor: ChanDescriptor,
+  defaultArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcon>>(componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcon>>(defaultArgs, componentActivity, navigationRouter) {
   private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
@@ -76,15 +77,18 @@ class AlbumScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-  private val keySuffix = when (chanDescriptor) {
-    is CatalogDescriptor -> "catalog"
-    is ThreadDescriptor -> "thread"
+  private val chanDescriptor: ChanDescriptor by requireArgument(CHAN_DESCRIPTOR_ARG)
+
+  private val keySuffix by lazy {
+    when (chanDescriptor) {
+      is CatalogDescriptor -> "catalog"
+      is ThreadDescriptor -> "thread"
+    }
   }
 
-  private val kurobaToolbarContainerViewModelKey = "${screenKey.key}_${keySuffix}"
-
-  private val defaultToolbarKey = "${screenKey.key}_${keySuffix}_toolbar"
-  private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
+  private val kurobaToolbarContainerViewModelKey by lazy { "${screenKey.key}_${keySuffix}" }
+  private val defaultToolbarKey by lazy { "${screenKey.key}_${keySuffix}_toolbar" }
+  private val defaultToolbarStateKey by lazy { "${defaultToolbarKey}_state" }
 
   private val defaultToolbarState by lazy {
     SimpleToolbarStateBuilder.Builder<ToolbarIcon>(componentActivity)
@@ -164,9 +168,9 @@ class AlbumScreen(
         postsAsyncData = postsAsyncData,
         paddingValues = paddingValues,
         onThumbnailClicked = { postImage ->
-          val mediaViewerParams = when (chanDescriptor) {
-            is CatalogDescriptor -> MediaViewerParams.Catalog(chanDescriptor, postImage.fullImageAsUrl)
-            is ThreadDescriptor -> MediaViewerParams.Thread(chanDescriptor, postImage.fullImageAsUrl)
+          val mediaViewerParams = when (val descriptor = chanDescriptor) {
+            is CatalogDescriptor -> MediaViewerParams.Catalog(descriptor, postImage.fullImageAsUrl)
+            is ThreadDescriptor -> MediaViewerParams.Thread(descriptor, postImage.fullImageAsUrl)
           }
 
           val mediaViewerScreen = MediaViewerScreen(
@@ -316,6 +320,8 @@ class AlbumScreen(
   }
 
   companion object {
+    const val CHAN_DESCRIPTOR_ARG = "chan_descriptor"
+
     val SCREEN_KEY = ScreenKey("AlbumScreen")
   }
 }
