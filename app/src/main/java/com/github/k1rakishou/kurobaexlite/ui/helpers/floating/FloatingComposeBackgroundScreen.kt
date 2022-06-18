@@ -13,10 +13,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
 class FloatingComposeBackgroundScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
 
   private val backgroundColor = Color(
     red = 0f,

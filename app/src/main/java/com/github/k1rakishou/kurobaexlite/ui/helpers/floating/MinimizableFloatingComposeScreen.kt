@@ -51,10 +51,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
 abstract class MinimizableFloatingComposeScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   abstract val isScreenMinimized: MutableState<Boolean>
 
   override val ignoreBackPresses: Boolean

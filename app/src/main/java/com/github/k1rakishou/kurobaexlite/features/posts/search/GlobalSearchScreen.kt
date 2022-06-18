@@ -54,17 +54,17 @@ import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class GlobalSearchScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-) : HomeNavigationScreen<KurobaChildToolbar>(defaultArgs, componentActivity, navigationRouter) {
+) : HomeNavigationScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
   private val globalSearchScreenViewModel: GlobalSearchScreenViewModel by componentActivity.viewModel()
 
   private val postSearchLongtapContentMenu by lazy {
     PostSearchLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
-  private val catalogDescriptor: CatalogDescriptor by requireArgument(CATALOG_DESCRIPTOR_ARG)
+  private val catalogDescriptor: CatalogDescriptor by requireArgument(CATALOG_DESCRIPTOR)
 
   override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -96,7 +96,7 @@ class GlobalSearchScreen(
 
     ScreenCallbackStorage.invokeCallback(
       screenKey = screenKey,
-      callbackKey = CLOSE_CATALOG_SEARCH_TOOLBAR_CALLBACK
+      callbackKey = CLOSE_CATALOG_SEARCH_TOOLBAR
     )
   }
 
@@ -240,7 +240,7 @@ class GlobalSearchScreen(
           onClick = {
             ScreenCallbackStorage.invokeCallback(
               screenKey = screenKey,
-              callbackKey = ON_POST_CLICKED_CALLBACK,
+              callbackKey = ON_POST_CLICKED,
               p1 = postCellData.postDescriptor
             )
           },
@@ -413,10 +413,10 @@ class GlobalSearchScreen(
   }
 
   companion object {
-    const val CATALOG_DESCRIPTOR_ARG = "catalog_descriptor"
+    const val CATALOG_DESCRIPTOR = "catalog_descriptor"
 
-    const val CLOSE_CATALOG_SEARCH_TOOLBAR_CALLBACK = "close_catalog_search_toolbar"
-    const val ON_POST_CLICKED_CALLBACK = "on_post_clicked"
+    const val CLOSE_CATALOG_SEARCH_TOOLBAR = "close_catalog_search_toolbar"
+    const val ON_POST_CLICKED = "on_post_clicked"
 
     val SCREEN_KEY = ScreenKey("GlobalSearchScreen")
   }

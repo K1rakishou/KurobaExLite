@@ -80,10 +80,10 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class PopupRepliesScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val popupRepliesScreenViewModel: PopupRepliesScreenViewModel by componentActivity.viewModel()

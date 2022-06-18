@@ -121,12 +121,12 @@ import org.koin.java.KoinJavaComponent.inject
 
 // TODO(KurobaEx): screen parameters are not persisted across process death yet!
 class MediaViewerScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   private val mediaViewerParams: MediaViewerParams,
   private val openedFromScreen: ScreenKey,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : MinimizableFloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : MinimizableFloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()

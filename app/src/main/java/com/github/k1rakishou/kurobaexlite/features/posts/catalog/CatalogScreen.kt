@@ -71,10 +71,10 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : PostsScreen<KurobaChildToolbar>(defaultArgs, componentActivity, navigationRouter) {
+) : PostsScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
   private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
@@ -183,10 +183,10 @@ class CatalogScreen(
         val globalSearchScreen = ComposeScreen.createScreen<GlobalSearchScreen>(
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
-          args = { putParcelable(GlobalSearchScreen.CATALOG_DESCRIPTOR_ARG, descriptor) },
+          args = { putParcelable(GlobalSearchScreen.CATALOG_DESCRIPTOR, descriptor) },
           callbacks = {
             callback<PostDescriptor>(
-              callbackKey = GlobalSearchScreen.ON_POST_CLICKED_CALLBACK,
+              callbackKey = GlobalSearchScreen.ON_POST_CLICKED,
               func = { postDescriptor ->
                 globalUiInfoManager.updateCurrentPage(
                   screenKey = ThreadScreen.SCREEN_KEY,
@@ -203,7 +203,7 @@ class CatalogScreen(
             )
 
             callback(
-              callbackKey = GlobalSearchScreen.CLOSE_CATALOG_SEARCH_TOOLBAR_CALLBACK,
+              callbackKey = GlobalSearchScreen.CLOSE_CATALOG_SEARCH_TOOLBAR,
               func = {
                 if (localSearchToolbar.searchQuery.isNotEmpty()) {
                   return@callback

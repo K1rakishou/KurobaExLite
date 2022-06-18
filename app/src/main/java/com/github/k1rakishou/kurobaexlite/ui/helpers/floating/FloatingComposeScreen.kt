@@ -34,11 +34,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.launch
 
 abstract class FloatingComposeScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   private val canDismissByClickingOutside: Boolean = true
-) : ComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : ComposeScreen(screenArgs, componentActivity, navigationRouter) {
   val horizPaddingDp by lazy { if (globalUiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
   val vertPaddingDp by lazy { if (globalUiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
 

@@ -24,10 +24,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
 class MainScreen private constructor(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   private val mainNavigationRouter: MainNavigationRouter
-) : ComposeScreen(defaultArgs, componentActivity, mainNavigationRouter) {
+) : ComposeScreen(screenArgs, componentActivity, mainNavigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable

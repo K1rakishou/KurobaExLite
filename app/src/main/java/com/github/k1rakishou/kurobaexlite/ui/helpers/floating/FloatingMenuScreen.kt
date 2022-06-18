@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.floating
 
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -41,13 +42,14 @@ import logcat.logcat
 
 // TODO(KurobaEx): screen parameters are not persisted across process death yet!
 class FloatingMenuScreen(
+  screenArgs: Bundle? = null,
   floatingMenuKey: String,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
   menuItems: List<FloatingMenuItem>,
   private val onMenuItemClicked: (FloatingMenuItem) -> Unit,
   private val onDismiss: () -> Unit = {}
-) : FloatingComposeScreen(null, componentActivity, navigationRouter) {
+) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val floatingMenuScreenKey = ScreenKey("FloatingMenuScreen_${floatingMenuKey}")
 
   private val callbacksToInvokeMap = mutableMapOf<Any, FloatingMenuItem>()

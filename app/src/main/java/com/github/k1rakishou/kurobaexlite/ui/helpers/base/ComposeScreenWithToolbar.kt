@@ -12,10 +12,10 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarConta
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar> protected constructor(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : ComposeScreen(screenArgs, componentActivity, navigationRouter) {
   protected val kurobaToolbarContainerViewModel: KurobaToolbarContainerViewModel by componentActivity.viewModel()
 
   abstract val hasFab: Boolean

@@ -121,10 +121,10 @@ import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class BookmarksScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : ComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val bookmarksScreenViewModel: BookmarksScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
 

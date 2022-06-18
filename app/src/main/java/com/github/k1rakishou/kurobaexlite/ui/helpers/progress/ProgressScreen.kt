@@ -20,10 +20,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 
 class ProgressScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
 
   private val title: String by requireArgument(TITLE)

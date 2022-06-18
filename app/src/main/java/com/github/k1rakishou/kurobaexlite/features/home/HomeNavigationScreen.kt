@@ -35,10 +35,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import kotlinx.coroutines.flow.StateFlow
 
 abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar> protected constructor(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : ComposeScreenWithToolbar<ToolbarType>(defaultArgs, componentActivity, navigationRouter) {
+) : ComposeScreenWithToolbar<ToolbarType>(screenArgs, componentActivity, navigationRouter) {
   abstract val screenContentLoadedFlow: StateFlow<Boolean>
 
   protected open val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(true)

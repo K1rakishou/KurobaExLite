@@ -29,7 +29,7 @@ import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 abstract class ComposeScreen protected constructor(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   val componentActivity: ComponentActivity,
   val navigationRouter: NavigationRouter
 ) {
@@ -40,7 +40,7 @@ abstract class ComposeScreen protected constructor(
 
   private val savedStateViewModel by lazy {
     val key = "${screenKey.key}_SavedStateViewModel"
-    val provider = ViewModelProvider(componentActivity, KurobaSavedStateViewModelFactory(componentActivity, defaultArgs))
+    val provider = ViewModelProvider(componentActivity, KurobaSavedStateViewModelFactory(componentActivity, screenArgs))
 
     return@lazy provider.get(key, SavedStateViewModel::class.java)
   }

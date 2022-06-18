@@ -44,10 +44,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.CancellationException
 
 abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<ToolbarType>(defaultArgs, componentActivity, navigationRouter) {
+) : HomeNavigationScreen<ToolbarType>(screenArgs, componentActivity, navigationRouter) {
   abstract val isCatalogScreen: Boolean
 
   override val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(false)

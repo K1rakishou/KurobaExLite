@@ -65,10 +65,10 @@ import java.util.Locale
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class Chan4CaptchaScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : FloatingComposeScreen(defaultArgs, componentActivity, navigationRouter) {
+) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val chan4CaptchaViewModel: Chan4CaptchaViewModel by componentActivity.viewModel()
 
   private val chanDescriptor: ChanDescriptor by requireArgument(CHAN_DESCRIPTOR_ARG)

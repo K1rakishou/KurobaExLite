@@ -76,10 +76,10 @@ import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class HistoryScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<SimpleToolbar<HistoryScreen.ToolbarIcons>>(defaultArgs, componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<HistoryScreen.ToolbarIcons>>(screenArgs, componentActivity, navigationRouter) {
   private val historyScreenViewModel: HistoryScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()

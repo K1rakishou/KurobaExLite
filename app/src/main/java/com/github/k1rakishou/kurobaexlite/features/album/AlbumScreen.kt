@@ -64,10 +64,10 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class AlbumScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcon>>(defaultArgs, componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcon>>(screenArgs, componentActivity, navigationRouter) {
   private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()

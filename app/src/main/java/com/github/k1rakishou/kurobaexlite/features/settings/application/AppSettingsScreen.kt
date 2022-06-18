@@ -48,10 +48,10 @@ import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class AppSettingsScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<SimpleToolbar<AppSettingsScreen.ToolbarIcons>>(defaultArgs, componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<AppSettingsScreen.ToolbarIcons>>(screenArgs, componentActivity, navigationRouter) {
   private val appSettingsScreenViewModel by componentActivity.viewModel<AppSettingsScreenViewModel>()
 
   override val screenKey: ScreenKey = SCREEN_KEY

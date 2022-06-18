@@ -43,10 +43,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.java.KoinJavaComponent.inject
 
 class SiteSettingsScreen(
-  defaultArgs: Bundle? = null,
+  screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-) : HomeNavigationScreen<KurobaChildToolbar>(defaultArgs, componentActivity, navigationRouter) {
+) : HomeNavigationScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
   private val siteManager: SiteManager by inject(SiteManager::class.java)
 
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)
