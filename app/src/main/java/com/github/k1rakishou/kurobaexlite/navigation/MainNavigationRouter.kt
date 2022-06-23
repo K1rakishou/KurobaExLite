@@ -157,7 +157,7 @@ class MainNavigationRouter : NavigationRouter(
     val floatingComposeScreen = floatingScreensStack.getOrNull(index)
       ?: return false
 
-    if (canRemoveBgScreenWhenUnpresenting()) {
+    if (shouldRemoveBgScreen(screenKey)) {
       logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
 
       val prevBgScreen = floatingScreensStack
@@ -182,20 +182,17 @@ class MainNavigationRouter : NavigationRouter(
     return true
   }
 
-  private fun canRemoveBgScreenWhenUnpresenting(): Boolean {
-    if (_floatingScreensStack.size <= 1) {
-      return _floatingScreensStack.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
+  private fun shouldRemoveBgScreen(unpresentedScreenKey: ScreenKey): Boolean {
+    // Only check screens that do not handle the background on their own (Do not use the
+    // FloatingComposeBackgroundScreen) AND screens that are not the screen that we are about to
+    // destroy
+    val remainingScreens = _floatingScreensStack.filter { floatingScreen ->
+      return@filter !floatingScreen.customBackground &&
+        floatingScreen.screenKey != unpresentedScreenKey
     }
 
-    if (_floatingScreensStack.size == 2) {
-      val hasBgScreen = _floatingScreensStack
-        .indexOfFirst { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY } >= 0
-      val hasScreenWithCustomBg = _floatingScreensStack
-        .indexOfFirst { it.customBackground } >= 0
-
-      if (hasBgScreen && !hasScreenWithCustomBg) {
-        return true
-      }
+    if (remainingScreens.size <= 1) {
+      return remainingScreens.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
     }
 
     return false
