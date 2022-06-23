@@ -29,7 +29,7 @@ import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
 abstract class ComposeScreen protected constructor(
-  screenArgs: Bundle? = null,
+  val screenArgs: Bundle? = null,
   val componentActivity: ComponentActivity,
   val navigationRouter: NavigationRouter
 ) {
@@ -50,13 +50,35 @@ abstract class ComposeScreen protected constructor(
 
   abstract val screenKey: ScreenKey
 
-  protected fun <T : Any> argumentOrNull(key: String): Lazy<T?> {
+  fun <T : Any> setArgument(key: String, value: T) {
+    savedStateViewModel.setArgument(key, value)
+  }
+
+  fun <T : Any> argumentOrNull(key: String): T? {
+    return savedStateViewModel.getArgumentOrNull(key)
+  }
+
+  fun <T : Any> argumentOr(key: String, default: T): T {
+    return savedStateViewModel.getArgumentOrNull(key) ?: default
+  }
+
+  fun <T : Any> requireArgument(key: String): Lazy<T> {
+    return lazy {
+      val arg = argumentOrNull<T>(key)
+
+      return@lazy checkNotNull(arg) {
+        "Required argument on screen: ${screenKey} with key: ${key} is null"
+      }
+    }
+  }
+
+  protected fun <T : Any> argumentOrNullLazy(key: String): Lazy<T?> {
     return lazy { savedStateViewModel.getArgumentOrNull(key) }
   }
 
-  protected fun <T : Any> requireArgument(key: String): Lazy<T> {
+  protected fun <T : Any> requireArgumentLazy(key: String): Lazy<T> {
     return lazy {
-      val arg = argumentOrNull<T>(key).value
+      val arg = argumentOrNullLazy<T>(key).value
 
       return@lazy checkNotNull(arg) {
         "Required argument on screen: ${screenKey} with key: ${key} is null"

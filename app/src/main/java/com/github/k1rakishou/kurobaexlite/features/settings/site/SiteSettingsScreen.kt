@@ -53,7 +53,7 @@ class SiteSettingsScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-  private val siteKey: SiteKey by requireArgument(SITE_KEY_ARG)
+  private val siteKey: SiteKey by requireArgumentLazy(SITE_KEY_ARG)
   private val defaultToolbarKey = "${screenKey.key}_default"
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
 

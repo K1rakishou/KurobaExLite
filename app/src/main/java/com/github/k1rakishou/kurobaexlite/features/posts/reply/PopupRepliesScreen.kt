@@ -89,7 +89,7 @@ class PopupRepliesScreen(
   private val popupRepliesScreenViewModel: PopupRepliesScreenViewModel by componentActivity.viewModel()
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
-  private val replyViewMode: ReplyViewMode by requireArgument(REPLY_VIEW_MODE)
+  private val replyViewMode: ReplyViewMode by requireArgumentLazy(REPLY_VIEW_MODE)
 
   private val postListLayoutId = "PopupRepliesScreen_PostListContent"
   private val buttonsLayoutId = "PopupRepliesScreen_Buttons"

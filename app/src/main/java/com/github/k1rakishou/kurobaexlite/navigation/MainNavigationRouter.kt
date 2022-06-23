@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateListOf
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -15,9 +16,9 @@ class MainNavigationRouter : NavigationRouter(
   routerKey = MainScreen.SCREEN_KEY,
   parentRouter = null
 ) {
-  private val _floatingScreensStack = mutableListOf<FloatingComposeScreen>()
+  private val _floatingScreensStack = mutableStateListOf<FloatingComposeScreen>()
   val floatingScreensStack: List<FloatingComposeScreen>
-    get() = _floatingScreensStack.toList()
+    get() = _floatingScreensStack
 
   protected val backPressHandlers = mutableListOf<OnBackPressHandler>()
 

@@ -64,7 +64,7 @@ class GlobalSearchScreen(
     PostSearchLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
-  private val catalogDescriptor: CatalogDescriptor by requireArgument(CATALOG_DESCRIPTOR)
+  private val catalogDescriptor: CatalogDescriptor by requireArgumentLazy(CATALOG_DESCRIPTOR)
 
   override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
   override val screenKey: ScreenKey = SCREEN_KEY

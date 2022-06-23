@@ -17,7 +17,7 @@ data class ThreadDataJson(
   val posts: List<ThreadPostDataJson>
 )
 
-abstract class PostImageDataJson {
+abstract class SharedDataJson {
   abstract val filename: String?
   abstract val ext: String?
   abstract val tim: Long?
@@ -105,7 +105,7 @@ data class ThreadPostDataJson(
   override val w: Int?,
   override val h: Int?,
   override val fsize: Int?
-) : PostImageDataJson()
+) : SharedDataJson()
 
 @JsonClass(generateAdapter = true)
 data class CatalogThreadDataJson(
@@ -140,7 +140,7 @@ data class CatalogThreadDataJson(
   override val w: Int?,
   override val h: Int?,
   override val fsize: Int?
-) : PostImageDataJson()
+) : SharedDataJson()
 
 @JsonClass(generateAdapter = true)
 data class ThreadBookmarkInfoJson(

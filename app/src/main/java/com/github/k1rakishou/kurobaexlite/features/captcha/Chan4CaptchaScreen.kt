@@ -71,7 +71,7 @@ class Chan4CaptchaScreen(
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val chan4CaptchaViewModel: Chan4CaptchaViewModel by componentActivity.viewModel()
 
-  private val chanDescriptor: ChanDescriptor by requireArgument(CHAN_DESCRIPTOR_ARG)
+  private val chanDescriptor: ChanDescriptor by requireArgumentLazy(CHAN_DESCRIPTOR_ARG)
 
   override val screenKey: ScreenKey = SCREEN_KEY
 

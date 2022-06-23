@@ -26,7 +26,7 @@ class ProgressScreen(
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
 
-  private val title: String by requireArgument(TITLE)
+  private val title: String by requireArgumentLazy(TITLE)
 
   @Composable
   override fun FloatingContent() {

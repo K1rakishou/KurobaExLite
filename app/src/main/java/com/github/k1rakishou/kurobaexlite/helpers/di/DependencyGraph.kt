@@ -256,7 +256,7 @@ object DependencyGraph {
 
   private fun Module.viewModels() {
     viewModel {
-      MainActivityViewModel()
+      MainActivityViewModel(savedStateHandle = get())
     }
     viewModel {
       HomeScreenViewModel(

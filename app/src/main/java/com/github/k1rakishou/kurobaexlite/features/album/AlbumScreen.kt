@@ -77,7 +77,7 @@ class AlbumScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-  private val chanDescriptor: ChanDescriptor by requireArgument(CHAN_DESCRIPTOR_ARG)
+  private val chanDescriptor: ChanDescriptor by requireArgumentLazy(CHAN_DESCRIPTOR_ARG)
 
   private val keySuffix by lazy {
     when (chanDescriptor) {

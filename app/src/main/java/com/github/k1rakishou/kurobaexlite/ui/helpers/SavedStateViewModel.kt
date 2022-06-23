@@ -26,6 +26,10 @@ class SavedStateViewModel(
   private val handle: SavedStateHandle
 ) : ViewModel() {
 
+  fun <T> setArgument(key: String, value: T) {
+    handle.set(key, value)
+  }
+
   @OptIn(SavedStateHandleSaveableApi::class)
   fun <T : Any> mutableSaveable(
     key: String,

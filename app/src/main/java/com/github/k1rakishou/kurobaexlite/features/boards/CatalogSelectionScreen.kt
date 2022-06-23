@@ -75,7 +75,7 @@ class CatalogSelectionScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
-  private val catalogDescriptor: CatalogDescriptor? by argumentOrNull(CATALOG_DESCRIPTOR_ARG)
+  private val catalogDescriptor: CatalogDescriptor? by argumentOrNullLazy(CATALOG_DESCRIPTOR_ARG)
 
   // TODO(KurobaEx): use "lastUsedSite" from the settings and update it too (once there are have multiple sites)
   private val siteKey: SiteKey

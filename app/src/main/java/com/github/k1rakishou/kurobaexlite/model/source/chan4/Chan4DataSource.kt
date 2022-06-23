@@ -28,7 +28,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardsDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.PostImageDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.SharedDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadBookmarkInfoJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadDataJson
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -122,7 +122,7 @@ class Chan4DataSource(
               images = parsePostImages(
                 postDescriptor = postDescriptor,
                 postImageInfo = postImageInfo,
-                postImageDataJson = threadPost,
+                sharedDataJson = threadPost,
                 boardCode = boardCode
               ),
               threadRepliesTotal = threadPost.replies,
@@ -151,7 +151,7 @@ class Chan4DataSource(
               images = parsePostImages(
                 postDescriptor = postDescriptor,
                 postImageInfo = postImageInfo,
-                postImageDataJson = threadPost,
+                sharedDataJson = threadPost,
                 boardCode = boardCode
               ),
               lastModified = null,
@@ -232,7 +232,7 @@ class Chan4DataSource(
               images = parsePostImages(
                 postDescriptor = postDescriptor,
                 postImageInfo = postImageInfo,
-                postImageDataJson = catalogThread,
+                sharedDataJson = catalogThread,
                 boardCode = boardCode
               ),
               threadRepliesTotal = catalogThread.replies,
@@ -463,33 +463,33 @@ class Chan4DataSource(
   private fun parsePostImages(
     postDescriptor: PostDescriptor,
     postImageInfo: Site.PostImageInfo?,
-    postImageDataJson: PostImageDataJson,
+    sharedDataJson: SharedDataJson,
     boardCode: String
   ): List<PostImageData> {
-    if (postImageInfo == null || !postImageDataJson.hasImage()) {
+    if (postImageInfo == null || !sharedDataJson.hasImage()) {
       return emptyList()
     }
 
-    val extension = postImageDataJson.ext
+    val extension = sharedDataJson.ext
       ?.removePrefix(".")
       ?: "jpg"
 
     val thumbnailUrl = postImageInfo.thumbnailUrl(
       boardCode = boardCode,
-      tim = postImageDataJson.tim!!,
+      tim = sharedDataJson.tim!!,
       extension = "jpg"
     ).toHttpUrlOrNull()
       ?: return emptyList()
 
     val fullUrl = postImageInfo.fullUrl(
       boardCode = boardCode,
-      tim = postImageDataJson.tim!!,
+      tim = sharedDataJson.tim!!,
       extension = extension
     ).toHttpUrlOrNull()
       ?: return emptyList()
 
-    val serverFileName = postImageDataJson.tim.toString()
-    val originalFileName = postImageDataJson.filename
+    val serverFileName = sharedDataJson.tim.toString()
+    val originalFileName = sharedDataJson.filename
       ?.takeIf { filename -> filename.isNotNullNorBlank() }
       ?: serverFileName
 
@@ -499,9 +499,9 @@ class Chan4DataSource(
       originalFileNameEscaped = HtmlUnescape.unescape(originalFileName),
       serverFileName = serverFileName,
       ext = extension,
-      width = postImageDataJson.w!!,
-      height = postImageDataJson.h!!,
-      fileSize = postImageDataJson.fsize!!,
+      width = sharedDataJson.w!!,
+      height = sharedDataJson.h!!,
+      fileSize = sharedDataJson.fsize!!,
       ownerPostDescriptor = postDescriptor
     )
 

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import com.github.k1rakishou.kurobaexlite.helpers.moveToEnd
@@ -337,6 +338,29 @@ open class NavigationRouter(
       navigationScreenUpdates = newNavigationScreenUpdates,
       floatingScreenUpdates = newFloatingScreenUpdates
     )
+  }
+
+  protected fun <T : ComposeScreen> MutableState<List<T>>.addScreen(
+    index: Int = value.lastIndex,
+    newScreen: T
+  ): T {
+    val oldScreens = this.value
+    val newScreens = oldScreens.toMutableList().apply { add(index, newScreen) }
+    this.value = newScreens
+
+    return newScreen
+  }
+
+  protected fun <T : ComposeScreen> MutableState<List<T>>.removeScreen(
+    index: Int
+  ): T {
+    val oldScreens = this.value
+    val removedScreen = oldScreens[index]
+
+    val newScreens = oldScreens.toMutableList().apply { removeAt(index) }
+    this.value = newScreens
+
+    return removedScreen
   }
 
   data class ScreenUpdateTransaction(
