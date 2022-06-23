@@ -15,7 +15,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreen
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
-import com.github.k1rakishou.kurobaexlite.navigation.RootRouterHost
+import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
@@ -85,8 +85,8 @@ class MainScreen private constructor(
           return@HandleBackPresses homeScreen.onBackPressed()
         }
 
-        RootRouterHost(
-          rootNavigationRouter = navigationRouter,
+        RouterHost(
+          navigationRouter = navigationRouter,
           defaultScreenFunc = { homeScreen }
         )
 

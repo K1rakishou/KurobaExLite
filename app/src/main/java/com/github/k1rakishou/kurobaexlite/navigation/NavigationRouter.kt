@@ -3,15 +3,12 @@ package com.github.k1rakishou.kurobaexlite.navigation
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
-import com.github.k1rakishou.kurobaexlite.helpers.moveToEnd
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.helpers.unreachable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.MinimizableFloatingComposeScreen
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import logcat.LogPriority
 import logcat.logcat
 
@@ -23,12 +20,11 @@ open class NavigationRouter(
   val navigationScreensStack: List<ComposeScreen>
     get() = _navigationScreensStack
 
+  protected val _screenAnimations = mutableStateMapOf<ScreenKey, ScreenAnimation>()
+  val screenAnimations: Map<ScreenKey, ScreenAnimation>
+    get() = _screenAnimations
+
   protected val childRouters = linkedMapOf<ScreenKey, NavigationRouter>()
-
-  protected val _screenUpdatesFlow = MutableStateFlow<ScreenUpdateTransaction?>(null)
-  val screenUpdatesFlow: StateFlow<ScreenUpdateTransaction?>
-    get() = _screenUpdatesFlow.asStateFlow()
-
   protected val removingScreens = mutableSetOf<ScreenKey>()
 
   fun navigationScreensStackExcept(thisScreen: ComposeScreen): List<ComposeScreen> {
@@ -52,25 +48,19 @@ open class NavigationRouter(
       return false
     }
 
-    val newScreenUpdate = if (withAnimation) {
-      ScreenUpdate.Push(composeScreen)
+    val screenAnimation = if (withAnimation) {
+      ScreenAnimation.Push(composeScreen.screenKey)
     } else {
-      ScreenUpdate.Set(composeScreen)
+      ScreenAnimation.Set(composeScreen.screenKey)
     }
 
-    val navigationScreenUpdates = combineScreenUpdates(
-      oldScreens = _navigationScreensStack,
-      newScreenUpdate = newScreenUpdate
-    )
+    Snapshot.withMutableSnapshot {
+      _navigationScreensStack.add(composeScreen)
+      _screenAnimations.put(composeScreen.screenKey, screenAnimation)
+    }
 
-    _navigationScreensStack.add(composeScreen)
     logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${composeScreen.screenKey.key})" }
     composeScreen.onStartCreating()
-
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = emptyList()
-    )
 
     return true
   }
@@ -92,27 +82,18 @@ open class NavigationRouter(
       return false
     }
 
-    val newScreenUpdate = if (withAnimation) {
-      ScreenUpdate.Pop(composeScreen)
+    val screenAnimation = if (withAnimation) {
+      ScreenAnimation.Pop(composeScreen.screenKey)
     } else {
-      ScreenUpdate.Remove(composeScreen)
+      ScreenAnimation.Remove(composeScreen.screenKey)
     }
-
-    val oldScreens = _navigationScreensStack
-      .filter { screen -> screen.screenKey != composeScreen.screenKey }
-
-    val navigationScreenUpdates = combineScreenUpdates(
-      oldScreens = oldScreens,
-      newScreenUpdate = newScreenUpdate
-    )
 
     logcat(TAG, LogPriority.VERBOSE) { "popScreen(${composeScreen.screenKey.key})" }
     composeScreen.onStartDisposing()
 
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = emptyList()
-    )
+    Snapshot.withMutableSnapshot {
+      _screenAnimations.put(composeScreen.screenKey, screenAnimation)
+    }
 
     return true
   }
@@ -128,39 +109,13 @@ open class NavigationRouter(
 
   open fun stopPresentingScreen(
     screenKey: ScreenKey,
-    overrideAnimation: ScreenRemoveAnimation? = null
+    overrideAnimation: ScreenAnimation? = null
   ): Boolean {
     if (parentRouter != null) {
       return parentRouter.stopPresentingScreen(screenKey, overrideAnimation)
     }
 
     unreachable("Must never reach here because should be overridden by MainNavigationRouter")
-  }
-
-  protected fun combineScreenUpdates(
-    oldScreens: List<ComposeScreen>,
-    newScreenUpdate: ScreenUpdate
-  ): List<ScreenUpdate> {
-    val screensCombined = mutableListOf<ScreenUpdate>()
-    screensCombined.addAll(oldScreens.map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) })
-    screensCombined.add(newScreenUpdate)
-
-    // Hack for making MinimizableFloatingComposeScreen always on top of any other screen
-    // TODO(KurobaEx): Maybe I could add some kind of "zOrder" property and use it to sort screens?
-
-    val indexOfMinimizableScreen = screensCombined.indexOfFirst { it.screen is MinimizableFloatingComposeScreen }
-    if (indexOfMinimizableScreen >= 0 && indexOfMinimizableScreen != screensCombined.lastIndex) {
-      val isScreenMinimized = (screensCombined.getOrNull(indexOfMinimizableScreen)?.screen as? MinimizableFloatingComposeScreen)
-        ?.isScreenMinimized
-        ?.value
-        ?: false
-
-      if (isScreenMinimized) {
-        screensCombined.moveToEnd(indexOfMinimizableScreen)
-      }
-    }
-
-    return screensCombined
   }
 
   fun childRouter(screenKey: ScreenKey): NavigationRouter {
@@ -275,69 +230,30 @@ open class NavigationRouter(
     return parentRouter.getRootRouter()
   }
 
-  open suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
-    if (!screenUpdate.isScreenBeingRemoved()) {
-      screenUpdate.screen.onCreated()
+  open suspend fun onScreenAnimationFinished(screenAnimation: ScreenAnimation) {
+    _screenAnimations.remove(screenAnimation.screenKey)
+
+    val composeScreen = navigationScreensStack
+      .firstOrNull { composeScreen -> composeScreen.screenKey == screenAnimation.screenKey }
+
+    if (composeScreen == null) {
       return
     }
 
-    screenUpdate.screen.onDisposed()
+    if (!screenAnimation.isScreenBeingRemoved()) {
+      composeScreen.onCreated()
+      return
+    }
+
+    composeScreen.onDisposed()
 
     _navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == screenUpdate.screen.screenKey }
+      .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }
       .takeIf { index -> index >= 0 }
       ?.let { indexOfRemovedScreen ->
-        removingScreens.remove(screenUpdate.screen.screenKey)
+        removingScreens.remove(screenAnimation.screenKey)
         _navigationScreensStack.removeAt(indexOfRemovedScreen)
       }
-
-    if (_navigationScreensStack.isEmpty()) {
-      _screenUpdatesFlow.value = null
-      return
-    }
-
-    removeUpdateAfterAnimationFinished(screenUpdate)
-  }
-
-  protected fun removeUpdateAfterAnimationFinished(screenUpdate: ScreenUpdate) {
-    val prevScreenUpdates = _screenUpdatesFlow.value
-      ?: return
-
-    val indexOfOldFloatingScreenUpdate = prevScreenUpdates.floatingScreenUpdates
-      .indexOfFirst { oldScreenUpdate -> oldScreenUpdate === screenUpdate }
-    val indexOfOldNavigationScreenUpdate = prevScreenUpdates.navigationScreenUpdates
-      .indexOfFirst { oldScreenUpdate -> oldScreenUpdate === screenUpdate }
-
-    var needUpdate = false
-
-    val newFloatingScreenUpdates = if (indexOfOldFloatingScreenUpdate >= 0) {
-      needUpdate = true
-
-      val prevList = prevScreenUpdates.floatingScreenUpdates.toMutableList()
-      prevList.removeAt(indexOfOldFloatingScreenUpdate)
-      prevList
-    } else {
-      prevScreenUpdates.floatingScreenUpdates
-    }
-
-    val newNavigationScreenUpdates = if (indexOfOldNavigationScreenUpdate >= 0) {
-      needUpdate = true
-
-      val prevList = prevScreenUpdates.navigationScreenUpdates.toMutableList()
-      prevList.removeAt(indexOfOldNavigationScreenUpdate)
-      prevList
-    } else {
-      prevScreenUpdates.navigationScreenUpdates
-    }
-
-    if (!needUpdate) {
-      return
-    }
-
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = newNavigationScreenUpdates,
-      floatingScreenUpdates = newFloatingScreenUpdates
-    )
   }
 
   protected fun <T : ComposeScreen> MutableState<List<T>>.addScreen(
@@ -363,13 +279,9 @@ open class NavigationRouter(
     return removedScreen
   }
 
-  data class ScreenUpdateTransaction(
-    val navigationScreenUpdates: List<ScreenUpdate>,
-    val floatingScreenUpdates: List<ScreenUpdate>
-  )
-
   @Stable
-  sealed class ScreenUpdate(val screen: ComposeScreen) {
+  sealed class ScreenAnimation {
+    abstract val screenKey: ScreenKey
 
     fun isScreenBeingRemoved(): Boolean {
       return when (this) {
@@ -380,21 +292,21 @@ open class NavigationRouter(
         is Remove -> true
       }
     }
-    
-    data class Set(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
-      override fun toString(): String = "Set(key=${composeScreen.screenKey.key})"
+
+    data class Set(override val screenKey: ScreenKey) : ScreenAnimation() {
+      override fun toString(): String = "Set(key=${screenKey.key})"
     }
-    data class Remove(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
-      override fun toString(): String = "Remove(key=${composeScreen.screenKey.key})"
+    data class Remove(override val screenKey: ScreenKey) : ScreenAnimation() {
+      override fun toString(): String = "Remove(key=${screenKey.key})"
     }
-    data class Push(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
-      override fun toString(): String = "Push(key=${composeScreen.screenKey.key})"
+    data class Push(override val screenKey: ScreenKey) : ScreenAnimation() {
+      override fun toString(): String = "Push(key=${screenKey.key})"
     }
-    data class Pop(val composeScreen: ComposeScreen) : ScreenUpdate(composeScreen) {
-      override fun toString(): String = "Pop(key=${composeScreen.screenKey.key})"
+    data class Pop(override val screenKey: ScreenKey) : ScreenAnimation() {
+      override fun toString(): String = "Pop(key=${screenKey.key})"
     }
-    data class Fade(val composeScreen: ComposeScreen, val fadeType: FadeType) : ScreenUpdate(composeScreen) {
-      override fun toString(): String = "Fade(key=${composeScreen.screenKey.key}, fadeType=$fadeType)"
+    data class Fade(override val screenKey: ScreenKey, val fadeType: FadeType) : ScreenAnimation() {
+      override fun toString(): String = "Fade(key=${screenKey.key}, fadeType=$fadeType)"
     }
 
     enum class FadeType {
@@ -406,27 +318,17 @@ open class NavigationRouter(
       if (this === other) return true
       if (javaClass != other?.javaClass) return false
 
-      other as ScreenUpdate
+      other as ScreenAnimation
 
-      if (screen != other.screen) return false
+      if (screenKey != other.screenKey) return false
 
       return true
     }
 
     override fun hashCode(): Int {
-      return screen.hashCode()
+      return screenKey.hashCode()
     }
 
-  }
-
-  enum class ScreenAddAnimation {
-    Push,
-    FadeIn
-  }
-
-  enum class ScreenRemoveAnimation {
-    Pop,
-    FadeOut
   }
 
   companion object {

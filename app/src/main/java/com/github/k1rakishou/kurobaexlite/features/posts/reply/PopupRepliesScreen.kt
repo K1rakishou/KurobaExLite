@@ -104,7 +104,9 @@ class PopupRepliesScreen(
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY
-  override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.Pop
+
+  override val unpresentAnimation: NavigationRouter.ScreenAnimation
+    get() = NavigationRouter.ScreenAnimation.Pop(screenKey)
 
   @OptIn(ExperimentalMaterialApi::class)
   private val swipeableState = SwipeableState(
@@ -117,7 +119,6 @@ class PopupRepliesScreen(
   @Composable
   override fun CardContent() {
     var size by remember { mutableStateOf(IntSize.Zero) }
-    val coroutineScope = rememberCoroutineScope()
 
     val swipeDistance = remember(key1 = size) {
       if (size.width > 0) size.width.toFloat() else 1f

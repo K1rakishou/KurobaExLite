@@ -16,60 +16,63 @@ import androidx.compose.ui.graphics.graphicsLayer
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 
 @Composable
 fun ScreenTransition(
-  screenUpdate: NavigationRouter.ScreenUpdate,
-  onScreenUpdateFinished: suspend (NavigationRouter.ScreenUpdate) -> Unit,
+  composeScreen: ComposeScreen,
+  screenAnimation: NavigationRouter.ScreenAnimation,
+  onScreenAnimationFinished: suspend (NavigationRouter.ScreenAnimation) -> Unit,
   content: @Composable () -> Unit
 ) {
-  val scaleInitial = when (screenUpdate) {
-    is NavigationRouter.ScreenUpdate.Push -> .9f
-    is NavigationRouter.ScreenUpdate.Pop -> 1f
-    is NavigationRouter.ScreenUpdate.Fade -> 1f
-    is NavigationRouter.ScreenUpdate.Set -> 1f
-    is NavigationRouter.ScreenUpdate.Remove -> 0f
+  val scaleInitial = when (screenAnimation) {
+    is NavigationRouter.ScreenAnimation.Push -> .9f
+    is NavigationRouter.ScreenAnimation.Pop -> 1f
+    is NavigationRouter.ScreenAnimation.Fade -> 1f
+    is NavigationRouter.ScreenAnimation.Set -> 1f
+    is NavigationRouter.ScreenAnimation.Remove -> 0f
   }
 
-  val alphaInitial = when (screenUpdate) {
-    is NavigationRouter.ScreenUpdate.Push -> 0f
-    is NavigationRouter.ScreenUpdate.Pop -> 1f
-    is NavigationRouter.ScreenUpdate.Fade -> {
-      when (screenUpdate.fadeType) {
-        NavigationRouter.ScreenUpdate.FadeType.In -> 0f
-        NavigationRouter.ScreenUpdate.FadeType.Out -> 1f
+  val alphaInitial = when (screenAnimation) {
+    is NavigationRouter.ScreenAnimation.Push -> 0f
+    is NavigationRouter.ScreenAnimation.Pop -> 1f
+    is NavigationRouter.ScreenAnimation.Fade -> {
+      when (screenAnimation.fadeType) {
+        NavigationRouter.ScreenAnimation.FadeType.In -> 0f
+        NavigationRouter.ScreenAnimation.FadeType.Out -> 1f
       }
     }
-    is NavigationRouter.ScreenUpdate.Set -> 1f
-    is NavigationRouter.ScreenUpdate.Remove -> 0f
+    is NavigationRouter.ScreenAnimation.Set -> 1f
+    is NavigationRouter.ScreenAnimation.Remove -> 0f
   }
 
-  val canRenderInitial = when (screenUpdate) {
-    is NavigationRouter.ScreenUpdate.Push -> false
-    is NavigationRouter.ScreenUpdate.Pop -> true
-    is NavigationRouter.ScreenUpdate.Fade -> {
-      when (screenUpdate.fadeType) {
-        NavigationRouter.ScreenUpdate.FadeType.In -> false
-        NavigationRouter.ScreenUpdate.FadeType.Out -> true
+  val canRenderInitial = when (screenAnimation) {
+    is NavigationRouter.ScreenAnimation.Push -> false
+    is NavigationRouter.ScreenAnimation.Pop -> true
+    is NavigationRouter.ScreenAnimation.Fade -> {
+      when (screenAnimation.fadeType) {
+        NavigationRouter.ScreenAnimation.FadeType.In -> false
+        NavigationRouter.ScreenAnimation.FadeType.Out -> true
       }
     }
-    is NavigationRouter.ScreenUpdate.Set -> true
-    is NavigationRouter.ScreenUpdate.Remove -> false
+    is NavigationRouter.ScreenAnimation.Set -> true
+    is NavigationRouter.ScreenAnimation.Remove -> false
   }
 
-  var scaleAnimated by remember(key1 = screenUpdate) { mutableStateOf(scaleInitial) }
-  var alphaAnimated by remember(key1 = screenUpdate) { mutableStateOf(alphaInitial) }
-  var canRender by remember(key1 = screenUpdate) { mutableStateOf(canRenderInitial) }
+  var scaleAnimated by remember(key1 = screenAnimation) { mutableStateOf(scaleInitial) }
+  var alphaAnimated by remember(key1 = screenAnimation) { mutableStateOf(alphaInitial) }
+  var canRender by remember(key1 = screenAnimation) { mutableStateOf(canRenderInitial) }
 
   val animationDuration = 200
 
   LaunchedEffect(
-    key1 = screenUpdate,
+    key1 = composeScreen.screenKey,
+    key2 = screenAnimation,
     block = {
-      val homeNavigationScreen = screenUpdate.screen as? HomeNavigationScreen<*>
+      val homeNavigationScreen = composeScreen as? HomeNavigationScreen<*>
 
-      when (screenUpdate) {
-        is NavigationRouter.ScreenUpdate.Push -> {
+      when (screenAnimation) {
+        is NavigationRouter.ScreenAnimation.Push -> {
           val scaleStart = .9f
           val scaleEnd = 1f
           canRender = true
@@ -91,10 +94,10 @@ fun ScreenTransition(
               homeNavigationScreen?.updateAnimationProgress(animationProgress)
             }
           } finally {
-            onScreenUpdateFinished(screenUpdate)
+            onScreenAnimationFinished(screenAnimation)
           }
         }
-        is NavigationRouter.ScreenUpdate.Pop -> {
+        is NavigationRouter.ScreenAnimation.Pop -> {
           val scaleStart = 1f
           val scaleEnd = .9f
 
@@ -115,22 +118,22 @@ fun ScreenTransition(
               homeNavigationScreen?.updateAnimationProgress(1f - animationProgress)
             }
           } finally {
-            onScreenUpdateFinished(screenUpdate)
+            onScreenAnimationFinished(screenAnimation)
           }
 
           canRender = false
         }
-        is NavigationRouter.ScreenUpdate.Fade -> {
+        is NavigationRouter.ScreenAnimation.Fade -> {
           scaleAnimated = 1f
 
-          val initialValue = when (screenUpdate.fadeType) {
-            NavigationRouter.ScreenUpdate.FadeType.In -> 0f
-            NavigationRouter.ScreenUpdate.FadeType.Out -> 1f
+          val initialValue = when (screenAnimation.fadeType) {
+            NavigationRouter.ScreenAnimation.FadeType.In -> 0f
+            NavigationRouter.ScreenAnimation.FadeType.Out -> 1f
           }
 
-          val targetValue = when (screenUpdate.fadeType) {
-            NavigationRouter.ScreenUpdate.FadeType.In -> 1f
-            NavigationRouter.ScreenUpdate.FadeType.Out -> 0f
+          val targetValue = when (screenAnimation.fadeType) {
+            NavigationRouter.ScreenAnimation.FadeType.In -> 1f
+            NavigationRouter.ScreenAnimation.FadeType.Out -> 0f
           }
 
           canRender = true
@@ -150,26 +153,26 @@ fun ScreenTransition(
               homeNavigationScreen?.updateAnimationProgress(animationProgress)
             }
           } finally {
-            onScreenUpdateFinished(screenUpdate)
+            onScreenAnimationFinished(screenAnimation)
           }
 
-          canRender = when (screenUpdate.fadeType) {
-            NavigationRouter.ScreenUpdate.FadeType.In -> true
-            NavigationRouter.ScreenUpdate.FadeType.Out -> false
+          canRender = when (screenAnimation.fadeType) {
+            NavigationRouter.ScreenAnimation.FadeType.In -> true
+            NavigationRouter.ScreenAnimation.FadeType.Out -> false
           }
         }
-        is NavigationRouter.ScreenUpdate.Set -> {
+        is NavigationRouter.ScreenAnimation.Set -> {
           scaleAnimated = 1f
           alphaAnimated = 1f
           homeNavigationScreen?.updateAnimationProgress(1f)
-          onScreenUpdateFinished(screenUpdate)
+          onScreenAnimationFinished(screenAnimation)
           canRender = true
         }
-        is NavigationRouter.ScreenUpdate.Remove -> {
+        is NavigationRouter.ScreenAnimation.Remove -> {
           scaleAnimated = 0f
           alphaAnimated = 0f
           homeNavigationScreen?.updateAnimationProgress(0f)
-          onScreenUpdateFinished(screenUpdate)
+          onScreenAnimationFinished(screenAnimation)
           canRender = false
         }
       }

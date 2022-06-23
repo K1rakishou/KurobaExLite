@@ -141,12 +141,15 @@ class MediaViewerScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val isScreenMinimized: MutableState<Boolean> = mediaViewerScreenViewModel.isScreenMinimized
 
-  override val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation
+  override val unpresentAnimation: NavigationRouter.ScreenAnimation
     get() {
       return if (isScreenMinimized.value) {
-        NavigationRouter.ScreenRemoveAnimation.FadeOut
+        NavigationRouter.ScreenAnimation.Fade(
+          screenKey,
+          NavigationRouter.ScreenAnimation.FadeType.Out
+        )
       } else {
-        NavigationRouter.ScreenRemoveAnimation.Pop
+        NavigationRouter.ScreenAnimation.Pop(screenKey)
       }
     }
 

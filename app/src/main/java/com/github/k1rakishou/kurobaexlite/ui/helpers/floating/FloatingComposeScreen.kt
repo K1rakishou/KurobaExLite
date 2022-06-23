@@ -45,8 +45,22 @@ abstract class FloatingComposeScreen(
   open val ignoreBackPresses: Boolean = false
   open val customBackground: Boolean = false
   open val contentAlignment: Alignment = Alignment.Center
-  open val presentAnimation: NavigationRouter.ScreenAddAnimation = NavigationRouter.ScreenAddAnimation.FadeIn
-  open val unpresentAnimation: NavigationRouter.ScreenRemoveAnimation = NavigationRouter.ScreenRemoveAnimation.FadeOut
+
+  open val presentAnimation: NavigationRouter.ScreenAnimation
+    get() {
+      return NavigationRouter.ScreenAnimation.Fade(
+        screenKey = screenKey,
+        fadeType = NavigationRouter.ScreenAnimation.FadeType.In
+      )
+    }
+
+  open val unpresentAnimation: NavigationRouter.ScreenAnimation
+    get() {
+      return NavigationRouter.ScreenAnimation.Fade(
+        screenKey = screenKey,
+        fadeType = NavigationRouter.ScreenAnimation.FadeType.Out
+      )
+    }
 
   protected val touchPositionDependantAlignment by lazy {
     TouchPositionDependantAlignment(

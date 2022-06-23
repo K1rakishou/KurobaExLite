@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -50,27 +51,19 @@ class MainNavigationRouter : NavigationRouter(
       return false
     }
 
-    val newScreenUpdate = if (withAnimation) {
-      ScreenUpdate.Push(composeScreen)
+    val screenAnimation = if (withAnimation) {
+      ScreenAnimation.Push(composeScreen.screenKey)
     } else {
-      ScreenUpdate.Set(composeScreen)
+      ScreenAnimation.Set(composeScreen.screenKey)
     }
 
-    val navigationScreenUpdates = combineScreenUpdates(
-      oldScreens = navigationScreensStack,
-      newScreenUpdate = newScreenUpdate
-    )
-    val floatingScreenUpdates = _floatingScreensStack
-      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
+    Snapshot.withMutableSnapshot {
+      _navigationScreensStack.add(composeScreen)
+      _screenAnimations.put(composeScreen.screenKey, screenAnimation)
+    }
 
-    _navigationScreensStack.add(composeScreen)
     logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${composeScreen.screenKey.key})" }
     composeScreen.onStartCreating()
-
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = floatingScreenUpdates
-    )
 
     return true
   }
@@ -92,29 +85,18 @@ class MainNavigationRouter : NavigationRouter(
       return false
     }
 
-    val newScreenUpdate = if (withAnimation) {
-      ScreenUpdate.Pop(composeScreen)
+    val screenAnimation = if (withAnimation) {
+      ScreenAnimation.Pop(composeScreen.screenKey)
     } else {
-      ScreenUpdate.Remove(composeScreen)
+      ScreenAnimation.Remove(composeScreen.screenKey)
     }
 
-    val oldScreens = navigationScreensStack
-      .filter { screen -> screen.screenKey != composeScreen.screenKey }
-
-    val navigationScreenUpdates = combineScreenUpdates(
-      oldScreens = oldScreens,
-      newScreenUpdate = newScreenUpdate
-    )
-
-    val floatingScreenUpdates = _floatingScreensStack
-      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
-
     logcat(TAG, LogPriority.VERBOSE) { "popScreen(${composeScreen.screenKey.key})" }
+    composeScreen.onStartDisposing()
 
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = floatingScreenUpdates
-    )
+    Snapshot.withMutableSnapshot {
+      _screenAnimations.put(composeScreen.screenKey, screenAnimation)
+    }
 
     return true
   }
@@ -124,6 +106,8 @@ class MainNavigationRouter : NavigationRouter(
       .indexOfFirst { screen -> screen.screenKey == floatingComposeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
+      // TODO(KurobaEx): pass screenArgs from floatingComposeScreen into the same screen
+      //  that is already in the stack
       if (floatingComposeScreen is MinimizableFloatingComposeScreen) {
         floatingComposeScreen.maximize()
       }
@@ -131,13 +115,6 @@ class MainNavigationRouter : NavigationRouter(
       // Already added
       return
     }
-
-    val navigationScreenUpdates = navigationScreensStack
-      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
-    val floatingScreenUpdates = combineScreenUpdates(
-      oldScreens = _floatingScreensStack,
-      newScreenUpdate = chooseAddAnimation(floatingComposeScreen)
-    ).toMutableList()
 
     if (
       !floatingComposeScreen.customBackground &&
@@ -150,67 +127,56 @@ class MainNavigationRouter : NavigationRouter(
         navigationRouter = floatingComposeScreen.navigationRouter
       )
 
-      floatingScreenUpdates.add(0, ScreenUpdate.Fade(bgScreen, ScreenUpdate.FadeType.In))
-      _floatingScreensStack.add(0, bgScreen)
+      Snapshot.withMutableSnapshot {
+        _floatingScreensStack.add(0, bgScreen)
+        _screenAnimations.put(
+          bgScreen.screenKey,
+          ScreenAnimation.Fade(bgScreen.screenKey, ScreenAnimation.FadeType.In)
+        )
+      }
     }
 
     _floatingScreensStack.add(floatingComposeScreen)
     logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
     floatingComposeScreen.onStartCreating()
-
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = floatingScreenUpdates
-    )
   }
 
   override fun stopPresentingScreen(
     screenKey: ScreenKey,
-    overrideAnimation: ScreenRemoveAnimation?
+    overrideAnimation: ScreenAnimation?
   ): Boolean {
     val index = _floatingScreensStack.indexOfLast { screen -> screen.screenKey == screenKey }
     if (index < 0) {
       return false
     }
 
-    val floatingComposeScreen = _floatingScreensStack.removeAt(index)
+    if (!removingScreens.add(screenKey)) {
+      return false
+    }
 
-    val navigationScreenUpdates = navigationScreensStack
-      .map { prevComposeScreen -> ScreenUpdate.Set(prevComposeScreen) }
-    val floatingScreenUpdates = combineScreenUpdates(
-      oldScreens = _floatingScreensStack,
-      newScreenUpdate = chooseRemoveAnimation(overrideAnimation, floatingComposeScreen)
-    ).toMutableList()
+    val floatingComposeScreen = floatingScreensStack.getOrNull(index)
+      ?: return false
 
     if (canRemoveBgScreenWhenUnpresenting()) {
       logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
 
-      val indexOfPrevBg = floatingScreenUpdates
-        .indexOfFirst { screenUpdate -> screenUpdate.screen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
-      if (indexOfPrevBg >= 0) {
-        floatingScreenUpdates.removeAt(indexOfPrevBg)
-      }
+      val prevBgScreen = floatingScreensStack
+        .firstOrNull { floatingScreen -> floatingScreen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
 
-      val bgScreen = FloatingComposeBackgroundScreen(
-        componentActivity = floatingComposeScreen.componentActivity,
-        navigationRouter = floatingComposeScreen.navigationRouter
-      )
-
-      floatingScreenUpdates.add(0, ScreenUpdate.Fade(bgScreen, ScreenUpdate.FadeType.Out))
-
-      val indexOfBgScreen = _floatingScreensStack
-        .indexOfLast { screen -> screen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
-      if (indexOfBgScreen >= 0) {
-        _floatingScreensStack.removeAt(indexOfBgScreen)
+      if (prevBgScreen != null) {
+        _screenAnimations.put(
+          prevBgScreen.screenKey,
+          ScreenAnimation.Fade(prevBgScreen.screenKey, ScreenAnimation.FadeType.Out)
+        )
       }
     }
 
     logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key})" }
     floatingComposeScreen.onStartDisposing()
 
-    _screenUpdatesFlow.value = ScreenUpdateTransaction(
-      navigationScreenUpdates = navigationScreenUpdates,
-      floatingScreenUpdates = floatingScreenUpdates
+    _screenAnimations.put(
+      screenKey,
+      overrideAnimation ?: ScreenAnimation.Fade(screenKey, ScreenAnimation.FadeType.Out)
     )
 
     return true
@@ -227,7 +193,7 @@ class MainNavigationRouter : NavigationRouter(
       val hasScreenWithCustomBg = _floatingScreensStack
         .indexOfFirst { it.customBackground } >= 0
 
-      if (hasBgScreen && hasScreenWithCustomBg) {
+      if (hasBgScreen && !hasScreenWithCustomBg) {
         return true
       }
     }
@@ -235,27 +201,29 @@ class MainNavigationRouter : NavigationRouter(
     return false
   }
 
-  override suspend fun onScreenUpdateFinished(screenUpdate: ScreenUpdate) {
-    if (!screenUpdate.isScreenBeingRemoved()) {
+  override suspend fun onScreenAnimationFinished(screenAnimation: ScreenAnimation) {
+    _screenAnimations.remove(screenAnimation.screenKey)
+
+    val composeScreen = floatingScreensStack
+      .firstOrNull { composeScreen -> composeScreen.screenKey == screenAnimation.screenKey }
+
+    if (composeScreen == null) {
       return
     }
 
-    screenUpdate.screen.onDisposed()
+    if (!screenAnimation.isScreenBeingRemoved()) {
+      return
+    }
 
-    _navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == screenUpdate.screen.screenKey }
+    composeScreen.onDisposed()
+
+    _floatingScreensStack
+      .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }
       .takeIf { index -> index >= 0 }
       ?.let { indexOfRemovedScreen ->
-        removingScreens.remove(screenUpdate.screen.screenKey)
-        _navigationScreensStack.removeAt(indexOfRemovedScreen)
+        removingScreens.remove(screenAnimation.screenKey)
+        _floatingScreensStack.removeAt(indexOfRemovedScreen)
       }
-
-    if (navigationScreensStack.isEmpty() && floatingScreensStack.isEmpty()) {
-      _screenUpdatesFlow.value = null
-      return
-    }
-
-    removeUpdateAfterAnimationFinished(screenUpdate)
   }
 
   suspend fun onBackBackPressed(): Boolean {
@@ -266,26 +234,6 @@ class MainNavigationRouter : NavigationRouter(
     }
 
     return false
-  }
-
-  private fun chooseAddAnimation(
-    floatingComposeScreen: FloatingComposeScreen
-  ): ScreenUpdate {
-    return when (floatingComposeScreen.presentAnimation) {
-      ScreenAddAnimation.FadeIn -> ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.In)
-      ScreenAddAnimation.Push -> ScreenUpdate.Push(floatingComposeScreen)
-    }
-  }
-
-  private fun chooseRemoveAnimation(
-    overrideAnimation: ScreenRemoveAnimation?,
-    floatingComposeScreen: FloatingComposeScreen
-  ): ScreenUpdate {
-    return when (overrideAnimation) {
-      null,
-      ScreenRemoveAnimation.FadeOut -> ScreenUpdate.Fade(floatingComposeScreen, ScreenUpdate.FadeType.Out)
-      ScreenRemoveAnimation.Pop -> ScreenUpdate.Pop(floatingComposeScreen)
-    }
   }
 
   fun interface OnBackPressHandler {
