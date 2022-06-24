@@ -333,26 +333,29 @@ abstract class MinimizableFloatingComposeScreen(
     onCloseMediaViewerClicked: () -> Unit
   ) {
     if (currentMediaState is MediaState.Video) {
-      val isMuted by currentMediaState.isMutedState
+      val hasAudioState by currentMediaState.hasAudioState
+      if (hasAudioState) {
+        val isMuted by currentMediaState.isMutedState
 
-      val drawableId = if (isMuted) {
-        R.drawable.ic_volume_off_white_24dp
-      } else {
-        R.drawable.ic_volume_up_white_24dp
+        val drawableId = if (isMuted) {
+          R.drawable.ic_volume_off_white_24dp
+        } else {
+          R.drawable.ic_volume_up_white_24dp
+        }
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(32.dp)
+            .kurobaClickable(
+              bounded = false,
+              enabled = buttonsClickable,
+              onClick = { currentMediaState.toggleMute() }
+            ),
+          drawableId = drawableId
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
       }
-
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(32.dp)
-          .kurobaClickable(
-            bounded = false,
-            enabled = buttonsClickable,
-            onClick = { currentMediaState.toggleMute() }
-          ),
-        drawableId = drawableId
-      )
-
-      Spacer(modifier = Modifier.width(8.dp))
     }
 
     KurobaComposeIcon(

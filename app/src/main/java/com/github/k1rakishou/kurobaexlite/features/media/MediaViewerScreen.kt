@@ -1279,8 +1279,8 @@ class MediaViewerScreen(
   companion object {
     private const val TAG = "MediaViewerScreen"
 
-    val mediaViewerParamsKey = "media_viewer_params"
-    val openedFromScreenKey = "opened_from_screen"
+    const val mediaViewerParamsKey = "media_viewer_params"
+    const val openedFromScreenKey = "opened_from_screen"
 
     val SCREEN_KEY = ScreenKey("MediaViewerScreen")
   }
