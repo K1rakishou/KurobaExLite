@@ -71,6 +71,7 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import kotlin.math.absoluteValue
@@ -347,7 +348,7 @@ class PopupRepliesScreen(
         },
         onQuotePostClicked = { postCellData -> },
         onQuotePostWithCommentClicked = { postCellData -> },
-        onPostImageClicked = { _, postImageDataResult, thumbnailBoundsInRoot ->
+        onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
           val postImageData = if (postImageDataResult.isFailure) {
             snackbarManager.errorToast(
               message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
@@ -364,16 +365,22 @@ class PopupRepliesScreen(
             return@PostListContent
           }
 
+          // TODO(KurobaEx): pass the bounds as the args as well
           clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
-          val mediaViewerScreen = MediaViewerScreen(
-            mediaViewerParams = MediaViewerParams.Images(
-              images = collectedImages,
-              initialImageUrl = postImageData.fullImageAsUrl
-            ),
-            openedFromScreen = screenKey,
+          val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
             componentActivity = componentActivity,
-            navigationRouter = navigationRouter
+            navigationRouter = navigationRouter,
+            args = {
+              val mediaViewerParams = MediaViewerParams.Images(
+                chanDescriptor = chanDescriptor,
+                images = collectedImages.map { it.fullImageUrl },
+                initialImageUrlString = postImageData.fullImageAsString
+              )
+
+              putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
+              putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
+            }
           )
 
           navigationRouter.presentScreen(mediaViewerScreen)
@@ -435,10 +442,12 @@ class PopupRepliesScreen(
     return super.onFloatingControllerBackPressed()
   }
 
-  override fun onDisposed() {
-    super.onDisposed()
+  override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
+    super.onDisposed(screenDisposeEvent)
 
-    popupRepliesScreenViewModel.clearPostReplyChainStack()
+    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
+      popupRepliesScreenViewModel.clearPostReplyChainStack()
+    }
   }
 
   enum class Anchors {

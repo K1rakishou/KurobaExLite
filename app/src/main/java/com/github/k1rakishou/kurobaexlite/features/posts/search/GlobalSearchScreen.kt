@@ -91,13 +91,15 @@ class GlobalSearchScreen(
     kurobaToolbarContainerViewModel.getOrCreate<KurobaChildToolbar>(screenKey)
   }
 
-  override fun onStartDisposing() {
-    super.onStartDisposing()
+  override fun onStartDisposing(screenDisposeEvent: ScreenDisposeEvent) {
+    super.onStartDisposing(screenDisposeEvent)
 
-    ScreenCallbackStorage.invokeCallback(
-      screenKey = screenKey,
-      callbackKey = CLOSE_CATALOG_SEARCH_TOOLBAR
-    )
+    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
+      ScreenCallbackStorage.invokeCallback(
+        screenKey = screenKey,
+        callbackKey = CLOSE_CATALOG_SEARCH_TOOLBAR
+      )
+    }
   }
 
   @Composable

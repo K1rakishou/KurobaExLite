@@ -6,7 +6,6 @@ import androidx.annotation.CallSuper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.saveable.Saver
-import androidx.compose.runtime.saveable.autoSaver
 import androidx.lifecycle.ViewModelProvider
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
@@ -20,7 +19,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.SavedStateViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import kotlin.properties.PropertyDelegateProvider
-import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KClass
 import kotlinx.coroutines.flow.StateFlow
@@ -40,15 +38,29 @@ abstract class ComposeScreen protected constructor(
 
   private val savedStateViewModel by lazy {
     val key = "${screenKey.key}_SavedStateViewModel"
-    val provider = ViewModelProvider(componentActivity, KurobaSavedStateViewModelFactory(componentActivity, screenArgs))
+    val provider = ViewModelProvider(
+      componentActivity,
+      KurobaSavedStateViewModelFactory(componentActivity, screenArgs)
+    )
 
-    return@lazy provider.get(key, SavedStateViewModel::class.java)
+    val savedStateViewModel = provider.get(key, SavedStateViewModel::class.java)
+    savedStateViewModel.onNewArguments(screenArgs)
+
+    return@lazy savedStateViewModel
   }
 
   private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
   protected val screenCoroutineScope = KurobaCoroutineScope()
 
   abstract val screenKey: ScreenKey
+
+  private var _screenLifecycle = ScreenLifecycle.Disposed
+  val screenLifecycle: ScreenLifecycle
+    get() = _screenLifecycle
+
+  fun onNewArguments(newArgs: Bundle?) {
+    savedStateViewModel.onNewArguments(newArgs)
+  }
 
   fun <T : Any> setArgument(key: String, value: T) {
     savedStateViewModel.setArgument(key, value)
@@ -93,20 +105,12 @@ abstract class ComposeScreen protected constructor(
     return savedStateViewModel.listenForArgumentsAsStateFlow(key, initialValue)
   }
 
-  protected fun <T : Any> saveable(
+  protected fun <T : Any?> saveable(
     key: String,
-    saver: Saver<T, out Any> = autoSaver<T>(),
-    init: () -> T,
-  ): PropertyDelegateProvider<Any?, ReadOnlyProperty<Any?, T>> {
-    return savedStateViewModel.saveable(key, saver, init)
-  }
-
-  protected fun <T : Any> mutableSaveable(
-    key: String,
-    saver: Saver<T, out Any> = autoSaver<T>(),
+    saver: Saver<T, out Any> = SavedStateViewModel.saver<T>(),
     init: () -> T,
   ): PropertyDelegateProvider<Any?, ReadWriteProperty<Any?, T>> {
-    return savedStateViewModel.mutableSaveable(key, saver, init)
+    return savedStateViewModel.saveable(key, saver, init)
   }
 
   @Composable
@@ -120,21 +124,65 @@ abstract class ComposeScreen protected constructor(
     )
   }
 
+  fun dispatchScreenLifecycleEvent(
+    screenLifecycle: ScreenLifecycle,
+    isLifecycleEvent: Boolean = false
+  ) {
+    if (_screenLifecycle == screenLifecycle) {
+      return
+    }
+
+    _screenLifecycle = screenLifecycle
+
+    when (screenLifecycle) {
+      ScreenLifecycle.Creating,
+      ScreenLifecycle.Created -> {
+        val screenCreateEvent = if (isLifecycleEvent) {
+          ScreenCreateEvent.LifecycleEvent
+        } else {
+          ScreenCreateEvent.AddToNavStack
+        }
+
+        when (screenLifecycle) {
+          ScreenLifecycle.Creating -> onStartCreating(screenCreateEvent)
+          ScreenLifecycle.Created -> onCreated(screenCreateEvent)
+          else -> error("Unexpected screenLifecycle: ${screenLifecycle}")
+        }
+      }
+      ScreenLifecycle.Disposing,
+      ScreenLifecycle.Disposed -> {
+        val screenDisposeEvent = if (isLifecycleEvent) {
+          ScreenDisposeEvent.LifecycleEvent
+        } else {
+          ScreenDisposeEvent.RemoveFromNavStack
+        }
+
+        when (screenLifecycle) {
+          ScreenLifecycle.Disposing -> onStartDisposing(screenDisposeEvent)
+          ScreenLifecycle.Disposed -> onDisposed(screenDisposeEvent)
+          else -> error("Unexpected screenLifecycle: ${screenLifecycle}")
+        }
+      }
+    }
+  }
+
   /**
    * [onStartCreating] is called when the screen is added to the stack before the animation started
    * playing
    * */
   @CallSuper
-  open fun onStartCreating() {
-    logcat(TAG, LogPriority.VERBOSE) { "onStartCreating(${screenKey.key})" }
+  protected open fun onStartCreating(screenCreateEvent: ScreenCreateEvent) {
+    _screenLifecycle = ScreenLifecycle.Creating
+    logcat(TAG, LogPriority.VERBOSE) { "onStartCreating(${screenKey.key}, ${screenCreateEvent})" }
   }
 
   /**
    * [onCreated] is called after the creation animation finished playing
    * */
   @CallSuper
-  open fun onCreated() {
-    logcat(TAG, LogPriority.VERBOSE) { "onCreated(${screenKey.key})" }
+  protected open fun onCreated(screenCreateEvent: ScreenCreateEvent) {
+    _screenLifecycle = ScreenLifecycle.Created
+    logcat(TAG, LogPriority.VERBOSE) { "onCreated(${screenKey.key}, ${screenCreateEvent})" }
   }
 
   /**
@@ -142,19 +190,27 @@ abstract class ComposeScreen protected constructor(
    * started playing
    * */
   @CallSuper
-  open fun onStartDisposing() {
-    logcat(TAG, LogPriority.VERBOSE) { "onStartDisposing(${screenKey.key})" }
+  protected open fun onStartDisposing(screenDisposeEvent: ScreenDisposeEvent) {
+    _screenLifecycle = ScreenLifecycle.Disposing
+    logcat(TAG, LogPriority.VERBOSE) { "onStartDisposing(${screenKey.key}, ${screenDisposeEvent})" }
   }
 
   /**
    * [onCreated] is called after the disposing animation finished playing
    * */
   @CallSuper
-  open fun onDisposed() {
-    logcat(TAG, LogPriority.VERBOSE) { "onDisposed(${screenKey.key})" }
+  protected open fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
+    _screenLifecycle = ScreenLifecycle.Disposed
+    logcat(TAG, LogPriority.VERBOSE) { "onDisposed(${screenKey.key}, ${screenDisposeEvent})" }
 
-    screenCoroutineScope.cancelChildren()
-    ScreenCallbackStorage.onScreenDisposed(screenKey)
+    // When screen is being removed from the nav stack (normally) we need to clear it's SavedStateHandle
+    // to clear all cached data so that we don't get the same data on the next screen creation
+    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
+      savedStateViewModel.removeSavedStateHandle()
+
+      screenCoroutineScope.cancelChildren()
+      ScreenCallbackStorage.onScreenDisposed(screenKey)
+    }
   }
 
   @Composable
@@ -193,40 +249,21 @@ abstract class ComposeScreen protected constructor(
     return screenKey.hashCode()
   }
 
-  class CallbackBuilder(
-    private val screenKey: ScreenKey
-  ) {
+  enum class ScreenCreateEvent {
+    AddToNavStack,
+    LifecycleEvent
+  }
 
-    fun callback(callbackKey: String, func: () -> Unit) {
-      val rememberableCallback = ScreenCallbackStorage.RememberableCallback0 { func() }
+  enum class ScreenDisposeEvent {
+    RemoveFromNavStack,
+    LifecycleEvent
+  }
 
-      ScreenCallbackStorage.rememberCallback(
-        screenKey = screenKey,
-        callbackKey = callbackKey,
-        callback = rememberableCallback as ScreenCallbackStorage.IRememberableCallback
-      )
-    }
-
-    fun <T1 : Any> callback(callbackKey: String, func: (T1) -> Unit) {
-      val rememberableCallback = ScreenCallbackStorage.RememberableCallback1<T1> { p1 -> func(p1) }
-
-      ScreenCallbackStorage.rememberCallback(
-        screenKey = screenKey,
-        callbackKey = callbackKey,
-        callback = rememberableCallback as ScreenCallbackStorage.IRememberableCallback
-      )
-    }
-
-    fun <T1 : Any, T2: Any> callback(callbackKey: String, func: (T1, T2) -> Unit) {
-      val rememberableCallback = ScreenCallbackStorage.RememberableCallback2<T1, T2> { p1, p2 -> func(p1, p2) }
-
-      ScreenCallbackStorage.rememberCallback(
-        screenKey = screenKey,
-        callbackKey = callbackKey,
-        callback = rememberableCallback as ScreenCallbackStorage.IRememberableCallback
-      )
-    }
-
+  enum class ScreenLifecycle {
+    Creating,
+    Created,
+    Disposing,
+    Disposed
   }
 
   companion object {
@@ -255,15 +292,19 @@ abstract class ComposeScreen protected constructor(
       callbacks: ( CallbackBuilder.() -> Unit)? = null
     ): T {
       val screenArgs = if (args != null) {
-        val bundle = Bundle()
-        args(bundle)
-        bundle
+        Bundle().apply { args(this) }
       } else {
         null
       }
 
       val constructor = screenClass.constructors.first()
-      val createdScreen = constructor.call(screenArgs, componentActivity, navigationRouter)
+      val createdScreen = try {
+        constructor.call(screenArgs, componentActivity, navigationRouter)
+      } catch (error: Throwable) {
+        val actualError = extractActualError(error)
+
+        throw RuntimeException("Failed to create screen of class: ${screenClass.simpleName}, error: ${actualError}")
+      }
 
       if (callbacks != null) {
         val callbackBuilder = CallbackBuilder(createdScreen.screenKey)
@@ -271,6 +312,16 @@ abstract class ComposeScreen protected constructor(
       }
 
       return createdScreen
+    }
+
+    private fun extractActualError(error: Throwable): Throwable {
+      var cause: Throwable? = error
+
+      while (true) {
+        cause = cause?.cause ?: break
+      }
+
+      return cause ?: error
     }
 
   }

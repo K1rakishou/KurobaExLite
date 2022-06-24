@@ -1,21 +1,41 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
-import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
-import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import android.os.Parcelable
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import kotlinx.parcelize.Parcelize
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 
-sealed class MediaViewerParams {
-  val initialImage: HttpUrl
+
+sealed class MediaViewerParams : Parcelable {
+  abstract val chanDescriptor: ChanDescriptor
+  abstract val initialImageUrlString: String
+
+  val initialImageUrl: HttpUrl
     get() {
       return when (this) {
-        is Catalog -> this.initialImageUrl
-        is Images -> this.initialImageUrl
-        is Thread -> this.initialImageUrl
+        is Catalog -> this.initialImageUrlString.toHttpUrl()
+        is Images -> this.initialImageUrlString.toHttpUrl()
+        is Thread -> this.initialImageUrlString.toHttpUrl()
       }
     }
 
-  data class Catalog(val catalogDescriptor: CatalogDescriptor, val initialImageUrl: HttpUrl): MediaViewerParams()
-  data class Thread(val threadDescriptor: ThreadDescriptor, val initialImageUrl: HttpUrl) : MediaViewerParams()
-  data class Images(val images: List<PostCellImageData>, val initialImageUrl: HttpUrl) : MediaViewerParams()
+  @Parcelize
+  data class Catalog(
+    override val chanDescriptor: ChanDescriptor,
+    override val initialImageUrlString: String
+  ): MediaViewerParams()
+
+  @Parcelize
+  data class Thread(
+    override val chanDescriptor: ChanDescriptor,
+    override val initialImageUrlString: String
+  ) : MediaViewerParams()
+
+  @Parcelize
+  data class Images(
+    override val chanDescriptor: ChanDescriptor,
+    val images: List<String>,
+    override val initialImageUrlString: String
+  ) : MediaViewerParams()
 }

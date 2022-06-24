@@ -290,8 +290,11 @@ object DependencyGraph {
       )
 
       MediaViewerScreenViewModel(
+        savedStateHandle = get(),
         mpvSettings = mpvSettings,
         mpvInitializer = mpvInitializer,
+        appSettings = get(),
+        chanCache = get(),
         proxiedOkHttpClient = get(),
         kurobaLruDiskCache = get(),
         installMpvNativeLibrariesFromGithub = get(),

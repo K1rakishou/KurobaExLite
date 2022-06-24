@@ -56,6 +56,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButto
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -168,16 +169,18 @@ class AlbumScreen(
         postsAsyncData = postsAsyncData,
         paddingValues = paddingValues,
         onThumbnailClicked = { postImage ->
-          val mediaViewerParams = when (val descriptor = chanDescriptor) {
-            is CatalogDescriptor -> MediaViewerParams.Catalog(descriptor, postImage.fullImageAsUrl)
-            is ThreadDescriptor -> MediaViewerParams.Thread(descriptor, postImage.fullImageAsUrl)
-          }
-
-          val mediaViewerScreen = MediaViewerScreen(
-            mediaViewerParams = mediaViewerParams,
-            openedFromScreen = screenKey,
+          val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
             componentActivity = componentActivity,
-            navigationRouter = navigationRouter
+            navigationRouter = navigationRouter,
+            args = {
+              val mediaViewerParams = when (val descriptor = chanDescriptor) {
+                is CatalogDescriptor -> MediaViewerParams.Catalog(descriptor, postImage.fullImageAsString)
+                is ThreadDescriptor -> MediaViewerParams.Thread(descriptor, postImage.fullImageAsString)
+              }
+
+              putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
+              putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
+            }
           )
 
           navigationRouter.presentScreen(mediaViewerScreen)

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
+import androidx.annotation.CallSuper
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
@@ -31,6 +32,28 @@ open class NavigationRouter(
     return navigationScreensStack.filter { screen -> screen.screenKey != thisScreen.screenKey }
   }
 
+  @CallSuper
+  open fun onLifecycleCreate() {
+    // When creating, first create parent screens, then child screens
+    _navigationScreensStack.forEach { screen ->
+      screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating, true)
+      screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Created, true)
+    }
+
+    childRouters.entries.forEach { (_, childRouter) -> childRouter.onLifecycleCreate() }
+  }
+
+  @CallSuper
+  open fun onLifecycleDestroy() {
+    // When destroying, first destroy child screens, then parent screens
+    childRouters.entries.forEach { (_, childRouter) -> childRouter.onLifecycleDestroy() }
+
+    _navigationScreensStack.forEach { screen ->
+      screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing, true)
+      screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposed, true)
+    }
+  }
+
   open fun pushScreen(composeScreen: ComposeScreen): Boolean {
     return pushScreen(composeScreen, true)
   }
@@ -44,7 +67,8 @@ open class NavigationRouter(
       .indexOfFirst { screen -> screen.screenKey == composeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
-      // Already added
+      // Already added, update the arguments
+      navigationScreensStack[indexOfPrev].onNewArguments(composeScreen.screenArgs)
       return false
     }
 
@@ -60,7 +84,7 @@ open class NavigationRouter(
     }
 
     logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${composeScreen.screenKey.key})" }
-    composeScreen.onStartCreating()
+    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating)
 
     return true
   }
@@ -89,7 +113,7 @@ open class NavigationRouter(
     }
 
     logcat(TAG, LogPriority.VERBOSE) { "popScreen(${composeScreen.screenKey.key})" }
-    composeScreen.onStartDisposing()
+    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing)
 
     Snapshot.withMutableSnapshot {
       _screenAnimations.put(composeScreen.screenKey, screenAnimation)
@@ -241,11 +265,11 @@ open class NavigationRouter(
     }
 
     if (!screenAnimation.isScreenBeingRemoved()) {
-      composeScreen.onCreated()
+      composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Created)
       return
     }
 
-    composeScreen.onDisposed()
+    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposed)
 
     _navigationScreensStack
       .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }

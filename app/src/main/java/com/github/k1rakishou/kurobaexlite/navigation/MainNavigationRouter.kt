@@ -5,11 +5,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeBackgroundScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
-import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.MinimizableFloatingComposeScreen
 import logcat.LogPriority
 import logcat.logcat
 
@@ -34,6 +34,24 @@ class MainNavigationRouter : NavigationRouter(
     )
   }
 
+  override fun onLifecycleCreate() {
+    super.onLifecycleCreate()
+
+    _floatingScreensStack.forEach { screen ->
+      screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating, true)
+      screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Created, true)
+    }
+  }
+
+  override fun onLifecycleDestroy() {
+    super.onLifecycleDestroy()
+
+    _floatingScreensStack.forEach { screen ->
+      screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing, true)
+      screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposed, true)
+    }
+  }
+
   override fun pushScreen(composeScreen: ComposeScreen): Boolean {
     return pushScreen(composeScreen, true)
   }
@@ -47,7 +65,8 @@ class MainNavigationRouter : NavigationRouter(
       .indexOfFirst { screen -> screen.screenKey == composeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
-      // Already added
+      // Already added, update the arguments
+      navigationScreensStack[indexOfPrev].onNewArguments(composeScreen.screenArgs)
       return false
     }
 
@@ -63,7 +82,7 @@ class MainNavigationRouter : NavigationRouter(
     }
 
     logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${composeScreen.screenKey.key})" }
-    composeScreen.onStartCreating()
+    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating)
 
     return true
   }
@@ -92,7 +111,7 @@ class MainNavigationRouter : NavigationRouter(
     }
 
     logcat(TAG, LogPriority.VERBOSE) { "popScreen(${composeScreen.screenKey.key})" }
-    composeScreen.onStartDisposing()
+    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing)
 
     Snapshot.withMutableSnapshot {
       _screenAnimations.put(composeScreen.screenKey, screenAnimation)
@@ -106,13 +125,8 @@ class MainNavigationRouter : NavigationRouter(
       .indexOfFirst { screen -> screen.screenKey == floatingComposeScreen.screenKey }
 
     if (indexOfPrev >= 0) {
-      // TODO(KurobaEx): pass screenArgs from floatingComposeScreen into the same screen
-      //  that is already in the stack
-      if (floatingComposeScreen is MinimizableFloatingComposeScreen) {
-        floatingComposeScreen.maximize()
-      }
-
-      // Already added
+      // Already added, update the arguments
+      _floatingScreensStack[indexOfPrev].onNewArguments(floatingComposeScreen.screenArgs)
       return
     }
 
@@ -136,9 +150,19 @@ class MainNavigationRouter : NavigationRouter(
       }
     }
 
-    _floatingScreensStack.add(floatingComposeScreen)
+    val indexOfMinimizedMediaViewerScreen = _floatingScreensStack
+      .indexOfLast { screen -> screen is MediaViewerScreen && screen.isScreenMinimized.value }
+
+    // If we have a minimized media viewer screen in the stack then add the new screen before it
+    // so that the minimized media viewer is always at the top
+    if (indexOfMinimizedMediaViewerScreen >= 0) {
+      _floatingScreensStack.add(indexOfMinimizedMediaViewerScreen, floatingComposeScreen)
+    } else {
+      _floatingScreensStack.add(floatingComposeScreen)
+    }
+
     logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
-    floatingComposeScreen.onStartCreating()
+    floatingComposeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating)
   }
 
   override fun stopPresentingScreen(
@@ -172,7 +196,7 @@ class MainNavigationRouter : NavigationRouter(
     }
 
     logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key})" }
-    floatingComposeScreen.onStartDisposing()
+    floatingComposeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing)
 
     _screenAnimations.put(
       screenKey,
@@ -209,10 +233,11 @@ class MainNavigationRouter : NavigationRouter(
     }
 
     if (!screenAnimation.isScreenBeingRemoved()) {
+      composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Created)
       return
     }
 
-    composeScreen.onDisposed()
+    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposed)
 
     _floatingScreensStack
       .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }

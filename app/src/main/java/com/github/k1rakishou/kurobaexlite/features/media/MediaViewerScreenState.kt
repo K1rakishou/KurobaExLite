@@ -4,26 +4,35 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.autoSaver
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewmodel.compose.saveable
 import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 class MediaViewerScreenState(
+  private val savedStateHandle: SavedStateHandle,
   private val appSettings: AppSettings,
-  muteByDefault: Boolean = true,
-  initialPage: Int? = null
 ) {
+  private var chanDescriptor: ChanDescriptor? = null
+
   private var _mediaList = mutableStateListOf<ImageLoadState>()
   val mediaList: List<ImageLoadState>
     get() = _mediaList
 
-  private val _currentPageIndex = mutableStateOf<Int?>(initialPage)
+  // Used for scroll position restoration after configuration change, etc.
+  private val _currentPageIndex = savedStateHandle.saveable(
+    key = "current_page_index",
+    stateSaver = autoSaver(),
+    init = { mutableStateOf<Int?>(null) }
+  )
   val currentPageIndex: State<Int?>
     get() = _currentPageIndex
 
@@ -35,7 +44,11 @@ class MediaViewerScreenState(
   val mediaViewerUiVisible: State<Boolean>
     get() = _mediaViewerUiVisible
 
-  private val _muteByDefault = mutableStateOf(muteByDefault)
+  private val _muteByDefault = savedStateHandle.saveable(
+    key = "mute_by_default",
+    stateSaver = autoSaver(),
+    init = { mutableStateOf<Boolean>(false) }
+  )
   val muteByDefault: State<Boolean>
     get() = _muteByDefault
 
@@ -43,19 +56,46 @@ class MediaViewerScreenState(
   val mediaNavigationEventFlow: SharedFlow<MediaNavigationEvent>
     get() = _mediaNavigationEventFlow.asSharedFlow()
 
-  fun init(images: List<ImageLoadState>?, initialPage: Int?, mediaViewerUiVisible: Boolean) {
-    Snapshot.withMutableSnapshot {
-      _mediaList.clear()
+  // Used to scroll after the state was re-initialized, after, for example,
+  // the user clicked a different media when the viewer is minimized
+  private val _scrollToMediaFlow = MutableSharedFlow<Pair<Boolean, Int>>(extraBufferCapacity = Channel.UNLIMITED)
+  val scrollToMediaFlow: SharedFlow<Pair<Boolean, Int>>
+    get() = _scrollToMediaFlow.asSharedFlow()
 
-      if (images != null) {
+  fun init(
+    chanDescriptor: ChanDescriptor,
+    images: List<ImageLoadState>,
+    pageIndex: Int,
+    mediaViewerUiVisible: Boolean
+  ) {
+    Snapshot.withMutableSnapshot {
+      _currentlyLoadedMediaMap.clear()
+
+      val descriptorsAreTheSame = this.chanDescriptor == chanDescriptor
+      val longScroll = !descriptorsAreTheSame
+
+      if (!descriptorsAreTheSame || _mediaList.isEmpty()) {
+        _mediaList.clear()
         _mediaList.addAll(images)
+        _currentPageIndex.value = null
+
+        this.chanDescriptor = chanDescriptor
       }
 
       if (_currentPageIndex.value == null) {
-        _currentPageIndex.value = initialPage
+        _currentPageIndex.value = pageIndex
       }
 
+      _scrollToMediaFlow.tryEmit(Pair(longScroll, pageIndex))
       _mediaViewerUiVisible.value = mediaViewerUiVisible
+    }
+  }
+
+  fun destroy() {
+    Snapshot.withMutableSnapshot {
+      chanDescriptor = null
+      _currentPageIndex.value = null
+      _currentlyLoadedMediaMap.clear()
     }
   }
 
@@ -136,24 +176,6 @@ class MediaViewerScreenState(
 
   companion object {
     private const val MAX_VISIBLE_PAGES = 3
-
-    fun Saver(
-      appSettings: AppSettings
-    ): Saver<MediaViewerScreenState, *> = Saver(
-      save = {
-        listOf<Any?>(
-          it.muteByDefault.value,
-          it.currentPageIndex.value
-        )
-      },
-      restore = { list ->
-        MediaViewerScreenState(
-          appSettings = appSettings,
-          muteByDefault = list[0] as Boolean,
-          initialPage = list[1] as Int?
-        )
-      }
-    )
   }
 
 }

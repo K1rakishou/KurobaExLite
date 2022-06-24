@@ -419,16 +419,22 @@ class CatalogScreen(
         }
 
         val catalogDescriptor = chanDescriptor as CatalogDescriptor
+
+        // TODO(KurobaEx): pass the bounds as the args as well
         clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
-        val mediaViewerScreen = MediaViewerScreen(
-          mediaViewerParams = MediaViewerParams.Catalog(
-            catalogDescriptor = catalogDescriptor,
-            initialImageUrl = postImageData.fullImageAsUrl
-          ),
-          openedFromScreen = screenKey,
+        val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
           componentActivity = componentActivity,
-          navigationRouter = navigationRouter
+          navigationRouter = navigationRouter,
+          args = {
+            val mediaViewerParams = MediaViewerParams.Catalog(
+              chanDescriptor = catalogDescriptor,
+              initialImageUrlString = postImageData.fullImageAsString
+            )
+
+            putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
+            putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
+          }
         )
 
         navigationRouter.presentScreen(mediaViewerScreen)

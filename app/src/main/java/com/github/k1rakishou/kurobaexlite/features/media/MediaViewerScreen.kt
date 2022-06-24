@@ -34,7 +34,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,7 +59,6 @@ import coil.size.Size
 import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.DisplayLoadingProgressIndicator
@@ -72,8 +70,6 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerTool
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayFullImage
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayUnsupportedMedia
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayVideo
-import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
@@ -109,9 +105,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.absoluteValue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import logcat.LogPriority
@@ -122,14 +120,10 @@ import org.koin.java.KoinJavaComponent.inject
 // TODO(KurobaEx): screen parameters are not persisted across process death yet!
 class MediaViewerScreen(
   screenArgs: Bundle? = null,
-  private val mediaViewerParams: MediaViewerParams,
-  private val openedFromScreen: ScreenKey,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : MinimizableFloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
-  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
-  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
@@ -153,24 +147,31 @@ class MediaViewerScreen(
       }
     }
 
-  override fun onDisposed() {
-    super.onDisposed()
+  override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
+    super.onDisposed(screenDisposeEvent)
 
-    mediaViewerScreenViewModel.destroy()
+    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
+      mediaViewerScreenViewModel.destroy()
+    }
   }
 
   @Composable
   override fun CardContent() {
-    val mediaViewerScreenState =
-      rememberSaveable(saver = MediaViewerScreenState.Saver(appSettings)) {
-        MediaViewerScreenState(appSettings)
-      }
+    val mediaViewerScreenState = mediaViewerScreenViewModel.mediaViewerScreenState
+
+    val mediaViewerParamsMut by listenForArgumentsNullable<MediaViewerParams?>(mediaViewerParamsKey, null).collectAsState()
+    val openedFromScreenMut by listenForArgumentsNullable<ScreenKey?>(openedFromScreenKey, null).collectAsState()
+
+    val mediaViewerParams = mediaViewerParamsMut ?: return
+    val openedFromScreen = openedFromScreenMut ?: return
 
     MinimizableContent(
       mediaViewerScreenState = mediaViewerScreenState,
       onCloseMediaViewerClicked = { stopPresenting() },
       content = { isMinimized ->
         CardContentInternal(
+          mediaViewerParams = mediaViewerParams,
+          openedFromScreen = openedFromScreen,
           isMinimized = isMinimized,
           mediaViewerScreenState = mediaViewerScreenState
         )
@@ -180,6 +181,8 @@ class MediaViewerScreen(
 
   @Composable
   private fun CardContentInternal(
+    mediaViewerParams: MediaViewerParams,
+    openedFromScreen: ScreenKey,
     isMinimized: Boolean,
     mediaViewerScreenState: MediaViewerScreenState
   ) {
@@ -230,11 +233,17 @@ class MediaViewerScreen(
             chanTheme = chanTheme,
             availableSize = availableSize,
             toolbarHeight = toolbarHeight,
+            openedFromScreen = openedFromScreen,
             coroutineScope = coroutineScope,
             insets = insets,
             onPreviewLoadingFinished = { postImage ->
-              val previewLoadingFinishedForOutThumbnail = clickedThumbnailBounds == null
-                || postImage == clickedThumbnailBounds?.postImage
+              if (previewLoadingFinished) {
+                return@ContentAfterTransition
+              }
+
+              val bounds = clickedThumbnailBounds
+              val previewLoadingFinishedForOutThumbnail = bounds == null ||
+                postImage.fullImageAsString == bounds.postImage.fullImageAsString
 
               logcat(TAG, LogPriority.VERBOSE) {
                 "onPreviewLoadingFinished() " +
@@ -287,6 +296,7 @@ class MediaViewerScreen(
     chanTheme: ChanTheme,
     availableSize: IntSize,
     toolbarHeight: Dp,
+    openedFromScreen: ScreenKey,
     coroutineScope: CoroutineScope,
     insets: Insets,
     onPreviewLoadingFinished: (IPostImage) -> Unit
@@ -306,6 +316,7 @@ class MediaViewerScreen(
       isMinimized = isMinimized,
       availableSize = availableSize,
       toolbarHeight = toolbarHeight,
+      openedFromScreen = openedFromScreen,
       mediaViewerScreenState = mediaViewerScreenState,
       onViewPagerInitialized = { pagerState -> pagerStateHolderMut = pagerState },
       onPreviewLoadingFinished = onPreviewLoadingFinished
@@ -598,62 +609,35 @@ class MediaViewerScreen(
     mediaViewerScreenState: MediaViewerScreenState,
     mediaViewerParams: MediaViewerParams
   ) {
-    when (mediaViewerParams) {
-      is MediaViewerParams.Catalog,
-      is MediaViewerParams.Thread -> {
-        val postsAsyncDataState by if (mediaViewerParams is MediaViewerParams.Catalog) {
-          catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-        } else {
-          threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-        }
-
-        val postCellDataListMut = (postsAsyncDataState as? AsyncData.Data)?.data?.posts
-        val postCellDataList = postCellDataListMut
-
-        LaunchedEffect(
-          key1 = postCellDataList,
-          block = {
-            if (postCellDataList == null) {
-              mediaViewerScreenState.init(
-                images = null,
-                initialPage = null,
-                mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
-              )
-
-              return@LaunchedEffect
-            }
-
-            val initResult = mediaViewerScreenViewModel.initFromPostStateList(
-              postCellDataList = postCellDataList,
-              initialImageUrl = mediaViewerParams.initialImage
-            )
-
-            mediaViewerScreenState.init(
-              images = initResult.images,
-              initialPage = initResult.initialPage,
-              mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
+    LaunchedEffect(
+      key1 = mediaViewerScreenState,
+      key2 = mediaViewerParams,
+      block = {
+        val initResult = when (mediaViewerParams) {
+          is MediaViewerParams.Catalog,
+          is MediaViewerParams.Thread -> {
+            mediaViewerScreenViewModel.initFromCatalogOrThreadDescriptor(
+              chanDescriptor = mediaViewerParams.chanDescriptor,
+              initialImageUrl = mediaViewerParams.initialImageUrl
             )
           }
-        )
-      }
-      is MediaViewerParams.Images -> {
-        LaunchedEffect(
-          key1 = Unit,
-          block = {
-            val initResult = mediaViewerScreenViewModel.initFromImageList(
+          is MediaViewerParams.Images -> {
+            mediaViewerScreenViewModel.initFromImageList(
+              chanDescriptor = mediaViewerParams.chanDescriptor,
               images = mediaViewerParams.images,
               initialImageUrl = mediaViewerParams.initialImageUrl
             )
-
-            mediaViewerScreenState.init(
-              images = initResult.images,
-              initialPage = initResult.initialPage,
-              mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
-            )
           }
+        }
+
+        mediaViewerScreenState.init(
+          chanDescriptor = mediaViewerParams.chanDescriptor,
+          images = initResult.images,
+          pageIndex = initResult.initialPage,
+          mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
         )
       }
-    }
+    )
   }
 
   @OptIn(ExperimentalPagerApi::class)
@@ -662,6 +646,7 @@ class MediaViewerScreen(
     isMinimized: Boolean,
     availableSize: IntSize,
     toolbarHeight: Dp,
+    openedFromScreen: ScreenKey,
     mediaViewerScreenState: MediaViewerScreenState,
     onViewPagerInitialized: (PagerState) -> Unit,
     onPreviewLoadingFinished: (IPostImage) -> Unit
@@ -704,13 +689,20 @@ class MediaViewerScreen(
     }
 
     var initialScrollHappened by remember { mutableStateOf(false) }
+    val initialScrollHappenedUpdated by rememberUpdatedState(newValue = initialScrollHappened)
+
     val pagerState = rememberPagerState()
     val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
+    val isScrollInProgress by remember { derivedStateOf { pagerState.isScrollInProgress } }
 
     LaunchedEffect(
       key1 = Unit,
       block = {
         mediaViewerScreenState.mediaNavigationEventFlow.collectLatest { mediaNavigationEvent ->
+          if (!initialScrollHappenedUpdated) {
+            return@collectLatest
+          }
+
           val currentPage = pagerState.currentPage
           val pageCount = pagerState.pageCount
 
@@ -737,6 +729,11 @@ class MediaViewerScreen(
     LaunchedEffect(
       key1 = pagerState,
       block = {
+        if (pagerState.currentPage == currentPageIndexForInitialScroll) {
+          initialScrollHappened = true
+          return@LaunchedEffect
+        }
+
         try {
           pagerState.scrollToPage(currentPageIndexForInitialScroll)
           delay(250L)
@@ -748,20 +745,47 @@ class MediaViewerScreen(
 
     LaunchedEffect(
       key1 = Unit,
+      block = {
+        mediaViewerScreenState.scrollToMediaFlow
+          // We need to wait for some time before the mediaList is applied to the PagerState
+          // otherwise the scrolling won't do anything in case the current pages count is less than
+          // the scroll index.
+          .debounce(128)
+          .collectLatest { (longScroll, pageIndex) ->
+            val distance = (pagerState.currentPage - pageIndex).absoluteValue
+
+            try {
+              if (longScroll || distance > 1) {
+                pagerState.scrollToPage(pageIndex)
+              } else {
+                pagerState.animateScrollToPage(pageIndex)
+              }
+            } catch (error: CancellationException) {
+              // ignore
+            }
+          }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
       block = { onViewPagerInitialized(pagerState) }
     )
 
     LaunchedEffect(
       key1 = currentPageIndex,
+      key2 = isScrollInProgress,
       block = {
-        mediaViewerScreenState.onCurrentPagerPageChanged(currentPageIndex)
-
-        if (!initialScrollHappened) {
+        if (!initialScrollHappened || isScrollInProgress) {
           return@LaunchedEffect
         }
 
+        mediaViewerScreenState.onCurrentPagerPageChanged(currentPageIndex)
+
         val postImageData = images.getOrNull(currentPageIndex)?.postImage
-          ?: return@LaunchedEffect
+        if (postImageData == null) {
+          return@LaunchedEffect
+        }
 
         mediaViewerPostListScroller.onSwipedTo(
           screenKey = openedFromScreen,
@@ -786,7 +810,7 @@ class MediaViewerScreen(
       count = images.size,
       state = pagerState,
       userScrollEnabled = !isMinimized,
-      key = { page -> images[page].fullImageUrlAsString }
+      key = { page -> images.getOrNull(page)?.fullImageUrlAsString ?: "<null>" }
     ) { page ->
       val mediaState = remember(key1 = page) {
         val prevMediaState = mediaViewerScreenState.getMediaStateByIndex(page)
@@ -794,7 +818,7 @@ class MediaViewerScreen(
           return@remember prevMediaState
         }
 
-        val postImage = mediaViewerScreenState.mediaList
+        val postImage = images
           .getOrNull(page)
           ?.postImage
           ?: return@remember null
@@ -1024,7 +1048,10 @@ class MediaViewerScreen(
       componentActivity = componentActivity,
       navigationRouter = navigationRouter,
       args = {
-        putString(ProgressScreen.TITLE, context.resources.getString(R.string.media_viewer_plugins_loading_libs))
+        putString(
+          ProgressScreen.TITLE,
+          context.resources.getString(R.string.media_viewer_plugins_loading_libs)
+        )
       }
     )
 
@@ -1251,6 +1278,10 @@ class MediaViewerScreen(
 
   companion object {
     private const val TAG = "MediaViewerScreen"
+
+    val mediaViewerParamsKey = "media_viewer_params"
+    val openedFromScreenKey = "opened_from_screen"
+
     val SCREEN_KEY = ScreenKey("MediaViewerScreen")
   }
 }

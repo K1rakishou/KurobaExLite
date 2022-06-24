@@ -66,10 +66,12 @@ abstract class MinimizableFloatingComposeScreen(
       return false
     }
 
-  override fun onDisposed() {
-    super.onDisposed()
+  override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
+    super.onDisposed(screenDisposeEvent)
 
-    isScreenMinimized.value = false
+    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
+      isScreenMinimized.value = false
+    }
   }
 
   fun maximize() {

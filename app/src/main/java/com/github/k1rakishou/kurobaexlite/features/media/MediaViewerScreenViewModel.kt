@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
 import coil.request.ErrorResult
@@ -21,18 +22,22 @@ import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
-import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
-import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
@@ -51,8 +56,11 @@ import okio.sink
 
 
 class MediaViewerScreenViewModel(
+  private val savedStateHandle: SavedStateHandle,
   val mpvSettings: MpvSettings,
   private val mpvInitializer: MpvInitializer,
+  private val appSettings: AppSettings,
+  private val chanCache: ChanCache,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val kurobaLruDiskCache: KurobaLruDiskCache,
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub,
@@ -64,14 +72,17 @@ class MediaViewerScreenViewModel(
     get() = mpvInitializer.initialized
   val isScreenMinimized = mutableStateOf(false)
 
-  suspend fun initFromPostStateList(
-    postCellDataList: List<PostCellData>,
+  val mediaViewerScreenState = MediaViewerScreenState(savedStateHandle, appSettings)
+
+  suspend fun initFromCatalogOrThreadDescriptor(
+    chanDescriptor: ChanDescriptor,
     initialImageUrl: HttpUrl
   ): InitResult {
     return withContext(Dispatchers.Default) {
       logcat(TAG) {
-        "initFromPostStateList() postCellDataListSize=${postCellDataList.size}, " +
-          "initialImageUrl=${initialImageUrl}, start"
+        "initFromPostStateList() " +
+          "chanDescriptor=${chanDescriptor}, " +
+          "initialImageUrl=${initialImageUrl} start"
       }
 
       // Trim the cache every time we open the media viewer
@@ -79,12 +90,17 @@ class MediaViewerScreenViewModel(
 
       val imagesToShow = mutableListOf<IPostImage>()
 
-      postCellDataList.forEach { postCellData ->
-        val threadImages = postCellData.images
+      val posts = when (chanDescriptor) {
+        is CatalogDescriptor -> chanCache.getCatalogThreads(chanDescriptor)
+        is ThreadDescriptor -> chanCache.getThreadPosts(chanDescriptor)
+      }
+
+      posts.forEach { post ->
+        val imagesOfThisPost = post.images
           ?: return@forEach
 
-        if (threadImages.isNotEmpty()) {
-          imagesToShow += threadImages
+        imagesOfThisPost.forEach { postImage ->
+          imagesToShow += postImage
         }
       }
 
@@ -102,8 +118,11 @@ class MediaViewerScreenViewModel(
       val images = imagesToShow.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) }
 
       logcat(TAG) {
-        "initFromPostStateList() postCellDataListSize=${postCellDataList.size}, " +
-          "initialImageUrl=${initialImageUrl}, images=${images.size}, initialPage=${initialPage} end"
+        "initFromPostStateList() " +
+          "chanDescriptor=${chanDescriptor}, " +
+          "images=${images.size}, " +
+          "initialImageUrl=${initialImageUrl}, " +
+          "initialPage=${initialPage} end"
       }
 
       return@withContext InitResult(
@@ -114,32 +133,68 @@ class MediaViewerScreenViewModel(
   }
 
   suspend fun initFromImageList(
-    images: List<PostCellImageData>,
+    chanDescriptor: ChanDescriptor,
+    images: List<String>,
     initialImageUrl: HttpUrl
   ): InitResult {
     return withContext(Dispatchers.Default) {
+      logcat(TAG) {
+        "initFromImageList() " +
+          "chanDescriptor=${chanDescriptor}, " +
+          "inputImages=${images.size}, " +
+          "initialImageUrl=${initialImageUrl} start"
+      }
+
       // Trim the cache every time we open the media viewer
       kurobaLruDiskCache.manualTrim(CacheFileType.PostMediaFull)
 
-      var initialPage = images.indexOfFirst { it.fullImageAsUrl == initialImageUrl }
+      val posts = when (chanDescriptor) {
+        is CatalogDescriptor -> chanCache.getCatalogThreads(chanDescriptor)
+        is ThreadDescriptor -> chanCache.getThreadPosts(chanDescriptor)
+      }
+
+      val postImages = mutableListWithCap<IPostImage>(posts.size)
+      val imagesAsSet = images.toSet()
+
+      posts.forEach { post ->
+        val imagesOfThisPost = post.images
+          ?: return@forEach
+
+        imagesOfThisPost.forEach { postImage ->
+          if (postImage.fullImageAsString in imagesAsSet) {
+            postImages += postImage
+          }
+        }
+      }
+
+      var initialPage = postImages.indexOfFirst { it.fullImageAsUrl == initialImageUrl }
       if (initialPage < 0) {
         logcatError(TAG) { "Failed to find post image with url: \'${initialImageUrl}\', resetting it" }
         initialPage = 0
       }
 
-      val hasVideos = images.any { postImage -> postImage.imageType() == ImageType.Video }
+      val hasVideos = postImages.any { postImage -> postImage.imageType() == ImageType.Video }
       if (hasVideos) {
         mpvInitializer.init()
       }
 
+      logcat(TAG) {
+        "initFromImageList() " +
+          "chanDescriptor=${chanDescriptor}, " +
+          "postImages=${postImages.size}, " +
+          "initialImageUrl=${initialImageUrl}, " +
+          "initialPage=${initialPage} end"
+      }
+
       return@withContext InitResult(
-        images = images.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) },
+        images = postImages.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) },
         initialPage = initialPage
       )
     }
   }
 
   fun destroy() {
+    mediaViewerScreenState.destroy()
     mpvInitializer.destroy()
   }
 

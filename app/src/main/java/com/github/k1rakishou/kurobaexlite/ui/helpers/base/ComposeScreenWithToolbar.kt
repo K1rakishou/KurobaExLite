@@ -23,14 +23,14 @@ abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar> protec
 
   protected abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<ToolbarType>
 
-  override fun onStartCreating() {
-    super.onStartCreating()
+  override fun onStartCreating(screenCreateEvent: ScreenCreateEvent) {
+    super.onStartCreating(screenCreateEvent)
 
     kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar)
   }
 
-  override fun onDisposed() {
-    super.onDisposed()
+  override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
+    super.onDisposed(screenDisposeEvent)
 
     kurobaToolbarContainerState.popChildToolbars()
   }

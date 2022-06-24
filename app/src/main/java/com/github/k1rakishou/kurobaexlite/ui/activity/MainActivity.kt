@@ -85,6 +85,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
     clickedThumbnailBoundsStorage.clear()
 
+    mainActivityViewModel.rootNavigationRouter.onLifecycleCreate()
+
     setContent {
       HandleOrientationChanges()
 
@@ -116,6 +118,8 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     localFilePicker.detachActivity()
     mainActivityIntentHandler.onDestroy()
     appRestarter.detachActivity()
+
+    mainActivityViewModel.rootNavigationRouter.onLifecycleDestroy()
 
     super.onDestroy()
   }

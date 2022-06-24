@@ -52,6 +52,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSna
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
@@ -349,16 +350,22 @@ class ThreadScreen(
         }
 
         val threadDescriptor = chanDescriptor as ThreadDescriptor
+
+        // TODO(KurobaEx): pass the bounds as the args as well
         clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
-        val mediaViewerScreen = MediaViewerScreen(
-          mediaViewerParams = MediaViewerParams.Thread(
-            threadDescriptor = threadDescriptor,
-            initialImageUrl = postImageData.fullImageAsUrl
-          ),
-          openedFromScreen = screenKey,
+        val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
           componentActivity = componentActivity,
-          navigationRouter = navigationRouter
+          navigationRouter = navigationRouter,
+          args = {
+            val mediaViewerParams = MediaViewerParams.Thread(
+              chanDescriptor = threadDescriptor,
+              initialImageUrlString = postImageData.fullImageAsString
+            )
+
+            putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
+            putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
+          }
         )
 
         navigationRouter.presentScreen(mediaViewerScreen)

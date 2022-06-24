@@ -75,13 +75,15 @@ class Chan4CaptchaScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
-  override fun onDisposed() {
-    super.onDisposed()
+  override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
+    super.onDisposed(screenDisposeEvent)
 
-    chan4CaptchaViewModel.resetCaptchaIfCaptchaIsAlmostDead(chanDescriptor)
-    chan4CaptchaViewModel.cleanup()
+    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
+      chan4CaptchaViewModel.resetCaptchaIfCaptchaIsAlmostDead(chanDescriptor)
+      chan4CaptchaViewModel.cleanup()
 
-    ScreenCallbackStorage.invokeCallback(screenKey, ON_SCREEN_DISMISSED)
+      ScreenCallbackStorage.invokeCallback(screenKey, ON_SCREEN_DISMISSED)
+    }
   }
 
   @Composable
