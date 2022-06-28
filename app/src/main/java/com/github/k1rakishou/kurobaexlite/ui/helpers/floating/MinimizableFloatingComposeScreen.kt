@@ -49,6 +49,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 
 abstract class MinimizableFloatingComposeScreen(
   screenArgs: Bundle? = null,
@@ -130,6 +135,7 @@ abstract class MinimizableFloatingComposeScreen(
     val currentPageIndexMut by mediaViewerScreenState.currentPageIndex
     val currentPageIndex = currentPageIndexMut
     val currentMediaState = mediaViewerScreenState.getMediaStateByIndex(currentPageIndex)
+    val currentMediaStateUpdated by rememberUpdatedState(newValue = currentMediaState)
 
     Box(
       modifier = Modifier
@@ -193,11 +199,37 @@ abstract class MinimizableFloatingComposeScreen(
         Modifier.fillMaxSize()
       }
 
+      val clicksFlow = remember {
+        MutableSharedFlow<Unit>(
+          extraBufferCapacity = 1,
+          onBufferOverflow = BufferOverflow.DROP_OLDEST
+        )
+      }
+
+      LaunchedEffect(
+        key1 = Unit,
+        block = {
+          clicksFlow
+            .debounce(3000.milliseconds)
+            .collectLatest {
+              // Do not auto-hide when current media is a video and it's paused
+              if ((currentMediaStateUpdated as? MediaState.Video)?.isPausedState?.value == true) {
+                return@collectLatest
+              }
+
+              showUi = false
+            }
+        }
+      )
+
       Box(
         modifier = sizeModifier
           .kurobaClickable(
             enabled = isMinimized,
-            onClick = { showUi = !showUi }
+            onClick = {
+              showUi = true
+              clicksFlow.tryEmit(Unit)
+            }
           )
       ) {
         content(isMinimized)
@@ -208,7 +240,8 @@ abstract class MinimizableFloatingComposeScreen(
             currentMediaState = currentMediaState,
             onCloseMediaViewerClicked = onCloseMediaViewerClicked,
             goToPreviousMedia = { mediaViewerScreenState.goToPrevMedia() },
-            goToNextMedia = { mediaViewerScreenState.goToNextMedia() }
+            goToNextMedia = { mediaViewerScreenState.goToNextMedia() },
+            resetHideUiTask = { clicksFlow.tryEmit(Unit) }
           )
         }
       }
@@ -221,7 +254,8 @@ abstract class MinimizableFloatingComposeScreen(
     currentMediaState: MediaState?,
     onCloseMediaViewerClicked: () -> Unit,
     goToPreviousMedia: () -> Unit,
-    goToNextMedia: () -> Unit
+    goToNextMedia: () -> Unit,
+    resetHideUiTask: () -> Unit
   ) {
     val alphaAnimated by animateFloatAsState(targetValue = if (showUi) 1f else 0f)
     val bgColor = remember { Color.Black.copy(alpha = 0.3f) }
@@ -241,7 +275,8 @@ abstract class MinimizableFloatingComposeScreen(
         TopButtonRow(
           currentMediaState = currentMediaState,
           buttonsClickable = buttonsClickable,
-          onCloseMediaViewerClicked = onCloseMediaViewerClicked
+          onCloseMediaViewerClicked = onCloseMediaViewerClicked,
+          resetHideUiTask = resetHideUiTask
         )
       }
 
@@ -249,14 +284,18 @@ abstract class MinimizableFloatingComposeScreen(
         buttonsClickable = buttonsClickable,
         goToPreviousMedia = goToPreviousMedia,
         currentMediaState = currentMediaState,
-        goToNextMedia = goToNextMedia
+        goToNextMedia = goToNextMedia,
+        resetHideUiTask = resetHideUiTask
       )
 
       if (currentMediaState is MediaState.Video) {
         val videoDuration = currentMediaState.durationState.value ?: 0
         
         if (videoDuration > 1) {
-          MiniSeekbar(currentMediaState)
+          MiniSeekbar(
+            currentMediaState = currentMediaState,
+            resetHideUiTask = resetHideUiTask
+          )
         }
       }
     }
@@ -267,7 +306,8 @@ abstract class MinimizableFloatingComposeScreen(
     buttonsClickable: Boolean,
     goToPreviousMedia: () -> Unit,
     currentMediaState: MediaState?,
-    goToNextMedia: () -> Unit
+    goToNextMedia: () -> Unit,
+    resetHideUiTask: () -> Unit
   ) {
     Row(
       modifier = Modifier
@@ -283,6 +323,7 @@ abstract class MinimizableFloatingComposeScreen(
             enabled = buttonsClickable,
             onClick = {
               goToPreviousMedia()
+              resetHideUiTask()
             }
           ),
         drawableId = R.drawable.ic_baseline_skip_previous_24
@@ -303,7 +344,10 @@ abstract class MinimizableFloatingComposeScreen(
             .kurobaClickable(
               bounded = false,
               enabled = buttonsClickable,
-              onClick = { currentMediaState.togglePlayPause() }
+              onClick = {
+                currentMediaState.togglePlayPause()
+                resetHideUiTask()
+              }
             ),
           drawableId = drawableId
         )
@@ -319,6 +363,7 @@ abstract class MinimizableFloatingComposeScreen(
             enabled = buttonsClickable,
             onClick = {
               goToNextMedia()
+              resetHideUiTask()
             }
           ),
         drawableId = R.drawable.ic_baseline_skip_next_24
@@ -330,7 +375,8 @@ abstract class MinimizableFloatingComposeScreen(
   private fun RowScope.TopButtonRow(
     currentMediaState: MediaState?,
     buttonsClickable: Boolean,
-    onCloseMediaViewerClicked: () -> Unit
+    onCloseMediaViewerClicked: () -> Unit,
+    resetHideUiTask: () -> Unit
   ) {
     if (currentMediaState is MediaState.Video) {
       val hasAudioState by currentMediaState.hasAudioState
@@ -349,7 +395,10 @@ abstract class MinimizableFloatingComposeScreen(
             .kurobaClickable(
               bounded = false,
               enabled = buttonsClickable,
-              onClick = { currentMediaState.toggleMute() }
+              onClick = {
+                currentMediaState.toggleMute()
+                resetHideUiTask()
+              }
             ),
           drawableId = drawableId
         )
@@ -385,7 +434,10 @@ abstract class MinimizableFloatingComposeScreen(
   }
 
   @Composable
-  private fun BoxScope.MiniSeekbar(currentMediaState: MediaState.Video) {
+  private fun BoxScope.MiniSeekbar(
+    currentMediaState: MediaState.Video,
+    resetHideUiTask: () -> Unit
+  ) {
     val chanTheme = LocalChanTheme.current
 
     val timePosition by currentMediaState.timePositionState
@@ -429,8 +481,14 @@ abstract class MinimizableFloatingComposeScreen(
               unBlockAutoPositionUpdateState = {
                 currentMediaState.blockAutoPositionUpdateState.value = false
               },
-              updateSeekHint = { newPosition -> currentMediaState.updateSeekToHint(newPosition) },
-              seekTo = { newPosition -> currentMediaState.seekTo(newPosition) },
+              updateSeekHint = { newPosition ->
+                currentMediaState.updateSeekToHint(newPosition)
+                resetHideUiTask()
+              },
+              seekTo = { newPosition ->
+                currentMediaState.seekTo(newPosition)
+                resetHideUiTask()
+              },
             )
           }
         ),

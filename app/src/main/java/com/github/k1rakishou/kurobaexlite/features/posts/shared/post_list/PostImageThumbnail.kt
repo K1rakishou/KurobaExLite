@@ -35,7 +35,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 
 @Composable
-fun ImageThumbnail(
+fun PostImageThumbnail(
   modifier: Modifier = Modifier,
   bgColor: Color = LocalChanTheme.current.backColorSecondary,
   showShimmerEffectWhenLoading: Boolean = false,

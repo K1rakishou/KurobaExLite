@@ -255,8 +255,8 @@ abstract class ComposeScreen protected constructor(
   }
 
   enum class ScreenDisposeEvent {
-    RemoveFromNavStack,
-    LifecycleEvent
+    LifecycleEvent,
+    RemoveFromNavStack
   }
 
   enum class ScreenLifecycle {

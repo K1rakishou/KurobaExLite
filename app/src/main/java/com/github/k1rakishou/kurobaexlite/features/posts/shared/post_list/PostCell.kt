@@ -228,12 +228,12 @@ private fun PostCellTitle(
             boundsInWindowMut = layoutCoordinates.boundsInWindow()
           }
       ) {
-        ImageThumbnail(
+        PostImageThumbnail(
           modifier = Modifier.size(70.dp),
           postImage = postImage,
           onClick = { clickedImageResult ->
             val boundsInWindow = boundsInWindowMut
-              ?: return@ImageThumbnail
+              ?: return@PostImageThumbnail
 
             onPostImageClicked(chanDescriptor, clickedImageResult, boundsInWindow)
           }

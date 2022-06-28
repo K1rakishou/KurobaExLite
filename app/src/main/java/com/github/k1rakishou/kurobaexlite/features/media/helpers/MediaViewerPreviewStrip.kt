@@ -23,7 +23,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.ImageThumbnail
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
@@ -145,7 +145,7 @@ private fun DisplayImagePreview(
     Modifier
   }
 
-  ImageThumbnail(
+  PostImageThumbnail(
     modifier = Modifier
       .size(itemSize)
       .then(highlightModifier)

@@ -36,7 +36,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.ImageThumbnail
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
@@ -278,7 +278,7 @@ class AlbumScreen(
               val postImage = albumItems[index]
               var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
 
-              ImageThumbnail(
+              PostImageThumbnail(
                 modifier = Modifier
                   .fillMaxWidth()
                   .height(160.dp)
@@ -296,14 +296,14 @@ class AlbumScreen(
                       screenKey = MainScreen.SCREEN_KEY
                     )
 
-                    return@ImageThumbnail
+                    return@PostImageThumbnail
                   }
 
                   val clickedPostImage = clickedImageResult.getOrThrow()
 
                   val boundsInWindow = boundsInWindowMut
                   if (boundsInWindow == null) {
-                    return@ImageThumbnail
+                    return@PostImageThumbnail
                   }
 
                   clickedThumbnailBoundsStorage.storeBounds(clickedPostImage, boundsInWindow)
