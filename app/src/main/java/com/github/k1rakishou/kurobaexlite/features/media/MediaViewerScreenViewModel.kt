@@ -127,7 +127,8 @@ class MediaViewerScreenViewModel(
 
       return@withContext InitResult(
         images = images,
-        initialPage = initialPage
+        initialPage = initialPage,
+        sourceType = SourceType.CatalogOrThread
       )
     }
   }
@@ -188,7 +189,8 @@ class MediaViewerScreenViewModel(
 
       return@withContext InitResult(
         images = postImages.map { postImageData -> ImageLoadState.PreparingForLoading(postImageData) },
-        initialPage = initialPage
+        initialPage = initialPage,
+        sourceType = SourceType.ImageLinkList
       )
     }
   }
@@ -365,8 +367,14 @@ class MediaViewerScreenViewModel(
 
   class InitResult(
     val images: List<ImageLoadState>,
-    val initialPage: Int
+    val initialPage: Int,
+    val sourceType: SourceType
   )
+
+  enum class SourceType {
+    CatalogOrThread,
+    ImageLinkList
+  }
 
   class ImageLoadException : ClientException {
     constructor(url: HttpUrl) : super("Failed to load image \'$url\'")

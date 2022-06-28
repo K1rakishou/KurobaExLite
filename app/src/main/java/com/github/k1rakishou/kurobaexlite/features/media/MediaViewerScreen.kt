@@ -634,6 +634,7 @@ class MediaViewerScreen(
           chanDescriptor = mediaViewerParams.chanDescriptor,
           images = initResult.images,
           pageIndex = initResult.initialPage,
+          sourceType = initResult.sourceType,
           mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
         )
       }

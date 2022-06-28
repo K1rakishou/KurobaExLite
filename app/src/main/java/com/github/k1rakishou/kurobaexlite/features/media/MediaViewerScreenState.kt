@@ -22,6 +22,7 @@ class MediaViewerScreenState(
   private val appSettings: AppSettings,
 ) {
   private var chanDescriptor: ChanDescriptor? = null
+  private var sourceType: MediaViewerScreenViewModel.SourceType? = null
 
   private var _mediaList = mutableStateListOf<ImageLoadState>()
   val mediaList: List<ImageLoadState>
@@ -66,6 +67,7 @@ class MediaViewerScreenState(
     chanDescriptor: ChanDescriptor,
     images: List<ImageLoadState>,
     pageIndex: Int,
+    sourceType: MediaViewerScreenViewModel.SourceType,
     mediaViewerUiVisible: Boolean
   ) {
     Snapshot.withMutableSnapshot {
@@ -74,12 +76,13 @@ class MediaViewerScreenState(
       val descriptorsAreTheSame = this.chanDescriptor == chanDescriptor
       val longScroll = !descriptorsAreTheSame
 
-      if (!descriptorsAreTheSame || _mediaList.isEmpty()) {
+      if (!descriptorsAreTheSame || _mediaList.isEmpty() || this.sourceType != sourceType) {
         _mediaList.clear()
         _mediaList.addAll(images)
         _currentPageIndex.value = null
 
         this.chanDescriptor = chanDescriptor
+        this.sourceType = sourceType
       }
 
       if (_currentPageIndex.value == null) {
