@@ -28,6 +28,7 @@ Right now you can:
 - View albums.
 - Track navigation history (disabled by default, can be enabled in the settings).
 - Bookmark threads (+ reply notifications).
+- Media player can be minimized into a floating mini-player (Can only draw on top of the KurobaExLite, can't draw on top of other apps like other video players. Need a special permission to do that which I don't think is worth it)
 
 What you can't do which will be implemented in the future:
 - Navigate other sites (maybe?).
