@@ -1,10 +1,10 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     ext {
-        kotlin_version = "1.6.21"
-        ksp = "1.6.21-1.0.5"
-        kotlin_coroutines_version = "1.6.1"
-        compose_version = "1.2.0-rc02"
+        kotlin_version = "1.7.0"
+        ksp = "1.7.0-1.0.6"
+        kotlin_coroutines_version = "1.6.3"
+        compose_version = "1.2.0-rc03"
         koin_version = "3.2.0-beta-1"
         okhttp = "4.9.2"
         moshi = "1.13.0"

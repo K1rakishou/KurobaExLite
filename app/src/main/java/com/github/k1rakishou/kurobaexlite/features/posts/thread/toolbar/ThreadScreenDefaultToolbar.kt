@@ -287,6 +287,7 @@ class ThreadScreenDefaultToolbar(
               val bookmarkThreadIcon = state.bookmarkIcon()
               bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
             }
+            BookmarksManager.Event.Loaded,
             is BookmarksManager.Event.Updated -> {
               // no-op
             }

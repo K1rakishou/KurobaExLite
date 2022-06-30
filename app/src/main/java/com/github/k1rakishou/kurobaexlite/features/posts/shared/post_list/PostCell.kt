@@ -377,7 +377,8 @@ private fun PostCellIcon(
           error("Expected CountryFlag or BoardFlag but got ${postCellAnnotatedContent}")
         }
         ParsedPostDataCache.PostCellIcon.CountryFlag,
-        ParsedPostDataCache.PostCellIcon.BoardFlag -> {
+        ParsedPostDataCache.PostCellIcon.BoardFlag,
+        ParsedPostDataCache.PostCellIcon.RollingSticky -> {
           // no-op
         }
       }
