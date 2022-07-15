@@ -34,6 +34,17 @@ class MainNavigationRouter : NavigationRouter(
     )
   }
 
+  override fun screenExistsInThisRouter(screenKey: ScreenKey): Boolean {
+    val exists = floatingScreensStack
+      .any { composeScreen -> composeScreen.screenKey == screenKey }
+
+    if (exists) {
+      return true
+    }
+
+    return super.screenExistsInThisRouter(screenKey)
+  }
+
   override fun onLifecycleCreate() {
     super.onLifecycleCreate()
 
@@ -134,12 +145,15 @@ class MainNavigationRouter : NavigationRouter(
       !floatingComposeScreen.customBackground &&
       _floatingScreensStack.none { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
     ) {
-      logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key}) adding bgScreen" }
+      logcat(TAG, LogPriority.VERBOSE) {
+        "presentScreen(${FloatingComposeBackgroundScreen.SCREEN_KEY}) at 0"
+      }
 
       val bgScreen = FloatingComposeBackgroundScreen(
         componentActivity = floatingComposeScreen.componentActivity,
         navigationRouter = floatingComposeScreen.navigationRouter
       )
+      bgScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating)
 
       Snapshot.withMutableSnapshot {
         _floatingScreensStack.add(0, bgScreen)
@@ -150,18 +164,30 @@ class MainNavigationRouter : NavigationRouter(
       }
     }
 
-    val indexOfMinimizedMediaViewerScreen = _floatingScreensStack
+    val miniMediaScreenIndex = _floatingScreensStack
       .indexOfLast { screen -> screen is MediaViewerScreen && screen.isScreenMinimized.value }
 
     // If we have a minimized media viewer screen in the stack then add the new screen before it
     // so that the minimized media viewer is always at the top
-    if (indexOfMinimizedMediaViewerScreen >= 0) {
-      _floatingScreensStack.add(indexOfMinimizedMediaViewerScreen, floatingComposeScreen)
+    if (miniMediaScreenIndex >= 0) {
+      _floatingScreensStack.add(miniMediaScreenIndex, floatingComposeScreen)
+
+      logcat(TAG, LogPriority.VERBOSE) {
+        "presentScreen(${floatingComposeScreen.screenKey.key}) at $miniMediaScreenIndex"
+      }
     } else {
       _floatingScreensStack.add(floatingComposeScreen)
+
+      logcat(TAG, LogPriority.VERBOSE) {
+        "presentScreen(${floatingComposeScreen.screenKey.key}) at 0"
+      }
     }
 
-    logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key})" }
+    _screenAnimations.put(
+      floatingComposeScreen.screenKey,
+      ScreenAnimation.Fade(floatingComposeScreen.screenKey, ScreenAnimation.FadeType.In)
+    )
+
     floatingComposeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating)
   }
 
@@ -182,12 +208,17 @@ class MainNavigationRouter : NavigationRouter(
       ?: return false
 
     if (shouldRemoveBgScreen(screenKey)) {
-      logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) removing bgScreen" }
+      val indexOfBgScreen = floatingScreensStack
+        .indexOfFirst { floatingScreen -> floatingScreen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
 
-      val prevBgScreen = floatingScreensStack
-        .firstOrNull { floatingScreen -> floatingScreen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
+      logcat(TAG, LogPriority.VERBOSE) {
+        "stopPresentingScreen(${FloatingComposeBackgroundScreen.SCREEN_KEY}) at $indexOfBgScreen"
+      }
 
+      val prevBgScreen = floatingScreensStack.getOrNull(indexOfBgScreen)
       if (prevBgScreen != null) {
+        prevBgScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing)
+
         _screenAnimations.put(
           prevBgScreen.screenKey,
           ScreenAnimation.Fade(prevBgScreen.screenKey, ScreenAnimation.FadeType.Out)
@@ -195,7 +226,9 @@ class MainNavigationRouter : NavigationRouter(
       }
     }
 
-    logcat(TAG, LogPriority.VERBOSE) { "stopPresentingScreen(${floatingComposeScreen.screenKey.key})" }
+    logcat(TAG, LogPriority.VERBOSE) {
+      "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) at $index"
+    }
     floatingComposeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing)
 
     _screenAnimations.put(
@@ -207,6 +240,11 @@ class MainNavigationRouter : NavigationRouter(
   }
 
   private fun shouldRemoveBgScreen(unpresentedScreenKey: ScreenKey): Boolean {
+    // If there is already an animation with the background screen then do nothing
+    if (_screenAnimations.containsKey(FloatingComposeBackgroundScreen.SCREEN_KEY)) {
+      return false
+    }
+
     // Only check screens that do not handle the background on their own (Do not use the
     // FloatingComposeBackgroundScreen) AND screens that are not the screen that we are about to
     // destroy
@@ -223,6 +261,14 @@ class MainNavigationRouter : NavigationRouter(
   }
 
   override suspend fun onScreenAnimationFinished(screenAnimation: ScreenAnimation) {
+    val prevScreenAnimation = _screenAnimations[screenAnimation.screenKey]
+
+    if (prevScreenAnimation != null && prevScreenAnimation !== screenAnimation) {
+      // During the animation the stack was changed so the ScreenAnimation was replaced with a
+      // different one. In this case we don't need to do anything
+      return
+    }
+
     _screenAnimations.remove(screenAnimation.screenKey)
 
     val composeScreen = floatingScreensStack

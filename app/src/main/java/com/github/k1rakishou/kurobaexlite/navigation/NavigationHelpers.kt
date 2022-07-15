@@ -6,6 +6,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenTransition
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
@@ -31,17 +32,21 @@ fun RouterHost(
       key = key,
       defaultValue = {
         movableContentOf {
-          saveableStateHolder.SaveableStateProvider(key = key) {
-            key(primaryScreen.screenKey) {
-              primaryScreen.Content()
-            }
+          key(primaryScreen.screenKey) {
+            primaryScreen.Content()
           }
         }
       }
     )
 
-    val screenAnimation = navigationRouter.screenAnimations[primaryScreen.screenKey] ?:
-      NavigationRouter.ScreenAnimation.Set(primaryScreen.screenKey)
+    var screenAnimation = navigationRouter.screenAnimations[primaryScreen.screenKey]
+    if (screenAnimation == null) {
+      if (!navigationRouter.screenExistsInThisRouter(primaryScreen.screenKey)) {
+        continue
+      }
+
+      screenAnimation = NavigationRouter.ScreenAnimation.Set(primaryScreen.screenKey)
+    }
 
     ScreenTransition(
       composeScreen = primaryScreen,
@@ -56,7 +61,15 @@ fun RouterHost(
           saveableStateHolder.removeState(key)
         }
       },
-      content = { contentLambda() }
+      content = {
+        WrapIntoSaveableStateProviderIfNeeded(
+          key = key,
+          composeScreen = primaryScreen,
+          saveableStateHolder = saveableStateHolder
+        ) {
+          contentLambda()
+        }
+      }
     )
   }
 
@@ -68,17 +81,21 @@ fun RouterHost(
         key = key,
         defaultValue = {
           movableContentOf {
-            saveableStateHolder.SaveableStateProvider(key = key) {
-              key(floatingScreen.screenKey) {
-                floatingScreen.Content()
-              }
+            key(floatingScreen.screenKey) {
+              floatingScreen.Content()
             }
           }
         }
       )
 
-      val screenAnimation = navigationRouter.screenAnimations[floatingScreen.screenKey]
-        ?: NavigationRouter.ScreenAnimation.Set(floatingScreen.screenKey)
+      var screenAnimation = navigationRouter.screenAnimations[floatingScreen.screenKey]
+      if (screenAnimation == null) {
+        if (!navigationRouter.screenExistsInThisRouter(floatingScreen.screenKey)) {
+          continue
+        }
+
+        screenAnimation = NavigationRouter.ScreenAnimation.Set(floatingScreen.screenKey)
+      }
 
       ScreenTransition(
         composeScreen = floatingScreen,
@@ -93,8 +110,32 @@ fun RouterHost(
             saveableStateHolder.removeState(key)
           }
         },
-        content = { contentLambda() }
+        content = {
+          WrapIntoSaveableStateProviderIfNeeded(
+            key = key,
+            composeScreen = floatingScreen,
+            saveableStateHolder = saveableStateHolder
+          ) {
+            contentLambda()
+          }
+        }
       )
     }
+  }
+}
+
+@Composable
+private fun WrapIntoSaveableStateProviderIfNeeded(
+  key: String,
+  composeScreen: ComposeScreen,
+  saveableStateHolder: SaveableStateHolder,
+  content: @Composable () -> Unit
+) {
+  if (composeScreen.statefulScreen) {
+    saveableStateHolder.SaveableStateProvider(key = key) {
+      content()
+    }
+  } else {
+    content()
   }
 }

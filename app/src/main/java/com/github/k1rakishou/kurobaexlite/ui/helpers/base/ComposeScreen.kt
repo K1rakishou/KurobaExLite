@@ -54,6 +54,12 @@ abstract class ComposeScreen protected constructor(
 
   abstract val screenKey: ScreenKey
 
+  /**
+   * If true, we will wrap this screen's Content function into SaveableStateProvider.
+   * Not all screens needs this and some may even cause crashes (Like FloatingComposeBackgroundScreen)
+   * */
+  open val statefulScreen: Boolean = true
+
   private var _screenLifecycle = ScreenLifecycle.Disposed
   val screenLifecycle: ScreenLifecycle
     get() = _screenLifecycle

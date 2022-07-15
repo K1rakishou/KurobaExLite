@@ -48,7 +48,7 @@ class MediaViewerScreenState(
   private val _muteByDefault = savedStateHandle.saveable(
     key = "mute_by_default",
     stateSaver = autoSaver(),
-    init = { mutableStateOf<Boolean>(false) }
+    init = { mutableStateOf<Boolean>(true) }
   )
   val muteByDefault: State<Boolean>
     get() = _muteByDefault

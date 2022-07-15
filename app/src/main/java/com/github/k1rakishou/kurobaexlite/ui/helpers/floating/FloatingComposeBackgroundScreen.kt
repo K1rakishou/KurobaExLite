@@ -18,6 +18,8 @@ class FloatingComposeBackgroundScreen(
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
 
+  override val statefulScreen: Boolean = false
+
   private val backgroundColor = Color(
     red = 0f,
     green = 0f,

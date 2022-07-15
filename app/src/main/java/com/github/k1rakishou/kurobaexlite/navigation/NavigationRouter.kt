@@ -32,6 +32,10 @@ open class NavigationRouter(
     return navigationScreensStack.filter { screen -> screen.screenKey != thisScreen.screenKey }
   }
 
+  open fun screenExistsInThisRouter(screenKey: ScreenKey): Boolean {
+    return navigationScreensStack.any { composeScreen -> composeScreen.screenKey == screenKey }
+  }
+
   @CallSuper
   open fun onLifecycleCreate() {
     // When creating, first create parent screens, then child screens
@@ -255,6 +259,14 @@ open class NavigationRouter(
   }
 
   open suspend fun onScreenAnimationFinished(screenAnimation: ScreenAnimation) {
+    val prevScreenAnimation = _screenAnimations[screenAnimation.screenKey]
+
+    if (prevScreenAnimation != null && prevScreenAnimation !== screenAnimation) {
+      // During the animation the stack was changed so the ScreenAnimation was replaced with a
+      // different one. In this case we don't need to do anything
+      return
+    }
+
     _screenAnimations.remove(screenAnimation.screenKey)
 
     val composeScreen = navigationScreensStack
