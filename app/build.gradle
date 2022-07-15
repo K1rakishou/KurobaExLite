@@ -16,8 +16,8 @@ android {
         applicationId "com.github.k1rakishou.kurobaexlite"
         minSdk 21
         targetSdk 31
-        versionCode 10002
-        versionName "1.0.2"
+        versionCode 10003
+        versionName "1.0.3"
         archivesBaseName = "KurobaExLite"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -193,6 +193,8 @@ dependencies {
     implementation "joda-time:joda-time:${joda_time}"
     implementation 'org.nibor.autolink:autolink:0.10.0'
     implementation "org.jsoup:jsoup:${jsoup}"
+
+    runtimeOnly "org.jetbrains.kotlin:kotlin-reflect:${kotlin_version}"
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
     implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:e98f7d0fb3'
