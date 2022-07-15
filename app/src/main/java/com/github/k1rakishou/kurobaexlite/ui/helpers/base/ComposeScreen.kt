@@ -297,13 +297,17 @@ abstract class ComposeScreen protected constructor(
       args: (Bundle.() -> Unit)? = null,
       callbacks: ( CallbackBuilder.() -> Unit)? = null
     ): T {
+      val constructor = screenClass.constructors.firstOrNull()
+      if (constructor == null) {
+        error("Screen of class ${screenClass.simpleName} has no constructors")
+      }
+
       val screenArgs = if (args != null) {
         Bundle().apply { args(this) }
       } else {
         null
       }
 
-      val constructor = screenClass.constructors.first()
       val createdScreen = try {
         constructor.call(screenArgs, componentActivity, navigationRouter)
       } catch (error: Throwable) {

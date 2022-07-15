@@ -23,7 +23,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
-class MainScreen private constructor(
+class MainScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   private val mainNavigationRouter: MainNavigationRouter
