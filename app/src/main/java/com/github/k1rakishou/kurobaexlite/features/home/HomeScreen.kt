@@ -246,7 +246,10 @@ class HomeScreen(
         return@HandleBackPresses true
       }
 
-      val freshCurrentPageScreenKey = globalUiInfoManager.currentPage(mainUiLayoutMode)?.screenKey
+      val currentMainUiLayoutMode = globalUiInfoManager.currentUiLayoutModeState.value
+        ?: return@HandleBackPresses false
+
+      val freshCurrentPageScreenKey = globalUiInfoManager.currentPage(currentMainUiLayoutMode)?.screenKey
         ?: return@HandleBackPresses false
 
       // First, process all child screens
