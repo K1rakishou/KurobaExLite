@@ -67,6 +67,10 @@ class ChanCatalogCache(
     return mutex.withLockNonCancellable { threads.map { it.postDescriptor } }
   }
 
+  suspend fun getOriginalPost(postDescriptor: PostDescriptor): IPostData? {
+    return mutex.withLockNonCancellable { threadsMap[postDescriptor] }
+  }
+
   companion object {
     private const val TAG = "ChanCatalogCache"
   }

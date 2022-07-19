@@ -2,12 +2,16 @@ package com.github.k1rakishou.kurobaexlite.features.album
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
@@ -18,14 +22,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
@@ -41,6 +50,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -54,6 +64,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
@@ -240,7 +251,7 @@ class AlbumScreen(
       return
     }
 
-    if (album.images.isEmpty()) {
+    if (album.albumImages.isEmpty()) {
       KurobaComposeError(errorMessage = stringResource(id = R.string.album_screen_album_empty))
       return
     }
@@ -269,52 +280,138 @@ class AlbumScreen(
       lazyGridState = lazyGridState,
       contentPadding = paddingValues,
       content = {
-        val albumItems = album.images
+        val albumImages = album.albumImages
 
-        albumItems.fastForEachIndexed { index, albumItem ->
+        albumImages.fastForEachIndexed { index, albumImage ->
           item(
-            key = albumItems[index].fullImageAsString,
+            key = albumImages[index].postImage.fullImageAsString,
             content = {
-              val postImage = albumItems[index]
-              var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
+              val albumImage = albumImages[index]
 
-              PostImageThumbnail(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .height(160.dp)
-                  .padding(1.dp)
-                  .onGloballyPositioned { layoutCoordinates -> boundsInWindowMut = layoutCoordinates.boundsInWindow() },
-                showShimmerEffectWhenLoading = true,
-                postImage = postImage,
-                contentScale = ContentScale.Crop,
-                onClick = { clickedImageResult ->
-                  if (clickedImageResult.isFailure) {
-                    val error = clickedImageResult.exceptionOrThrow()
-
-                    snackbarManager.errorToast(
-                      message = error.errorMessageOrClassName(),
-                      screenKey = MainScreen.SCREEN_KEY
-                    )
-
-                    return@PostImageThumbnail
-                  }
-
-                  val clickedPostImage = clickedImageResult.getOrThrow()
-
-                  val boundsInWindow = boundsInWindowMut
-                  if (boundsInWindow == null) {
-                    return@PostImageThumbnail
-                  }
-
-                  clickedThumbnailBoundsStorage.storeBounds(clickedPostImage, boundsInWindow)
-                  onThumbnailClicked(clickedPostImage)
-                }
+              AlbumImageItem(
+                albumImage = albumImage,
+                onThumbnailClicked = onThumbnailClicked
               )
             }
           )
         }
       }
     )
+  }
+
+  @Composable
+  private fun AlbumImageItem(
+    albumImage: AlbumScreenViewModel.AlbumImage,
+    onThumbnailClicked: (IPostImage) -> Unit
+  ) {
+    var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
+
+    Box {
+      PostImageThumbnail(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(160.dp)
+          .padding(1.dp)
+          .onGloballyPositioned { layoutCoordinates ->
+            boundsInWindowMut = layoutCoordinates.boundsInWindow()
+          },
+        showShimmerEffectWhenLoading = true,
+        postImage = albumImage.postImage,
+        contentScale = ContentScale.Crop,
+        onClick = { clickedImageResult ->
+          if (clickedImageResult.isFailure) {
+            val error = clickedImageResult.exceptionOrThrow()
+
+            snackbarManager.errorToast(
+              message = error.errorMessageOrClassName(),
+              screenKey = MainScreen.SCREEN_KEY
+            )
+
+            return@PostImageThumbnail
+          }
+
+          val clickedPostImage = clickedImageResult.getOrThrow()
+
+          val boundsInWindow = boundsInWindowMut
+          if (boundsInWindow == null) {
+            return@PostImageThumbnail
+          }
+
+          clickedThumbnailBoundsStorage.storeBounds(clickedPostImage, boundsInWindow)
+          onThumbnailClicked(clickedPostImage)
+        }
+      )
+
+      if (albumImage.postSubject.isNotNullNorEmpty()) {
+        PostSubject(albumImage.postSubject)
+      }
+
+      ImageInfo(albumImage)
+    }
+  }
+
+  @Composable
+  private fun BoxScope.PostSubject(subject: String) {
+    val bgColor = remember { Color.Black.copy(alpha = 0.5f) }
+
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .align(Alignment.TopCenter)
+        .background(bgColor)
+        .padding(2.dp)
+    ) {
+      KurobaComposeText(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight(),
+        text = subject,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        color = Color.White,
+        textAlign = TextAlign.Center,
+        fontSize = 12.sp
+      )
+    }
+  }
+
+  @Composable
+  private fun BoxScope.ImageInfo(albumImage: AlbumScreenViewModel.AlbumImage) {
+    val bgColor = remember { Color.Black.copy(alpha = 0.5f) }
+
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .align(Alignment.BottomCenter)
+        .background(bgColor)
+        .padding(2.dp)
+    ) {
+      KurobaComposeText(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight(),
+        text = albumImage.imageOriginalFileName,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        color = Color.White,
+        textAlign = TextAlign.Center,
+        fontSize = 12.sp
+      )
+
+      KurobaComposeText(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight(),
+        text = albumImage.imageInfo,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        color = Color.White,
+        textAlign = TextAlign.Center,
+        fontSize = 11.sp
+      )
+    }
   }
 
   enum class ToolbarIcon {

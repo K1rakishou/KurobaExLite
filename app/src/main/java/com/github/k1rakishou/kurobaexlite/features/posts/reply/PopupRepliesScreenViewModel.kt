@@ -121,7 +121,7 @@ class PopupRepliesScreenViewModel(savedStateHandle: SavedStateHandle) : PostScre
     val postDescriptor = replyViewMode.postDescriptor
     postScreenState.updateChanDescriptor(postDescriptor.threadDescriptor)
 
-    val threadPosts = chanCache.getPost(postDescriptor)
+    val threadPosts = chanCache.getThreadPost(postDescriptor)
       ?.let { postData -> parsePostData(replyViewMode, postDescriptor, postData) }
       ?: emptyList()
 

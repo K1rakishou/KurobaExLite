@@ -77,7 +77,7 @@ class LinkableClickHelper(
       when (linkable) {
         is TextPartSpan.Linkable.Quote -> {
           if (linkable.dead) {
-            if (chanCache.getPost(linkable.postDescriptor) == null) {
+            if (chanCache.getThreadPost(linkable.postDescriptor) == null) {
               snackbarManager.toast(
                 messageId = R.string.thread_toolbar_cannot_view_dead_posts,
                 screenKey = sourceScreenKey
