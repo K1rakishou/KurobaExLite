@@ -37,7 +37,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleSearchToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleSearchToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton

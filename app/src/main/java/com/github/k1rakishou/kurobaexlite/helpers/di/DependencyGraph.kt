@@ -170,6 +170,7 @@ object DependencyGraph {
       MediaSaver(
         applicationContext = get(),
         androidHelpers = get(),
+        globalConstants = get(),
         proxiedOkHttpClient = get(),
         parsedPostDataCache = get()
       )

@@ -231,7 +231,7 @@ private fun PostCellTitle(
         PostImageThumbnail(
           modifier = Modifier.size(70.dp),
           postImage = postImage,
-          onClick = { clickedImageResult ->
+          onClickWithError = { clickedImageResult ->
             val boundsInWindow = boundsInWindowMut
               ?: return@PostImageThumbnail
 

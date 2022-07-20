@@ -152,6 +152,6 @@ private fun DisplayImagePreview(
       .padding(padding),
     bgColor = Color.Unspecified,
     postImage = postImage,
-    onClick = { onPreviewClicked(postImage) }
+    onClickWithError = { onPreviewClicked(postImage) }
   )
 }

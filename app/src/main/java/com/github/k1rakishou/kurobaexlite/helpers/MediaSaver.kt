@@ -5,7 +5,9 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.annotation.GuardedBy
 import androidx.annotation.RequiresApi
+import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
@@ -13,7 +15,18 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.imageNameForDiskStore
 import com.github.k1rakishou.kurobaexlite.model.data.mimeType
 import java.io.File
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
@@ -23,11 +36,84 @@ import okio.BufferedSource
 class MediaSaver(
   private val applicationContext: Context,
   private val androidHelpers: AndroidHelpers,
+  private val globalConstants: GlobalConstants,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val parsedPostDataCache: ParsedPostDataCache,
 ) {
 
+  private val activeDownloadsMutex = Mutex()
+
+  @GuardedBy("activeDownloads")
+  private val activeDownloads = mutableMapOf<String, ActiveDownload>()
+
+  private val _activeDownloadsInfoFlow = MutableSharedFlow<String?>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+  )
+  val activeDownloadsInfoFlow: SharedFlow<String?>
+    get() = _activeDownloadsInfoFlow.asSharedFlow()
+
+  suspend fun savePostImages(postImages: List<IPostImage>): ActiveDownload {
+    return supervisorScope {
+      val uuid = UUID.randomUUID().toString()
+
+      val downloadedImages = AtomicInteger(0)
+      val failedImages = AtomicInteger(0)
+
+      try {
+        activeDownloadsMutex.withLock { activeDownloads[uuid] = ActiveDownload(0, 0, postImages.size) }
+        notifyListeners()
+
+        postImages
+          .chunked(globalConstants.coresCount)
+          .forEach { batch ->
+            val results = batch
+              .map { postImage -> async { savePostImageInternal(postImage) } }
+              .awaitAll()
+
+            results.forEach { downloadResult ->
+              if (downloadResult.isSuccess) {
+                downloadedImages.incrementAndGet()
+              } else {
+                failedImages.incrementAndGet()
+              }
+            }
+
+            activeDownloads[uuid]?.let { activeDownload ->
+              activeDownload.downloaded = downloadedImages.get()
+              activeDownload.failed = failedImages.get()
+            }
+
+            notifyListeners()
+          }
+
+        return@supervisorScope ActiveDownload(
+          downloaded = downloadedImages.get(),
+          failed = failedImages.get(),
+          total = postImages.size
+        )
+      } finally {
+        activeDownloadsMutex.withLock { activeDownloads.remove(uuid) }
+        notifyListeners()
+      }
+    }
+  }
+
   suspend fun savePostImage(postImage: IPostImage): Result<Unit> {
+    val uuid = UUID.randomUUID().toString()
+
+    return try {
+      activeDownloadsMutex.withLock { activeDownloads[uuid] = ActiveDownload(0, 0, 1) }
+      notifyListeners()
+
+      savePostImageInternal(postImage)
+    } finally {
+      activeDownloadsMutex.withLock { activeDownloads.remove(uuid) }
+      notifyListeners()
+    }
+  }
+
+  private suspend fun savePostImageInternal(postImage: IPostImage): Result<Unit> {
     return withContext(Dispatchers.IO) {
       return@withContext Result.Try {
         val request = Request.Builder()
@@ -35,28 +121,32 @@ class MediaSaver(
           .get()
           .build()
 
-        val response = proxiedOkHttpClient.okHttpClient()
-          .suspendCall(request)
-          .unwrap()
+        retryableIoTask(
+          attempts = 5,
+          task = {
+            val response = proxiedOkHttpClient.okHttpClient()
+              .suspendCall(request)
+              .unwrap()
 
-        if (!response.isSuccessful) {
-          if (response.code == 404) {
-            throw MediaNotFoundOnServerException(postImage)
-          }
+            if (!response.isSuccessful) {
+              if (response.code == 404) {
+                throw MediaNotFoundOnServerException(postImage)
+              }
 
-          throw MediaDownloadBadStatusException(postImage, response.code)
-        }
+              throw MediaDownloadBadStatusException(postImage, response.code)
+            }
 
-        val responseBody = response.body
-          ?: throw MediaDownloadEmptyBody(postImage)
+            val responseBody = response.body
+              ?: throw MediaDownloadEmptyBody(postImage)
 
-        responseBody.useBufferedSource { bufferedSource ->
-          if (androidHelpers.isAndroidQ()) {
-            savePostImageAndroidQAndAbove(postImage, bufferedSource)
-          } else {
-            savePostImageAndroidPAndBelow(postImage, bufferedSource)
-          }
-        }
+            responseBody.useBufferedSource { bufferedSource ->
+              if (androidHelpers.isAndroidQ()) {
+                savePostImageAndroidQAndAbove(postImage, bufferedSource)
+              } else {
+                savePostImageAndroidPAndBelow(postImage, bufferedSource)
+              }
+            }
+          })
       }.onFailure { error ->
         logcatError(TAG) { "savePostImage(${postImage.fullImageAsString}) error: ${error.asLogIfImportantOrErrorMessage()}" }
       }.onSuccess {
@@ -142,6 +232,40 @@ class MediaSaver(
       }
     }
   }
+
+  private suspend fun notifyListeners() {
+    val activeDownloadsInfo = activeDownloadsMutex.withLock {
+      if (activeDownloads.isEmpty()) {
+        return@withLock null
+      }
+
+      if (activeDownloads.size == 1) {
+        val activeDownload = activeDownloads.entries.firstOrNull()?.value
+          ?: return@withLock null
+
+        return@withLock "Downloaded: ${activeDownload.downloaded}, " +
+          "Failed: ${activeDownload.failed}, " +
+          "Total: ${activeDownload.total}"
+      } else {
+        val totalDownloaded = activeDownloads.entries.sumOf { it.value.downloaded }
+        val totalFailed = activeDownloads.entries.sumOf { it.value.failed }
+        val total = activeDownloads.entries.sumOf { it.value.total }
+
+        return@withLock "Downloaded: ${totalDownloaded}, " +
+          "Failed: ${totalFailed}, " +
+          "Total: ${total}, " +
+          "Active downloads: ${activeDownloads.size}"
+      }
+    }
+
+    _activeDownloadsInfoFlow.tryEmit(activeDownloadsInfo)
+  }
+
+  class ActiveDownload(
+    var downloaded: Int,
+    var failed: Int,
+    val total: Int
+  )
 
   class MediaNotFoundOnServerException(postImage: IPostImage) :
     ClientException("Media file '${postImage.fullImageAsString}' not found on server (404)")

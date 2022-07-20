@@ -139,6 +139,7 @@
 
     <string name="media_viewer_failed_to_find_image_in_images">Failed to find previous image in images</string>
     <string name="media_viewer_download_success">Successfully downloaded \'%1$s\'</string>
+    <string name="media_viewer_download_success_multiple">Batch download finished. Downloaded: \'%1$d\', Failed: \'%2$d\', Total: \'%3$d\'</string>
     <string name="media_viewer_download_failed">Failed to download \'%1$s\', error=\'%2$s\'</string>
     <string name="media_viewer_download_failed_no_permission">Can\'t download images without the WRITE_EXTERNAL_STORAGE permission on Android P and below</string>
     <string name="media_viewer_plugins_failed_to_load_mpv_libs">Failed to load mpv libraries! Check that they are installed and restart the app.</string>

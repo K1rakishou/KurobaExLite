@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.base
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
@@ -23,12 +24,14 @@ abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar> protec
 
   protected abstract val kurobaToolbarContainerState: KurobaToolbarContainerState<ToolbarType>
 
+  @CallSuper
   override fun onStartCreating(screenCreateEvent: ScreenCreateEvent) {
     super.onStartCreating(screenCreateEvent)
 
     kurobaToolbarContainerState.setDefaultToolbar(defaultToolbar)
   }
 
+  @CallSuper
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     super.onDisposed(screenDisposeEvent)
 

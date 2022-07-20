@@ -41,7 +41,9 @@ fun PostImageThumbnail(
   showShimmerEffectWhenLoading: Boolean = false,
   contentScale: ContentScale = ContentScale.Fit,
   postImage: IPostImage,
-  onClick: (Result<IPostImage>) -> Unit
+  onClickWithError: ((Result<IPostImage>) -> Unit)? = null,
+  onClick: (IPostImage) -> Unit = {},
+  onLongClick: (IPostImage) -> Unit = {},
 ) {
   val context = LocalContext.current
   val chanTheme = LocalChanTheme.current
@@ -54,14 +56,19 @@ fun PostImageThumbnail(
       .background(bgColor)
       .then(modifier)
       .kurobaClickable(
+        onLongClick = { onLongClick(postImage) },
         onClick = {
-          val result = if (loadError != null) {
-            Result.failure(loadError)
-          } else {
-            Result.success(postImage)
-          }
+          if (onClickWithError != null) {
+            val result = if (loadError != null) {
+              Result.failure(loadError)
+            } else {
+              Result.success(postImage)
+            }
 
-          onClick(result)
+            onClickWithError(result)
+          } else {
+            onClick(postImage)
+          }
         }
       )
   ) {

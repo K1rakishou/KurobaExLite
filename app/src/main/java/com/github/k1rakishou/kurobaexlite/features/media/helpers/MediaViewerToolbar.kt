@@ -29,9 +29,9 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarConta
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarState
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey

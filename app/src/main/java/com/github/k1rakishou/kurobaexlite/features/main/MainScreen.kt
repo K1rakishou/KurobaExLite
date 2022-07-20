@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -13,21 +14,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreen
+import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import org.koin.java.KoinJavaComponent.inject
 
 class MainScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   private val mainNavigationRouter: MainNavigationRouter
 ) : ComposeScreen(screenArgs, componentActivity, mainNavigationRouter) {
+  private val mediaSaver: MediaSaver by inject(MediaSaver::class.java)
+
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Composable
@@ -41,6 +50,29 @@ class MainScreen(
 
     var contentSize by remember { mutableStateOf(IntSize.Zero) }
     val kurobaSnackbarState = rememberKurobaSnackbarState()
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        mediaSaver.activeDownloadsInfoFlow.collect { activeDownloadsInfo ->
+          if (activeDownloadsInfo == null) {
+            kurobaSnackbarState.popSnackbar(SnackbarId.ActiveDownloadsInfo)
+            return@collect
+          }
+
+          kurobaSnackbarState.pushSnackbar(
+            SnackbarInfo(
+              snackbarId = SnackbarId.ActiveDownloadsInfo,
+              aliveUntil = null,
+              content = listOf(
+                SnackbarContentItem.LoadingIndicator,
+                SnackbarContentItem.Spacer(12.dp),
+                SnackbarContentItem.Text(activeDownloadsInfo)
+              )
+            )
+          )
+        }
+      })
 
     GradientBackground(
       modifier = Modifier

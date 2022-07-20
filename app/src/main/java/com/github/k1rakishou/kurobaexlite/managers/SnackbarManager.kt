@@ -24,6 +24,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
@@ -35,7 +36,7 @@ class SnackbarManager(
   val snackbarEventFlow: SharedFlow<SnackbarInfoEvent>
     get() = _snackbarEventFlow.asSharedFlow()
 
-  private val activeSnackbarsFlow = MutableSharedFlow<Map<ScreenKey, List<SnackbarInfo>>>(extraBufferCapacity = Channel.UNLIMITED)
+  private val _activeSnackbarsFlow = MutableStateFlow<Map<ScreenKey, List<SnackbarInfo>>>(emptyMap())
 
   private val _removedSnackbarsFlow = MutableSharedFlow<Set<RemovedSnackbarInfo>>(extraBufferCapacity = Channel.UNLIMITED)
   val removedSnackbarsFlow: SharedFlow<Set<RemovedSnackbarInfo>>
@@ -50,7 +51,7 @@ class SnackbarManager(
   }
 
   fun onSnackbarsUpdated(snackbarsByScreenKey: Map<ScreenKey, List<SnackbarInfo>>) {
-    activeSnackbarsFlow.tryEmit(snackbarsByScreenKey)
+    _activeSnackbarsFlow.tryEmit(snackbarsByScreenKey)
   }
 
   fun onSnackbarsRemoved(removedSnackbars: Set<RemovedSnackbarInfo>) {
@@ -58,7 +59,7 @@ class SnackbarManager(
   }
 
   fun listenForActiveSnackbarsFlow(forScreenKey: ScreenKey): Flow<List<SnackbarInfo>> {
-    return activeSnackbarsFlow.map { map ->
+    return _activeSnackbarsFlow.map { map ->
       val thisScreenSnackbars = map[forScreenKey] ?: emptyList()
       val mainScreenSnackbars = map[MainScreen.SCREEN_KEY] ?: emptyList()
 

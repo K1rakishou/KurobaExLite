@@ -26,8 +26,8 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.SimpleToolbarStateBuilder
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller

@@ -1,11 +1,16 @@
 package com.github.k1rakishou.kurobaexlite.features.album
 
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.originalFileNameForPostCell
@@ -16,12 +21,55 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.java.KoinJavaComponent.inject
 
 class AlbumScreenViewModel : BaseViewModel() {
   private val chanViewManager: ChanViewManager by inject(ChanViewManager::class.java)
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
+  private val chanCache: ChanCache by inject(ChanCache::class.java)
+  private val mediaSaver: MediaSaver by inject(MediaSaver::class.java)
+
+  private val _selectedImages = mutableStateMapOf<String, Unit>()
+  val selectedImages: Map<String, Unit>
+    get() = _selectedImages
+
+  private val _allImageKeys = mutableSetWithCap<String>(128)
+
+  fun clearAllImageKeys() {
+    _allImageKeys.clear()
+  }
+
+  fun isImageSelected(albumImage: AlbumImage): Boolean {
+    return _selectedImages.containsKey(albumImage.postImage.serverFileName)
+  }
+
+  fun toggleImageSelection(albumImage: AlbumImage) {
+    val key = albumImage.postImage.serverFileName
+
+    if (_selectedImages.containsKey(key)) {
+      _selectedImages.remove(key)
+    } else {
+      _selectedImages[key] = Unit
+    }
+  }
+
+  fun toggleSelectionGlobal() {
+    val allSelected = _allImageKeys.all { key -> key in _selectedImages }
+    if (allSelected) {
+      _selectedImages.clear()
+    } else {
+      val newMap = _allImageKeys.associateWith { Unit }
+
+      _selectedImages.clear()
+      _selectedImages.putAll(newMap)
+    }
+  }
+
+  fun clearSelection() {
+    _selectedImages.clear()
+  }
 
   suspend fun loadAlbumFromPostStateList(
     chanDescriptor: ChanDescriptor,
@@ -75,10 +123,49 @@ class AlbumScreenViewModel : BaseViewModel() {
         }
       }
 
+      _allImageKeys.clear()
+      _allImageKeys.addAll(albumImages.map { it.postImage.serverFileName })
+
       return@withContext Album(
         imageToScrollTo = imageToScrollTo,
         albumImages = albumImages
       )
+    }
+  }
+
+  fun downloadSelectedImages(
+    chanDescriptor: ChanDescriptor,
+    onResult: (MediaSaver.ActiveDownload) -> Unit
+  ) {
+    val selectedImagesCopy = selectedImages.toMap()
+
+    if (selectedImagesCopy.isEmpty()) {
+      onResult(MediaSaver.ActiveDownload(0, 0, 0))
+      return
+    }
+
+    viewModelScope.launch {
+      val imagesToSave = mutableListOf<IPostImage>()
+
+      val posts = when (chanDescriptor) {
+        is CatalogDescriptor -> chanCache.getCatalogThreads(chanDescriptor)
+        is ThreadDescriptor -> chanCache.getThreadPosts(chanDescriptor)
+      }
+
+      posts.forEach { postData ->
+        postData.images?.forEach { postImage ->
+          if (selectedImagesCopy.containsKey(postImage.serverFileName)) {
+            imagesToSave += postImage
+          }
+        }
+      }
+
+      if (imagesToSave.isEmpty()) {
+        return@launch
+      }
+
+      val activeDownload = mediaSaver.savePostImages(imagesToSave)
+      onResult(activeDownload)
     }
   }
 

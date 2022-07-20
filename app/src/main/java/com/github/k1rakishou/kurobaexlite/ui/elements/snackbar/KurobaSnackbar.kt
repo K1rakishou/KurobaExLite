@@ -521,6 +521,8 @@ sealed class SnackbarId(
   object ReloadLastVisitedCatalog : SnackbarId("reload_last_visited_catalog")
   object ReloadLastVisitedThread : SnackbarId("reload_last_visited_thread")
 
+  object ActiveDownloadsInfo : SnackbarId("active_downloads_info")
+
   class Toast(toastId: String) : SnackbarId(toastId)
 
   override fun equals(other: Any?): Boolean {

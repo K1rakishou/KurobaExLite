@@ -84,7 +84,7 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
     )
   }
 
-  inline fun <reified T : KurobaChildToolbar> topChildToolbar(): T? {
+  inline fun <reified T : KurobaChildToolbar> topChildToolbarAs(): T? {
     return topChildToolbarInternal(T::class.java)
   }
 
@@ -94,12 +94,12 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
 
   @PublishedApi
   internal fun <T : KurobaChildToolbar> topChildToolbarInternal(clazz: Class<T>): T? {
-    val added = _stackContainerState.addedElements.lastOrNull()?.stackContainerElement as? T
+    val added = _stackContainerState.addedElements.lastOrNull()?.stackContainerElement?.element as? T
     if (added != null) {
       return added
     }
 
-    val animating = _stackContainerState.animatingElements.lastOrNull() as? T
+    val animating = _stackContainerState.animatingElements.lastOrNull()?.stackContainerElement?.element as? T
     if (animating != null) {
       return animating
     }

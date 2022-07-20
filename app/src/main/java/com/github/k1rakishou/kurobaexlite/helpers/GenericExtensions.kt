@@ -9,9 +9,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 import javax.net.ssl.SSLException
 import kotlin.contracts.ExperimentalContracts
@@ -27,6 +29,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
@@ -710,6 +713,34 @@ suspend fun <T, R> processDataCollectionConcurrently(
           .awaitAll()
           .filterNotNull()
       }
+  }
+}
+
+@Suppress("UnnecessaryVariable")
+suspend fun <T : Any> retryableIoTask(attempts: Int, task: suspend (Int) -> T): T {
+  require(attempts > 0) { "Bad attempts count: $attempts" }
+  val retries = AtomicInteger(0)
+
+  return coroutineScope {
+    while (true) {
+      ensureActive()
+
+      try {
+        // Try to execute a task
+        val result = task(retries.incrementAndGet())
+
+        // If no exceptions were thrown then just exit
+        return@coroutineScope result
+      } catch (error: IOException) {
+        // If any kind of IOException was thrown then retry until we either succeed or exhaust all
+        // attempts
+        if (retries.get() >= attempts) {
+          throw error
+        }
+      }
+    }
+
+    throw RuntimeException("Shouldn't be called")
   }
 }
 
