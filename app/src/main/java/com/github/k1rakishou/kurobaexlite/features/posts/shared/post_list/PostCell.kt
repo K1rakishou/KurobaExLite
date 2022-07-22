@@ -1,12 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -62,7 +60,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.kurobaAnimateContentSize
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -147,13 +144,12 @@ fun PostCell(
 
     if (columnSize != null) {
       PostCellMarks(columnSize, postCellData)
-      Spacer(modifier = Modifier.width(4.dp))
     }
   }
 }
 
 @Composable
-private fun RowScope.PostCellMarks(columnSize: IntSize, postCellData: PostCellData) {
+private fun PostCellMarks(columnSize: IntSize, postCellData: PostCellData) {
   val parsedPostData = postCellData.parsedPostData
     ?: return
 
@@ -167,37 +163,41 @@ private fun RowScope.PostCellMarks(columnSize: IntSize, postCellData: PostCellDa
   val lineWidthPx = with(LocalDensity.current) { remember { totalCanvasWidth.toPx() } }
   val pathEffect = remember { PathEffect.dashPathEffect(floatArrayOf(20f, 10f), 0f) }
 
-  Spacer(modifier = Modifier.width(4.dp))
+  Row {
+    Spacer(modifier = Modifier.width(4.dp))
 
-  Canvas(
-    modifier = Modifier
-      .width(totalCanvasWidth)
-      .height(heightDp),
-    onDraw = {
-      when {
-        parsedPostData.isPostMarkedAsMine -> {
-          drawLine(
-            color = chanTheme.postSavedReplyColor,
-            strokeWidth = lineWidthPx,
-            start = Offset.Zero,
-            end = Offset(0f, size.height)
-          )
-        }
-        parsedPostData.isReplyToPostMarkedAsMine -> {
-          drawLine(
-            color = chanTheme.postSavedReplyColor,
-            strokeWidth = lineWidthPx,
-            start = Offset.Zero,
-            end = Offset(0f, size.height),
-            pathEffect = pathEffect
-          )
-        }
-        else -> {
-          unreachable()
+    Canvas(
+      modifier = Modifier
+        .width(totalCanvasWidth)
+        .height(heightDp),
+      onDraw = {
+        when {
+          parsedPostData.isPostMarkedAsMine -> {
+            drawLine(
+              color = chanTheme.postSavedReplyColor,
+              strokeWidth = lineWidthPx,
+              start = Offset.Zero,
+              end = Offset(0f, size.height)
+            )
+          }
+          parsedPostData.isReplyToPostMarkedAsMine -> {
+            drawLine(
+              color = chanTheme.postSavedReplyColor,
+              strokeWidth = lineWidthPx,
+              start = Offset.Zero,
+              end = Offset(0f, size.height),
+              pathEffect = pathEffect
+            )
+          }
+          else -> {
+            unreachable()
+          }
         }
       }
-    }
-  )
+    )
+
+    Spacer(modifier = Modifier.width(4.dp))
+  }
 }
 
 @Composable
@@ -496,11 +496,7 @@ private fun PostCellFooter(
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .wrapContentHeight()
-      .kurobaAnimateContentSize(
-        animationSpec = tween(durationMillis = 250),
-        areEqual = { startSize, targetSize -> startSize.height == targetSize.height }
-      ),
+      .wrapContentHeight(),
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (postFooterText.isNotNullNorEmpty()) {
