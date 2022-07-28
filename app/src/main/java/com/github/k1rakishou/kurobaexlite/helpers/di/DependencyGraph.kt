@@ -71,6 +71,7 @@ import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
+import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.ISiteManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
@@ -251,6 +252,15 @@ object DependencyGraph {
         appScope = get(),
         appResources = get(),
         appSettings = get()
+      )
+    }
+
+    single(createdAtStart = true) {
+      FastScrollerMarksManager(
+        appScope = get(),
+        appSettings = get(),
+        parsedPostDataCache = get(),
+        chanCache = get()
       )
     }
   }

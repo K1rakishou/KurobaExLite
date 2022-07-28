@@ -56,6 +56,7 @@ import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.asLog
+import logcat.logcat
 
 class ParsedPostDataCache(
   private val appContext: Context,
@@ -79,9 +80,13 @@ class ParsedPostDataCache(
 
   private val updateNotifyDebouncer = DebouncingCoroutineExecutor(coroutineScope)
 
-  private val _postDataUpdatesFlow = MutableSharedFlow<Set<PostDescriptor>>(extraBufferCapacity = Channel.UNLIMITED)
-  val postDataUpdatesFlow: SharedFlow<Set<PostDescriptor>>
+  private val _postDataUpdatesFlow = MutableSharedFlow<Pair<ChanDescriptor, Set<PostDescriptor>>>(extraBufferCapacity = Channel.UNLIMITED)
+  val postDataUpdatesFlow: SharedFlow<Pair<ChanDescriptor, Set<PostDescriptor>>>
     get() = _postDataUpdatesFlow.asSharedFlow()
+
+  private val _chanDescriptorPostsUpdatedFlow = MutableSharedFlow<ChanDescriptor>(extraBufferCapacity = Channel.UNLIMITED)
+  val chanDescriptorPostsUpdatedFlow: SharedFlow<ChanDescriptor>
+    get() = _chanDescriptorPostsUpdatedFlow.asSharedFlow()
 
   suspend fun ensurePostDataLoaded(
     isCatalog: Boolean,
@@ -107,7 +112,7 @@ class ParsedPostDataCache(
     postDataUpdatesFlow
       .takeWhile { !processed.get() }
       .cancellable()
-      .collect { updated ->
+      .collect { (_, updated) ->
         if (!updated.contains(postDescriptor)) {
           return@collect
         }
@@ -227,6 +232,31 @@ class ParsedPostDataCache(
     return newParsedPostData
   }
 
+  suspend fun recalculatePostCellData(
+    chanDescriptor: ChanDescriptor,
+    postCellData: PostCellData,
+    parsedPostDataContext: ParsedPostDataContext,
+    chanTheme: ChanTheme,
+  ): ParsedPostData {
+    val postDescriptor = postCellData.postDescriptor
+
+    val newParsedPostData = calculateParsedPostData(
+      postCellData = postCellData,
+      parsedPostDataContext = parsedPostDataContext,
+      chanTheme = chanTheme
+    )
+
+    mutex.withLockNonCancellable {
+      when (chanDescriptor) {
+        is CatalogDescriptor -> catalogParsedPostDataMap[postDescriptor] = newParsedPostData
+        is ThreadDescriptor -> threadParsedPostDataMap[postDescriptor] = newParsedPostData
+      }
+    }
+
+    notifyListenersPostDataUpdated(chanDescriptor, postDescriptor)
+    return newParsedPostData
+  }
+
   private suspend fun notifyListenersPostDataUpdated(
     chanDescriptor: ChanDescriptor,
     postDescriptor: PostDescriptor
@@ -238,29 +268,32 @@ class ParsedPostDataCache(
       }
     }
 
-    updateNotifyDebouncer.post(timeout = 100L) {
-      val updates = mutex.withLockNonCancellable {
-        when (chanDescriptor) {
+    _chanDescriptorPostsUpdatedFlow.emit(chanDescriptor)
+
+    updateNotifyDebouncer.post(timeout = 250L) {
+      mutex.withLockNonCancellable {
+        val updates = when (chanDescriptor) {
           is CatalogDescriptor -> {
             val updates = catalogPendingUpdates.toSet()
             catalogPendingUpdates.clear()
 
-            return@withLockNonCancellable updates
+            updates
           }
           is ThreadDescriptor -> {
             val updates = threadPendingUpdates.toSet()
             threadPendingUpdates.clear()
 
-            return@withLockNonCancellable updates
+            updates
           }
         }
-      }
 
-      if (updates.isEmpty()) {
-        return@post
-      }
+        if (updates.isEmpty()) {
+          return@withLockNonCancellable
+        }
 
-      _postDataUpdatesFlow.emit(updates)
+        logcat(TAG) { "notifyListenersPostDataUpdated() chanDescriptor: ${chanDescriptor}, updates: ${updates.size}" }
+        _postDataUpdatesFlow.emit(Pair(chanDescriptor, updates))
+      }
     }
   }
 
@@ -337,7 +370,7 @@ class ParsedPostDataCache(
     )
   }
 
-  suspend fun calculateParsedPostData(
+  private suspend fun calculateParsedPostData(
     originalPostOrder: Int,
     postCommentUnparsed: String,
     postSubjectUnparsed: String,
@@ -877,6 +910,10 @@ class ParsedPostDataCache(
     RollingSticky("id_post_rolling_sticky"),
     CountryFlag("id_post_country_flag"),
     BoardFlag("id_post_board_flag")
+  }
+
+  companion object {
+    private const val TAG = "ParsedPostDataCache"
   }
 
 }

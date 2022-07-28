@@ -19,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
+import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -52,6 +53,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Mutex
@@ -80,6 +82,7 @@ abstract class PostScreenViewModel(
   protected val loadMarkedPosts: LoadMarkedPosts by inject(LoadMarkedPosts::class.java)
   protected val loadChanCatalog: LoadChanCatalog by inject(LoadChanCatalog::class.java)
   protected val updateBookmarkInfoUponThreadOpen: UpdateBookmarkInfoUponThreadOpen by inject(UpdateBookmarkInfoUponThreadOpen::class.java)
+  protected val fastScrollerMarksManager: FastScrollerMarksManager by inject(FastScrollerMarksManager::class.java)
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
@@ -104,12 +107,46 @@ abstract class PostScreenViewModel(
   val currentlyOpenedThreadFlow: StateFlow<ThreadDescriptor?>
     get() = chanThreadManager.currentlyOpenedThreadFlow
 
+  private val _fastScrollerMarksFlow = MutableStateFlow<FastScrollerMarksManager.FastScrollerMarks?>(null)
+  val fastScrollerMarksFlow: StateFlow<FastScrollerMarksManager.FastScrollerMarks?>
+    get() = _fastScrollerMarksFlow.asStateFlow()
+
   private val lazyColumnRememberedPositionCache = mutableMapOf<ChanDescriptor, LazyColumnRememberedPosition>()
 
   abstract val postScreenState: PostScreenState
 
   val chanDescriptor: ChanDescriptor?
     get() = postScreenState.chanDescriptor
+
+  init {
+    viewModelScope.launch {
+      combine(
+        flow = fastScrollerMarksManager.marksUpdatedEventFlow,
+        flow2 = chanThreadManager.currentlyOpenedCatalogFlow,
+        flow3 = chanThreadManager.currentlyOpenedThreadFlow,
+        transform = { t1, t2, t3 -> Triple(t1, t2, t3) }
+      )
+        .collect { (marksChanDescriptor, currentCatalogDescriptor, currentThreadDescriptor) ->
+          val descriptorsMatch = when (marksChanDescriptor) {
+            is CatalogDescriptor -> {
+              marksChanDescriptor == currentCatalogDescriptor &&
+                chanDescriptor == marksChanDescriptor
+            }
+            is ThreadDescriptor -> {
+              marksChanDescriptor == currentThreadDescriptor &&
+                chanDescriptor == marksChanDescriptor
+            }
+          }
+
+          if (!descriptorsMatch) {
+            return@collect
+          }
+
+          val fastScrollerMarks = fastScrollerMarksManager.getFastScrollerMarks(marksChanDescriptor)
+          _fastScrollerMarksFlow.emit(fastScrollerMarks)
+        }
+    }
+  }
 
   abstract fun reload(
     loadOptions: LoadOptions = LoadOptions(),
@@ -261,17 +298,26 @@ abstract class PostScreenViewModel(
     }
   }
 
-  fun reparsePostsByDescriptors(postDescriptors: Collection<PostDescriptor>) {
+  fun reparsePostsByDescriptors(
+    chanDescriptor: ChanDescriptor,
+    postDescriptors: Collection<PostDescriptor>
+  ) {
     if (postDescriptors.isEmpty()) {
       return
     }
 
     viewModelScope.launch(globalConstants.postParserDispatcher) {
-      reparsePostsByDescriptorsSuspend(postDescriptors)
+      reparsePostsByDescriptorsSuspend(
+        chanDescriptor = chanDescriptor,
+        postDescriptors = postDescriptors
+      )
     }
   }
 
-  suspend fun reparsePostsByDescriptorsSuspend(postDescriptors: Collection<PostDescriptor>) {
+  private suspend fun reparsePostsByDescriptorsSuspend(
+    chanDescriptor: ChanDescriptor,
+    postDescriptors: Collection<PostDescriptor>
+  ) {
     if (postDescriptors.isEmpty()) {
       return
     }
@@ -286,7 +332,8 @@ abstract class PostScreenViewModel(
     }
 
     postCellDataList.forEach { postCellData ->
-      val parsedPostData = parsedPostDataCache.calculateParsedPostData(
+      val parsedPostData = parsedPostDataCache.recalculatePostCellData(
+        chanDescriptor = chanDescriptor,
         postCellData = postCellData,
         chanTheme = chanTheme,
         parsedPostDataContext = postCellData.parsedPostDataContext!!
@@ -594,7 +641,7 @@ abstract class PostScreenViewModel(
     scrollToPost: PostDescriptor?
   ) {
     if (scrollToPost != null) {
-      val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
+      val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts?.toList()
         ?: emptyList()
 
       val index = posts

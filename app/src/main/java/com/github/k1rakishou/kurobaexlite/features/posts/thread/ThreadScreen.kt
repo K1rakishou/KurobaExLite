@@ -296,7 +296,15 @@ class ThreadScreen(
           postListOptions = postListOptions,
           postCellData = postCellData,
           reparsePostsFunc = { postDescriptors ->
-            threadScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+            val threadDescriptor = threadScreenViewModel.threadDescriptor
+            if (threadDescriptor == null) {
+              return@showMenu
+            }
+
+            threadScreenViewModel.reparsePostsByDescriptors(
+              chanDescriptor = threadDescriptor,
+              postDescriptors = postDescriptors
+            )
           }
         )
       },

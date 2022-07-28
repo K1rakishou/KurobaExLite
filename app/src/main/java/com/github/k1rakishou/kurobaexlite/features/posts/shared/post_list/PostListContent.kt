@@ -374,6 +374,7 @@ private fun PostListInternal(
   val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostForIndicator.collectAsState()
   val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
   val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
+  val fastScrollerMarks by postsScreenViewModel.fastScrollerMarksFlow.collectAsState()
 
   val contentPadding = remember(key1 = searchQuery, key2 = postListOptions.contentPadding) {
     if (searchQuery.isNullOrEmpty()) {
@@ -446,6 +447,7 @@ private fun PostListInternal(
         ),
         lazyListState = lazyListState,
         contentPadding = contentPadding,
+        fastScrollerMarks = fastScrollerMarks,
         onFastScrollerDragStateChanged = { dragging -> onFastScrollerDragStateChanged(dragging) },
         content = {
           postListAsyncDataContent(

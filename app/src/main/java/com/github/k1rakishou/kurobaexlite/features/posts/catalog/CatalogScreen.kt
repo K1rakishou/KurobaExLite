@@ -387,7 +387,15 @@ class CatalogScreen(
           postListOptions = postListOptions,
           postCellData = postCellData,
           reparsePostsFunc = { postDescriptors ->
-            catalogScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+            val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+            if (catalogDescriptor == null) {
+              return@showMenu
+            }
+
+            catalogScreenViewModel.reparsePostsByDescriptors(
+              chanDescriptor = catalogDescriptor,
+              postDescriptors = postDescriptors
+            )
           }
         )
       },

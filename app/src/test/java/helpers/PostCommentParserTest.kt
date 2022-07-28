@@ -95,7 +95,7 @@ class PostCommentParserTest : TestCase() {
       archived = false,
       deleted = false,
       closed = false,
-      sticky = false,
+      sticky = null,
       bumpLimit = null,
       imageLimit = null,
     )

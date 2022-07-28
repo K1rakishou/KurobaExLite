@@ -18,10 +18,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 
 private val DefaultPaddingValues = PaddingValues(0.dp)
@@ -167,6 +169,7 @@ fun Modifier.scrollbar(
   scrollbarThumbColorNormal: Color,
   scrollbarThumbColorDragged: Color,
   contentPadding: PaddingValues,
+  fastScrollerMarks: FastScrollerMarksManager.FastScrollerMarks? = null,
   scrollbarManualDragProgress: Float? = null,
   isScrollInProgress: (LazyStateWrapper) -> Boolean = { lazyListState -> lazyListState.isScrollInProgress }
 ): Modifier {
@@ -248,6 +251,8 @@ fun Modifier.scrollbar(
         animationSpec = tween(durationMillis = 200)
       )
 
+      val minLabelHeight = with(density) { remember { 1.dp.toPx() } }
+
       this.then(
         Modifier.drawWithContent {
           drawContent()
@@ -297,6 +302,8 @@ fun Modifier.scrollbar(
                 alpha = trackAlphaAnimated
               )
 
+              // TODO(KurobaEx): fastScrollerMarks are not supported for horizontal scrollbars
+
               drawRect(
                 color = thumbColorAnimated,
                 topLeft = Offset(offsetX, offsetY),
@@ -331,19 +338,60 @@ fun Modifier.scrollbar(
               val offsetY = topPaddingPx + scrollbarOffsetY
               val offsetX = this.size.width - scrollbarDimens.width
 
-              drawRect(
-                color = scrollbarTrackColor,
-                topLeft = Offset(offsetX, topPaddingPx),
-                size = Size(scrollbarDimens.width.toFloat(), this.size.height - (topPaddingPx + bottomPaddingPx)),
-                alpha = trackAlphaAnimated
-              )
+              kotlin.run {
+                val trackWidth = scrollbarDimens.width.toFloat()
+                val trackHeight = this.size.height - (topPaddingPx + bottomPaddingPx)
 
-              drawRect(
-                color = thumbColorAnimated,
-                topLeft = Offset(offsetX, offsetY),
-                size = Size(scrollbarDimens.width.toFloat(), scrollbarHeightAdjusted),
-                alpha = thumbAlphaAnimated
-              )
+                val topLeft = Offset(offsetX, topPaddingPx)
+                val size = Size(trackWidth, trackHeight)
+
+                drawRect(
+                  color = scrollbarTrackColor,
+                  topLeft = topLeft,
+                  size = size,
+                  alpha = trackAlphaAnimated
+                )
+
+                if (fastScrollerMarks != null) {
+                  val unit = trackHeight / lazyStateWrapper.totalItemsCount.toFloat()
+                  val halfUnit = unit / 2f
+
+                  val markLeft = this.size.width - trackWidth
+                  val markRight = this.size.width
+
+                  translate(top = topLeft.y) {
+                    for (fastScrollerMark in fastScrollerMarks.marks) {
+                      val color = fastScrollerMark.type.color
+                      val startPosition = fastScrollerMark.startPosition
+                      val endPosition = fastScrollerMark.endPosition
+
+                      var top = startPosition * unit - halfUnit
+                      var bottom = (endPosition * unit) + halfUnit
+
+                      if (bottom - top < minLabelHeight) {
+                        top -= minLabelHeight / 2f
+                        bottom += minLabelHeight / 2f
+                      }
+
+                      drawRect(
+                        color = color,
+                        topLeft = Offset(markLeft, top),
+                        size = Size(markRight - markLeft, bottom - top),
+                        alpha = thumbAlphaAnimated
+                      )
+                    }
+                  }
+                }
+              }
+
+              kotlin.run {
+                drawRect(
+                  color = thumbColorAnimated,
+                  topLeft = Offset(offsetX, offsetY),
+                  size = Size(scrollbarDimens.width.toFloat(), scrollbarHeightAdjusted),
+                  alpha = thumbAlphaAnimated
+                )
+              }
             }
           }
         }

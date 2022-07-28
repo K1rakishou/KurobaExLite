@@ -24,6 +24,7 @@ import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyGridStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyStateWrapper
@@ -56,6 +57,7 @@ fun LazyColumnWithFastScroller(
   scrollbarHeight: Int = DefaultScrollbarHeight(),
   lazyListState: LazyListState,
   contentPadding: PaddingValues,
+  fastScrollerMarks: FastScrollerMarksManager.FastScrollerMarks? = null,
   userScrollEnabled: Boolean = true,
   onFastScrollerDragStateChanged: ((Boolean) -> Unit)? = null,
   content: LazyListScope.() -> Unit
@@ -111,6 +113,7 @@ fun LazyColumnWithFastScroller(
             scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormal,
             scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDragged,
             contentPadding = contentPadding,
+            fastScrollerMarks = fastScrollerMarks,
             scrollbarManualDragProgress = scrollbarDragProgress
           ),
         userScrollEnabled = userScrollEnabled,

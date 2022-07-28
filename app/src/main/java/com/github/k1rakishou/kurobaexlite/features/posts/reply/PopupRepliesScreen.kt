@@ -306,10 +306,20 @@ class PopupRepliesScreen(
             postListOptions = postListOptions,
             postCellData = postCellData,
             reparsePostsFunc = { postDescriptors ->
-              popupRepliesScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+              val chanDescriptor = if (postListOptions.isCatalogMode) {
+                catalogScreenViewModel.catalogDescriptor
+              } else {
+                threadScreenViewModel.threadDescriptor
+              }
+
+              if (chanDescriptor == null) {
+                return@showMenu
+              }
+
+              popupRepliesScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
 
               // Reparse the threadScreenViewModel posts too
-              threadScreenViewModel.reparsePostsByDescriptors(postDescriptors)
+              threadScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
             }
           )
         },
