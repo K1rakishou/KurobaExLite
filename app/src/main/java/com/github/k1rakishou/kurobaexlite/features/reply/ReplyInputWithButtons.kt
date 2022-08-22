@@ -1,17 +1,18 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
@@ -26,26 +27,33 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.LayoutOrientation
+import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SlotLayout
 
 @Composable
 fun ReplyInputWithButtons(
   height: Dp,
-  replyLayoutEnabled: Boolean,
-  replyText: TextFieldValue,
   replyLayoutState: ReplyLayoutState,
-  replyLayoutVisibility: ReplyLayoutVisibility,
   onExpandReplyLayoutClicked: () -> Unit,
   onCollapseReplyLayoutClicked: () -> Unit,
-  sendReplyState: SendReplyState,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+  val iconSize = 40.dp
 
   val replySendProgressMut by replyLayoutState.replySendProgressState
+  val replyText by replyLayoutState.replyText
+  val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
+  val sendReplyState by replyLayoutState.sendReplyState
+
   val replySendProgress = replySendProgressMut
 
-  val iconSize = 40.dp
+  val replyLayoutEnabled = when (sendReplyState) {
+    SendReplyState.Started,
+    is SendReplyState.ReplySent -> false
+    is SendReplyState.Finished -> true
+  }
 
   val replyInputVisualTransformation = remember {
     VisualTransformation { text ->
@@ -65,87 +73,144 @@ fun ReplyInputWithButtons(
     }
   }
 
-  Row {
-    KurobaComposeCustomTextField(
-      modifier = Modifier
-        .weight(1f)
-        .height(height)
-        .padding(top = 4.dp, start = 4.dp, end = 4.dp),
-      enabled = replyLayoutEnabled,
-      value = replyText,
-      singleLine = false,
-      maxLines = Int.MAX_VALUE,
-      visualTransformation = replyInputVisualTransformation,
-      onValueChange = { newTextFieldValue ->
-        replyLayoutState.onReplyTextChanged(newTextFieldValue)
+  SlotLayout(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(height),
+    layoutOrientation = LayoutOrientation.Horizontal,
+    builder = {
+      dynamic(1f, "ReplyTextField") {
+        ReplyTextField(
+          replyLayoutEnabled = replyLayoutEnabled,
+          replyText = replyText,
+          replyInputVisualTransformation = replyInputVisualTransformation,
+          replyLayoutState = replyLayoutState
+        )
       }
-    )
 
-    Column(
-      modifier = Modifier
-        .wrapContentSize()
-    ) {
+      fixed(50.dp, "ReplyButtons") {
+        ReplyButtons(
+          replyLayoutVisibility = replyLayoutVisibility,
+          iconSize = iconSize,
+          replyLayoutEnabled = replyLayoutEnabled,
+          onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
+          onCollapseReplyLayoutClicked = onCollapseReplyLayoutClicked,
+          sendReplyState = sendReplyState,
+          onCancelReplySendClicked = onCancelReplySendClicked,
+          onSendReplyClicked = onSendReplyClicked,
+          replySendProgress = replySendProgress
+        )
+      }
+    }
+  )
+}
+
+@Composable
+private fun ReplyTextField(
+  replyLayoutEnabled: Boolean,
+  replyText: TextFieldValue,
+  replyInputVisualTransformation: VisualTransformation,
+  replyLayoutState: ReplyLayoutState
+) {
+  KurobaComposeCustomTextField(
+    modifier = Modifier
+      .fillMaxSize()
+      .padding(vertical = 4.dp, horizontal = 8.dp),
+    enabled = replyLayoutEnabled,
+    value = replyText,
+    singleLine = false,
+    maxLines = Int.MAX_VALUE,
+    visualTransformation = replyInputVisualTransformation,
+    onValueChange = { newTextFieldValue ->
+      replyLayoutState.onReplyTextChanged(newTextFieldValue)
+    }
+  )
+}
+
+@Composable
+private fun ReplyButtons(
+  replyLayoutVisibility: ReplyLayoutVisibility,
+  iconSize: Dp,
+  replyLayoutEnabled: Boolean,
+  onExpandReplyLayoutClicked: () -> Unit,
+  onCollapseReplyLayoutClicked: () -> Unit,
+  sendReplyState: SendReplyState,
+  onCancelReplySendClicked: () -> Unit,
+  onSendReplyClicked: () -> Unit,
+  replySendProgress: Float?
+) {
+  Column(
+    modifier = Modifier.fillMaxSize(),
+    verticalArrangement = Arrangement.Top,
+  ) {
+    run {
       val drawableId = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
         R.drawable.ic_baseline_arrow_drop_down_24
       } else {
         R.drawable.ic_baseline_arrow_drop_up_24
       }
 
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(iconSize)
-          .kurobaClickable(
-            enabled = replyLayoutEnabled,
-            bounded = false,
-            onClick = {
-              when (replyLayoutVisibility) {
-                ReplyLayoutVisibility.Closed -> {
-                  // no-op
+      val iconScale = remember { FixedScale(2f) }
+
+      Box(modifier = Modifier.size(iconSize)) {
+        KurobaComposeIcon(
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(4.dp)
+            .kurobaClickable(
+              enabled = replyLayoutEnabled,
+              bounded = false,
+              onClick = {
+                when (replyLayoutVisibility) {
+                  ReplyLayoutVisibility.Closed -> {
+                    // no-op
+                  }
+                  ReplyLayoutVisibility.Opened -> onExpandReplyLayoutClicked()
+                  ReplyLayoutVisibility.Expanded -> onCollapseReplyLayoutClicked()
                 }
-                ReplyLayoutVisibility.Opened -> onExpandReplyLayoutClicked()
-                ReplyLayoutVisibility.Expanded -> onCollapseReplyLayoutClicked()
               }
-            }
-          ),
-        drawableId = drawableId,
-        enabled = replyLayoutEnabled
-      )
+            ),
+          drawableId = drawableId,
+          contentScale = iconScale,
+          enabled = replyLayoutEnabled
+        )
+      }
+    }
 
-      run {
-        val buttonDrawableId = remember(key1 = sendReplyState) {
-          if (sendReplyState.canCancel) {
-            R.drawable.ic_baseline_close_24
-          } else {
-            R.drawable.ic_baseline_send_24
-          }
+    run {
+      val buttonDrawableId = remember(key1 = sendReplyState) {
+        if (sendReplyState.canCancel) {
+          R.drawable.ic_baseline_close_24
+        } else {
+          R.drawable.ic_baseline_send_24
         }
+      }
 
-        Box(modifier = Modifier.size(iconSize)) {
-          KurobaComposeIcon(
+      Box(modifier = Modifier.size(iconSize)) {
+        KurobaComposeIcon(
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(4.dp)
+            .kurobaClickable(
+              bounded = false,
+              onClick = {
+                if (sendReplyState.canCancel) {
+                  onCancelReplySendClicked()
+                } else {
+                  onSendReplyClicked()
+                }
+              }
+            ),
+          drawableId = buttonDrawableId
+        )
+
+        if (replySendProgress != null && replySendProgress > 0f) {
+          KurobaComposeLoadingIndicator(
             modifier = Modifier
               .fillMaxSize()
-              .padding(4.dp)
-              .kurobaClickable(
-                bounded = false,
-                onClick = {
-                  if (sendReplyState.canCancel) {
-                    onCancelReplySendClicked()
-                  } else {
-                    onSendReplyClicked()
-                  }
-                }
-              ),
-            drawableId = buttonDrawableId
+              .padding(4.dp),
+            progress = replySendProgress
           )
-
-          if (replySendProgress != null && replySendProgress > 0f) {
-            KurobaComposeLoadingIndicator(
-              modifier = Modifier
-                .fillMaxSize()
-                .padding(4.dp),
-              progress = replySendProgress
-            )
-          }
         }
       }
     }

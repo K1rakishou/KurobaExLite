@@ -210,12 +210,12 @@ class AlbumScreen(
   override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    super.onDisposed(screenDisposeEvent)
-
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       albumScreenViewModel.clearAllImageKeys()
       albumScreenViewModel.clearSelection()
     }
+
+    super.onDisposed(screenDisposeEvent)
   }
 
   @Composable

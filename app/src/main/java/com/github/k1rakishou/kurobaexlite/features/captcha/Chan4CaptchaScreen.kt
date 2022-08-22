@@ -2,10 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.captcha
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,35 +12,40 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.ScaleFactor
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.withScale
+import androidx.core.graphics.withTranslation
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
@@ -51,6 +53,10 @@ import com.github.k1rakishou.kurobaexlite.managers.Captcha
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.elements.FlowMainAxisAlignment
+import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeSnappingSlider
@@ -61,7 +67,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import java.util.Locale
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class Chan4CaptchaScreen(
@@ -76,14 +84,14 @@ class Chan4CaptchaScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    super.onDisposed(screenDisposeEvent)
-
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       chan4CaptchaViewModel.resetCaptchaIfCaptchaIsAlmostDead(chanDescriptor)
       chan4CaptchaViewModel.cleanup()
 
       ScreenCallbackStorage.invokeCallback(screenKey, ON_SCREEN_DISMISSED)
     }
+
+    super.onDisposed(screenDisposeEvent)
   }
 
   @Composable
@@ -124,50 +132,183 @@ class Chan4CaptchaScreen(
     val captchaInfoAsync by chan4CaptchaViewModel.captchaInfoToShow
     val captchaInfo = (captchaInfoAsync as? AsyncData.Data)?.data
 
-    if (captchaInfo != null && !captchaInfo.isNoopChallenge()) {
-      var currentInputValue by captchaInfo.currentInputValue
-      val scrollValueState = captchaInfo.sliderValue
+    if (captchaInfo == null || captchaInfo.isNoopChallenge()) {
+      return
+    }
 
-      KurobaComposeTextField(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight()
-          .padding(horizontal = 16.dp),
-        value = currentInputValue,
-        onValueChange = { newValue -> currentInputValue = newValue.uppercase(Locale.ENGLISH) },
-        keyboardActions = KeyboardActions(
-          onDone = { verifyCaptcha(captchaInfo, currentInputValue) }
-        ),
-        keyboardOptions = KeyboardOptions(
-          autoCorrect = false,
-          keyboardType = KeyboardType.Password
-        ),
-        maxLines = 1,
-        singleLine = true
-      )
+    var currentInputValue by captchaInfo.currentInputValue
+    var prevSolution by remember { mutableStateOf<String?>(null) }
+    val currentCaptchaSolution by captchaInfo.captchaSolution
+    var captchaSuggestions by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    val scrollValueState = captchaInfo.sliderValue
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        snapshotFlow { currentCaptchaSolution }
+          .collectLatest { captchaSolution ->
+            captchaSuggestions = emptyList()
+
+            if (captchaSolution == null) {
+              return@collectLatest
+            }
+
+            val solution = captchaSolution.solutions.firstOrNull()
+
+            if (solution == null || solution.isEmpty()) {
+              snackbarManager.toast(R.string.chan4_captcha_layout_failed_to_find_solution)
+              return@collectLatest
+            }
+
+            if (solution == prevSolution) {
+              return@collectLatest
+            }
+
+            if (captchaSolution.solutions.size > 1) {
+              val duplicates = mutableSetOf<String>()
+              val actualSuggestions = mutableListOf<String>()
+
+              for (suggestion in captchaSolution.solutions) {
+                if (duplicates.add(suggestion)) {
+                  actualSuggestions += suggestion
+                }
+
+                if (actualSuggestions.size >= 10) {
+                  break
+                }
+              }
+
+              if (actualSuggestions.isNotEmpty()) {
+                captchaSuggestions = actualSuggestions
+              }
+            }
+
+            prevSolution = solution
+            currentInputValue = solution
+
+            captchaSolution.sliderOffset?.let { sliderOffset ->
+              scrollValueState.value = sliderOffset.coerceIn(0f, 1f)
+            }
+          }
+      })
+
+    KurobaComposeTextField(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .padding(horizontal = 16.dp),
+      value = currentInputValue,
+      onValueChange = { newValue -> currentInputValue = newValue.uppercase(Locale.ENGLISH) },
+      keyboardActions = KeyboardActions(
+        onDone = { verifyCaptcha(captchaInfo, currentInputValue) }
+      ),
+      keyboardOptions = KeyboardOptions(
+        autoCorrect = false,
+        keyboardType = KeyboardType.Password
+      ),
+      maxLines = 1,
+      singleLine = true
+    )
+
+    if (captchaSuggestions.isNotEmpty()) {
       Spacer(modifier = Modifier.height(8.dp))
 
-      if (captchaInfo.needSlider()) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-          val widthDiff = captchaInfo.widthDiff()
+      CaptchaSuggestions(
+        currentInputValue = currentInputValue,
+        captchaSuggestions = captchaSuggestions,
+        onSuggestionClicked = { clickedSuggestion -> currentInputValue = clickedSuggestion }
+      )
+    }
 
-          val slideSteps = widthDiff
-            ?: (constraints.maxWidth / PIXELS_PER_STEP)
+    Spacer(modifier = Modifier.height(8.dp))
 
-          KurobaComposeSnappingSlider(
-            slideOffsetState = scrollValueState,
-            slideSteps = slideSteps.coerceAtLeast(MIN_SLIDE_STEPS),
-            backgroundColor = chanTheme.backColor,
-            modifier = Modifier
-              .wrapContentHeight()
-              .fillMaxWidth()
-              .padding(horizontal = 16.dp),
-            onValueChange = { newValue -> scrollValueState.value = newValue }
+    if (captchaInfo.needSlider()) {
+      BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        KurobaComposeSnappingSlider(
+          slideOffsetState = scrollValueState,
+          slideSteps = SLIDE_STEPS,
+          backgroundColor = chanTheme.backColor,
+          modifier = Modifier
+            .wrapContentHeight()
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+          onValueChange = { newValue -> scrollValueState.value = newValue }
+        )
+      }
+
+      Spacer(modifier = Modifier.height(8.dp))
+    }
+  }
+
+  @Composable
+  private fun CaptchaSuggestions(
+    currentInputValue: String,
+    captchaSuggestions: List<String>,
+    onSuggestionClicked: (String) -> Unit
+  ) {
+    FlowRow(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .padding(horizontal = 16.dp),
+      mainAxisAlignment = FlowMainAxisAlignment.Center,
+      mainAxisSpacing = 4.dp,
+      crossAxisSpacing = 4.dp
+    ) {
+      for (captchaSuggestion in captchaSuggestions) {
+        key(captchaSuggestion) {
+          CaptchaSuggestion(
+            currentInputValue = currentInputValue,
+            captchaSuggestion = captchaSuggestion,
+            onSuggestionClicked = onSuggestionClicked
           )
         }
+      }
+    }
+  }
 
-        Spacer(modifier = Modifier.height(8.dp))
+  @Composable
+  private fun CaptchaSuggestion(
+    currentInputValue: String,
+    captchaSuggestion: String,
+    onSuggestionClicked: (String) -> Unit
+  ) {
+    val chanTheme = LocalChanTheme.current
+
+    Row(
+      modifier = Modifier.wrapContentSize()
+    ) {
+      val bgColor = remember(key1 = currentInputValue, key2 = captchaSuggestion) {
+        if (currentInputValue.equals(captchaSuggestion, ignoreCase = true)) {
+          chanTheme.accentColor
+        } else {
+          chanTheme.backColorSecondary
+        }
+      }
+
+      val textColor = remember(key1 = bgColor) {
+        if (ThemeEngine.isDarkColor(bgColor)) {
+          Color.White
+        } else {
+          Color.Black
+        }
+      }
+
+      KurobaComposeCardView(
+        modifier = Modifier
+          .wrapContentSize()
+          .kurobaClickable(bounded = true, onClick = { onSuggestionClicked(captchaSuggestion) }),
+        backgroundColor = bgColor,
+        shape = remember { RoundedCornerShape(4.dp) }
+      ) {
+        Text(
+          modifier = Modifier
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+          text = captchaSuggestion,
+          color = textColor,
+          fontSize = 18.sp
+        )
       }
     }
   }
@@ -175,6 +316,9 @@ class Chan4CaptchaScreen(
   @Composable
   private fun BuildCaptchaWindowFooter() {
     val captchaInfoAsync by chan4CaptchaViewModel.captchaInfoToShow
+    val solvingInProgress by chan4CaptchaViewModel.solvingInProgress
+    val captchaSolverInstalled by chan4CaptchaViewModel.captchaSolverInstalled
+
     val captchaInfo = (captchaInfoAsync as? AsyncData.Data)?.data
 
     Row(
@@ -194,30 +338,46 @@ class Chan4CaptchaScreen(
         )
       }
 
+      Spacer(modifier = Modifier.width(8.dp))
+
+      KurobaComposeTextBarButton(
+        text = stringResource(id = R.string.chan4_captcha_layout_reload),
+        enabled = !solvingInProgress,
+        onClick = {
+          chan4CaptchaViewModel.requestCaptcha(chanDescriptor, forced = true)
+        }
+      )
+
       Spacer(modifier = Modifier.weight(1f))
 
       KurobaComposeTextBarButton(
-        modifier = Modifier.wrapContentSize(),
         onClick = {
-          chan4CaptchaViewModel.requestCaptcha(chanDescriptor, forced = true)
+          if (captchaInfo?.captchaInfoRawString != null) {
+            chan4CaptchaViewModel.solveCaptcha(
+              captchaInfoRawString = captchaInfo.captchaInfoRawString,
+              sliderOffset = captchaInfo.sliderValue.value
+            )
+          }
         },
-        text = stringResource(id = R.string.chan4_captcha_layout_reload)
+        text = stringResource(id = R.string.chan4_captcha_layout_solve),
+        enabled = !solvingInProgress &&
+          captchaSolverInstalled &&
+          captchaInfo != null &&
+          captchaInfo.captchaInfoRawString != null
       )
 
       Spacer(modifier = Modifier.width(8.dp))
 
-      val buttonEnabled = captchaInfo != null
-        && (captchaInfo.isNoopChallenge() || captchaInfo.currentInputValue.value.isNotEmpty())
-
       KurobaComposeTextBarButton(
-        modifier = Modifier.wrapContentSize(),
         onClick = {
           val currentInputValue = captchaInfo?.currentInputValue
             ?: return@KurobaComposeTextBarButton
 
           verifyCaptcha(captchaInfo, currentInputValue.value)
         },
-        enabled = buttonEnabled,
+        enabled = captchaInfo != null
+          && (captchaInfo.isNoopChallenge() || captchaInfo.currentInputValue.value.isNotEmpty())
+          && !solvingInProgress,
         text = stringResource(id = R.string.chan4_captcha_layout_verify)
       )
 
@@ -228,12 +388,9 @@ class Chan4CaptchaScreen(
   @Composable
   private fun BuildCaptchaWindowImageOrText() {
     val captchaInfoAsync by chan4CaptchaViewModel.captchaInfoToShow
-    var height by remember { mutableStateOf(160.dp) }
 
     BoxWithConstraints(
-      modifier = Modifier
-        .wrapContentHeight()
-        .height(height)
+      modifier = Modifier.wrapContentSize()
     ) {
       val size = with(LocalDensity.current) {
         remember(key1 = maxWidth, key2 = maxHeight) {
@@ -245,12 +402,19 @@ class Chan4CaptchaScreen(
         val captchaInfo = when (val cia = captchaInfoAsync) {
           AsyncData.Uninitialized,
           AsyncData.Loading -> {
-            KurobaComposeLoadingIndicator()
+            KurobaComposeLoadingIndicator(
+              modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = 16.dp),
+            )
+
             null
           }
           is AsyncData.Error -> {
             KurobaComposeError(
-              modifier = Modifier.fillMaxSize(),
+              modifier = Modifier
+                .fillMaxSize()
+                .padding(vertical = 16.dp),
               errorMessage = cia.error.errorMessageOrClassName()
             )
 
@@ -261,10 +425,12 @@ class Chan4CaptchaScreen(
 
         if (captchaInfo != null) {
           if (captchaInfo.isNoopChallenge()) {
-            Box(modifier = Modifier
-              .fillMaxWidth()
-              .height(128.dp)
-              .align(Alignment.Center)
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(128.dp)
+                .align(Alignment.Center)
+                .padding(vertical = 16.dp)
             ) {
               KurobaComposeText(
                 text = stringResource(id = R.string.chan4_captcha_layout_verification_not_required),
@@ -274,7 +440,6 @@ class Chan4CaptchaScreen(
               )
             }
           } else {
-            height = 160.dp
             BuildCaptchaImageNormal(captchaInfo, size)
           }
         }
@@ -287,54 +452,41 @@ class Chan4CaptchaScreen(
     captchaInfo: Chan4CaptchaViewModel.CaptchaInfo,
     size: IntSize
   ) {
-    val imgBitmapPainter = captchaInfo.imgBitmapPainter!!
+    val density = LocalDensity.current
 
-    val scale = Math.min(
-      size.width.toFloat() / imgBitmapPainter.intrinsicSize.width,
-      size.height.toFloat() / imgBitmapPainter.intrinsicSize.height
-    )
+    val width = captchaInfo.imgBitmap!!.width
+    val height = captchaInfo.imgBitmap.height
+    val th = 80
+    val pw = 16
+    val canvasScale = (th / height)
+    val canvasHeight = th
+    val canvasWidth = width * canvasScale + pw * 2
 
-    val contentScale = Scale(scale)
-    var scrollValue by captchaInfo.sliderValue
+    val scale = Math.min(size.width.toFloat() / width, size.height.toFloat() / height)
+    val canvasWidthDp = with(density) { (canvasWidth * scale).toDp() }
+    val canvasHeightDp = with(density) { (canvasHeight * scale).toDp() }
 
-    if (captchaInfo.bgBitmapPainter != null) {
-      val bgBitmapPainter = captchaInfo.bgBitmapPainter
-      val offset = remember(key1 = scrollValue) {
-        val xOffset = (captchaInfo.bgInitialOffset + MIN_OFFSET + (scrollValue * MAX_OFFSET * -1f)).toInt()
-        IntOffset(x = xOffset, y = 0)
-      }
+    val scrollValue by captchaInfo.sliderValue
 
-      Image(
-        modifier = Modifier
-          .fillMaxSize()
-          .offset { offset },
-        painter = bgBitmapPainter,
-        contentScale = contentScale,
-        contentDescription = null,
-      )
-    }
-
-    val scrollState = rememberScrollableState { delta ->
-      var newScrollValue = scrollValue + ((delta * 2f) / size.width.toFloat())
-
-      if (newScrollValue < 0f) {
-        newScrollValue = 0f
-      } else if (newScrollValue > 1f) {
-        newScrollValue = 1f
-      }
-
-      scrollValue = newScrollValue
-
-      return@rememberScrollableState delta
-    }
-
-    Image(
+    Canvas(
       modifier = Modifier
-        .fillMaxSize()
-        .scrollable(state = scrollState, orientation = Orientation.Horizontal),
-      painter = captchaInfo.imgBitmapPainter,
-      contentScale = contentScale,
-      contentDescription = null
+        .size(canvasWidthDp, canvasHeightDp)
+        .clipToBounds(),
+      onDraw = {
+        val canvas = drawContext.canvas.nativeCanvas
+
+        canvas.withScale(x = scale, y = scale) {
+          drawRect(Color(0xFFEEEEEE.toInt()))
+
+          if (captchaInfo.bgBitmap != null) {
+            canvas.withTranslation(x = (scrollValue * captchaInfo.widthDiff() * -1)) {
+              canvas.drawBitmap(captchaInfo.bgBitmap, 0f, 0f, null)
+            }
+          }
+
+          canvas.drawBitmap(captchaInfo.imgBitmap, 0f, 0f, null)
+        }
+      }
     )
   }
 
@@ -367,14 +519,6 @@ class Chan4CaptchaScreen(
     stopPresenting()
   }
 
-  class Scale(
-    private val scale: Float
-  ) : ContentScale {
-    override fun computeScaleFactor(srcSize: Size, dstSize: Size): ScaleFactor {
-      return ScaleFactor(scale, scale)
-    }
-  }
-
   companion object {
     const val CHAN_DESCRIPTOR_ARG = "chan_descriptor"
 
@@ -383,11 +527,7 @@ class Chan4CaptchaScreen(
 
     val SCREEN_KEY = ScreenKey("Chan4CaptchaScreen")
 
-    private const val MIN_OFFSET = 100f
-    private const val MAX_OFFSET = 400f
-
-    private const val MIN_SLIDE_STEPS = 25
-    private const val PIXELS_PER_STEP = 50
+    private const val SLIDE_STEPS = 50
   }
 
 }

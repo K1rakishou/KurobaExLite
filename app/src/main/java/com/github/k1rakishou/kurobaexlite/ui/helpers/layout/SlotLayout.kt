@@ -139,29 +139,35 @@ fun SlotLayout(
         }
       }
 
-      var maxWidth = 0f
-      var totalHeight = 0f
+      var resultWidth = 0f
+      var resultHeight = 0f
 
       when (layoutOrientation) {
         LayoutOrientation.Horizontal -> {
-          maxWidth = placeables.fold(0f) { acc, placeable ->
+          // Total sum of children's width
+          resultWidth = placeables.fold(0f) { acc, placeable ->
             acc + (placeable?.width?.toFloat() ?: 0f )
           }
-          totalHeight = placeables.fold(0f) { acc, placeable ->
+
+          // Max height
+          resultHeight = placeables.fold(0f) { acc, placeable ->
             Math.max(acc, placeable?.height?.toFloat() ?: 0f)
           }
         }
         LayoutOrientation.Vertical -> {
-          maxWidth = placeables.fold(0f) { acc, placeable ->
+          // Max width
+          resultWidth = placeables.fold(0f) { acc, placeable ->
             Math.max(acc, placeable?.width?.toFloat() ?: 0f)
           }
-          totalHeight = placeables.fold(0f) { acc, placeable ->
+
+          // Total sum of children's height
+          resultHeight = placeables.fold(0f) { acc, placeable ->
             acc + (placeable?.height?.toFloat() ?: 0f )
           }
         }
       }
 
-      return@SubcomposeLayout layout(maxWidth.toInt(), totalHeight.toInt()) {
+      return@SubcomposeLayout layout(resultWidth.toInt(), resultHeight.toInt()) {
         when (layoutOrientation) {
           LayoutOrientation.Horizontal -> {
             var takenWidth = 0

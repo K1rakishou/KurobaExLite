@@ -16,6 +16,7 @@ import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaSolverHelper
 import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaViewModel
 import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
@@ -211,6 +212,8 @@ object DependencyGraph {
         persistBookmarks = get(),
       )
     }
+
+    single { Chan4CaptchaSolverHelper(moshi = get(), appContext = get()) }
   }
 
   private fun Module.managers() {

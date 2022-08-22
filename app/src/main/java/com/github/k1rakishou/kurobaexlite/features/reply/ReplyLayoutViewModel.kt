@@ -222,7 +222,7 @@ class ReplyLayoutViewModel(
 
           val message = appResources.string(R.string.reply_view_model_reply_send_canceled_by_user)
           replyLayoutState.replyShowErrorToast(message)
-          replyLayoutState.onReplySendCanceled()
+          replyLayoutState.onReplySendFinishedUnsuccesfully()
         } else {
           logcatError(TAG) { "sendReply($screenKey) error: ${error.asLogIfImportantOrErrorMessage()}" }
 
@@ -232,7 +232,7 @@ class ReplyLayoutViewModel(
           )
 
           replyLayoutState.replyShowErrorToast(message)
-          replyLayoutState.onReplySendEndedWithError()
+          replyLayoutState.onReplySendFinishedUnsuccesfully()
         }
       } finally {
         replyLayoutState.onReplyProgressChanged(null)
@@ -335,17 +335,17 @@ class ReplyLayoutViewModel(
             }
           }
 
-          replyLayoutState.onReplySendEndedWithError()
+          replyLayoutState.onReplySendFinishedUnsuccesfully()
         }
         is ReplyResponse.Banned -> {
           val message = appResources.string(R.string.reply_view_model_you_are_banned_error, replyResponse.banMessage)
           replyLayoutState.replyShowErrorToast(message)
-          replyLayoutState.onReplySendEndedWithError()
+          replyLayoutState.onReplySendFinishedUnsuccesfully()
         }
         is ReplyResponse.Error -> {
           val message = appResources.string(R.string.reply_view_model_unknown_posting_error, replyResponse.errorMessage)
           replyLayoutState.replyShowErrorToast(message)
-          replyLayoutState.onReplySendEndedWithError()
+          replyLayoutState.onReplySendFinishedUnsuccesfully()
         }
         is ReplyResponse.RateLimited -> {
           val message = appResources.string(
@@ -354,7 +354,7 @@ class ReplyLayoutViewModel(
           )
 
           replyLayoutState.replyShowErrorToast(message)
-          replyLayoutState.onReplySendEndedWithError()
+          replyLayoutState.onReplySendFinishedUnsuccesfully()
         }
         is ReplyResponse.Success -> {
           val postDescriptor = replyResponse.postDescriptor
@@ -367,7 +367,7 @@ class ReplyLayoutViewModel(
           )
 
           showToast(chanDescriptor, appResources.string(R.string.reply_view_model_reply_sent_successfully))
-          replyLayoutState.onReplySendEndedSuccessfully(postDescriptor)
+          replyLayoutState.onReplySendFinishedSuccessfully(postDescriptor)
           logcat(TAG) { "sendReply($screenKey) success postDescriptor: ${postDescriptor}" }
         }
       }

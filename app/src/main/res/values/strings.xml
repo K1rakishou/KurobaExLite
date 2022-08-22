@@ -178,9 +178,11 @@
     <string name="post_search_longtap_menu_add_to_history">Add to history</string>
 
     <string name="chan4_captcha_layout_reload">Reload</string>
+    <string name="chan4_captcha_layout_solve">Solve</string>
     <string name="chan4_captcha_layout_verify">Verify</string>
     <string name="chan4_captcha_layout_verification_not_required">Verification is not required! Just click \"Verify\", it\'s free!</string>
     <string name="chan4_captcha_layout_captcha_already_expired">The captcha has already expired</string>
+    <string name="chan4_captcha_layout_failed_to_find_solution">Failed to find captcha solution</string>
 
     <string name="reply_view_model_site_not_found">Site for key \'%1$s\' not found</string>
     <string name="reply_view_model_site_does_not_support_posting">Site \'%1$s\' does not support posting</string>

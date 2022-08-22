@@ -33,15 +33,15 @@ class RetrieveSiteCatalogList(
       }
 
       if (!forceReload) {
-        logcat(TAG) { "Reading from disk..." }
+        logcat(TAG) { "Reading from database..." }
 
         val readCatalogsResult = kurobaExLiteDatabase.call { chanCatalogDao.selectAllForSiteOrdered(siteKey.key) }
         if (readCatalogsResult.isSuccess) {
-          logcat(TAG) { "Reading from disk... SUCCESS" }
+          logcat(TAG) { "Reading from database... SUCCESS" }
 
           val catalogListFromDatabase = readCatalogsResult.getOrThrow()
           if (catalogListFromDatabase.isNotEmpty()) {
-            logcat(TAG) { "Got catalogs from database: count=${catalogListFromDatabase.size}" }
+            logcat(TAG) { "Got catalogs from the database: count=${catalogListFromDatabase.size}" }
 
             val chanCatalogsFromDatabase = catalogListFromDatabase
               .sortedBy { catalogEntity -> catalogEntity.chanCatalogSortOrderEntity.sortOrder }
@@ -56,7 +56,8 @@ class RetrieveSiteCatalogList(
           // fallthrough
         } else {
           logcat(TAG) {
-            "Reading from disk...ERROR, error=${readCatalogsResult.exceptionOrThrow().errorMessageOrClassName()}"
+            "Reading from database...ERROR, " +
+              "error=${readCatalogsResult.exceptionOrThrow().errorMessageOrClassName()}"
           }
 
           // fallthrough

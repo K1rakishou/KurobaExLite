@@ -77,7 +77,7 @@ class SnackbarManager(
   // A toast is a snack too
   fun toast(
     @StringRes messageId: Int,
-    screenKey: ScreenKey,
+    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
     toastId: String = nextToastId(),
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {

@@ -61,8 +61,6 @@ class FloatingMenuScreen(
   override val contentAlignment: Alignment = touchPositionDependantAlignment
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    super.onDisposed(screenDisposeEvent)
-
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       val callbacksWereEmpty = callbacksToInvokeMap.isEmpty()
 
@@ -77,6 +75,8 @@ class FloatingMenuScreen(
         onDismiss()
       }
     }
+
+    super.onDisposed(screenDisposeEvent)
   }
 
   @Composable

@@ -64,6 +64,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
@@ -407,7 +408,7 @@ private fun KurobaComposeButton(
 
 @Composable
 fun KurobaComposeTextBarButton(
-  modifier: Modifier,
+  modifier: Modifier = Modifier,
   text: String,
   enabled: Boolean = true,
   customTextColor: Color? = null,
@@ -543,7 +544,8 @@ fun KurobaComposeIcon(
   @DrawableRes drawableId: Int,
   colorBehindIcon: Color? = null,
   iconColor: Color? = null,
-  enabled: Boolean = true
+  enabled: Boolean = true,
+  contentScale: ContentScale = ContentScale.Fit,
 ) {
   val chanTheme = LocalChanTheme.current
   val alpha = if (enabled) 1f else ContentAlpha.disabled
@@ -570,6 +572,7 @@ fun KurobaComposeIcon(
       .then(modifier),
     painter = painterResource(id = drawableId),
     colorFilter = ColorFilter.tint(tintColor),
+    contentScale = contentScale,
     contentDescription = null
   )
 }
@@ -814,4 +817,22 @@ fun KurobaComposeSwitch(
     onCheckedChange = onCheckedChange,
     colors = chanTheme.switchColors()
   )
+}
+
+@Composable
+fun KurobaComposeCardView(
+  modifier: Modifier = Modifier,
+  backgroundColor: Color? = null,
+  shape: Shape = RoundedCornerShape(2.dp),
+  content: @Composable () -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+
+  Card(
+    modifier = modifier,
+    shape = shape,
+    backgroundColor = backgroundColor ?: chanTheme.backColor
+  ) {
+    content()
+  }
 }

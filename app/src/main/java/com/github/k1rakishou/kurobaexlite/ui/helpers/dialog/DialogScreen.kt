@@ -62,11 +62,11 @@ class DialogScreen(
   override val screenKey: ScreenKey = dialogScreeKey
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    super.onDisposed(screenDisposeEvent)
-
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       onDismissed?.invoke()
     }
+
+    super.onDisposed(screenDisposeEvent)
   }
 
   @OptIn(ExperimentalComposeUiApi::class)

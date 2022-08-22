@@ -148,11 +148,11 @@ class MediaViewerScreen(
     }
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    super.onDisposed(screenDisposeEvent)
-
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       mediaViewerScreenViewModel.destroy()
     }
+
+    super.onDisposed(screenDisposeEvent)
   }
 
   @Composable

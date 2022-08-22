@@ -202,7 +202,8 @@ abstract class ComposeScreen protected constructor(
   }
 
   /**
-   * [onCreated] is called after the disposing animation finished playing
+   * [onCreated] is called after the disposing animation finished playing.
+   * When overriding, the "super" method must be called at the end of the overridden onDisposed() method.
    * */
   @CallSuper
   protected open fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
@@ -279,7 +280,7 @@ abstract class ComposeScreen protected constructor(
       componentActivity: ComponentActivity,
       navigationRouter: NavigationRouter,
       noinline args: (Bundle.() -> Unit)? = null,
-      noinline callbacks: ( CallbackBuilder.() -> Unit)? = null
+      noinline callbacks: (CallbackBuilder.() -> Unit)? = null
     ): T {
       return createScreenInternal(
         screenClass = T::class,
@@ -295,7 +296,7 @@ abstract class ComposeScreen protected constructor(
       componentActivity: ComponentActivity,
       navigationRouter: NavigationRouter,
       args: (Bundle.() -> Unit)? = null,
-      callbacks: ( CallbackBuilder.() -> Unit)? = null
+      callbacks: (CallbackBuilder.() -> Unit)? = null
     ): T {
       val constructor = screenClass.constructors.firstOrNull()
       if (constructor == null) {

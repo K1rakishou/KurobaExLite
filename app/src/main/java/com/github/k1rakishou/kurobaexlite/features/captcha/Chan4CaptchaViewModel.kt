@@ -1,20 +1,24 @@
 package com.github.k1rakishou.kurobaexlite.features.captcha
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
+import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
+import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
+import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -35,6 +39,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.logcat
 import okhttp3.Request
+import org.koin.java.KoinJavaComponent.inject
 
 class Chan4CaptchaViewModel(
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
@@ -42,12 +47,22 @@ class Chan4CaptchaViewModel(
   private val moshi: Moshi,
   private val catalogManager: CatalogManager
 ) : BaseViewModel() {
+  private val chan4CaptchaSolverHelper: Chan4CaptchaSolverHelper by inject(Chan4CaptchaSolverHelper::class.java)
+
   private var activeJob: Job? = null
   private var captchaTtlUpdateJob: Job? = null
 
   private val _captchaTtlMillisFlow = MutableStateFlow(-1L)
   val captchaTtlMillisFlow: StateFlow<Long>
     get() = _captchaTtlMillisFlow.asStateFlow()
+
+  private var _captchaSolverInstalled = mutableStateOf<Boolean>(false)
+  val captchaSolverInstalled: State<Boolean>
+    get() = _captchaSolverInstalled
+
+  private var _solvingInProgress = mutableStateOf<Boolean>(false)
+  val solvingInProgress: State<Boolean>
+    get() = _solvingInProgress
 
   private val captchaInfoCache = mutableMapOf<ChanDescriptor, CaptchaInfo>()
 
@@ -119,6 +134,9 @@ class Chan4CaptchaViewModel(
     activeJob = viewModelScope.launch(Dispatchers.Default) {
       captchaInfoToShow.value = AsyncData.Loading
 
+      val chan4CaptchaSolverInfo = chan4CaptchaSolverHelper.checkCaptchaSolverInstalled()
+      _captchaSolverInstalled.value = chan4CaptchaSolverInfo == CaptchaSolverInfo.Installed
+
       runCatching { requestCaptchaInternal(chanDescriptor) }
         .onFailure { error ->
           logcatError(TAG) { "requestCaptcha() error=${error.errorMessageOrClassName()}" }
@@ -142,6 +160,34 @@ class Chan4CaptchaViewModel(
         }
 
       activeJob = null
+    }
+  }
+
+  fun solveCaptcha(captchaInfoRawString: String, sliderOffset: Float) {
+    viewModelScope.launch {
+      if (!_captchaSolverInstalled.value) {
+        return@launch
+      }
+
+      val currentCaptchaInfo = (captchaInfoToShow.value as? AsyncData.Data)?.data
+        ?: return@launch
+
+      _solvingInProgress.value = true
+
+      val captchaSolution = try {
+        chan4CaptchaSolverHelper.autoSolveCaptcha(
+          captchaInfoRawString = captchaInfoRawString,
+          sliderOffset = sliderOffset
+        )
+      } finally {
+        _solvingInProgress.value = false
+      }
+
+      if (captchaSolution == null) {
+        return@launch
+      }
+
+      currentCaptchaInfo.captchaSolution.value = captchaSolution
     }
   }
 
@@ -206,23 +252,17 @@ class Chan4CaptchaViewModel(
     val request = requestBuilder.build()
     val captchaInfoRawAdapter = moshi.adapter(CaptchaInfoRaw::class.java)
 
-    val captchaInfoRawResult = proxiedOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
-      request = request,
-      adapter = captchaInfoRawAdapter
-    )
-
-    val captchaInfoRaw = if (captchaInfoRawResult.isFailure) {
-      val error = captchaInfoRawResult.exceptionOrThrow()
-      logcatError(TAG) {
-        "requestCaptchaInternal($chanDescriptor) get captcha from server " +
-          "error: ${error.errorMessageOrClassName()}"
-      }
-
-      throw error
-    } else {
-      captchaInfoRawResult.getOrThrow()
+    val response = proxiedOkHttpClient.okHttpClient().suspendCall(request).unwrap()
+    if (!response.isSuccessful) {
+      throw BadStatusResponseException(response.code)
     }
 
+    val captchaInfoRawString = response.body?.string()
+    if (captchaInfoRawString == null) {
+      throw EmptyBodyResponseException()
+    }
+
+    val captchaInfoRaw = captchaInfoRawAdapter.fromJson(captchaInfoRawString)
     if (captchaInfoRaw == null) {
       throw IOException("Failed to convert json to CaptchaInfoRaw")
     }
@@ -240,51 +280,53 @@ class Chan4CaptchaViewModel(
 
       return CaptchaInfo(
         chanDescriptor = chanDescriptor,
-        bgBitmapPainter = null,
-        imgBitmapPainter = null,
+        bgBitmap = null,
+        imgBitmap = null,
         challenge = NOOP_CHALLENGE,
         startedAt = System.currentTimeMillis(),
         ttlSeconds = captchaInfoRaw.ttlSeconds(),
-        bgInitialOffset = 0f,
         imgWidth = null,
-        bgWidth = null
+        bgWidth = null,
+        captchaInfoRawString = null,
+        captchaSolution = null
       )
     }
 
-    val bgBitmapPainter = captchaInfoRaw.bg?.let { bgBase64Img ->
+    val captchaSolution = if (_captchaSolverInstalled.value) {
+      chan4CaptchaSolverHelper.autoSolveCaptcha(captchaInfoRawString, null)
+    } else {
+      null
+    }
+
+    val bgBitmap = captchaInfoRaw.bg?.let { bgBase64Img ->
       val bgByteArray = Base64.decode(bgBase64Img, Base64.DEFAULT)
       val bitmap = BitmapFactory.decodeByteArray(bgByteArray, 0, bgByteArray.size)
 
-      return@let BitmapPainter(bitmap.asImageBitmap())
+      val bgImageBitmap = replaceColor(
+        src = bitmap,
+        fromColor = CAPTCHA_DEFAULT_BG_COLOR.toArgb(),
+        targetColor = CAPTCHA_CONTRAST_BG_COLOR.toArgb()
+      )
+
+      return@let bgImageBitmap
     }
 
-    val imgBitmapPainter = captchaInfoRaw.img?.let { imgBase64Img ->
+    val imgBitmap = captchaInfoRaw.img?.let { imgBase64Img ->
       val bgByteArray = Base64.decode(imgBase64Img, Base64.DEFAULT)
-      val imgImageBitmap = BitmapFactory.decodeByteArray(bgByteArray, 0, bgByteArray.size).asImageBitmap()
-
-      return@let BitmapPainter(imgImageBitmap)
-    }
-
-    val bgInitialOffset = if (captchaInfoRaw.bgWidth != null && captchaInfoRaw.imgWidth != null) {
-      if (captchaInfoRaw.bgWidth > captchaInfoRaw.imgWidth) {
-        captchaInfoRaw.bgWidth - captchaInfoRaw.imgWidth
-      } else {
-        captchaInfoRaw.imgWidth - captchaInfoRaw.bgWidth
-      }
-    } else {
-      0
+      return@let BitmapFactory.decodeByteArray(bgByteArray, 0, bgByteArray.size)
     }
 
     return CaptchaInfo(
       chanDescriptor = chanDescriptor,
-      bgBitmapPainter = bgBitmapPainter,
-      imgBitmapPainter = imgBitmapPainter!!,
+      bgBitmap = bgBitmap,
+      imgBitmap = imgBitmap!!,
       challenge = captchaInfoRaw.challenge!!,
       startedAt = System.currentTimeMillis(),
       ttlSeconds = captchaInfoRaw.ttl!!,
-      bgInitialOffset = bgInitialOffset.toFloat(),
       imgWidth = captchaInfoRaw.imgWidth,
-      bgWidth = captchaInfoRaw.bgWidth
+      bgWidth = captchaInfoRaw.bgWidth,
+      captchaInfoRawString = captchaInfoRawString,
+      captchaSolution = captchaSolution
     )
   }
 
@@ -319,6 +361,25 @@ class Chan4CaptchaViewModel(
     }
 
     return captchaInfo
+  }
+
+  private fun replaceColor(src: Bitmap, fromColor: Int, targetColor: Int): Bitmap {
+    val width = src.width
+    val height = src.height
+    val pixels = IntArray(width * height)
+    src.getPixels(pixels, 0, width, 0, 0, width, height)
+
+    for (x in pixels.indices) {
+      pixels[x] = if (pixels[x] == fromColor) {
+        targetColor
+      } else {
+        pixels[x]
+      }
+    }
+
+    val result = Bitmap.createBitmap(width, height, src.config)
+    result.setPixels(pixels, 0, width, 0, 0, width, height)
+    return result
   }
 
   @JsonClass(generateAdapter = true)
@@ -360,29 +421,26 @@ class Chan4CaptchaViewModel(
 
   class CaptchaInfo(
     val chanDescriptor: ChanDescriptor,
-    val bgBitmapPainter: BitmapPainter?,
-    val imgBitmapPainter: BitmapPainter?,
+    val bgBitmap: Bitmap?,
+    val imgBitmap: Bitmap?,
     val challenge: String,
     val startedAt: Long,
     val ttlSeconds: Int,
-    val bgInitialOffset: Float,
     val imgWidth: Int?,
-    val bgWidth: Int?
+    val bgWidth: Int?,
+    val captchaInfoRawString: String?,
+    captchaSolution: Chan4CaptchaSolverHelper.CaptchaSolution?
   ) {
     var currentInputValue = mutableStateOf<String>("")
     var sliderValue = mutableStateOf(0f)
+    val captchaSolution = mutableStateOf<Chan4CaptchaSolverHelper.CaptchaSolution?>(captchaSolution)
 
-    fun widthDiff(): Int? {
+    fun widthDiff(): Int {
       if (imgWidth == null || bgWidth == null) {
-        return null
+        return 0
       }
 
-      val diff = abs(imgWidth - bgWidth)
-      if (diff == 0) {
-        return null
-      }
-
-      return diff
+      return abs(imgWidth - bgWidth)
     }
 
     fun reset() {
@@ -390,7 +448,7 @@ class Chan4CaptchaViewModel(
       sliderValue.value = 0f
     }
 
-    fun needSlider(): Boolean = bgBitmapPainter != null
+    fun needSlider(): Boolean = bgBitmap != null
 
     fun ttlMillis(): Long {
       val ttlMillis = ttlSeconds * 1000L
@@ -414,6 +472,9 @@ class Chan4CaptchaViewModel(
 
     private const val MIN_TTL_TO_NOT_REQUEST_NEW_CAPTCHA = 25_000L // 25 seconds
     private const val MIN_TTL_TO_RESET_CAPTCHA = 5_000L // 5 seconds
+
+    val CAPTCHA_DEFAULT_BG_COLOR = Color(0xFFEEEEEEL.toInt())
+    val CAPTCHA_CONTRAST_BG_COLOR = Color(0xFFE0224E.toInt())
 
     const val NOOP_CHALLENGE = "noop"
   }

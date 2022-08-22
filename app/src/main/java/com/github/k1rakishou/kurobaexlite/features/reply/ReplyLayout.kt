@@ -114,12 +114,6 @@ fun ReplyLayoutContainer(
     }
   )
 
-  val replyLayoutEnabled = when (sendReplyState) {
-    SendReplyState.Started,
-    is SendReplyState.ReplySent -> false
-    is SendReplyState.Finished -> true
-  }
-
   Box(
     modifier = Modifier
       .fillMaxSize()
@@ -179,7 +173,6 @@ fun ReplyLayoutContainer(
       }
 
       ReplyLayout(
-        replyLayoutEnabled = replyLayoutEnabled,
         replyLayoutState = replyLayoutState,
         replyLayoutHeight = replyLayoutHeightClampedDp,
         replyLayoutVisibility = replyLayoutVisibility,
@@ -201,7 +194,6 @@ fun ReplyLayoutContainer(
 
 @Composable
 private fun ReplyLayout(
-  replyLayoutEnabled: Boolean,
   replyLayoutState: ReplyLayoutState,
   replyLayoutHeight: Dp,
   replyLayoutVisibility: ReplyLayoutVisibility,
@@ -216,9 +208,6 @@ private fun ReplyLayout(
   if (replyLayoutHeight < 0.dp) {
     return
   }
-
-  val replyText by replyLayoutState.replyText
-  val sendReplyState by replyLayoutState.sendReplyState
 
   Column(
     modifier = Modifier
@@ -241,13 +230,9 @@ private fun ReplyLayout(
 
     ReplyInputWithButtons(
       height = replyInputHeight,
-      replyLayoutEnabled = replyLayoutEnabled,
-      replyText = replyText,
       replyLayoutState = replyLayoutState,
-      replyLayoutVisibility = replyLayoutVisibility,
       onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
       onCollapseReplyLayoutClicked = onCollapseReplyLayoutClicked,
-      sendReplyState = sendReplyState,
       onCancelReplySendClicked = onCancelReplySendClicked,
       onSendReplyClicked = onSendReplyClicked
     )

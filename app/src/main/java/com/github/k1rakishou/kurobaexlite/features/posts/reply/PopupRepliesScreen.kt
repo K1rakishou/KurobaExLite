@@ -453,11 +453,11 @@ class PopupRepliesScreen(
   }
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    super.onDisposed(screenDisposeEvent)
-
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       popupRepliesScreenViewModel.clearPostReplyChainStack()
     }
+
+    super.onDisposed(screenDisposeEvent)
   }
 
   enum class Anchors {

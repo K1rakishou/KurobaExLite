@@ -166,7 +166,7 @@ class ReplyLayoutState(
     _replySendProgressState.value = progress
   }
 
-  fun onReplySendEndedSuccessfully(postDescriptor: PostDescriptor) {
+  fun onReplySendFinishedSuccessfully(postDescriptor: PostDescriptor) {
     Snapshot.withMutableSnapshot {
       _attachedMediaList.forEach { attachedMedia -> attachedMedia.deleteFile() }
 
@@ -182,16 +182,8 @@ class ReplyLayoutState(
     }
   }
 
-  fun onReplySendCanceled() {
-    Snapshot.withMutableSnapshot {
-      _sendReplyState.value = SendReplyState.Finished
-    }
-  }
-
-  fun onReplySendEndedWithError() {
-    Snapshot.withMutableSnapshot {
-      _sendReplyState.value = SendReplyState.Finished
-    }
+  fun onReplySendFinishedUnsuccesfully() {
+    _sendReplyState.value = SendReplyState.Finished
   }
 
   fun attachMedia(attachedMedia: AttachedMedia) {
