@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    compileSdk 32
+    compileSdk 33
 
     productFlavors.all {
         ext.apkVersionNameSuffix = null
@@ -15,7 +15,7 @@ android {
     defaultConfig {
         applicationId "com.github.k1rakishou.kurobaexlite"
         minSdk 21
-        targetSdk 31
+        targetSdk 32
         versionCode 10003
         versionName "1.0.3"
         archivesBaseName = "KurobaExLite"
