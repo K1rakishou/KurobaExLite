@@ -143,15 +143,20 @@ class ReplyLayoutViewModel(
     )
   }
 
-  fun showToast(chanDescriptor: ChanDescriptor, message: String) {
+  fun showToast(chanDescriptor: ChanDescriptor, message: String, toastId: String? = null) {
+    showToast(chanDescriptor, ReplyLayoutState.ToastMessage(message, toastId))
+  }
+
+  fun showToast(chanDescriptor: ChanDescriptor, toastMessage: ReplyLayoutState.ToastMessage) {
     val screenKey = when (chanDescriptor) {
       is CatalogDescriptor -> CatalogScreen.SCREEN_KEY
       is ThreadDescriptor -> ThreadScreen.SCREEN_KEY
     }
 
     snackbarManager.toast(
-      message = message,
-      screenKey = screenKey
+      message = toastMessage.message,
+      screenKey = screenKey,
+      toastId = toastMessage.toastId ?: SnackbarManager.nextToastId()
     )
   }
 

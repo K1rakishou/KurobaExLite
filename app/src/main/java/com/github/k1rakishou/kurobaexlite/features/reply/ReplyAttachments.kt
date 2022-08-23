@@ -60,7 +60,6 @@ fun ReplyAttachments(
               mediaHeight = mediaHeight,
               paddings = paddings,
               attachedMedia = attachedMedia,
-              replyLayoutVisibility = replyLayoutVisibility,
               onAttachedMediaClicked = onAttachedMediaClicked,
               onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked
             )
@@ -76,7 +75,6 @@ private fun AttachedMediaThumbnail(
   mediaHeight: Dp,
   paddings: Dp,
   attachedMedia: AttachedMedia,
-  replyLayoutVisibility: ReplyLayoutVisibility,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
   onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {

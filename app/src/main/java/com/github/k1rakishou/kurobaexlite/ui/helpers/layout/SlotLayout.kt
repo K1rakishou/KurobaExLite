@@ -15,10 +15,11 @@ fun SlotLayout(
   layoutOrientation: LayoutOrientation,
   builder: SlotBuilder.() -> Unit
 ) {
-  val slots = remember {
-    val slotBuilder = SlotBuilder()
-    builder(slotBuilder)
-    return@remember slotBuilder.build()
+  val slots = remember(key1 = builder) {
+    with(SlotBuilder()) {
+      builder(this)
+      build()
+    }
   }
 
   require(slots.isNotEmpty()) { "slots are empty" }
@@ -222,6 +223,21 @@ class SlotBuilder {
 
   fun build(): Array<Slot> {
     return slots.toTypedArray()
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as SlotBuilder
+
+    if (slots != other.slots) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return slots.hashCode()
   }
 
 }

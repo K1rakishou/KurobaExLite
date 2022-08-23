@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.FloatRange
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -12,6 +13,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -32,13 +34,21 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonColors
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.ButtonElevation
 import androidx.compose.material.Card
 import androidx.compose.material.Checkbox
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.ContentAlpha
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.LocalContentAlpha
 import androidx.compose.material.LocalTextStyle
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.ProvideTextStyle
 import androidx.compose.material.RadioButton
+import androidx.compose.material.Surface
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -406,6 +416,55 @@ private fun KurobaComposeButton(
   )
 }
 
+private val ContentPadding = PaddingValues(
+  start = 8.dp,
+  top = 4.dp,
+  end = 8.dp,
+  bottom = 4.dp
+)
+
+@OptIn(ExperimentalMaterialApi::class)
+@Composable
+private fun KurobaComposeCustomButton(
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+  elevation: ButtonElevation? = ButtonDefaults.elevation(),
+  shape: Shape = MaterialTheme.shapes.small,
+  border: BorderStroke? = null,
+  colors: ButtonColors = ButtonDefaults.buttonColors(),
+  contentPadding: PaddingValues = ContentPadding,
+  content: @Composable RowScope.() -> Unit
+) {
+  val contentColor by colors.contentColor(enabled)
+  Surface(
+    onClick = onClick,
+    modifier = modifier,
+    enabled = enabled,
+    shape = shape,
+    color = colors.backgroundColor(enabled).value,
+    contentColor = contentColor.copy(alpha = 1f),
+    border = border,
+    elevation = elevation?.elevation(enabled, interactionSource)?.value ?: 0.dp,
+    interactionSource = interactionSource,
+  ) {
+    CompositionLocalProvider(LocalContentAlpha provides contentColor.alpha) {
+      ProvideTextStyle(
+        value = MaterialTheme.typography.button
+      ) {
+        Row(
+          Modifier
+            .padding(contentPadding),
+          horizontalArrangement = Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically,
+          content = content
+        )
+      }
+    }
+  }
+}
+
 @Composable
 fun KurobaComposeTextBarButton(
   modifier: Modifier = Modifier,
@@ -437,6 +496,46 @@ fun KurobaComposeTextBarButton(
           .wrapContentSize()
           .align(Alignment.CenterVertically),
         textAlign = TextAlign.Center
+      )
+    },
+    elevation = null,
+    colors = chanTheme.barButtonColors()
+  )
+}
+
+@Composable
+fun KurobaComposeTextBarButton(
+  modifier: Modifier = Modifier,
+  text: AnnotatedString,
+  enabled: Boolean = true,
+  customTextColor: Color? = null,
+  fontSize: TextUnit = TextUnit.Unspecified,
+  onClick: () -> Unit,
+) {
+  val chanTheme = LocalChanTheme.current
+
+  KurobaComposeCustomButton(
+    onClick = onClick,
+    enabled = enabled,
+    modifier = modifier,
+    content = {
+      val textColor = customTextColor
+        ?: chanTheme.textColorPrimary
+
+      val modifiedTextColor = if (enabled) {
+        textColor
+      } else {
+        textColor.copy(alpha = ContentAlpha.disabled)
+      }
+
+      Text(
+        text = text,
+        color = modifiedTextColor,
+        modifier = Modifier
+          .wrapContentSize()
+          .align(Alignment.CenterVertically),
+        textAlign = TextAlign.Center,
+        fontSize = fontSize
       )
     },
     elevation = null,

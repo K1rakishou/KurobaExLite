@@ -49,7 +49,6 @@ fun ReplyLayoutContainer(
   val chanTheme = LocalChanTheme.current
   val density = LocalDensity.current
   val windowInsets = LocalWindowInsets.current
-  val sendReplyState by replyLayoutState.sendReplyState
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val attachedMediaList = replyLayoutState.attachedMediaList
 
@@ -217,10 +216,14 @@ private fun ReplyLayout(
     val density = LocalDensity.current
     val spacerHeight = 8.dp
 
-    val replyInputHeightPercentage = if (attachedMediaList.isEmpty()) {
-      100f
+    val replyInputHeightPercentage = if (replyLayoutHeight >= 160.dp) {
+      when (replyLayoutVisibility) {
+        ReplyLayoutVisibility.Closed -> 100f
+        ReplyLayoutVisibility.Opened -> if (attachedMediaList.isEmpty()) 100f else 70f
+        ReplyLayoutVisibility.Expanded -> 60f
+      }
     } else {
-      60f
+      100f
     }
 
     val replyLayoutHeightExcludingSpacer = replyLayoutHeight - spacerHeight
@@ -238,7 +241,7 @@ private fun ReplyLayout(
     )
 
     val replyAttachmentsHeight = replyLayoutHeightExcludingSpacer - replyInputHeight
-    if (attachedMediaList.isNotEmpty()) {
+    if (attachedMediaList.isNotEmpty() && replyAttachmentsHeight > 32.dp) {
       Spacer(modifier = Modifier.height(spacerHeight))
 
       ReplyAttachments(

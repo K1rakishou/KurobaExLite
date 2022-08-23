@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.sites.chan4
 
 import android.content.Context
+import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClient
@@ -26,6 +27,7 @@ import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.sites.FormattingButton
 import com.github.k1rakishou.kurobaexlite.sites.RequestModifier
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Site
@@ -168,6 +170,49 @@ class Chan4(
         }
       }
     }
+  }
+
+  override fun commentFormattingButtons(catalogDescriptor: CatalogDescriptor): List<FormattingButton> {
+    val boardCode = catalogDescriptor.boardCode
+    val formattingButtons = mutableListOf<FormattingButton>()
+
+    formattingButtons += FormattingButton(
+      title = AnnotatedString(">"),
+      openTag = ">",
+      closeTag = ""
+    )
+
+    if (boardCode == "g") {
+      formattingButtons += FormattingButton(
+        title = AnnotatedString("[c]"),
+        openTag = "[code]",
+        closeTag = "[/code]"
+      )
+    }
+
+    if (boardCode == "sci") {
+      formattingButtons += FormattingButton(
+        title = AnnotatedString("[eqn]"),
+        openTag = "[eqn]",
+        closeTag = "[/eqn]"
+      )
+
+      formattingButtons += FormattingButton(
+        title = AnnotatedString("[math]"),
+        openTag = "[math]",
+        closeTag = "[/math]"
+      )
+    }
+
+    if (boardCode == "jp" || boardCode == "vip") {
+      formattingButtons += FormattingButton(
+        title = AnnotatedString("[sjis]"),
+        openTag = "[sjis]",
+        closeTag = "[/sjis]"
+      )
+    }
+
+    return formattingButtons
   }
 
   class CatalogInfo(private val chan4DataSource: Chan4DataSource) : Site.CatalogInfo {

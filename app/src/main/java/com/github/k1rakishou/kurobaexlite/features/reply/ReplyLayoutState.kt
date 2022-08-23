@@ -8,23 +8,32 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.getSelectedText
+import androidx.compose.ui.text.input.getTextAfterSelection
+import androidx.compose.ui.text.input.getTextBeforeSelection
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.sites.FormattingButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import java.io.File
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import logcat.logcat
@@ -66,6 +75,7 @@ class ReplyLayoutState(
   val bundle: Bundle = Bundle()
 ) : IReplyLayoutState {
   private val globalUiInfoManager: GlobalUiInfoManager by lazy { GlobalContext.get().get() }
+  private val siteManager: SiteManager by lazy { GlobalContext.get().get() }
   private val appResources: AppResources by lazy { GlobalContext.get().get() }
 
   private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Closed)
@@ -99,12 +109,16 @@ class ReplyLayoutState(
   val replyErrorMessageFlow: SharedFlow<String>
     get() = _replyErrorMessageFlow.asSharedFlow()
 
-  private val _replyMessageFlow = MutableSharedFlow<String>(
+  private val _replyMessageFlow = MutableSharedFlow<ToastMessage>(
     extraBufferCapacity = 1,
     onBufferOverflow = BufferOverflow.DROP_LATEST
   )
-  val replyMessageFlow: SharedFlow<String>
+  val replyMessageFlow: SharedFlow<ToastMessage>
     get() = _replyMessageFlow.asSharedFlow()
+
+  private val _replyFormattingButtons = MutableStateFlow<List<FormattingButton>>(emptyList())
+  val replyFormattingButtons: StateFlow<List<FormattingButton>>
+    get() = _replyFormattingButtons.asStateFlow()
 
   init {
     when (chanDescriptor) {
@@ -113,6 +127,15 @@ class ReplyLayoutState(
     }
 
     restoreFromBundle()
+    initReplyFormattingButtons()
+  }
+
+  private fun initReplyFormattingButtons() {
+    val newFormattingButtons = siteManager.bySiteKey(chanDescriptor.siteKey)
+      ?.commentFormattingButtons(chanDescriptor.catalogDescriptor())
+      ?: emptyList()
+
+    _replyFormattingButtons.value = newFormattingButtons
   }
 
   private fun restoreFromBundle() {
@@ -150,8 +173,8 @@ class ReplyLayoutState(
     _replyErrorMessageFlow.tryEmit(errorMessage)
   }
 
-  fun replyShowInfoToast(message: String) {
-    _replyMessageFlow.tryEmit(message)
+  fun replyShowInfoToast(message: String, toastId: String? = null) {
+    _replyMessageFlow.tryEmit(ToastMessage(message, toastId))
   }
 
   fun onReplySendStarted() {
@@ -197,7 +220,7 @@ class ReplyLayoutState(
     onAttachedImagesUpdated()
 
     val message = appResources.string(R.string.reply_attached_media_removed, attachedMedia.actualFileName)
-    replyShowInfoToast(message)
+    replyShowInfoToast(message, toastId = "attached_media_removed")
   }
 
   fun onReplyTextChanged(text: String) {
@@ -311,6 +334,43 @@ class ReplyLayoutState(
     onReplyTextChanged(newReplyText)
     openReplyLayout()
   }
+
+  fun insertTags(formattingButton: FormattingButton) {
+    Snapshot.withMutableSnapshot {
+      val replyText = replyText.value
+      var cursorPosition = 0
+
+      val replyTextWithNewTags = buildAnnotatedString {
+        if (replyText.selection.collapsed) {
+          append(replyText.getTextBeforeSelection(replyText.text.length))
+          append(formattingButton.openTag)
+          cursorPosition = this.length
+          append(formattingButton.closeTag)
+          append(replyText.getTextAfterSelection(replyText.text.length))
+        } else {
+          append(replyText.getTextBeforeSelection(replyText.text.length))
+          append(formattingButton.openTag)
+          append(replyText.getSelectedText())
+          append(formattingButton.closeTag)
+          cursorPosition = this.length
+          append(replyText.getTextAfterSelection(replyText.text.length))
+        }
+      }
+
+      val textFieldValue = TextFieldValue(
+        annotatedString = replyTextWithNewTags,
+        selection = TextRange(cursorPosition),
+        composition = replyText.composition
+      )
+
+      onReplyTextChanged(textFieldValue)
+    }
+  }
+
+  data class ToastMessage(
+    val message: String,
+    val toastId: String?
+  )
 
   companion object {
     private const val TAG = "ReplyLayoutState"

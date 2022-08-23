@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.sites
 
+import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
@@ -45,6 +46,8 @@ interface Site {
   fun requestModifier(): RequestModifier<Site>
   fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String?
   fun iconUrl(iconId: String, params: Map<String, String>): String?
+
+  fun commentFormattingButtons(catalogDescriptor: CatalogDescriptor): List<FormattingButton>
 
   interface CatalogInfo  {
     fun catalogUrl(boardCode: String): String
@@ -119,3 +122,9 @@ sealed class ReplyResponse {
     val postDescriptor: PostDescriptor
   ) : ReplyResponse()
 }
+
+data class FormattingButton(
+  val title: AnnotatedString,
+  val openTag: String,
+  val closeTag: String
+)
