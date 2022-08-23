@@ -168,7 +168,7 @@ android {
 
 dependencies {
     implementation 'androidx.core:core-ktx:1.8.0'
-    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'androidx.appcompat:appcompat:1.5.0'
     implementation 'com.google.android.material:material:1.6.1'
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.animation:animation:$compose_version"
@@ -177,9 +177,9 @@ dependencies {
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
     implementation "androidx.compose.ui:ui-util:$compose_version"
     implementation 'androidx.work:work-runtime-ktx:2.7.1'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.0'
-    implementation 'androidx.activity:activity-compose:1.5.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.5.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1'
+    implementation 'androidx.activity:activity-compose:1.5.1'
     implementation "androidx.datastore:datastore-preferences:1.0.0"
     implementation "io.insert-koin:koin-core:$koin_version"
     implementation "io.insert-koin:koin-android:$koin_version"
@@ -190,6 +190,7 @@ dependencies {
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${kotlin_coroutines_version}"
     implementation "io.coil-kt:coil:${coil}"
     implementation "io.coil-kt:coil-compose:${coil}"
+    implementation "io.coil-kt:coil-video:${coil}"
     implementation "joda-time:joda-time:${joda_time}"
     implementation 'org.nibor.autolink:autolink:0.10.0'
     implementation "org.jsoup:jsoup:${jsoup}"
