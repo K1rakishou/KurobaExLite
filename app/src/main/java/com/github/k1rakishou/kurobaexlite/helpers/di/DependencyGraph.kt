@@ -6,7 +6,7 @@ import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import coil.Coil
 import coil.ImageLoader
-import coil.annotation.ExperimentalCoilApi
+import coil.decode.VideoFrameDecoder
 import coil.disk.DiskCache
 import com.github.k1rakishou.chan.core.mpv.MpvInitializer
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
@@ -536,7 +536,6 @@ object DependencyGraph {
     }
   }
 
-  @OptIn(ExperimentalCoilApi::class)
   private fun Module.coilImageLoader() {
     single<ImageLoader> {
       val applicationContext = get<Context>().applicationContext
@@ -546,6 +545,7 @@ object DependencyGraph {
         .apply {
           components {
             diskCache(diskCacheInit)
+            add(VideoFrameDecoder.Factory())
           }
         }.build()
 

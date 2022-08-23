@@ -6,6 +6,7 @@ import android.provider.OpenableColumns
 import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
 import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -35,7 +36,11 @@ abstract class AbstractFilePicker(
         check(attachedMediaDir.mkdirs()) { "Failed to create \'${attachedMediaDir.path}\' directory" }
       }
 
-      val replyFile = createAttachMediaFile(chanDescriptor, attachedMediaDir)
+      val extension = externalFileUri.lastPathSegment
+        ?.substringAfterLast('.')
+        ?.takeIf { extension -> extension.length <= 8 }
+
+      val replyFile = createAttachMediaFile(chanDescriptor, attachedMediaDir, extension)
       val originalFileName = tryExtractFileNameOrDefault(externalFileUri, appContext)
 
       if (replyFile == null) {
@@ -58,7 +63,8 @@ abstract class AbstractFilePicker(
 
   private fun createAttachMediaFile(
     chanDescriptor: ChanDescriptor,
-    attachedMediaDir: File
+    attachedMediaDir: File,
+    extension: String?
   ): File? {
     val dirName = when (chanDescriptor) {
       is CatalogDescriptor -> "${chanDescriptor.siteKeyActual}_${chanDescriptor.boardCode}"
@@ -70,7 +76,16 @@ abstract class AbstractFilePicker(
       check(thisReplyAttachMediaDir.mkdirs()) { "Failed to create \'${thisReplyAttachMediaDir.path}\' directory" }
     }
 
-    val resultFile = File(thisReplyAttachMediaDir, System.currentTimeMillis().toString())
+    val resultFileName = buildString {
+      append(System.currentTimeMillis().toString())
+
+      if (extension.isNotNullNorEmpty()) {
+        append('.')
+        append(extension)
+      }
+    }
+
+    val resultFile = File(thisReplyAttachMediaDir, resultFileName)
     if (resultFile.exists()) {
       logcatError(TAG) { "resultFile (${resultFile.path}) already exists" }
       return null

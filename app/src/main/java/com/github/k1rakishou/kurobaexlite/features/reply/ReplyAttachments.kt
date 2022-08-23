@@ -18,18 +18,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
-import coil.size.Size
+import coil.request.videoFrameMillis
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+
+private const val COIL_FAILED_TO_DECODE_FRAME_ERROR_MSG =
+  "Often this means BitmapFactory could not decode the image data read from the input source"
 
 @Composable
 fun ReplyAttachments(
@@ -79,7 +83,10 @@ private fun AttachedMediaThumbnail(
   onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
   val context = LocalContext.current
+  val density = LocalDensity.current
+
   val attachedMediaFile = attachedMedia.asFile
+  val mediaHeightPx = with(density) { mediaHeight.roundToPx() }
 
   Box(
     modifier = Modifier
@@ -94,7 +101,8 @@ private fun AttachedMediaThumbnail(
       model = ImageRequest.Builder(context)
         .data(attachedMediaFile)
         .crossfade(true)
-        .size(Size.ORIGINAL)
+        .size(mediaHeightPx)
+        .videoFrameMillis(1000L)
         .build(),
       contentDescription = null,
       contentScale = ContentScale.Crop,
@@ -107,11 +115,22 @@ private fun AttachedMediaThumbnail(
               "error=${state.result.throwable.errorMessageOrClassName()}"
           }
 
+          val isFailedToDecodeVideoFrameError = (state.result.throwable as? IllegalStateException)
+            ?.message
+            ?.contains(COIL_FAILED_TO_DECODE_FRAME_ERROR_MSG)
+            ?: false
+
+          val drawableId = if (isFailedToDecodeVideoFrameError) {
+            R.drawable.ic_baseline_movie_24
+          } else {
+            R.drawable.ic_baseline_warning_24
+          }
+
           KurobaComposeIcon(
             modifier = Modifier
               .size(24.dp)
               .align(Alignment.Center),
-            drawableId = R.drawable.ic_baseline_warning_24
+            drawableId = drawableId
           )
 
           return@SubcomposeAsyncImage
