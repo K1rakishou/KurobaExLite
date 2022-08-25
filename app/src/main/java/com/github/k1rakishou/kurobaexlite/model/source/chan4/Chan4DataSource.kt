@@ -292,7 +292,8 @@ class Chan4DataSource(
             catalogDescriptor = CatalogDescriptor(input, boardCode),
             boardTitle = boardTitle,
             boardDescription = boardDescription,
-            workSafe = boardDataJson.workSafe == 1
+            workSafe = boardDataJson.workSafe == 1,
+            maxAttachFilesPerPost = 1
           )
         }
 

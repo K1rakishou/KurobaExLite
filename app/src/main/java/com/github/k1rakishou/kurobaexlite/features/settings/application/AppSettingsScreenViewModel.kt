@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.settings.application
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import androidx.lifecycle.viewModelScope
@@ -30,16 +31,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.koin.java.KoinJavaComponent.inject
 
-class AppSettingsScreenViewModel : BaseViewModel() {
-  private val context: Context by inject(Context::class.java)
-  private val appSettings: AppSettings by inject(AppSettings::class.java)
-  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
-  private val appResources: AppResources by inject(AppResources::class.java)
-  private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
-  private val updateManager: UpdateManager by inject(UpdateManager::class.java)
-
+class AppSettingsScreenViewModel(
+  @SuppressLint("StaticFieldLeak") private val appContext: Context,
+  private val appSettings: AppSettings,
+  private val androidHelpers: AndroidHelpers,
+  private val appResources: AppResources,
+  private val snackbarManager: SnackbarManager,
+  private val updateManager: UpdateManager,
+) : BaseViewModel() {
   private val _builtSettings = ConcurrentHashMap<SettingScreens, MutableStateFlow<SettingScreen?>>()
 
   private val _currentScreen = MutableStateFlow<SettingScreens>(SettingScreens.Main)
@@ -94,7 +94,7 @@ class AppSettingsScreenViewModel : BaseViewModel() {
           },
           onSettingUpdated = {
             BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-              appContext = context.applicationContext,
+              appContext = appContext,
               flavorType = androidHelpers.getFlavorType(),
               appSettings = appSettings,
               isInForeground = true,
@@ -185,7 +185,7 @@ class AppSettingsScreenViewModel : BaseViewModel() {
         link(
           key = "open_github_repository",
           title = appResources.string(R.string.settings_screen_open_github_repository),
-          onClicked = { androidHelpers.openLink(context, githubUrl) }
+          onClicked = { androidHelpers.openLink(appContext, githubUrl) }
         )
       }
     )

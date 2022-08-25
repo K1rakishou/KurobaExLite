@@ -3,65 +3,25 @@ package com.github.k1rakishou.kurobaexlite.helpers.picker
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
-import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.extractFileName
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
+import okhttp3.HttpUrl
 
 abstract class AbstractFilePicker(
   private val appContext: Context
 ) {
   protected val attachedMediaDir = File(appContext.cacheDir, "attached_media")
 
-  abstract suspend fun pickFile(
-    chanDescriptor: ChanDescriptor,
-    allowMultiSelection: Boolean
-  ): Result<List<AttachedMedia>>
-
-  protected fun copyExternalFileToReplyFileStorage(
-    chanDescriptor: ChanDescriptor,
-    externalFileUri: Uri,
-  ): Result<AttachedMedia> {
-    BackgroundUtils.ensureBackgroundThread()
-
-    return runCatching {
-      if (!attachedMediaDir.exists()) {
-        check(attachedMediaDir.mkdirs()) { "Failed to create \'${attachedMediaDir.path}\' directory" }
-      }
-
-      val extension = externalFileUri.lastPathSegment
-        ?.substringAfterLast('.')
-        ?.takeIf { extension -> extension.length <= 8 }
-
-      val replyFile = createAttachMediaFile(chanDescriptor, attachedMediaDir, extension)
-      val originalFileName = tryExtractFileNameOrDefault(externalFileUri, appContext)
-
-      if (replyFile == null) {
-        throw IOException("Failed to get attach file")
-      }
-
-      try {
-        copyExternalFileIntoReplyFile(appContext, externalFileUri, replyFile)
-      } catch (error: Throwable) {
-        replyFile.delete()
-        throw error
-      }
-
-      return@runCatching AttachedMedia(
-        path = replyFile.absolutePath,
-        fileName = originalFileName
-      )
-    }
-  }
-
-  private fun createAttachMediaFile(
+  protected fun createAttachMediaFile(
     chanDescriptor: ChanDescriptor,
     attachedMediaDir: File,
     extension: String?
@@ -99,7 +59,7 @@ abstract class AbstractFilePicker(
     return resultFile
   }
 
-  private fun tryExtractFileNameOrDefault(uri: Uri, appContext: Context): String {
+  protected fun tryExtractFileNameOrDefault(uri: Uri, appContext: Context): String {
     var fileName: String? = null
 
     try {
@@ -134,11 +94,22 @@ abstract class AbstractFilePicker(
     return fileName
   }
 
+  protected fun getRemoteFileName(url: HttpUrl): String {
+    val actualFileName = url.extractFileName()
+
+//    if (ChanSettings.alwaysRandomizePickedFilesNames.get()) {
+//      return getRandomFileName(actualFileName)
+//    }
+
+    return actualFileName
+      ?: getRandomFileNameWithoutExtension()
+  }
+
   private fun getRandomFileNameWithoutExtension(): String {
     return System.currentTimeMillis().toString()
   }
 
-  private fun copyExternalFileIntoReplyFile(
+  protected fun copyExternalFileIntoReplyFile(
     appContext: Context,
     uri: Uri,
     replyFile: File
@@ -156,6 +127,11 @@ abstract class AbstractFilePicker(
         }
       }
     }
+  }
+
+  class PickFileError : ClientException {
+    constructor(message: String) : super(message)
+    constructor(message: String, cause: Throwable) : super(message, cause)
   }
 
   companion object {

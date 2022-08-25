@@ -36,7 +36,8 @@ data class ChanCatalogEntity(
       catalogDescriptor = catalogKey.catalogDescriptor,
       boardTitle = boardTitle,
       boardDescription = boardDescription,
-      workSafe = workSafe
+      workSafe = workSafe,
+      maxAttachFilesPerPost = 1
     )
   }
 
@@ -107,7 +108,7 @@ abstract class ChanCatalogDao {
         chan_catalogs.catalog_board_code = :boardCode
     LIMIT 1
   """)
-  abstract suspend fun selectCatalog(siteKey: String, boardCode: String): ChanCatalogEntity
+  abstract suspend fun selectCatalog(siteKey: String, boardCode: String): ChanCatalogEntity?
 
   @Transaction
   open suspend fun insertChanCatalogEntityList(chanCatalogEntityList: List<ChanCatalogEntity>): Map<CatalogDescriptor, Long> {

@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.features.settings.items
 
 import androidx.compose.ui.text.AnnotatedString
-import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
-import com.github.k1rakishou.kurobaexlite.helpers.settings.EnumSetting
-import com.github.k1rakishou.kurobaexlite.helpers.settings.StringSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.EnumSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 

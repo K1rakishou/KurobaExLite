@@ -1,6 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
 import android.app.Activity
+import android.os.Binder
+import android.os.Parcelable
+import android.util.Size
+import android.util.SizeF
+import android.util.SparseArray
 import android.view.MotionEvent
 import android.view.View
 import androidx.activity.ComponentActivity
@@ -9,10 +14,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.model.BypassException
+import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException
 import java.io.IOException
 import java.io.InterruptedIOException
+import java.io.Serializable
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 import javax.net.ssl.SSLException
@@ -38,6 +47,7 @@ import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
+import okhttp3.HttpUrl
 import okhttp3.Request
 import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
@@ -217,11 +227,17 @@ fun Throwable.errorMessageOrClassName(): String {
     message
   }
 
+  val exceptionClassName = this::class.java.name
+
   if (!actualMessage.isNullOrBlank()) {
-    return actualMessage
+    if (actualMessage.contains(exceptionClassName)) {
+      return actualMessage
+    }
+
+    return "${exceptionClassName}: ${actualMessage}"
   }
 
-  return this::class.java.name
+  return exceptionClassName
 }
 
 fun Throwable.asLogIfImportantOrErrorMessage(): String {
@@ -237,6 +253,8 @@ fun Throwable.isExceptionImportant(): Boolean {
     is CancellationException,
     is InterruptedIOException,
     is InterruptedException,
+    is FirewallDetectedException,
+    is BypassException,
     is SSLException -> false
     else -> true
   }
@@ -748,6 +766,8 @@ fun <T> Lazy<T>.forceInit(): T {
   return this.value
 }
 
+private const val maxExtensionLength = 8
+
 fun String.removeExtensionIfPresent(): String {
   val index = this.lastIndexOf('.')
   if (index < 0) {
@@ -759,11 +779,38 @@ fun String.removeExtensionIfPresent(): String {
 
 fun String.extractFileNameExtension(): String? {
   val index = this.lastIndexOf('.')
-  return if (index == -1) {
-    null
-  } else {
-    this.substring(index + 1)
+  if (index == -1) {
+    return null
   }
+
+  val indexOfFirstBadCharacter = indexOfFirst(
+    startIndex = index + 1,
+    endIndex = (index + 1) + maxExtensionLength,
+    predicate = { ch -> !ch.isLetterOrDigit() }
+  )
+
+  if (indexOfFirstBadCharacter != null) {
+    return this.substring(index + 1, indexOfFirstBadCharacter)
+  }
+
+  return this.substring(index + 1).takeIf { extension -> extension.length <= maxExtensionLength }
+}
+
+fun String.indexOfFirst(
+  startIndex: Int = 0,
+  endIndex: Int = lastIndex,
+  predicate: (Char) -> Boolean
+): Int? {
+  for (i in startIndex until endIndex) {
+    val ch = this.getOrNull(i)
+      ?: break
+
+    if (predicate(ch)) {
+      return i
+    }
+  }
+
+  return null
 }
 
 fun String.findAllOccurrences(query: String?, minQueryLength: Int): List<IntRange> {
@@ -831,4 +878,64 @@ fun <T> MutableList<T>.moveToEnd(index: Int) {
   }
 
   this.add(this.removeAt(index))
+}
+
+fun rawSizeToLong(size: String): Long {
+  return when (size.uppercase(Locale.ENGLISH)) {
+    "KB" -> 1000
+    "KIB" -> 1024
+    "MB" -> 1000 * 1000
+    "MIB" -> 1024 * 1024
+    "GB" -> 1000 * 1000 * 1000
+    "GIB" -> 1024 * 1024 * 1024
+    "B" -> 1
+    else -> 1024
+  }
+}
+
+private const val HTTP = "http://"
+private const val HTTPS = "https://"
+
+fun fixUrlOrNull(inputUrlRaw: String?): String? {
+  if (inputUrlRaw == null) {
+    return null
+  }
+
+  if (inputUrlRaw.startsWith("//")) {
+    return HTTPS + inputUrlRaw.removePrefix("//")
+  }
+
+  if (inputUrlRaw.startsWith(HTTPS)) {
+    return inputUrlRaw
+  }
+
+  if (inputUrlRaw.startsWith(HTTP)) {
+    return HTTPS + inputUrlRaw.removePrefix(HTTP)
+  }
+
+  return HTTPS + inputUrlRaw
+}
+
+fun HttpUrl.extractFileName(): String? {
+  return this.pathSegments.lastOrNull()?.substringAfterLast("/")
+}
+
+private val AcceptableClasses = arrayOf(
+  Serializable::class.java,
+  Parcelable::class.java,
+  String::class.java,
+  SparseArray::class.java,
+  Binder::class.java,
+  Size::class.java,
+  SizeF::class.java
+)
+
+fun checkCanUseType(value: Any): Boolean {
+  for (cl in AcceptableClasses) {
+    if (cl.isInstance(value)) {
+      return true
+    }
+  }
+
+  return false
 }

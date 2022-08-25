@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.AnnotatedString
-import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import kotlinx.coroutines.flow.combine
 
 abstract class SettingItem(

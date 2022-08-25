@@ -27,7 +27,8 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenDefaultToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
-import com.github.k1rakishou.kurobaexlite.features.posts.search.GlobalSearchScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.search.global.GlobalSearchScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
@@ -165,7 +166,31 @@ class CatalogScreen(
         val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
           ?: return@CatalogScreenReplyToolbar
 
-        replyLayoutViewModel.onPickFileRequested(catalogDescriptor)
+        replyLayoutViewModel.pickLocalFile(catalogDescriptor)
+      },
+      imageRemoteSearch = {
+        val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+          ?: return@CatalogScreenReplyToolbar
+
+        val remoteImageSearchScreen = ComposeScreen.createScreen<RemoteImageSearchScreen>(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          callbacks = {
+            callback<String>(
+              callbackKey = RemoteImageSearchScreen.ON_IMAGE_SELECTED,
+              func = { selectedImageUrl ->
+                replyLayoutViewModel.pickRemoteFile(
+                  componentActivityInput = componentActivity,
+                  navigationRouterInput = navigationRouter,
+                  chanDescriptor = catalogDescriptor,
+                  fileUrl = selectedImageUrl
+                )
+              }
+            )
+          }
+        )
+
+        navigationRouter.pushScreen(remoteImageSearchScreen)
       }
     )
   }
@@ -288,18 +313,18 @@ class CatalogScreen(
   @Composable
   override fun HomeNavigationScreenContent() {
     HandleBackPresses {
+      for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
+        if (composeScreen.onBackPressed()) {
+          return@HandleBackPresses true
+        }
+      }
+
       if (replyLayoutState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
       if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
-      }
-
-      for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
-        if (composeScreen.onBackPressed()) {
-          return@HandleBackPresses true
-        }
       }
 
       return@HandleBackPresses false

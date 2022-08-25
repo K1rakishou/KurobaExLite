@@ -86,7 +86,7 @@ private fun AttachedMediaThumbnail(
   val density = LocalDensity.current
 
   val attachedMediaFile = attachedMedia.asFile
-  val mediaHeightPx = with(density) { mediaHeight.roundToPx() }
+  val mediaHeightPx = with(density) { mediaHeight.roundToPx() - 8.dp.roundToPx() }
 
   Box(
     modifier = Modifier

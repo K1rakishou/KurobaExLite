@@ -9,7 +9,7 @@ object ScreenCallbackStorage {
     callbackStorage.remove(screenKey)
   }
 
-  fun <T: IRememberableCallback> rememberCallback(screenKey: ScreenKey, callbackKey: String, callback: T): T {
+  fun <T : IRememberableCallback> rememberCallback(screenKey: ScreenKey, callbackKey: String, callback: T): T {
     val callbacksForScreen = callbackStorage.getOrPut(key = screenKey, defaultValue = { mutableMapOf() })
     callbacksForScreen[callbackKey] = callback
 

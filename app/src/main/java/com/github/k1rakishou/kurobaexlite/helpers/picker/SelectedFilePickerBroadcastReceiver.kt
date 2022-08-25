@@ -24,7 +24,12 @@ class SelectedFilePickerBroadcastReceiver : BroadcastReceiver() {
       return
     }
 
-    val component = intent.getParcelableExtra<ComponentName>(Intent.EXTRA_CHOSEN_COMPONENT)
+    val component = if (androidHelpers.isAndroidTiramisu()) {
+      intent.getParcelableExtra<ComponentName>(Intent.EXTRA_CHOSEN_COMPONENT, ComponentName::class.java)
+    } else {
+      intent.getParcelableExtra<ComponentName>(Intent.EXTRA_CHOSEN_COMPONENT)
+    }
+
     if (component == null) {
       logcat(TAG) { "component == null" }
       return

@@ -25,7 +25,8 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnai
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.search.GlobalSearchScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.search.global.GlobalSearchScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostCellIconViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
@@ -41,9 +42,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificatio
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
+import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.RemoteImageSearchSettings
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
@@ -58,6 +61,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenFor
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.CatalogGlobalSearch
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
+import com.github.k1rakishou.kurobaexlite.interactors.image_search.YandexImageSearch
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.LoadNavigationHistory
@@ -140,6 +144,9 @@ object DependencyGraph {
   }
 
   private fun Module.misc() {
+    single { AppSettings(appContext = get(), moshi = get(), fileName = "app_settings") }
+    single { RemoteImageSearchSettings(appContext = get(), moshi = get(), fileName = "remote_image_search_settings") }
+
     single { KurobaExLiteDatabase.buildDatabase(application = get()) }
     single { ProxiedOkHttpClient() }
     single { GlobalConstants(get()) }
@@ -149,7 +156,6 @@ object DependencyGraph {
     single { FullScreenHelpers(get()) }
     single { AndroidHelpers(application = get(), snackbarManager = get()) }
     single { ChanCache(androidHelpers = get()) }
-    single { AppSettings(appContext = get(), moshi = get()) }
     single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
     single { PostBindProcessor(get()) }
     single { ThemeEngine() }
@@ -186,6 +192,14 @@ object DependencyGraph {
         appSettings = get(),
         androidHelpers = get(),
         appResources = get(),
+      )
+    }
+
+    single {
+      RemoteFilePicker(
+        appContext = get(),
+        appScope = get(),
+        proxiedOkHttpClient = get(),
       )
     }
 
@@ -270,8 +284,14 @@ object DependencyGraph {
 
   private fun Module.viewModels() {
     viewModel {
-      MainActivityViewModel(savedStateHandle = get())
+      MainActivityViewModel(
+        savedStateHandle = get(),
+        loadBookmarks = get(),
+        snackbarManager = get(),
+        appResources = get(),
+      )
     }
+
     viewModel {
       HomeScreenViewModel(
         siteManager = get(),
@@ -280,17 +300,38 @@ object DependencyGraph {
     }
     viewModel {
       CatalogScreenViewModel(
-        savedStateHandle = get()
+        savedStateHandle = get(),
+        updateChanCatalogView = get(),
+        lastVisitedEndpointManager = get(),
+        loadNavigationHistory = get(),
       )
     }
     viewModel {
       ThreadScreenViewModel(
-        savedStateHandle = get()
+        savedStateHandle = get(),
+        loadChanThreadView = get(),
+        updateChanThreadView = get(),
+        crossThreadFollowHistory = get(),
+        lastVisitedEndpointManager = get(),
+        loadNavigationHistory = get(),
+        addOrRemoveBookmark = get(),
+        updatePostSeenForBookmark = get(),
+        catalogPagesRepository = get(),
+        applicationVisibilityManager = get(),
       )
     }
-    viewModel { AlbumScreenViewModel() }
+
+    viewModel {
+      AlbumScreenViewModel(
+        chanViewManager = get(),
+        parsedPostDataCache = get(),
+        chanCache = get(),
+        mediaSaver = get(),
+      )
+    }
+
     viewModel { PopupRepliesScreenViewModel(savedStateHandle = get()) }
-    viewModel { CatalogSelectionScreenViewModel() }
+    viewModel { CatalogSelectionScreenViewModel(retrieveSiteCatalogList = get()) }
     viewModel {
       val mpvSettings = MpvSettings(
         appContext = get(),
@@ -316,14 +357,27 @@ object DependencyGraph {
         mediaSaver = get(),
       )
     }
-    viewModel { HistoryScreenViewModel() }
+
+    viewModel {
+      HistoryScreenViewModel(
+        siteManager = get(),
+        appSettings = get(),
+        loadNavigationHistory = get(),
+        modifyNavigationHistory = get(),
+        persistNavigationHistory = get(),
+        navigationHistoryManager = get(),
+      )
+    }
+
     viewModel {
       ReplyLayoutViewModel(
         captchaManager = get(),
         siteManager = get(),
         snackbarManager = get(),
+        remoteFilePicker = get(),
         modifyMarkedPosts = get(),
         addOrRemoveBookmark = get(),
+        loadChanCatalog = get(),
         localFilePicker = get(),
         appResources = get(),
         savedStateHandle = get()
@@ -334,17 +388,44 @@ object DependencyGraph {
         proxiedOkHttpClient = get(),
         siteManager = get(),
         moshi = get(),
-        catalogManager = get()
+        loadChanCatalog = get(),
+        chan4CaptchaSolverHelper = get()
       )
     }
+
     viewModel {
-      BookmarksScreenViewModel()
+      BookmarksScreenViewModel(
+        appSettings = get(),
+        androidHelpers = get(),
+        bookmarksManager = get(),
+        catalogPagesRepository = get(),
+        reorderBookmarks = get(),
+        deleteBookmarks = get(),
+      )
     }
+
     viewModel { AnimateableStackContainerViewModel() }
     viewModel { KurobaToolbarContainerViewModel() }
-    viewModel { GlobalSearchScreenViewModel() }
+    viewModel { GlobalSearchScreenViewModel(catalogGlobalSearch = get()) }
     viewModel { PostCellIconViewModel(siteManager = get()) }
-    viewModel { AppSettingsScreenViewModel() }
+
+    viewModel {
+      AppSettingsScreenViewModel(
+        appContext = get(),
+        appSettings = get(),
+        androidHelpers = get(),
+        appResources = get(),
+        snackbarManager = get(),
+        updateManager = get(),
+      )
+    }
+
+    viewModel {
+      RemoteImageSearchScreenViewModel(
+        remoteImageSearchSettings = get(),
+        yandexImageSearch = get()
+      )
+    }
   }
 
   private fun Module.repositories() {
@@ -498,6 +579,13 @@ object DependencyGraph {
         bookmarksManager = get(),
         kurobaExLiteDatabase = get(),
         parsedPostDataCache = get(),
+      )
+    }
+
+    single {
+      YandexImageSearch(
+        proxiedOkHttpClient = get(),
+        moshi = get()
       )
     }
   }

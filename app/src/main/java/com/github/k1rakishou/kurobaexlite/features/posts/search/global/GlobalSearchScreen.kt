@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.posts.search
+package com.github.k1rakishou.kurobaexlite.features.posts.search.global
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

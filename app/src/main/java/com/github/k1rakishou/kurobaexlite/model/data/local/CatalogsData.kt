@@ -10,5 +10,6 @@ data class ChanCatalog(
   val catalogDescriptor: CatalogDescriptor,
   val boardTitle: String?,
   val boardDescription: String?,
-  val workSafe: Boolean
+  val workSafe: Boolean,
+  val maxAttachFilesPerPost: Int
 )

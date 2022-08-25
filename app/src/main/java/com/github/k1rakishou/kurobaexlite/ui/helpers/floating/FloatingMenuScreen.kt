@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
+import com.github.k1rakishou.kurobaexlite.helpers.checkCanUseType
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
@@ -195,6 +197,14 @@ class FloatingMenuScreen(
               }
             }
           }
+          is FloatingMenuItem.TextHeader -> {
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.End
+            ) {
+              BuildTextHeaderMenuItem(item = menuItem)
+            }
+          }
         }
       }
 
@@ -205,6 +215,37 @@ class FloatingMenuScreen(
             .padding(horizontal = 6.dp)
         )
       }
+    }
+  }
+
+  @Composable
+  private fun BuildTextHeaderMenuItem(item: FloatingMenuItem.TextHeader) {
+    val chanTheme = LocalChanTheme.current
+    val density = LocalDensity.current
+
+    val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
+    val headerTextSize = with(density) {
+      remember(key1 = titleTextSize) { (titleTextSize.toPx() + 4.sp.toPx()).toSp() }
+    }
+
+    val headerTitle = when (item.text) {
+      is FloatingMenuItem.MenuItemText.Id -> stringResource(id = item.text.id)
+      is FloatingMenuItem.MenuItemText.String -> item.text.text
+    }
+
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .padding(horizontal = 8.dp, vertical = 16.dp),
+      contentAlignment = Alignment.CenterStart
+    ) {
+      Text(
+        modifier = Modifier.wrapContentSize(),
+        text = headerTitle,
+        color = chanTheme.textColorPrimary,
+        fontSize = headerTextSize
+      )
     }
   }
 
@@ -444,6 +485,7 @@ class FloatingMenuScreen(
     const val THREAD_OVERFLOW = "thread_overflow_menu"
     const val BOOKMARKS_OVERFLOW = "bookmarks_overflow_menu"
     const val APP_SETTINGS_LIST_OPTION_MENU = "app_settings_list_option_menu"
+    const val REMOTE_IMAGE_SEARCH_OPTIONS_MENUS = "remote_image_search_options_menu"
   }
 }
 
@@ -460,41 +502,75 @@ sealed class FloatingMenuItem {
       return null
     }
 
+
+  data class Header(
+    override val menuItemKey: Long = HEADER,
+    val items: List<Icon>
+  ) : FloatingMenuItem() {
+    init {
+      require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }
+    }
+  }
+
+  data class TextHeader(
+    override val menuItemKey: Long = TEXT_HEADER,
+    val text: MenuItemText
+  ) : FloatingMenuItem() {
+    init {
+      require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }
+    }
+  }
+
   data class Text(
     override val menuItemKey: Any,
     override val visible: Boolean = true,
     val menuItemData: Any? = null,
     val text: MenuItemText,
     val subText: MenuItemText? = null
-  ) : FloatingMenuItem()
+  ) : FloatingMenuItem() {
+    init {
+      require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }
+    }
+  }
 
   data class Check(
     override val menuItemKey: Any,
     val isChecked: suspend () -> Boolean,
     val text: MenuItemText,
     val subText: MenuItemText? = null
-  ) : FloatingMenuItem()
+  ) : FloatingMenuItem() {
+    init {
+      require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }
+    }
+  }
 
   data class Icon(
     override val menuItemKey: Any,
     @DrawableRes val iconId: Int
-  ) : FloatingMenuItem()
+  ) : FloatingMenuItem() {
+    init {
+      require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }
+    }
+  }
 
   data class Group(
     override val menuItemKey: Any = keyCounter.getAndDecrement(),
     val checkedMenuItemKey: Any,
     val groupItems: List<Text>
-  ) : FloatingMenuItem()
-
-  data class Header(
-    override val menuItemKey: Long = HEADER,
-    val items: List<Icon>
-  ) : FloatingMenuItem()
+  ) : FloatingMenuItem() {
+    init {
+      require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }
+    }
+  }
 
   data class Footer(
     override val menuItemKey: Long = FOOTER,
     val items: List<Icon>
-  ) : FloatingMenuItem()
+  ) : FloatingMenuItem() {
+    init {
+      require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }
+    }
+  }
 
   sealed class MenuItemText {
     data class Id(@StringRes val id: Int) : MenuItemText()
@@ -503,7 +579,8 @@ sealed class FloatingMenuItem {
 
   companion object {
     const val HEADER = -1L
-    const val FOOTER = -2L
+    const val TEXT_HEADER = -2L
+    const val FOOTER = -3L
 
     private val keyCounter = AtomicLong(-100)
   }

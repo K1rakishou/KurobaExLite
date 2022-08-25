@@ -61,7 +61,9 @@
     <string name="close">Close</string>
     <string name="apply">Apply</string>
     <string name="undo">Undo</string>
+
     <string name="type_to_search_hint">Type to search</string>
+    <string name="downloading_file">Downloading file, this may take some time</string>
 
     <string name="main_activity_press_back_again_to_exit">Press back again to exit the app</string>
     <string name="main_screen_view_model_failed_to_load_bookmarks_from_database">Failed to load bookmarks from database, error: \'%1$s\'</string>
@@ -104,6 +106,13 @@
 
     <string name="album_screen_toolbar_title">Album</string>
     <string name="album_screen_album_empty">Album is empty</string>
+
+    <string name="remote_image_search_screen_title">Image search</string>
+    <string name="remote_image_search_screen_current_instance">Current search instance</string>
+    <string name="remote_image_search_screen_select_source">Select source</string>
+    
+    <string name="site_firewall_bypass_screen_failed_to_initialize_webclient">Failed to initialize BypassWebClient</string>
+    <string name="site_firewall_bypass_screen_bad_url_to_open">urlToOpen is null or empty</string>
 
     <string name="settings_screen_toolbar_title">Settings</string>
     <string name="settings_screen_requires_app_restart">Requires app restart!</string>
@@ -205,6 +214,10 @@
     <string name="pager_exclusion_zone_drag">DRAG</string>
 
     <string name="posts_screen_search_toolbar_global_search">Global</string>
+    <string name="posts_screen_successfully_picked_local_files">Successfully picked %1$d local file(s)</string>
+    <string name="posts_screen_failed_to_pick_local_file">Failed to pick local file, error: \'%1$s\'</string>
+    <string name="posts_screen_successfully_picked_remote_file">Successfully picked remote file \'%1$s\'</string>
+    <string name="posts_screen_failed_to_pick_remote_file">Failed to pick remote file, error: \'%1$s\'</string>
 
     <string name="global_search_screen_end_of_results_reached">End of results reached</string>
     <string name="global_search_screen_nothing_found_by_query">Nothing found by query \'%1$s\'</string>

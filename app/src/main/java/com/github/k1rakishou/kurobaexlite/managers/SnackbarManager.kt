@@ -81,25 +81,17 @@ class SnackbarManager(
     toastId: String = nextToastId(),
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {
-    pushSnackbar(
-      SnackbarInfo(
-        snackbarId = SnackbarId.Toast(toastId),
-        aliveUntil = SnackbarInfo.snackbarDuration(duration),
-        screenKey = screenKey,
-        content = listOf(
-          SnackbarContentItem.Text(
-            text = appContext.getString(messageId),
-            takeWholeWidth = false
-          )
-        ),
-        snackbarType = SnackbarType.Toast
-      )
+    toast(
+      message = appContext.getString(messageId),
+      screenKey = screenKey,
+      toastId = toastId,
+      duration = duration
     )
   }
 
   fun toast(
     message: String,
-    screenKey: ScreenKey,
+    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
     toastId: String = nextToastId(),
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {
@@ -120,9 +112,23 @@ class SnackbarManager(
   }
 
   fun errorToast(
+    @StringRes messageId: Int,
+    toastId: String = nextToastId(),
+    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
+    duration: Duration = STANDARD_DELAY.milliseconds
+  ) {
+    errorToast(
+      message = appContext.getString(messageId),
+      toastId = toastId,
+      screenKey = screenKey,
+      duration = duration
+    )
+  }
+
+  fun errorToast(
     message: String,
     toastId: String = nextToastId(),
-    screenKey: ScreenKey,
+    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {
     pushSnackbar(

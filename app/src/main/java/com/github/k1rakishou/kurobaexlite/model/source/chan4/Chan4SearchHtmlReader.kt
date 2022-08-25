@@ -4,6 +4,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.extractFileNameExtension
 import com.github.k1rakishou.kurobaexlite.helpers.groupOrNull
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlReader
 import com.github.k1rakishou.kurobaexlite.helpers.html.SearchException
+import com.github.k1rakishou.kurobaexlite.helpers.rawSizeToLong
 import com.github.k1rakishou.kurobaexlite.helpers.removeExtensionIfPresent
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
@@ -14,7 +15,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
-import java.util.Locale
 import java.util.regex.Pattern
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.jsoup.Jsoup
@@ -175,17 +175,7 @@ class Chan4SearchHtmlReader(
     val sizeType = matcher.groupOrNull(2) ?: "KB"
     val width = matcher.groupOrNull(3)?.toIntOrNull() ?: 0
     val height = matcher.groupOrNull(4)?.toIntOrNull() ?: 0
-
-    val multiplier = when (sizeType.uppercase(Locale.ENGLISH)) {
-      "KB" -> 1000
-      "KIB" -> 1024
-      "MB" -> 1000 * 1000
-      "MIB" -> 1024 * 1024
-      "GB" -> 1000 * 1000 * 1000
-      "GIB" -> 1024 * 1024 * 1024
-      "B" -> 1
-      else -> 1024
-    }
+    val multiplier = rawSizeToLong(sizeType).toInt()
 
     val actualFileSize = (fileSize * multiplier)
     val serverFileName = fullFileUrl.substringAfterLast("/")

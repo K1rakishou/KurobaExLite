@@ -25,7 +25,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
@@ -100,15 +99,9 @@ fun ReplyLayoutContainer(
           return@collect
         }
 
-        pickFileResult.pickResult
-          .onFailure { error ->
-            replyLayoutViewModel.showErrorToast(chanDescriptor, error.errorMessageOrClassName())
-          }
-          .onSuccess { attachedMediaList ->
-            attachedMediaList.forEach { attachedMedia ->
-              replyLayoutState.attachMedia(attachedMedia)
-            }
-          }
+        pickFileResult.newPickedMedias.forEach { attachedMedia ->
+          replyLayoutState.attachMedia(attachedMedia)
+        }
       }
     }
   )

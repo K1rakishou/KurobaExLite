@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.reply
 
 import android.os.Bundle
 import android.os.Parcelable
+import androidx.activity.ComponentActivity
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.R
@@ -10,10 +11,13 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
+import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -22,10 +26,15 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.ReplyEvent
 import com.github.k1rakishou.kurobaexlite.sites.ReplyResponse
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
+import java.lang.ref.WeakReference
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
@@ -41,8 +50,10 @@ class ReplyLayoutViewModel(
   private val captchaManager: CaptchaManager,
   private val siteManager: SiteManager,
   private val snackbarManager: SnackbarManager,
+  private val remoteFilePicker: RemoteFilePicker,
   private val modifyMarkedPosts: ModifyMarkedPosts,
   private val addOrRemoveBookmark: AddOrRemoveBookmark,
+  private val loadChanCatalog: LoadChanCatalog,
   private val localFilePicker: LocalFilePicker,
   private val appResources: AppResources,
   private val savedStateHandle: SavedStateHandle
@@ -257,19 +268,138 @@ class ReplyLayoutViewModel(
     logcat(TAG) { "cancelSendReply($screenKey) canceled" }
   }
 
-  fun onPickFileRequested(chanDescriptor: ChanDescriptor) {
+  fun pickLocalFile(chanDescriptor: ChanDescriptor) {
     viewModelScope.launch {
+      logcat(TAG) { "pickLocalFile($chanDescriptor) start" }
+
+      val maxAttachFilesPerPost = loadChanCatalog.await(chanDescriptor)
+        .getOrElse { error ->
+          logcatError(TAG) { "loadChanCatalog($chanDescriptor) error: ${error.asLogIfImportantOrErrorMessage()}" }
+          return@getOrElse null
+        }
+        ?.maxAttachFilesPerPost
+        ?: 1
+
       val pickResult = localFilePicker.pickFile(
         chanDescriptor = chanDescriptor,
-        allowMultiSelection = false
+        allowMultiSelection = maxAttachFilesPerPost > 1
       )
+
+      logcat(TAG) { "pickLocalFile($chanDescriptor) finish, success: ${pickResult.isSuccess}" }
+
+      if (!pickResult.isSuccess) {
+        val errorMessage = pickResult.exceptionOrThrow().errorMessageOrClassName()
+
+        snackbarManager.errorToast(
+          message = appResources.string(R.string.posts_screen_failed_to_pick_local_file, errorMessage),
+          screenKey = snackbarManager.screenKeyFromDescriptor(chanDescriptor)
+        )
+
+        return@launch
+      }
+
+      val newPickedMedias = pickResult.getOrNull()
+        ?: return@launch
 
       val pickFileResult = PickFileResult(
         chanDescriptor = chanDescriptor,
-        pickResult = pickResult
+        newPickedMedias = newPickedMedias
       )
 
       _pickFileResultFlow.emit(pickFileResult)
+
+      snackbarManager.toast(
+        message = appResources.string(R.string.posts_screen_successfully_picked_local_files, newPickedMedias.size),
+        screenKey = snackbarManager.screenKeyFromDescriptor(chanDescriptor)
+      )
+    }
+  }
+
+  fun pickRemoteFile(
+    componentActivityInput: ComponentActivity,
+    navigationRouterInput: NavigationRouter,
+    chanDescriptor: ChanDescriptor,
+    fileUrl: String
+  ) {
+    val componentActivityRef = WeakReference(componentActivityInput)
+    val navigationRouterRef = WeakReference(navigationRouterInput)
+
+    fun newProgressScreen(): ProgressScreen? {
+      val componentActivity = componentActivityRef.get() ?: return null
+      val navigationRouter = navigationRouterRef.get() ?: return null
+
+      return ComposeScreen.createScreen<ProgressScreen>(
+        componentActivity = componentActivity,
+        navigationRouter = navigationRouter,
+        args = {
+          putString(
+            ProgressScreen.TITLE,
+            appResources.string(R.string.downloading_file)
+          )
+        }
+      )
+    }
+
+    viewModelScope.launch {
+      logcat(TAG) { "pickRemoteFile($chanDescriptor, $fileUrl) start" }
+
+      val pickResult = remoteFilePicker.pickFile(
+        chanDescriptor = chanDescriptor,
+        imageUrls = listOf(fileUrl),
+        showLoadingView = {
+          withContext(Dispatchers.Main) {
+            val navigationRouter = navigationRouterRef.get()
+              ?: return@withContext
+            val progressScreen = newProgressScreen()
+              ?: return@withContext
+
+            if (navigationRouter.getScreenByKey(progressScreen.screenKey) != null) {
+              return@withContext
+            }
+
+            navigationRouter.presentScreen(progressScreen)
+          }
+        },
+        hideLoadingView = {
+          withContext(Dispatchers.Main) {
+            val navigationRouter = navigationRouterRef.get()
+              ?: return@withContext
+
+            navigationRouter.stopPresentingScreen(ProgressScreen.SCREEN_KEY)
+          }
+        }
+      )
+
+      logcat(TAG) { "pickRemoteFile($chanDescriptor, $fileUrl) finish, success: ${pickResult.isSuccess}" }
+
+      if (!pickResult.isSuccess) {
+        val errorMessage = pickResult.exceptionOrThrow().errorMessageOrClassName()
+
+        snackbarManager.errorToast(
+          message = appResources.string(R.string.posts_screen_failed_to_pick_remote_file, errorMessage),
+          screenKey = snackbarManager.screenKeyFromDescriptor(chanDescriptor)
+        )
+
+        return@launch
+      }
+
+      val newPickedMedia = pickResult.getOrNull()
+        ?: return@launch
+
+      val resultFileName = pickResult.getOrThrow().actualFileName
+
+
+      val pickFileResult = PickFileResult(
+        chanDescriptor = chanDescriptor,
+        newPickedMedias = listOf(newPickedMedia)
+      )
+
+      _pickFileResultFlow.emit(pickFileResult)
+
+      snackbarManager.toast(
+        message = appResources.string(R.string.posts_screen_successfully_picked_remote_file, resultFileName),
+        screenKey = snackbarManager.screenKeyFromDescriptor(chanDescriptor)
+      )
     }
   }
 
@@ -381,7 +511,7 @@ class ReplyLayoutViewModel(
 
   data class PickFileResult(
     val chanDescriptor: ChanDescriptor,
-    val pickResult: Result<List<AttachedMedia>>
+    val newPickedMedias: List<AttachedMedia>
   )
 
   companion object {

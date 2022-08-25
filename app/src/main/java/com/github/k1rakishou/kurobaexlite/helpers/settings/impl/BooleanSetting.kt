@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers.settings
+package com.github.k1rakishou.kurobaexlite.helpers.settings.impl
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

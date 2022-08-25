@@ -25,15 +25,15 @@ import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesReposito
 import kotlinx.coroutines.launch
 import logcat.LogPriority
 import logcat.logcat
-import org.koin.java.KoinJavaComponent.inject
 
-class BookmarksScreenViewModel : BaseViewModel() {
-  private val appSettings: AppSettings by inject(AppSettings::class.java)
-  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
-  private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
-  private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
-  private val reorderBookmarks: ReorderBookmarks by inject(ReorderBookmarks::class.java)
-  private val deleteBookmarks: DeleteBookmarks by inject(DeleteBookmarks::class.java)
+class BookmarksScreenViewModel(
+  private val appSettings: AppSettings,
+  private val androidHelpers: AndroidHelpers,
+  private val bookmarksManager: BookmarksManager,
+  private val catalogPagesRepository: CatalogPagesRepository,
+  private val reorderBookmarks: ReorderBookmarks,
+  private val deleteBookmarks: DeleteBookmarks,
+) : BaseViewModel() {
 
   private val _bookmarksToMark = mutableStateMapOf<ThreadDescriptor, Unit>()
   val bookmarksToMark: Map<ThreadDescriptor, Unit>

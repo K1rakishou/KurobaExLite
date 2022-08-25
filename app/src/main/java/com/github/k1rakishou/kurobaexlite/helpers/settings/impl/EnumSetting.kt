@@ -1,22 +1,21 @@
-package com.github.k1rakishou.kurobaexlite.helpers.settings
+package com.github.k1rakishou.kurobaexlite.helpers.settings.impl
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.squareup.moshi.JsonAdapter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
-class JsonSetting<T : Any?>(
-  val jsonAdapter: JsonAdapter<T>,
+class EnumSetting<T : Enum<T>>(
   override val defaultValue: T,
   override val settingKey: String,
+  private val enumClazz: Class<T>,
   dataStore: DataStore<Preferences>
 ) : AbstractSetting<T>(dataStore) {
+  val enumValues by lazy { enumClazz.enumConstants }
   private val prefsKey: Preferences.Key<String> = stringPreferencesKey(settingKey)
 
   override suspend fun read(): T {
@@ -27,12 +26,14 @@ class JsonSetting<T : Any?>(
 
     val readValue = dataStore.data
       .map { prefs ->
-        val value = prefs.get(prefsKey)?.let { json -> fromJson(json) }
-        if (value == null) {
+        val enumName = prefs.get(prefsKey)
+        val enumValue = enumValues.firstOrNull { it.name == enumName }
+
+        if (enumName == null || enumValue == null) {
           write(defaultValue)
         }
 
-        return@map value
+        return@map enumValue ?: defaultValue
       }
       .catch {
         write(defaultValue)
@@ -52,7 +53,7 @@ class JsonSetting<T : Any?>(
     }
 
     dataStore.edit { prefs ->
-      prefs.set(prefsKey, toJson(value))
+      prefs.set(prefsKey, value.name)
       cachedValue = value
     }
   }
@@ -63,28 +64,14 @@ class JsonSetting<T : Any?>(
   }
 
   override fun listen(): Flow<T> {
-    return dataStore.data
-      .map { prefs ->
-        return@map prefs.get(prefsKey)
-          ?.let { fromJson(it) }
-          ?: read()
-      }
-      .catch {
-        write(defaultValue)
-        emit(defaultValue)
-      }
-  }
+    return dataStore.data.map { prefs ->
+      val enumName = prefs.get(prefsKey)
+      val enumValue = enumValues.firstOrNull { it.name == enumName }
 
-  private fun toJson(value: T): String {
-    return jsonAdapter.toJson(value)
-  }
-
-  private fun fromJson(json: String): T {
-    return try {
-      jsonAdapter.fromJson(json) ?: defaultValue
-    } catch (error: Throwable) {
-      logcatError { "jsonAdapter.fromJson() error.\njson=\'$json\',\nerror=${error}" }
-      defaultValue
+      return@map enumValue ?: read()
+    }.catch {
+      write(defaultValue)
+      emit(defaultValue)
     }
   }
 

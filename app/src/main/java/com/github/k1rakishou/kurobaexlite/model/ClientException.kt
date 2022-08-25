@@ -1,6 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.model
 
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
+import java.io.IOException
+import okhttp3.HttpUrl
 
 abstract class ClientException : Exception {
   constructor(message: String) : super(message)
@@ -26,3 +28,15 @@ class BadStatusResponseException(val status: Int) : ClientException("Bad respons
 class EmptyBodyResponseException : ClientException("Response has no body")
 
 class SiteIsNotSupported(siteKey: SiteKey) : ClientException("Site \'${siteKey.key}\' is not supported")
+
+enum class FirewallType {
+  YandexSmartCaptcha
+}
+
+
+class FirewallDetectedException(
+  val firewallType: FirewallType,
+  val requestUrl: HttpUrl
+) : IOException("Url '$requestUrl' is blocked by ${firewallType} firewall!")
+
+class BypassException(message: String) : Exception(message)

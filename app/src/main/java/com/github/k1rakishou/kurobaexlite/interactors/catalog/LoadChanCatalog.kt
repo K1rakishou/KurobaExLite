@@ -14,7 +14,7 @@ class LoadChanCatalog(
   private val kurobaExLiteDatabase: KurobaExLiteDatabase
 ) {
 
-  suspend fun await(chanDescriptor: ChanDescriptor): Result<ChanCatalog> {
+  suspend fun await(chanDescriptor: ChanDescriptor): Result<ChanCatalog?> {
     return Result.Try {
       val catalogDescriptor = when (chanDescriptor) {
         is CatalogDescriptor -> chanDescriptor
@@ -32,10 +32,17 @@ class LoadChanCatalog(
           boardCode = catalogDescriptor.boardCode
         )
 
+        if (catalogEntity == null) {
+          return@call null
+        }
+
         return@call catalogEntity.toChanCatalog()
       }.unwrap()
 
-      catalogManager.insert(catalogFromDatabase)
+      if (catalogFromDatabase != null) {
+        catalogManager.insert(catalogFromDatabase)
+      }
+
       return@Try catalogFromDatabase
     }
   }

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers.settings
+package com.github.k1rakishou.kurobaexlite.helpers.settings.impl
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -9,16 +9,14 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
-class EnumSetting<T : Enum<T>>(
-  override val defaultValue: T,
+class StringSetting(
+  override val defaultValue: String,
   override val settingKey: String,
-  private val enumClazz: Class<T>,
   dataStore: DataStore<Preferences>
-) : AbstractSetting<T>(dataStore) {
-  val enumValues by lazy { enumClazz.enumConstants }
+) : AbstractSetting<String>(dataStore) {
   private val prefsKey: Preferences.Key<String> = stringPreferencesKey(settingKey)
 
-  override suspend fun read(): T {
+  override suspend fun read(): String {
     val cached = cachedValue
     if (cached != null) {
       return cached
@@ -26,14 +24,12 @@ class EnumSetting<T : Enum<T>>(
 
     val readValue = dataStore.data
       .map { prefs ->
-        val enumName = prefs.get(prefsKey)
-        val enumValue = enumValues.firstOrNull { it.name == enumName }
-
-        if (enumName == null || enumValue == null) {
+        val value = prefs.get(prefsKey)
+        if (value == null) {
           write(defaultValue)
         }
 
-        return@map enumValue ?: defaultValue
+        return@map value
       }
       .catch {
         write(defaultValue)
@@ -47,13 +43,13 @@ class EnumSetting<T : Enum<T>>(
     return readValue
   }
 
-  override suspend fun write(value: T) {
+  override suspend fun write(value: String) {
     if (cachedValue == value) {
       return
     }
 
     dataStore.edit { prefs ->
-      prefs.set(prefsKey, value.name)
+      prefs.set(prefsKey, value)
       cachedValue = value
     }
   }
@@ -63,16 +59,13 @@ class EnumSetting<T : Enum<T>>(
     dataStore.edit { prefs -> prefs.remove(prefsKey) }
   }
 
-  override fun listen(): Flow<T> {
-    return dataStore.data.map { prefs ->
-      val enumName = prefs.get(prefsKey)
-      val enumValue = enumValues.firstOrNull { it.name == enumName }
-
-      return@map enumValue ?: read()
-    }.catch {
-      write(defaultValue)
-      emit(defaultValue)
-    }
+  override fun listen(): Flow<String> {
+    return dataStore.data
+      .map { prefs -> prefs.get(prefsKey) ?: read() }
+      .catch {
+        write(defaultValue)
+        emit(defaultValue)
+      }
   }
 
 }

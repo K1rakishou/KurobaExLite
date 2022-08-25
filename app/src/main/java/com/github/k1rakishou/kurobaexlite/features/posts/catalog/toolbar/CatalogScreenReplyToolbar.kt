@@ -36,6 +36,7 @@ class CatalogScreenReplyToolbar(
   private val threadScreenViewModel: ThreadScreenViewModel,
   private val closeReplyLayout: () -> Unit,
   private val pickLocalFile: () -> Unit,
+  private val imageRemoteSearch: () -> Unit,
 ) : KurobaChildToolbar() {
   private val key = "CatalogScreenReplyToolbar"
   private val state: State = State("${key}_state")
@@ -71,6 +72,7 @@ class CatalogScreenReplyToolbar(
           when (key) {
             State.Icons.Close -> closeReplyLayout()
             State.Icons.PickLocalFile -> pickLocalFile()
+            State.Icons.ImageRemoteSearch -> imageRemoteSearch()
           }
         }
       }
@@ -130,6 +132,10 @@ class CatalogScreenReplyToolbar(
         key = Icons.PickLocalFile,
         drawableId = R.drawable.ic_baseline_attach_file_24
       ),
+      KurobaToolbarIcon(
+        key = Icons.ImageRemoteSearch,
+        drawableId = R.drawable.ic_baseline_search_24
+      ),
     )
 
     private val _iconClickEvents = MutableSharedFlow<Icons>(extraBufferCapacity = Channel.UNLIMITED)
@@ -152,7 +158,8 @@ class CatalogScreenReplyToolbar(
 
     enum class Icons {
       Close,
-      PickLocalFile
+      PickLocalFile,
+      ImageRemoteSearch
     }
 
     companion object {

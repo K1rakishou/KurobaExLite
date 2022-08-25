@@ -9,16 +9,22 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.EnumSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.JsonSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.NumberSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import logcat.asLog
 
 class AppSettings(
+  private val fileName: String,
   private val appContext: Context,
   private val moshi: Moshi
 ) {
-  private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "app_settings")
+  private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = fileName)
   private val dataStore by lazy { appContext.dataStore }
   private val isTablet by lazy { appContext.resources.getBoolean(R.bool.isTablet) }
 

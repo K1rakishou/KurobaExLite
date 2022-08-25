@@ -23,14 +23,13 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.koin.java.KoinJavaComponent.inject
 
-class AlbumScreenViewModel : BaseViewModel() {
-  private val chanViewManager: ChanViewManager by inject(ChanViewManager::class.java)
-  private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
-  private val chanCache: ChanCache by inject(ChanCache::class.java)
-  private val mediaSaver: MediaSaver by inject(MediaSaver::class.java)
-
+class AlbumScreenViewModel(
+  private val chanViewManager: ChanViewManager,
+  private val parsedPostDataCache: ParsedPostDataCache,
+  private val chanCache: ChanCache,
+  private val mediaSaver: MediaSaver,
+) : BaseViewModel() {
   private val _selectedImages = mutableStateMapOf<String, Unit>()
   val selectedImages: Map<String, Unit>
     get() = _selectedImages

@@ -39,22 +39,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
-import org.koin.java.KoinJavaComponent.inject
 
 class ThreadScreenViewModel(
-  savedStateHandle: SavedStateHandle
+  savedStateHandle: SavedStateHandle,
+  private val loadChanThreadView: LoadChanThreadView,
+  private val updateChanThreadView: UpdateChanThreadView,
+  private val crossThreadFollowHistory: CrossThreadFollowHistory,
+  private val lastVisitedEndpointManager: LastVisitedEndpointManager,
+  private val loadNavigationHistory: LoadNavigationHistory,
+  private val addOrRemoveBookmark: AddOrRemoveBookmark,
+  private val updatePostSeenForBookmark: UpdatePostSeenForBookmark,
+  private val catalogPagesRepository: CatalogPagesRepository,
+  private val applicationVisibilityManager: ApplicationVisibilityManager,
 ) : PostScreenViewModel(savedStateHandle) {
   private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
-
-  private val loadChanThreadView: LoadChanThreadView by inject(LoadChanThreadView::class.java)
-  private val updateChanThreadView: UpdateChanThreadView by inject(UpdateChanThreadView::class.java)
-  private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
-  private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
-  private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
-  private val addOrRemoveBookmark: AddOrRemoveBookmark by inject(AddOrRemoveBookmark::class.java)
-  private val updatePostSeenForBookmark: UpdatePostSeenForBookmark by inject(UpdatePostSeenForBookmark::class.java)
-  private val catalogPagesRepository: CatalogPagesRepository by inject(CatalogPagesRepository::class.java)
-  private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
 
   private val threadAutoUpdater = ThreadAutoUpdater(
     applicationVisibilityManager = applicationVisibilityManager,

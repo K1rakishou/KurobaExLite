@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.posts.search
+package com.github.k1rakishou.kurobaexlite.features.posts.search.global
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
@@ -16,11 +16,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logcat.logcat
-import org.koin.java.KoinJavaComponent.inject
 
-class GlobalSearchScreenViewModel : BaseViewModel() {
-  private val catalogGlobalSearch: CatalogGlobalSearch by inject(CatalogGlobalSearch::class.java)
-
+class GlobalSearchScreenViewModel(
+  private val catalogGlobalSearch: CatalogGlobalSearch
+) : BaseViewModel() {
   private val screenState = ScreenState()
 
   val postsAsyncState: State<AsyncData<List<PostCellData>>> = screenState.postsAsyncState

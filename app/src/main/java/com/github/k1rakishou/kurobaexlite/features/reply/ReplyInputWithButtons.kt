@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.text.SpanStyle
@@ -190,6 +191,7 @@ private fun ReplyButtons(
 ) {
   Column(
     modifier = Modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     run {
       val drawableId = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {

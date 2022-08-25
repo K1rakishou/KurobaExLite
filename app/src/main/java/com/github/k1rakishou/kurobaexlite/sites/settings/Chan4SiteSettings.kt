@@ -6,8 +6,8 @@ import com.github.k1rakishou.kurobaexlite.features.settings.items.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.StringSettingItem
 import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
-import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
-import com.github.k1rakishou.kurobaexlite.helpers.settings.StringSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.squareup.moshi.Moshi
 

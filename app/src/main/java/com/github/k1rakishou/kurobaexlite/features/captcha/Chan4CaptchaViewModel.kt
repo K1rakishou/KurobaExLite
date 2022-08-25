@@ -15,7 +15,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClien
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
-import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
@@ -39,16 +39,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.logcat
 import okhttp3.Request
-import org.koin.java.KoinJavaComponent.inject
 
 class Chan4CaptchaViewModel(
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val siteManager: SiteManager,
   private val moshi: Moshi,
-  private val catalogManager: CatalogManager
+  private val loadChanCatalog: LoadChanCatalog,
+  private val chan4CaptchaSolverHelper: Chan4CaptchaSolverHelper
 ) : BaseViewModel() {
-  private val chan4CaptchaSolverHelper: Chan4CaptchaSolverHelper by inject(Chan4CaptchaSolverHelper::class.java)
-
   private var activeJob: Job? = null
   private var captchaTtlUpdateJob: Job? = null
 
@@ -331,7 +329,8 @@ class Chan4CaptchaViewModel(
   }
 
   private suspend fun formatCaptchaUrl(chanDescriptor: ChanDescriptor, boardCode: String): String {
-    val chanCatalog = catalogManager.byCatalogDescriptor(chanDescriptor.catalogDescriptor())
+    val chanCatalog = loadChanCatalog.await(chanDescriptor.catalogDescriptor())
+      .getOrNull()
 
     val host = if (chanCatalog == null || chanCatalog.workSafe) {
       "4channel"

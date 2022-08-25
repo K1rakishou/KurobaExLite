@@ -18,8 +18,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.SerializedCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import java.io.IOException
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -55,7 +55,7 @@ class LocalFilePicker(
     this.componentActivity = null
   }
 
-  override suspend fun pickFile(
+  suspend fun pickFile(
     chanDescriptor: ChanDescriptor,
     allowMultiSelection: Boolean
   ): Result<List<AttachedMedia>> {
@@ -304,6 +304,42 @@ class LocalFilePicker(
     activity.startActivityForResult(chooser, requestCode)
   }
 
+  private fun copyExternalFileToReplyFileStorage(
+    chanDescriptor: ChanDescriptor,
+    externalFileUri: Uri,
+  ): Result<AttachedMedia> {
+    BackgroundUtils.ensureBackgroundThread()
+
+    return runCatching {
+      if (!attachedMediaDir.exists()) {
+        check(attachedMediaDir.mkdirs()) { "Failed to create \'${attachedMediaDir.path}\' directory" }
+      }
+
+      val extension = externalFileUri.lastPathSegment
+        ?.substringAfterLast('.')
+        ?.takeIf { extension -> extension.length <= 8 }
+
+      val replyFile = createAttachMediaFile(chanDescriptor, attachedMediaDir, extension)
+      val originalFileName = tryExtractFileNameOrDefault(externalFileUri, appContext)
+
+      if (replyFile == null) {
+        throw IOException("Failed to get attach file")
+      }
+
+      try {
+        copyExternalFileIntoReplyFile(appContext, externalFileUri, replyFile)
+      } catch (error: Throwable) {
+        replyFile.delete()
+        throw error
+      }
+
+      return@runCatching AttachedMedia(
+        path = replyFile.absolutePath,
+        fileName = originalFileName
+      )
+    }
+  }
+
   suspend fun cleanup() {
     withContext(coroutineDispatcher) {
       val filesInDirectory = attachedMediaDir.listFiles() ?: emptyArray()
@@ -327,11 +363,6 @@ class LocalFilePicker(
     val chanDescriptor: ChanDescriptor,
     val completableDeferred: CompletableDeferred<List<AttachedMedia>>
   )
-
-  class PickFileError : ClientException {
-    constructor(message: String) : super(message)
-    constructor(message: String, cause: Throwable) : super(message, cause)
-  }
 
   companion object {
     private const val TAG = "LocalFilePicker"

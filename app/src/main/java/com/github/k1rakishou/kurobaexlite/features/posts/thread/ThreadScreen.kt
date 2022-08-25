@@ -26,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnai
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
@@ -126,7 +127,31 @@ class ThreadScreen(
         val threadDescriptor = threadScreenViewModel.threadDescriptor
           ?: return@ThreadScreenReplyToolbar
 
-        replyLayoutViewModel.onPickFileRequested(threadDescriptor)
+        replyLayoutViewModel.pickLocalFile(threadDescriptor)
+      },
+      imageRemoteSearch = {
+        val threadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@ThreadScreenReplyToolbar
+
+        val remoteImageSearchScreen = ComposeScreen.createScreen<RemoteImageSearchScreen>(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          callbacks = {
+            callback<String>(
+              callbackKey = RemoteImageSearchScreen.ON_IMAGE_SELECTED,
+              func = { selectedImageUrl ->
+                replyLayoutViewModel.pickRemoteFile(
+                  componentActivityInput = componentActivity,
+                  navigationRouterInput = navigationRouter,
+                  chanDescriptor = threadDescriptor,
+                  fileUrl = selectedImageUrl
+                )
+              }
+            )
+          }
+        )
+
+        navigationRouter.pushScreen(remoteImageSearchScreen)
       }
     )
   }
@@ -205,18 +230,18 @@ class ThreadScreen(
   @Composable
   override fun HomeNavigationScreenContent() {
     HandleBackPresses {
+      for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
+        if (composeScreen.onBackPressed()) {
+          return@HandleBackPresses true
+        }
+      }
+
       if (replyLayoutState.onBackPressed()) {
         return@HandleBackPresses true
       }
 
       if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
-      }
-
-      for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
-        if (composeScreen.onBackPressed()) {
-          return@HandleBackPresses true
-        }
       }
 
       if (threadScreenViewModel.onBackPressed()) {

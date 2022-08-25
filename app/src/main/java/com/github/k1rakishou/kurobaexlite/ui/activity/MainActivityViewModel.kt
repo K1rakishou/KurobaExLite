@@ -11,15 +11,13 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import kotlinx.coroutines.launch
-import org.koin.java.KoinJavaComponent.inject
 
 class MainActivityViewModel(
-  private val savedStateHandle: SavedStateHandle
+  private val savedStateHandle: SavedStateHandle,
+  private val loadBookmarks: LoadBookmarks,
+  private val snackbarManager: SnackbarManager,
+  private val appResources: AppResources,
 ) : BaseViewModel() {
-  private val loadBookmarks: LoadBookmarks by inject(LoadBookmarks::class.java)
-  private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
-  private val appResources: AppResources by inject(AppResources::class.java)
-
   val rootNavigationRouter = MainNavigationRouter()
 
   override suspend fun onViewModelReady() {

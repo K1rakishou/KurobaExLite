@@ -81,6 +81,11 @@ class AndroidHelpers(
     return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
   }
 
+  // Api 33
+  fun isAndroidTiramisu(): Boolean {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+  }
+
   fun getApplicationLabel(): String {
     return application.packageManager.getApplicationLabel(application.applicationInfo).toString()
   }

@@ -17,8 +17,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.k1rakishou.kurobaexlite.helpers.settings.BooleanSetting
-import com.github.k1rakishou.kurobaexlite.helpers.settings.EnumSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.EnumSetting
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable

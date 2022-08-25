@@ -18,11 +18,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import logcat.asLog
-import org.koin.java.KoinJavaComponent.inject
 
-class CatalogSelectionScreenViewModel : BaseViewModel() {
-  private val retrieveSiteCatalogList: RetrieveSiteCatalogList by inject(RetrieveSiteCatalogList::class.java)
-
+class CatalogSelectionScreenViewModel(
+  private val retrieveSiteCatalogList: RetrieveSiteCatalogList
+) : BaseViewModel() {
   private val boardsCache = mutableMapOf<CatalogDescriptor, ChanCatalog>()
   private val loadedBoardsPerSite = mutableMapOf<SiteKey, MutableList<CatalogDescriptor>>()
 

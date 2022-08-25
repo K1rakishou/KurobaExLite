@@ -18,16 +18,15 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import org.koin.java.KoinJavaComponent.inject
 
-class HistoryScreenViewModel : BaseViewModel() {
-  private val siteManager: SiteManager by inject(SiteManager::class.java)
-  private val appSettings: AppSettings by inject(AppSettings::class.java)
-  private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
-  private val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
-  private val persistNavigationHistory: PersistNavigationHistory by inject(PersistNavigationHistory::class.java)
-  private val navigationHistoryManager: NavigationHistoryManager by inject(NavigationHistoryManager::class.java)
-
+class HistoryScreenViewModel(
+  private val siteManager: SiteManager,
+  private val appSettings: AppSettings,
+  private val loadNavigationHistory: LoadNavigationHistory,
+  private val modifyNavigationHistory: ModifyNavigationHistory,
+  private val persistNavigationHistory: PersistNavigationHistory,
+  private val navigationHistoryManager: NavigationHistoryManager,
+) : BaseViewModel() {
   private val _navigationHistoryList = mutableStateListOf<UiNavigationElement>()
   val navigationHistoryList: List<UiNavigationElement>
     get() = _navigationHistoryList

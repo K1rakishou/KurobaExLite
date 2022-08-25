@@ -30,15 +30,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.asLog
 import logcat.logcat
-import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreenViewModel(
-  savedStateHandle: SavedStateHandle
+  savedStateHandle: SavedStateHandle,
+  private val updateChanCatalogView: UpdateChanCatalogView,
+  private val lastVisitedEndpointManager: LastVisitedEndpointManager,
+  private val loadNavigationHistory: LoadNavigationHistory,
 ) : PostScreenViewModel(savedStateHandle) {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
-  private val updateChanCatalogView: UpdateChanCatalogView by inject(UpdateChanCatalogView::class.java)
-  private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
-  private val loadNavigationHistory: LoadNavigationHistory by inject(LoadNavigationHistory::class.java)
 
   private val catalogScreenState = CatalogScreenPostsState()
   private val updateChanCatalogViewExecutor = DebouncingCoroutineExecutor(viewModelScope)

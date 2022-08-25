@@ -225,4 +225,8 @@ abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
     }
   }
 
+  companion object {
+    private const val TAG = "PostsScreen"
+  }
+
 }
