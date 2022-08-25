@@ -377,11 +377,22 @@ class RemoteImageSearchScreen(
         return
       }
       AsyncData.Loading -> {
-        KurobaComposeLoadingIndicator()
+        KurobaComposeLoadingIndicator(
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = windowInsets.bottom)
+        )
+
         return
       }
       is AsyncData.Error -> {
-        KurobaComposeError(errorMessage = result.error.errorMessageOrClassName())
+        KurobaComposeError(
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = windowInsets.bottom),
+          errorMessage = result.error.errorMessageOrClassName()
+        )
+
         return
       }
       is AsyncData.Data -> result.data
