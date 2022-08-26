@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenDrawerLayout
 import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestures
+import com.github.k1rakishou.kurobaexlite.features.firewall.BypassResult
+import com.github.k1rakishou.kurobaexlite.features.firewall.SiteFirewallBypassScreen
 import com.github.k1rakishou.kurobaexlite.features.home.pages.AbstractPage
 import com.github.k1rakishou.kurobaexlite.features.home.pages.SinglePage
 import com.github.k1rakishou.kurobaexlite.features.home.pages.SplitPage
@@ -39,9 +41,15 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.resumeSafe
+import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.model.FirewallType
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -68,8 +76,10 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import logcat.LogPriority
 import logcat.logcat
+import okhttp3.HttpUrl
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -82,7 +92,9 @@ class HomeScreen(
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val homeScreenPageConverter by lazy { HomeScreenPageConverter(componentActivity, navigationRouter) }
+  private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val lastVisitedEndpointManager: LastVisitedEndpointManager by inject(LastVisitedEndpointManager::class.java)
+  private val firewallBypassManager: FirewallBypassManager by inject(FirewallBypassManager::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -108,6 +120,8 @@ class HomeScreen(
       key1 = Unit,
       block = { globalUiInfoManager.init() }
     )
+
+    ListenForFirewallBypassManagerEvents()
 
     if (!globalUiInfoViewModelInitialized) {
       return
@@ -556,6 +570,94 @@ class HomeScreen(
           drawerWidth = drawerWidth,
           navigationRouterProvider = { navigationRouter },
         )
+      }
+    }
+  }
+
+  @Composable
+  private fun ListenForFirewallBypassManagerEvents() {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        firewallBypassManager.showFirewallControllerEvents.collect { showFirewallControllerInfo ->
+          val siteFirewallBypassScreen = navigationRouter.getScreenByKey(SiteFirewallBypassScreen.SCREEN_KEY)
+
+          val screenIsAlive = when (siteFirewallBypassScreen?.screenLifecycle) {
+            null -> false
+            ScreenLifecycle.Creating,
+            ScreenLifecycle.Created -> true
+            ScreenLifecycle.Disposing,
+            ScreenLifecycle.Disposed -> false
+          }
+
+          if (screenIsAlive) {
+            return@collect
+          }
+
+          val firewallType = showFirewallControllerInfo.firewallType
+          val urlToOpen = showFirewallControllerInfo.urlToOpen
+          val siteKey = showFirewallControllerInfo.siteKey
+          val onFinished = showFirewallControllerInfo.onFinished
+
+          try {
+            showSiteFirewallBypassController(
+              firewallType = firewallType,
+              urlToOpen = urlToOpen,
+              siteKey = siteKey
+            )
+          } finally {
+            onFinished.complete(Unit)
+          }
+        }
+      }
+    )
+  }
+
+  private suspend fun showSiteFirewallBypassController(
+    firewallType: FirewallType,
+    urlToOpen: HttpUrl,
+    siteKey: SiteKey
+  ) {
+    logcat(TAG) { "Launching SiteFirewallBypassScreen" }
+
+    val bypassResult = suspendCancellableCoroutine<BypassResult> { continuation ->
+      val siteFirewallBypassScreen = createScreen<SiteFirewallBypassScreen>(
+        componentActivity = componentActivity,
+        navigationRouter = navigationRouter,
+        args = {
+          putSerializable(
+            SiteFirewallBypassScreen.FIREWALL_TYPE,
+            firewallType
+          )
+          putSerializable(SiteFirewallBypassScreen.URL_TO_OPEN, urlToOpen.toString())
+        },
+        callbacks = {
+          callback<BypassResult>(
+            callbackKey = SiteFirewallBypassScreen.ON_RESULT,
+            func = { bypassResult -> continuation.resumeSafe(bypassResult) }
+          )
+        }
+      )
+
+      navigationRouter.presentScreen(siteFirewallBypassScreen)
+    }
+
+    logcat(TAG) { "SiteFirewallBypassScreen finished" }
+
+
+    when (firewallType) {
+      FirewallType.Cloudflare -> {
+        if (bypassResult is BypassResult.Cookie && bypassResult.cookie.isNotEmpty()) {
+          logcat(TAG) { "Got ${firewallType} cookies, cookieResult: ${bypassResult}" }
+
+          siteManager.bySiteKey(siteKey)?.siteSettings?.cloudFlareClearanceCookie
+            ?.write(bypassResult.cookie)
+        } else {
+          logcatError(TAG) { "Failed to bypass ${firewallType}, bypassResult: ${bypassResult}" }
+        }
+      }
+      FirewallType.YandexSmartCaptcha -> {
+        // No-op. We only handle Yandex's captcha in one place (ImageSearchController)
       }
     }
   }

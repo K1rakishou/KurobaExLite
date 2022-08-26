@@ -78,6 +78,7 @@ import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
+import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.ISiteManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
@@ -149,7 +150,14 @@ object DependencyGraph {
     single { RemoteImageSearchSettings(appContext = get(), moshi = get(), fileName = "remote_image_search_settings") }
 
     single { KurobaExLiteDatabase.buildDatabase(application = get()) }
-    single { ProxiedOkHttpClient() }
+
+    single {
+      ProxiedOkHttpClient(
+        siteManager = get(),
+        firewallBypassManager = get()
+      )
+    }
+
     single { GlobalConstants(get()) }
     single { Moshi.Builder().build() }
     single { PostCommentParser(siteManager = get()) }
@@ -279,6 +287,13 @@ object DependencyGraph {
         appSettings = get(),
         parsedPostDataCache = get(),
         chanCache = get()
+      )
+    }
+
+    single {
+      FirewallBypassManager(
+        appScope = get(),
+        applicationVisibilityManager = get()
       )
     }
   }

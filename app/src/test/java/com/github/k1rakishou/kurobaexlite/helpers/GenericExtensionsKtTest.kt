@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.helpers
 
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -88,6 +89,15 @@ class GenericExtensionsKtTest {
       val res = (-1000f).quantize(25f)
       assertEquals((-1000), res.roundToInt())
     }
+  }
+
+  @Test
+  fun topDomainTest() {
+    assertEquals("4cdn.org", "https://a.4cdn.org".toHttpUrl().domain())
+    assertEquals("4cdn.org", "https://sys.4cdn.org".toHttpUrl().domain())
+    assertEquals("4cdn.org", "https://q.w.e.r.t.y.4cdn.org".toHttpUrl().domain())
+    assertEquals("4chan.org", "https://4chan.org".toHttpUrl().domain())
+    assertEquals("wikipedia.ru", "https://wikipedia.ru/%D0%A7%D1%91%D1%80%D0%BD%D1%8B%D0%B9_%D0%B0%D0%B2%D0%B3%D1%83%D1%81%D1%82".toHttpUrl().domain())
   }
 
 }

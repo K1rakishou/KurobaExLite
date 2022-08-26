@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
+import com.github.k1rakishou.kurobaexlite.helpers.domain
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
@@ -71,6 +72,7 @@ class Chan4(
 
   override val siteKey: SiteKey = SITE_KEY
   override val readableName: String = "4chan"
+  override val firewallChallengeEndpoint: HttpUrl? = null
   override val siteCaptcha: SiteCaptcha = SiteCaptcha.Chan4Captcha
   override val siteSettings: SiteSettings = chan4SiteSettings
 
@@ -83,6 +85,15 @@ class Chan4(
   override fun catalogPagesInfo(): Site.CatalogPagesInfo = chan4CatalogPagesInfo
   override fun globalSearchInfo(): Site.GlobalSearchInfo? = chan4GlobalSearchInfo
   override fun passcodeInfo(): Site.PasscodeInfo? = chan4PasscodeInfo
+
+  override fun matchesUrl(httpUrl: HttpUrl): Boolean {
+    val domain = httpUrl.domain()
+    if (domain.isNullOrEmpty()) {
+      return false
+    }
+
+    return siteDomains.any { siteHost -> siteHost.contains(domain) }
+  }
 
   override fun parser(): AbstractSitePostParser = chan4PostParser
   override fun icon(): HttpUrl = icon
@@ -391,6 +402,12 @@ class Chan4(
   companion object {
     private const val TAG = "Chan4"
     val SITE_KEY = SiteKey("4chan")
+
+    private val siteDomains = arrayOf(
+      "4chan.org",
+      "4channel.org",
+      "4cdn.org"
+    )
   }
 
 }

@@ -301,7 +301,7 @@ class RemoteImageSearchScreen(
                 return@collect
               }
 
-              logcat(TAG) { "Get YandexSmartCaptcha cookies, cookieResult: ${bypassResult}" }
+              logcat(TAG) { "Got YandexSmartCaptcha cookies, cookieResult: ${bypassResult}" }
               remoteImageSearchScreenViewModel.updateYandexSmartCaptchaCookies(bypassResult.cookie)
               remoteImageSearchScreenViewModel.reloadCurrentPage()
             } finally {

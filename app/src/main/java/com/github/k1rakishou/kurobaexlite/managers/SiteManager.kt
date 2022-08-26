@@ -6,6 +6,7 @@ import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import java.util.concurrent.ConcurrentHashMap
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class SiteManager(
@@ -15,6 +16,10 @@ class SiteManager(
 
   init {
     sites[Chan4.SITE_KEY] = Chan4(appContext)
+  }
+
+  override fun byUrl(httpUrl: HttpUrl): Site? {
+    return sites.values.firstOrNull { site -> site.matchesUrl(httpUrl) }
   }
 
   override fun bySiteKey(siteKey: SiteKey): Site? {

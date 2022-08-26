@@ -32,6 +32,8 @@ import okhttp3.HttpUrl
 interface Site {
   val siteKey: SiteKey
   val readableName: String
+  val firewallChallengeEndpoint: HttpUrl?
+
   val siteCaptcha: SiteCaptcha
   val siteSettings: SiteSettings
 
@@ -44,6 +46,8 @@ interface Site {
   fun catalogPagesInfo(): CatalogPagesInfo?
   fun globalSearchInfo(): GlobalSearchInfo?
   fun passcodeInfo(): PasscodeInfo?
+
+  fun matchesUrl(httpUrl: HttpUrl): Boolean
 
   fun parser(): AbstractSitePostParser
   fun icon(): HttpUrl?

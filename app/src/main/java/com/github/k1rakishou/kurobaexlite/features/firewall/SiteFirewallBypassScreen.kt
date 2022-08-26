@@ -51,6 +51,13 @@ class SiteFirewallBypassScreen(
     check(!bypassResultCompletableDeferred.isCompleted) { "bypassResultCompletableDeferred already completed!" }
 
     return when (firewallType) {
+      FirewallType.Cloudflare -> {
+        CloudFlareCheckBypassWebClient(
+          originalRequestUrlHost = urlToOpen,
+          cookieManager = cookieManager,
+          bypassResultCompletableDeferred = bypassResultCompletableDeferred
+        )
+      }
       FirewallType.YandexSmartCaptcha -> {
         YandexSmartCaptchaCheckBypassWebClient(
           originalRequestUrlHost = urlToOpen,
@@ -161,15 +168,19 @@ class SiteFirewallBypassScreen(
     when (cookieResult) {
       is BypassResult.Cookie -> {
         logcat(TAG) { "waitAndHandleResult() Success: ${cookieResult.cookie}" }
+        snackbarManager.toast("Successfully passed firewall ${firewallType}")
       }
       is BypassResult.Error -> {
         logcatError(TAG) { "waitAndHandleResult() Error: ${cookieResult.exception.errorMessageOrClassName()}" }
+        snackbarManager.errorToast("Failed to pass firewall ${firewallType}, error: ${cookieResult.exception.errorMessageOrClassName()}")
       }
       BypassResult.Canceled -> {
         logcatError(TAG) { "waitAndHandleResult() Canceled" }
+        snackbarManager.toast("Canceled")
       }
       BypassResult.NotSupported -> {
         logcatError(TAG) { "waitAndHandleResult() NotSupported" }
+        snackbarManager.errorToast("Firewall ${firewallType} is not supported")
       }
     }
 

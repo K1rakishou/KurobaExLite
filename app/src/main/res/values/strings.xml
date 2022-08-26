@@ -263,6 +263,7 @@
     <string name="settings_screen_notify_about_beta_versions">Notify about new beta versions</string>
     <string name="settings_screen_open_github_repository">Open github repository</string>
 
+    <string name="site_setting_cloudflare_clearance_cookie">CloudFlare clearance cookie</string>
     <string name="chan4_setting_remember_captcha_cookies">Remember captcha cookies</string>
     <string name="chan4_setting_4chan_cookie">4chan captcha cookie</string>
     <string name="chan4_setting_4channel_cookie">4channel captcha cookie</string>

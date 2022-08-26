@@ -29,6 +29,8 @@ class Chan4SiteSettings(
   val channel4CaptchaCookie by lazy { StringSetting("", "channel4_captcha_cookie", dataStore) }
   val passcodeCookie by lazy { StringSetting("", "passcode_cookie", dataStore) }
 
+  override val cloudFlareClearanceCookie: StringSetting by lazy { StringSetting("", "cloudflare_clearance_cookie", dataStore) }
+
   override suspend fun isLoggedIn(): Boolean {
     return passcodeCookie.read().isNotEmpty()
   }
@@ -53,6 +55,12 @@ class Chan4SiteSettings(
       StringSettingItem(
         title = appContext.resources.getString(R.string.chan4_setting_4channel_cookie),
         delegate = channel4CaptchaCookie,
+        showDialogScreen = showDialogScreen,
+        settingValueMapper = { token -> token.asFormattedToken() }
+      ),
+      StringSettingItem(
+        title = appContext.resources.getString(R.string.site_setting_cloudflare_clearance_cookie),
+        delegate = cloudFlareClearanceCookie,
         showDialogScreen = showDialogScreen,
         settingValueMapper = { token -> token.asFormattedToken() }
       ),

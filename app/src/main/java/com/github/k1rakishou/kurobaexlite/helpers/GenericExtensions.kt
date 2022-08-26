@@ -34,6 +34,7 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -920,6 +921,34 @@ fun HttpUrl.extractFileName(): String? {
   return this.pathSegments.lastOrNull()?.substringAfterLast("/")
 }
 
+fun HttpUrl.domain(): String? {
+  val host = host.removePrefix("www.")
+  if (host.isEmpty()) {
+    return null
+  }
+
+  var topDomainSeparatorFound = false
+  var indexOfDomainSeparator = -1
+
+  for (index in host.lastIndex downTo 0) {
+    if (host[index] == '.') {
+      if (!topDomainSeparatorFound) {
+        topDomainSeparatorFound = true
+        continue
+      }
+
+      indexOfDomainSeparator = index
+      break
+    }
+  }
+
+  if (indexOfDomainSeparator < 0) {
+    return host
+  }
+
+  return host.substring(indexOfDomainSeparator + 1, host.length)
+}
+
 private val AcceptableClasses = arrayOf(
   Serializable::class.java,
   Parcelable::class.java,
@@ -938,4 +967,46 @@ fun checkCanUseType(value: Any): Boolean {
   }
 
   return false
+}
+
+fun ByteArray.containsPattern(startFrom: Int, pattern: ByteArray): Boolean {
+  if (pattern.size > this.size) {
+    return false
+  }
+
+  for (offset in startFrom until this.size) {
+    if (pattern[0] == this[offset]) {
+      if (checkPattern(this, offset, pattern)) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+private fun checkPattern(input: ByteArray, offset: Int, pattern: ByteArray): Boolean {
+  for (index in pattern.indices) {
+    if (pattern[index] != input[offset + index]) {
+      return false
+    }
+  }
+
+  return true
+}
+
+suspend fun <T> CompletableDeferred<T>.awaitSilently(defaultValue: T): T {
+  return try {
+    await()
+  } catch (ignored: CancellationException) {
+    defaultValue
+  }
+}
+
+suspend fun CompletableDeferred<*>.awaitSilently() {
+  try {
+    await()
+  } catch (ignored: CancellationException) {
+    // no-op
+  }
 }

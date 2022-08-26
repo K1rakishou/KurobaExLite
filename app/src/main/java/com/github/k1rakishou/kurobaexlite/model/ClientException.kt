@@ -30,6 +30,7 @@ class EmptyBodyResponseException : ClientException("Response has no body")
 class SiteIsNotSupported(siteKey: SiteKey) : ClientException("Site \'${siteKey.key}\' is not supported")
 
 enum class FirewallType {
+  Cloudflare,
   YandexSmartCaptcha
 }
 

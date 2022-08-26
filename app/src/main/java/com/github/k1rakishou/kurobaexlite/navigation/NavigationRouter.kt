@@ -240,7 +240,7 @@ open class NavigationRouter(
       return screen
     }
 
-    for ((_, childRouter) in childRouters) {
+    for ((_, childRouter) in currentRouter.childRouters) {
       val screen = getScreenByKeyInternal(childRouter, screenKey)
       if (screen != null) {
         return screen
