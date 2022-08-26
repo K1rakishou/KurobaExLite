@@ -196,16 +196,11 @@ class CloudFlareInterceptor(
 
     const val CF_CLEARANCE = "cf_clearance"
 
-    private val CLOUD_FLARE_NEEDLE1 = "<title>Please Wait... | Cloudflare</title>".toByteArray(StandardCharsets.UTF_8)
-    private val CLOUD_FLARE_NEEDLE2 = "Checking your browser before accessing".toByteArray(StandardCharsets.UTF_8)
-    private val CLOUD_FLARE_NEEDLE3 = "<title>Just a moment...</title>".toByteArray(StandardCharsets.UTF_8)
-    private val CLOUD_FLARE_NEEDLE4 = "Browser Integrity Check".toByteArray(StandardCharsets.UTF_8)
-
     private val cloudflareNeedles = arrayOf(
-      CLOUD_FLARE_NEEDLE1,
-      CLOUD_FLARE_NEEDLE2,
-      CLOUD_FLARE_NEEDLE3,
-      CLOUD_FLARE_NEEDLE4
+      "<title>Just a moment".toByteArray(StandardCharsets.UTF_8),
+      "<title>Please wait".toByteArray(StandardCharsets.UTF_8),
+      "Checking your browser before accessing".toByteArray(StandardCharsets.UTF_8),
+      "Browser Integrity Check".toByteArray(StandardCharsets.UTF_8)
     )
   }
 }
