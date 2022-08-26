@@ -185,16 +185,7 @@ class CloudFlareInterceptor(
           return@use false
         }
 
-        if (
-          !bytes.containsPattern(0, CLOUD_FLARE_NEEDLE1) &&
-          !bytes.containsPattern(0, CLOUD_FLARE_NEEDLE2) &&
-          !bytes.containsPattern(0, CLOUD_FLARE_NEEDLE3) &&
-          !bytes.containsPattern(0, CLOUD_FLARE_NEEDLE4)
-        ) {
-          return@use false
-        }
-
-        return@use true
+        return@use cloudflareNeedles.any { needle -> bytes.containsPattern(0, needle) }
       }
     }
   }
@@ -209,5 +200,12 @@ class CloudFlareInterceptor(
     private val CLOUD_FLARE_NEEDLE2 = "Checking your browser before accessing".toByteArray(StandardCharsets.UTF_8)
     private val CLOUD_FLARE_NEEDLE3 = "<title>Just a moment...</title>".toByteArray(StandardCharsets.UTF_8)
     private val CLOUD_FLARE_NEEDLE4 = "Browser Integrity Check".toByteArray(StandardCharsets.UTF_8)
+
+    private val cloudflareNeedles = arrayOf(
+      CLOUD_FLARE_NEEDLE1,
+      CLOUD_FLARE_NEEDLE2,
+      CLOUD_FLARE_NEEDLE3,
+      CLOUD_FLARE_NEEDLE4
+    )
   }
 }
