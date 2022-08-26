@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers.http_client
+package com.github.k1rakishou.kurobaexlite.helpers.network.http_client
 
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
