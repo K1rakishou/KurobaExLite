@@ -48,7 +48,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi

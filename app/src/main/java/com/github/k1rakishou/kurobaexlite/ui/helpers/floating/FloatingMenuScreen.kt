@@ -28,8 +28,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
-import com.github.k1rakishou.kurobaexlite.helpers.checkCanUseType
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
+import com.github.k1rakishou.kurobaexlite.helpers.util.checkCanUseType
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider

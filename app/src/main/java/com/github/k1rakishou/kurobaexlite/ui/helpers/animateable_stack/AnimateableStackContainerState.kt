@@ -3,7 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import com.github.k1rakishou.kurobaexlite.helpers.removeIfKt
+import com.github.k1rakishou.kurobaexlite.helpers.util.removeIfKt
 
 interface DisposableElement {
   val elementKey: String

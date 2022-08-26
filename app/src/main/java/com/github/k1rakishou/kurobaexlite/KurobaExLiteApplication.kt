@@ -6,8 +6,8 @@ import android.os.Bundle
 import android.util.Log
 import com.github.k1rakishou.kurobaexlite.helpers.di.DependencyGraph
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.ui.activity.CrashReportActivity
 import kotlin.system.exitProcess

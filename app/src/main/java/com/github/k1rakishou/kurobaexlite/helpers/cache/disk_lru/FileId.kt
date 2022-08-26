@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru
 
-import com.github.k1rakishou.kurobaexlite.helpers.removeExtensionFromFileName
+import com.github.k1rakishou.kurobaexlite.helpers.util.removeExtensionFromFileName
 import java.io.File
 import okhttp3.HttpUrl
 import okio.ByteString.Companion.encodeUtf8

@@ -76,10 +76,10 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.image.GrayscaleTransformation
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkStatsUi

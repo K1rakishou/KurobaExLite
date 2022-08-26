@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.view.WindowManager
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import logcat.logcat
 
 class MpvInitializer(

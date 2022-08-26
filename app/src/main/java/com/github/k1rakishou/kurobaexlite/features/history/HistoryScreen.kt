@@ -50,8 +50,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detect
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem

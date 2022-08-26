@@ -9,9 +9,9 @@ import com.github.k1rakishou.kurobaexlite.features.settings.items.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.features.settings.items.LinkSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.StringSettingItem
-import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
+import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen

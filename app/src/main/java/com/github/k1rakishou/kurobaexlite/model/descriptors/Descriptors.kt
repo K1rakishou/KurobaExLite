@@ -2,8 +2,8 @@ package com.github.k1rakishou.kurobaexlite.model.descriptors
 
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
-import com.github.k1rakishou.kurobaexlite.helpers.readUtfString
-import com.github.k1rakishou.kurobaexlite.helpers.writeUtfString
+import com.github.k1rakishou.kurobaexlite.helpers.util.readUtfString
+import com.github.k1rakishou.kurobaexlite.helpers.util.writeUtfString
 import kotlinx.parcelize.Parcelize
 import okio.Buffer
 

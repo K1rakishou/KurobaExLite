@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
-import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey

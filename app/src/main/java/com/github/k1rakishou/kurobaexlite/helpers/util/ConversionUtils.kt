@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers
+package com.github.k1rakishou.kurobaexlite.helpers.util
 
 import android.graphics.Color
 import okhttp3.internal.and

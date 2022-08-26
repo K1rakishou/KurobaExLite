@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers
+package com.github.k1rakishou.kurobaexlite.helpers.util
 
 import java.util.concurrent.CancellationException
 import kotlin.time.Duration

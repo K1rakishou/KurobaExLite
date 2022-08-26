@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager

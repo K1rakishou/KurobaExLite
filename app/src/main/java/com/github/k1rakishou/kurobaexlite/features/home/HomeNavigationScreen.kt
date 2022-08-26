@@ -25,8 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
-import com.github.k1rakishou.kurobaexlite.helpers.quantize
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar

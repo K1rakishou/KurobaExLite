@@ -24,13 +24,13 @@ import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
-import com.github.k1rakishou.kurobaexlite.helpers.processDataCollectionConcurrently
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.processDataCollectionConcurrently
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.PersistBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager

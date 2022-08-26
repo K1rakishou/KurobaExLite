@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.gesture.awaitPointerSlopOrCancellationWithPass
 import kotlin.math.absoluteValue

@@ -15,7 +15,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey

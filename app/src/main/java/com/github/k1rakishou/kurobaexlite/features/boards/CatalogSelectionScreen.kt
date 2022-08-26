@@ -32,9 +32,9 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.site.SiteSettingsScreen
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.sort.WeightedSorter
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter

@@ -1,14 +1,14 @@
 package com.github.k1rakishou.kurobaexlite.sites.chan4
 
 import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
-import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
-import com.github.k1rakishou.kurobaexlite.helpers.groupOrNull
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressRequestBody
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
-import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
-import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
+import com.github.k1rakishou.kurobaexlite.helpers.util.groupOrNull
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor

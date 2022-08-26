@@ -9,13 +9,13 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts

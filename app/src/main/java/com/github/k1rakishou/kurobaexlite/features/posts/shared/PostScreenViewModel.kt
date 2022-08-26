@@ -9,11 +9,11 @@ import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
-import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequence
-import com.github.k1rakishou.kurobaexlite.helpers.bidirectionalSequenceIndexed
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequence
+import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequenceIndexed
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdateBookmarkInfoUponThreadOpen
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts

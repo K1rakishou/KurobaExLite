@@ -2,8 +2,8 @@ package com.github.k1rakishou.kurobaexlite.model.data.ui
 
 import android.os.Parcel
 import android.os.Parcelable
-import com.github.k1rakishou.kurobaexlite.helpers.readBooleanKt
-import com.github.k1rakishou.kurobaexlite.helpers.writeBooleanKt
+import com.github.k1rakishou.kurobaexlite.helpers.util.readBooleanKt
+import com.github.k1rakishou.kurobaexlite.helpers.util.writeBooleanKt
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

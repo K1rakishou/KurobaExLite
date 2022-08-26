@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.interactors.catalog
 
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase

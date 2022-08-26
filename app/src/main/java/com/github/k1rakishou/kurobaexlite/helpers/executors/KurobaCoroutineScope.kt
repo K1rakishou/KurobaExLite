@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.executors
 
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler

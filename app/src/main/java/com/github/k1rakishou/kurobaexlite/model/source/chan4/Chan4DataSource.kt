@@ -1,15 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.model.source.chan4
 
-import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
-import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
-import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithHtmlReader
-import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
-import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithHtmlReader
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithJsonAdapter
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException

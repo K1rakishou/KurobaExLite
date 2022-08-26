@@ -44,10 +44,10 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.rememberViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.unreachable
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.rememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon

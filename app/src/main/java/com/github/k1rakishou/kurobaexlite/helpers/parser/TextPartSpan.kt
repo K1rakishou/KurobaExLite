@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.helpers.parser
 
 import androidx.compose.runtime.Immutable
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.readUtfString
-import com.github.k1rakishou.kurobaexlite.helpers.writeUtfString
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.readUtfString
+import com.github.k1rakishou.kurobaexlite.helpers.util.writeUtfString
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import okio.Buffer

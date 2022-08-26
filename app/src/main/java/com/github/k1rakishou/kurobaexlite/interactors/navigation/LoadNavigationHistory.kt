@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.navigation
 
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase

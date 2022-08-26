@@ -2,8 +2,8 @@ package com.github.k1rakishou.kurobaexlite.model.cache
 
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.BackgroundUtils
-import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
+import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
+import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor

@@ -7,7 +7,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.CatalogGlobalSearch
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor

@@ -6,7 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Rect
 import androidx.compose.ui.unit.IntSize
 import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageDecoder
-import com.github.k1rakishou.kurobaexlite.helpers.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import java.io.InputStream
 import logcat.logcat
 import tachiyomi.decoder.ImageDecoder

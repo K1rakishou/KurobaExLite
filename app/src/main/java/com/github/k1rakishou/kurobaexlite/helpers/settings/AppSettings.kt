@@ -8,12 +8,12 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.EnumSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.JsonSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.NumberSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi

@@ -1,5 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
+import com.github.k1rakishou.kurobaexlite.helpers.util.domain
+import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import okhttp3.HttpUrl.Companion.toHttpUrl

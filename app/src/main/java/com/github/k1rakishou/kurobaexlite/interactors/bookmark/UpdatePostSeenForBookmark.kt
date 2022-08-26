@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase

@@ -2,7 +2,7 @@ package com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru
 
 import android.content.Context
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.ExperimentalTime

@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import com.github.k1rakishou.kurobaexlite.helpers.annotations.DoNotStrip
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import java.io.File
 import kotlin.math.abs
 import logcat.logcat

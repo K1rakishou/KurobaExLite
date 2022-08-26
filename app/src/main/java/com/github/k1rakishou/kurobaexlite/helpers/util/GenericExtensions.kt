@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers
+package com.github.k1rakishou.kurobaexlite.helpers.util
 
 import android.app.Activity
 import android.os.Binder

@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.model.repoository
 
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult

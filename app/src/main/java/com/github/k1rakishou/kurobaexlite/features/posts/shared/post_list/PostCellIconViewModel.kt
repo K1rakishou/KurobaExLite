@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.CountryFlag

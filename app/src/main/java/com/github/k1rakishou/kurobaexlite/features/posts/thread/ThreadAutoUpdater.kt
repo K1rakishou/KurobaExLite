@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.thread
 
 import android.os.SystemClock
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibility
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor

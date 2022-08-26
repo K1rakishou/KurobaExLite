@@ -9,8 +9,8 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.compose.saveable
-import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow

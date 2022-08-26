@@ -14,7 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 

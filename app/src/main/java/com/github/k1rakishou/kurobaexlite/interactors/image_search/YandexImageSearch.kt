@@ -1,15 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.interactors.image_search
 
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.appendCookieHeader
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.extractFileNameExtension
-import com.github.k1rakishou.kurobaexlite.helpers.fixUrlOrNull
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
-import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
-import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.extractFileNameExtension
+import com.github.k1rakishou.kurobaexlite.helpers.util.fixUrlOrNull
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException

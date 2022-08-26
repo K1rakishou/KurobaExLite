@@ -11,10 +11,10 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.util.fastForEachIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.findAllOccurrences
-import com.github.k1rakishou.kurobaexlite.helpers.linkedMapWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.toHashSetByKey
+import com.github.k1rakishou.kurobaexlite.helpers.util.findAllOccurrences
+import com.github.k1rakishou.kurobaexlite.helpers.util.linkedMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.toHashSetByKey
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor

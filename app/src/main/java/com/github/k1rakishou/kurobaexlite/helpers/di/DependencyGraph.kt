@@ -86,6 +86,7 @@ import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
+import com.github.k1rakishou.kurobaexlite.managers.ReportManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
@@ -294,6 +295,16 @@ object DependencyGraph {
       FirewallBypassManager(
         appScope = get(),
         applicationVisibilityManager = get()
+      )
+    }
+
+    single {
+      ReportManager(
+        appScope = get(),
+        appContext = get(),
+        androidHelpers = get(),
+        proxiedOkHttpClient = get(),
+        moshi = get(),
       )
     }
   }

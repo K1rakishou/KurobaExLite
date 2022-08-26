@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.model.data.local.bookmark
 
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkReplyEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadLocalPostKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor

@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.model.repoository
 
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor

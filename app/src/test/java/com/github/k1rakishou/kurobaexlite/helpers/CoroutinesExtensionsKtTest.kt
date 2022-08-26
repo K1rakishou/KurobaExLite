@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers
 
+import com.github.k1rakishou.kurobaexlite.helpers.util.buffer
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay

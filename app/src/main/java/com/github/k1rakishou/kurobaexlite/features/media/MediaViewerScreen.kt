@@ -73,11 +73,11 @@ import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayV
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType

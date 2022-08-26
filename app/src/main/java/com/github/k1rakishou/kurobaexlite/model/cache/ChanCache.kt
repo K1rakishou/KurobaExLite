@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.model.cache
 
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult

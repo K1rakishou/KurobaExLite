@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers
+package com.github.k1rakishou.kurobaexlite.helpers.util
 
 import androidx.compose.foundation.gestures.GestureCancellationException
 import androidx.compose.foundation.gestures.PressGestureScope

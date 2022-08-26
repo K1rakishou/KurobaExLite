@@ -28,9 +28,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility

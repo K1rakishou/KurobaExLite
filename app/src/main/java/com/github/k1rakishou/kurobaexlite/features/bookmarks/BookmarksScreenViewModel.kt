@@ -9,10 +9,10 @@ import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.move
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.move
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks

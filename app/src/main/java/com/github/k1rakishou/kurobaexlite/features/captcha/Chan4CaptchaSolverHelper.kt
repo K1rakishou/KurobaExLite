@@ -6,9 +6,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.resumeValueSafe
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeValueSafe
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi

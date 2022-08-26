@@ -20,7 +20,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingItem
-import com.github.k1rakishou.kurobaexlite.helpers.resumeSafe
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter

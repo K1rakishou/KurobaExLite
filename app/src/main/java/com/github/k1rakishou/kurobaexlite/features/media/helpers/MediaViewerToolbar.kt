@@ -19,9 +19,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenState
-import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
-import com.github.k1rakishou.kurobaexlite.helpers.rememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.util.rememberViewModel
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState

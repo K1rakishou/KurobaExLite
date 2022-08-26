@@ -6,7 +6,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.Snapshot
-import com.github.k1rakishou.kurobaexlite.helpers.unreachable
+import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen

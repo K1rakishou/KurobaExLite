@@ -25,9 +25,9 @@ import androidx.compose.ui.zIndex
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.FAB_TRANSITION_ANIMATION_DURATION_MS
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
-import com.github.k1rakishou.kurobaexlite.helpers.quantize
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme

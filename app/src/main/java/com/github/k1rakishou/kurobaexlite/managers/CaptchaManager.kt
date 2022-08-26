@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import android.os.SystemClock
-import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CompletableDeferred

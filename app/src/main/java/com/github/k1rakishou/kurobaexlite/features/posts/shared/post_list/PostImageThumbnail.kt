@@ -23,8 +23,8 @@ import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType

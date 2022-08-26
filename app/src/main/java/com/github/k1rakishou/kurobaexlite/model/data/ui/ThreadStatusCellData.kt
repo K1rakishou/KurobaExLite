@@ -2,7 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.ui
 
 import android.content.Context
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData

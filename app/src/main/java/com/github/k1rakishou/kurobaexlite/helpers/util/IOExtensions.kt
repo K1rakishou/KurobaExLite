@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.helpers
+package com.github.k1rakishou.kurobaexlite.helpers.util
 
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlReader
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException

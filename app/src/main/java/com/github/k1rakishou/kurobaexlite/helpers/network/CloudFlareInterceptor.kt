@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.helpers.network
 
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.containsPattern
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.containsPattern
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException

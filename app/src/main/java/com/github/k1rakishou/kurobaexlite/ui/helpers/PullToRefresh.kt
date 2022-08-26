@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 
 @Stable
 class PullToRefreshState {

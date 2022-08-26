@@ -7,7 +7,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.withTransaction
-import com.github.k1rakishou.kurobaexlite.helpers.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogSortOrderEntity

@@ -45,11 +45,11 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.firewall.BypassResult
 import com.github.k1rakishou.kurobaexlite.features.firewall.SiteFirewallBypassScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
-import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.resumeSafe
+import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.model.FirewallType
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer

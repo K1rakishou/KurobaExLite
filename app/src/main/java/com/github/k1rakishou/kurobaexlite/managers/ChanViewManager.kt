@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
+import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalogView
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanThreadView
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor

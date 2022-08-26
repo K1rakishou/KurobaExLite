@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.executors
 
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineDispatcher

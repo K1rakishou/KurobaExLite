@@ -15,12 +15,12 @@ import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.groupOrNull
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.groupOrNull
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithJsonAdapter
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi

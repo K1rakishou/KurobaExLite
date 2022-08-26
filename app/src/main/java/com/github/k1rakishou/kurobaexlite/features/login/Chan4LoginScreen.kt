@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField

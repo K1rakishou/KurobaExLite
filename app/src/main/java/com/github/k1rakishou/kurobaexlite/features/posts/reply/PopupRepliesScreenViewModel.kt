@@ -7,8 +7,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewMo
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PopupPostsScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
-import com.github.k1rakishou.kurobaexlite.helpers.flatMapNotNull
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
+import com.github.k1rakishou.kurobaexlite.helpers.util.flatMapNotNull
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData

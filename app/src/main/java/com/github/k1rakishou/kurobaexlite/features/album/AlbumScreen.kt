@@ -53,9 +53,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor

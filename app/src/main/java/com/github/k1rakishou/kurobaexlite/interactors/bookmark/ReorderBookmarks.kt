@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkSortOrderEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadKey
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark

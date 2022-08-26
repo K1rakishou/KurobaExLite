@@ -11,10 +11,10 @@ import androidx.work.WorkerParameters
 import androidx.work.await
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager

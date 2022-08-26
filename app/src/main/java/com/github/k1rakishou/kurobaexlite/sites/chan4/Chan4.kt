@@ -2,14 +2,14 @@ package com.github.k1rakishou.kurobaexlite.sites.chan4
 
 import android.content.Context
 import androidx.compose.ui.text.AnnotatedString
-import com.github.k1rakishou.kurobaexlite.helpers.appendCookieHeader
-import com.github.k1rakishou.kurobaexlite.helpers.asFormattedToken
-import com.github.k1rakishou.kurobaexlite.helpers.domain
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.Chan4PostParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
+import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
+import com.github.k1rakishou.kurobaexlite.helpers.util.domain
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData

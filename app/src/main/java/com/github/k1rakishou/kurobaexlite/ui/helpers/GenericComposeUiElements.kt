@@ -92,7 +92,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.detectTapGesturesWithFilter
+import com.github.k1rakishou.kurobaexlite.helpers.util.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import java.util.Locale
 

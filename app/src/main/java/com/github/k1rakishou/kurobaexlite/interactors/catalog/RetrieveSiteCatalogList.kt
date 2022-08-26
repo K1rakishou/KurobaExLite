@@ -1,11 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.interactors.catalog
 
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.entity.CatalogKey

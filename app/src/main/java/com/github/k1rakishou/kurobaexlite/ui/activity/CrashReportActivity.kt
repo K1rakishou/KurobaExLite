@@ -1,8 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.activity
 
-import android.app.ActivityManager
-import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -38,16 +35,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import com.github.k1rakishou.kurobaexlite.BuildConfig
-import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.managers.ReportManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
@@ -61,16 +58,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.verticalScrollbar
-import java.io.IOException
-import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.logcat
-import okio.buffer
-import okio.source
-import org.joda.time.Duration
-import org.joda.time.format.PeriodFormatterBuilder
 import org.koin.java.KoinJavaComponent.inject
 
 class CrashReportActivity : ComponentActivity() {
@@ -78,6 +69,7 @@ class CrashReportActivity : ComponentActivity() {
   private val fullScreenHelpers: FullScreenHelpers by inject(FullScreenHelpers::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
+  private val reportManager: ReportManager by inject(ReportManager::class.java)
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
@@ -154,6 +146,12 @@ class CrashReportActivity : ComponentActivity() {
     var attachVerboseLogs by rememberSaveable { mutableStateOf(false) }
     var attachMpvLogs by rememberSaveable { mutableStateOf(false) }
 
+    var blockSendReportButton by rememberSaveable { mutableStateOf(false) }
+    var blockRestartAppButton by rememberSaveable { mutableStateOf(false) }
+
+    var logsMut by rememberSaveable(attachVerboseLogs) { mutableStateOf<String?>(null) }
+    val logs = logsMut
+
     InsetsAwareBox(
       modifier = Modifier
         .fillMaxSize()
@@ -213,14 +211,11 @@ class CrashReportActivity : ComponentActivity() {
         Spacer(modifier = Modifier.height(4.dp))
 
         Collapsable(title = stringResource(id = R.string.crash_report_activity_crash_logs_section)) {
-          var logsMut by rememberSaveable(attachVerboseLogs) { mutableStateOf<String?>(null) }
-          val logs = logsMut
-
           LaunchedEffect(
             key1 = Unit,
             block = {
               logsMut = withContext(Dispatchers.IO) {
-                loadLogs(attachVerboseLogs = attachVerboseLogs, attachMpvLogs = attachMpvLogs)
+                ReportManager.loadLogs(attachVerboseLogs = attachVerboseLogs, attachMpvLogs = attachMpvLogs)
               }
             }
           )
@@ -247,7 +242,7 @@ class CrashReportActivity : ComponentActivity() {
         Spacer(modifier = Modifier.height(4.dp))
 
         Collapsable(title = stringResource(id = R.string.crash_report_activity_additional_info_section)) {
-          val footer = remember { getReportFooter() }
+          val footer = remember { reportManager.getReportFooter() }
 
           SelectionContainer {
             KurobaComposeText(
@@ -288,6 +283,76 @@ class CrashReportActivity : ComponentActivity() {
             .wrapContentHeight(),
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
+          KurobaComposeTextButton(
+            modifier = Modifier.wrapContentWidth(),
+            text = stringResource(id = R.string.crash_report_activity_send),
+            enabled = !blockSendReportButton,
+            onClick = {
+              coroutineScope.launch {
+                reportHandled = true
+
+                blockSendReportButton = true
+                blockRestartAppButton = true
+
+                val logsForSending = if (logs.isNullOrEmpty()) {
+                  withContext(Dispatchers.IO) { ReportManager.loadLogs(attachVerboseLogs, attachMpvLogs) }
+                } else {
+                  logs
+                }
+
+                val reportFooter = reportManager.getReportFooter()
+                val title = "${className} ${message}"
+
+                val body = buildString(4096) {
+                  appendLine("Stacktrace")
+                  appendLine("```")
+                  appendLine(stacktrace)
+                  appendLine("```")
+                  appendLine()
+
+                  if (logsForSending.isNotNullNorEmpty()) {
+                    appendLine("Logs")
+                    appendLine("```")
+                    appendLine(logsForSending)
+                    appendLine("```")
+                  }
+
+                  appendLine("Additional information")
+                  appendLine("```")
+                  appendLine(reportFooter)
+                  appendLine("```")
+                }
+
+                reportManager.sendCrashlog(
+                  title = title,
+                  body = body,
+                  onReportSendResult = { sendReportResult ->
+                    if (sendReportResult.isFailure) {
+                      blockSendReportButton = false
+                      blockRestartAppButton = false
+
+                      Toast.makeText(
+                        this@CrashReportActivity,
+                        "Failed to send report, error: ${sendReportResult.exceptionOrThrow().errorMessageOrClassName()}",
+                        Toast.LENGTH_LONG
+                      ).show()
+                    } else {
+                      blockRestartAppButton = false
+
+                      Toast.makeText(
+                        this@CrashReportActivity,
+                        "Report sent",
+                        Toast.LENGTH_LONG
+                      ).show()
+                    }
+                  }
+                )
+              }
+            }
+          )
+
+          Spacer(modifier = Modifier.height(8.dp))
+
           KurobaComposeTextButton(
             modifier = Modifier.wrapContentWidth(),
             text = stringResource(id = R.string.crash_report_activity_copy_for_github),
@@ -332,6 +397,7 @@ class CrashReportActivity : ComponentActivity() {
           KurobaComposeTextButton(
             modifier = Modifier.wrapContentWidth(),
             text = buttonText,
+            enabled = !blockRestartAppButton,
             onClick = { appRestarter.restart() }
           )
         }
@@ -394,8 +460,8 @@ class CrashReportActivity : ComponentActivity() {
     attachVerboseLogs: Boolean,
     attachMpvLogs: Boolean
   ) {
-    val logs = withContext(Dispatchers.IO) { loadLogs(attachVerboseLogs, attachMpvLogs) }
-    val reportFooter = getReportFooter()
+    val logs = withContext(Dispatchers.IO) { ReportManager.loadLogs(attachVerboseLogs, attachMpvLogs) }
+    val reportFooter = reportManager.getReportFooter()
 
     val resultString = buildString(16000) {
       appendLine("Title (put this into the Github issue title)")
@@ -431,29 +497,6 @@ class CrashReportActivity : ComponentActivity() {
     ).show()
   }
 
-  private fun getReportFooter(): String {
-    val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-
-    return buildString(capacity = 128) {
-      appendLine("Android API Level: " + Build.VERSION.SDK_INT)
-      appendLine("App Version: " + BuildConfig.VERSION_NAME)
-      appendLine("Phone Model: " + Build.MANUFACTURER + " " + Build.MODEL)
-      appendLine("Flavor type: " + androidHelpers.getFlavorType().name)
-      appendLine("isSlowDevice: ${androidHelpers.isSlowDevice}")
-      appendLine("MemoryClass: ${activityManager?.memoryClass}")
-      appendLine("App running time: ${formatAppRunningTime()}")
-    }
-  }
-
-  private fun formatAppRunningTime(): String {
-    val time = androidHelpers.appRunningTime
-    if (time <= 0) {
-      return "Bad time: ${time}"
-    }
-
-    return appRunningTimeFormatter.print(Duration.millis(time).toPeriod())
-  }
-
   companion object {
     private const val TAG = "CrashReportActivity"
 
@@ -462,61 +505,6 @@ class CrashReportActivity : ComponentActivity() {
     const val EXCEPTION_MESSAGE_KEY = "exception_message"
     const val EXCEPTION_STACKTRACE_KEY = "exception_stacktrace"
 
-    private val appRunningTimeFormatter = PeriodFormatterBuilder()
-      .printZeroAlways()
-      .minimumPrintedDigits(2)
-      .appendHours()
-      .appendSuffix(":")
-      .appendMinutes()
-      .appendSuffix(":")
-      .appendSeconds()
-      .appendSuffix(".")
-      .appendMillis3Digit()
-      .toFormatter()
-
-    fun loadLogs(attachVerboseLogs: Boolean, attachMpvLogs: Boolean): String? {
-      val linesCount = if (attachVerboseLogs) {
-        1000
-      } else {
-        500
-      }
-
-      val process = try {
-        ProcessBuilder()
-          .command("logcat", "-v", "tag", "-t", linesCount.toString(), "StrictMode:S")
-          .start()
-      } catch (e: IOException) {
-        logcatError(TAG) { "Error starting logcat: ${e.asLogIfImportantOrErrorMessage()}" }
-        return null
-      }
-
-      val outputStream = process.inputStream
-      val fullLogsString = StringBuilder(16000)
-      val logsAsString = outputStream.use { it.source().buffer().readString(StandardCharsets.UTF_8) }
-
-      for (line in logsAsString.split("\n").toTypedArray()) {
-        if (line.contains("${KurobaExLiteApplication.GLOBAL_TAG} |", ignoreCase = true)) {
-          val logType = line.getOrNull(0)?.uppercaseChar() ?: continue
-
-          when (logType) {
-            'V' -> {
-              if (!attachVerboseLogs) {
-                continue
-              }
-            }
-            else -> {
-              // no-op
-            }
-          }
-
-          fullLogsString.appendLine(line)
-        } else if (attachMpvLogs && line.contains("mpv", ignoreCase = true)) {
-          fullLogsString.appendLine(line)
-        }
-      }
-
-      return fullLogsString.toString()
-    }
   }
 
 }

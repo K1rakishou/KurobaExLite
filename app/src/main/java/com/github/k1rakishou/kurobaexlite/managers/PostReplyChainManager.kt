@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.withLockNonCancellable
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.sync.Mutex

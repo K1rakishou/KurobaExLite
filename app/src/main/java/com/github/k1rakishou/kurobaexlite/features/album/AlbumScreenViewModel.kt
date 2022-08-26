@@ -5,10 +5,10 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
-import com.github.k1rakishou.kurobaexlite.helpers.asReadableFileSize
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache

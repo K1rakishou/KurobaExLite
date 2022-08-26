@@ -3,11 +3,11 @@ package com.github.k1rakishou.kurobaexlite.managers
 import androidx.annotation.GuardedBy
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
-import com.github.k1rakishou.kurobaexlite.helpers.buffer
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
+import com.github.k1rakishou.kurobaexlite.helpers.util.buffer
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData

@@ -35,8 +35,8 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
-import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
-import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard

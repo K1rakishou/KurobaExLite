@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import kotlinx.coroutines.channels.Channel

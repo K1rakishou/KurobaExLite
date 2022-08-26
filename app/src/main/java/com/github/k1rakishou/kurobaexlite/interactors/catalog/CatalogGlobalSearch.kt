@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.interactors.catalog
 
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData

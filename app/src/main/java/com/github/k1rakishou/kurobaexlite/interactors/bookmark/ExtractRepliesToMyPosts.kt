@@ -1,13 +1,13 @@
 package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType

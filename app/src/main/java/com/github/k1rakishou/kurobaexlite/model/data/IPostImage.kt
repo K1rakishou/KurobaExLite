@@ -2,7 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.data
 
 import android.webkit.MimeTypeMap
 import androidx.compose.runtime.Immutable
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import java.util.Locale
 import okhttp3.HttpUrl

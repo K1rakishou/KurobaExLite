@@ -12,8 +12,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Relation
 import androidx.room.Transaction
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmarkReply
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase

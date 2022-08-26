@@ -4,12 +4,12 @@ import android.content.Context
 import android.os.Build
 import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
-import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
-import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
-import com.github.k1rakishou.kurobaexlite.helpers.unwrap
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithJsonAdapter
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.squareup.moshi.Json

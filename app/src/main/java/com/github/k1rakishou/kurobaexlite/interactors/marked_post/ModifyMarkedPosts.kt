@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.marked_post
 
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.model.data.entity.MarkedPostEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.PostKey

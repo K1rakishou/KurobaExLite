@@ -21,10 +21,10 @@ import com.github.k1rakishou.cssi_lib.ScrollableContainerDirection
 import com.github.k1rakishou.cssi_lib.rememberComposeSubsamplingScaleImageState
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.Try
 import com.github.k1rakishou.kurobaexlite.helpers.decoder.TachiyomiImageDecoder
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import java.io.File
 
 @Composable

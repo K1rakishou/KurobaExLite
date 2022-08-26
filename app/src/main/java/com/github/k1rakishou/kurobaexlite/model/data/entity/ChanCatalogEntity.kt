@@ -13,7 +13,7 @@ import androidx.room.Query
 import androidx.room.Relation
 import androidx.room.Transaction
 import androidx.room.Update
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 

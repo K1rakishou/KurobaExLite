@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.html
 
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 
 /**
  * Not thread safe!

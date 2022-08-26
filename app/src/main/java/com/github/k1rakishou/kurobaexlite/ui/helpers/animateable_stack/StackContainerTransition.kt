@@ -13,7 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 
 @Composable
 internal fun <T : DisposableElement> StackContainerTransition(

@@ -1,11 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.model.source.chan4
 
-import com.github.k1rakishou.kurobaexlite.helpers.extractFileNameExtension
-import com.github.k1rakishou.kurobaexlite.helpers.groupOrNull
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlReader
 import com.github.k1rakishou.kurobaexlite.helpers.html.SearchException
-import com.github.k1rakishou.kurobaexlite.helpers.rawSizeToLong
-import com.github.k1rakishou.kurobaexlite.helpers.removeExtensionIfPresent
+import com.github.k1rakishou.kurobaexlite.helpers.util.extractFileNameExtension
+import com.github.k1rakishou.kurobaexlite.helpers.util.groupOrNull
+import com.github.k1rakishou.kurobaexlite.helpers.util.rawSizeToLong
+import com.github.k1rakishou.kurobaexlite.helpers.util.removeExtensionIfPresent
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData

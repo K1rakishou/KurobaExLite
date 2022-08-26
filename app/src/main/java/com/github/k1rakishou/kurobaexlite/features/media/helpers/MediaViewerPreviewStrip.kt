@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
-import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi

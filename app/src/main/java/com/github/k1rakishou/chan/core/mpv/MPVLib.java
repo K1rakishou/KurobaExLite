@@ -10,7 +10,7 @@ package com.github.k1rakishou.chan.core.mpv;
  * NATIVE LIBRARIES DEPEND ON THE CLASS PACKAGE!
  */
 
-import static com.github.k1rakishou.kurobaexlite.helpers.GenericExtensionsKt.errorMessageOrClassName;
+import static com.github.k1rakishou.kurobaexlite.helpers.util.GenericExtensionsKt.errorMessageOrClassName;
 
 import android.annotation.SuppressLint;
 import android.content.Context;

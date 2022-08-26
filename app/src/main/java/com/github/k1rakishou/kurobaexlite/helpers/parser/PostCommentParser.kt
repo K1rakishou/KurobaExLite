@@ -1,11 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.helpers.parser
 
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlNode
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlParser
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.managers.ISiteManager
 import com.github.k1rakishou.kurobaexlite.model.SiteIsNotSupported
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor

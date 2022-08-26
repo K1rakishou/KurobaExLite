@@ -29,11 +29,11 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.koinRemember
-import com.github.k1rakishou.kurobaexlite.helpers.lerpFloat
-import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
-import com.github.k1rakishou.kurobaexlite.helpers.quantize
-import com.github.k1rakishou.kurobaexlite.helpers.unreachable
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
+import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
+import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter

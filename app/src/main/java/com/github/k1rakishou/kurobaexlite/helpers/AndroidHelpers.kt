@@ -14,6 +14,8 @@ import android.text.TextUtils
 import android.view.WindowManager
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import java.io.File
 import logcat.logcat

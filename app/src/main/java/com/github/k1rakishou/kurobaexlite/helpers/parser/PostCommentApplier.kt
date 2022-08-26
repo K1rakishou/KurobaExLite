@@ -6,8 +6,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import com.github.k1rakishou.kurobaexlite.helpers.buildAnnotatedString
-import com.github.k1rakishou.kurobaexlite.helpers.createAnnotationItem
+import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
+import com.github.k1rakishou.kurobaexlite.helpers.util.createAnnotationItem
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext

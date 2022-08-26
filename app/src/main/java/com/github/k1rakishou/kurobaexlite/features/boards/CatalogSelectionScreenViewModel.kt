@@ -4,9 +4,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog

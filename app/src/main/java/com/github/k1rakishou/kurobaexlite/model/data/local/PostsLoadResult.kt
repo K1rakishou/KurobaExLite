@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.model.data.local
 
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 

@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.awaitSilently
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.helpers.util.awaitSilently
 import com.github.k1rakishou.kurobaexlite.model.FirewallType
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import kotlinx.coroutines.CompletableDeferred

@@ -1,14 +1,14 @@
 package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.Try
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
-import com.github.k1rakishou.kurobaexlite.helpers.processDataCollectionConcurrently
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.processDataCollectionConcurrently
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager

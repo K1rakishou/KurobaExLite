@@ -40,9 +40,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.resumeSafe
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode

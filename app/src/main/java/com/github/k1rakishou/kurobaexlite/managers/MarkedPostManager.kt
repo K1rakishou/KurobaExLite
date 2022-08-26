@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.mutableIteration
-import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor

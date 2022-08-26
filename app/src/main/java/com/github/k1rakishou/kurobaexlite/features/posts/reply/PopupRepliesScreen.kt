@@ -63,8 +63,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapConte
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter

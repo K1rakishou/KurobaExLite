@@ -40,9 +40,9 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.unreachable
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache

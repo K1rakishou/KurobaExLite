@@ -2,10 +2,10 @@ package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
 import android.content.Context
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.resumeValueSafe
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeValueSafe
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager

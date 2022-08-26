@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.helpers.parser
 
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
-import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import java.util.EnumSet
 import org.nibor.autolink.LinkExtractor

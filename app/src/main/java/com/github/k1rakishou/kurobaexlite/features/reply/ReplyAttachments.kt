@@ -27,8 +27,8 @@ import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import coil.request.videoFrameMillis
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 

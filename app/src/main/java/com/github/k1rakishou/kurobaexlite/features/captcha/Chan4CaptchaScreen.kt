@@ -48,7 +48,7 @@ import androidx.core.graphics.withScale
 import androidx.core.graphics.withTranslation
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.managers.Captcha
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor

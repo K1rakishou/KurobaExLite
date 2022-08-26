@@ -47,9 +47,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor

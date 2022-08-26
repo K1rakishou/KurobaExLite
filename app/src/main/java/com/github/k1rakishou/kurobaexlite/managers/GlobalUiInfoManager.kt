@@ -16,13 +16,13 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.SaveableComponent
-import com.github.k1rakishou.kurobaexlite.helpers.getParcelableMap
-import com.github.k1rakishou.kurobaexlite.helpers.getSerializableMap
-import com.github.k1rakishou.kurobaexlite.helpers.putParcelableMap
-import com.github.k1rakishou.kurobaexlite.helpers.putSerializableMap
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
+import com.github.k1rakishou.kurobaexlite.helpers.util.getParcelableMap
+import com.github.k1rakishou.kurobaexlite.helpers.util.getSerializableMap
+import com.github.k1rakishou.kurobaexlite.helpers.util.putParcelableMap
+import com.github.k1rakishou.kurobaexlite.helpers.util.putSerializableMap
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ChildScreenSearchInfo
 import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
