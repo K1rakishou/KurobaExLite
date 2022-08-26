@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.FloatRange
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -79,6 +80,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -699,6 +701,22 @@ fun Modifier.passClicksThrough(passClicks: Boolean = true): Modifier {
   return composed {
     pointerInteropFilter(onTouchEvent = { false })
   }
+}
+
+@Composable
+fun KurobaComposeTextFieldLabel(@StringRes textId: Int) {
+  KurobaComposeTextFieldLabel(stringResource(id = textId))
+}
+
+@Composable
+fun KurobaComposeTextFieldLabel(text: String) {
+  val chanTheme = LocalChanTheme.current
+
+  Text(
+    text = text,
+    color = chanTheme.textColorHint,
+    fontSize = 12.sp
+  )
 }
 
 @Composable

@@ -123,11 +123,12 @@ class CatalogScreenToolbarActionHandler(
         params = DialogScreen.Params(
           title = DialogScreen.Text.Id(R.string.catalog_toolbar_enter_identifier),
           description = DialogScreen.Text.Id(R.string.catalog_toolbar_enter_identifier_description),
-          input = DialogScreen.Input.String(),
+          inputs = listOf(DialogScreen.Input.String()),
           negativeButton = DialogScreen.DialogButton(buttonText = R.string.cancel),
           positiveButton = DialogScreen.PositiveDialogButton(
             buttonText = R.string.ok,
-            onClick = { value ->
+            onClick = { results ->
+              val value = results.firstOrNull()
               if (value.isNullOrEmpty()) {
                 return@PositiveDialogButton
               }

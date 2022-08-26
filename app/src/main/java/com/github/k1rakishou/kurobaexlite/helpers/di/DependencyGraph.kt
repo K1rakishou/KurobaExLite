@@ -20,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaSolverHel
 import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaViewModel
 import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.login.Chan4LoginScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
@@ -425,6 +426,10 @@ object DependencyGraph {
         remoteImageSearchSettings = get(),
         yandexImageSearch = get()
       )
+    }
+
+    viewModel {
+      Chan4LoginScreenViewModel(siteManager = get())
     }
   }
 

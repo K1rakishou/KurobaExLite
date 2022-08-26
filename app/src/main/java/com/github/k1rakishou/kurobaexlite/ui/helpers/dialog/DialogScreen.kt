@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -81,21 +83,6 @@ class DialogScreen(
       effect = { onDispose { keyboardController?.hide() } }
     )
 
-    val inputValueState: MutableState<String>? = remember {
-      val input = params.input
-
-      if (input != null) {
-        val initialValueString = when (input) {
-          is Input.Number -> input.initialValue?.toString()
-          is Input.String -> input.initialValue
-        }
-
-        return@remember mutableStateOf(initialValueString ?: "")
-      } else {
-        return@remember null
-      }
-    }
-
     val dialogWidth = if (globalUiInfoManager.isTablet) {
       val availableWidth = maxAvailableWidth()
       availableWidth - (availableWidth / 2)
@@ -128,31 +115,55 @@ class DialogScreen(
         )
       }
 
-      if (params.input != null && inputValueState != null) {
-        val input = params.input
-        var value by inputValueState
-
-        val keyboardOptions = KeyboardOptions(
-          keyboardType = when (input) {
-            is Input.Number -> KeyboardType.Number
-            is Input.String -> KeyboardType.Text
+      val inputValueStates: List<MutableState<String>> = remember {
+        params.inputs.map { input ->
+          val initialValueString = when (input) {
+            is Input.Number -> input.initialValue?.toString()
+            is Input.String -> input.initialValue
           }
-        )
 
-        Spacer(modifier = Modifier.height(4.dp))
+          return@map mutableStateOf(initialValueString ?: "")
+        }
+      }
 
-        KurobaComposeTextField(
-          modifier = Modifier.fillMaxWidth(),
-          value = value,
-          keyboardOptions = keyboardOptions,
-          onValueChange = { newValue ->
-            if (input is Input.Number && newValue.toIntOrNull() == null) {
-              return@KurobaComposeTextField
+      params.inputs.forEachIndexed { index, input ->
+        key(index) {
+          val inputValueState = inputValueStates[index]
+          var value by inputValueState
+
+          val keyboardOptions = KeyboardOptions(
+            keyboardType = when (input) {
+              is Input.Number -> KeyboardType.Number
+              is Input.String -> KeyboardType.Text
             }
+          )
 
-            value = newValue
+          Spacer(modifier = Modifier.height(4.dp))
+
+          val label: @Composable (() -> Unit)? = if (input.hint != null) {
+            buildInputLabel(input.hint!!)
+          } else {
+            null
           }
-        )
+
+          if (index > 0) {
+            Spacer(modifier = Modifier.height(8.dp))
+          }
+
+          KurobaComposeTextField(
+            modifier = Modifier.fillMaxWidth(),
+            value = value,
+            keyboardOptions = keyboardOptions,
+            onValueChange = { newValue ->
+              if (input is Input.Number && newValue.toIntOrNull() == null) {
+                return@KurobaComposeTextField
+              }
+
+              value = newValue
+            },
+            label = label
+          )
+        }
       }
 
       Spacer(modifier = Modifier.height(4.dp))
@@ -196,7 +207,8 @@ class DialogScreen(
         KurobaComposeTextBarButton(
           modifier = Modifier.wrapContentSize(),
           onClick = {
-            params.positiveButton.onClick?.invoke(inputValueState?.value)
+            val results = inputValueStates.map { it.value }
+            params.positiveButton.onClick?.invoke(results)
             stopPresenting()
           },
           customTextColor = buttonTextColor,
@@ -206,18 +218,37 @@ class DialogScreen(
     }
   }
 
+  private fun buildInputLabel(hint: Text): @Composable (() -> Unit) = {
+    val chanTheme = LocalChanTheme.current
+
+    Text(
+      text = hint.actualText(),
+      color = chanTheme.textColorHint,
+      fontSize = 12.sp
+    )
+  }
+
   class Params(
     val title: Text,
     val description: Text? = null,
-    val input: Input? = null,
+    val inputs: List<Input> = emptyList(),
     val negativeButton: DialogButton? = null,
     val neutralButton: DialogButton? = null,
     val positiveButton: PositiveDialogButton
   )
 
   sealed class Input {
-    class String(val initialValue: kotlin.String? = null) : Input()
-    class Number(val initialValue: Int? = null) : Input()
+    abstract val hint: Text?
+
+    class String(
+      override val hint: Text? = null,
+      val initialValue: kotlin.String? = null
+    ) : Input()
+
+    class Number(
+      override val hint: Text? = null,
+      val initialValue: Int? = null
+    ) : Input()
   }
 
   class DialogButton(
@@ -242,7 +273,7 @@ class DialogScreen(
   class PositiveDialogButton(
     @StringRes val buttonText: Int,
     val isActionDangerous: Boolean = false,
-    val onClick: ((result: String?) -> Unit)? = null
+    val onClick: ((result: List<String>) -> Unit)? = null
   )
 
   companion object {
@@ -259,9 +290,13 @@ class DialogScreen(
       return DialogButton(buttonText = R.string.cancel, onClick = onClick)
     }
 
+    fun closeButton(onClick: (() -> Unit)? = null): DialogButton {
+      return DialogButton(buttonText = R.string.close, onClick = onClick)
+    }
+
     fun okButton(
       isActionDangerous: Boolean = false,
-      onClick: ((result: String?) -> Unit)? = null
+      onClick: ((result: List<String>) -> Unit)? = null
     ): PositiveDialogButton {
       return PositiveDialogButton(
         buttonText = R.string.ok,

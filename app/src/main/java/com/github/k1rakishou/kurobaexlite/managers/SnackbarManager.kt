@@ -261,7 +261,8 @@ class SnackbarManager(
 
   companion object {
     private val TOAST_ID_COUNTER = AtomicLong(0L)
-    private const val STANDARD_DELAY = 3000
+    const val SHORT_DELAY = 1500
+    const val STANDARD_DELAY = 3000
 
     fun nextToastId(): String = "toast_${TOAST_ID_COUNTER.getAndIncrement()}"
   }

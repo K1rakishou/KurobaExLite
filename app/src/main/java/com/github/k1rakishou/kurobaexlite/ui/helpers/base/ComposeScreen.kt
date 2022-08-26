@@ -9,7 +9,10 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.lifecycle.ViewModelProvider
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
+import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
+import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -23,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScr
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.StateFlow
 import logcat.LogPriority
 import logcat.logcat
@@ -233,6 +237,52 @@ abstract class ComposeScreen protected constructor(
     }
 
     return navigationRouter.popScreen(this)
+  }
+
+  protected fun <T> Result<T>.toastOnError(
+    longToast: Boolean = false,
+    message: ((Throwable) -> String)? = null
+  ): Result<T> {
+    if (isFailure) {
+      val message = message?.invoke(this.exceptionOrThrow())
+        ?: this.exceptionOrThrow().errorMessageOrClassName()
+
+      val duration = if (longToast) {
+        SnackbarManager.STANDARD_DELAY
+      } else {
+        SnackbarManager.SHORT_DELAY
+      }
+
+      logcatError(TAG) { "[${screenKey}] toastOnError() message: ${message}" }
+      snackbarManager.errorToast(
+        message = message,
+        screenKey = screenKey,
+        duration = duration.milliseconds
+      )
+    }
+
+    return this
+  }
+
+  protected fun <T> Result<T>.toastOnSuccess(
+    longToast: Boolean = false,
+    message: () -> String
+  ): Result<T> {
+    if (isSuccess) {
+      val duration = if (longToast) {
+        SnackbarManager.STANDARD_DELAY
+      } else {
+        SnackbarManager.SHORT_DELAY
+      }
+
+      snackbarManager.toast(
+        message = message(),
+        screenKey = screenKey,
+        duration = duration.milliseconds
+      )
+    }
+
+    return this
   }
 
   suspend fun onBackPressed(): Boolean {

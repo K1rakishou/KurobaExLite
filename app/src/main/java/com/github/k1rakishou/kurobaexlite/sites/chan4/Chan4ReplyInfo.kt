@@ -192,6 +192,9 @@ class Chan4ReplyInfo(
         formBuilder.addFormDataPart("t-challenge", captchaSolution.challenge)
         formBuilder.addFormDataPart("t-response", captchaSolution.solution)
       }
+      is CaptchaSolution.UsePasscode -> {
+        // no-op
+      }
       null -> {
         // no-op
       }

@@ -19,8 +19,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 class LinkSettingItem(
   key: String,
   title: String,
-  subtitle: AnnotatedString?,
-  val enabled: Boolean,
+  subtitle: AnnotatedString? = null,
+  val enabled: Boolean = true,
   val onClicked: () -> Unit
 ) : SettingItem(key, title, subtitle, emptyList()) {
 

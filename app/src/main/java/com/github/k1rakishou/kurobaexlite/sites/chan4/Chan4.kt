@@ -12,6 +12,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginDetails
+import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
@@ -25,6 +27,8 @@ import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ILoginDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ILogoutDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.sites.FormattingButton
@@ -60,6 +64,7 @@ class Chan4(
   private val chan4BookmarkInfo by lazy { BookmarkInfo(chan4DataSource) }
   private val chan4CatalogPagesInfo by lazy { CatalogPagesInfo(chan4DataSource) }
   private val chan4GlobalSearchInfo by lazy { GlobalSearchInfo(chan4DataSource) }
+  private val chan4PasscodeInfo by lazy { Chan4PasscodeInfo(chan4DataSource) }
 
   private val chan4PostParser by lazy { Chan4PostParser() }
   private val icon by lazy { "https://s.4cdn.org/image/favicon.ico".toHttpUrl() }
@@ -77,6 +82,7 @@ class Chan4(
   override fun bookmarkInfo(): Site.BookmarkInfo = chan4BookmarkInfo
   override fun catalogPagesInfo(): Site.CatalogPagesInfo = chan4CatalogPagesInfo
   override fun globalSearchInfo(): Site.GlobalSearchInfo? = chan4GlobalSearchInfo
+  override fun passcodeInfo(): Site.PasscodeInfo? = chan4PasscodeInfo
 
   override fun parser(): AbstractSitePostParser = chan4PostParser
   override fun icon(): HttpUrl = icon
@@ -315,10 +321,30 @@ class Chan4(
 
   }
 
+  class Chan4PasscodeInfo(private val chan4DataSource: Chan4DataSource): Site.PasscodeInfo {
+
+    override fun loginUrl(): String {
+      return "https://sys.4chan.org/auth"
+    }
+
+    override fun loginDataSource(): ILoginDataSource<Chan4LoginDetails, Chan4LoginResult> {
+      return chan4DataSource
+    }
+
+    override fun logoutDataSource(): ILogoutDataSource<Unit, Unit> {
+      return chan4DataSource
+    }
+  }
+
   class Chan4RequestModifier(site: Chan4, appSettings: AppSettings) : RequestModifier<Chan4>(site, appSettings) {
 
     override suspend fun modifyReplyRequest(site: Chan4, requestBuilder: Request.Builder) {
       super.modifyReplyRequest(site, requestBuilder)
+
+      val passcodeCookie = (site.siteSettings as Chan4SiteSettings).passcodeCookie.read()
+      if (passcodeCookie.isNotEmpty()) {
+        requestBuilder.addHeader("Cookie", "pass_id=$passcodeCookie")
+      }
 
       addChan4CookieHeader(site, requestBuilder)
     }

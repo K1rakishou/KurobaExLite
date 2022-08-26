@@ -57,6 +57,15 @@ data class Captcha private constructor(
   fun isValid(time: Long) = (validUntilMs - MIN_VALID_CAPTCHA_TIME) > time
 
   companion object {
+    private val validForever = TimeUnit.DAYS.toMillis(1) * 365L
+
+    fun newPasscodeCaptcha(): Captcha {
+      return Captcha(
+        solution = CaptchaSolution.UsePasscode,
+        validUntilMs = SystemClock.elapsedRealtime() + validForever
+      )
+    }
+
     fun newSolvedCaptcha(captchaSolution: CaptchaSolution, ttlMs: Long): Captcha {
       return Captcha(
         solution = captchaSolution,
@@ -69,6 +78,8 @@ data class Captcha private constructor(
 }
 
 sealed class CaptchaSolution {
+
+  object UsePasscode : CaptchaSolution()
 
   data class ChallengeWithSolution(val challenge: String, val solution: String) : CaptchaSolution() {
     fun is4chanNoopChallenge(): Boolean {

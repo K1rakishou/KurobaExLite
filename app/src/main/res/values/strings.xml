@@ -61,6 +61,7 @@
     <string name="close">Close</string>
     <string name="apply">Apply</string>
     <string name="undo">Undo</string>
+    <string name="save">Save</string>
 
     <string name="type_to_search_hint">Type to search</string>
     <string name="downloading_file">Downloading file, this may take some time</string>
@@ -111,9 +112,6 @@
     <string name="remote_image_search_screen_current_instance">Current search instance</string>
     <string name="remote_image_search_screen_select_source">Select source</string>
     
-    <string name="site_firewall_bypass_screen_failed_to_initialize_webclient">Failed to initialize BypassWebClient</string>
-    <string name="site_firewall_bypass_screen_bad_url_to_open">urlToOpen is null or empty</string>
-
     <string name="settings_screen_toolbar_title">Settings</string>
     <string name="settings_screen_requires_app_restart">Requires app restart!</string>
 
@@ -193,6 +191,13 @@
     <string name="chan4_captcha_layout_captcha_already_expired">The captcha has already expired</string>
     <string name="chan4_captcha_layout_failed_to_find_solution">Failed to find captcha solution</string>
 
+    <string name="chan4_login_screen_login">Login</string>
+    <string name="chan4_login_screen_logout">Logout</string>
+    <string name="chan4_login_failed_to_log_in">Failed to log in, error: \'$1%s\'</string>
+    <string name="chan4_login_successfully_logged_in">Successfully logged in</string>
+    <string name="chan4_login_failed_to_log_out">Failed to log out, error: \'$1%s\'</string>
+    <string name="chan4_login_successfully_logged_out">Successfully logged out</string>
+
     <string name="reply_view_model_site_not_found">Site for key \'%1$s\' not found</string>
     <string name="reply_view_model_site_does_not_support_posting">Site \'%1$s\' does not support posting</string>
     <string name="reply_view_model_empty_reply_error">Empty reply (no message and no images)</string>
@@ -261,6 +266,12 @@
     <string name="chan4_setting_remember_captcha_cookies">Remember captcha cookies</string>
     <string name="chan4_setting_4chan_cookie">4chan captcha cookie</string>
     <string name="chan4_setting_4channel_cookie">4channel captcha cookie</string>
+    <string name="chan4_setting_passcode">4chan passcode</string>
+    <string name="chan4_setting_passcode_not_logged_in">Not logged in</string>
+    <string name="chan4_setting_passcode_enter_token_and_pin">Enter 4chan passcode Token and PIN</string>
+    <string name="chan4_setting_passcode_token">Token</string>
+    <string name="chan4_setting_passcode_pin">PIN</string>
+    <string name="chan4_setting_passcode_cookie">Passcode cookie</string>
 
     <string name="crash_report_activity_title">The application has crashed!</string>
     <string name="crash_report_activity_crash_message_section">Crash message</string>

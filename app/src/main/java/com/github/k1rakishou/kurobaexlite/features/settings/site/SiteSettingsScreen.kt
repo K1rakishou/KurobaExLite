@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
@@ -102,6 +103,7 @@ class SiteSettingsScreen(
   override fun HomeNavigationScreenContent() {
     val chanTheme = LocalChanTheme.current
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     HandleBackPresses {
       if (kurobaToolbarContainerState.onBackPressed()) {
@@ -139,7 +141,12 @@ class SiteSettingsScreen(
       block = {
         val uiSettingItems = siteManager.bySiteKey(siteKey)
           ?.siteSettings
-          ?.uiSettingItems(showDialogScreen = { params -> showDialogScreen(params) })
+          ?.uiSettingItems(
+            coroutineScope = coroutineScope,
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            showDialogScreen = { params -> showDialogScreen(params) }
+          )
           ?: return@LaunchedEffect
 
         siteSettingItems.clear()

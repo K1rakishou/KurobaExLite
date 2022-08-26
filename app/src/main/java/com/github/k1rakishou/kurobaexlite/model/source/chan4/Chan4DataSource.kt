@@ -6,15 +6,19 @@ import com.github.k1rakishou.kurobaexlite.helpers.http_client.ProxiedOkHttpClien
 import com.github.k1rakishou.kurobaexlite.helpers.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithHtmlReader
 import com.github.k1rakishou.kurobaexlite.helpers.suspendConvertWithJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
+import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginDetails
+import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
@@ -40,14 +44,20 @@ import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ILoginDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ILogoutDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.Site
+import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
+import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
+import java.net.HttpCookie
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
+import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 
@@ -61,7 +71,9 @@ class Chan4DataSource(
   IBoardDataSource<SiteKey, CatalogsData>,
   IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkData>,
   ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?>,
-  IGlobalSearchDataSource<SearchParams, SearchResult> {
+  IGlobalSearchDataSource<SearchParams, SearchResult>,
+  ILoginDataSource<Chan4LoginDetails, Chan4LoginResult>,
+  ILogoutDataSource<Unit, Unit> {
 
   override suspend fun loadThread(
     threadDescriptor: ThreadDescriptor,
@@ -457,6 +469,87 @@ class Chan4DataSource(
 
         return@Try kurobaOkHttpClient.okHttpClient().suspendConvertWithHtmlReader(request, htmlReader)
           .unwrap()
+      }
+    }
+  }
+
+  override suspend fun login(input: Chan4LoginDetails): Result<Chan4LoginResult> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val chan4 = siteManager.bySiteKey(Chan4.SITE_KEY)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+        val chan4SiteSettings = chan4.siteSettings as Chan4SiteSettings
+
+        val passcodeInfo = chan4.passcodeInfo()
+          ?: throw ChanDataSourceException("Site ${chan4.readableName} does not support passcodeInfo")
+
+        val loginUrl = passcodeInfo.loginUrl()
+
+        logcat(TAG, LogPriority.VERBOSE) { "login() url='$loginUrl'" }
+
+        val formBuilder = FormBody.Builder().apply {
+          add("act", "do_login")
+          add("id", input.token)
+          add("pin", input.pin)
+        }
+
+        val request = Request.Builder()
+          .url(loginUrl)
+          .post(formBuilder.build())
+          .build()
+
+        return@Try kurobaOkHttpClient.okHttpClient().suspendCall(request).unwrap().use { response ->
+          val result = response.body?.string()
+            ?: throw EmptyBodyResponseException()
+
+          if (result.contains("Success! Your device is now authorized")) {
+            val cookies: List<String> = response.headers("Set-Cookie")
+            var passId: String? = null
+
+            for (cookie in cookies) {
+              val parsedList = HttpCookie.parse(cookie)
+              for (parsed in parsedList) {
+                if (parsed.name == "pass_id" && parsed.value != "0") {
+                  passId = parsed.value
+                }
+              }
+            }
+
+            if (passId.isNullOrEmpty()) {
+              throw ChanDataSourceException("Could not get pass id")
+            }
+
+            if (passId.isNotEmpty()) {
+              chan4SiteSettings.passcodeCookie.write(passId)
+            }
+
+            return@use Chan4LoginResult(passId)
+          }
+
+          val message = if (result.contains("Your Token must be exactly 10 characters")) {
+            "Incorrect token"
+          } else if (result.contains("You have left one or more fields blank")) {
+            "You have left one or more fields blank"
+          } else if (result.contains("Incorrect Token or PIN")) {
+            "Incorrect Token or PIN"
+          } else {
+            "Unknown error"
+          }
+
+          throw ChanDataSourceException(message)
+        }
+      }
+    }
+  }
+
+  override suspend fun logout(input: Unit): Result<Unit> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val chan4 = siteManager.bySiteKey(Chan4.SITE_KEY)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val chan4SiteSettings = chan4.siteSettings as Chan4SiteSettings
+        chan4SiteSettings.passcodeCookie.write("")
       }
     }
   }

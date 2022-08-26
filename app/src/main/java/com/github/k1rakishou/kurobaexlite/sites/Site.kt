@@ -5,6 +5,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginDetails
+import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
@@ -20,6 +22,8 @@ import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ILoginDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ILogoutDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.settings.SiteSettings
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +43,7 @@ interface Site {
   fun bookmarkInfo(): BookmarkInfo?
   fun catalogPagesInfo(): CatalogPagesInfo?
   fun globalSearchInfo(): GlobalSearchInfo?
+  fun passcodeInfo(): PasscodeInfo?
 
   fun parser(): AbstractSitePostParser
   fun icon(): HttpUrl?
@@ -93,6 +98,13 @@ interface Site {
     fun globalSearchUrl(query: String, page: Int): String
 
     fun globalSearchDataSource(): IGlobalSearchDataSource<SearchParams, SearchResult>
+  }
+
+  interface PasscodeInfo {
+    fun loginUrl(): String
+
+    fun loginDataSource(): ILoginDataSource<Chan4LoginDetails, Chan4LoginResult>
+    fun logoutDataSource(): ILogoutDataSource<Unit, Unit>
   }
 
 }

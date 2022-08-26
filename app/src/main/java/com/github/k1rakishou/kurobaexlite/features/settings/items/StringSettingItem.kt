@@ -59,7 +59,7 @@ class StringSettingItem(
             coroutineScope.launch {
               val dialogParams = DialogScreen.Params(
                 title = DialogScreen.Text.String("Enter value"),
-                input = DialogScreen.Input.String(initialValue = value),
+                inputs = listOf(DialogScreen.Input.String(initialValue = value)),
                 negativeButton = DialogScreen.DialogButton(
                   buttonText = R.string.cancel,
                   onClick = { /*No-op*/ }
@@ -70,10 +70,8 @@ class StringSettingItem(
                 ),
                 positiveButton = DialogScreen.PositiveDialogButton(
                   buttonText = R.string.ok,
-                  onClick = { input ->
-                    if (input == null) {
-                      return@PositiveDialogButton
-                    }
+                  onClick = { inputs ->
+                    val input = inputs.firstOrNull() ?: return@PositiveDialogButton
 
                     coroutineScope.launch {
                       delegate.write(input)

@@ -19,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
+import com.github.k1rakishou.kurobaexlite.managers.Captcha
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -204,12 +205,18 @@ class ReplyLayoutViewModel(
       logcat(TAG) { "sendReply($screenKey) started" }
 
       try {
-        logcat(TAG) { "sendReply($screenKey) getCaptchaSolutionOrRequestNewOne() start" }
+        logcat(TAG) { "sendReply($screenKey) getOrRequestCaptcha() start" }
 
         val captcha = try {
-          captchaManager.getOrRequestCaptcha(chanDescriptor)
+          if (site.siteSettings.isLoggedIn()) {
+            logcat(TAG) { "sendReply($screenKey) getOrRequestCaptcha() using passcode" }
+            Captcha.newPasscodeCaptcha()
+          } else {
+            logcat(TAG) { "sendReply($screenKey) getOrRequestCaptcha() requesting captcha" }
+            captchaManager.getOrRequestCaptcha(chanDescriptor)
+          }
         } catch (error: Throwable) {
-          logcat(TAG) { "sendReply($screenKey) getCaptchaSolutionOrRequestNewOne() error" }
+          logcat(TAG) { "sendReply($screenKey) getOrRequestCaptcha() error" }
           throw error
         }
 

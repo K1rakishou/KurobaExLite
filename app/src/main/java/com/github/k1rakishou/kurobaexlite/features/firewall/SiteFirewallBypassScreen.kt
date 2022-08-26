@@ -20,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.logcatError
 import com.github.k1rakishou.kurobaexlite.model.FirewallType
@@ -38,8 +37,8 @@ class SiteFirewallBypassScreen(
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
 
-  private val firewallType by argumentOrNullLazy<FirewallType>(FIREWALL_TYPE)
-  private val urlToOpen by argumentOrNullLazy<String>(URL_TO_OPEN)
+  private val firewallType by requireArgumentLazy<FirewallType>(FIREWALL_TYPE)
+  private val urlToOpen by requireArgumentLazy<String>(URL_TO_OPEN)
 
   private val bypassResultCompletableDeferred = CompletableDeferred<BypassResult>()
   private val cookieManager by lazy { CookieManager.getInstance() }
@@ -48,19 +47,7 @@ class SiteFirewallBypassScreen(
   private var webView: WebView? = null
   private var resultNotified: Boolean = false
 
-  private fun createWebClient(): BypassWebClient? {
-    val firewallType = firewallType
-    if (firewallType == null) {
-      logcatError(TAG) { "createWebClient() firewallType == null" }
-      return null
-    }
-
-    val urlToOpen = urlToOpen
-    if (urlToOpen == null) {
-      logcatError(TAG) { "createWebClient() urlToOpen == null" }
-      return null
-    }
-
+  private fun createWebClient(): BypassWebClient {
     check(!bypassResultCompletableDeferred.isCompleted) { "bypassResultCompletableDeferred already completed!" }
 
     return when (firewallType) {
@@ -75,7 +62,7 @@ class SiteFirewallBypassScreen(
   }
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    webClient?.destroy()
+    webClient.destroy()
     webView?.stopLoading()
 
     if (!bypassResultCompletableDeferred.isCompleted) {
@@ -93,25 +80,6 @@ class SiteFirewallBypassScreen(
     val context = LocalContext.current
     val webClientLocal = webClient
     val urlToOpenLocal = urlToOpen
-
-    if (webClientLocal == null || urlToOpenLocal.isNullOrEmpty()) {
-      LaunchedEffect(
-        key1 = Unit,
-        block = {
-          logcat(TAG) { "Bad webClientLocal or urlToOpenLocal" }
-
-          if (webClientLocal == null) {
-            snackbarManager.errorToast(R.string.site_firewall_bypass_screen_failed_to_initialize_webclient)
-          } else if (urlToOpenLocal.isNullOrEmpty()) {
-            snackbarManager.errorToast(R.string.site_firewall_bypass_screen_bad_url_to_open)
-          }
-
-          stopPresenting()
-        }
-      )
-
-      return
-    }
 
     var webViewMut by remember { mutableStateOf<WebView?>(null) }
     val webViewLocal = webViewMut
