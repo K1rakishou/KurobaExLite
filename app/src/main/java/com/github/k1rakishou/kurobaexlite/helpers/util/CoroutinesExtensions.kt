@@ -15,6 +15,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.selects.select
 
 fun <T> Flow<T>.buffer(delay: Duration, emitIfEmpty: Boolean = true): Flow<List<T>> {
+  require(delay.isPositive()) { "delay parameter must be positive" }
+
   return flow {
     coroutineScope {
       val collection = mutableListOf<T>()

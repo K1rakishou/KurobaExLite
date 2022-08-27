@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -26,7 +28,7 @@ class ProgressScreen(
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
 
-  private val title: String by requireArgumentLazy(TITLE)
+  private val title by argumentOrNullLazy<String>(TITLE)
 
   @Composable
   override fun FloatingContent() {
@@ -39,9 +41,11 @@ class ProgressScreen(
         .wrapContentHeight()
         .padding(all = 8.dp)
     ) {
+      val titleText = title ?: stringResource(id = R.string.loading_please_wait)
+
       KurobaComposeText(
         modifier = Modifier.fillMaxWidth(),
-        text = title,
+        text = titleText,
         fontSize = 16.sp
       )
 

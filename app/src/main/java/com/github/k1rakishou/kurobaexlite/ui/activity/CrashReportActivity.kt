@@ -5,16 +5,13 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -31,7 +28,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -49,16 +45,14 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.ReportManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
+import com.github.k1rakishou.kurobaexlite.ui.helpers.Collapsable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
-import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.verticalScrollbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -408,52 +402,6 @@ class CrashReportActivity : ComponentActivity() {
         }
 
         Spacer(modifier = Modifier.height(4.dp))
-      }
-    }
-  }
-
-  @Composable
-  private fun Collapsable(
-    title: String,
-    collapsedByDefault: Boolean = true,
-    content: @Composable () -> Unit
-  ) {
-    var collapsed by rememberSaveable { mutableStateOf(collapsedByDefault) }
-
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-        .animateContentSize()
-    ) {
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight()
-          .kurobaClickable(onClick = { collapsed = !collapsed }),
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        KurobaComposeIcon(
-          modifier = Modifier
-            .graphicsLayer { rotationZ = if (collapsed) 0f else 90f },
-          drawableId = R.drawable.ic_baseline_arrow_right_24
-        )
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        KurobaComposeText(text = title)
-
-        Spacer(modifier = Modifier.width(4.dp))
-
-        KurobaComposeDivider(modifier = Modifier
-          .weight(1f)
-          .height(1.dp))
-      }
-
-      if (!collapsed) {
-        Box(modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) {
-          content()
-        }
       }
     }
   }

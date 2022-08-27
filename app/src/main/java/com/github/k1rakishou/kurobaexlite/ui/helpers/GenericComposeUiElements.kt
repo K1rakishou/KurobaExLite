@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers
 import androidx.annotation.DrawableRes
 import androidx.annotation.FloatRange
 import androidx.annotation.StringRes
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -60,6 +61,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -951,5 +953,51 @@ fun KurobaComposeCardView(
     backgroundColor = backgroundColor ?: chanTheme.backColor
   ) {
     content()
+  }
+}
+
+@Composable
+fun Collapsable(
+  title: String,
+  collapsedByDefault: Boolean = true,
+  content: @Composable () -> Unit
+) {
+  var collapsed by rememberSaveable { mutableStateOf(collapsedByDefault) }
+
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .animateContentSize()
+  ) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .kurobaClickable(onClick = { collapsed = !collapsed }),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      KurobaComposeIcon(
+        modifier = Modifier
+          .graphicsLayer { rotationZ = if (collapsed) 0f else 90f },
+        drawableId = R.drawable.ic_baseline_arrow_right_24
+      )
+
+      Spacer(modifier = Modifier.width(4.dp))
+
+      KurobaComposeText(text = title)
+
+      Spacer(modifier = Modifier.width(4.dp))
+
+      KurobaComposeDivider(modifier = Modifier
+        .weight(1f)
+        .height(1.dp))
+    }
+
+    if (!collapsed) {
+      Box(modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)) {
+        content()
+      }
+    }
   }
 }

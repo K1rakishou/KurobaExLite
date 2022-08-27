@@ -65,6 +65,7 @@
 
     <string name="type_to_search_hint">Type to search</string>
     <string name="downloading_file">Downloading file, this may take some time</string>
+    <string name="loading_please_wait">Loading, please wait…</string>
 
     <string name="main_activity_press_back_again_to_exit">Press back again to exit the app</string>
     <string name="main_screen_view_model_failed_to_load_bookmarks_from_database">Failed to load bookmarks from database, error: \'%1$s\'</string>
@@ -262,6 +263,8 @@
     <string name="settings_screen_check_for_updates_description">Click to check for updates</string>
     <string name="settings_screen_notify_about_beta_versions">Notify about new beta versions</string>
     <string name="settings_screen_open_github_repository">Open github repository</string>
+    <string name="settings_screen_report">Report</string>
+    <string name="settings_screen_report_description">Report a crash or other issue</string>
 
     <string name="site_setting_cloudflare_clearance_cookie">CloudFlare clearance cookie</string>
     <string name="chan4_setting_remember_captcha_cookies">Remember captcha cookies</string>
@@ -288,5 +291,24 @@
     <string name="crash_report_activity_restart_the_app">Restart the app</string>
     <string name="crash_report_activity_restart_the_app_not_my_problem">Not my problem, restart the app</string>
     <string name="crash_report_activity_copied_to_clipboard">Report copied to clipboard</string>
+
+    <string name="report_issue_screen_title">Report screen</string>
+    <string name="report_issue_screen_logs">Logs</string>
+    <string name="report_issue_screen_loading_logs">Loading logs…</string>
+    <string name="report_issue_screen_attach_logs">Attach logs</string>
+    <string name="report_issue_screen_verbose_logs">+Verbose logs</string>
+    <string name="report_issue_screen_mpv_logs">+MPV logs</string>
+    <string name="report_issue_screen_note">It\'s very recommended to attach link to a post/thread/image if the problem is with any of those so it\'s easier to reproduce and test! The more information you provide the better!</string>
+    <string name="report_issue_screen_last_logs">Last logs</string>
+    <string name="report_issue_screen_issue_number">Existing issue number (to leave a comment)</string>
+    <string name="report_issue_screen_issue_title">Issue title</string>
+    <string name="report_issue_screen_issue_description">Issue description</string>
+    <string name="report_issue_screen_description_cannot_be_empty_error_comment_mode">Description cannot be empty!</string>
+    <string name="report_issue_screen_error_while_trying_to_send_report">Error while trying to send report: %1$s</string>
+    <string name="report_issue_screen_title_cannot_be_empty_error">Title cannot be empty!</string>
+    <string name="report_issue_screen_description_cannot_be_empty_error">If description is empty, logs cannot be empty!</string>
+    <string name="report_issue_screen_logs_are_empty_error">\"Attach logs\" option is checked, but logs are empty!</string>
+    <string name="report_issue_report_sent_message">Sent \;)</string>
+
 
 </resources>

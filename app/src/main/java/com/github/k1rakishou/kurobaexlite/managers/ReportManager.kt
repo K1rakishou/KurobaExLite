@@ -264,7 +264,7 @@ class ReportManager(
 
     const val MAX_TITLE_LENGTH = 512
     const val MAX_DESCRIPTION_LENGTH = 8192
-    const val MAX_LOGS_LENGTH = 65535
+    const val MAX_LOGS_LENGTH = 50000
 
     private val appRunningTimeFormatter = PeriodFormatterBuilder()
       .printZeroAlways()

@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.settings.application
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
+import androidx.activity.ComponentActivity
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
@@ -11,6 +12,7 @@ import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreenBuilder
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreens
+import com.github.k1rakishou.kurobaexlite.features.settings.report.ReportIssueScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -19,10 +21,13 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherFg
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
+import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,6 +54,13 @@ class AppSettingsScreenViewModel(
   private val _showMenuItemsFlow = MutableSharedFlow<DisplayedMenuOptions>(extraBufferCapacity = Channel.RENDEZVOUS)
   val showMenuItemsFlow: SharedFlow<DisplayedMenuOptions>
     get() = _showMenuItemsFlow.asSharedFlow()
+
+  private val _showScreenFlow = MutableSharedFlow<DisplayScreenRequest>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_LATEST
+  )
+  val showScreenFlow: SharedFlow<DisplayScreenRequest>
+    get() = _showScreenFlow.asSharedFlow()
 
   init {
     SettingScreens.values().forEach { settingScreens ->
@@ -177,6 +189,26 @@ class AppSettingsScreenViewModel(
           }
         )
 
+        link(
+          key = "report_issue",
+          title = appResources.string(R.string.settings_screen_report),
+          subtitleBuilder = {
+            append(appResources.string(R.string.settings_screen_report_description))
+          },
+          onClicked = {
+            val displayScreenRequest = DisplayScreenRequest(
+              screenBuilder = { componentActivity, navigationRouter ->
+                ComposeScreen.createScreen<ReportIssueScreen>(
+                  componentActivity = componentActivity,
+                  navigationRouter = navigationRouter
+                )
+              }
+            )
+
+            _showScreenFlow.tryEmit(displayScreenRequest)
+          }
+        )
+
         boolean(
           title = appResources.string(R.string.settings_screen_notify_about_beta_versions),
           delegate = appSettings.notifyAboutBetaUpdates
@@ -236,6 +268,10 @@ class AppSettingsScreenViewModel(
   class DisplayedMenuOptions(
     val items: List<FloatingMenuItem>,
     val result: CompletableDeferred<String?>
+  )
+
+  class DisplayScreenRequest(
+    val screenBuilder: (ComponentActivity, NavigationRouter) -> ComposeScreen
   )
 
   companion object {

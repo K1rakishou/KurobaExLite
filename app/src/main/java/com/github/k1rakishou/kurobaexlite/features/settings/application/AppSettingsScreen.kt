@@ -40,6 +40,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -110,6 +111,15 @@ class AppSettingsScreen(
       block = {
         appSettingsScreenViewModel.showMenuItemsFlow.collectLatest { displayedMenuOptions ->
           displayMenuOptionsAndWaitForResult(displayedMenuOptions)
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        appSettingsScreenViewModel.showScreenFlow.collectLatest { displayScreenRequest ->
+          displayScreen(displayScreenRequest)
         }
       }
     )
@@ -227,6 +237,18 @@ class AppSettingsScreen(
           }
         }
       }
+    }
+  }
+
+  private fun displayScreen(
+    displayScreenRequest: AppSettingsScreenViewModel.DisplayScreenRequest
+  ) {
+    val screen = displayScreenRequest.screenBuilder(componentActivity, navigationRouter)
+
+    if (screen is FloatingComposeScreen) {
+      navigationRouter.presentScreen(screen)
+    } else {
+      navigationRouter.pushScreen(screen)
     }
   }
 
