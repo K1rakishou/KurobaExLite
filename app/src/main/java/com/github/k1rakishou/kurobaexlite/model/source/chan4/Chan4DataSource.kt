@@ -364,7 +364,9 @@ class Chan4DataSource(
               isBumpLimit = postInfoForBookmarkJson.isBumpLimit,
               isImageLimit = postInfoForBookmarkJson.isImageLimit,
               stickyThread = stickyPost,
-              comment = postInfoForBookmarkJson.comment
+              tim = postInfoForBookmarkJson.tim,
+              subject = postInfoForBookmarkJson.sub,
+              comment = postInfoForBookmarkJson.comment,
             )
           } else {
             return@map ThreadBookmarkInfoPostObject.RegularPost(

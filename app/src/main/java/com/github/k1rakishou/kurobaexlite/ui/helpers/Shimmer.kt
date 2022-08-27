@@ -43,7 +43,7 @@ import kotlin.math.sqrt
 fun rememberShimmerState(
   rotation: Float = 15f,
   cornerRadius: Dp = 4.dp,
-  bgColor: Color
+  bgColor: Color = LocalChanTheme.current.backColor
 ): ShimmerState {
   val cornerRadiusPx = with(LocalDensity.current) {
     remember(key1 = cornerRadius) { cornerRadius.toPx()  }
@@ -61,7 +61,7 @@ fun rememberShimmerState(
 @Composable
 fun Shimmer(
   modifier: Modifier = Modifier,
-  shimmerState: ShimmerState
+  shimmerState: ShimmerState = rememberShimmerState()
 ) {
   val density = LocalDensity.current
   val chanTheme = LocalChanTheme.current

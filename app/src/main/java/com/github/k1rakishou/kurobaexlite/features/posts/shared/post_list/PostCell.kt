@@ -60,7 +60,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -247,8 +246,7 @@ private fun PostCellTitle(
       Shimmer(
         modifier = Modifier
           .weight(1f)
-          .height(42.dp),
-        shimmerState = rememberShimmerState(bgColor = chanTheme.backColor)
+          .height(42.dp)
       )
     } else {
       var actualPostSubject by remember(key1 = postSubject) { mutableStateOf(postSubject) }
@@ -463,8 +461,7 @@ private fun PostCellComment(
     Shimmer(
       modifier = Modifier
         .fillMaxWidth()
-        .height(80.dp),
-      shimmerState = rememberShimmerState(bgColor = chanTheme.backColor)
+        .height(80.dp)
     )
   }
 }

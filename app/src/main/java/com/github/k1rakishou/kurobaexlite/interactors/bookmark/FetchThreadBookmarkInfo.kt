@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThread
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
+import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
@@ -25,12 +26,14 @@ import kotlin.time.measureTime
 import kotlinx.coroutines.Dispatchers
 import logcat.LogPriority
 import logcat.logcat
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.joda.time.DateTime
 
 class FetchThreadBookmarkInfo(
   private val siteManager: SiteManager,
   private val bookmarksManager: BookmarksManager,
   private val replyNotificationsHelper: ReplyNotificationsHelper,
+  private val parsedPostDataCache: ParsedPostDataCache,
   private val loadChanThreadView: LoadChanThreadView,
   private val extractRepliesToMyPosts: ExtractRepliesToMyPosts,
   private val persistBookmarks: PersistBookmarks,
@@ -167,6 +170,7 @@ class FetchThreadBookmarkInfo(
 
             logcat(TAG, LogPriority.VERBOSE) { "updateSingleBookmark() threadBookmark=${threadBookmark}" }
             bookmarksManager.putBookmark(threadBookmark)
+
             return@mapNotNull threadDescriptor
           }
 
@@ -291,6 +295,34 @@ class FetchThreadBookmarkInfo(
       deleted = false,
       stickyNoCap = originalPost.stickyThread is StickyThread.StickyUnlimited
     )
+
+    // Update bookmark title if it's not set
+    if (threadBookmark.title == null) {
+      val subject = threadBookmarkData.subject()
+      val originalPostComment = threadBookmarkData.originalPostComment()
+
+      val updatedTitle = parsedPostDataCache.formatBookmarkTitle(subject, originalPostComment)
+      if (updatedTitle != null) {
+        threadBookmark.title = updatedTitle
+      }
+    }
+
+    // Update bookmark thumbnail if it's not set
+    if (threadBookmark.thumbnailUrl == null) {
+      val tim = threadBookmarkData.originalPostTim()
+      if (tim != null) {
+        val site = siteManager.bySiteKey(threadDescriptor.siteKey)
+        if (site != null) {
+          val updatedThumbnailUrl = site.postImageInfo()
+            ?.thumbnailUrl(threadDescriptor.boardCode, tim, "jpg")
+            ?.toHttpUrlOrNull()
+
+          if (updatedThumbnailUrl != null) {
+            threadBookmark.thumbnailUrl = updatedThumbnailUrl
+          }
+        }
+      }
+    }
 
     threadBookmark.clearFirstFetchFlag()
   }

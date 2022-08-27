@@ -11,8 +11,8 @@ import org.joda.time.DateTime
 @Stable
 class ThreadBookmarkUi(
   val threadDescriptor: ThreadDescriptor,
-  val title: String,
-  val thumbnailUrl: String?,
+  title: String?,
+  thumbnailUrl: String?,
   val threadBookmarkStatsUi: ThreadBookmarkStatsUi,
   val createdOn: DateTime,
 ) {
@@ -23,14 +23,28 @@ class ThreadBookmarkUi(
   val highlighted: State<Boolean>
     get() = _highlighted
 
+  private val _title = mutableStateOf(title)
+  val title: State<String?>
+    get() = _title
+  private val _thumbnailUrl = mutableStateOf(thumbnailUrl)
+  val thumbnailUrl: State<String?>
+    get() = _thumbnailUrl
+
   fun matchesQuery(searchQuery: String): Boolean {
-    return title.contains(other = searchQuery, ignoreCase = true)
+    return title.value?.contains(other = searchQuery, ignoreCase = true) ?: false
   }
 
-  fun updateStatsFrom(
+  fun update(
     threadBookmark: ThreadBookmark,
     threadPage: CatalogPagesRepository.ThreadPage?
   ) {
+    if (_title.value.isNullOrEmpty() && !threadBookmark.title.isNullOrEmpty()) {
+      _title.value = threadBookmark.title
+    }
+    if (thumbnailUrl.value.isNullOrEmpty() && threadBookmark.thumbnailUrl != null) {
+      _thumbnailUrl.value = threadBookmark.thumbnailUrl!!.toString()
+    }
+
     threadBookmarkStatsUi.updateFrom(
       threadBookmark = threadBookmark,
       threadPage = threadPage
@@ -50,8 +64,8 @@ class ThreadBookmarkUi(
     other as ThreadBookmarkUi
 
     if (threadDescriptor != other.threadDescriptor) return false
-    if (title != other.title) return false
-    if (thumbnailUrl != other.thumbnailUrl) return false
+    if (title.value != other.title.value) return false
+    if (thumbnailUrl.value != other.thumbnailUrl.value) return false
     if (threadBookmarkStatsUi != other.threadBookmarkStatsUi) return false
     if (createdOn != other.createdOn) return false
 
@@ -60,8 +74,8 @@ class ThreadBookmarkUi(
 
   override fun hashCode(): Int {
     var result = threadDescriptor.hashCode()
-    result = 31 * result + title.hashCode()
-    result = 31 * result + (thumbnailUrl?.hashCode() ?: 0)
+    result = 31 * result + title.value.hashCode()
+    result = 31 * result + (thumbnailUrl.value?.hashCode() ?: 0)
     result = 31 * result + threadBookmarkStatsUi.hashCode()
     result = 31 * result + createdOn.hashCode()
     return result
@@ -71,10 +85,10 @@ class ThreadBookmarkUi(
     fun fromThreadBookmark(
       threadBookmark: ThreadBookmark,
       threadPage: CatalogPagesRepository.ThreadPage?
-    ): ThreadBookmarkUi? {
+    ): ThreadBookmarkUi {
       return ThreadBookmarkUi(
         threadDescriptor = threadBookmark.threadDescriptor,
-        title = threadBookmark.title ?: return null,
+        title = threadBookmark.title,
         thumbnailUrl = threadBookmark.thumbnailUrl?.toString(),
         createdOn = threadBookmark.createdOn,
         threadBookmarkStatsUi = ThreadBookmarkStatsUi.fromThreadBookmark(

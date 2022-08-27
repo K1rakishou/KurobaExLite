@@ -100,6 +100,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefreshState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
@@ -570,38 +571,59 @@ class BookmarksScreen(
       val isArchived by threadBookmarkStatsUi.isArchived
       val isDeleted by threadBookmarkStatsUi.isDeleted
       val isDead = isArchived || isDeleted
+      val thumbnailSize = dimensionResource(id = R.dimen.history_or_bookmark_thumbnail_size)
 
-      if (threadBookmarkUi.thumbnailUrl != null) {
-        val thumbnailSize = dimensionResource(id = R.dimen.history_or_bookmark_thumbnail_size)
+      val titleMut by threadBookmarkUi.title
+      val title = titleMut
+      val thumbnailUrlMut by threadBookmarkUi.thumbnailUrl
+      val thumbnailUrl = thumbnailUrlMut
 
+      if (thumbnailUrl != null) {
         BookmarkThumbnail(
           modifier = Modifier
             .size(thumbnailSize)
             .graphicsLayer { alpha = if (isDead) 0.5f else 1f },
-          iconUrl = threadBookmarkUi.thumbnailUrl,
+          iconUrl = thumbnailUrl,
           isDead = isDead
         )
 
         Spacer(modifier = Modifier.width(8.dp))
+      } else {
+        Shimmer(
+          modifier = Modifier
+            .size(thumbnailSize)
+        )
       }
 
-      Column(modifier = Modifier.weight(1f)) {
-        val textColor = if (isDead) {
-          chanTheme.textColorHint
-        } else {
-          chanTheme.textColorPrimary
-        }
+      Spacer(modifier = Modifier.width(4.dp))
 
-        KurobaComposeText(
-          modifier = Modifier
-            .fillMaxWidth()
-            .weight(0.5f),
-          text = threadBookmarkUi.title,
-          color = textColor,
-          fontSize = 15.sp,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis
-        )
+      Column(
+        modifier = Modifier.weight(1f)
+      ) {
+        if (title != null) {
+          val textColor = if (isDead) {
+            chanTheme.textColorHint
+          } else {
+            chanTheme.textColorPrimary
+          }
+
+          KurobaComposeText(
+            modifier = Modifier
+              .fillMaxWidth()
+              .weight(0.5f),
+            text = title,
+            color = textColor,
+            fontSize = 15.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+          )
+        } else {
+          Shimmer(
+            modifier = Modifier
+              .fillMaxWidth()
+              .weight(0.5f)
+          )
+        }
 
         ThreadBookmarkAdditionalInfo(
           modifier = Modifier

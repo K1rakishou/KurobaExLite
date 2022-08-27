@@ -152,12 +152,15 @@ data class PostInfoForBookmarkJson(
   @Json(name = "no") val postNo: Long,
   @Json(name = "archived") val archived: Int?,
   @Json(name = "closed") val closed: Int?,
+  val sub: String?,
   val com: String?,
   val resto: Int,
   @Json(name = "bumplimit") val bumpLimit: Int?,
   @Json(name = "imagelimit") val imageLimit: Int?,
   @Json(name = "sticky") val sticky: Int?,
   @Json(name = "sticky_cap") val stickyCap: Int?,
+
+  val tim: Long?
 ) {
   val isOp: Boolean
     get() = resto == 0

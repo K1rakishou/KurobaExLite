@@ -64,8 +64,8 @@ class BookmarksScreenViewModel(
       bookmarksManager.awaitUntilInitialized()
 
       val loadedBookmarks = reorderBookmarks.sort(bookmarksManager.getAllBookmarks())
-        .mapNotNull { threadBookmark ->
-          return@mapNotNull ThreadBookmarkUi.fromThreadBookmark(
+        .map { threadBookmark ->
+          return@map ThreadBookmarkUi.fromThreadBookmark(
             threadBookmark = threadBookmark,
             threadPage = null
           )
@@ -221,7 +221,7 @@ class BookmarksScreenViewModel(
             // Bookmark exists, update it
             val threadPage = catalogPagesRepository.getThreadPage(threadDescriptor)
 
-            _bookmarksList[index].updateStatsFrom(
+            _bookmarksList[index].update(
               threadBookmark = threadBookmark,
               threadPage = threadPage
             )
@@ -233,9 +233,7 @@ class BookmarksScreenViewModel(
               threadPage = threadPage
             )
 
-            if (threadBookmarkUi != null) {
-              _bookmarksList.add(0, threadBookmarkUi)
-            }
+            _bookmarksList.add(0, threadBookmarkUi)
           }
         }
       }

@@ -32,7 +32,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberShimmerState
 
 @Composable
 fun PostImageThumbnail(
@@ -109,7 +108,7 @@ fun PostImageThumbnail(
           (state is AsyncImagePainter.State.Empty || state is AsyncImagePainter.State.Loading)
           && showShimmerEffectWhenLoading
         ) {
-          Shimmer(shimmerState = rememberShimmerState(bgColor = chanTheme.backColor))
+          Shimmer()
         }
 
         if (state !is AsyncImagePainter.State.Error) {

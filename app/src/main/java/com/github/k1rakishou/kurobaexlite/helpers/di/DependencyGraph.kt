@@ -512,6 +512,7 @@ object DependencyGraph {
         siteManager = get(),
         bookmarksManager = get(),
         replyNotificationsHelper = get(),
+        parsedPostDataCache = get(),
         loadChanThreadView = get(),
         extractRepliesToMyPosts = get(),
         persistBookmarks = get(),

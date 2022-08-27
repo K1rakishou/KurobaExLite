@@ -312,6 +312,14 @@ class ParsedPostDataCache(
     return parsedPostData.parsedPostComment.take(maxLength)
   }
 
+  fun formatBookmarkTitle(subject: String?, comment: String?, maxLength: Int = 64): String? {
+    if (subject.isNotNullNorBlank()) {
+      return HtmlUnescape.unescape(subject)
+    }
+
+    return comment?.take(maxLength)
+  }
+
   suspend fun calculateParsedPostData(
     postData: IPostData,
     parsedPostDataContext: ParsedPostDataContext,

@@ -34,6 +34,27 @@ class ThreadBookmarkData(
     return postObjects.maxOfOrNull { simplePostObject -> simplePostObject.postDescriptor() }
   }
 
+  fun subject(): String? {
+    val originalPost = postObjects.firstOrNull() as? ThreadBookmarkInfoPostObject.OriginalPost
+      ?: return null
+
+    return originalPost.subject
+  }
+
+  fun originalPostComment(): String? {
+    val originalPost = postObjects.firstOrNull() as? ThreadBookmarkInfoPostObject.OriginalPost
+      ?: return null
+
+    return originalPost.comment
+  }
+
+  fun originalPostTim(): Long? {
+    val originalPost = postObjects.firstOrNull() as? ThreadBookmarkInfoPostObject.OriginalPost
+      ?: return null
+
+    return originalPost.tim
+  }
+
 }
 
 sealed class ThreadBookmarkInfoPostObject {
@@ -59,12 +80,15 @@ sealed class ThreadBookmarkInfoPostObject {
     val isBumpLimit: Boolean,
     val isImageLimit: Boolean,
     val stickyThread: StickyThread,
+    val tim: Long?,
+    val subject: String?,
     val comment: String
   ) : ThreadBookmarkInfoPostObject() {
 
     override fun toString(): String {
       return "OriginalPost(postDescriptor=$postDescriptor, closed=$closed, archived=$archived, " +
-        "isBumpLimit=$isBumpLimit, isImageLimit=$isImageLimit, stickyThread=$stickyThread)"
+        "isBumpLimit=$isBumpLimit, isImageLimit=$isImageLimit, stickyThread=$stickyThread, " +
+        "tim=$tim, subject=$subject, comment=$comment)"
     }
   }
 
