@@ -125,7 +125,7 @@ class ReportManager(
     }
   }
 
-  fun getReportFooter(): String {
+  fun getReportFooter(context: Context): String {
     return buildString(capacity = 128) {
       appendLine("Android API Level: " + Build.VERSION.SDK_INT)
       appendLine("App Version: " + BuildConfig.VERSION_NAME)
@@ -134,13 +134,14 @@ class ReportManager(
       appendLine("isSlowDevice: ${androidHelpers.isSlowDevice}")
       appendLine("MemoryClass: ${activityManager?.memoryClass}")
       appendLine("App running time: ${formatAppRunningTime()}")
+      appendLine("System animations info: ${systemAnimationsState(context)}")
     }
   }
 
   private fun formatAppRunningTime(): String {
     val time = androidHelpers.appRunningTime
     if (time <= 0) {
-      return "Bad time: ${time}"
+      return "${time} ms"
     }
 
     return appRunningTimeFormatter.print(Duration.millis(time).toPeriod())

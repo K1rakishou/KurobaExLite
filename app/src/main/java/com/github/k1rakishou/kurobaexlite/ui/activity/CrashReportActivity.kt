@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.activity
 
+import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -31,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -135,6 +137,7 @@ class CrashReportActivity : ComponentActivity() {
   ) {
     val insets = LocalWindowInsets.current
     val chanTheme = LocalChanTheme.current
+    val context = LocalContext.current
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
@@ -242,7 +245,7 @@ class CrashReportActivity : ComponentActivity() {
         Spacer(modifier = Modifier.height(4.dp))
 
         Collapsable(title = stringResource(id = R.string.crash_report_activity_additional_info_section)) {
-          val footer = remember { reportManager.getReportFooter() }
+          val footer = remember { reportManager.getReportFooter(context) }
 
           SelectionContainer {
             KurobaComposeText(
@@ -300,7 +303,7 @@ class CrashReportActivity : ComponentActivity() {
                   logs
                 }
 
-                val reportFooter = reportManager.getReportFooter()
+                val reportFooter = reportManager.getReportFooter(context)
                 val title = "${className} ${message}"
 
                 val body = buildString(4096) {
@@ -333,7 +336,8 @@ class CrashReportActivity : ComponentActivity() {
 
                       Toast.makeText(
                         this@CrashReportActivity,
-                        "Failed to send report, error: ${sendReportResult.exceptionOrThrow().errorMessageOrClassName()}",
+                        "Failed to send report, error: " +
+                          "${sendReportResult.exceptionOrThrow().errorMessageOrClassName()}",
                         Toast.LENGTH_LONG
                       ).show()
                     } else {
@@ -361,6 +365,7 @@ class CrashReportActivity : ComponentActivity() {
 
               coroutineScope.launch {
                 copyLogsFormattedToClipboard(
+                  context = context,
                   className = className,
                   message = message,
                   stacktrace = stacktrace,
@@ -454,6 +459,7 @@ class CrashReportActivity : ComponentActivity() {
   }
 
   private suspend fun copyLogsFormattedToClipboard(
+    context: Context,
     className: String,
     message: String,
     stacktrace: String,
@@ -461,7 +467,7 @@ class CrashReportActivity : ComponentActivity() {
     attachMpvLogs: Boolean
   ) {
     val logs = withContext(Dispatchers.IO) { ReportManager.loadLogs(attachVerboseLogs, attachMpvLogs) }
-    val reportFooter = reportManager.getReportFooter()
+    val reportFooter = reportManager.getReportFooter(context)
 
     val resultString = buildString(16000) {
       appendLine("Title (put this into the Github issue title)")
