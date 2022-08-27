@@ -50,6 +50,7 @@ class ThreadScreenDefaultToolbar(
   private val onBackPressed: suspend () -> Unit,
   private val showLocalSearchToolbar: () -> Unit,
   private val toggleBookmarkState: () -> Unit,
+  private val openThreadAlbum: () -> Unit,
   private val showOverflowMenu: () -> Unit,
 ) : KurobaChildToolbar() {
   private val key = "ThreadScreenDefaultToolbar"
@@ -103,6 +104,9 @@ class ThreadScreenDefaultToolbar(
             }
             State.Icons.Bookmark -> {
               toggleBookmarkState()
+            }
+            State.Icons.Album -> {
+              openThreadAlbum()
             }
             State.Icons.Overflow -> {
               showOverflowMenu()
@@ -320,6 +324,11 @@ class ThreadScreenDefaultToolbar(
         visible = false
       ),
       KurobaToolbarIcon(
+        key = Icons.Album,
+        drawableId = R.drawable.ic_baseline_image_24,
+        visible = false
+      ),
+      KurobaToolbarIcon(
         key = Icons.Overflow,
         drawableId = R.drawable.ic_baseline_more_vert_24
       ),
@@ -353,6 +362,7 @@ class ThreadScreenDefaultToolbar(
       Back,
       Search,
       Bookmark,
+      Album,
       Overflow
     }
 

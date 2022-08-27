@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
@@ -98,6 +99,18 @@ class ThreadScreen(
       globalUiInfoManager = globalUiInfoManager,
       onBackPressed = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY, true) },
       toggleBookmarkState = { threadScreenViewModel.bookmarkOrUnbookmarkThread() },
+      openThreadAlbum = {
+        val threadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@ThreadScreenDefaultToolbar
+
+        val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, threadDescriptor) }
+        )
+
+        navigationRouter.pushScreen(albumScreen)
+      },
       showLocalSearchToolbar = { kurobaToolbarContainerState.setToolbar(localSearchToolbar) },
       showOverflowMenu = {
         navigationRouter.presentScreen(
@@ -109,7 +122,6 @@ class ThreadScreen(
             onMenuItemClicked = { menuItem ->
               threadScreenToolbarActionHandler.processClickedToolbarMenuItem(
                 componentActivity = componentActivity,
-                navigationRouter = navigationRouter,
                 menuItem = menuItem
               )
             }
@@ -184,10 +196,6 @@ class ThreadScreen(
       FloatingMenuItem.Text(
         menuItemKey = ThreadScreenToolbarActionHandler.ACTION_COPY_THREAD_URL,
         text = FloatingMenuItem.MenuItemText.Id(R.string.thread_toolbar_action_copy_thread_url)
-      ),
-      FloatingMenuItem.Text(
-        menuItemKey = ThreadScreenToolbarActionHandler.ACTION_THREAD_ALBUM,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.thread_toolbar_album)
       ),
       FloatingMenuItem.Footer(
         items = listOf(

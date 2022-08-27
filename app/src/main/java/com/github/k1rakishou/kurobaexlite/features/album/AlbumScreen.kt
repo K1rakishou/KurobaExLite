@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -29,15 +30,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
@@ -418,6 +422,15 @@ class AlbumScreen(
           .fillMaxWidth()
           .height(160.dp)
           .padding(1.dp)
+          .graphicsLayer {
+            if (selected) {
+              scaleX = 0.85f
+              scaleY = 0.85f
+            } else {
+              scaleX = 1f
+              scaleY = 1f
+            }
+          }
           .onGloballyPositioned { layoutCoordinates ->
             boundsInWindowMut = layoutCoordinates.boundsInWindow()
           },
@@ -468,11 +481,15 @@ class AlbumScreen(
 
   @Composable
   private fun BoxScope.SelectionMark(selected: Boolean) {
+    val density = LocalDensity.current
+    val topLeftOffset = with(density) { remember { IntOffset(8.dp.roundToPx(), 8.dp.roundToPx()) } }
+
     if (selected) {
       Image(
         modifier = Modifier
           .size(36.dp)
-          .align(Alignment.Center),
+          .offset { topLeftOffset }
+          .align(Alignment.TopStart),
         painter = painterResource(id = R.drawable.ic_selection_checkmark_with_bg_24dp),
         contentDescription = null
       )
@@ -481,7 +498,8 @@ class AlbumScreen(
     Image(
       modifier = Modifier
         .size(36.dp)
-        .align(Alignment.Center),
+        .offset { topLeftOffset }
+        .align(Alignment.TopStart),
       painter = painterResource(id = R.drawable.ic_selection_circle_24dp),
       contentDescription = null
     )
