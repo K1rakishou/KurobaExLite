@@ -62,6 +62,9 @@
     <string name="apply">Apply</string>
     <string name="undo">Undo</string>
     <string name="save">Save</string>
+    <string name="copy">Copy</string>
+    <string name="quote">Quote</string>
+    <string name="quote_text">Quote Text</string>
 
     <string name="type_to_search_hint">Type to search</string>
     <string name="downloading_file">Downloading file, this may take some time</string>

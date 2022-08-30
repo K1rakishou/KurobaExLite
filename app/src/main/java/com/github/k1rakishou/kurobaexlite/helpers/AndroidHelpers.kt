@@ -228,6 +228,10 @@ class AndroidHelpers(
     return wm.defaultDisplay.mode.refreshRate.toInt()
   }
 
+  fun copyToClipboard(label: String, content: String) {
+    clipboardManager.setPrimaryClip(ClipData.newPlainText(label, content))
+  }
+
   enum class FlavorType {
     Production,
     Development

@@ -256,14 +256,19 @@ class GlobalSearchScreen(
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         postCellData = postCellData,
-        postCellControlsShown = false,
-        onSelectionModeChanged = {
+        onTextSelectionModeChanged = {
           // no-op
         },
         onPostBind = {
           // no-op
         },
         onPostUnbind = {
+          // no-op
+        },
+        onCopySelectedText = {
+          // no-op
+        },
+        onQuoteSelectedText = { _, _, _ ->
           // no-op
         },
         onPostCellCommentClicked = { _, _, _ ->
@@ -273,12 +278,6 @@ class GlobalSearchScreen(
           // no-op
         },
         onPostRepliesClicked = {
-          // no-op
-        },
-        onQuotePostClicked = {
-          // no-op
-        },
-        onQuotePostWithCommentClicked = {
           // no-op
         },
         onPostImageClicked = { _, _, _ ->

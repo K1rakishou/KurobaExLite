@@ -70,7 +70,6 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerTool
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayFullImage
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayUnsupportedMedia
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayVideo
-import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
@@ -125,7 +124,6 @@ class MediaViewerScreen(
 ) : MinimizableFloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
-  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 

@@ -366,17 +366,18 @@ class ThreadScreen(
       onPostRepliesClicked = { postDescriptor ->
         showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
       },
-      onQuotePostClicked = { postCellData ->
-        val threadDescriptor = threadScreenViewModel.threadDescriptor
-          ?: return@PostListContent
-
-        replyLayoutViewModel.quotePost(threadDescriptor, postCellData)
+      onCopySelectedText = { selectedText ->
+        androidHelpers.copyToClipboard("Selected text", selectedText)
       },
-      onQuotePostWithCommentClicked = { postCellData ->
+      onQuoteSelectedText = { withText, selectedText, postCellData ->
         val threadDescriptor = threadScreenViewModel.threadDescriptor
           ?: return@PostListContent
 
-        replyLayoutViewModel.quotePostWithComment(threadDescriptor, postCellData)
+        if (withText) {
+          replyLayoutViewModel.quotePostWithText(threadDescriptor, postCellData, selectedText)
+        } else {
+          replyLayoutViewModel.quotePost(threadDescriptor, postCellData)
+        }
       },
       onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
         val postImageData = if (postImageDataResult.isFailure) {

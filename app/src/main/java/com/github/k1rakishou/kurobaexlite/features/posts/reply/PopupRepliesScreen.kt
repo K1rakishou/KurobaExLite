@@ -63,6 +63,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapConte
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
@@ -88,6 +89,7 @@ class PopupRepliesScreen(
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val popupRepliesScreenViewModel: PopupRepliesScreenViewModel by componentActivity.viewModel()
+  private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val replyViewMode: ReplyViewMode by requireArgumentLazy(REPLY_VIEW_MODE)
@@ -356,8 +358,19 @@ class PopupRepliesScreen(
             popupRepliesScreenViewModel.loadRepliesForMode(ReplyViewMode.RepliesFrom(postDescriptor))
           }
         },
-        onQuotePostClicked = { postCellData -> },
-        onQuotePostWithCommentClicked = { postCellData -> },
+        onCopySelectedText = { selectedText ->
+          androidHelpers.copyToClipboard("Selected text", selectedText)
+        },
+        onQuoteSelectedText = { withText, selectedText, postCellData ->
+          val threadDescriptor = threadScreenViewModel.threadDescriptor
+            ?: return@PostListContent
+
+          if (withText) {
+            replyLayoutViewModel.quotePostWithText(threadDescriptor, postCellData, selectedText)
+          } else {
+            replyLayoutViewModel.quotePost(threadDescriptor, postCellData)
+          }
+        },
         onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
           val postImageData = if (postImageDataResult.isFailure) {
             snackbarManager.errorToast(

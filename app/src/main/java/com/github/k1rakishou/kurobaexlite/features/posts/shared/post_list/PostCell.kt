@@ -22,27 +22,37 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.core.content.res.ResourcesCompat
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
+import com.github.k1rakishou.composecustomtextselection.lib.ConfigurableTextToolbar
+import com.github.k1rakishou.composecustomtextselection.lib.SelectableTextContainer
+import com.github.k1rakishou.composecustomtextselection.lib.SelectionToolbarMenu
+import com.github.k1rakishou.composecustomtextselection.lib.rememberSelectionState
+import com.github.k1rakishou.composecustomtextselection.lib.textSelectionAfterDoubleTapOrTapWithLongTap
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
@@ -55,7 +65,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
@@ -71,15 +80,14 @@ fun PostCell(
   postCellCommentTextSizeSp: TextUnit,
   postCellSubjectTextSizeSp: TextUnit,
   postCellData: PostCellData,
-  postCellControlsShown: Boolean,
-  onSelectionModeChanged: (Boolean) -> Unit,
+  onTextSelectionModeChanged: (inSelectionMode: Boolean) -> Unit,
   onPostBind: (PostCellData) -> Unit,
   onPostUnbind: (PostCellData) -> Unit,
+  onCopySelectedText: (String) -> Unit,
+  onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
-  onQuotePostClicked: (PostCellData) -> Unit,
-  onQuotePostWithCommentClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
 ) {
@@ -123,21 +131,19 @@ fun PostCell(
         postComment = postComment,
         isCatalogMode = isCatalogMode,
         detectLinkableClicks = detectLinkableClicks,
+        onCopySelectedText = onCopySelectedText,
+        onQuoteSelectedText = onQuoteSelectedText,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        onSelectionModeChanged = onSelectionModeChanged,
         onPostCellCommentClicked = onPostCellCommentClicked,
-        onPostCellCommentLongClicked = onPostCellCommentLongClicked
+        onPostCellCommentLongClicked = onPostCellCommentLongClicked,
+        onTextSelectionModeChanged = onTextSelectionModeChanged
       )
 
       PostCellFooter(
-        isCatalogMode = isCatalogMode,
-        postCellControlsShown = postCellControlsShown,
         postCellData = postCellData,
         postFooterText = postFooterText,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        onPostRepliesClicked = onPostRepliesClicked,
-        onQuotePostClicked = onQuotePostClicked,
-        onQuotePostWithCommentClicked = onQuotePostWithCommentClicked
+        onPostRepliesClicked = onPostRepliesClicked
       )
     }
 
@@ -430,9 +436,11 @@ private fun PostCellComment(
   isCatalogMode: Boolean,
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
-  onSelectionModeChanged: (Boolean) -> Unit,
+  onCopySelectedText: (String) -> Unit,
+  onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
+  onTextSelectionModeChanged: (inSelectionMode: Boolean) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
   val clickedTextBackgroundColorMap = remember(key1 = chanTheme) { createClickableTextColorMap(chanTheme) }
@@ -440,12 +448,15 @@ private fun PostCellComment(
   if (postComment.isNotNullNorBlank()) {
     PostCellCommentSelectionWrapper(
       isCatalogMode = isCatalogMode,
-      onSelectionModeChanged = onSelectionModeChanged
-    ) {
+      onCopySelectedText = onCopySelectedText,
+      onQuoteSelectedText = { withText, selectedText -> onQuoteSelectedText(withText, selectedText, postCellData) },
+      onTextSelectionModeChanged = onTextSelectionModeChanged
+    ) { textModifier, onTextLayout ->
       KurobaComposeClickableText(
         modifier = Modifier
           .fillMaxWidth()
-          .wrapContentHeight(),
+          .wrapContentHeight()
+          .then(textModifier),
         fontSize = postCellCommentTextSizeSp,
         text = postComment,
         isTextClickable = detectLinkableClicks,
@@ -455,6 +466,7 @@ private fun PostCellComment(
         },
         onTextAnnotationClicked = { text, offset -> onPostCellCommentClicked(postCellData, text, offset) },
         onTextAnnotationLongClicked = { text, offset -> onPostCellCommentLongClicked(postCellData, text, offset) },
+        onTextLayout = onTextLayout
       )
     }
   } else if (postComment == null) {
@@ -469,24 +481,85 @@ private fun PostCellComment(
 @Composable
 private fun PostCellCommentSelectionWrapper(
   isCatalogMode: Boolean,
-  onSelectionModeChanged: (Boolean) -> Unit,
-  content: @Composable () -> Unit
+  onCopySelectedText: (String) -> Unit,
+  onQuoteSelectedText: (Boolean, String) -> Unit,
+  onTextSelectionModeChanged: (inSelectionMode: Boolean) -> Unit,
+  content: @Composable (textModifier: Modifier, onTextLayout: (TextLayoutResult) -> Unit) -> Unit
 ) {
-  // TODO(KurobaEx): text selection doesn't work for now because the current Jetpack Compose's
-  //  text selection API is not advanced enough to implement it how I want it to be
-  content()
+  if (isCatalogMode) {
+    content(
+      textModifier = Modifier,
+      onTextLayout = {}
+    )
+    return
+  }
+
+  val view = LocalView.current
+  val context = LocalContext.current
+  val selectionState = rememberSelectionState()
+
+  val onCopySelectedTextUpdated by rememberUpdatedState(newValue = onCopySelectedText)
+  val onQuoteSelectedTextUpdated by rememberUpdatedState(newValue = onQuoteSelectedText)
+
+  val configurableTextToolbar = remember {
+    val resources = context.resources
+    val theme = context.theme
+
+    var id = 1
+    var order = 0
+
+    val selectionToolbarMenu = SelectionToolbarMenu(
+      items = listOf(
+        SelectionToolbarMenu.Item(
+          id = id++,
+          order = order++,
+          text = resources.getString(R.string.copy),
+          icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_content_copy_24, theme),
+          callback = { selectedText -> onCopySelectedTextUpdated.invoke(selectedText.text) }
+        ),
+        SelectionToolbarMenu.Item(
+          id = id++,
+          order = order++,
+          text = resources.getString(R.string.quote),
+          icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_chevron_right_24, theme),
+          callback = { selectedText -> onQuoteSelectedTextUpdated.invoke(false, selectedText.text) }
+        ),
+        SelectionToolbarMenu.Item(
+          id = id++,
+          order = order++,
+          text = resources.getString(R.string.quote_text),
+          icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_format_quote_24, theme),
+          callback = { selectedText -> onQuoteSelectedTextUpdated.invoke(true, selectedText.text) }
+        ),
+      )
+    )
+
+    return@remember ConfigurableTextToolbar(
+      view = view,
+      selectionToolbarMenu = selectionToolbarMenu
+    )
+  }
+
+  SelectableTextContainer(
+    modifier = Modifier
+      .pointerInput(
+        key1 = Unit,
+        block = { textSelectionAfterDoubleTapOrTapWithLongTap(selectionState) }
+      ),
+    selectionState = selectionState,
+    configurableTextToolbar = configurableTextToolbar,
+    onEnteredSelection = { onTextSelectionModeChanged(true) },
+    onExitedSelection = { onTextSelectionModeChanged(false) },
+    textContent = { modifier, onTextLayout -> content(modifier, onTextLayout) }
+  )
 }
 
 @Composable
 private fun PostCellFooter(
-  isCatalogMode: Boolean,
-  postCellControlsShown: Boolean,
   postCellData: PostCellData,
   postFooterText: AnnotatedString?,
   postCellCommentTextSizeSp: TextUnit,
-  onPostRepliesClicked: (PostCellData) -> Unit,
-  onQuotePostClicked: (PostCellData) -> Unit,
-  onQuotePostWithCommentClicked: (PostCellData) -> Unit
+  onPostRepliesClicked: (PostCellData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
 
@@ -509,30 +582,6 @@ private fun PostCellFooter(
       )
     } else {
       Spacer(modifier = Modifier.weight(1f))
-    }
-
-    if (!isCatalogMode && postCellControlsShown) {
-      KurobaComposeIcon(
-        modifier = Modifier.kurobaClickable(
-          bounded = false,
-          onClick = { onQuotePostClicked(postCellData) }
-        ),
-        drawableId = R.drawable.ic_baseline_reply_24
-      )
-
-      Spacer(modifier = Modifier.width(8.dp))
-
-      if (postCellData.parsedPostData?.parsedPostComment?.isNotNullNorEmpty() == true) {
-        KurobaComposeIcon(
-          modifier = Modifier.kurobaClickable(
-            bounded = false,
-            onClick = { onQuotePostWithCommentClicked(postCellData) }
-          ),
-          drawableId = R.drawable.ic_baseline_format_quote_24
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-      }
     }
   }
 

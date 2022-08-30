@@ -54,16 +54,22 @@ suspend fun PointerInputScope.detectTapGesturesWithFilter(
         return@awaitPointerEventScope
       }
 
-      if (down.pressed != down.previousPressed) down.consume()
+      if (down.pressed != down.previousPressed) {
+        down.consume()
+      }
+
       pressScope.reset()
 
       if (onPress !== NoPressGesture) launch {
         pressScope.onPress(down.position)
       }
+
       val longPressTimeout = onLongPress?.let {
         viewConfiguration.longPressTimeoutMillis
       } ?: (Long.MAX_VALUE / 2)
+
       var upOrCancel: PointerInputChange? = null
+
       try {
         // wait for first tap up or long press
         upOrCancel = withTimeout(longPressTimeout) {

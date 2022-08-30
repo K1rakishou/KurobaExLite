@@ -419,13 +419,7 @@ class ReplyLayoutViewModel(
     replyLayoutState.appendPostQuote(postCellData.postDescriptor)
   }
 
-  fun quotePostWithComment(threadDescriptor: ThreadDescriptor, postCellData: PostCellData) {
-    val parsedPostComment = postCellData.parsedPostData?.parsedPostComment
-    if (parsedPostComment.isNullOrEmpty()) {
-      quotePost(threadDescriptor, postCellData)
-      return
-    }
-
+  fun quotePostWithText(threadDescriptor: ThreadDescriptor, postCellData: PostCellData, selectedText: String) {
     val replyLayoutState = getOrCreateReplyLayoutState(threadDescriptor)
     if (replyLayoutState !is ReplyLayoutState) {
       return
@@ -433,7 +427,7 @@ class ReplyLayoutViewModel(
 
     replyLayoutState.appendPostQuoteWithComment(
       postDescriptor = postCellData.postDescriptor,
-      comment = parsedPostComment
+      comment = selectedText
     )
   }
 

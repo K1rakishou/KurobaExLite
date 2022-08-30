@@ -43,7 +43,6 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
-import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.forceInit
@@ -80,7 +79,6 @@ class CatalogScreen(
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
-  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
@@ -433,10 +431,10 @@ class CatalogScreen(
       onPostRepliesClicked = { postDescriptor ->
         // no-op
       },
-      onQuotePostClicked = { postCellData ->
+      onCopySelectedText = {
         // no-op
       },
-      onQuotePostWithCommentClicked = { postCellData ->
+      onQuoteSelectedText = { _, _, _ ->
         // no-op
       },
       onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->

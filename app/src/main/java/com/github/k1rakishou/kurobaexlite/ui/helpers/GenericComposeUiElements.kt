@@ -291,6 +291,7 @@ fun KurobaComposeClickableText(
   detectClickedAnnotations: (Offset, TextLayoutResult?, AnnotatedString) -> AnnotatedString.Range<String>?,
   onTextAnnotationClicked: (AnnotatedString, Int) -> Unit,
   onTextAnnotationLongClicked: (AnnotatedString, Int) -> Unit,
+  onTextLayout: (TextLayoutResult) -> Unit = {}
 ) {
   var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
   var currentlyPressedAnnotationPath by remember { mutableStateOf<Path?>(null) }
@@ -373,7 +374,10 @@ fun KurobaComposeClickableText(
       enabled = enabled,
       textAlign = textAlign,
       inlineContent = inlineContent,
-      onTextLayout = { result -> layoutResult = result }
+      onTextLayout = { result ->
+        layoutResult = result
+        onTextLayout(result)
+      }
     )
   }
 }
