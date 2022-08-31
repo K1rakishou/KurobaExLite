@@ -220,6 +220,16 @@ open class NavigationRouter(
     return getScreenByKeyInternal(rootRouter, screenKey)
   }
 
+  fun isTopmostScreen(screen: ComposeScreen): Boolean {
+    val rootRouter = getRootRouter()
+
+    if (rootRouter.floatingScreensStack.isNotEmpty()) {
+      return false
+    }
+
+    return navigationScreensStack.lastOrNull() === screen
+  }
+
   private fun getScreenByKeyInternal(
     currentRouter: NavigationRouter,
     screenKey: ScreenKey
@@ -250,9 +260,9 @@ open class NavigationRouter(
     return null
   }
 
-  private fun getRootRouter(): NavigationRouter {
+  private fun getRootRouter(): MainNavigationRouter {
     if (parentRouter == null) {
-      return this
+      return this as MainNavigationRouter
     }
 
     return parentRouter.getRootRouter()

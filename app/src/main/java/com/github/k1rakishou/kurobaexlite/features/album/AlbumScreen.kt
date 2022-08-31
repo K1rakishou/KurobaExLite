@@ -276,6 +276,10 @@ class AlbumScreen(
       key1 = Unit,
       block = {
         albumScreenViewModel.snackbarFlow.collect { message ->
+          if (!navigationRouter.isTopmostScreen(this@AlbumScreen)) {
+            return@collect
+          }
+
           // Hardcode for now, we only have 1 snackbar emitted from the albumScreenViewModel
           snackbarManager.toast(
             message = message,
