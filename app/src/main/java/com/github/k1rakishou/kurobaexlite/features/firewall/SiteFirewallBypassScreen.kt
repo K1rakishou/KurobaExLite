@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.firewall
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebStorage
@@ -96,6 +97,10 @@ class SiteFirewallBypassScreen(
       modifier = Modifier.fillMaxSize(),
       factory = {
         val wv = WebView(context)
+        wv.layoutParams = ViewGroup.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT,
+          ViewGroup.LayoutParams.MATCH_PARENT
+        )
         webViewMut = wv
         logcat(TAG) { "WebView created" }
 

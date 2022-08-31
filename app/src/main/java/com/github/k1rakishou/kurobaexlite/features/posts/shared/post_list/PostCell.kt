@@ -444,13 +444,17 @@ private fun PostCellComment(
 ) {
   val chanTheme = LocalChanTheme.current
   val clickedTextBackgroundColorMap = remember(key1 = chanTheme) { createClickableTextColorMap(chanTheme) }
+  var isInSelectionMode by remember { mutableStateOf(false) }
 
   if (postComment.isNotNullNorBlank()) {
     PostCellCommentSelectionWrapper(
       isCatalogMode = isCatalogMode,
       onCopySelectedText = onCopySelectedText,
       onQuoteSelectedText = { withText, selectedText -> onQuoteSelectedText(withText, selectedText, postCellData) },
-      onTextSelectionModeChanged = onTextSelectionModeChanged
+      onTextSelectionModeChanged = { inSelectionMode ->
+        isInSelectionMode = inSelectionMode
+        onTextSelectionModeChanged(inSelectionMode)
+      }
     ) { textModifier, onTextLayout ->
       KurobaComposeClickableText(
         modifier = Modifier
@@ -459,7 +463,7 @@ private fun PostCellComment(
           .then(textModifier),
         fontSize = postCellCommentTextSizeSp,
         text = postComment,
-        isTextClickable = detectLinkableClicks,
+        isTextClickable = detectLinkableClicks && !isInSelectionMode,
         annotationBgColors = clickedTextBackgroundColorMap,
         detectClickedAnnotations = { offset, textLayoutResult, text ->
           return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)
