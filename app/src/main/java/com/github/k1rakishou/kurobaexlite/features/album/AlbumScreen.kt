@@ -272,6 +272,32 @@ class AlbumScreen(
     paddingValues: PaddingValues,
     onThumbnailClicked: (IPostImage) -> Unit
   ) {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        albumScreenViewModel.snackbarFlow.collect { message ->
+          // Hardcode for now, we only have 1 snackbar emitted from the albumScreenViewModel
+          snackbarManager.toast(
+            message = message,
+            screenKey = AlbumScreen.SCREEN_KEY,
+            toastId = NEW_ALBUM_IMAGES_ADDED_TOAST_ID
+          )
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        albumScreenViewModel.toolbarTitleInfo.collect { toolbarTitleInfo ->
+          defaultToolbarState.toolbarTitleState.value = appResources.string(
+            R.string.album_screen_toolbar_title_with_images,
+            toolbarTitleInfo.albumImagesCount
+          )
+        }
+      }
+    )
+
     val albumMut by albumScreenViewModel.album.collectAsState()
     val album = albumMut
 
@@ -312,20 +338,6 @@ class AlbumScreen(
           if (indexToScroll != null) {
             lazyGridState.scrollToItem(index = indexToScroll)
           }
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        albumScreenViewModel.snackbarFlow.collect { message ->
-          // Hardcode for now
-          snackbarManager.toast(
-            message = message,
-            screenKey = AlbumScreen.SCREEN_KEY,
-            toastId = NEW_ALBUM_IMAGES_ADDED_TOAST_ID
-          )
         }
       }
     )

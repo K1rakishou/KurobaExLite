@@ -56,6 +56,10 @@ class AlbumScreenViewModel(
   val album: StateFlow<Album?>
     get() = _album.asStateFlow()
 
+  private val _toolbarTitleInfoFlow = MutableSharedFlow<ToolbarTitleInfo>()
+  val toolbarTitleInfo: SharedFlow<ToolbarTitleInfo>
+    get() = _toolbarTitleInfoFlow.asSharedFlow()
+
   private val _snackbarFlow = MutableSharedFlow<String>()
   val snackbarFlow: SharedFlow<String>
     get() = _snackbarFlow.asSharedFlow()
@@ -164,6 +168,7 @@ class AlbumScreenViewModel(
     val album = loadAlbumInitial(chanDescriptor)
     album.albumImages.forEach { albumImage -> _allImageKeys.add(albumImage.postImage.serverFileName) }
     _album.emit(album)
+    updateToolbarTitleInfo(album)
 
     logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${album.albumImages.size} album images" }
 
@@ -203,6 +208,8 @@ class AlbumScreenViewModel(
         }
 
         currentAlbum.appendNewAlbumImages(newAlbumImages)
+        updateToolbarTitleInfo(currentAlbum)
+
         _snackbarFlow.emit(
           appResources.string(
             R.string.album_screen_new_album_images_added,
@@ -210,6 +217,11 @@ class AlbumScreenViewModel(
           )
         )
       }
+  }
+
+  private suspend fun updateToolbarTitleInfo(album: Album) {
+    val toolbarTitleInfo = ToolbarTitleInfo(album.albumImages.size)
+    _toolbarTitleInfoFlow.emit(toolbarTitleInfo)
   }
 
   private suspend fun loadAlbumInitial(
@@ -355,6 +367,8 @@ class AlbumScreenViewModel(
     val imageOriginalFileName: String,
     val imageInfo: String
   )
+
+  data class ToolbarTitleInfo(val albumImagesCount: Int)
 
   companion object {
     private const val TAG = "AlbumScreenViewModel"
