@@ -13,6 +13,10 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
 import logcat.logcat
 
@@ -25,6 +29,22 @@ class ChanCache(
   private val catalogs = ConcurrentHashMap<CatalogDescriptor, ChanCatalogCache>()
   private val threads = ConcurrentHashMap<ThreadDescriptor, ChanThreadCache>()
 
+  private val _threadPostUpdates = MutableSharedFlow<PostsLoadResult>(extraBufferCapacity = Channel.UNLIMITED)
+  private val _catalogThreadUpdates = MutableSharedFlow<PostsLoadResult>(extraBufferCapacity = Channel.UNLIMITED)
+
+  fun listenForPostUpdates(chanDescriptor: ChanDescriptor): Flow<PostsLoadResult> {
+    return when (chanDescriptor) {
+      is CatalogDescriptor -> {
+        _catalogThreadUpdates
+          .filter { postsLoadResult -> postsLoadResult.chanDescriptor == chanDescriptor }
+      }
+      is ThreadDescriptor -> {
+        _threadPostUpdates
+          .filter { postsLoadResult -> postsLoadResult.chanDescriptor == chanDescriptor }
+      }
+    }
+  }
+
   suspend fun onCatalogOrThreadAccessed(chanDescriptor: ChanDescriptor) {
     when (chanDescriptor) {
       is CatalogDescriptor -> catalogs[chanDescriptor]?.onCatalogAccessed()
@@ -35,10 +55,10 @@ class ChanCache(
   suspend fun insertCatalogThreads(
     catalogDescriptor: CatalogDescriptor,
     catalogThreads: Collection<IPostData>
-  ): PostsLoadResult {
+  ): PostsLoadResult? {
     return withContext(Dispatchers.IO) {
       if (catalogThreads.isEmpty()) {
-        return@withContext PostsLoadResult.EMPTY
+        return@withContext null
       }
 
       val chanCatalog = catalogs.getOrPut(
@@ -54,20 +74,24 @@ class ChanCache(
         evictOld(catalogs as ConcurrentHashMap<ChanDescriptor, IChanCache>, maxCachedCatalogs)
       }
 
-      return@withContext PostsLoadResult(
+      val postsLoadResult = PostsLoadResult(
+        chanDescriptor = catalogDescriptor,
         newPosts = catalogThreads.toList(),
         updatedPosts = emptyList()
       )
+      _catalogThreadUpdates.emit(postsLoadResult)
+
+      return@withContext postsLoadResult
     }
   }
 
   suspend fun insertThreadPosts(
     threadDescriptor: ThreadDescriptor,
     threadPostCells: Collection<IPostData>
-  ): PostsLoadResult {
+  ): PostsLoadResult? {
     return withContext(Dispatchers.IO) {
       if (threadPostCells.isEmpty()) {
-        return@withContext PostsLoadResult.EMPTY
+        return@withContext null
       }
 
       val chanThread = threads.getOrPut(
@@ -77,6 +101,8 @@ class ChanCache(
 
       val hasPosts = chanThread.hasPosts()
       val postsMergeResult = chanThread.insert(threadPostCells)
+
+      _threadPostUpdates.emit(postsMergeResult)
 
       // Only run evictOld() routine when inserting new threads into the cache
       if (!hasPosts) {

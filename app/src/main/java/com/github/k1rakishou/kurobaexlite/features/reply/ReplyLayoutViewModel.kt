@@ -48,6 +48,7 @@ import kotlinx.coroutines.withContext
 import logcat.logcat
 
 class ReplyLayoutViewModel(
+  private val savedStateHandle: SavedStateHandle,
   private val captchaManager: CaptchaManager,
   private val siteManager: SiteManager,
   private val snackbarManager: SnackbarManager,
@@ -56,8 +57,7 @@ class ReplyLayoutViewModel(
   private val addOrRemoveBookmark: AddOrRemoveBookmark,
   private val loadChanCatalog: LoadChanCatalog,
   private val localFilePicker: LocalFilePicker,
-  private val appResources: AppResources,
-  private val savedStateHandle: SavedStateHandle
+  private val appResources: AppResources
 ) : BaseViewModel() {
   private val sendReplyJobMap = mutableMapOf<ScreenKey, Job>()
   private val manuallyCanceled = mutableSetOf<ScreenKey>()

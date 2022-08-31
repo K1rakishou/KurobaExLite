@@ -312,7 +312,6 @@ object DependencyGraph {
   private fun Module.viewModels() {
     viewModel {
       MainActivityViewModel(
-        savedStateHandle = get(),
         loadBookmarks = get(),
         snackbarManager = get(),
         appResources = get(),
@@ -350,6 +349,8 @@ object DependencyGraph {
 
     viewModel {
       AlbumScreenViewModel(
+        appSettings = get(),
+        appResources = get(),
         chanViewManager = get(),
         parsedPostDataCache = get(),
         chanCache = get(),

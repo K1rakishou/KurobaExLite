@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.ui.activity
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -13,7 +12,6 @@ import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import kotlinx.coroutines.launch
 
 class MainActivityViewModel(
-  private val savedStateHandle: SavedStateHandle,
   private val loadBookmarks: LoadBookmarks,
   private val snackbarManager: SnackbarManager,
   private val appResources: AppResources,

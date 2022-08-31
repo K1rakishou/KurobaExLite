@@ -93,6 +93,7 @@ class ChanThreadCache(
       }
 
       return@withLockNonCancellable PostsLoadResult(
+        chanDescriptor = threadDescriptor,
         newPosts = insertedPosts,
         updatedPosts = updatedPosts,
         unchangedPosts = unchangedPosts,

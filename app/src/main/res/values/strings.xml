@@ -111,6 +111,8 @@
 
     <string name="album_screen_toolbar_title">Album</string>
     <string name="album_screen_album_empty">Album is empty</string>
+    <string name="album_screen_selected_n_images">Selected %1$d image(s)</string>
+    <string name="album_screen_new_album_images_added">%1$d new image(s)</string>
 
     <string name="remote_image_search_screen_title">Image search</string>
     <string name="remote_image_search_screen_current_instance">Current search instance</string>

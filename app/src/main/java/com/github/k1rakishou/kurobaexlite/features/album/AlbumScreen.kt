@@ -24,7 +24,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,17 +45,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
-import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
@@ -71,16 +66,15 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleTool
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeErrorWithButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -90,8 +84,6 @@ class AlbumScreen(
   navigationRouter: NavigationRouter
 ) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcon>>(screenArgs, componentActivity, navigationRouter) {
   private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModel()
-  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
-  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
@@ -249,16 +241,10 @@ class AlbumScreen(
       return@HandleBackPresses popScreen()
     }
 
-    val postsAsyncData by when (chanDescriptor) {
-      is CatalogDescriptor -> catalogScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-      is ThreadDescriptor -> threadScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-    }
-
     GradientBackground(
       modifier = Modifier.fillMaxSize()
     ) {
       ContentInternal(
-        postsAsyncData = postsAsyncData,
         paddingValues = paddingValues,
         onThumbnailClicked = { postImage ->
           val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
@@ -283,51 +269,18 @@ class AlbumScreen(
 
   @Composable
   private fun ContentInternal(
-    postsAsyncData: AsyncData<PostsState>,
     paddingValues: PaddingValues,
     onThumbnailClicked: (IPostImage) -> Unit
   ) {
-    if (postsAsyncData is AsyncData.Uninitialized) {
-      return
-    }
-
-    val coroutineScope = rememberCoroutineScope()
-    val postCellDataList = (postsAsyncData as? AsyncData.Data)?.data?.posts
-    var albumMut by remember { mutableStateOf<AlbumScreenViewModel.Album?>(null) }
+    val albumMut by albumScreenViewModel.album.collectAsState()
     val album = albumMut
 
-    if (postsAsyncData is AsyncData.Error) {
-      val errorMessage = remember { postsAsyncData.error.errorMessageOrClassName() }
-
-      KurobaComposeErrorWithButton(
-        errorMessage = errorMessage,
-        buttonText = stringResource(id = R.string.reload),
-        onButtonClicked = {
-          coroutineScope.launch {
-            val freshPostCellDataList = (postsAsyncData as? AsyncData.Data)?.data?.posts
-              ?: return@launch
-
-            albumScreenViewModel.loadAlbumFromPostStateList(chanDescriptor, freshPostCellDataList)
-          }
-        }
-      )
-
-      return
-    }
-
     LaunchedEffect(
-      key1 = postCellDataList,
-      block = {
-        if (postCellDataList == null) {
-          albumMut = null
-          return@LaunchedEffect
-        }
-
-        albumMut = albumScreenViewModel.loadAlbumFromPostStateList(chanDescriptor, postCellDataList)
-      }
+      key1 = chanDescriptor,
+      block = { albumScreenViewModel.loadAlbumAndListenForUpdates(chanDescriptor) }
     )
 
-    if (album == null || postsAsyncData is AsyncData.Loading) {
+    if (album == null) {
       KurobaComposeLoadingIndicator()
       return
     }
@@ -337,7 +290,15 @@ class AlbumScreen(
       return
     }
 
-    val lazyGridState = rememberLazyGridState(initialFirstVisibleItemIndex = album.scrollIndex)
+    val lazyGridState = rememberLazyGridState()
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        delay(64)
+        lazyGridState.scrollToItem(album.scrollIndex)
+      }
+    )
 
     LaunchedEffect(
       key1 = chanDescriptor,
@@ -351,6 +312,20 @@ class AlbumScreen(
           if (indexToScroll != null) {
             lazyGridState.scrollToItem(index = indexToScroll)
           }
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        albumScreenViewModel.snackbarFlow.collect { message ->
+          // Hardcode for now
+          snackbarManager.toast(
+            message = message,
+            screenKey = AlbumScreen.SCREEN_KEY,
+            toastId = NEW_ALBUM_IMAGES_ADDED_TOAST_ID
+          )
         }
       }
     )
@@ -377,7 +352,10 @@ class AlbumScreen(
     LaunchedEffect(
       key1 = selectedItemsCount,
       block = {
-        selectionToolbarState.toolbarTitleState.value = "Selected ${selectedItemsCount} images"
+        selectionToolbarState.toolbarTitleState.value = appResources.string(
+          R.string.album_screen_selected_n_images,
+          selectedItemsCount
+        )
       }
     )
 
@@ -583,8 +561,11 @@ class AlbumScreen(
   }
 
   companion object {
+    private const val TAG = "AlbumScreen"
     const val CHAN_DESCRIPTOR_ARG = "chan_descriptor"
 
     val SCREEN_KEY = ScreenKey("AlbumScreen")
+
+    private const val NEW_ALBUM_IMAGES_ADDED_TOAST_ID = "new_album_images_added_toast_id"
   }
 }

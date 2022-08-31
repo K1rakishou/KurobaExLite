@@ -2,10 +2,12 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 
 data class PostsLoadResult(
+  val chanDescriptor: ChanDescriptor,
   val newPosts: List<IPostData>,
   val updatedPosts: List<IPostData>,
   val unchangedPosts: List<IPostData> = emptyList(),
@@ -109,10 +111,6 @@ data class PostsLoadResult(
   fun info(): String {
     return "newPosts=${newPosts.size}, updatedPosts=${updatedPosts.size}, " +
       "unchangedPosts=${unchangedPosts.size}, deletedPosts=${deletedPosts.size}"
-  }
-
-  companion object {
-    val EMPTY = PostsLoadResult(emptyList(), emptyList(), emptyList(), emptyList())
   }
 
 }
