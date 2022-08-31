@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -53,7 +52,6 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -76,7 +74,6 @@ private val durationFormatter = PeriodFormatterBuilder()
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun DisplayVideo(
-  isMinimized: Boolean,
   pageIndex: Int,
   pagerState: PagerState,
   toolbarHeight: Dp,
@@ -109,26 +106,14 @@ fun DisplayVideo(
   val context = LocalContext.current
 
   if (!librariesInstalledAndLoaded) {
-    if (isMinimized) {
-      Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-      ) {
-        KurobaComposeIcon(
-          modifier = Modifier.size(24.dp),
-          drawableId = R.drawable.ic_baseline_warning_24
-        )
-      }
-    } else {
-      DisplayMpvLibrariesAreNotLoadedError(
-        onPlayerLoaded = onPlayerLoaded,
-        toolbarHeight = toolbarHeight,
-        onVideoTapped = onVideoTapped,
-        context = context,
-        mpvSettings = mpvSettings,
-        installMpvLibsFromGithubButtonClicked = installMpvLibsFromGithubButtonClicked
-      )
-    }
+    DisplayMpvLibrariesAreNotLoadedError(
+      onPlayerLoaded = onPlayerLoaded,
+      toolbarHeight = toolbarHeight,
+      onVideoTapped = onVideoTapped,
+      context = context,
+      mpvSettings = mpvSettings,
+      installMpvLibsFromGithubButtonClicked = installMpvLibsFromGithubButtonClicked
+    )
 
     return
   }
@@ -280,7 +265,6 @@ fun DisplayVideo(
       modifier = Modifier
         .fillMaxSize()
         .kurobaClickable(
-          enabled = !isMinimized,
           hasClickIndication = false,
           onClick = { onVideoTapped() }
         ),
@@ -302,12 +286,10 @@ fun DisplayVideo(
       }
     }
 
-    if (!isMinimized) {
-      SeekToHint(
-        seekingToHint = seekingToHint,
-        mpvView = mpvView
-      )
-    }
+    SeekToHint(
+      seekingToHint = seekingToHint,
+      mpvView = mpvView
+    )
   }
 
   if (videoStartedPlaying) {

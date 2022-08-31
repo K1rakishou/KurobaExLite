@@ -47,7 +47,6 @@ internal fun MediaViewerToolbar(
   mediaViewerScreenState: MediaViewerScreenState,
   pagerState: PagerState?,
   onDownloadMediaClicked: (IPostImage) -> Unit,
-  onMinimizeClicked: () -> Unit,
   onBackPressed: () -> Unit
 ) {
   if (!mediaViewerScreenState.isLoaded() || pagerState == null) {
@@ -80,7 +79,6 @@ internal fun MediaViewerToolbar(
           mediaViewerScreenState = mediaViewerScreenState,
           currentPagerPage = currentImageIndex,
           onDownloadMediaClicked = onDownloadMediaClicked,
-          onMinimizeClicked = onMinimizeClicked,
           onBackPressed = onBackPressed
         )
       })
@@ -97,7 +95,6 @@ internal fun MediaViewerToolbar(
             mediaViewerScreenState = mediaViewerScreenState,
             currentPagerPage = targetImageIndex,
             onDownloadMediaClicked = onDownloadMediaClicked,
-            onMinimizeClicked = onMinimizeClicked,
             onBackPressed = onBackPressed
           )
         }
@@ -143,7 +140,6 @@ private fun MediaToolbar(
   mediaViewerScreenState: MediaViewerScreenState,
   currentPagerPage: Int,
   onDownloadMediaClicked: (IPostImage) -> Unit,
-  onMinimizeClicked: () -> Unit,
   onBackPressed: () -> Unit,
 ) {
   val componentActivity = LocalComponentActivity.current
@@ -152,9 +148,6 @@ private fun MediaToolbar(
     return@remember SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
       .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.DownloadMedia, drawableId = R.drawable.ic_baseline_download_24))
-      // TODO(KurobaEx): disabled for now because there is a bug where we don't track new posts so when
-      //  new posts with media are loaded, when tapping them, an incorrect media will be displayed.
-//      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Minimize, drawableId = R.drawable.ic_baseline_fullscreen_exit_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
       .build(toolbarKey)
   }
@@ -183,9 +176,6 @@ private fun MediaToolbar(
 
                 onDownloadMediaClicked(postImageToDownload)
               }
-          }
-          ToolbarIcons.Minimize -> {
-            onMinimizeClicked()
           }
           ToolbarIcons.Overflow -> {
             // no-op
@@ -286,6 +276,5 @@ private class ChildToolbar(
 private enum class ToolbarIcons {
   Back,
   DownloadMedia,
-  Minimize,
   Overflow
 }

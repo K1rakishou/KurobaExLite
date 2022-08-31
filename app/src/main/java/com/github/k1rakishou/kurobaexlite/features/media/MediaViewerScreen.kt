@@ -21,11 +21,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -49,7 +47,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import androidx.core.graphics.withTranslation
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
@@ -89,7 +86,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -98,7 +94,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
-import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.MinimizableFloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import java.io.IOException
@@ -121,7 +117,7 @@ class MediaViewerScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : MinimizableFloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
+) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
   private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
@@ -131,19 +127,9 @@ class MediaViewerScreen(
 
   override val customBackground: Boolean = true
   override val screenKey: ScreenKey = SCREEN_KEY
-  override val isScreenMinimized: MutableState<Boolean> = mediaViewerScreenViewModel.isScreenMinimized
 
   override val unpresentAnimation: NavigationRouter.ScreenAnimation
-    get() {
-      return if (isScreenMinimized.value) {
-        NavigationRouter.ScreenAnimation.Fade(
-          screenKey,
-          NavigationRouter.ScreenAnimation.FadeType.Out
-        )
-      } else {
-        NavigationRouter.ScreenAnimation.Pop(screenKey)
-      }
-    }
+    get() = NavigationRouter.ScreenAnimation.Pop(screenKey)
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
@@ -163,17 +149,10 @@ class MediaViewerScreen(
     val mediaViewerParams = mediaViewerParamsMut ?: return
     val openedFromScreen = openedFromScreenMut ?: return
 
-    MinimizableContent(
-      mediaViewerScreenState = mediaViewerScreenState,
-      onCloseMediaViewerClicked = { stopPresenting() },
-      content = { isMinimized ->
-        CardContentInternal(
-          mediaViewerParams = mediaViewerParams,
-          openedFromScreen = openedFromScreen,
-          isMinimized = isMinimized,
-          mediaViewerScreenState = mediaViewerScreenState
-        )
-      }
+    CardContentInternal(
+      mediaViewerParams = mediaViewerParams,
+      openedFromScreen = openedFromScreen,
+      mediaViewerScreenState = mediaViewerScreenState
     )
   }
 
@@ -181,7 +160,6 @@ class MediaViewerScreen(
   private fun CardContentInternal(
     mediaViewerParams: MediaViewerParams,
     openedFromScreen: ScreenKey,
-    isMinimized: Boolean,
     mediaViewerScreenState: MediaViewerScreenState
   ) {
     val chanTheme = LocalChanTheme.current
@@ -196,14 +174,10 @@ class MediaViewerScreen(
     val animatable = remember { Animatable(0f) }
     val animationProgress by animatable.asState()
 
-    var availableSizeMut by remember(key1 = isMinimized) { mutableStateOf<IntSize>(IntSize.Zero) }
+    var availableSizeMut by remember(key1 = Unit) { mutableStateOf<IntSize>(IntSize.Zero) }
     val availableSize = availableSizeMut
 
-    val bgColor = if (isMinimized) {
-      Color.Unspecified
-    } else {
-      Color.Black
-    }
+    val bgColor = Color.Black
 
     Box(
       modifier = Modifier
@@ -226,7 +200,6 @@ class MediaViewerScreen(
       ) {
         if (availableSize.width > 0 && availableSize.height > 0) {
           ContentAfterTransition(
-            isMinimized = isMinimized,
             mediaViewerScreenState = mediaViewerScreenState,
             chanTheme = chanTheme,
             availableSize = availableSize,
@@ -289,7 +262,6 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun BoxScope.ContentAfterTransition(
-    isMinimized: Boolean,
     mediaViewerScreenState: MediaViewerScreenState,
     chanTheme: ChanTheme,
     availableSize: IntSize,
@@ -311,7 +283,6 @@ class MediaViewerScreen(
     }
 
     MediaViewerPagerContainer(
-      isMinimized = isMinimized,
       availableSize = availableSize,
       toolbarHeight = toolbarHeight,
       openedFromScreen = openedFromScreen,
@@ -330,35 +301,32 @@ class MediaViewerScreen(
       animationSpec = tween(durationMillis = 300)
     )
 
-    if (!isMinimized) {
-      Box(
-        modifier = Modifier.Companion
-          .align(Alignment.TopCenter)
-          .alpha(mediaViewerUiAlpha)
-          .passClicksThrough(passClicks = !mediaViewerUiVisible)
-          .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
-          .background(bgColor)
-      ) {
-        val context = LocalContext.current
-        val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
+    Box(
+      modifier = Modifier.Companion
+        .align(Alignment.TopCenter)
+        .alpha(mediaViewerUiAlpha)
+        .passClicksThrough(passClicks = !mediaViewerUiVisible)
+        .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
+        .background(bgColor)
+    ) {
+      val context = LocalContext.current
+      val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
 
-        MediaViewerToolbar(
-          toolbarHeight = toolbarHeight,
-          backgroundColor = bgColor,
-          screenKey = screenKey,
-          mediaViewerScreenState = mediaViewerScreenState,
-          pagerState = pagerStateHolder,
-          onDownloadMediaClicked = { postImage ->
-            onDownloadButtonClicked(
-              context = context,
-              runtimePermissionsHelper = runtimePermissionsHelper,
-              postImage = postImage
-            )
-          },
-          onMinimizeClicked = { minimize() },
-          onBackPressed = { coroutineScope.launch { onBackPressed() } }
-        )
-      }
+      MediaViewerToolbar(
+        toolbarHeight = toolbarHeight,
+        backgroundColor = bgColor,
+        screenKey = screenKey,
+        mediaViewerScreenState = mediaViewerScreenState,
+        pagerState = pagerStateHolder,
+        onDownloadMediaClicked = { postImage ->
+          onDownloadButtonClicked(
+            context = context,
+            runtimePermissionsHelper = runtimePermissionsHelper,
+            postImage = postImage
+          )
+        },
+        onBackPressed = { coroutineScope.launch { onBackPressed() } }
+      )
     }
 
     val currentPageIndex by remember { derivedStateOf { pagerStateHolder.currentPage } }
@@ -381,21 +349,19 @@ class MediaViewerScreen(
       animationSpec = tween(durationMillis = 300)
     )
 
-    if (!isMinimized) {
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .align(Alignment.BottomCenter)
-          .passClicksThrough(passClicks = !mediaViewerUiVisible)
-          .graphicsLayer { this.alpha = alphaAnimated }
-          .background(bgColor)
-      ) {
-        if (currentLoadedMedia is MediaState.Video) {
-          MediaViewerScreenVideoControls(currentLoadedMedia)
-        }
-
-        Spacer(modifier = Modifier.height(insets.bottom))
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .align(Alignment.BottomCenter)
+        .passClicksThrough(passClicks = !mediaViewerUiVisible)
+        .graphicsLayer { this.alpha = alphaAnimated }
+        .background(bgColor)
+    ) {
+      if (currentLoadedMedia is MediaState.Video) {
+        MediaViewerScreenVideoControls(currentLoadedMedia)
       }
+
+      Spacer(modifier = Modifier.height(insets.bottom))
     }
 
     if (images.isNotNullNorEmpty()) {
@@ -412,7 +378,7 @@ class MediaViewerScreen(
         return@remember toolbarCalculatedHeight
       }
 
-      if (!isMinimized && toolbarCalculatedHeight != null) {
+      if (toolbarCalculatedHeight != null) {
         Box(
           modifier = Modifier
             .align(Alignment.TopCenter)
@@ -642,7 +608,6 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun MediaViewerPagerContainer(
-    isMinimized: Boolean,
     availableSize: IntSize,
     toolbarHeight: Dp,
     openedFromScreen: ScreenKey,
@@ -808,7 +773,6 @@ class MediaViewerScreen(
       modifier = Modifier.fillMaxSize(),
       count = images.size,
       state = pagerState,
-      userScrollEnabled = !isMinimized,
       key = { page -> images.getOrNull(page)?.fullImageUrlAsString ?: "<null>" }
     ) { page ->
       val mediaState = remember(key1 = page) {
@@ -844,7 +808,6 @@ class MediaViewerScreen(
       }
 
       PageContent(
-        isMinimized = isMinimized,
         page = page,
         images = images,
         mediaViewerScreenState = mediaViewerScreenState,
@@ -863,7 +826,6 @@ class MediaViewerScreen(
   @OptIn(ExperimentalPagerApi::class)
   @Composable
   private fun PageContent(
-    isMinimized: Boolean,
     page: Int,
     images: List<ImageLoadState>,
     mediaViewerScreenState: MediaViewerScreenState,
@@ -903,15 +865,12 @@ class MediaViewerScreen(
     }
 
     val coroutineScope = rememberCoroutineScope()
-    val isMinimizedUpdated by rememberUpdatedState(newValue = isMinimized)
     var isDragGestureAllowedFunc by remember { mutableStateOf(defaultIsDragGestureAllowedFunc) }
 
     DraggableArea(
       availableSize = availableSize,
       closeScreen = { stopPresenting() },
-      isDragGestureAllowedFunc = { currPosition, startPosition ->
-        return@DraggableArea !isMinimizedUpdated && isDragGestureAllowedFunc(currPosition, startPosition)
-      }
+      isDragGestureAllowedFunc = { currPosition, startPosition -> isDragGestureAllowedFunc(currPosition, startPosition) }
     ) {
       when (postImageDataLoadState) {
         is ImageLoadState.PreparingForLoading -> {
@@ -960,7 +919,6 @@ class MediaViewerScreen(
               val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
 
               DisplayFullImage(
-                isMinimized = isMinimized,
                 availableSize = availableSize,
                 postImageDataLoadState = postImageDataLoadState,
                 imageFile = imageFile,
@@ -990,7 +948,6 @@ class MediaViewerScreen(
               )
 
               DisplayVideo(
-                isMinimized = isMinimized,
                 pageIndex = page,
                 pagerState = pagerState,
                 toolbarHeight = toolbarHeight,
@@ -1018,7 +975,6 @@ class MediaViewerScreen(
               )
 
               DisplayUnsupportedMedia(
-                isMinimized = isMinimized,
                 toolbarHeight = toolbarHeight,
                 postImageDataLoadState = postImageDataLoadState,
                 onFullImageLoaded = { fullMediaLoaded = true },
@@ -1030,7 +986,6 @@ class MediaViewerScreen(
         }
         is ImageLoadState.Error -> {
           DisplayImageLoadError(
-            isMinimized = isMinimized,
             toolbarHeight = toolbarHeight,
             postImageDataLoadState = postImageDataLoadState
           )
@@ -1196,24 +1151,9 @@ class MediaViewerScreen(
 
   @Composable
   private fun DisplayImageLoadError(
-    isMinimized: Boolean,
     toolbarHeight: Dp,
     postImageDataLoadState: ImageLoadState.Error
   ) {
-    if (isMinimized) {
-      Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-      ) {
-        KurobaComposeIcon(
-          modifier = Modifier.size(24.dp),
-          drawableId = R.drawable.ic_baseline_warning_24
-        )
-      }
-
-      return
-    }
-
     val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
 
     InsetsAwareBox(

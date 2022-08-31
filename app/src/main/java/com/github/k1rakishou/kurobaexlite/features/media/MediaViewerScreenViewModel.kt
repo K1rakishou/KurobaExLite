@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.features.media
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
@@ -70,7 +69,6 @@ class MediaViewerScreenViewModel(
 
   val mpvInitialized: Boolean
     get() = mpvInitializer.initialized
-  val isScreenMinimized = mutableStateOf(false)
 
   val mediaViewerScreenState = MediaViewerScreenState(savedStateHandle, appSettings)
 

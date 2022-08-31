@@ -5,7 +5,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
-import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeBackgroundScreen
@@ -164,24 +163,8 @@ class MainNavigationRouter : NavigationRouter(
       }
     }
 
-    val miniMediaScreenIndex = _floatingScreensStack
-      .indexOfLast { screen -> screen is MediaViewerScreen && screen.isScreenMinimized.value }
-
-    // If we have a minimized media viewer screen in the stack then add the new screen before it
-    // so that the minimized media viewer is always at the top
-    if (miniMediaScreenIndex >= 0) {
-      _floatingScreensStack.add(miniMediaScreenIndex, floatingComposeScreen)
-
-      logcat(TAG, LogPriority.VERBOSE) {
-        "presentScreen(${floatingComposeScreen.screenKey.key}) at $miniMediaScreenIndex"
-      }
-    } else {
-      _floatingScreensStack.add(floatingComposeScreen)
-
-      logcat(TAG, LogPriority.VERBOSE) {
-        "presentScreen(${floatingComposeScreen.screenKey.key}) at 0"
-      }
-    }
+    _floatingScreensStack.add(floatingComposeScreen)
+    logcat(TAG, LogPriority.VERBOSE) { "presentScreen(${floatingComposeScreen.screenKey.key}) at 0" }
 
     _screenAnimations.put(
       floatingComposeScreen.screenKey,
