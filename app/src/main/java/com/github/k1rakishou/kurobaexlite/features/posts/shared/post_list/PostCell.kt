@@ -15,8 +15,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -500,6 +503,7 @@ private fun PostCellCommentSelectionWrapper(
 
   val view = LocalView.current
   val context = LocalContext.current
+  val chanTheme = LocalChanTheme.current
   val selectionState = rememberSelectionState()
 
   val onCopySelectedTextUpdated by rememberUpdatedState(newValue = onCopySelectedText)
@@ -544,18 +548,27 @@ private fun PostCellCommentSelectionWrapper(
     )
   }
 
-  SelectableTextContainer(
-    modifier = Modifier
-      .pointerInput(
-        key1 = Unit,
-        block = { textSelectionAfterDoubleTapOrTapWithLongTap(selectionState) }
-      ),
-    selectionState = selectionState,
-    configurableTextToolbar = configurableTextToolbar,
-    onEnteredSelection = { onTextSelectionModeChanged(true) },
-    onExitedSelection = { onTextSelectionModeChanged(false) },
-    textContent = { modifier, onTextLayout -> content(modifier, onTextLayout) }
-  )
+  val textSelectionColors = remember(key1 = chanTheme.accentColor) {
+    TextSelectionColors(
+      handleColor = chanTheme.accentColor,
+      backgroundColor = chanTheme.accentColor.copy(alpha = 0.4f)
+    )
+  }
+
+  CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
+    SelectableTextContainer(
+      modifier = Modifier
+        .pointerInput(
+          key1 = Unit,
+          block = { textSelectionAfterDoubleTapOrTapWithLongTap(selectionState) }
+        ),
+      selectionState = selectionState,
+      configurableTextToolbar = configurableTextToolbar,
+      onEnteredSelection = { onTextSelectionModeChanged(true) },
+      onExitedSelection = { onTextSelectionModeChanged(false) },
+      textContent = { modifier, onTextLayout -> content(modifier, onTextLayout) }
+    )
+  }
 }
 
 @Composable
