@@ -32,7 +32,7 @@ class FullScreenHelpers(
     }
 
     if (androidHelpers.isAndroidO()) {
-      newSystemUiVisibility = if (theme.lightStatusBar) {
+      newSystemUiVisibility = if (theme.lightNavBar) {
         newSystemUiVisibility and View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
       } else {
         newSystemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR

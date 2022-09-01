@@ -21,18 +21,18 @@ fun GradientBackground(
 ) {
   val chanTheme = LocalChanTheme.current
 
-  val currentTopColor = chanTheme.gradientTopColor.copy(alpha = 0.035f)
-  val currentBottomColor = chanTheme.gradientBottomColor.copy(alpha = 0.035f)
-  val behindGradientColor = chanTheme.behindGradientColor
-
   Surface(
     modifier = modifier,
-    color = behindGradientColor,
+    color = Color.Unspecified,
   ) {
     Box(
       modifier = Modifier
         .fillMaxSize()
         .drawWithCache {
+          val currentTopColor = chanTheme.gradientTopColor.copy(alpha = 0.035f)
+          val currentBottomColor = chanTheme.gradientBottomColor.copy(alpha = 0.035f)
+          val behindGradientColor = chanTheme.behindGradientColor
+
           // Compute the start and end coordinates such that the gradients are angled 11.06
           // degrees off the vertical axis
           val offset = size.height * kotlin.math.tan(
@@ -60,6 +60,8 @@ fun GradientBackground(
           )
 
           onDrawBehind {
+            drawRect(behindGradientColor)
+
             // There is overlap here, so order is important
             drawRect(topGradient)
             drawRect(bottomGradient)
