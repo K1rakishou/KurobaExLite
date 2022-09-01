@@ -177,6 +177,7 @@
     <string name="media_viewer_switched_to_hw_decoding">Switched to hardware decoding</string>
     <string name="media_viewer_switched_to_sw_decoding">Switched to software decoding</string>
     <string name="media_viewer_no_images_to_show">No images to show</string>
+    <string name="media_viewer_new_images_added">%1$d new image(s)</string>
 
     <string name="history_screen_toolbar_title">History</string>
     <string name="navigation_history_screen_removed_navigation_item_text">Removed history \'%1$s\'</string>

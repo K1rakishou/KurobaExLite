@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
+import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -32,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.scrollbar
+import kotlinx.coroutines.CancellationException
 
 private const val TAG = "MediaViewerPreviewStrip"
 
@@ -40,6 +42,7 @@ private const val TAG = "MediaViewerPreviewStrip"
 fun MediaViewerPreviewStrip(
   pagerState: PagerState,
   images: List<ImageLoadState>,
+  mediaViewerScreenState: MediaViewerScreenState,
   bgColor: Color,
   toolbarHeightPx: Int?,
   onPreviewClicked: (IPostImage) -> Unit
@@ -75,12 +78,38 @@ fun MediaViewerPreviewStrip(
   if (stripWidth != null) {
     LaunchedEffect(
       key1 = Unit,
-      block = { lazyListState.scrollToItem(currentPageIndex, -scrollOffset) }
+      block = {
+        try {
+          lazyListState.scrollToItem(currentPageIndex, -scrollOffset)
+        } catch (_: CancellationException) {
+        }
+      }
     )
 
     LaunchedEffect(
       key1 = currentPageIndex,
-      block = { lazyListState.animateScrollToItem(currentPageIndex, -scrollOffset) }
+      block = {
+        try {
+          lazyListState.animateScrollToItem(currentPageIndex, -scrollOffset)
+        } catch (_: CancellationException) {
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        mediaViewerScreenState.newImagesAddedFlow.collect {
+          if (lazyListState.isScrollInProgress) {
+            return@collect
+          }
+
+          try {
+            lazyListState.animateScrollToItem(pagerState.currentPage, -scrollOffset)
+          } catch (_: CancellationException) {
+          }
+        }
+      }
     )
   }
 

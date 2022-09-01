@@ -9,20 +9,30 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.compose.saveable
+import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+import logcat.logcat
 
 class MediaViewerScreenState(
   private val savedStateHandle: SavedStateHandle,
   private val appSettings: AppSettings,
+  private val appResources: AppResources,
+  private val chanCache: ChanCache
 ) {
   private var chanDescriptor: ChanDescriptor? = null
   private var sourceType: MediaViewerScreenViewModel.SourceType? = null
+
+  private val scope = KurobaCoroutineScope()
 
   private val _mediaList = mutableStateListOf<ImageLoadState>()
   val mediaList: List<ImageLoadState>
@@ -63,6 +73,14 @@ class MediaViewerScreenState(
   val scrollToMediaFlow: SharedFlow<Pair<Boolean, Int>>
     get() = _scrollToMediaFlow.asSharedFlow()
 
+  private val _snackbarFlow = MutableSharedFlow<String>()
+  val snackbarFlow: SharedFlow<String>
+    get() = _snackbarFlow.asSharedFlow()
+
+  private val _newImagesAddedFlow = MutableSharedFlow<Unit>()
+  val newImagesAddedFlow: SharedFlow<Unit>
+    get() = _newImagesAddedFlow.asSharedFlow()
+
   fun init(
     chanDescriptor: ChanDescriptor,
     images: List<ImageLoadState>,
@@ -70,6 +88,8 @@ class MediaViewerScreenState(
     sourceType: MediaViewerScreenViewModel.SourceType,
     mediaViewerUiVisible: Boolean
   ) {
+    scope.cancelChildren()
+
     Snapshot.withMutableSnapshot {
       _currentlyLoadedMediaMap.clear()
 
@@ -92,9 +112,19 @@ class MediaViewerScreenState(
       _scrollToMediaFlow.tryEmit(Pair(longScroll, pageIndex))
       _mediaViewerUiVisible.value = mediaViewerUiVisible
     }
+
+    if (sourceType == MediaViewerScreenViewModel.SourceType.CatalogOrThread) {
+      scope.launch {
+        logcat(TAG) { "init() listening for \'$chanDescriptor\' post updates" }
+
+        listenForPostUpdates(chanDescriptor)
+      }
+    }
   }
 
   fun destroy() {
+    scope.cancelChildren()
+
     Snapshot.withMutableSnapshot {
       chanDescriptor = null
       _currentPageIndex.value = null
@@ -172,12 +202,67 @@ class MediaViewerScreenState(
     imagesMut[page] = ImageLoadState.PreparingForLoading(postImageDataLoadState.postImage)
   }
 
+  private suspend fun listenForPostUpdates(chanDescriptor: ChanDescriptor) {
+    chanCache.listenForPostUpdates(chanDescriptor)
+      .collect { postLoadResult ->
+        if (postLoadResult.newPostsCount <= 0) {
+          return@collect
+        }
+
+        val newMediaList = mutableListOf<ImageLoadState>()
+
+        postLoadResult.newPosts.forEach { postData ->
+          val images = postData.images
+          if (images.isNullOrEmpty()) {
+            return@forEach
+          }
+
+          images.forEach { postImage ->
+            newMediaList += ImageLoadState.PreparingForLoading(postImage)
+          }
+        }
+
+        if (newMediaList.isEmpty()) {
+          return@collect
+        }
+
+        logcat(TAG) {
+          "listenForPostUpdates() Got ${newMediaList.size} new medias " +
+            "from ChanCache for ${chanDescriptor}"
+        }
+
+        Snapshot.withMutableSnapshot {
+          newMediaList.forEach { newMedia ->
+            val alreadyAdded = _mediaList.any { imageLoadState ->
+              imageLoadState.postImage.fullImageAsString == newMedia.postImage.fullImageAsString
+            }
+
+            if (alreadyAdded) {
+              return@forEach
+            }
+
+            _mediaList += newMedia
+          }
+        }
+
+        _snackbarFlow.emit(
+          appResources.string(
+            R.string.media_viewer_new_images_added,
+            newMediaList.size
+          )
+        )
+        _newImagesAddedFlow.emit(Unit)
+      }
+  }
+
   enum class MediaNavigationEvent {
     GoToPrev,
     GoToNext
   }
 
   companion object {
+    private const val TAG = "MediaViewerScreenState"
+
     private const val MAX_VISIBLE_PAGES = 3
   }
 

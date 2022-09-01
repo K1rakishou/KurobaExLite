@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenState
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.util.rememberViewModel
@@ -230,15 +231,47 @@ private fun UpdateMediaViewerToolbarTitle(
         return@LaunchedEffect
       }
 
-      val imagesCount = mediaViewerScreenState.mediaList.size
-
-      toolbarState.toolbarTitleState.value = HtmlUnescape.unescape(currentImageData.originalFileNameEscaped)
-      toolbarState.toolbarSubtitleState.value = formatImageInfo(
-        currentPagerPage = currentPagerPage,
-        imagesCount = imagesCount,
-        currentImageData = currentImageData
+      updateToolbarTitleAndSubtitle(
+        mediaViewerScreenState = mediaViewerScreenState,
+        toolbarState = toolbarState,
+        currentImageData = currentImageData,
+        currentPagerPage = currentPagerPage
       )
     }
+  )
+
+  LaunchedEffect(
+    key1 = currentImageData,
+    block = {
+      mediaViewerScreenState.newImagesAddedFlow.collect {
+        if (currentImageData == null) {
+          return@collect
+        }
+
+        updateToolbarTitleAndSubtitle(
+          mediaViewerScreenState = mediaViewerScreenState,
+          toolbarState = toolbarState,
+          currentImageData = currentImageData,
+          currentPagerPage = currentPagerPage
+        )
+      }
+    }
+  )
+}
+
+private fun updateToolbarTitleAndSubtitle(
+  mediaViewerScreenState: MediaViewerScreenState,
+  toolbarState: SimpleToolbarState<ToolbarIcons>,
+  currentImageData: IPostImage,
+  currentPagerPage: Int
+) {
+  val imagesCount = mediaViewerScreenState.mediaList.size
+
+  toolbarState.toolbarTitleState.value = HtmlUnescape.unescape(currentImageData.originalFileNameEscaped)
+  toolbarState.toolbarSubtitleState.value = formatImageInfo(
+    currentPagerPage = currentPagerPage,
+    imagesCount = imagesCount,
+    currentImageData = currentImageData
   )
 }
 
@@ -252,16 +285,16 @@ private fun formatImageInfo(
     append("/")
     append(imagesCount?.toString() ?: "?")
 
-    append(", ")
+    append(AppConstants.TEXT_SEPARATOR)
     append(currentImageData.ext.uppercase(Locale.ENGLISH))
 
-    append(", ")
+    append(AppConstants.TEXT_SEPARATOR)
     append(currentImageData.width)
     append("x")
     append(currentImageData.height)
 
     if (currentImageData.fileSize > 0) {
-      append(", ")
+      append(AppConstants.TEXT_SEPARATOR)
       append(currentImageData.fileSize.asReadableFileSize())
     }
   }

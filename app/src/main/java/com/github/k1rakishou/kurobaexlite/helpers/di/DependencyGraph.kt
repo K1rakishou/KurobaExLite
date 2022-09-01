@@ -377,6 +377,7 @@ object DependencyGraph {
         mpvSettings = mpvSettings,
         mpvInitializer = mpvInitializer,
         appSettings = get(),
+        appResources = get(),
         chanCache = get(),
         proxiedOkHttpClient = get(),
         kurobaLruDiskCache = get(),

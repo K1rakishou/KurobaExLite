@@ -223,6 +223,10 @@ open class NavigationRouter(
   fun isTopmostScreen(screen: ComposeScreen): Boolean {
     val rootRouter = getRootRouter()
 
+    if (screen is FloatingComposeScreen) {
+      return rootRouter.floatingScreensStack.lastOrNull() === screen
+    }
+
     if (rootRouter.floatingScreensStack.isNotEmpty()) {
       return false
     }

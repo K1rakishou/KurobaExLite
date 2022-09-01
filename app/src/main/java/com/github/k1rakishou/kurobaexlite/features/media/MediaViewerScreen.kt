@@ -133,7 +133,7 @@ class MediaViewerScreen(
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
-      mediaViewerScreenViewModel.destroy()
+      mediaViewerScreenViewModel.onScreenDisposed()
     }
 
     super.onDisposed(screenDisposeEvent)
@@ -159,6 +159,24 @@ class MediaViewerScreen(
 
     val mediaViewerParams = mediaViewerParamsMut ?: return
     val openedFromScreen = openedFromScreenMut ?: return
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        mediaViewerScreenState.snackbarFlow.collect { message ->
+          if (!navigationRouter.isTopmostScreen(this@MediaViewerScreen)) {
+            return@collect
+          }
+
+          // Hardcode for now, we only have 1 snackbar emitted from the mediaViewerScreenState
+          snackbarManager.toast(
+            message = message,
+            screenKey = SCREEN_KEY,
+            toastId = NEW_MEDIA_VIEWER_IMAGES_ADDED_TOAST_ID
+          )
+        }
+      }
+    )
 
     CardContentInternal(
       mediaViewerParams = mediaViewerParams,
@@ -399,6 +417,7 @@ class MediaViewerScreen(
           MediaViewerPreviewStrip(
             pagerState = pagerStateHolder,
             images = images,
+            mediaViewerScreenState = mediaViewerScreenState,
             bgColor = bgColor,
             toolbarHeightPx = actualToolbarCalculatedHeight,
             onPreviewClicked = { postImage ->
@@ -1241,5 +1260,7 @@ class MediaViewerScreen(
     const val openedFromScreenKey = "opened_from_screen"
 
     val SCREEN_KEY = ScreenKey("MediaViewerScreen")
+
+    private const val NEW_MEDIA_VIEWER_IMAGES_ADDED_TOAST_ID = "new_media_viewer_images_added_toast_id"
   }
 }

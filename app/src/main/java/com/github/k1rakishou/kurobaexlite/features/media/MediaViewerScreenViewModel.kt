@@ -17,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.CacheFileType
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
@@ -59,6 +60,7 @@ class MediaViewerScreenViewModel(
   val mpvSettings: MpvSettings,
   private val mpvInitializer: MpvInitializer,
   private val appSettings: AppSettings,
+  private val appResources: AppResources,
   private val chanCache: ChanCache,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val kurobaLruDiskCache: KurobaLruDiskCache,
@@ -70,7 +72,12 @@ class MediaViewerScreenViewModel(
   val mpvInitialized: Boolean
     get() = mpvInitializer.initialized
 
-  val mediaViewerScreenState = MediaViewerScreenState(savedStateHandle, appSettings)
+  val mediaViewerScreenState = MediaViewerScreenState(
+    savedStateHandle = savedStateHandle,
+    appSettings = appSettings,
+    appResources = appResources,
+    chanCache = chanCache
+  )
 
   suspend fun initFromCatalogOrThreadDescriptor(
     chanDescriptor: ChanDescriptor,
@@ -193,7 +200,7 @@ class MediaViewerScreenViewModel(
     }
   }
 
-  fun destroy() {
+  fun onScreenDisposed() {
     mediaViewerScreenState.destroy()
     mpvInitializer.destroy()
   }

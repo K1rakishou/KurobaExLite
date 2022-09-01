@@ -220,8 +220,6 @@ class CatalogSelectionScreen(
           paddingValues = paddingValues,
           onBoardClicked = { clickedCatalogDescriptor ->
             coroutineScope.launch {
-              kurobaToolbarContainerState.popChildToolbars()
-
               catalogScreenViewModel.loadCatalog(clickedCatalogDescriptor)
               popScreen()
             }
