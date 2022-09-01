@@ -24,7 +24,7 @@ class MediaViewerScreenState(
   private var chanDescriptor: ChanDescriptor? = null
   private var sourceType: MediaViewerScreenViewModel.SourceType? = null
 
-  private var _mediaList = mutableStateListOf<ImageLoadState>()
+  private val _mediaList = mutableStateListOf<ImageLoadState>()
   val mediaList: List<ImageLoadState>
     get() = _mediaList
 
