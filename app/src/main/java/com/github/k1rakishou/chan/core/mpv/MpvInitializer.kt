@@ -2,7 +2,6 @@ package com.github.k1rakishou.chan.core.mpv
 
 import android.content.Context
 import android.os.Build
-import android.view.WindowManager
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import logcat.logcat
@@ -55,20 +54,6 @@ class MpvInitializer(
     }
 
     // vo: set display fps as reported by android
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      val wm = applicationContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-      val disp = wm.defaultDisplay
-      val refreshRate = disp.mode.refreshRate
-
-      logcat(TAG) { "init() Display ${disp.displayId} reports FPS of $refreshRate" }
-      MPVLib.mpvSetOptionString("override-display-fps", refreshRate.toString())
-    } else {
-      logcat(TAG) {
-        "init() Android version too old, disabling refresh rate functionality " +
-          "(${Build.VERSION.SDK_INT} < ${Build.VERSION_CODES.M})"
-      }
-    }
-
     if (androidHelpers.isAndroidM()) {
       val displayFps = androidHelpers.getDisplayFps()
 

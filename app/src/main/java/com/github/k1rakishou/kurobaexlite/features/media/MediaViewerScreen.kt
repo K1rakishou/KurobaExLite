@@ -870,7 +870,9 @@ class MediaViewerScreen(
     DraggableArea(
       availableSize = availableSize,
       closeScreen = { stopPresenting() },
-      isDragGestureAllowedFunc = { currPosition, startPosition -> isDragGestureAllowedFunc(currPosition, startPosition) }
+      isDragGestureAllowedFunc = { currPosition, startPosition ->
+        isDragGestureAllowedFunc(currPosition, startPosition)
+      }
     ) {
       when (postImageDataLoadState) {
         is ImageLoadState.PreparingForLoading -> {
@@ -1120,7 +1122,11 @@ class MediaViewerScreen(
               val currentRetryIndex = retriesCount.incrementAndGet()
               if (currentRetryIndex <= MediaViewerScreenViewModel.MAX_RETRIES) {
                 coroutineScope.launch {
-                  logcat { "Got retriable Error state, waiting ${currentRetryIndex} seconds and then restarting image load" }
+                  logcat {
+                    "Got retriable Error state, waiting ${currentRetryIndex} seconds " +
+                      "and then restarting image load"
+                  }
+
                   delay(currentRetryIndex * 1000L)
 
                   loadFullImageInternal(
@@ -1205,7 +1211,9 @@ class MediaViewerScreen(
               if (!callbackCalled) {
                 callbackCalled = true
 
-                logcat(TAG, LogPriority.VERBOSE) { "onPreviewLoadingFinished() url=\'${postImageData.fullImageAsString}\'" }
+                logcat(TAG, LogPriority.VERBOSE) {
+                  "onPreviewLoadingFinished() url=\'${postImageData.fullImageAsString}\'"
+                }
                 onPreviewLoadingFinished(postImageData)
               }
             }
