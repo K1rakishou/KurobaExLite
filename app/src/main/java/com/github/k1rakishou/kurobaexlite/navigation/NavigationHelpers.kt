@@ -6,7 +6,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenTransition
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
@@ -62,11 +61,7 @@ fun RouterHost(
         }
       },
       content = {
-        WrapIntoSaveableStateProviderIfNeeded(
-          key = key,
-          composeScreen = primaryScreen,
-          saveableStateHolder = saveableStateHolder
-        ) {
+        saveableStateHolder.SaveableStateProvider(key = key) {
           contentLambda()
         }
       }
@@ -111,31 +106,11 @@ fun RouterHost(
           }
         },
         content = {
-          WrapIntoSaveableStateProviderIfNeeded(
-            key = key,
-            composeScreen = floatingScreen,
-            saveableStateHolder = saveableStateHolder
-          ) {
+          saveableStateHolder.SaveableStateProvider(key = key) {
             contentLambda()
           }
         }
       )
     }
-  }
-}
-
-@Composable
-private fun WrapIntoSaveableStateProviderIfNeeded(
-  key: String,
-  composeScreen: ComposeScreen,
-  saveableStateHolder: SaveableStateHolder,
-  content: @Composable () -> Unit
-) {
-  if (composeScreen.statefulScreen) {
-    saveableStateHolder.SaveableStateProvider(key = key) {
-      content()
-    }
-  } else {
-    content()
   }
 }

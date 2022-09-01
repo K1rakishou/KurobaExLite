@@ -3,11 +3,9 @@ package com.github.k1rakishou.kurobaexlite.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.Snapshot
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeBackgroundScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import logcat.LogPriority
 import logcat.logcat
@@ -71,30 +69,7 @@ class MainNavigationRouter : NavigationRouter(
       error("FloatingComposeScreens must be added via presentScreen() function!")
     }
 
-    val indexOfPrev = navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == composeScreen.screenKey }
-
-    if (indexOfPrev >= 0) {
-      // Already added, update the arguments
-      navigationScreensStack[indexOfPrev].onNewArguments(composeScreen.screenArgs)
-      return false
-    }
-
-    val screenAnimation = if (withAnimation) {
-      ScreenAnimation.Push(composeScreen.screenKey)
-    } else {
-      ScreenAnimation.Set(composeScreen.screenKey)
-    }
-
-    Snapshot.withMutableSnapshot {
-      _navigationScreensStack.add(composeScreen)
-      _screenAnimations.put(composeScreen.screenKey, screenAnimation)
-    }
-
-    logcat(TAG, LogPriority.VERBOSE) { "pushScreen(${composeScreen.screenKey.key})" }
-    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating)
-
-    return true
+    return super.pushScreen(composeScreen, withAnimation)
   }
 
   override fun popScreen(composeScreen: ComposeScreen): Boolean {
@@ -102,32 +77,11 @@ class MainNavigationRouter : NavigationRouter(
   }
 
   override fun popScreen(composeScreen: ComposeScreen, withAnimation: Boolean): Boolean {
-    val indexOfPrev = navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == composeScreen.screenKey }
-
-    if (indexOfPrev < 0) {
-      // Already removed
-      return false
+    if (composeScreen is FloatingComposeScreen) {
+      error("FloatingComposeScreens must be removed via stopPresentingScreen() function!")
     }
 
-    if (!removingScreens.add(composeScreen.screenKey)) {
-      return false
-    }
-
-    val screenAnimation = if (withAnimation) {
-      ScreenAnimation.Pop(composeScreen.screenKey)
-    } else {
-      ScreenAnimation.Remove(composeScreen.screenKey)
-    }
-
-    logcat(TAG, LogPriority.VERBOSE) { "popScreen(${composeScreen.screenKey.key})" }
-    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing)
-
-    Snapshot.withMutableSnapshot {
-      _screenAnimations.put(composeScreen.screenKey, screenAnimation)
-    }
-
-    return true
+    return super.popScreen(composeScreen, withAnimation)
   }
 
   override fun presentScreen(floatingComposeScreen: FloatingComposeScreen) {
@@ -138,29 +92,6 @@ class MainNavigationRouter : NavigationRouter(
       // Already added, update the arguments
       _floatingScreensStack[indexOfPrev].onNewArguments(floatingComposeScreen.screenArgs)
       return
-    }
-
-    if (
-      !floatingComposeScreen.customBackground &&
-      _floatingScreensStack.none { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
-    ) {
-      logcat(TAG, LogPriority.VERBOSE) {
-        "presentScreen(${FloatingComposeBackgroundScreen.SCREEN_KEY}) at 0"
-      }
-
-      val bgScreen = FloatingComposeBackgroundScreen(
-        componentActivity = floatingComposeScreen.componentActivity,
-        navigationRouter = floatingComposeScreen.navigationRouter
-      )
-      bgScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating)
-
-      Snapshot.withMutableSnapshot {
-        _floatingScreensStack.add(0, bgScreen)
-        _screenAnimations.put(
-          bgScreen.screenKey,
-          ScreenAnimation.Fade(bgScreen.screenKey, ScreenAnimation.FadeType.In)
-        )
-      }
     }
 
     _floatingScreensStack.add(floatingComposeScreen)
@@ -190,25 +121,6 @@ class MainNavigationRouter : NavigationRouter(
     val floatingComposeScreen = floatingScreensStack.getOrNull(index)
       ?: return false
 
-    if (shouldRemoveBgScreen(screenKey)) {
-      val indexOfBgScreen = floatingScreensStack
-        .indexOfFirst { floatingScreen -> floatingScreen.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
-
-      logcat(TAG, LogPriority.VERBOSE) {
-        "stopPresentingScreen(${FloatingComposeBackgroundScreen.SCREEN_KEY}) at $indexOfBgScreen"
-      }
-
-      val prevBgScreen = floatingScreensStack.getOrNull(indexOfBgScreen)
-      if (prevBgScreen != null) {
-        prevBgScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing)
-
-        _screenAnimations.put(
-          prevBgScreen.screenKey,
-          ScreenAnimation.Fade(prevBgScreen.screenKey, ScreenAnimation.FadeType.Out)
-        )
-      }
-    }
-
     logcat(TAG, LogPriority.VERBOSE) {
       "stopPresentingScreen(${floatingComposeScreen.screenKey.key}) at $index"
     }
@@ -220,27 +132,6 @@ class MainNavigationRouter : NavigationRouter(
     )
 
     return true
-  }
-
-  private fun shouldRemoveBgScreen(unpresentedScreenKey: ScreenKey): Boolean {
-    // If there is already an animation with the background screen then do nothing
-    if (_screenAnimations.containsKey(FloatingComposeBackgroundScreen.SCREEN_KEY)) {
-      return false
-    }
-
-    // Only check screens that do not handle the background on their own (Do not use the
-    // FloatingComposeBackgroundScreen) AND screens that are not the screen that we are about to
-    // destroy
-    val remainingScreens = _floatingScreensStack.filter { floatingScreen ->
-      return@filter !floatingScreen.customBackground &&
-        floatingScreen.screenKey != unpresentedScreenKey
-    }
-
-    if (remainingScreens.size <= 1) {
-      return remainingScreens.any { it.screenKey == FloatingComposeBackgroundScreen.SCREEN_KEY }
-    }
-
-    return false
   }
 
   override suspend fun onScreenAnimationFinished(screenAnimation: ScreenAnimation) {

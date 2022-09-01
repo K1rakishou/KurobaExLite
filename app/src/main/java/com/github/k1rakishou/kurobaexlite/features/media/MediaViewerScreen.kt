@@ -93,6 +93,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
@@ -125,7 +126,6 @@ class MediaViewerScreen(
 
   private val defaultIsDragGestureAllowedFunc: (currPosition: Offset, startPosition: Offset) -> Boolean = { _, _ -> true }
 
-  override val customBackground: Boolean = true
   override val screenKey: ScreenKey = SCREEN_KEY
 
   override val unpresentAnimation: NavigationRouter.ScreenAnimation
@@ -137,6 +137,17 @@ class MediaViewerScreen(
     }
 
     super.onDisposed(screenDisposeEvent)
+  }
+
+  @Composable
+  override fun BackgroundContent() {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .consumeClicks(enabled = true)
+    ) {
+      CardContent()
+    }
   }
 
   @Composable

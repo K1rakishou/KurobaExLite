@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.floating
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.annotation.CallSuper
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
@@ -16,10 +17,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalTextInputService
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -39,11 +42,17 @@ abstract class FloatingComposeScreen(
   navigationRouter: NavigationRouter,
   private val canDismissByClickingOutside: Boolean = true
 ) : ComposeScreen(screenArgs, componentActivity, navigationRouter) {
+  private val backgroundColor = Color(
+    red = 0f,
+    green = 0f,
+    blue = 0f,
+    alpha = 0.6f
+  )
+
   val horizPaddingDp by lazy { if (globalUiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
   val vertPaddingDp by lazy { if (globalUiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
 
   open val ignoreBackPresses: Boolean = false
-  open val customBackground: Boolean = false
   open val contentAlignment: Alignment = Alignment.Center
 
   open val presentAnimation: NavigationRouter.ScreenAnimation
@@ -69,10 +78,11 @@ abstract class FloatingComposeScreen(
     )
   }
 
+  @OptIn(ExperimentalComposeUiApi::class)
   @Composable
   override fun Content() {
     val localFocusManager = LocalFocusManager.current
-    val localTextInputService = LocalTextInputService.current
+    val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
 
     HandleBackPresses { onFloatingControllerBackPressed() }
 
@@ -82,12 +92,24 @@ abstract class FloatingComposeScreen(
       effect = {
         onDispose {
           localFocusManager.clearFocus(force = true)
-          localTextInputService?.hideSoftwareKeyboard()
+          localSoftwareKeyboardController?.hide()
         }
       }
     )
 
-    CardContent()
+    BackgroundContent()
+  }
+
+  @Composable
+  open fun BackgroundContent() {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(backgroundColor)
+        .consumeClicks(enabled = true)
+    ) {
+      CardContent()
+    }
   }
 
   @Composable
