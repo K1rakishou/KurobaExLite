@@ -93,6 +93,7 @@
     <string name="catalog_toolbar_album">Album</string>
     <string name="catalog_toolbar_dev_menu">Dev menu</string>
     <string name="catalog_toolbar_bookmark_all_catalog_threads">Bookmark all catalog threads</string>
+    <string name="catalog_toolbar_failed_to_parse_input">Failed to parse input: \'%1$s\'</string>
 
     <string name="thread_toolbar_open_external_thread_dialog_title">Open external thread?</string>
     <string name="thread_toolbar_open_external_thread_dialog_description">Open \'%1$s\'?</string>
@@ -178,6 +179,7 @@
     <string name="media_viewer_switched_to_sw_decoding">Switched to software decoding</string>
     <string name="media_viewer_no_images_to_show">No images to show</string>
     <string name="media_viewer_new_images_added">%1$d new image(s)</string>
+    <string name="media_viewer_media_not_supported">Media \'%1$s\' is not supported</string>
 
     <string name="history_screen_toolbar_title">History</string>
     <string name="navigation_history_screen_removed_navigation_item_text">Removed history \'%1$s\'</string>

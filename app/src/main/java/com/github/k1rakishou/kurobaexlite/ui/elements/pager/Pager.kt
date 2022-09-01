@@ -307,7 +307,6 @@ internal fun Pager(
   require(count >= 0) { "pageCount must be >= 0" }
 
   // Provide our PagerState with access to the SnappingFlingBehavior animation target
-  // TODO: can this be done in a better way?
   state.flingAnimationTarget = {
     @OptIn(ExperimentalSnapperApi::class)
     (flingBehavior as? SnapperFlingBehavior)?.animationTarget

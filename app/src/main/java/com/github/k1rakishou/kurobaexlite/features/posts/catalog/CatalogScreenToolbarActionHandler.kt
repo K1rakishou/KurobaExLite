@@ -8,7 +8,7 @@ import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -29,7 +29,7 @@ class CatalogScreenToolbarActionHandler(
   private val screenCoroutineScope: CoroutineScope
 ) {
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
-  private val appSettings: AppSettings by inject(AppSettings::class.java)
+  private val appResources: AppResources by inject(AppResources::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val bookmarkAllCatalogThreads: BookmarkAllCatalogThreads by inject(BookmarkAllCatalogThreads::class.java)
 
@@ -129,7 +129,7 @@ class CatalogScreenToolbarActionHandler(
             buttonText = R.string.ok,
             onClick = { results ->
               val value = results.firstOrNull()
-              if (value.isNullOrEmpty()) {
+              if (value == null || value.isEmpty()) {
                 return@PositiveDialogButton
               }
 
@@ -137,8 +137,7 @@ class CatalogScreenToolbarActionHandler(
               if (resolvedDescriptor == null) {
                 snackbarManager.toast(
                   screenKey = CatalogScreen.SCREEN_KEY,
-                  // TODO(KurobaEx): strings
-                  message = "Failed to parse \'$value\'"
+                  message = appResources.string(R.string.catalog_toolbar_failed_to_parse_input, value)
                 )
 
                 return@PositiveDialogButton

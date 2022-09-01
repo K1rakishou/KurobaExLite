@@ -36,7 +36,6 @@ fun Modifier.kurobaAnimateContentSize(
     properties["finishedListener"] = finishedListener
   }
 ) {
-  // TODO: Listener could be a fun interface after 1.4
   val scope = rememberCoroutineScope()
   val animModifier = remember(scope) {
     SizeAnimationModifier(animationSpec, scope)

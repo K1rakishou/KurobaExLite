@@ -190,7 +190,6 @@ open class KurobaSwipeableState<T>(
   @ExperimentalMaterialApi
   val targetValue: T
     get() {
-      // TODO(calintat): Track current velocity (b/149549482) and use that here.
       val target = animationTarget.value ?: computeTarget(
         offset = offset.value,
         lastValue = anchors.getOffset(currentValue) ?: offset.value,

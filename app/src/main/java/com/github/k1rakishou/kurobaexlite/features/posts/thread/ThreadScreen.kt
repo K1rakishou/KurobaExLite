@@ -393,7 +393,6 @@ class ThreadScreen(
 
         val threadDescriptor = chanDescriptor as ThreadDescriptor
 
-        // TODO(KurobaEx): pass the bounds as the args as well
         clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
         val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(

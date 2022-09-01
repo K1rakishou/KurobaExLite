@@ -40,8 +40,6 @@ class SiteManager(
           return resolvedDescriptor
         }
       }
-
-      // TODO(KurobaEx): add more stuff
     }
 
     return null

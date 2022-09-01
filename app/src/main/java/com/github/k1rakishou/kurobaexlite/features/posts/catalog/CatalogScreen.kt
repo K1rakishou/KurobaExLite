@@ -451,7 +451,6 @@ class CatalogScreen(
 
         val catalogDescriptor = chanDescriptor as CatalogDescriptor
 
-        // TODO(KurobaEx): pass the bounds as the args as well
         clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
         val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(

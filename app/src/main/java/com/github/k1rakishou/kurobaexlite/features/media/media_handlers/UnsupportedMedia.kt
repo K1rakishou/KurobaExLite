@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -24,7 +26,11 @@ fun DisplayUnsupportedMedia(
     modifier = Modifier.fillMaxSize(),
     additionalPaddings = additionalPaddings
   ) {
-    // TODO(KurobaEx):
-    KurobaComposeText(text = "Error: media is not supported")
+    val text = stringResource(
+      id = R.string.media_viewer_media_not_supported,
+      postImageDataLoadState.postImage.fullImageAsString
+    )
+
+    KurobaComposeText(text = text)
   }
 }

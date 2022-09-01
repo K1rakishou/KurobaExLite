@@ -113,7 +113,6 @@ import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
-// TODO(KurobaEx): screen parameters are not persisted across process death yet!
 class MediaViewerScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,

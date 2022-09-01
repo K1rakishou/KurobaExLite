@@ -388,7 +388,6 @@ class PopupRepliesScreen(
             return@PostListContent
           }
 
-          // TODO(KurobaEx): pass the bounds as the args as well
           clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
           val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(

@@ -38,7 +38,7 @@ class PostBindProcessor(
     postsParsedOnce: Boolean,
     postDescriptor: PostDescriptor
   ) {
-    // TODO(KurobaEx):
+    // no-op
   }
 
   companion object {
