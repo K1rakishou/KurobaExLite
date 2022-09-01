@@ -112,6 +112,7 @@ class PostsScreenLocalSearchToolbar(
       leftPart = {
         KurobaComposeIcon(
           modifier = Modifier
+            .padding(horizontal = toolbarIconPadding)
             .size(toolbarIconSize)
             .kurobaClickable(
               bounded = false,

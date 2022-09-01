@@ -27,5 +27,6 @@ abstract class KurobaChildToolbar : DisposableElement {
 
   companion object {
     val toolbarIconSize = 30.dp
+    val toolbarIconPadding = 4.dp
   }
 }

@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
@@ -30,7 +29,7 @@ class KurobaToolbarIcon<T : Any>(
 
     KurobaComposeIcon(
       modifier = Modifier
-        .padding(horizontal = 4.dp)
+        .padding(horizontal = KurobaChildToolbar.toolbarIconPadding)
         .size(KurobaChildToolbar.toolbarIconSize)
         .kurobaClickable(
           bounded = false,

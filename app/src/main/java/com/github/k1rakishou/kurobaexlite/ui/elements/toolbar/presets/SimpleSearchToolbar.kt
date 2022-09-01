@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets
 import android.os.Bundle
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.KeyboardActions
@@ -71,6 +72,7 @@ class SimpleSearchToolbar(
       leftPart = {
         KurobaComposeIcon(
           modifier = Modifier
+            .padding(horizontal = toolbarIconPadding)
             .size(toolbarIconSize)
             .kurobaClickable(
               bounded = false,
