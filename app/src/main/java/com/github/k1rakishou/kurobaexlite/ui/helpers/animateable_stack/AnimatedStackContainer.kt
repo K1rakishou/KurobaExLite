@@ -38,7 +38,13 @@ fun <T : DisposableElement> AnimateableStackContainer(
 
       StackContainerTransition(
         animatingChange = stackContainerElement,
-        onAnimationFinished = { state.onAnimationFinished() }
+        onAnimationFinished = {
+          state.onAnimationFinished()
+
+          if (stackContainerElement.animation.isDisposing) {
+            composedItems.remove(element)
+          }
+        }
       ) {
         movableContent(element)
       }

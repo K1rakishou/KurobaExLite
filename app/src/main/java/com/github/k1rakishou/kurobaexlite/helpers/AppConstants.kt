@@ -15,7 +15,7 @@ object AppConstants {
   const val CREATE_NEW_ISSUE_URL = "https://github.com/K1rakishou/KurobaExLite/issues"
 
   object Transition {
-    val TransitionFps = 1f / 16f
+    val TransitionFps = 1f / 32f
   }
 
   object Actions {

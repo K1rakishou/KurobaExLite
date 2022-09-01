@@ -18,8 +18,10 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
   fun init(stackContainerState: AnimateableStackContainerState<T>) {
     _stackContainerState = stackContainerState
 
-    callbacksToInvoke.fastForEach { callback -> callback.invoke(stackContainerState) }
-    callbacksToInvoke.clear()
+    if (callbacksToInvoke.isNotEmpty()) {
+      callbacksToInvoke.fastForEach { callback -> callback.invoke(stackContainerState) }
+      callbacksToInvoke.clear()
+    }
   }
 
   fun setDefaultToolbar(childToolbar: T) {
