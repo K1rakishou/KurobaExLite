@@ -360,7 +360,7 @@ class RemoteImageSearchScreen(
   ) {
     val windowInsets = LocalWindowInsets.current
     val paddingValues = remember(key1 = windowInsets) {
-      windowInsets.copy(
+      windowInsets.copyInsets(
         newLeft = 0.dp,
         newRight = 0.dp,
         newTop = 0.dp

@@ -168,7 +168,7 @@ class CatalogSelectionScreen(
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val paddingValues = remember(key1 = windowInsets) {
-      windowInsets.copy(
+      windowInsets.copyInsets(
         newLeft = 0.dp,
         newRight = 0.dp,
         newTop = windowInsets.top + toolbarHeight

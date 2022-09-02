@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -193,7 +194,8 @@ class KurobaViewConfiguration(
     get() = DpSize(20.dp, 20.dp)
 }
 
-class Insets(
+@Immutable
+data class Insets(
   private val density: Density,
   val left: Dp,
   val right: Dp,
@@ -215,41 +217,13 @@ class Insets(
     )
   }
 
-  fun copy(
+  fun copyInsets(
     newLeft: Dp = left,
     newRight: Dp = right,
     newTop: Dp = top,
     newBottom: Dp = bottom,
   ): Insets {
     return Insets(density, newLeft, newRight, newTop, newBottom)
-  }
-
-  override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (javaClass != other?.javaClass) return false
-
-    other as Insets
-
-    if (density != other.density) return false
-    if (left != other.left) return false
-    if (right != other.right) return false
-    if (top != other.top) return false
-    if (bottom != other.bottom) return false
-
-    return true
-  }
-
-  override fun hashCode(): Int {
-    var result = density.hashCode()
-    result = 31 * result + left.hashCode()
-    result = 31 * result + right.hashCode()
-    result = 31 * result + top.hashCode()
-    result = 31 * result + bottom.hashCode()
-    return result
-  }
-
-  override fun toString(): String {
-    return "Insets(leftDp=$left, rightDp=$right, topDp=$top, bottomDp=$bottom)"
   }
 
 }

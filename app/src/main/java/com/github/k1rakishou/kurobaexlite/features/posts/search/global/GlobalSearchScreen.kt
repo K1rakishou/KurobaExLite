@@ -126,7 +126,7 @@ class GlobalSearchScreen(
 
     val lazyListState = rememberLazyListState()
     val paddingValues = remember(key1 = windowInsets) {
-      windowInsets.copy(
+      windowInsets.copyInsets(
         newLeft = 0.dp,
         newRight = 0.dp,
         newTop = windowInsets.top + toolbarHeight
