@@ -34,7 +34,6 @@ import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
-import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
@@ -185,7 +184,7 @@ fun HomeScreenToolbarContainer(
             }
 
             BuildChildToolbar(
-              composeScreenWithToolbar = currentScreen,
+              screenKey = currentScreen.screenKey,
               zOrder = zOrder,
               toolbarContainerAlpha = toolbarContainerAlpha,
               targetToolbarAlpha = currentToolbarAlpha,
@@ -203,7 +202,7 @@ fun HomeScreenToolbarContainer(
             }
 
             BuildChildToolbar(
-              composeScreenWithToolbar = currentScreen,
+              screenKey = currentScreen.screenKey,
               zOrder = zOrder,
               toolbarContainerAlpha = toolbarContainerAlpha,
               targetToolbarAlpha = targetToolbarAlpha,
@@ -214,7 +213,7 @@ fun HomeScreenToolbarContainer(
           }
           else -> {
             BuildChildToolbar(
-              composeScreenWithToolbar = currentScreen,
+              screenKey = currentScreen.screenKey,
               zOrder = zOrder,
               toolbarContainerAlpha = toolbarContainerAlpha,
               targetToolbarAlpha = 0f,
@@ -231,7 +230,7 @@ fun HomeScreenToolbarContainer(
 
 @Composable
 private fun BuildChildToolbar(
-  composeScreenWithToolbar: ComposeScreenWithToolbar<*>,
+  screenKey: ScreenKey,
   zOrder: Int,
   toolbarContainerAlpha: Float,
   targetToolbarAlpha: Float,
@@ -239,7 +238,7 @@ private fun BuildChildToolbar(
   transitionIsProgress: Boolean,
   toolbarContent: @Composable () -> Unit
 ) {
-  key(composeScreenWithToolbar.screenKey) {
+  key(screenKey) {
     Box(
       modifier = Modifier
         .zIndex(zOrder.toFloat())
