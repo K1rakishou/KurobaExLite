@@ -7,12 +7,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -49,7 +49,6 @@ import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -107,8 +106,6 @@ fun DisplayVideo(
 
   if (!librariesInstalledAndLoaded) {
     DisplayMpvLibrariesAreNotLoadedError(
-      onPlayerLoaded = onPlayerLoaded,
-      toolbarHeight = toolbarHeight,
       onVideoTapped = onVideoTapped,
       context = context,
       mpvSettings = mpvSettings,
@@ -594,66 +591,67 @@ private fun rememberEventObserver(
 
 @Composable
 private fun DisplayMpvLibrariesAreNotLoadedError(
-  onPlayerLoaded: () -> Unit,
-  toolbarHeight: Dp,
   onVideoTapped: () -> Unit,
   context: Context,
   mpvSettings: MpvSettings,
   installMpvLibsFromGithubButtonClicked: () -> Unit
 ) {
-  LaunchedEffect(key1 = Unit, block = { onPlayerLoaded() })
-
   val lastError = remember { MPVLib.getLastError() }
-  val additionalPaddings = PaddingValues(top = toolbarHeight)
+  val bgColor = remember { Color.Black.copy(alpha = 0.6f) }
 
-  InsetsAwareBox(
-    modifier = Modifier
-      .fillMaxSize()
-      .kurobaClickable(hasClickIndication = false, onClick = { onVideoTapped() }),
-    additionalPaddings = additionalPaddings,
-    contentAlignment = Alignment.Center,
+  Box(
+    modifier = Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
   ) {
-    val errorMessage = remember {
-      buildString {
-        if (lastError != null) {
-          appendLine("Mpv load error: ${lastError.asLog()}")
-        } else {
-          appendLine(context.getString(R.string.media_viewer_plugins_failed_to_load_mpv_libs))
+    Box(
+      modifier = Modifier
+        .widthIn(max = 360.dp)
+        .background(bgColor)
+        .padding(8.dp)
+        .kurobaClickable(hasClickIndication = false, onClick = { onVideoTapped() }),
+      contentAlignment = Alignment.Center,
+    ) {
+      val errorMessage = remember {
+        buildString {
+          if (lastError != null) {
+            appendLine("Mpv load error: ${lastError.asLog()}")
+          } else {
+            appendLine(context.getString(R.string.media_viewer_plugins_failed_to_load_mpv_libs))
 
-          val status = getLibsStatus(context, mpvSettings)
-          appendLine()
-          appendLine(status)
+            val status = getLibsStatus(context, mpvSettings)
+            appendLine()
+            appendLine(status)
+          }
         }
       }
-    }
 
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-    ) {
-      Text(
+      Column(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight()
-          .padding(horizontal = 8.dp, vertical = 16.dp),
-        text = errorMessage,
-        color = Color.White,
-        fontSize = 16.sp
-      )
+      ) {
+        Text(
+          modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+          text = errorMessage,
+          color = Color.White,
+          fontSize = 14.sp
+        )
 
-      Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-      KurobaComposeTextButton(
-        modifier = Modifier
-          .wrapContentWidth()
-          .padding(horizontal = 16.dp)
-          .align(Alignment.CenterHorizontally),
-        text = stringResource(id = R.string.media_viewer_plugins_install_mpv_libs_from_github),
-        onClick = { installMpvLibsFromGithubButtonClicked() }
-      )
+        KurobaComposeTextButton(
+          modifier = Modifier
+            .wrapContentWidth()
+            .padding(horizontal = 8.dp)
+            .align(Alignment.CenterHorizontally),
+          text = stringResource(id = R.string.media_viewer_plugins_install_mpv_libs_from_github),
+          onClick = { installMpvLibsFromGithubButtonClicked() }
+        )
+      }
+
     }
-
   }
 }
 
