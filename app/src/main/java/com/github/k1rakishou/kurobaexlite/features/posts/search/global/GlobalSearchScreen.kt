@@ -283,10 +283,7 @@ class GlobalSearchScreen(
         onPostImageClicked = { _, _, _ ->
           // no-op
         },
-        reparsePostSubject = {
-          // no-op
-          null
-        }
+        reparsePostSubject = { _, onPostSubjectParsed -> onPostSubjectParsed(null) }
       )
 
       if (index < (totalCount - 1)) {

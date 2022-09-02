@@ -21,6 +21,10 @@ abstract class BaseViewModel : ViewModel() {
     logcat("BaseViewModel", LogPriority.VERBOSE) { "ViewModel ${this.javaClass.simpleName} created" }
   }
 
+  fun forceInit() {
+    // no-op
+  }
+
   override fun onCleared() {
     super.onCleared()
 

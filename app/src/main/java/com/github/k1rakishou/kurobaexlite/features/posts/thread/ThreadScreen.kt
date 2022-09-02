@@ -14,7 +14,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
@@ -41,12 +43,19 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
@@ -264,256 +273,289 @@ class ThreadScreen(
       currentChanDescriptor = { threadScreenViewModel.threadDescriptor }
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-      ThreadPostListScreen()
-    }
-  }
-
-  @Composable
-  private fun BoxScope.ThreadPostListScreen() {
-    val windowInsets = LocalWindowInsets.current
-    val context = LocalContext.current
-
-    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-    val orientation = orientationMut
-    if (orientation == null) {
-      return
-    }
-
-    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
-    val mainUiLayoutMode = mainUiLayoutModeMut ?: return
-
-    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-    val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
-    var replyLayoutContainerHeight by remember { mutableStateOf(0.dp) }
-
-    val kurobaSnackbarState = rememberKurobaSnackbarState()
-    val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
-    val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
-
-    val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
-      derivedStateOf {
-        val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
-          ReplyLayoutVisibility.Closed -> windowInsets.bottom
-          ReplyLayoutVisibility.Opened,
-          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerHeight
-        }
-
-        PostListOptions(
-          isCatalogMode = isCatalogScreen,
-          isInPopup = false,
-          ownerScreenKey = screenKey,
-          pullToRefreshEnabled = true,
-          contentPadding = PaddingValues(
-            top = toolbarHeight + windowInsets.top,
-            bottom = bottomPadding + fabVertOffset
-          ),
-          mainUiLayoutMode = mainUiLayoutMode,
-          postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-          detectLinkableClicks = true,
-          orientation = orientation
-        )
-      }
-    }
-
-    PostListContent(
-      modifier = Modifier.fillMaxSize(),
-      postListOptions = postListOptions,
-      postsScreenViewModel = threadScreenViewModel,
-      onPostCellClicked = { postCellData ->
-      },
-      onPostCellLongClicked = { postCellData ->
-        postLongtapContentMenu.showMenu(
-          postListOptions = postListOptions,
-          postCellData = postCellData,
-          reparsePostsFunc = { postDescriptors ->
-            val threadDescriptor = threadScreenViewModel.threadDescriptor
-            if (threadDescriptor == null) {
-              return@showMenu
-            }
-
-            threadScreenViewModel.reparsePostsByDescriptors(
-              chanDescriptor = threadDescriptor,
-              postDescriptors = postDescriptors
-            )
-          }
-        )
-      },
-      onLinkableClicked = { postCellData, linkable ->
-        linkableClickHelper.processClickedLinkable(
-          context = context,
-          sourceScreenKey = screenKey,
-          postCellData = postCellData,
-          linkable = linkable,
-          loadThreadFunc = { threadDescriptor ->
-            threadScreenViewModel.loadThread(threadDescriptor)
-          },
-          loadCatalogFunc = { catalogDescriptor ->
-            catalogScreenViewModel.loadCatalog(catalogDescriptor)
-          },
-          showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
-        )
-      },
-      onLinkableLongClicked = { postCellData, linkable ->
-        linkableClickHelper.processLongClickedLinkable(
-          sourceScreenKey = screenKey,
-          postCellData = postCellData,
-          linkable = linkable
-        )
-      },
-      onPostRepliesClicked = { postDescriptor ->
-        showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
-      },
-      onCopySelectedText = { selectedText ->
-        androidHelpers.copyToClipboard("Selected text", selectedText)
-      },
-      onQuoteSelectedText = { withText, selectedText, postCellData ->
-        val threadDescriptor = threadScreenViewModel.threadDescriptor
-          ?: return@PostListContent
-
-        if (withText) {
-          replyLayoutViewModel.quotePostWithText(threadDescriptor, postCellData, selectedText)
-        } else {
-          replyLayoutViewModel.quotePost(threadDescriptor, postCellData)
-        }
-      },
-      onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
-        val postImageData = if (postImageDataResult.isFailure) {
-          snackbarManager.errorToast(
-            message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
-            screenKey = screenKey
-          )
-
-          return@PostListContent
-        } else {
-          postImageDataResult.getOrThrow()
-        }
-
-        val threadDescriptor = chanDescriptor as ThreadDescriptor
-
-        clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
-
-        val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          args = {
-            val mediaViewerParams = MediaViewerParams.Thread(
-              chanDescriptor = threadDescriptor,
-              initialImageUrlString = postImageData.fullImageAsString
-            )
-
-            putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
-            putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
-          }
-        )
-
-        navigationRouter.presentScreen(mediaViewerScreen)
-      },
-      onPostListScrolled = { delta ->
-        globalUiInfoManager.onContentListScrolling(screenKey, delta)
-      },
-      onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
-        globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
-      },
-      onCurrentlyTouchingPostList = { touching ->
-        globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
-      },
-      onFastScrollerDragStateChanged = { dragging ->
-        globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
-      }
-    )
-
+    val screenContentLoaded by screenContentLoadedFlow.collectAsState()
     val currentThreadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
 
-    val replyLayoutVisibility by replyLayoutViewModel.getOrCreateReplyLayoutState(currentThreadDescriptor)
-      .replyLayoutVisibilityState
-
     LaunchedEffect(
-      key1 = replyLayoutVisibility,
+      key1 = currentThreadDescriptor,
       block = {
-        when (replyLayoutVisibility) {
-          ReplyLayoutVisibility.Closed -> {
-            kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
-          }
-          ReplyLayoutVisibility.Opened,
-          ReplyLayoutVisibility.Expanded -> {
-            if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
-              kurobaToolbarContainerState.setToolbar(replyToolbar)
+        snapshotFlow {
+          replyLayoutViewModel.getOrCreateReplyLayoutState(currentThreadDescriptor)
+            .replyLayoutVisibilityState.value
+        }.collect { replyLayoutVisibility ->
+          when (replyLayoutVisibility) {
+            ReplyLayoutVisibility.Closed -> {
+              kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
+            }
+            ReplyLayoutVisibility.Opened,
+            ReplyLayoutVisibility.Expanded -> {
+              if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
+                kurobaToolbarContainerState.setToolbar(replyToolbar)
+              }
             }
           }
         }
+
       }
     )
 
-    if (mainUiLayoutMode == MainUiLayoutMode.Split) {
-      val lastLoadError by threadScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
-      val screenContentLoaded by screenContentLoadedFlow.collectAsState()
-      val lastLoadedEndedWithError by remember { derivedStateOf { lastLoadError != null } }
-
-      PostsScreenFloatingActionButton(
-        screenKey = screenKey,
+    Box(modifier = Modifier.fillMaxSize()) {
+      ThreadPostListScreen(
         screenContentLoaded = screenContentLoaded,
-        lastLoadedEndedWithError = lastLoadedEndedWithError,
-        mainUiLayoutMode = mainUiLayoutMode,
-        onFabClicked = { clickedFabScreenKey ->
-          if (screenKey != clickedFabScreenKey) {
-            return@PostsScreenFloatingActionButton
+        screenKey = screenKey,
+        isCatalogScreen = isCatalogScreen,
+        replyLayoutState = replyLayoutState,
+        postLongtapContentMenuProvider = { postLongtapContentMenu },
+        linkableClickHelperProvider = { linkableClickHelper },
+        showRepliesForPost = { replyViewMode -> showRepliesForPost(replyViewMode) },
+        onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
+          val postImageData = if (postImageDataResult.isFailure) {
+            snackbarManager.errorToast(
+              message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
+              screenKey = screenKey
+            )
+
+            return@ThreadPostListScreen
+          } else {
+            postImageDataResult.getOrThrow()
           }
 
-          replyLayoutState.openReplyLayout()
-        }
-      )
-    } else {
-      LaunchedEffect(
-        key1 = Unit,
-        block = {
-          homeScreenViewModel.homeScreenFabClickEventFlow.collectLatest { clickedFabScreenKey ->
-            if (screenKey != clickedFabScreenKey) {
-              return@collectLatest
+          val threadDescriptor = chanDescriptor as ThreadDescriptor
+
+          clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
+
+          val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            args = {
+              val mediaViewerParams = MediaViewerParams.Thread(
+                chanDescriptor = threadDescriptor,
+                initialImageUrlString = postImageData.fullImageAsString
+              )
+
+              putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
+              putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
             }
+          )
 
-            replyLayoutState.openReplyLayout()
-          }
+          navigationRouter.presentScreen(mediaViewerScreen)
+        },
+        postListSearchButtons = {
+          PostListSearchButtons(
+            postsScreenViewModel = threadScreenViewModel,
+            searchToolbar = localSearchToolbar
+          )
         }
       )
     }
-
-    if (!postListOptions.isInPopup) {
-      PostListSearchButtons(
-        postsScreenViewModel = threadScreenViewModel,
-        searchToolbar = localSearchToolbar
-      )
-    }
-
-    ReplyLayoutContainer(
-      chanDescriptor = threadScreenViewModel.chanDescriptor,
-      replyLayoutState = replyLayoutState,
-      replyLayoutViewModel = replyLayoutViewModel,
-      onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
-      onAttachedMediaClicked = { attachedMedia ->
-        // TODO(KurobaEx): show options
-        snackbarManager.toast(
-          message = "Media editor is not implemented yet",
-          screenKey = ThreadScreen.SCREEN_KEY
-        )
-      },
-      onPostedSuccessfully = { postDescriptor ->
-        // no-op
-      }
-    )
-
-    KurobaSnackbarContainer(
-      modifier = Modifier.fillMaxSize(),
-      screenKey = screenKey,
-      isTablet = globalUiInfoManager.isTablet,
-      kurobaSnackbarState = kurobaSnackbarState
-    )
   }
 
   companion object {
     private const val TAG = "ThreadScreen"
     val SCREEN_KEY = ScreenKey("ThreadScreen")
   }
+}
+
+
+@Composable
+private fun BoxScope.ThreadPostListScreen(
+  catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel(),
+  threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel(),
+  homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel(),
+  replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel(),
+  snackbarManager: SnackbarManager = koinRemember(),
+  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
+  androidHelpers: AndroidHelpers = koinRemember(),
+  screenContentLoaded: Boolean,
+  screenKey: ScreenKey,
+  isCatalogScreen: Boolean,
+  replyLayoutState: IReplyLayoutState,
+  postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  linkableClickHelperProvider: () -> LinkableClickHelper,
+  showRepliesForPost: (PopupRepliesScreen.ReplyViewMode) -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  postListSearchButtons: @Composable () -> Unit
+) {
+  val windowInsets = LocalWindowInsets.current
+  val context = LocalContext.current
+
+  val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
+  val orientation = orientationMut
+  if (orientation == null) {
+    return
+  }
+
+  val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
+  val mainUiLayoutMode = mainUiLayoutModeMut ?: return
+
+  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+  val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
+  var replyLayoutContainerHeight by remember { mutableStateOf(0.dp) }
+
+  val kurobaSnackbarState = rememberKurobaSnackbarState()
+  val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
+  val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+  val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
+
+  val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
+    derivedStateOf {
+      val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
+        ReplyLayoutVisibility.Closed -> windowInsets.bottom
+        ReplyLayoutVisibility.Opened,
+        ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerHeight
+      }
+
+      PostListOptions(
+        isCatalogMode = isCatalogScreen,
+        isInPopup = false,
+        ownerScreenKey = screenKey,
+        pullToRefreshEnabled = true,
+        contentPadding = PaddingValues(
+          top = toolbarHeight + windowInsets.top,
+          bottom = bottomPadding + fabVertOffset
+        ),
+        mainUiLayoutMode = mainUiLayoutMode,
+        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+        detectLinkableClicks = true,
+        orientation = orientation
+      )
+    }
+  }
+
+  PostListContent(
+    modifier = Modifier.fillMaxSize(),
+    postListOptions = postListOptions,
+    postsScreenViewModelProvider = { threadScreenViewModel },
+    onPostCellClicked = { postCellData ->
+    },
+    onPostCellLongClicked = { postCellData ->
+      postLongtapContentMenuProvider().showMenu(
+        postListOptions = postListOptions,
+        postCellData = postCellData,
+        reparsePostsFunc = { postDescriptors ->
+          val threadDescriptor = threadScreenViewModel.threadDescriptor
+          if (threadDescriptor == null) {
+            return@showMenu
+          }
+
+          threadScreenViewModel.reparsePostsByDescriptors(
+            chanDescriptor = threadDescriptor,
+            postDescriptors = postDescriptors
+          )
+        }
+      )
+    },
+    onLinkableClicked = { postCellData, linkable ->
+      linkableClickHelperProvider().processClickedLinkable(
+        context = context,
+        sourceScreenKey = screenKey,
+        postCellData = postCellData,
+        linkable = linkable,
+        loadThreadFunc = { threadDescriptor ->
+          threadScreenViewModel.loadThread(threadDescriptor)
+        },
+        loadCatalogFunc = { catalogDescriptor ->
+          catalogScreenViewModel.loadCatalog(catalogDescriptor)
+        },
+        showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
+      )
+    },
+    onLinkableLongClicked = { postCellData, linkable ->
+      linkableClickHelperProvider().processLongClickedLinkable(
+        sourceScreenKey = screenKey,
+        postCellData = postCellData,
+        linkable = linkable
+      )
+    },
+    onPostRepliesClicked = { postDescriptor ->
+      showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
+    },
+    onCopySelectedText = { selectedText ->
+      androidHelpers.copyToClipboard("Selected text", selectedText)
+    },
+    onQuoteSelectedText = { withText, selectedText, postCellData ->
+      val threadDescriptor = threadScreenViewModel.threadDescriptor
+        ?: return@PostListContent
+
+      if (withText) {
+        replyLayoutViewModel.quotePostWithText(threadDescriptor, postCellData, selectedText)
+      } else {
+        replyLayoutViewModel.quotePost(threadDescriptor, postCellData)
+      }
+    },
+    onPostImageClicked = onPostImageClicked,
+    onPostListScrolled = { delta ->
+      globalUiInfoManager.onContentListScrolling(screenKey, delta)
+    },
+    onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
+      globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
+    },
+    onCurrentlyTouchingPostList = { touching ->
+      globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
+    },
+    onFastScrollerDragStateChanged = { dragging ->
+      globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
+    }
+  )
+
+  if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+    val lastLoadError by threadScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
+    val lastLoadedEndedWithError by remember { derivedStateOf { lastLoadError != null } }
+
+    PostsScreenFloatingActionButton(
+      screenKey = screenKey,
+      screenContentLoaded = screenContentLoaded,
+      lastLoadedEndedWithError = lastLoadedEndedWithError,
+      mainUiLayoutMode = mainUiLayoutMode,
+      onFabClicked = { clickedFabScreenKey ->
+        if (screenKey != clickedFabScreenKey) {
+          return@PostsScreenFloatingActionButton
+        }
+
+        replyLayoutState.openReplyLayout()
+      }
+    )
+  } else {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        homeScreenViewModel.homeScreenFabClickEventFlow.collectLatest { clickedFabScreenKey ->
+          if (screenKey != clickedFabScreenKey) {
+            return@collectLatest
+          }
+
+          replyLayoutState.openReplyLayout()
+        }
+      }
+    )
+  }
+
+  if (!postListOptions.isInPopup) {
+    postListSearchButtons()
+  }
+
+  ReplyLayoutContainer(
+    chanDescriptor = threadScreenViewModel.chanDescriptor,
+    replyLayoutState = replyLayoutState,
+    replyLayoutViewModel = replyLayoutViewModel,
+    onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
+    onAttachedMediaClicked = { attachedMedia ->
+      // TODO(KurobaEx): show options
+      snackbarManager.toast(
+        message = "Media editor is not implemented yet",
+        screenKey = ThreadScreen.SCREEN_KEY
+      )
+    },
+    onPostedSuccessfully = { postDescriptor ->
+      // no-op
+    }
+  )
+
+  KurobaSnackbarContainer(
+    modifier = Modifier.fillMaxSize(),
+    screenKey = screenKey,
+    isTablet = globalUiInfoManager.isTablet,
+    kurobaSnackbarState = kurobaSnackbarState
+  )
 }

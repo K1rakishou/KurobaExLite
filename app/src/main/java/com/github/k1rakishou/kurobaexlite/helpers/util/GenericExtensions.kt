@@ -769,10 +769,6 @@ suspend fun <T : Any> retryableIoTask(attempts: Int, task: suspend (Int) -> T): 
   }
 }
 
-fun <T> Lazy<T>.forceInit(): T {
-  return this.value
-}
-
 private const val maxExtensionLength = 8
 
 fun String.removeExtensionIfPresent(): String {

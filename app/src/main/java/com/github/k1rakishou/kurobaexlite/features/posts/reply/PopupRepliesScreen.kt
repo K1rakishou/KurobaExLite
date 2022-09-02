@@ -301,7 +301,7 @@ class PopupRepliesScreen(
     ) {
       PostListContent(
         postListOptions = postListOptions,
-        postsScreenViewModel = popupRepliesScreenViewModel,
+        postsScreenViewModelProvider = { popupRepliesScreenViewModel },
         onPostCellClicked = { postCellData -> /*no-op*/ },
         onPostCellLongClicked = { postCellData ->
           postLongtapContentMenu.showMenu(

@@ -343,29 +343,37 @@ abstract class PostScreenViewModel(
     }
   }
 
-  suspend fun reparsePostSubject(postCellData: PostCellData): AnnotatedString? {
+  fun reparsePostSubject(postCellData: PostCellData, onPostSubjectParsed: (AnnotatedString?) -> Unit) {
     val parsedPostData = postCellData.parsedPostData
-      ?: return null
-    val chanTheme = themeEngine.chanTheme
+    if (parsedPostData == null) {
+      onPostSubjectParsed(null)
+     return
+    }
 
-    return withContext(globalConstants.postParserDispatcher) {
-      return@withContext parsedPostDataCache.parseAndProcessPostSubject(
-        chanTheme = chanTheme,
-        postIndex = postCellData.originalPostOrder,
-        postDescriptor = postCellData.postDescriptor,
-        postTimeMs = postCellData.timeMs,
-        posterName = postCellData.name,
-        posterTripcode = postCellData.tripcode,
-        posterId = postCellData.posterId,
-        postIcons = arrayOf(postCellData.countryFlag, postCellData.boardFlag).filterNotNull(),
-        postImages = postCellData.images,
-        postSubjectParsed = parsedPostData.parsedPostSubject,
-        archived = postCellData.archived,
-        deleted = postCellData.deleted,
-        closed = postCellData.closed,
-        sticky = postCellData.sticky,
-        parsedPostDataContext = parsedPostData.parsedPostDataContext
-      )
+    viewModelScope.launch {
+      val chanTheme = themeEngine.chanTheme
+
+      val parsedPostSubject = withContext(globalConstants.postParserDispatcher) {
+        return@withContext parsedPostDataCache.parseAndProcessPostSubject(
+          chanTheme = chanTheme,
+          postIndex = postCellData.originalPostOrder,
+          postDescriptor = postCellData.postDescriptor,
+          postTimeMs = postCellData.timeMs,
+          posterName = postCellData.name,
+          posterTripcode = postCellData.tripcode,
+          posterId = postCellData.posterId,
+          postIcons = arrayOf(postCellData.countryFlag, postCellData.boardFlag).filterNotNull(),
+          postImages = postCellData.images,
+          postSubjectParsed = parsedPostData.parsedPostSubject,
+          archived = postCellData.archived,
+          deleted = postCellData.deleted,
+          closed = postCellData.closed,
+          sticky = postCellData.sticky,
+          parsedPostDataContext = parsedPostData.parsedPostDataContext
+        )
+      }
+
+      onPostSubjectParsed(parsedPostSubject)
     }
   }
 

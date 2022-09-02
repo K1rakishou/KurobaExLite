@@ -14,7 +14,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
@@ -45,11 +47,16 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
-import com.github.k1rakishou.kurobaexlite.helpers.util.forceInit
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -333,260 +340,78 @@ class CatalogScreen(
       currentChanDescriptor = { catalogScreenViewModel.catalogDescriptor }
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-      CatalogPostListScreen()
-    }
-  }
+    val screenContentLoaded by screenContentLoadedFlow.collectAsState()
+    val currentCatalogDescriptor by threadScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
 
-  @Composable
-  private fun BoxScope.CatalogPostListScreen() {
-    val windowInsets = LocalWindowInsets.current
-
-    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-    val orientation = orientationMut
-    if (orientation == null) {
-      return
-    }
-
-    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
-    val mainUiLayoutMode = mainUiLayoutModeMut ?: return
-
-    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-    val fabSize = dimensionResource(id = R.dimen.fab_size)
-    val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
-    var replyLayoutContainerHeight by remember { mutableStateOf(0.dp) }
-
-    val kurobaSnackbarState = rememberKurobaSnackbarState()
-    val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
-    val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
-
-    val postListOptions by remember(
-      windowInsets,
-      replyLayoutVisibilityInfoStateForScreen,
-      replyLayoutContainerHeight
-    ) {
-      derivedStateOf {
-        val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
-          ReplyLayoutVisibility.Closed -> windowInsets.bottom
-          ReplyLayoutVisibility.Opened,
-          ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerHeight
-        }
-
-        PostListOptions(
-          isCatalogMode = isCatalogScreen,
-          isInPopup = false,
-          pullToRefreshEnabled = true,
-          ownerScreenKey = screenKey,
-          contentPadding = PaddingValues(
-            top = toolbarHeight + windowInsets.top,
-            bottom = bottomPadding + fabSize + fabVertOffset
-          ),
-          mainUiLayoutMode = mainUiLayoutMode,
-          postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-          detectLinkableClicks = true,
-          orientation = orientation
-        )
-      }
-    }
-
-    PostListContent(
-      modifier = Modifier.fillMaxSize(),
-      postListOptions = postListOptions,
-      postsScreenViewModel = catalogScreenViewModel,
-      onPostCellClicked = { postCellData ->
-        globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
-
-        val threadDescriptor = ThreadDescriptor(
-          catalogDescriptor = postCellData.postDescriptor.catalogDescriptor,
-          threadNo = postCellData.postNo
-        )
-
-        threadScreenViewModel.loadThread(threadDescriptor)
-      },
-      onPostCellLongClicked = { postCellData ->
-        postLongtapContentMenu.showMenu(
-          postListOptions = postListOptions,
-          postCellData = postCellData,
-          reparsePostsFunc = { postDescriptors ->
-            val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
-            if (catalogDescriptor == null) {
-              return@showMenu
+    LaunchedEffect(
+      key1 = currentCatalogDescriptor,
+      block = {
+        snapshotFlow {
+          replyLayoutViewModel.getOrCreateReplyLayoutState(currentCatalogDescriptor)
+            .replyLayoutVisibilityState.value
+        }.collect { replyLayoutVisibility ->
+          when (replyLayoutVisibility) {
+            ReplyLayoutVisibility.Closed -> {
+              kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
             }
-
-            catalogScreenViewModel.reparsePostsByDescriptors(
-              chanDescriptor = catalogDescriptor,
-              postDescriptors = postDescriptors
-            )
+            ReplyLayoutVisibility.Opened,
+            ReplyLayoutVisibility.Expanded -> {
+              if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
+                kurobaToolbarContainerState.setToolbar(replyToolbar)
+              }
+            }
           }
-        )
-      },
-      onLinkableClicked = { postCellData, linkable ->
-        // no-op (for now?)
-      },
-      onLinkableLongClicked = { postCellData, linkable ->
-        // no-op (for now?)
-      },
-      onPostRepliesClicked = { postDescriptor ->
-        // no-op
-      },
-      onCopySelectedText = {
-        // no-op
-      },
-      onQuoteSelectedText = { _, _, _ ->
-        // no-op
-      },
-      onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
-        val postImageData = if (postImageDataResult.isFailure) {
-          snackbarManager.errorToast(
-            message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
-            screenKey = screenKey
+        }
+      }
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+      CatalogPostListScreen(
+        screenContentLoaded = screenContentLoaded,
+        screenKey = screenKey,
+        isCatalogScreen = isCatalogScreen,
+        replyLayoutState = replyLayoutState,
+        postLongtapContentMenuProvider = { postLongtapContentMenu },
+        onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
+          val postImageData = if (postImageDataResult.isFailure) {
+            snackbarManager.errorToast(
+              message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
+              screenKey = screenKey
+            )
+
+            return@CatalogPostListScreen
+          } else {
+            postImageDataResult.getOrThrow()
+          }
+
+          val catalogDescriptor = chanDescriptor as CatalogDescriptor
+
+          clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
+
+          val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            args = {
+              val mediaViewerParams = MediaViewerParams.Catalog(
+                chanDescriptor = catalogDescriptor,
+                initialImageUrlString = postImageData.fullImageAsString
+              )
+
+              putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
+              putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
+            }
           )
 
-          return@PostListContent
-        } else {
-          postImageDataResult.getOrThrow()
-        }
-
-        val catalogDescriptor = chanDescriptor as CatalogDescriptor
-
-        clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
-
-        val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          args = {
-            val mediaViewerParams = MediaViewerParams.Catalog(
-              chanDescriptor = catalogDescriptor,
-              initialImageUrlString = postImageData.fullImageAsString
-            )
-
-            putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
-            putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
-          }
-        )
-
-        navigationRouter.presentScreen(mediaViewerScreen)
-      },
-      onPostListScrolled = { delta ->
-        globalUiInfoManager.onContentListScrolling(screenKey, delta)
-      },
-      onPostListTouchingTopOrBottomStateChanged = { touching ->
-        globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(screenKey, touching)
-      },
-      onCurrentlyTouchingPostList = { touching ->
-        globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
-      },
-      onFastScrollerDragStateChanged = { dragging ->
-        globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        combine(
-          flow = chanThreadManager.currentlyOpenedCatalogFlow,
-          flow2 = chanThreadManager.currentlyOpenedThreadFlow,
-          transform = { catalog, thread -> catalog to thread }
-        )
-          .takeWhile { (catalog, thread) -> catalog == null || thread == null }
-          .filter { (catalog, thread) -> catalog != null || thread != null }
-          .collect {
-            // Force init the view models after a catalog or thread is loaded to make sure they start
-            // processing events from everywhere round
-            historyScreenViewModel.forceInit()
-            bookmarksScreenViewModel.forceInit()
-          }
-      }
-    )
-
-    val currentCatalogDescriptor by threadScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
-    val replyLayoutVisibility by replyLayoutViewModel.getOrCreateReplyLayoutState(currentCatalogDescriptor)
-      .replyLayoutVisibilityState
-
-    LaunchedEffect(
-      key1 = replyLayoutVisibility,
-      block = {
-        when (replyLayoutVisibility) {
-          ReplyLayoutVisibility.Closed -> {
-            kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
-          }
-          ReplyLayoutVisibility.Opened,
-          ReplyLayoutVisibility.Expanded -> {
-            if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
-              kurobaToolbarContainerState.setToolbar(replyToolbar)
-            }
-          }
-        }
-      }
-    )
-
-    if (mainUiLayoutMode == MainUiLayoutMode.Split) {
-      val lastLoadError by catalogScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
-      val screenContentLoaded by screenContentLoadedFlow.collectAsState()
-      val lastLoadedEndedWithError by remember { derivedStateOf { lastLoadError != null } }
-
-      PostsScreenFloatingActionButton(
-        screenKey = screenKey,
-        screenContentLoaded = screenContentLoaded,
-        lastLoadedEndedWithError = lastLoadedEndedWithError,
-        mainUiLayoutMode = mainUiLayoutMode,
-        onFabClicked = { clickedFabScreenKey ->
-          if (screenKey != clickedFabScreenKey) {
-            return@PostsScreenFloatingActionButton
-          }
-
-          replyLayoutState.openReplyLayout()
-        }
-      )
-    } else {
-      LaunchedEffect(
-        key1 = Unit,
-        block = {
-          homeScreenViewModel.homeScreenFabClickEventFlow.collectLatest { clickedFabScreenKey ->
-            if (screenKey != clickedFabScreenKey) {
-              return@collectLatest
-            }
-
-            replyLayoutState.openReplyLayout()
-          }
+          navigationRouter.presentScreen(mediaViewerScreen)
+        },
+        postListSearchButtons = {
+          PostListSearchButtons(
+            postsScreenViewModel = catalogScreenViewModel,
+            searchToolbar = localSearchToolbar
+          )
         }
       )
     }
-
-    if (!postListOptions.isInPopup) {
-      PostListSearchButtons(
-        postsScreenViewModel = catalogScreenViewModel,
-        searchToolbar = localSearchToolbar
-      )
-    }
-
-    ReplyLayoutContainer(
-      chanDescriptor = catalogScreenViewModel.catalogDescriptor,
-      replyLayoutState = replyLayoutState,
-      replyLayoutViewModel = replyLayoutViewModel,
-      onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
-      onAttachedMediaClicked = { attachedMedia ->
-        // TODO(KurobaEx): show options
-        snackbarManager.toast(
-          message = "Media editor is not implemented yet",
-          screenKey = CatalogScreen.SCREEN_KEY
-        )
-      },
-      onPostedSuccessfully = { postDescriptor ->
-        threadScreenViewModel.loadThread(postDescriptor.threadDescriptor)
-        globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
-      }
-    )
-
-    KurobaSnackbarContainer(
-      modifier = Modifier.fillMaxSize(),
-      screenKey = screenKey,
-      isTablet = globalUiInfoManager.isTablet,
-      kurobaSnackbarState = kurobaSnackbarState
-    )
   }
 
   companion object {
@@ -594,4 +419,217 @@ class CatalogScreen(
     val SCREEN_KEY = ScreenKey("CatalogScreen")
   }
 
+}
+
+
+@Composable
+private fun BoxScope.CatalogPostListScreen(
+  catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel(),
+  threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel(),
+  historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel(),
+  bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel(),
+  homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel(),
+  replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel(),
+  snackbarManager: SnackbarManager = koinRemember(),
+  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
+  chanThreadManager: ChanThreadManager = koinRemember(),
+  screenContentLoaded: Boolean,
+  screenKey: ScreenKey,
+  isCatalogScreen: Boolean,
+  replyLayoutState: IReplyLayoutState,
+  postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  postListSearchButtons: @Composable () -> Unit
+) {
+  val windowInsets = LocalWindowInsets.current
+
+  val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
+  val orientation = orientationMut
+  if (orientation == null) {
+    return
+  }
+
+  val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
+  val mainUiLayoutMode = mainUiLayoutModeMut ?: return
+
+  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+  val fabSize = dimensionResource(id = R.dimen.fab_size)
+  val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
+  var replyLayoutContainerHeight by remember { mutableStateOf(0.dp) }
+
+  val kurobaSnackbarState = rememberKurobaSnackbarState()
+  val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
+  val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+  val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
+
+  val postListOptions by remember(
+    windowInsets,
+    replyLayoutVisibilityInfoStateForScreen,
+    replyLayoutContainerHeight
+  ) {
+    derivedStateOf {
+      val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
+        ReplyLayoutVisibility.Closed -> windowInsets.bottom
+        ReplyLayoutVisibility.Opened,
+        ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerHeight
+      }
+
+      PostListOptions(
+        isCatalogMode = isCatalogScreen,
+        isInPopup = false,
+        pullToRefreshEnabled = true,
+        ownerScreenKey = screenKey,
+        contentPadding = PaddingValues(
+          top = toolbarHeight + windowInsets.top,
+          bottom = bottomPadding + fabSize + fabVertOffset
+        ),
+        mainUiLayoutMode = mainUiLayoutMode,
+        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+        detectLinkableClicks = true,
+        orientation = orientation
+      )
+    }
+  }
+
+  PostListContent(
+    modifier = Modifier.fillMaxSize(),
+    postListOptions = postListOptions,
+    postsScreenViewModelProvider = { catalogScreenViewModel },
+    onPostCellClicked = { postCellData ->
+      globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
+
+      val threadDescriptor = ThreadDescriptor(
+        catalogDescriptor = postCellData.postDescriptor.catalogDescriptor,
+        threadNo = postCellData.postNo
+      )
+
+      threadScreenViewModel.loadThread(threadDescriptor)
+    },
+    onPostCellLongClicked = { postCellData ->
+      postLongtapContentMenuProvider().showMenu(
+        postListOptions = postListOptions,
+        postCellData = postCellData,
+        reparsePostsFunc = { postDescriptors ->
+          val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+          if (catalogDescriptor == null) {
+            return@showMenu
+          }
+
+          catalogScreenViewModel.reparsePostsByDescriptors(
+            chanDescriptor = catalogDescriptor,
+            postDescriptors = postDescriptors
+          )
+        }
+      )
+    },
+    onLinkableClicked = { postCellData, linkable ->
+      // no-op (for now?)
+    },
+    onLinkableLongClicked = { postCellData, linkable ->
+      // no-op (for now?)
+    },
+    onPostRepliesClicked = { postDescriptor ->
+      // no-op
+    },
+    onCopySelectedText = {
+      // no-op
+    },
+    onQuoteSelectedText = { _, _, _ ->
+      // no-op
+    },
+    onPostImageClicked = onPostImageClicked,
+    onPostListScrolled = { delta ->
+      globalUiInfoManager.onContentListScrolling(screenKey, delta)
+    },
+    onPostListTouchingTopOrBottomStateChanged = { touching ->
+      globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(screenKey, touching)
+    },
+    onCurrentlyTouchingPostList = { touching ->
+      globalUiInfoManager.onCurrentlyTouchingContentList(screenKey, touching)
+    },
+    onFastScrollerDragStateChanged = { dragging ->
+      globalUiInfoManager.onFastScrollerDragStateChanged(screenKey, dragging)
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      combine(
+        flow = chanThreadManager.currentlyOpenedCatalogFlow,
+        flow2 = chanThreadManager.currentlyOpenedThreadFlow,
+        transform = { catalog, thread -> catalog to thread }
+      )
+        .takeWhile { (catalog, thread) -> catalog == null || thread == null }
+        .filter { (catalog, thread) -> catalog != null || thread != null }
+        .collect {
+          // Force init the view models after a catalog or thread is loaded to make sure they start
+          // processing events from everywhere round
+          historyScreenViewModel.forceInit()
+          bookmarksScreenViewModel.forceInit()
+        }
+    }
+  )
+
+  if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+    val lastLoadError by catalogScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
+    val lastLoadedEndedWithError by remember { derivedStateOf { lastLoadError != null } }
+
+    PostsScreenFloatingActionButton(
+      screenKey = screenKey,
+      screenContentLoaded = screenContentLoaded,
+      lastLoadedEndedWithError = lastLoadedEndedWithError,
+      mainUiLayoutMode = mainUiLayoutMode,
+      onFabClicked = { clickedFabScreenKey ->
+        if (screenKey != clickedFabScreenKey) {
+          return@PostsScreenFloatingActionButton
+        }
+
+        replyLayoutState.openReplyLayout()
+      }
+    )
+  } else {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        homeScreenViewModel.homeScreenFabClickEventFlow.collectLatest { clickedFabScreenKey ->
+          if (screenKey != clickedFabScreenKey) {
+            return@collectLatest
+          }
+
+          replyLayoutState.openReplyLayout()
+        }
+      }
+    )
+  }
+
+  if (!postListOptions.isInPopup) {
+    postListSearchButtons()
+  }
+
+  ReplyLayoutContainer(
+    chanDescriptor = catalogScreenViewModel.catalogDescriptor,
+    replyLayoutState = replyLayoutState,
+    replyLayoutViewModel = replyLayoutViewModel,
+    onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
+    onAttachedMediaClicked = { attachedMedia ->
+      // TODO(KurobaEx): show options
+      snackbarManager.toast(
+        message = "Media editor is not implemented yet",
+        screenKey = CatalogScreen.SCREEN_KEY
+      )
+    },
+    onPostedSuccessfully = { postDescriptor ->
+      threadScreenViewModel.loadThread(postDescriptor.threadDescriptor)
+      globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
+    }
+  )
+
+  KurobaSnackbarContainer(
+    modifier = Modifier.fillMaxSize(),
+    screenKey = screenKey,
+    isTablet = globalUiInfoManager.isTablet,
+    kurobaSnackbarState = kurobaSnackbarState
+  )
 }

@@ -60,6 +60,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
@@ -73,6 +74,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 @Composable
 fun PostCell(
@@ -91,7 +93,7 @@ fun PostCell(
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
-  reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
+  reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
   val postComment = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostComment }
   val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
@@ -214,10 +216,8 @@ private fun PostCellTitle(
   postSubject: AnnotatedString?,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
-  reparsePostSubject: suspend (PostCellData) -> AnnotatedString?
+  reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
-  val chanTheme = LocalChanTheme.current
-
   Row(
     modifier = Modifier
       .wrapContentHeight()
@@ -271,8 +271,17 @@ private fun PostCellTitle(
 
             delay(delay)
 
-            val newPostSubject = reparsePostSubject(postCellData)
-              ?: continue
+            val newPostSubject = suspendCancellableCoroutine<AnnotatedString?> { cancellableContinuation ->
+              reparsePostSubject(postCellData) { parsedPostSubject ->
+                cancellableContinuation.resumeSafe(
+                  parsedPostSubject
+                )
+              }
+            }
+
+            if (newPostSubject == null) {
+              return@LaunchedEffect
+            }
 
             actualPostSubject = newPostSubject
           }
