@@ -66,6 +66,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarState
@@ -141,67 +142,16 @@ class AlbumScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
-    val context = LocalContext.current
-    val albumScreenViewModel = koinRememberViewModel<AlbumScreenViewModel>()
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        defaultToolbarState.iconClickEvents.collect { icon ->
-          icon as DefaultToolbarIcon
-
-          when (icon) {
-            DefaultToolbarIcon.Back -> { onBackPressed() }
-            DefaultToolbarIcon.Overflow -> {
-              // no-op
-            }
-          }
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        selectionToolbarState.iconClickEvents.collect { icon ->
-          icon as SelectionToolbarIcon
-
-          when (icon) {
-            SelectionToolbarIcon.Close -> { onBackPressed() }
-            SelectionToolbarIcon.ToggleSelection -> {
-              albumScreenViewModel.toggleSelectionGlobal()
-            }
-            SelectionToolbarIcon.Download -> {
-              albumScreenViewModel.downloadSelectedImages(
-                chanDescriptor = chanDescriptor,
-                onResult = { activeDownload ->
-                  val message = context.resources.getString(
-                    R.string.media_viewer_download_success_multiple,
-                    activeDownload.downloaded,
-                    activeDownload.failed,
-                    activeDownload.total
-                  )
-
-                  snackbarManager.toast(
-                    message = message,
-                    screenKey = MainScreen.SCREEN_KEY
-                  )
-                }
-              )
-              onBackPressed()
-            }
-          }
-        }
-      }
-    )
-
-    val toolbarContainerKey = "${screenKey.key}_${keySuffix}"
-
-    KurobaToolbarContainer(
-      toolbarContainerKey = toolbarContainerKey,
-      kurobaToolbarContainerState = kurobaToolbarContainerState,
-      canProcessBackEvent = { true }
-    )
+    with(boxScope) {
+      ToolbarInternal(
+        defaultToolbarState = defaultToolbarState,
+        selectionToolbarState = selectionToolbarState,
+        kurobaToolbarContainerState = kurobaToolbarContainerState,
+        chanDescriptor = chanDescriptor,
+        toolbarContainerKey = "${screenKey.key}_${keySuffix}",
+        onBackPressed = { onBackPressed() }
+      )
+    }
   }
 
   override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
@@ -305,6 +255,81 @@ class AlbumScreen(
 
     internal const val NEW_ALBUM_IMAGES_ADDED_TOAST_ID = "new_album_images_added_toast_id"
   }
+}
+
+@Composable
+private fun BoxScope.ToolbarInternal(
+  albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel(),
+  snackbarManager: SnackbarManager = koinRemember(),
+  defaultToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcon>,
+  selectionToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcon>,
+  kurobaToolbarContainerState: KurobaToolbarContainerState<SimpleToolbar<AlbumScreen.ToolbarIcon>>,
+  chanDescriptor: ChanDescriptor,
+  toolbarContainerKey: String,
+  onBackPressed: suspend () -> Unit
+) {
+  val context = LocalContext.current
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      defaultToolbarState.iconClickEvents.collect { icon ->
+        icon as AlbumScreen.DefaultToolbarIcon
+
+        when (icon) {
+          AlbumScreen.DefaultToolbarIcon.Back -> {
+            onBackPressed()
+          }
+          AlbumScreen.DefaultToolbarIcon.Overflow -> {
+            // no-op
+          }
+        }
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      selectionToolbarState.iconClickEvents.collect { icon ->
+        icon as AlbumScreen.SelectionToolbarIcon
+
+        when (icon) {
+          AlbumScreen.SelectionToolbarIcon.Close -> {
+            onBackPressed()
+          }
+          AlbumScreen.SelectionToolbarIcon.ToggleSelection -> {
+            albumScreenViewModel.toggleSelectionGlobal()
+          }
+          AlbumScreen.SelectionToolbarIcon.Download -> {
+            albumScreenViewModel.downloadSelectedImages(
+              chanDescriptor = chanDescriptor,
+              onResult = { activeDownload ->
+                val message = context.resources.getString(
+                  R.string.media_viewer_download_success_multiple,
+                  activeDownload.downloaded,
+                  activeDownload.failed,
+                  activeDownload.total
+                )
+
+                snackbarManager.toast(
+                  message = message,
+                  screenKey = MainScreen.SCREEN_KEY
+                )
+              }
+            )
+            onBackPressed()
+          }
+        }
+      }
+    }
+  )
+
+  KurobaToolbarContainer(
+    toolbarContainerKey = toolbarContainerKey,
+    kurobaToolbarContainerState = kurobaToolbarContainerState,
+    canProcessBackEvent = { true }
+  )
 }
 
 @Composable
