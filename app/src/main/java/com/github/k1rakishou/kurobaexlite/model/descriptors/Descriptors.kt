@@ -7,9 +7,13 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.writeUtfString
 import kotlinx.parcelize.Parcelize
 import okio.Buffer
 
+@JvmInline
+// TODO(KurobaEx):
+//  @Immutable doesn't work together with "value class"!!!
+//  It makes the whole class unstable for Compose.
 @Immutable
 @Parcelize
-inline class SiteKey(val key: String) : Parcelable {
+value class SiteKey(val key: String) : Parcelable {
   override fun toString(): String {
     return key
   }

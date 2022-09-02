@@ -24,6 +24,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,12 +83,13 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 class AlbumScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
-) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcon>>(screenArgs, componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcons>>(screenArgs, componentActivity, navigationRouter) {
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
@@ -107,41 +109,43 @@ class AlbumScreen(
   private val selectionToolbarStateKey by lazy { "${selectionToolbarKey}_state" }
 
   private val defaultToolbarState by lazy {
-    SimpleToolbarStateBuilder.Builder<ToolbarIcon>(componentActivity)
+    SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
       .titleId(R.string.album_screen_toolbar_title)
-      .leftIcon(KurobaToolbarIcon(key = DefaultToolbarIcon.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
-      .addRightIcon(KurobaToolbarIcon(key = DefaultToolbarIcon.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
+      .leftIcon(KurobaToolbarIcon(key = DefaultToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
+      .addRightIcon(KurobaToolbarIcon(key = DefaultToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
       .build(defaultToolbarStateKey)
   }
 
   private val selectionToolbarState by lazy {
-    SimpleToolbarStateBuilder.Builder<ToolbarIcon>(componentActivity)
-      .leftIcon(KurobaToolbarIcon(key = SelectionToolbarIcon.Close, drawableId = R.drawable.ic_baseline_close_24))
-      .addRightIcon(KurobaToolbarIcon(key = SelectionToolbarIcon.ToggleSelection, drawableId = R.drawable.ic_baseline_select_all_24))
-      .addRightIcon(KurobaToolbarIcon(key = SelectionToolbarIcon.Download, drawableId = R.drawable.ic_baseline_download_24))
+    SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
+      .leftIcon(KurobaToolbarIcon(key = SelectionToolbarIcons.Close, drawableId = R.drawable.ic_baseline_close_24))
+      .addRightIcon(KurobaToolbarIcon(key = SelectionToolbarIcons.ToggleSelection, drawableId = R.drawable.ic_baseline_select_all_24))
+      .addRightIcon(KurobaToolbarIcon(key = SelectionToolbarIcons.Download, drawableId = R.drawable.ic_baseline_download_24))
       .build(selectionToolbarStateKey)
   }
 
   override val defaultToolbar by lazy {
-    SimpleToolbar<ToolbarIcon>(
+    SimpleToolbar<ToolbarIcons>(
       toolbarKey = defaultToolbarKey,
       simpleToolbarState = defaultToolbarState
     )
   }
 
   private val selectionToolbar by lazy {
-    SimpleToolbar<ToolbarIcon>(
+    SimpleToolbar<ToolbarIcons>(
       toolbarKey = selectionToolbarKey,
       simpleToolbarState = selectionToolbarState
     )
   }
 
   override val kurobaToolbarContainerState by lazy {
-    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcon>>(kurobaToolbarContainerViewModelKey)
+    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcons>>(kurobaToolbarContainerViewModelKey)
   }
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
+    val coroutineScope = rememberCoroutineScope()
+
     with(boxScope) {
       ToolbarInternal(
         defaultToolbarState = defaultToolbarState,
@@ -149,7 +153,7 @@ class AlbumScreen(
         kurobaToolbarContainerState = kurobaToolbarContainerState,
         chanDescriptor = chanDescriptor,
         toolbarContainerKey = "${screenKey.key}_${keySuffix}",
-        onBackPressed = { onBackPressed() }
+        onBackPressed = { coroutineScope.launch { onBackPressed() } }
       )
     }
   }
@@ -180,7 +184,7 @@ class AlbumScreen(
     }
 
     HandleBackPresses {
-      val selectionToolbarOnTop = kurobaToolbarContainerState.topChildToolbarAs<SimpleToolbar<ToolbarIcon>>()
+      val selectionToolbarOnTop = kurobaToolbarContainerState.topChildToolbarAs<SimpleToolbar<ToolbarIcons>>()
         ?.toolbarKey == selectionToolbarKey
 
       if (kurobaToolbarContainerState.onBackPressed()) {
@@ -234,14 +238,14 @@ class AlbumScreen(
     }
   }
 
-  interface ToolbarIcon
+  interface ToolbarIcons
 
-  enum class DefaultToolbarIcon : ToolbarIcon {
+  enum class DefaultToolbarIcons : ToolbarIcons {
     Back,
     Overflow
   }
 
-  enum class SelectionToolbarIcon : ToolbarIcon{
+  enum class SelectionToolbarIcons : ToolbarIcons{
     Close,
     ToggleSelection,
     Download
@@ -261,12 +265,12 @@ class AlbumScreen(
 private fun BoxScope.ToolbarInternal(
   albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel(),
   snackbarManager: SnackbarManager = koinRemember(),
-  defaultToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcon>,
-  selectionToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcon>,
-  kurobaToolbarContainerState: KurobaToolbarContainerState<SimpleToolbar<AlbumScreen.ToolbarIcon>>,
+  defaultToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcons>,
+  selectionToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcons>,
+  kurobaToolbarContainerState: KurobaToolbarContainerState<SimpleToolbar<AlbumScreen.ToolbarIcons>>,
   chanDescriptor: ChanDescriptor,
   toolbarContainerKey: String,
-  onBackPressed: suspend () -> Unit
+  onBackPressed: () -> Unit
 ) {
   val context = LocalContext.current
 
@@ -274,13 +278,13 @@ private fun BoxScope.ToolbarInternal(
     key1 = Unit,
     block = {
       defaultToolbarState.iconClickEvents.collect { icon ->
-        icon as AlbumScreen.DefaultToolbarIcon
+        icon as AlbumScreen.DefaultToolbarIcons
 
         when (icon) {
-          AlbumScreen.DefaultToolbarIcon.Back -> {
+          AlbumScreen.DefaultToolbarIcons.Back -> {
             onBackPressed()
           }
-          AlbumScreen.DefaultToolbarIcon.Overflow -> {
+          AlbumScreen.DefaultToolbarIcons.Overflow -> {
             // no-op
           }
         }
@@ -292,16 +296,16 @@ private fun BoxScope.ToolbarInternal(
     key1 = Unit,
     block = {
       selectionToolbarState.iconClickEvents.collect { icon ->
-        icon as AlbumScreen.SelectionToolbarIcon
+        icon as AlbumScreen.SelectionToolbarIcons
 
         when (icon) {
-          AlbumScreen.SelectionToolbarIcon.Close -> {
+          AlbumScreen.SelectionToolbarIcons.Close -> {
             onBackPressed()
           }
-          AlbumScreen.SelectionToolbarIcon.ToggleSelection -> {
+          AlbumScreen.SelectionToolbarIcons.ToggleSelection -> {
             albumScreenViewModel.toggleSelectionGlobal()
           }
-          AlbumScreen.SelectionToolbarIcon.Download -> {
+          AlbumScreen.SelectionToolbarIcons.Download -> {
             albumScreenViewModel.downloadSelectedImages(
               chanDescriptor = chanDescriptor,
               onResult = { activeDownload ->
@@ -341,8 +345,8 @@ private fun ContentInternal(
   screenKey: ScreenKey,
   chanDescriptor: ChanDescriptor,
   paddingValues: PaddingValues,
-  defaultToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcon>,
-  selectionToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcon>,
+  defaultToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcons>,
+  selectionToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcons>,
   onThumbnailClicked: (IPostImage) -> Unit,
   onSelectionModeChanged: (Boolean) -> Unit,
   isTopmostScreen: () -> Boolean,
