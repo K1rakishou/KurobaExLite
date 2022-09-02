@@ -52,9 +52,14 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinViewModel
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -63,6 +68,7 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
@@ -75,18 +81,12 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.koin.androidx.viewmodel.ext.android.viewModel
-import org.koin.java.KoinJavaComponent.inject
 
 class AlbumScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : HomeNavigationScreen<SimpleToolbar<AlbumScreen.ToolbarIcon>>(screenArgs, componentActivity, navigationRouter) {
-  private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModel()
-  private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
-  private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
-
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
@@ -142,6 +142,7 @@ class AlbumScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val context = LocalContext.current
+    val albumScreenViewModel = koinRememberViewModel<AlbumScreenViewModel>()
 
     LaunchedEffect(
       key1 = Unit,
@@ -207,8 +208,10 @@ class AlbumScreen(
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
-      albumScreenViewModel.clearAllImageKeys()
-      albumScreenViewModel.clearSelection()
+      componentActivity.koinViewModel<AlbumScreenViewModel>().let { albumScreenViewModel ->
+        albumScreenViewModel.clearAllImageKeys()
+        albumScreenViewModel.clearSelection()
+      }
     }
 
     super.onDisposed(screenDisposeEvent)
@@ -231,6 +234,8 @@ class AlbumScreen(
         ?.toolbarKey == selectionToolbarKey
 
       if (kurobaToolbarContainerState.onBackPressed()) {
+        val albumScreenViewModel = componentActivity.koinViewModel<AlbumScreenViewModel>()
+
         if (selectionToolbarOnTop && albumScreenViewModel.selectedImages.isNotEmpty()) {
           albumScreenViewModel.clearSelection()
         }
@@ -246,6 +251,10 @@ class AlbumScreen(
     ) {
       ContentInternal(
         paddingValues = paddingValues,
+        screenKey = screenKey,
+        chanDescriptor = chanDescriptor,
+        defaultToolbarState = defaultToolbarState,
+        selectionToolbarState = selectionToolbarState,
         onThumbnailClicked = { postImage ->
           val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
             componentActivity = componentActivity,
@@ -262,303 +271,15 @@ class AlbumScreen(
           )
 
           navigationRouter.presentScreen(mediaViewerScreen)
-        }
-      )
-    }
-  }
-
-  @Composable
-  private fun ContentInternal(
-    paddingValues: PaddingValues,
-    onThumbnailClicked: (IPostImage) -> Unit
-  ) {
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        albumScreenViewModel.snackbarFlow.collect { message ->
-          if (!navigationRouter.isTopmostScreen(this@AlbumScreen)) {
-            return@collect
-          }
-
-          // Hardcode for now, we only have 1 snackbar emitted from the albumScreenViewModel
-          snackbarManager.toast(
-            message = message,
-            screenKey = AlbumScreen.SCREEN_KEY,
-            toastId = NEW_ALBUM_IMAGES_ADDED_TOAST_ID
-          )
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        albumScreenViewModel.toolbarTitleInfo.collect { toolbarTitleInfo ->
-          defaultToolbarState.toolbarTitleState.value = appResources.string(
-            R.string.album_screen_toolbar_title_with_images,
-            toolbarTitleInfo.albumImagesCount
-          )
-        }
-      }
-    )
-
-    val albumMut by albumScreenViewModel.album.collectAsState()
-    val album = albumMut
-
-    LaunchedEffect(
-      key1 = chanDescriptor,
-      block = { albumScreenViewModel.loadAlbumAndListenForUpdates(chanDescriptor) }
-    )
-
-    if (album == null) {
-      KurobaComposeLoadingIndicator()
-      return
-    }
-
-    if (album.albumImages.isEmpty()) {
-      KurobaComposeError(errorMessage = stringResource(id = R.string.album_screen_album_empty))
-      return
-    }
-
-    val lazyGridState = rememberLazyGridState()
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        delay(64)
-        lazyGridState.scrollToItem(album.scrollIndex)
-      }
-    )
-
-    LaunchedEffect(
-      key1 = chanDescriptor,
-      block = {
-        mediaViewerPostListScroller.scrollEventFlow.collect { scrollInfo ->
-          if (screenKey != scrollInfo.screenKey) {
-            return@collect
-          }
-
-          val indexToScroll = album.imageIndexByPostDescriptor(scrollInfo.postDescriptor)
-          if (indexToScroll != null) {
-            lazyGridState.scrollToItem(index = indexToScroll)
-          }
-        }
-      }
-    )
-
-    val isInSelectionMode by remember {
-      derivedStateOf { albumScreenViewModel.selectedImages.isNotEmpty() }
-    }
-
-    val selectedItemsCount by remember {
-      derivedStateOf { albumScreenViewModel.selectedImages.size }
-    }
-
-    LaunchedEffect(
-      key1 = isInSelectionMode,
-      block = {
-        if (isInSelectionMode) {
-          kurobaToolbarContainerState.setToolbar(selectionToolbar)
-        } else if (kurobaToolbarContainerState.contains(selectionToolbarKey)) {
-          kurobaToolbarContainerState.popToolbar(selectionToolbarKey)
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = selectedItemsCount,
-      block = {
-        selectionToolbarState.toolbarTitleState.value = appResources.string(
-          R.string.album_screen_selected_n_images,
-          selectedItemsCount
-        )
-      }
-    )
-
-    LazyVerticalGridWithFastScroller(
-      modifier = Modifier.fillMaxSize(),
-      columns = GridCells.Fixed(3),
-      lazyGridState = lazyGridState,
-      contentPadding = paddingValues,
-      content = {
-        val albumImages = album.albumImages
-
-        albumImages.fastForEachIndexed { index, albumImage ->
-          item(
-            key = albumImages[index].postImage.fullImageAsString,
-            content = {
-              val albumImage = albumImages[index]
-
-              AlbumImageItem(
-                isInSelectionMode = isInSelectionMode,
-                albumImage = albumImage,
-                onThumbnailClicked = onThumbnailClicked
-              )
-            }
-          )
-        }
-      }
-    )
-  }
-
-  @Composable
-  private fun AlbumImageItem(
-    isInSelectionMode: Boolean,
-    albumImage: AlbumScreenViewModel.AlbumImage,
-    onThumbnailClicked: (IPostImage) -> Unit
-  ) {
-    var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
-    val selected = albumScreenViewModel.isImageSelected(albumImage)
-
-    Box {
-      PostImageThumbnail(
-        modifier = Modifier
-          .fillMaxWidth()
-          .height(160.dp)
-          .padding(1.dp)
-          .graphicsLayer {
-            if (selected) {
-              scaleX = 0.85f
-              scaleY = 0.85f
-            } else {
-              scaleX = 1f
-              scaleY = 1f
-            }
-          }
-          .onGloballyPositioned { layoutCoordinates ->
-            boundsInWindowMut = layoutCoordinates.boundsInWindow()
-          },
-        showShimmerEffectWhenLoading = true,
-        postImage = albumImage.postImage,
-        contentScale = ContentScale.Crop,
-        onLongClick = { albumScreenViewModel.toggleImageSelection(albumImage) },
-        onClickWithError = { clickedImageResult ->
-          if (clickedImageResult.isFailure) {
-            val error = clickedImageResult.exceptionOrThrow()
-
-            snackbarManager.errorToast(
-              message = error.errorMessageOrClassName(),
-              screenKey = MainScreen.SCREEN_KEY
-            )
-
-            return@PostImageThumbnail
-          }
-
-          val clickedPostImage = clickedImageResult.getOrThrow()
-
+        },
+        onSelectionModeChanged = { isInSelectionMode ->
           if (isInSelectionMode) {
-            albumScreenViewModel.toggleImageSelection(albumImage)
-            return@PostImageThumbnail
+            kurobaToolbarContainerState.setToolbar(selectionToolbar)
+          } else if (kurobaToolbarContainerState.contains(selectionToolbarKey)) {
+            kurobaToolbarContainerState.popToolbar(selectionToolbarKey)
           }
-
-          val boundsInWindow = boundsInWindowMut
-          if (boundsInWindow == null) {
-            return@PostImageThumbnail
-          }
-
-          clickedThumbnailBoundsStorage.storeBounds(clickedPostImage, boundsInWindow)
-          onThumbnailClicked(clickedPostImage)
-        }
-      )
-
-      if (albumImage.postSubject.isNotNullNorEmpty()) {
-        PostSubject(albumImage.postSubject)
-      }
-
-      if (isInSelectionMode) {
-        SelectionMark(selected)
-      }
-
-      ImageInfo(albumImage)
-    }
-  }
-
-  @Composable
-  private fun BoxScope.SelectionMark(selected: Boolean) {
-    val density = LocalDensity.current
-    val topLeftOffset = with(density) { remember { IntOffset(8.dp.roundToPx(), 8.dp.roundToPx()) } }
-
-    if (selected) {
-      Image(
-        modifier = Modifier
-          .size(36.dp)
-          .offset { topLeftOffset }
-          .align(Alignment.TopStart),
-        painter = painterResource(id = R.drawable.ic_selection_checkmark_with_bg_24dp),
-        contentDescription = null
-      )
-    }
-
-    Image(
-      modifier = Modifier
-        .size(36.dp)
-        .offset { topLeftOffset }
-        .align(Alignment.TopStart),
-      painter = painterResource(id = R.drawable.ic_selection_circle_24dp),
-      contentDescription = null
-    )
-  }
-
-  @Composable
-  private fun BoxScope.PostSubject(subject: String) {
-    val bgColor = remember { Color.Black.copy(alpha = 0.5f) }
-
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-        .align(Alignment.TopCenter)
-        .background(bgColor)
-        .padding(2.dp)
-    ) {
-      KurobaComposeText(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight(),
-        text = subject,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        color = Color.White,
-        textAlign = TextAlign.Center,
-        fontSize = 12.sp
-      )
-    }
-  }
-
-  @Composable
-  private fun BoxScope.ImageInfo(albumImage: AlbumScreenViewModel.AlbumImage) {
-    val bgColor = remember { Color.Black.copy(alpha = 0.5f) }
-
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-        .align(Alignment.BottomCenter)
-        .background(bgColor)
-        .padding(2.dp)
-    ) {
-      KurobaComposeText(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight(),
-        text = albumImage.imageOriginalFileName,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        color = Color.White,
-        textAlign = TextAlign.Center,
-        fontSize = 12.sp
-      )
-
-      KurobaComposeText(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight(),
-        text = albumImage.imageInfo,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        color = Color.White,
-        textAlign = TextAlign.Center,
-        fontSize = 11.sp
+        },
+        isTopmostScreen = { navigationRouter.isTopmostScreen(this@AlbumScreen) }
       )
     }
   }
@@ -582,6 +303,309 @@ class AlbumScreen(
 
     val SCREEN_KEY = ScreenKey("AlbumScreen")
 
-    private const val NEW_ALBUM_IMAGES_ADDED_TOAST_ID = "new_album_images_added_toast_id"
+    internal const val NEW_ALBUM_IMAGES_ADDED_TOAST_ID = "new_album_images_added_toast_id"
+  }
+}
+
+@Composable
+private fun ContentInternal(
+  albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel(),
+  mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember(),
+  snackbarManager: SnackbarManager = koinRemember(),
+  appResources: AppResources = koinRemember(),
+  screenKey: ScreenKey,
+  chanDescriptor: ChanDescriptor,
+  paddingValues: PaddingValues,
+  defaultToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcon>,
+  selectionToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcon>,
+  onThumbnailClicked: (IPostImage) -> Unit,
+  onSelectionModeChanged: (Boolean) -> Unit,
+  isTopmostScreen: () -> Boolean,
+) {
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      albumScreenViewModel.snackbarFlow.collect { message ->
+        if (!isTopmostScreen()) {
+          return@collect
+        }
+
+        // Hardcode for now, we only have 1 snackbar emitted from the albumScreenViewModel
+        snackbarManager.toast(
+          message = message,
+          screenKey = screenKey,
+          toastId = AlbumScreen.NEW_ALBUM_IMAGES_ADDED_TOAST_ID
+        )
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      albumScreenViewModel.toolbarTitleInfo.collect { toolbarTitleInfo ->
+        defaultToolbarState.toolbarTitleState.value = appResources.string(
+          R.string.album_screen_toolbar_title_with_images,
+          toolbarTitleInfo.albumImagesCount
+        )
+      }
+    }
+  )
+
+  val albumMut by albumScreenViewModel.album.collectAsState()
+  val album = albumMut
+
+  LaunchedEffect(
+    key1 = chanDescriptor,
+    block = { albumScreenViewModel.loadAlbumAndListenForUpdates(chanDescriptor) }
+  )
+
+  if (album == null) {
+    KurobaComposeLoadingIndicator()
+    return
+  }
+
+  if (album.albumImages.isEmpty()) {
+    KurobaComposeError(errorMessage = stringResource(id = R.string.album_screen_album_empty))
+    return
+  }
+
+  val lazyGridState = rememberLazyGridState()
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      delay(64)
+      lazyGridState.scrollToItem(album.scrollIndex)
+    }
+  )
+
+  LaunchedEffect(
+    key1 = chanDescriptor,
+    block = {
+      mediaViewerPostListScroller.scrollEventFlow.collect { scrollInfo ->
+        if (screenKey != scrollInfo.screenKey) {
+          return@collect
+        }
+
+        val indexToScroll = album.imageIndexByPostDescriptor(scrollInfo.postDescriptor)
+        if (indexToScroll != null) {
+          lazyGridState.scrollToItem(index = indexToScroll)
+        }
+      }
+    }
+  )
+
+  val isInSelectionMode by remember {
+    derivedStateOf { albumScreenViewModel.selectedImages.isNotEmpty() }
+  }
+
+  val selectedItemsCount by remember {
+    derivedStateOf { albumScreenViewModel.selectedImages.size }
+  }
+
+  LaunchedEffect(
+    key1 = isInSelectionMode,
+    block = { onSelectionModeChanged(isInSelectionMode) }
+  )
+
+  LaunchedEffect(
+    key1 = selectedItemsCount,
+    block = {
+      selectionToolbarState.toolbarTitleState.value = appResources.string(
+        R.string.album_screen_selected_n_images,
+        selectedItemsCount
+      )
+    }
+  )
+
+  LazyVerticalGridWithFastScroller(
+    modifier = Modifier.fillMaxSize(),
+    columns = GridCells.Fixed(3),
+    lazyGridState = lazyGridState,
+    contentPadding = paddingValues,
+    content = {
+      val albumImages = album.albumImages
+
+      albumImages.fastForEachIndexed { index, albumImage ->
+        item(
+          key = albumImages[index].postImage.fullImageAsString,
+          content = {
+            val albumImage = albumImages[index]
+
+            AlbumImageItem(
+              isInSelectionMode = isInSelectionMode,
+              albumImage = albumImage,
+              onThumbnailClicked = onThumbnailClicked,
+            )
+          }
+        )
+      }
+    }
+  )
+}
+
+@Composable
+private fun AlbumImageItem(
+  albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel(),
+  snackbarManager: SnackbarManager = koinRemember(),
+  clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember(),
+  isInSelectionMode: Boolean,
+  albumImage: AlbumScreenViewModel.AlbumImage,
+  onThumbnailClicked: (IPostImage) -> Unit,
+) {
+  var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
+  val selected = albumScreenViewModel.isImageSelected(albumImage)
+
+  Box {
+    PostImageThumbnail(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(160.dp)
+        .padding(1.dp)
+        .graphicsLayer {
+          if (selected) {
+            scaleX = 0.85f
+            scaleY = 0.85f
+          } else {
+            scaleX = 1f
+            scaleY = 1f
+          }
+        }
+        .onGloballyPositioned { layoutCoordinates ->
+          boundsInWindowMut = layoutCoordinates.boundsInWindow()
+        },
+      showShimmerEffectWhenLoading = true,
+      postImage = albumImage.postImage,
+      contentScale = ContentScale.Crop,
+      onLongClick = { albumScreenViewModel.toggleImageSelection(albumImage) },
+      onClickWithError = { clickedImageResult ->
+        if (clickedImageResult.isFailure) {
+          val error = clickedImageResult.exceptionOrThrow()
+
+          snackbarManager.errorToast(
+            message = error.errorMessageOrClassName(),
+            screenKey = MainScreen.SCREEN_KEY
+          )
+
+          return@PostImageThumbnail
+        }
+
+        val clickedPostImage = clickedImageResult.getOrThrow()
+
+        if (isInSelectionMode) {
+          albumScreenViewModel.toggleImageSelection(albumImage)
+          return@PostImageThumbnail
+        }
+
+        val boundsInWindow = boundsInWindowMut
+        if (boundsInWindow == null) {
+          return@PostImageThumbnail
+        }
+
+        clickedThumbnailBoundsStorage.storeBounds(clickedPostImage, boundsInWindow)
+        onThumbnailClicked(clickedPostImage)
+      }
+    )
+
+    if (albumImage.postSubject.isNotNullNorEmpty()) {
+      PostSubject(albumImage.postSubject)
+    }
+
+    if (isInSelectionMode) {
+      SelectionMark(selected)
+    }
+
+    ImageInfo(albumImage)
+  }
+}
+
+@Composable
+private fun BoxScope.SelectionMark(selected: Boolean) {
+  val density = LocalDensity.current
+  val topLeftOffset = with(density) { remember { IntOffset(8.dp.roundToPx(), 8.dp.roundToPx()) } }
+
+  if (selected) {
+    Image(
+      modifier = Modifier
+        .size(36.dp)
+        .offset { topLeftOffset }
+        .align(Alignment.TopStart),
+      painter = painterResource(id = R.drawable.ic_selection_checkmark_with_bg_24dp),
+      contentDescription = null
+    )
+  }
+
+  Image(
+    modifier = Modifier
+      .size(36.dp)
+      .offset { topLeftOffset }
+      .align(Alignment.TopStart),
+    painter = painterResource(id = R.drawable.ic_selection_circle_24dp),
+    contentDescription = null
+  )
+}
+
+@Composable
+private fun BoxScope.PostSubject(subject: String) {
+  val bgColor = remember { Color.Black.copy(alpha = 0.5f) }
+
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .align(Alignment.TopCenter)
+      .background(bgColor)
+      .padding(2.dp)
+  ) {
+    KurobaComposeText(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight(),
+      text = subject,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      color = Color.White,
+      textAlign = TextAlign.Center,
+      fontSize = 12.sp
+    )
+  }
+}
+
+@Composable
+private fun BoxScope.ImageInfo(albumImage: AlbumScreenViewModel.AlbumImage) {
+  val bgColor = remember { Color.Black.copy(alpha = 0.5f) }
+
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .align(Alignment.BottomCenter)
+      .background(bgColor)
+      .padding(2.dp)
+  ) {
+    KurobaComposeText(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight(),
+      text = albumImage.imageOriginalFileName,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      color = Color.White,
+      textAlign = TextAlign.Center,
+      fontSize = 12.sp
+    )
+
+    KurobaComposeText(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight(),
+      text = albumImage.imageInfo,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      color = Color.White,
+      textAlign = TextAlign.Center,
+      fontSize = 11.sp
+    )
   }
 }

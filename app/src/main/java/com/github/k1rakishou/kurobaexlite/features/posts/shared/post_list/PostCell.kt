@@ -59,7 +59,7 @@ import com.github.k1rakishou.composecustomtextselection.lib.textSelectionAfterDo
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
-import com.github.k1rakishou.kurobaexlite.helpers.util.rememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
@@ -69,7 +69,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
@@ -368,8 +367,7 @@ private fun PostCellIcon(
   postCellAnnotatedContent: ParsedPostDataCache.PostCellIcon
 ) {
   val context = LocalContext.current
-  val componentActivity = LocalComponentActivity.current
-  val postCellIconViewModel = componentActivity.rememberViewModel<PostCellIconViewModel>()
+  val postCellIconViewModel = koinRememberViewModel<PostCellIconViewModel>()
 
   var iconUrl by remember { mutableStateOf<String?>(null) }
 

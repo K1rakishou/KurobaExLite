@@ -22,7 +22,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenState
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
-import com.github.k1rakishou.kurobaexlite.helpers.util.rememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
@@ -55,8 +55,7 @@ internal fun MediaViewerToolbar(
   }
 
   val insets = LocalWindowInsets.current
-  val componentActivity = LocalComponentActivity.current
-  val kurobaToolbarContainerViewModel = componentActivity.rememberViewModel<KurobaToolbarContainerViewModel>()
+  val kurobaToolbarContainerViewModel = koinRememberViewModel<KurobaToolbarContainerViewModel>()
 
   val toolbarTotalHeight = remember(key1 = insets.top) { insets.top + toolbarHeight }
   val currentImageIndex by remember { derivedStateOf { pagerState.currentPage } }

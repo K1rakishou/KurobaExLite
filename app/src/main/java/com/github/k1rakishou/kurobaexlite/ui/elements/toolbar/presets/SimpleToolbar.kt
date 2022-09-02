@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
@@ -140,6 +141,7 @@ class SimpleToolbarStateBuilder<T : Any> private constructor(
   }
 }
 
+@Stable
 class SimpleToolbarState<T : Any>(
   override val saveableComponentKey: String,
   title: String?,

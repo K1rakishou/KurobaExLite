@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.model.BypassException
 import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import java.io.IOException
 import java.io.InterruptedIOException
 import java.io.Serializable
@@ -647,13 +648,18 @@ fun View.emulateMotionEvent(downTime: Long, eventTime: Long, action: Int, x: Flo
 }
 
 @Composable
-inline fun <reified T : ViewModel> ComponentActivity.rememberViewModel(): T {
-  return remember { this.viewModel<T>().value }
+inline fun <reified T : ViewModel> koinRememberViewModel(): T {
+  val componentActivity = LocalComponentActivity.current
+  return remember { componentActivity.viewModel<T>().value }
 }
 
 @Composable
 inline fun <reified T : Any> koinRemember(): T {
   return remember { GlobalContext.get().get<T>() }
+}
+
+inline fun <reified T : ViewModel> ComponentActivity.koinViewModel(): T {
+  return this.viewModel<T>().value
 }
 
 private const val COOKIE_HEADER_NAME = "Cookie"

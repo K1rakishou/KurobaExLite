@@ -2,8 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.util.rememberViewModel
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 
 @Composable
 fun <T : DisposableElement> AnimateableStackContainer(
@@ -56,8 +55,7 @@ fun <T : DisposableElement> AnimateableStackContainer(
 fun <T : DisposableElement> rememberAnimateableStackContainerState(
   toolbarContainerKey: String
 ): AnimateableStackContainerState<T> {
-  val componentActivity = LocalComponentActivity.current
-  val viewModel = componentActivity.rememberViewModel<AnimateableStackContainerViewModel>()
+  val viewModel = koinRememberViewModel<AnimateableStackContainerViewModel>()
 
   return viewModel.stackContainerStates.getOrPut(
     key = toolbarContainerKey,
