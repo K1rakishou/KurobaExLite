@@ -402,7 +402,7 @@ private fun PostListInternal(
       with(lazyItemScope) {
         ThreadStatusCell(
           padding = cellsPadding,
-          threadScreenViewModel = postsScreenViewModel,
+          threadScreenViewModelProvider = { postsScreenViewModel },
           onThreadStatusCellClicked = onThreadStatusCellClicked
         )
       }

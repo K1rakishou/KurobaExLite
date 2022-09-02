@@ -255,12 +255,9 @@ class FastScrollerMarksManager(
     }
   }
 
-  class FastScrollerMarks(
+  @Immutable
+  data class FastScrollerMarks(
     val marks: List<FastScrollerMark>
-  )
-
-  private class FastScrollerMarksMut(
-    val marks: MutableList<FastScrollerMark>
   )
 
   @Immutable
@@ -268,6 +265,10 @@ class FastScrollerMarksManager(
     val startPosition: Int = 0,
     val endPosition: Int = 0,
     val type: FastScrollerMarkType
+  )
+
+  private class FastScrollerMarksMut(
+    val marks: MutableList<FastScrollerMark>
   )
 
   data class FastScrollerMarkMut(

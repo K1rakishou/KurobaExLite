@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ sealed class ScrollbarDimens {
   }
 }
 
+@Stable
 interface LazyStateWrapper {
   val isScrollInProgress: Boolean
   val firstVisibleItemIndex: Int?
@@ -59,6 +61,7 @@ interface LazyStateWrapper {
   suspend fun scrollToItem(index: Int, scrollOffset: Int = 0)
 }
 
+@Stable
 class LazyListStateWrapper(
   val lazyListState: LazyListState
 ) : LazyStateWrapper {
@@ -82,6 +85,7 @@ class LazyListStateWrapper(
 
 }
 
+@Stable
 class LazyGridStateWrapper(
   val lazyGridState: LazyGridState
 ) : LazyStateWrapper {

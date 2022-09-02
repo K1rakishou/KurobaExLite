@@ -42,10 +42,12 @@ internal val threadStatusCellKey = "thread_status_cell"
 @Composable
 internal fun LazyItemScope.ThreadStatusCell(
   padding: PaddingValues,
-  threadScreenViewModel: ThreadScreenViewModel,
+  threadScreenViewModelProvider: () -> ThreadScreenViewModel,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+
+  val threadScreenViewModel = threadScreenViewModelProvider()
   val threadStatusCellDataFromState by threadScreenViewModel.postScreenState.threadCellDataState.collectAsState()
   val lastLoadError by threadScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
   val chanDescriptor = threadScreenViewModel.postScreenState.chanDescriptor
