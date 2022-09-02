@@ -258,6 +258,16 @@ class ReplyLayoutState(
     }
   }
 
+  fun closeReplyLayout() {
+    if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Expanded) {
+      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
+      onReplyLayoutVisibilityStateChanged()
+    } else if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Opened) {
+      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Closed
+      onReplyLayoutVisibilityStateChanged()
+    }
+  }
+
   override fun onBackPressed(): Boolean {
     val currentState = replyLayoutVisibilityState.value
     if (currentState == ReplyLayoutVisibility.Closed) {

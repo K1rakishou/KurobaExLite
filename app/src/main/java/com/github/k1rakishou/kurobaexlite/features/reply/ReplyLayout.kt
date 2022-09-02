@@ -171,6 +171,7 @@ fun ReplyLayoutContainer(
         attachedMediaList = attachedMediaList,
         onExpandReplyLayoutClicked = { replyLayoutState.expandReplyLayout() },
         onCollapseReplyLayoutClicked = { replyLayoutState.collapseReplyLayout() },
+        onCloseReplyLayoutClicked = { replyLayoutState.closeReplyLayout() },
         onCancelReplySendClicked = { replyLayoutViewModel.cancelSendReply(replyLayoutState) },
         onSendReplyClicked = { replyLayoutViewModel.sendReply(chanDescriptor, replyLayoutState) },
         onAttachedMediaClicked = onAttachedMediaClicked,
@@ -192,6 +193,7 @@ private fun ReplyLayout(
   attachedMediaList: List<AttachedMedia>,
   onExpandReplyLayoutClicked: () -> Unit,
   onCollapseReplyLayoutClicked: () -> Unit,
+  onCloseReplyLayoutClicked: () -> Unit,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
@@ -229,6 +231,7 @@ private fun ReplyLayout(
       replyLayoutState = replyLayoutState,
       onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
       onCollapseReplyLayoutClicked = onCollapseReplyLayoutClicked,
+      onCloseReplyLayoutClicked = onCloseReplyLayoutClicked,
       onCancelReplySendClicked = onCancelReplySendClicked,
       onSendReplyClicked = onSendReplyClicked
     )

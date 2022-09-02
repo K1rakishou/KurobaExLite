@@ -18,7 +18,9 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.FixedScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
@@ -29,6 +31,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
@@ -45,6 +49,7 @@ fun ReplyInputWithButtons(
   replyLayoutState: ReplyLayoutState,
   onExpandReplyLayoutClicked: () -> Unit,
   onCollapseReplyLayoutClicked: () -> Unit,
+  onCloseReplyLayoutClicked: () -> Unit,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit
 ) {
@@ -104,6 +109,7 @@ fun ReplyInputWithButtons(
           replyLayoutEnabled = replyLayoutEnabled,
           onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
           onCollapseReplyLayoutClicked = onCollapseReplyLayoutClicked,
+          onCloseReplyLayoutClicked = onCloseReplyLayoutClicked,
           sendReplyState = sendReplyState,
           onCancelReplySendClicked = onCancelReplySendClicked,
           onSendReplyClicked = onSendReplyClicked,
@@ -184,6 +190,7 @@ private fun ReplyButtons(
   replyLayoutEnabled: Boolean,
   onExpandReplyLayoutClicked: () -> Unit,
   onCollapseReplyLayoutClicked: () -> Unit,
+  onCloseReplyLayoutClicked: () -> Unit,
   sendReplyState: SendReplyState,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit,
@@ -193,76 +200,147 @@ private fun ReplyButtons(
     modifier = Modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
-    run {
-      val drawableId = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
-        R.drawable.ic_baseline_arrow_drop_down_24
-      } else {
-        R.drawable.ic_baseline_arrow_drop_up_24
-      }
+    ExpandCollapseButton(
+      replyLayoutVisibility = replyLayoutVisibility,
+      iconSize = iconSize,
+      replyLayoutEnabled = replyLayoutEnabled,
+      onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
+      onCollapseReplyLayoutClicked = onCollapseReplyLayoutClicked
+    )
 
-      val iconScale = remember { FixedScale(2f) }
+    SendReplyButton(
+      sendReplyState = sendReplyState,
+      iconSize = iconSize,
+      onCancelReplySendClicked = onCancelReplySendClicked,
+      onSendReplyClicked = onSendReplyClicked,
+      replySendProgress = replySendProgress
+    )
 
-      Box(modifier = Modifier.size(iconSize)) {
-        KurobaComposeIcon(
-          modifier = Modifier
-            .fillMaxSize()
-            .padding(4.dp)
-            .kurobaClickable(
-              enabled = replyLayoutEnabled,
-              bounded = false,
-              onClick = {
-                when (replyLayoutVisibility) {
-                  ReplyLayoutVisibility.Closed -> {
-                    // no-op
-                  }
-                  ReplyLayoutVisibility.Opened -> onExpandReplyLayoutClicked()
-                  ReplyLayoutVisibility.Expanded -> onCollapseReplyLayoutClicked()
-                }
+    Spacer(modifier = Modifier.weight(1f))
+
+    CloseReplyLayoutButton(
+      iconSize = iconSize,
+      onCloseReplyLayoutClicked = onCloseReplyLayoutClicked
+    )
+  }
+}
+
+@Composable
+private fun ExpandCollapseButton(
+  replyLayoutVisibility: ReplyLayoutVisibility,
+  iconSize: Dp,
+  replyLayoutEnabled: Boolean,
+  onExpandReplyLayoutClicked: () -> Unit,
+  onCollapseReplyLayoutClicked: () -> Unit
+) {
+  val drawableId = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
+    R.drawable.ic_baseline_arrow_drop_down_24
+  } else {
+    R.drawable.ic_baseline_arrow_drop_up_24
+  }
+
+  val iconScale = remember { FixedScale(2f) }
+
+  Box(modifier = Modifier.size(iconSize)) {
+    KurobaComposeIcon(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(4.dp)
+        .kurobaClickable(
+          enabled = replyLayoutEnabled,
+          bounded = false,
+          onClick = {
+            when (replyLayoutVisibility) {
+              ReplyLayoutVisibility.Closed -> {
+                // no-op
               }
-            ),
-          drawableId = drawableId,
-          contentScale = iconScale,
-          enabled = replyLayoutEnabled
-        )
-      }
+              ReplyLayoutVisibility.Opened -> onExpandReplyLayoutClicked()
+              ReplyLayoutVisibility.Expanded -> onCollapseReplyLayoutClicked()
+            }
+          }
+        ),
+      drawableId = drawableId,
+      contentScale = iconScale,
+      enabled = replyLayoutEnabled
+    )
+  }
+}
+
+@Composable
+private fun SendReplyButton(
+  sendReplyState: SendReplyState,
+  iconSize: Dp,
+  onCancelReplySendClicked: () -> Unit,
+  onSendReplyClicked: () -> Unit,
+  replySendProgress: Float?
+) {
+  val buttonDrawableId = remember(key1 = sendReplyState) {
+    if (sendReplyState.canCancel) {
+      R.drawable.ic_baseline_close_24
+    } else {
+      R.drawable.ic_baseline_send_24
     }
+  }
 
-    run {
-      val buttonDrawableId = remember(key1 = sendReplyState) {
-        if (sendReplyState.canCancel) {
-          R.drawable.ic_baseline_close_24
-        } else {
-          R.drawable.ic_baseline_send_24
-        }
-      }
+  Box(modifier = Modifier.size(iconSize)) {
+    KurobaComposeIcon(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(4.dp)
+        .kurobaClickable(
+          bounded = false,
+          onClick = {
+            if (sendReplyState.canCancel) {
+              onCancelReplySendClicked()
+            } else {
+              onSendReplyClicked()
+            }
+          }
+        ),
+      drawableId = buttonDrawableId
+    )
 
-      Box(modifier = Modifier.size(iconSize)) {
-        KurobaComposeIcon(
-          modifier = Modifier
-            .fillMaxSize()
-            .padding(4.dp)
-            .kurobaClickable(
-              bounded = false,
-              onClick = {
-                if (sendReplyState.canCancel) {
-                  onCancelReplySendClicked()
-                } else {
-                  onSendReplyClicked()
-                }
-              }
-            ),
-          drawableId = buttonDrawableId
-        )
-
-        if (replySendProgress != null && replySendProgress > 0f) {
-          KurobaComposeLoadingIndicator(
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(4.dp),
-            progress = replySendProgress
-          )
-        }
-      }
+    if (replySendProgress != null && replySendProgress > 0f) {
+      KurobaComposeLoadingIndicator(
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(4.dp),
+        progress = replySendProgress
+      )
     }
+  }
+}
+
+@Composable
+private fun CloseReplyLayoutButton(
+  iconSize: Dp,
+  onCloseReplyLayoutClicked: () -> Unit
+) {
+  val androidHelpers = koinRemember<AndroidHelpers>()
+  val view = LocalView.current
+  val navigationGesturesUsed = remember { androidHelpers.navigationGesturesUsed(view) }
+
+  // Just press the back button on the navigation bar to close it.
+  if (!navigationGesturesUsed) {
+    return
+  }
+
+  val iconScale = remember { FixedScale(2f) }
+
+  Box(modifier = Modifier.size(iconSize)) {
+    KurobaComposeIcon(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(4.dp)
+        .graphicsLayer {
+          rotationZ = 90f
+        }
+        .kurobaClickable(
+          bounded = false,
+          onClick = onCloseReplyLayoutClicked
+        ),
+      drawableId = R.drawable.ic_baseline_chevron_right_24,
+      contentScale = iconScale,
+    )
   }
 }

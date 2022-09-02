@@ -11,7 +11,10 @@ import android.os.Build
 import android.os.StatFs
 import android.os.SystemClock
 import android.text.TextUtils
+import android.view.View
 import android.view.WindowManager
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
@@ -230,6 +233,14 @@ class AndroidHelpers(
 
   fun copyToClipboard(label: String, content: String) {
     clipboardManager.setPrimaryClip(ClipData.newPlainText(label, content))
+  }
+
+  fun navigationGesturesUsed(view: View): Boolean {
+    val rootWindowInsets = ViewCompat.getRootWindowInsets(view)
+      ?: return false
+
+    val systemGestures = rootWindowInsets.getInsets(WindowInsetsCompat.Type.systemGestures())
+    return systemGestures.left > 0 || systemGestures.right > 0
   }
 
   enum class FlavorType {
