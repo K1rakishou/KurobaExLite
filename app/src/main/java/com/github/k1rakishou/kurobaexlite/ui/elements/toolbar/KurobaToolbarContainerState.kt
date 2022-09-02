@@ -139,8 +139,10 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
     DisposableEffect(
       key1 = Unit,
       effect = {
-        backPressHandlers += backPressHandler
-        onDispose { backPressHandlers -= backPressHandler }
+        val localBackPressHandler = backPressHandler
+
+        backPressHandlers += localBackPressHandler
+        onDispose { backPressHandlers -= localBackPressHandler }
       }
     )
   }

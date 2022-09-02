@@ -25,8 +25,10 @@ class MainNavigationRouter : NavigationRouter(
     DisposableEffect(
       key1 = Unit,
       effect = {
-        backPressHandlers += onBackPressHandler
-        onDispose { backPressHandlers -= onBackPressHandler }
+        val localBackPressHandler = onBackPressHandler
+
+        backPressHandlers += localBackPressHandler
+        onDispose { backPressHandlers -= localBackPressHandler }
       }
     )
   }
