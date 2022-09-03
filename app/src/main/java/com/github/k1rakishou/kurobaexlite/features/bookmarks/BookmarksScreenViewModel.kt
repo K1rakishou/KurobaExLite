@@ -87,7 +87,7 @@ class BookmarksScreenViewModel(
         .takeIf { position -> position >= 0 }
         ?: 0
 
-      val deletedBookmark = deleteBookmarks.deleteFrom(threadDescriptor, oldPosition)
+      val deletedBookmark = deleteBookmarks.deleteFromMemoryCache(threadDescriptor, oldPosition)
       if (deletedBookmark != null) {
         onBookmarkDeleted(deletedBookmark, oldPosition)
       }

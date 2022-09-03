@@ -49,6 +49,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -207,6 +208,7 @@ private fun KurobaSnackbarLayout(
         hasClickableItems = snackbarInfo.hasClickableItems,
         aliveUntil = snackbarInfo.aliveUntil,
         snackbarId = snackbarInfo.snackbarId,
+        snackbarIdForCompose = snackbarInfo.snackbarIdForCompose,
         content = snackbarInfo.content,
         onSnackbarClicked = { snackbarClickable, snackbarId ->
           snackbarManager.onSnackbarElementClicked(snackbarClickable)
@@ -226,6 +228,7 @@ private fun RowScope.KurobaSnackbarContent(
   aliveUntil: Long?,
   content: List<SnackbarContentItem>,
   snackbarId: SnackbarId,
+  snackbarIdForCompose: Long,
   onSnackbarClicked: (SnackbarClickable, SnackbarId) -> Unit,
   onDismissSnackbar: (SnackbarId) -> Unit
 ) {
@@ -233,13 +236,14 @@ private fun RowScope.KurobaSnackbarContent(
   val textSize = if (isTablet) 18.sp else 16.sp
 
   if (!snackbarType.isToast && hasClickableItems && aliveUntil != null) {
-    val startTime = remember(key1 = snackbarId) { SystemClock.elapsedRealtime() }
-    var progress by remember(key1 = snackbarId) { mutableStateOf(1f) }
+    val startTime = remember(key1 = snackbarIdForCompose) { SystemClock.elapsedRealtime() }
+    var progress by remember(key1 = snackbarIdForCompose) { mutableStateOf(1f) }
 
     LaunchedEffect(
-      key1 = snackbarId,
+      key1 = snackbarIdForCompose,
       block = {
         val timeDelta = aliveUntil - startTime
+        val delayMs = 16 * 5L
 
         while (isActive) {
           val currentTimeDelta = aliveUntil - SystemClock.elapsedRealtime()
@@ -248,7 +252,7 @@ private fun RowScope.KurobaSnackbarContent(
           }
 
           progress = currentTimeDelta.toFloat() / timeDelta.toFloat()
-          delay(16 * 5)
+          delay(delayMs)
         }
 
         progress = 0f
@@ -437,6 +441,7 @@ class SnackbarInfo(
   val content: List<SnackbarContentItem>,
   val snackbarType: SnackbarType = SnackbarType.Default
 ) {
+  val snackbarIdForCompose: Long = nextSnackbarIdForCompose()
 
   val hasClickableItems: Boolean
     get() = content.any { contentItem -> contentItem is SnackbarClickable }
@@ -466,6 +471,10 @@ class SnackbarInfo(
   }
 
   companion object {
+    private val snackbarIdsForCompose = AtomicLong(0)
+
+    fun nextSnackbarIdForCompose(): Long = snackbarIdsForCompose.incrementAndGet()
+
     fun snackbarDuration(duration: Duration): Long {
       return SystemClock.elapsedRealtime() + duration.inWholeMilliseconds
     }
