@@ -36,7 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -47,6 +46,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
@@ -73,12 +73,11 @@ private val durationFormatter = PeriodFormatterBuilder()
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun DisplayVideo(
+  snackbarManager: SnackbarManager = koinRemember(),
   pageIndex: Int,
   pagerState: PagerState,
-  toolbarHeight: Dp,
-  mpvSettings: MpvSettings,
   postImageDataLoadState: ImageLoadState.Ready,
-  snackbarManager: SnackbarManager,
+  mpvSettingsProvider: () -> MpvSettings,
   checkLibrariesInstalledAndLoaded: () -> Boolean,
   onPlayerLoaded: () -> Unit,
   onPlayerUnloaded: () -> Unit,
@@ -108,7 +107,7 @@ fun DisplayVideo(
     DisplayMpvLibrariesAreNotLoadedError(
       onVideoTapped = onVideoTapped,
       context = context,
-      mpvSettings = mpvSettings,
+      mpvSettings = mpvSettingsProvider(),
       installMpvLibsFromGithubButtonClicked = installMpvLibsFromGithubButtonClicked
     )
 
@@ -297,7 +296,7 @@ fun DisplayVideo(
     DisposableEffect(
       key1 = videoMediaState,
       effect = {
-        mpvView.attach(mpvSettings)
+        mpvView.attach(mpvSettingsProvider())
         mpvView.addObserver(eventObserver)
         MPVLib.addLogObserver(logObserver)
 

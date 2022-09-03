@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import logcat.logcat
 
+@Stable
 class MediaViewerScreenState(
   private val savedStateHandle: SavedStateHandle,
   private val appSettings: AppSettings,

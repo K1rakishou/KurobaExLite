@@ -174,6 +174,9 @@ private fun MediaToolbar(
                 val postImageToDownload = images.getOrNull(currentPagerPage)?.postImage
                   ?: return@let
 
+                defaultToolbarState.findIconByKey(ToolbarIcons.DownloadMedia)
+                  ?.let { downloadMediaIcon -> downloadMediaIcon.enabled.value = false }
+
                 onDownloadMediaClicked(postImageToDownload)
               }
           }

@@ -171,6 +171,14 @@ class SimpleToolbarState<T : Any>(
     bundle?.getString(SUBTITLE_KEY)?.let { subtitle -> toolbarSubtitleState.value = subtitle }
   }
 
+  fun findIconByKey(key: T) : KurobaToolbarIcon<T>? {
+    if (leftIcon.key == key) {
+      return leftIcon
+    }
+
+    return rightIcons.firstOrNull { icon -> icon.key == key }
+  }
+
   fun onIconClicked(iconKey: T) {
     _iconClickEvents.tryEmit(iconKey)
   }

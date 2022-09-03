@@ -142,6 +142,19 @@ class AlbumScreen(
     kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcons>>(kurobaToolbarContainerViewModelKey)
   }
 
+  override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
+
+  override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
+    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
+      componentActivity.koinViewModel<AlbumScreenViewModel>().let { albumScreenViewModel ->
+        albumScreenViewModel.clearAllImageKeys()
+        albumScreenViewModel.clearSelection()
+      }
+    }
+
+    super.onDisposed(screenDisposeEvent)
+  }
+
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val coroutineScope = rememberCoroutineScope()
@@ -156,19 +169,6 @@ class AlbumScreen(
         onBackPressed = { coroutineScope.launch { onBackPressed() } }
       )
     }
-  }
-
-  override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
-
-  override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
-      componentActivity.koinViewModel<AlbumScreenViewModel>().let { albumScreenViewModel ->
-        albumScreenViewModel.clearAllImageKeys()
-        albumScreenViewModel.clearSelection()
-      }
-    }
-
-    super.onDisposed(screenDisposeEvent)
   }
 
   @Composable

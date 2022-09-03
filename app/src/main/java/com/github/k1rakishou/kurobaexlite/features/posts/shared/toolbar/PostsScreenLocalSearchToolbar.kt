@@ -117,8 +117,6 @@ class PostsScreenLocalSearchToolbar(
       leftPart = {
         KurobaComposeIcon(
           modifier = Modifier
-            .padding(horizontal = toolbarIconPadding)
-            .size(toolbarIconSize)
             .kurobaClickable(
               bounded = false,
               onClick = {
@@ -134,7 +132,9 @@ class PostsScreenLocalSearchToolbar(
                   }
                 }
               }
-            ),
+            )
+            .size(toolbarIconSize)
+            .padding(horizontal = toolbarIconPadding),
           drawableId = if (searchQuery.text.isNotEmpty()) {
             R.drawable.ic_baseline_clear_24
           } else {

@@ -1,8 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
+import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import java.io.File
 
+@Immutable
 sealed class ImageLoadState {
   abstract val postImage: IPostImage
 

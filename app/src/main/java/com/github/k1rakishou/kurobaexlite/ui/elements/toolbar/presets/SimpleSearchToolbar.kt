@@ -76,8 +76,6 @@ class SimpleSearchToolbar(
       leftPart = {
         KurobaComposeIcon(
           modifier = Modifier
-            .padding(horizontal = toolbarIconPadding)
-            .size(toolbarIconSize)
             .kurobaClickable(
               bounded = false,
               onClick = {
@@ -92,7 +90,9 @@ class SimpleSearchToolbar(
                   }
                 }
               }
-            ),
+            )
+            .size(toolbarIconSize)
+            .padding(horizontal = toolbarIconPadding),
           drawableId = if (searchQuery.text.isNotEmpty()) {
             R.drawable.ic_baseline_clear_24
           } else {

@@ -1,12 +1,14 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import kotlinx.parcelize.Parcelize
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 
 
+@Immutable
 sealed class MediaViewerParams : Parcelable {
   abstract val chanDescriptor: ChanDescriptor
   abstract val initialImageUrlString: String

@@ -59,6 +59,7 @@ import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
+import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen.Companion.defaultIsDragGestureAllowedFunc
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.DisplayLoadingProgressIndicator
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.DraggableArea
@@ -71,17 +72,20 @@ import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayU
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayVideo
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.model.data.originalFileNameWithExtension
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
@@ -95,7 +99,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
@@ -121,11 +124,7 @@ class MediaViewerScreen(
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
-  private val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
-  private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
-
-  private val defaultIsDragGestureAllowedFunc: (currPosition: Offset, startPosition: Offset) -> Boolean = { _, _ -> true }
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -143,9 +142,7 @@ class MediaViewerScreen(
   @Composable
   override fun BackgroundContent() {
     Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .consumeClicks(enabled = true)
+      modifier = Modifier.fillMaxSize()
     ) {
       CardContent()
     }
@@ -154,14 +151,18 @@ class MediaViewerScreen(
   @OptIn(ExperimentalComposeUiApi::class)
   @Composable
   override fun CardContent() {
-    val softwareKeyboardController = LocalSoftwareKeyboardController.current
-    val mediaViewerScreenState = mediaViewerScreenViewModel.mediaViewerScreenState
-
     val mediaViewerParamsMut by listenForArgumentsNullable<MediaViewerParams?>(mediaViewerParamsKey, null).collectAsState()
     val openedFromScreenMut by listenForArgumentsNullable<ScreenKey?>(openedFromScreenKey, null).collectAsState()
 
     val mediaViewerParams = mediaViewerParamsMut ?: return
     val openedFromScreen = openedFromScreenMut ?: return
+
+    val context = LocalContext.current
+    val softwareKeyboardController = LocalSoftwareKeyboardController.current
+    val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val mediaViewerScreenState = mediaViewerScreenViewModel.mediaViewerScreenState
 
     LaunchedEffect(
       key1 = Unit,
@@ -188,850 +189,37 @@ class MediaViewerScreen(
 
     CardContentInternal(
       mediaViewerParams = mediaViewerParams,
-      openedFromScreen = openedFromScreen,
-      mediaViewerScreenState = mediaViewerScreenState
-    )
-  }
-
-  @Composable
-  private fun CardContentInternal(
-    mediaViewerParams: MediaViewerParams,
-    openedFromScreen: ScreenKey,
-    mediaViewerScreenState: MediaViewerScreenState
-  ) {
-    val chanTheme = LocalChanTheme.current
-    val insets = LocalWindowInsets.current
-    val coroutineScope = rememberCoroutineScope()
-    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-
-    var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getBounds()) }
-    var transitionFinished by remember { mutableStateOf(false) }
-    var previewLoadingFinished by remember { mutableStateOf(false) }
-
-    val animatable = remember { Animatable(0f) }
-    val animationProgress by animatable.asState()
-
-    var availableSizeMut by remember(key1 = Unit) { mutableStateOf<IntSize>(IntSize.Zero) }
-    val availableSize = availableSizeMut
-
-    val bgColor = Color.Black
-
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .graphicsLayer { alpha = animationProgress }
-        .background(bgColor)
-        .onSizeChanged { newSize -> availableSizeMut = newSize }
-    ) {
-      InitMediaViewerData(
-        mediaViewerScreenState = mediaViewerScreenState,
-        mediaViewerParams = mediaViewerParams
-      )
-
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .graphicsLayer {
-            alpha = if (transitionFinished && previewLoadingFinished) 1f else 0f
-          }
-      ) {
-        if (availableSize.width > 0 && availableSize.height > 0) {
-          ContentAfterTransition(
-            mediaViewerScreenState = mediaViewerScreenState,
-            chanTheme = chanTheme,
-            availableSize = availableSize,
-            toolbarHeight = toolbarHeight,
-            openedFromScreen = openedFromScreen,
-            coroutineScope = coroutineScope,
-            insets = insets,
-            onPreviewLoadingFinished = { postImage ->
-              if (previewLoadingFinished) {
-                return@ContentAfterTransition
-              }
-
-              val bounds = clickedThumbnailBounds
-              val previewLoadingFinishedForOutThumbnail = bounds == null ||
-                postImage.fullImageAsString == bounds.postImage.fullImageAsString
-
-              logcat(TAG, LogPriority.VERBOSE) {
-                "onPreviewLoadingFinished() " +
-                  "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
-                  "got '${postImage.fullImageAsString}', " +
-                  "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
-              }
-
-              if (previewLoadingFinishedForOutThumbnail) {
-                previewLoadingFinished = true
-              }
-            }
-          )
-        }
-      }
-
-      TransitionPreview(
-        animatable = animatable,
-        clickedThumbnailBounds = clickedThumbnailBounds,
-        onTransitionFinished = {
-          if (!transitionFinished) {
-            logcat(TAG, LogPriority.VERBOSE) {
-              "onTransitionFinished() for image '${clickedThumbnailBounds?.postImage?.fullImageAsString}'"
-            }
-
-            animatable.snapTo(1f)
-            transitionFinished = true
-          }
-        }
-      )
-
-      LaunchedEffect(
-        key1 = transitionFinished,
-        key2 = previewLoadingFinished,
-        block = {
-          if (transitionFinished && previewLoadingFinished && clickedThumbnailBounds != null) {
-            clickedThumbnailBounds = null
-            clickedThumbnailBoundsStorage.consumeBounds()
-          }
-        }
-      )
-    }
-  }
-
-  @OptIn(ExperimentalPagerApi::class)
-  @Composable
-  private fun BoxScope.ContentAfterTransition(
-    mediaViewerScreenState: MediaViewerScreenState,
-    chanTheme: ChanTheme,
-    availableSize: IntSize,
-    toolbarHeight: Dp,
-    openedFromScreen: ScreenKey,
-    coroutineScope: CoroutineScope,
-    insets: Insets,
-    onPreviewLoadingFinished: (IPostImage) -> Unit
-  ) {
-    var pagerStateHolderMut by remember { mutableStateOf<PagerState?>(null) }
-    val pagerStateHolder = pagerStateHolderMut
-
-    val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
-    val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
-    val images = mediaViewerScreenState.mediaList
-
-    val bgColor = remember(chanTheme.backColor) {
-      chanTheme.backColor.copy(alpha = 0.5f)
-    }
-
-    MediaViewerPagerContainer(
-      availableSize = availableSize,
-      toolbarHeight = toolbarHeight,
+      screenKey = screenKey,
       openedFromScreen = openedFromScreen,
       mediaViewerScreenState = mediaViewerScreenState,
-      onViewPagerInitialized = { pagerState -> pagerStateHolderMut = pagerState },
-      onPreviewLoadingFinished = onPreviewLoadingFinished
-    )
-
-    if (pagerStateHolder == null || images.isEmpty()) {
-      return
-    }
-
-    val mediaViewerUiVisible by mediaViewerScreenState.mediaViewerUiVisible
-    val mediaViewerUiAlpha by animateFloatAsState(
-      targetValue = if (mediaViewerUiVisible) 1f else 0f,
-      animationSpec = tween(durationMillis = 300)
-    )
-
-    Box(
-      modifier = Modifier.Companion
-        .align(Alignment.TopCenter)
-        .alpha(mediaViewerUiAlpha)
-        .passClicksThrough(passClicks = !mediaViewerUiVisible)
-        .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
-        .background(bgColor)
-    ) {
-      val context = LocalContext.current
-      val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
-
-      MediaViewerToolbar(
-        toolbarHeight = toolbarHeight,
-        backgroundColor = bgColor,
-        screenKey = screenKey,
-        mediaViewerScreenState = mediaViewerScreenState,
-        pagerState = pagerStateHolder,
-        onDownloadMediaClicked = { postImage ->
-          onDownloadButtonClicked(
-            context = context,
-            runtimePermissionsHelper = runtimePermissionsHelper,
-            postImage = postImage
-          )
-        },
-        onBackPressed = { coroutineScope.launch { onBackPressed() } }
-      )
-    }
-
-    val currentPageIndex by remember { derivedStateOf { pagerStateHolder.currentPage } }
-    val currentLoadedMedia = remember(key1 = currentPageIndex) {
-      mediaViewerScreenState.currentlyLoadedMediaMap[currentPageIndex]
-    }
-
-    val targetAlpha = if (
-      mediaViewerScreenViewModel.mpvInitialized &&
-      currentLoadedMedia is MediaState.Video &&
-      mediaViewerUiVisible
-    ) {
-      1f
-    } else {
-      0f
-    }
-
-    val alphaAnimated by animateFloatAsState(
-      targetValue = targetAlpha,
-      animationSpec = tween(durationMillis = 300)
-    )
-
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .align(Alignment.BottomCenter)
-        .passClicksThrough(passClicks = !mediaViewerUiVisible)
-        .graphicsLayer { this.alpha = alphaAnimated }
-        .background(bgColor)
-    ) {
-      if (currentLoadedMedia is MediaState.Video) {
-        MediaViewerScreenVideoControls(currentLoadedMedia)
-      }
-
-      Spacer(modifier = Modifier.height(insets.bottom))
-    }
-
-    if (images.isNotNullNorEmpty()) {
-      val toolbarCalculatedHeight by toolbarTotalHeight
-
-      val actualToolbarCalculatedHeight = remember(
-        key1 = toolbarCalculatedHeight,
-        key2 = globalMediaViewerControlsVisible,
-      ) {
-        if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
-          return@remember null
-        }
-
-        return@remember toolbarCalculatedHeight
-      }
-
-      if (toolbarCalculatedHeight != null) {
-        Box(
-          modifier = Modifier
-            .align(Alignment.TopCenter)
-            .alpha(mediaViewerUiAlpha)
-            .passClicksThrough(passClicks = !mediaViewerUiVisible)
-        ) {
-          MediaViewerPreviewStrip(
-            pagerState = pagerStateHolder,
-            images = images,
-            mediaViewerScreenState = mediaViewerScreenState,
-            bgColor = bgColor,
-            toolbarHeightPx = actualToolbarCalculatedHeight,
-            onPreviewClicked = { postImage ->
-              coroutineScope.launch {
-                images
-                  .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
-                  .takeIf { index -> index >= 0 }
-                  ?.let { scrollIndex -> pagerStateHolder.scrollToPage(scrollIndex) }
-              }
-            }
-          )
-        }
-      }
-    }
-  }
-
-  private fun onDownloadButtonClicked(
-    context: Context,
-    runtimePermissionsHelper: RuntimePermissionsHelper,
-    postImage: IPostImage
-  ) {
-    // On Q and above we use MediaStore which does not require us requesting the permission
-    if (
-      androidHelpers.isAndroidQ() ||
-      runtimePermissionsHelper.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    ) {
-      downloadMediaActual(context, postImage)
-      return
-    }
-
-    runtimePermissionsHelper.requestPermission(
-      permission = Manifest.permission.WRITE_EXTERNAL_STORAGE,
-      callback = object : RuntimePermissionsHelper.Callback {
-        override fun onRuntimePermissionResult(granted: Boolean) {
-          if (granted) {
-            downloadMediaActual(context, postImage)
-            return
-          }
-
-          val message = context.resources.getString(R.string.media_viewer_download_failed_no_permission)
-          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
-        }
-      }
-    )
-  }
-
-  private fun downloadMediaActual(context: Context, postImage: IPostImage) {
-    mediaViewerScreenViewModel.downloadMedia(
-      postImage = postImage,
-      onResult = { mediaDownloadResult ->
-        if (mediaDownloadResult.isSuccess) {
-          val message = context.resources.getString(
-            R.string.media_viewer_download_success,
-            postImage.originalFileNameWithExtension()
-          )
-
-          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
-        } else {
-          val error = mediaDownloadResult.exceptionOrThrow()
-          val message = context.resources.getString(
-            R.string.media_viewer_download_failed,
-            postImage.originalFileNameWithExtension(),
-            error.errorMessageOrClassName()
-          )
-
-          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
-        }
-      }
-    )
-  }
-
-  @Composable
-  private fun TransitionPreview(
-    animatable: Animatable<Float, AnimationVector1D>,
-    clickedThumbnailBounds: ClickedThumbnailBoundsStorage.ClickedThumbnailBounds?,
-    onTransitionFinished: suspend () -> Unit
-  ) {
-    if (clickedThumbnailBounds == null) {
-      LaunchedEffect(
-        key1 = Unit,
-        block = {
-          logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() clickedThumbnailBounds == null" }
-          onTransitionFinished()
-        }
-      )
-
-      return
-    }
-
-    val bitmapMatrix = remember { Matrix() }
-    val postImage = clickedThumbnailBounds.postImage
-    val srcBounds = clickedThumbnailBounds.bounds
-
-    val bitmapPaint = remember {
-      Paint().apply {
-        isAntiAlias = true
-        isFilterBitmap = true
-      }
-    }
-
-    var bitmapMut by remember { mutableStateOf<Bitmap?>(null) }
-    val bitmap = bitmapMut
-    val context = LocalContext.current.applicationContext
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        var success = false
-
-        try {
-          withTimeout(timeMillis = 1000) {
-            bitmapMut = mediaViewerScreenViewModel.loadThumbnailBitmap(context, postImage)
-          }
-
-          success = true
-        } catch (error: Throwable) {
-          logcatError(TAG) { "loadThumbnailBitmap() error: ${error.errorMessageOrClassName()}" }
-          success = false
-        } finally {
-          if (!success) {
-            logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() success: false" }
-            onTransitionFinished()
-          }
-        }
-      }
-    )
-
-    if (bitmap == null) {
-      return
-    }
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        try {
-          animatable.animateTo(1f, animationSpec = tween(250))
-        } finally {
-          logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() success: true" }
-          onTransitionFinished()
-        }
-      }
-    )
-
-    val animationProgress by animatable.asState()
-
-    Canvas(
-      modifier = Modifier.fillMaxSize(),
-      onDraw = {
-        val nativeCanvas = drawContext.canvas.nativeCanvas
-
-        val scale = Math.min(
-          nativeCanvas.width.toFloat() / bitmap.width,
-          nativeCanvas.height.toFloat() / bitmap.height
+      onDownloadButtonClicked = { postImage ->
+        onDownloadButtonClicked(
+          context = context,
+          runtimePermissionsHelper = runtimePermissionsHelper,
+          postImage = postImage
         )
-
-        val dstWidth = bitmap.width * scale
-        val dstHeight = bitmap.height * scale
-
-        bitmapMatrix.reset()
-        bitmapMatrix.setScale(
-          lerpFloat(1f, scale, animationProgress),
-          lerpFloat(1f, scale, animationProgress)
+      },
+      onInstallMpvLibsFromGithubButtonClicked = {
+        onInstallMpvLibsFromGithubButtonClicked(
+          mpvSettings = mediaViewerScreenViewModel.mpvSettings,
+          context = context.applicationContext
         )
-
-        val startX = srcBounds.left
-        val endX = (nativeCanvas.width.toFloat() - dstWidth) / 2f
-
-        val startY = srcBounds.top
-        val endY = (nativeCanvas.height.toFloat() - dstHeight) / 2f
-
-        nativeCanvas.withTranslation(
-          x = lerpFloat(startX, endX, animationProgress),
-          y = lerpFloat(startY, endY, animationProgress)
-        ) {
-          nativeCanvas.drawBitmap(bitmap, bitmapMatrix, bitmapPaint)
-        }
-      }
-    )
-  }
-
-  @Composable
-  private fun InitMediaViewerData(
-    mediaViewerScreenState: MediaViewerScreenState,
-    mediaViewerParams: MediaViewerParams
-  ) {
-    LaunchedEffect(
-      key1 = mediaViewerScreenState,
-      key2 = mediaViewerParams,
-      block = {
-        val initResult = when (mediaViewerParams) {
-          is MediaViewerParams.Catalog,
-          is MediaViewerParams.Thread -> {
-            mediaViewerScreenViewModel.initFromCatalogOrThreadDescriptor(
-              chanDescriptor = mediaViewerParams.chanDescriptor,
-              initialImageUrl = mediaViewerParams.initialImageUrl
-            )
-          }
-          is MediaViewerParams.Images -> {
-            mediaViewerScreenViewModel.initFromImageList(
-              chanDescriptor = mediaViewerParams.chanDescriptor,
-              images = mediaViewerParams.images,
-              initialImageUrl = mediaViewerParams.initialImageUrl
-            )
-          }
-        }
-
-        mediaViewerScreenState.init(
-          chanDescriptor = mediaViewerParams.chanDescriptor,
-          images = initResult.images,
-          pageIndex = initResult.initialPage,
-          sourceType = initResult.sourceType,
-          mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
-        )
-      }
-    )
-  }
-
-  @OptIn(ExperimentalPagerApi::class)
-  @Composable
-  private fun MediaViewerPagerContainer(
-    availableSize: IntSize,
-    toolbarHeight: Dp,
-    openedFromScreen: ScreenKey,
-    mediaViewerScreenState: MediaViewerScreenState,
-    onViewPagerInitialized: (PagerState) -> Unit,
-    onPreviewLoadingFinished: (IPostImage) -> Unit
-  ) {
-    val context = LocalContext.current
-    val currentPageIndexForInitialScrollMut by mediaViewerScreenState.currentPageIndex
-    val imagesMut = mediaViewerScreenState.mediaList
-
-    val currentPageIndexForInitialScroll = currentPageIndexForInitialScrollMut
-    val images = imagesMut
-
-    if (currentPageIndexForInitialScroll == null || images.isEmpty()) {
-      return
-    }
-
-    if (images.isEmpty()) {
-      val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
-
-      InsetsAwareBox(
-        modifier = Modifier.fillMaxSize(),
-        additionalPaddings = additionalPaddings
-      ) {
-        KurobaComposeText(text = stringResource(id = R.string.media_viewer_no_images_to_show))
-      }
-
-      return
-    }
-
-    val mpvSettings = mediaViewerScreenViewModel.mpvSettings
-
-    val mpvLibsInstalledAndLoaded = remember {
-      lazy {
-        val librariesInstalled = MPVLib.checkLibrariesInstalled(context.applicationContext, mpvSettings)
-        if (!librariesInstalled) {
-          return@lazy false
-        }
-
-        return@lazy MPVLib.librariesAreLoaded()
-      }
-    }
-
-    var initialScrollHappened by remember { mutableStateOf(false) }
-    val initialScrollHappenedUpdated by rememberUpdatedState(newValue = initialScrollHappened)
-
-    val pagerState = rememberPagerState()
-    val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
-    val isScrollInProgress by remember { derivedStateOf { pagerState.isScrollInProgress } }
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        mediaViewerScreenState.mediaNavigationEventFlow.collectLatest { mediaNavigationEvent ->
-          if (!initialScrollHappenedUpdated) {
-            return@collectLatest
-          }
-
-          val currentPage = pagerState.currentPage
-          val pageCount = pagerState.pageCount
-
-          var nextPage = when (mediaNavigationEvent) {
-            MediaViewerScreenState.MediaNavigationEvent.GoToPrev -> currentPage - 1
-            MediaViewerScreenState.MediaNavigationEvent.GoToNext -> currentPage + 1
-          }
-
-          if (nextPage < 0) {
-            nextPage = (pageCount - 1)
-          }
-
-          nextPage %= pageCount
-
-          if ((nextPage - currentPage).absoluteValue > 1) {
-            pagerState.scrollToPage(nextPage)
-          } else {
-            pagerState.animateScrollToPage(nextPage)
-          }
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = pagerState,
-      block = {
-        if (pagerState.currentPage == currentPageIndexForInitialScroll) {
-          initialScrollHappened = true
-          return@LaunchedEffect
-        }
-
-        try {
-          pagerState.scrollToPage(currentPageIndexForInitialScroll)
-          delay(250L)
-        } finally {
-          initialScrollHappened = true
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        mediaViewerScreenState.scrollToMediaFlow
-          // We need to wait for some time before the mediaList is applied to the PagerState
-          // otherwise the scrolling won't do anything in case the current pages count is less than
-          // the scroll index.
-          .debounce(128)
-          .collectLatest { (longScroll, pageIndex) ->
-            val distance = (pagerState.currentPage - pageIndex).absoluteValue
-
-            try {
-              if (longScroll || distance > 1) {
-                pagerState.scrollToPage(pageIndex)
-              } else {
-                pagerState.animateScrollToPage(pageIndex)
-              }
-            } catch (error: CancellationException) {
-              // ignore
-            }
-          }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = { onViewPagerInitialized(pagerState) }
-    )
-
-    LaunchedEffect(
-      key1 = currentPageIndex,
-      key2 = isScrollInProgress,
-      block = {
-        if (!initialScrollHappened || isScrollInProgress) {
-          return@LaunchedEffect
-        }
-
-        mediaViewerScreenState.onCurrentPagerPageChanged(currentPageIndex)
-
-        val postImageData = images.getOrNull(currentPageIndex)?.postImage
-        if (postImageData == null) {
-          return@LaunchedEffect
-        }
-
-        mediaViewerPostListScroller.onSwipedTo(
-          screenKey = openedFromScreen,
-          fullImageUrl = postImageData.fullImageAsUrl,
-          postDescriptor = postImageData.ownerPostDescriptor
-        )
-      }
-    )
-
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(
-      key1 = currentPageIndex,
-      block = {
-        val pageCount = pagerState.pageCount
-        mediaViewerScreenState.removeCurrentlyLoadedMediaState(currentPageIndex, pageCount)
-      }
-    )
-
-    HorizontalPager(
-      modifier = Modifier.fillMaxSize(),
-      count = images.size,
-      state = pagerState,
-      key = { page -> images.getOrNull(page)?.fullImageUrlAsString ?: "<null>" }
-    ) { page ->
-      val mediaState = remember(key1 = page) {
-        val prevMediaState = mediaViewerScreenState.getMediaStateByIndex(page)
-        if (prevMediaState != null) {
-          return@remember prevMediaState
-        }
-
-        val postImage = images
-          .getOrNull(page)
-          ?.postImage
-          ?: return@remember null
-
-        val newMediaState = when (postImage.imageType()) {
-          ImageType.Static -> MediaState.Static(page)
-          ImageType.Video -> {
-            val muteByDefault = mediaViewerScreenState.muteByDefault.value
-            MediaState.Video(page, muteByDefault)
-          }
-          ImageType.Unsupported -> MediaState.Unsupported(page)
-        }
-
-        mediaViewerScreenState.addCurrentlyLoadedMediaState(page, newMediaState)
-        return@remember newMediaState
-      }
-
-      if (mediaState == null) {
-        return@HorizontalPager
-      }
-
-      if (!initialScrollHappened) {
-        return@HorizontalPager
-      }
-
-      PageContent(
-        page = page,
-        images = images,
-        mediaViewerScreenState = mediaViewerScreenState,
-        pagerState = pagerState,
-        toolbarHeight = toolbarHeight,
-        availableSize = availableSize,
-        mpvSettings = mpvSettings,
-        mediaState = mediaState,
-        checkLibrariesInstalledAndLoaded = { mpvLibsInstalledAndLoaded.value },
-        onPreviewLoadingFinished = onPreviewLoadingFinished,
-        onMediaTapped = { coroutineScope.launch { mediaViewerScreenState.toggleMediaViewerUiVisibility() } }
-      )
-    }
-  }
-
-  @OptIn(ExperimentalPagerApi::class)
-  @Composable
-  private fun PageContent(
-    page: Int,
-    images: List<ImageLoadState>,
-    mediaViewerScreenState: MediaViewerScreenState,
-    pagerState: PagerState,
-    toolbarHeight: Dp,
-    availableSize: IntSize,
-    mpvSettings: MpvSettings,
-    mediaState: MediaState,
-    checkLibrariesInstalledAndLoaded: () -> Boolean,
-    onPreviewLoadingFinished: (IPostImage) -> Unit,
-    onMediaTapped: () -> Unit
-  ) {
-    val context = LocalContext.current
-    val postImageDataLoadState = images[page]
-
-    DisposableEffect(
-      key1 = Unit,
-      effect = {
-        // When a page with media is being disposed we need to replace the current ImageLoadState
-        // with ImageLoadState.PreparingForLoading so that when we go back to this page we reload
-        // it again from cache/network. Otherwise we may use the cached ImageLoadState and while
-        // it might be set to "ImageLoadState.Ready" in reality the file on disk may long be
-        // removed so it will cause a crash.
-        onDispose {
-          mediaViewerScreenState.onPageDisposed(postImageDataLoadState)
-        }
-      }
-    )
-
-    val displayImagePreviewMovable = remember {
-      movableContentOf {
-        DisplayImagePreview(
-          postImageDataState = postImageDataLoadState,
-          onPreviewLoadingFinished = onPreviewLoadingFinished
-        )
-      }
-    }
-
-    val coroutineScope = rememberCoroutineScope()
-    var isDragGestureAllowedFunc by remember { mutableStateOf(defaultIsDragGestureAllowedFunc) }
-
-    DraggableArea(
-      availableSize = availableSize,
-      closeScreen = { stopPresenting() },
-      isDragGestureAllowedFunc = { currPosition, startPosition ->
-        isDragGestureAllowedFunc(currPosition, startPosition)
-      }
-    ) {
-      when (postImageDataLoadState) {
-        is ImageLoadState.PreparingForLoading -> {
-          var loadingProgressMut by remember { mutableStateOf<Pair<Int, Float>?>(null) }
-          var minimumLoadTimePassed by remember { mutableStateOf(false) }
-
-          LaunchedEffect(
-            key1 = Unit,
-            block = {
-              delay(500)
-              minimumLoadTimePassed = true
-            }
-          )
-
-          LoadFullImage(
-            mediaViewerScreenState = mediaViewerScreenState,
+      },
+      loadFullImage = { retriesCount, postImageDataLoadState, onLoadProgressUpdated ->
+        coroutineScope.launch {
+          loadFullImageInternal(
+            appContenxt = context.applicationContext,
+            coroutineScope = coroutineScope,
+            retriesCount = retriesCount,
             postImageDataLoadState = postImageDataLoadState,
-            onLoadProgressUpdated = { restartIndex, progress ->
-              loadingProgressMut = Pair(restartIndex, progress)
-            }
-          )
-
-          displayImagePreviewMovable()
-
-          val loadingProgress = loadingProgressMut
-          if (loadingProgress == null && minimumLoadTimePassed) {
-            KurobaComposeLoadingIndicator()
-          } else if (loadingProgress != null) {
-            val restartIndex = loadingProgress.first
-            val progress = loadingProgress.second
-
-            DisplayLoadingProgressIndicator(restartIndex, progress)
-          }
-        }
-        is ImageLoadState.Progress -> {
-          // no-op
-        }
-        is ImageLoadState.Ready -> {
-          var fullMediaLoaded by remember { mutableStateOf(false) }
-          if (!fullMediaLoaded) {
-            displayImagePreviewMovable()
-          }
-
-          when (mediaState) {
-            is MediaState.Static -> {
-              val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
-
-              DisplayFullImage(
-                availableSize = availableSize,
-                postImageDataLoadState = postImageDataLoadState,
-                imageFile = imageFile,
-                setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
-                onFullImageLoaded = { fullMediaLoaded = true },
-                onFullImageFailedToLoad = { fullMediaLoaded = false },
-                onImageTapped = { onMediaTapped() },
-                reloadImage = {
-                  coroutineScope.launch {
-                    mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
-                    mediaViewerScreenState.reloadImage(page, postImageDataLoadState)
-                  }
-                }
-              )
-            }
-            is MediaState.Video -> {
-              val muteByDefault by mediaViewerScreenState.muteByDefault
-
-              LaunchedEffect(
-                key1 = muteByDefault,
-                block = { mediaState.isMutedState.value = muteByDefault }
-              )
-
-              LaunchedEffect(
-                key1 = Unit,
-                block = { isDragGestureAllowedFunc = defaultIsDragGestureAllowedFunc }
-              )
-
-              DisplayVideo(
-                pageIndex = page,
-                pagerState = pagerState,
-                toolbarHeight = toolbarHeight,
-                mpvSettings = mpvSettings,
-                postImageDataLoadState = postImageDataLoadState,
-                snackbarManager = snackbarManager,
-                checkLibrariesInstalledAndLoaded = checkLibrariesInstalledAndLoaded,
-                onPlayerLoaded = { fullMediaLoaded = true },
-                onPlayerUnloaded = { fullMediaLoaded = false },
-                videoMediaState = mediaState,
-                onVideoTapped = { onMediaTapped() },
-                installMpvLibsFromGithubButtonClicked = {
-                  onInstallMpvLibsFromGithubButtonClicked(
-                    mpvSettings = mpvSettings,
-                    context = context
-                  )
-                },
-                toggleMuteByDefaultState = { mediaViewerScreenState.toggleMuteByDefault() }
-              )
-            }
-            is MediaState.Unsupported -> {
-              LaunchedEffect(
-                key1 = Unit,
-                block = { isDragGestureAllowedFunc = defaultIsDragGestureAllowedFunc }
-              )
-
-              DisplayUnsupportedMedia(
-                toolbarHeight = toolbarHeight,
-                postImageDataLoadState = postImageDataLoadState,
-                onFullImageLoaded = { fullMediaLoaded = true },
-                onFullImageFailedToLoad = { fullMediaLoaded = false },
-                onImageTapped = { onMediaTapped() }
-              )
-            }
-          }
-        }
-        is ImageLoadState.Error -> {
-          DisplayImageLoadError(
-            toolbarHeight = toolbarHeight,
-            postImageDataLoadState = postImageDataLoadState
+            mediaViewerScreenState = mediaViewerScreenState,
+            onLoadProgressUpdated = onLoadProgressUpdated
           )
         }
-      }
-    }
+      },
+      onBackPressed = { coroutineScope.launch { onBackPressed() } },
+      stopPresenting = { stopPresenting() },
+    )
   }
 
   private fun onInstallMpvLibsFromGithubButtonClicked(
@@ -1085,32 +273,6 @@ class MediaViewerScreen(
         )
 
         navigationRouter.presentScreen(dialogScreen)
-      }
-    )
-  }
-
-  @Composable
-  private fun LoadFullImage(
-    mediaViewerScreenState: MediaViewerScreenState,
-    postImageDataLoadState: ImageLoadState.PreparingForLoading,
-    onLoadProgressUpdated: (Int, Float) -> Unit
-  ) {
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-
-    LaunchedEffect(
-      key1 = postImageDataLoadState.postImage.fullImageAsUrl,
-      block = {
-        val retriesCount = AtomicInteger(0)
-
-        loadFullImageInternal(
-          appContenxt = context.applicationContext,
-          coroutineScope = coroutineScope,
-          retriesCount = retriesCount,
-          postImageDataLoadState = postImageDataLoadState,
-          mediaViewerScreenState = mediaViewerScreenState,
-          onLoadProgressUpdated = onLoadProgressUpdated
-        )
       }
     )
   }
@@ -1193,76 +355,63 @@ class MediaViewerScreen(
       }
   }
 
-  @Composable
-  private fun DisplayImageLoadError(
-    toolbarHeight: Dp,
-    postImageDataLoadState: ImageLoadState.Error
+  private fun onDownloadButtonClicked(
+    context: Context,
+    runtimePermissionsHelper: RuntimePermissionsHelper,
+    postImage: IPostImage
   ) {
-    val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
-
-    InsetsAwareBox(
-      modifier = Modifier.fillMaxSize(),
-      additionalPaddings = additionalPaddings
+    // On Q and above we use MediaStore which does not require us requesting the permission
+    if (
+      androidHelpers.isAndroidQ() ||
+      runtimePermissionsHelper.hasPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
     ) {
-      KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName()}")
+      downloadMediaActual(context, postImage)
+      return
     }
+
+    runtimePermissionsHelper.requestPermission(
+      permission = Manifest.permission.WRITE_EXTERNAL_STORAGE,
+      callback = object : RuntimePermissionsHelper.Callback {
+        override fun onRuntimePermissionResult(granted: Boolean) {
+          if (granted) {
+            downloadMediaActual(context, postImage)
+            return
+          }
+
+          val message = context.resources.getString(R.string.media_viewer_download_failed_no_permission)
+          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
+        }
+      }
+    )
   }
 
-  @Composable
-  private fun DisplayImagePreview(
-    postImageDataState: ImageLoadState,
-    onPreviewLoadingFinished: (IPostImage) -> Unit
-  ) {
-    val postImageDataLoadState = (postImageDataState as? ImageLoadState.PreparingForLoading)
-      ?: return
+  private fun downloadMediaActual(context: Context, postImage: IPostImage) {
+    mediaViewerScreenViewModel.downloadMedia(
+      postImage = postImage,
+      onResult = { mediaDownloadResult ->
+        if (mediaDownloadResult.isSuccess) {
+          val message = context.resources.getString(
+            R.string.media_viewer_download_success,
+            postImage.originalFileNameWithExtension()
+          )
 
-    val context = LocalContext.current
-    val postImageData = postImageDataLoadState.postImage
+          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
+        } else {
+          val error = mediaDownloadResult.exceptionOrThrow()
+          val message = context.resources.getString(
+            R.string.media_viewer_download_failed,
+            postImage.originalFileNameWithExtension(),
+            error.errorMessageOrClassName()
+          )
 
-    var callbackCalled by remember { mutableStateOf(false) }
-
-    SubcomposeAsyncImage(
-      modifier = Modifier.fillMaxSize(),
-      model = ImageRequest.Builder(context)
-        .data(postImageData.thumbnailAsUrl)
-        .crossfade(false)
-        .size(Size.ORIGINAL)
-        .build(),
-      contentDescription = null,
-      contentScale = ContentScale.Fit,
-      content = {
-        val state = painter.state
-        if (state is AsyncImagePainter.State.Error) {
-          logcatError(tag = TAG) {
-            "DisplayImagePreview() url=${postImageData}, " +
-              "postDescriptor=${postImageData.ownerPostDescriptor}, " +
-              "error=${state.result.throwable}"
-          }
+          snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
         }
-
-        SubcomposeAsyncImageContent()
-
-        LaunchedEffect(
-          key1 = state,
-          block = {
-            if (state is AsyncImagePainter.State.Success || state is AsyncImagePainter.State.Error) {
-              if (!callbackCalled) {
-                callbackCalled = true
-
-                logcat(TAG, LogPriority.VERBOSE) {
-                  "onPreviewLoadingFinished() url=\'${postImageData.fullImageAsString}\'"
-                }
-                onPreviewLoadingFinished(postImageData)
-              }
-            }
-          }
-        )
       }
     )
   }
 
   companion object {
-    private const val TAG = "MediaViewerScreen"
+    internal const val TAG = "MediaViewerScreen"
 
     const val mediaViewerParamsKey = "media_viewer_params"
     const val openedFromScreenKey = "opened_from_screen"
@@ -1270,5 +419,889 @@ class MediaViewerScreen(
     val SCREEN_KEY = ScreenKey("MediaViewerScreen")
 
     private const val NEW_MEDIA_VIEWER_IMAGES_ADDED_TOAST_ID = "new_media_viewer_images_added_toast_id"
+
+    internal val defaultIsDragGestureAllowedFunc: (currPosition: Offset, startPosition: Offset) -> Boolean = { _, _ -> true }
   }
+}
+
+
+@Composable
+private fun CardContentInternal(
+  clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember(),
+  mediaViewerParams: MediaViewerParams,
+  mediaViewerScreenState: MediaViewerScreenState,
+  screenKey: ScreenKey,
+  openedFromScreen: ScreenKey,
+  onDownloadButtonClicked: (IPostImage) -> Unit,
+  onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
+  loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
+  onBackPressed: () -> Unit,
+  stopPresenting: () -> Unit
+) {
+  val insets = LocalWindowInsets.current
+  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+
+  var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getBounds()) }
+  var transitionFinished by remember { mutableStateOf(false) }
+  var previewLoadingFinished by remember { mutableStateOf(false) }
+
+  val animatable = remember { Animatable(0f) }
+  val animationProgress by animatable.asState()
+
+  var availableSizeMut by remember(key1 = Unit) { mutableStateOf<IntSize>(IntSize.Zero) }
+  val availableSize = availableSizeMut
+
+  val bgColor = Color.Black
+
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .graphicsLayer { alpha = animationProgress }
+      .background(bgColor)
+      .onSizeChanged { newSize -> availableSizeMut = newSize }
+  ) {
+    InitMediaViewerData(
+      mediaViewerScreenState = mediaViewerScreenState,
+      mediaViewerParams = mediaViewerParams
+    )
+
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .graphicsLayer {
+          alpha = if (transitionFinished && previewLoadingFinished) 1f else 0f
+        }
+    ) {
+      if (availableSize.width > 0 && availableSize.height > 0) {
+        ContentAfterTransition(
+          availableSize = availableSize,
+          toolbarHeight = toolbarHeight,
+          screenKey = screenKey,
+          openedFromScreen = openedFromScreen,
+          insets = insets,
+          onDownloadButtonClicked = onDownloadButtonClicked,
+          onBackPressed = onBackPressed,
+          onInstallMpvLibsFromGithubButtonClicked = onInstallMpvLibsFromGithubButtonClicked,
+          loadFullImage = loadFullImage,
+          stopPresenting = stopPresenting,
+          mediaViewerScreenState = mediaViewerScreenState,
+          onPreviewLoadingFinished = { postImage ->
+            if (previewLoadingFinished) {
+              return@ContentAfterTransition
+            }
+
+            val bounds = clickedThumbnailBounds
+            val previewLoadingFinishedForOutThumbnail = bounds == null ||
+              postImage.fullImageAsString == bounds.postImage.fullImageAsString
+
+            logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
+              "onPreviewLoadingFinished() " +
+                "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
+                "got '${postImage.fullImageAsString}', " +
+                "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
+            }
+
+            if (previewLoadingFinishedForOutThumbnail) {
+              previewLoadingFinished = true
+            }
+          }
+        )
+      }
+    }
+
+    TransitionPreview(
+      animatable = animatable,
+      clickedThumbnailBounds = clickedThumbnailBounds,
+      onTransitionFinished = {
+        if (!transitionFinished) {
+          logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
+            "onTransitionFinished() for image '${clickedThumbnailBounds?.postImage?.fullImageAsString}'"
+          }
+
+          animatable.snapTo(1f)
+          transitionFinished = true
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = transitionFinished,
+      key2 = previewLoadingFinished,
+      block = {
+        if (transitionFinished && previewLoadingFinished && clickedThumbnailBounds != null) {
+          clickedThumbnailBounds = null
+          clickedThumbnailBoundsStorage.consumeBounds()
+        }
+      }
+    )
+  }
+}
+
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+private fun BoxScope.ContentAfterTransition(
+  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
+  mediaViewerScreenState: MediaViewerScreenState,
+  screenKey: ScreenKey,
+  availableSize: IntSize,
+  toolbarHeight: Dp,
+  openedFromScreen: ScreenKey,
+  insets: Insets,
+  onPreviewLoadingFinished: (IPostImage) -> Unit,
+  onDownloadButtonClicked: (IPostImage) -> Unit,
+  onBackPressed: () -> Unit,
+  onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
+  loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
+  stopPresenting: () -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  val coroutineScope = rememberCoroutineScope()
+
+  var pagerStateHolderMut by remember { mutableStateOf<PagerState?>(null) }
+  val pagerStateHolder = pagerStateHolderMut
+
+  val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
+  val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
+  val images = mediaViewerScreenState.mediaList
+
+  val bgColor = remember(chanTheme.backColor) {
+    chanTheme.backColor.copy(alpha = 0.5f)
+  }
+
+  MediaViewerPagerContainer(
+    availableSize = availableSize,
+    toolbarHeight = toolbarHeight,
+    openedFromScreen = openedFromScreen,
+    mediaViewerScreenState = mediaViewerScreenState,
+    onViewPagerInitialized = { pagerState -> pagerStateHolderMut = pagerState },
+    onPreviewLoadingFinished = onPreviewLoadingFinished,
+    onInstallMpvLibsFromGithubButtonClicked = onInstallMpvLibsFromGithubButtonClicked,
+    loadFullImage = loadFullImage,
+    stopPresenting = stopPresenting,
+  )
+
+  if (pagerStateHolder == null || images.isEmpty()) {
+    return
+  }
+
+  val mediaViewerUiVisible by mediaViewerScreenState.mediaViewerUiVisible
+  val mediaViewerUiAlpha by animateFloatAsState(
+    targetValue = if (mediaViewerUiVisible) 1f else 0f,
+    animationSpec = tween(durationMillis = 300)
+  )
+
+  Box(
+    modifier = Modifier.Companion
+      .align(Alignment.TopCenter)
+      .alpha(mediaViewerUiAlpha)
+      .passClicksThrough(passClicks = !mediaViewerUiVisible)
+      .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
+      .background(bgColor)
+  ) {
+    MediaViewerToolbar(
+      toolbarHeight = toolbarHeight,
+      backgroundColor = bgColor,
+      screenKey = screenKey,
+      mediaViewerScreenState = mediaViewerScreenState,
+      pagerState = pagerStateHolder,
+      onDownloadMediaClicked = { postImage -> onDownloadButtonClicked(postImage) },
+      onBackPressed = { coroutineScope.launch { onBackPressed() } }
+    )
+  }
+
+  val currentPageIndex by remember { derivedStateOf { pagerStateHolder.currentPage } }
+  val currentLoadedMedia = remember(key1 = currentPageIndex) {
+    mediaViewerScreenState.currentlyLoadedMediaMap[currentPageIndex]
+  }
+
+  val targetAlpha = if (
+    mediaViewerScreenViewModel.mpvInitialized &&
+    currentLoadedMedia is MediaState.Video &&
+    mediaViewerUiVisible
+  ) {
+    1f
+  } else {
+    0f
+  }
+
+  val alphaAnimated by animateFloatAsState(
+    targetValue = targetAlpha,
+    animationSpec = tween(durationMillis = 300)
+  )
+
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .align(Alignment.BottomCenter)
+      .passClicksThrough(passClicks = !mediaViewerUiVisible)
+      .graphicsLayer { this.alpha = alphaAnimated }
+      .background(bgColor)
+  ) {
+    if (currentLoadedMedia is MediaState.Video) {
+      MediaViewerScreenVideoControls(currentLoadedMedia)
+    }
+
+    Spacer(modifier = Modifier.height(insets.bottom))
+  }
+
+  if (images.isNotNullNorEmpty()) {
+    val toolbarCalculatedHeight by toolbarTotalHeight
+
+    val actualToolbarCalculatedHeight = remember(
+      key1 = toolbarCalculatedHeight,
+      key2 = globalMediaViewerControlsVisible,
+    ) {
+      if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
+        return@remember null
+      }
+
+      return@remember toolbarCalculatedHeight
+    }
+
+    if (toolbarCalculatedHeight != null) {
+      Box(
+        modifier = Modifier
+          .align(Alignment.TopCenter)
+          .alpha(mediaViewerUiAlpha)
+          .passClicksThrough(passClicks = !mediaViewerUiVisible)
+      ) {
+        MediaViewerPreviewStrip(
+          pagerState = pagerStateHolder,
+          images = images,
+          mediaViewerScreenState = mediaViewerScreenState,
+          bgColor = bgColor,
+          toolbarHeightPx = actualToolbarCalculatedHeight,
+          onPreviewClicked = { postImage ->
+            coroutineScope.launch {
+              images
+                .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
+                .takeIf { index -> index >= 0 }
+                ?.let { scrollIndex -> pagerStateHolder.scrollToPage(scrollIndex) }
+            }
+          }
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun TransitionPreview(
+  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
+  animatable: Animatable<Float, AnimationVector1D>,
+  clickedThumbnailBounds: ClickedThumbnailBoundsStorage.ClickedThumbnailBounds?,
+  onTransitionFinished: suspend () -> Unit
+) {
+  if (clickedThumbnailBounds == null) {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
+          "loadThumbnailBitmap() clickedThumbnailBounds == null"
+        }
+
+        onTransitionFinished()
+      }
+    )
+
+    return
+  }
+
+  val bitmapMatrix = remember { Matrix() }
+  val postImage = clickedThumbnailBounds.postImage
+  val srcBounds = clickedThumbnailBounds.bounds
+
+  val bitmapPaint = remember {
+    Paint().apply {
+      isAntiAlias = true
+      isFilterBitmap = true
+    }
+  }
+
+  var bitmapMut by remember { mutableStateOf<Bitmap?>(null) }
+  val bitmap = bitmapMut
+  val context = LocalContext.current.applicationContext
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      var success = false
+
+      try {
+        withTimeout(timeMillis = 1000) {
+          bitmapMut = mediaViewerScreenViewModel.loadThumbnailBitmap(context, postImage)
+        }
+
+        success = true
+      } catch (error: Throwable) {
+        logcatError(MediaViewerScreen.TAG) { "loadThumbnailBitmap() error: ${error.errorMessageOrClassName()}" }
+        success = false
+      } finally {
+        if (!success) {
+          logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() success: false" }
+          onTransitionFinished()
+        }
+      }
+    }
+  )
+
+  if (bitmap == null) {
+    return
+  }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      try {
+        animatable.animateTo(1f, animationSpec = tween(250))
+      } finally {
+        logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() success: true" }
+        onTransitionFinished()
+      }
+    }
+  )
+
+  val animationProgress by animatable.asState()
+
+  Canvas(
+    modifier = Modifier.fillMaxSize(),
+    onDraw = {
+      val nativeCanvas = drawContext.canvas.nativeCanvas
+
+      val scale = Math.min(
+        nativeCanvas.width.toFloat() / bitmap.width,
+        nativeCanvas.height.toFloat() / bitmap.height
+      )
+
+      val dstWidth = bitmap.width * scale
+      val dstHeight = bitmap.height * scale
+
+      bitmapMatrix.reset()
+      bitmapMatrix.setScale(
+        lerpFloat(1f, scale, animationProgress),
+        lerpFloat(1f, scale, animationProgress)
+      )
+
+      val startX = srcBounds.left
+      val endX = (nativeCanvas.width.toFloat() - dstWidth) / 2f
+
+      val startY = srcBounds.top
+      val endY = (nativeCanvas.height.toFloat() - dstHeight) / 2f
+
+      nativeCanvas.withTranslation(
+        x = lerpFloat(startX, endX, animationProgress),
+        y = lerpFloat(startY, endY, animationProgress)
+      ) {
+        nativeCanvas.drawBitmap(bitmap, bitmapMatrix, bitmapPaint)
+      }
+    }
+  )
+}
+
+@Composable
+private fun InitMediaViewerData(
+  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
+  appSettings: AppSettings = koinRemember(),
+  mediaViewerScreenState: MediaViewerScreenState,
+  mediaViewerParams: MediaViewerParams
+) {
+  LaunchedEffect(
+    key1 = mediaViewerScreenState,
+    key2 = mediaViewerParams,
+    block = {
+      val initResult = when (mediaViewerParams) {
+        is MediaViewerParams.Catalog,
+        is MediaViewerParams.Thread -> {
+          mediaViewerScreenViewModel.initFromCatalogOrThreadDescriptor(
+            chanDescriptor = mediaViewerParams.chanDescriptor,
+            initialImageUrl = mediaViewerParams.initialImageUrl
+          )
+        }
+        is MediaViewerParams.Images -> {
+          mediaViewerScreenViewModel.initFromImageList(
+            chanDescriptor = mediaViewerParams.chanDescriptor,
+            images = mediaViewerParams.images,
+            initialImageUrl = mediaViewerParams.initialImageUrl
+          )
+        }
+      }
+
+      mediaViewerScreenState.init(
+        chanDescriptor = mediaViewerParams.chanDescriptor,
+        images = initResult.images,
+        pageIndex = initResult.initialPage,
+        sourceType = initResult.sourceType,
+        mediaViewerUiVisible = appSettings.mediaViewerUiVisible.read()
+      )
+    }
+  )
+}
+
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+private fun MediaViewerPagerContainer(
+  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
+  mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember(),
+  availableSize: IntSize,
+  toolbarHeight: Dp,
+  openedFromScreen: ScreenKey,
+  mediaViewerScreenState: MediaViewerScreenState,
+  onViewPagerInitialized: (PagerState) -> Unit,
+  onPreviewLoadingFinished: (IPostImage) -> Unit,
+  onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
+  loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
+  stopPresenting: () -> Unit
+) {
+  val context = LocalContext.current
+  val currentPageIndexForInitialScrollMut by mediaViewerScreenState.currentPageIndex
+  val imagesMut = mediaViewerScreenState.mediaList
+
+  val currentPageIndexForInitialScroll = currentPageIndexForInitialScrollMut
+  val images = imagesMut
+
+  if (currentPageIndexForInitialScroll == null || images.isEmpty()) {
+    return
+  }
+
+  if (images.isEmpty()) {
+    val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
+
+    InsetsAwareBox(
+      modifier = Modifier.fillMaxSize(),
+      additionalPaddings = additionalPaddings
+    ) {
+      KurobaComposeText(text = stringResource(id = R.string.media_viewer_no_images_to_show))
+    }
+
+    return
+  }
+
+  val mpvSettingsProvider = remember { { mediaViewerScreenViewModel.mpvSettings } }
+
+  val mpvLibsInstalledAndLoaded = remember {
+    lazy {
+      val librariesInstalled = MPVLib.checkLibrariesInstalled(context.applicationContext, mpvSettingsProvider())
+      if (!librariesInstalled) {
+        return@lazy false
+      }
+
+      return@lazy MPVLib.librariesAreLoaded()
+    }
+  }
+
+  var initialScrollHappened by remember { mutableStateOf(false) }
+  val initialScrollHappenedUpdated by rememberUpdatedState(newValue = initialScrollHappened)
+
+  val pagerState = rememberPagerState()
+  val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
+  val isScrollInProgress by remember { derivedStateOf { pagerState.isScrollInProgress } }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      mediaViewerScreenState.mediaNavigationEventFlow.collectLatest { mediaNavigationEvent ->
+        if (!initialScrollHappenedUpdated) {
+          return@collectLatest
+        }
+
+        val currentPage = pagerState.currentPage
+        val pageCount = pagerState.pageCount
+
+        var nextPage = when (mediaNavigationEvent) {
+          MediaViewerScreenState.MediaNavigationEvent.GoToPrev -> currentPage - 1
+          MediaViewerScreenState.MediaNavigationEvent.GoToNext -> currentPage + 1
+        }
+
+        if (nextPage < 0) {
+          nextPage = (pageCount - 1)
+        }
+
+        nextPage %= pageCount
+
+        if ((nextPage - currentPage).absoluteValue > 1) {
+          pagerState.scrollToPage(nextPage)
+        } else {
+          pagerState.animateScrollToPage(nextPage)
+        }
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = pagerState,
+    block = {
+      if (pagerState.currentPage == currentPageIndexForInitialScroll) {
+        initialScrollHappened = true
+        return@LaunchedEffect
+      }
+
+      try {
+        pagerState.scrollToPage(currentPageIndexForInitialScroll)
+        delay(250L)
+      } finally {
+        initialScrollHappened = true
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      mediaViewerScreenState.scrollToMediaFlow
+        // We need to wait for some time before the mediaList is applied to the PagerState
+        // otherwise the scrolling won't do anything in case the current pages count is less than
+        // the scroll index.
+        .debounce(128)
+        .collectLatest { (longScroll, pageIndex) ->
+          val distance = (pagerState.currentPage - pageIndex).absoluteValue
+
+          try {
+            if (longScroll || distance > 1) {
+              pagerState.scrollToPage(pageIndex)
+            } else {
+              pagerState.animateScrollToPage(pageIndex)
+            }
+          } catch (error: CancellationException) {
+            // ignore
+          }
+        }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = { onViewPagerInitialized(pagerState) }
+  )
+
+  LaunchedEffect(
+    key1 = currentPageIndex,
+    key2 = isScrollInProgress,
+    block = {
+      if (!initialScrollHappened || isScrollInProgress) {
+        return@LaunchedEffect
+      }
+
+      mediaViewerScreenState.onCurrentPagerPageChanged(currentPageIndex)
+
+      val postImageData = images.getOrNull(currentPageIndex)?.postImage
+      if (postImageData == null) {
+        return@LaunchedEffect
+      }
+
+      mediaViewerPostListScroller.onSwipedTo(
+        screenKey = openedFromScreen,
+        fullImageUrl = postImageData.fullImageAsUrl,
+        postDescriptor = postImageData.ownerPostDescriptor
+      )
+    }
+  )
+
+  val coroutineScope = rememberCoroutineScope()
+
+  LaunchedEffect(
+    key1 = currentPageIndex,
+    block = {
+      val pageCount = pagerState.pageCount
+      mediaViewerScreenState.removeCurrentlyLoadedMediaState(currentPageIndex, pageCount)
+    }
+  )
+
+  HorizontalPager(
+    modifier = Modifier.fillMaxSize(),
+    count = images.size,
+    state = pagerState,
+    key = { page -> images.getOrNull(page)?.fullImageUrlAsString ?: "<null>" }
+  ) { page ->
+    val mediaState = remember(key1 = page) {
+      val prevMediaState = mediaViewerScreenState.getMediaStateByIndex(page)
+      if (prevMediaState != null) {
+        return@remember prevMediaState
+      }
+
+      val postImage = images
+        .getOrNull(page)
+        ?.postImage
+        ?: return@remember null
+
+      val newMediaState = when (postImage.imageType()) {
+        ImageType.Static -> MediaState.Static(page)
+        ImageType.Video -> {
+          val muteByDefault = mediaViewerScreenState.muteByDefault.value
+          MediaState.Video(page, muteByDefault)
+        }
+        ImageType.Unsupported -> MediaState.Unsupported(page)
+      }
+
+      mediaViewerScreenState.addCurrentlyLoadedMediaState(page, newMediaState)
+      return@remember newMediaState
+    }
+
+    if (mediaState == null) {
+      return@HorizontalPager
+    }
+
+    if (!initialScrollHappened) {
+      return@HorizontalPager
+    }
+
+    PageContent(
+      page = page,
+      mediaViewerScreenState = mediaViewerScreenState,
+      pagerState = pagerState,
+      toolbarHeight = toolbarHeight,
+      availableSize = availableSize,
+      mpvSettingsProvider = mpvSettingsProvider,
+      mediaState = mediaState,
+      checkLibrariesInstalledAndLoaded = { mpvLibsInstalledAndLoaded.value },
+      onPreviewLoadingFinished = onPreviewLoadingFinished,
+      onMediaTapped = { coroutineScope.launch { mediaViewerScreenState.toggleMediaViewerUiVisibility() } },
+      onInstallMpvLibsFromGithubButtonClicked = onInstallMpvLibsFromGithubButtonClicked,
+      loadFullImage = loadFullImage,
+      stopPresenting = stopPresenting,
+    )
+  }
+}
+
+@OptIn(ExperimentalPagerApi::class)
+@Composable
+private fun PageContent(
+  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
+  snackbarManager: SnackbarManager = koinRemember(),
+  page: Int,
+  mediaViewerScreenState: MediaViewerScreenState,
+  pagerState: PagerState,
+  toolbarHeight: Dp,
+  availableSize: IntSize,
+  mediaState: MediaState,
+  mpvSettingsProvider: () -> MpvSettings,
+  checkLibrariesInstalledAndLoaded: () -> Boolean,
+  onPreviewLoadingFinished: (IPostImage) -> Unit,
+  onMediaTapped: () -> Unit,
+  onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
+  loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
+  stopPresenting: () -> Unit
+) {
+  val images = mediaViewerScreenState.mediaList
+  val postImageDataLoadStateMut = images.getOrNull(page)
+    ?: return
+  val postImageDataLoadState = postImageDataLoadStateMut
+
+  DisposableEffect(
+    key1 = Unit,
+    effect = {
+      // When a page with media is being disposed we need to replace the current ImageLoadState
+      // with ImageLoadState.PreparingForLoading so that when we go back to this page we reload
+      // it again from cache/network. Otherwise we may use the cached ImageLoadState and while
+      // it might be set to "ImageLoadState.Ready" in reality the file on disk may long be
+      // removed so it will cause a crash.
+      onDispose {
+        mediaViewerScreenState.onPageDisposed(postImageDataLoadState)
+      }
+    }
+  )
+
+  val displayImagePreviewMovable = remember {
+    movableContentOf {
+      DisplayImagePreview(
+        postImageDataState = postImageDataLoadState,
+        onPreviewLoadingFinished = onPreviewLoadingFinished
+      )
+    }
+  }
+
+  val coroutineScope = rememberCoroutineScope()
+  var isDragGestureAllowedFunc by remember { mutableStateOf(defaultIsDragGestureAllowedFunc) }
+
+  DraggableArea(
+    availableSize = availableSize,
+    closeScreen = { stopPresenting() },
+    isDragGestureAllowedFunc = { currPosition, startPosition ->
+      isDragGestureAllowedFunc(currPosition, startPosition)
+    }
+  ) {
+    when (postImageDataLoadState) {
+      is ImageLoadState.PreparingForLoading -> {
+        var loadingProgressMut by remember { mutableStateOf<Pair<Int, Float>?>(null) }
+        var minimumLoadTimePassed by remember { mutableStateOf(false) }
+
+        LaunchedEffect(
+          key1 = Unit,
+          block = {
+            delay(500)
+            minimumLoadTimePassed = true
+          }
+        )
+
+        LaunchedEffect(
+          key1 = postImageDataLoadState.postImage.fullImageAsUrl,
+          block = {
+            val retriesCount = AtomicInteger(0)
+
+            loadFullImage(retriesCount, postImageDataLoadState) { restartIndex, progress ->
+              loadingProgressMut = Pair(restartIndex, progress)
+            }
+          }
+        )
+
+        displayImagePreviewMovable()
+
+        val loadingProgress = loadingProgressMut
+        if (loadingProgress == null && minimumLoadTimePassed) {
+          KurobaComposeLoadingIndicator()
+        } else if (loadingProgress != null) {
+          val restartIndex = loadingProgress.first
+          val progress = loadingProgress.second
+
+          DisplayLoadingProgressIndicator(restartIndex, progress)
+        }
+      }
+      is ImageLoadState.Progress -> {
+        // no-op
+      }
+      is ImageLoadState.Ready -> {
+        var fullMediaLoaded by remember { mutableStateOf(false) }
+        if (!fullMediaLoaded) {
+          displayImagePreviewMovable()
+        }
+
+        when (mediaState) {
+          is MediaState.Static -> {
+            val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
+
+            DisplayFullImage(
+              availableSize = availableSize,
+              postImageDataLoadState = postImageDataLoadState,
+              imageFile = imageFile,
+              setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
+              onFullImageLoaded = { fullMediaLoaded = true },
+              onFullImageFailedToLoad = { fullMediaLoaded = false },
+              onImageTapped = { onMediaTapped() },
+              reloadImage = {
+                coroutineScope.launch {
+                  mediaViewerScreenViewModel.removeFileFromDisk(postImageDataLoadState.postImage)
+                  mediaViewerScreenState.reloadImage(page, postImageDataLoadState)
+                }
+              }
+            )
+          }
+          is MediaState.Video -> {
+            val muteByDefault by mediaViewerScreenState.muteByDefault
+
+            LaunchedEffect(
+              key1 = muteByDefault,
+              block = { mediaState.isMutedState.value = muteByDefault }
+            )
+
+            LaunchedEffect(
+              key1 = Unit,
+              block = { isDragGestureAllowedFunc = defaultIsDragGestureAllowedFunc }
+            )
+
+            DisplayVideo(
+              pageIndex = page,
+              pagerState = pagerState,
+              postImageDataLoadState = postImageDataLoadState,
+              mpvSettingsProvider = mpvSettingsProvider,
+              snackbarManager = snackbarManager,
+              checkLibrariesInstalledAndLoaded = checkLibrariesInstalledAndLoaded,
+              onPlayerLoaded = { fullMediaLoaded = true },
+              onPlayerUnloaded = { fullMediaLoaded = false },
+              videoMediaState = mediaState,
+              onVideoTapped = { onMediaTapped() },
+              installMpvLibsFromGithubButtonClicked = onInstallMpvLibsFromGithubButtonClicked,
+              toggleMuteByDefaultState = { mediaViewerScreenState.toggleMuteByDefault() }
+            )
+          }
+          is MediaState.Unsupported -> {
+            LaunchedEffect(
+              key1 = Unit,
+              block = { isDragGestureAllowedFunc = defaultIsDragGestureAllowedFunc }
+            )
+
+            DisplayUnsupportedMedia(
+              toolbarHeight = toolbarHeight,
+              postImageDataLoadState = postImageDataLoadState,
+              onFullImageLoaded = { fullMediaLoaded = true },
+              onFullImageFailedToLoad = { fullMediaLoaded = false },
+              onImageTapped = { onMediaTapped() }
+            )
+          }
+        }
+      }
+      is ImageLoadState.Error -> {
+        DisplayImageLoadError(
+          toolbarHeight = toolbarHeight,
+          postImageDataLoadState = postImageDataLoadState
+        )
+      }
+    }
+  }
+}
+
+@Composable
+private fun DisplayImageLoadError(
+  toolbarHeight: Dp,
+  postImageDataLoadState: ImageLoadState.Error
+) {
+  val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
+
+  InsetsAwareBox(
+    modifier = Modifier.fillMaxSize(),
+    additionalPaddings = additionalPaddings
+  ) {
+    KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName()}")
+  }
+}
+
+@Composable
+private fun DisplayImagePreview(
+  postImageDataState: ImageLoadState,
+  onPreviewLoadingFinished: (IPostImage) -> Unit
+) {
+  val postImageDataLoadState = (postImageDataState as? ImageLoadState.PreparingForLoading)
+    ?: return
+
+  val context = LocalContext.current
+  val postImageData = postImageDataLoadState.postImage
+
+  var callbackCalled by remember { mutableStateOf(false) }
+
+  SubcomposeAsyncImage(
+    modifier = Modifier.fillMaxSize(),
+    model = ImageRequest.Builder(context)
+      .data(postImageData.thumbnailAsUrl)
+      .crossfade(false)
+      .size(Size.ORIGINAL)
+      .build(),
+    contentDescription = null,
+    contentScale = ContentScale.Fit,
+    content = {
+      val state = painter.state
+      if (state is AsyncImagePainter.State.Error) {
+        logcatError(tag = MediaViewerScreen.TAG) {
+          "DisplayImagePreview() url=${postImageData}, " +
+            "postDescriptor=${postImageData.ownerPostDescriptor}, " +
+            "error=${state.result.throwable}"
+        }
+      }
+
+      SubcomposeAsyncImageContent()
+
+      LaunchedEffect(
+        key1 = state,
+        block = {
+          if (state is AsyncImagePainter.State.Success || state is AsyncImagePainter.State.Error) {
+            if (!callbackCalled) {
+              callbackCalled = true
+
+              logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
+                "onPreviewLoadingFinished() url=\'${postImageData.fullImageAsString}\'"
+              }
+              onPreviewLoadingFinished(postImageData)
+            }
+          }
+        }
+      )
+    }
+  )
 }
