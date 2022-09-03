@@ -156,7 +156,9 @@ internal fun PostListContent(
               0
             }
             is PostScreenViewModel.ToolbarScrollEvent.ScrollToItem -> {
-              val postState = postListAsync.data
+              val postState = (postListAsyncUpdated as? AsyncData.Data)?.data
+                ?: return@collect
+
               postState.postIndexByPostDescriptor(toolbarScrollEvent.postDescriptor)
             }
           }
