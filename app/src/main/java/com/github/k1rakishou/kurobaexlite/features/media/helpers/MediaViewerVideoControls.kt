@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -99,7 +99,7 @@ internal fun MediaViewerScreenVideoControls(
 
       MpvSeekbar(
         modifier = Modifier
-          .height(42.dp)
+          .height(48.dp)
           .weight(1f)
           .pointerInput(
             key1 = videoMediaState,
@@ -108,8 +108,12 @@ internal fun MediaViewerScreenVideoControls(
                 videoStartedPlaying = { videoStartedPlayingUpdated },
                 videoDuration = { videoDurationUpdated },
                 lastSlideOffset = { lastSlideOffsetUpdated },
-                blockAutoPositionUpdateState = { videoMediaState.blockAutoPositionUpdateState.value = true },
-                unBlockAutoPositionUpdateState = { videoMediaState.blockAutoPositionUpdateState.value = false },
+                blockAutoPositionUpdateState = {
+                  videoMediaState.blockAutoPositionUpdateState.value = true
+                },
+                unBlockAutoPositionUpdateState = {
+                  videoMediaState.blockAutoPositionUpdateState.value = false
+                },
                 updateSeekHint = { newPosition -> videoMediaState.updateSeekToHint(newPosition) },
                 seekTo = { newPosition -> videoMediaState.seekTo(newPosition) },
               )
@@ -138,7 +142,9 @@ internal fun MediaViewerScreenVideoControls(
     Spacer(modifier = Modifier.height(4.dp))
 
     Row(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier
+        .fillMaxWidth()
+        .heightIn(min = 48.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.Center
     ) {
@@ -158,12 +164,12 @@ internal fun MediaViewerScreenVideoControls(
 
       Box(
         modifier = Modifier
-          .size(42.dp)
           .kurobaClickable(
             enabled = videoStartedPlayingUpdated,
             bounded = false,
             onClick = { videoMediaState.toggleHwDec() }
-          ),
+          )
+          .size(48.dp),
         contentAlignment = Alignment.Center
       ) {
         val alpha = if (videoStartedPlayingUpdated) 1f else disabledAlpha
@@ -177,11 +183,17 @@ internal fun MediaViewerScreenVideoControls(
         )
       }
 
-      IconButton(
+      Spacer(modifier = Modifier.width(8.dp))
+
+      Box(
         modifier = Modifier
-          .size(42.dp),
-        enabled = hasAudio && videoStartedPlayingUpdated,
-        onClick = { videoMediaState.toggleMute() }
+          .kurobaClickable(
+            enabled = hasAudio && videoStartedPlayingUpdated,
+            bounded = false,
+            onClick = { videoMediaState.toggleMute() }
+          )
+          .size(48.dp),
+        contentAlignment = Alignment.Center
       ) {
         val drawableId = if (isMuted) {
           R.drawable.ic_volume_off_white_24dp
@@ -190,18 +202,23 @@ internal fun MediaViewerScreenVideoControls(
         }
 
         KurobaComposeIcon(
-          drawableId = drawableId,
-          enabled = hasAudio && videoStartedPlayingUpdated
+          modifier = Modifier.size(32.dp),
+          enabled = hasAudio && videoStartedPlayingUpdated,
+          drawableId = drawableId
         )
       }
 
       Spacer(modifier = Modifier.width(8.dp))
 
-      IconButton(
+      Box(
         modifier = Modifier
-          .size(42.dp),
-        enabled = videoStartedPlayingUpdated,
-        onClick = { videoMediaState.togglePlayPause() }
+          .kurobaClickable(
+            enabled = videoStartedPlayingUpdated,
+            bounded = false,
+            onClick = { videoMediaState.togglePlayPause() }
+          )
+          .size(48.dp),
+        contentAlignment = Alignment.Center
       ) {
         val drawableId = if (isPaused) {
           R.drawable.exo_icon_play
@@ -210,8 +227,9 @@ internal fun MediaViewerScreenVideoControls(
         }
 
         KurobaComposeIcon(
+          modifier = Modifier.size(32.dp),
           drawableId = drawableId,
-          enabled = videoStartedPlayingUpdated
+          enabled = videoStartedPlayingUpdated,
         )
       }
     }

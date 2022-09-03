@@ -70,6 +70,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.DefaultAlpha
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
@@ -645,6 +646,44 @@ fun KurobaComposeCard(
   }
 }
 
+
+@Composable
+fun KurobaComposeClickableIcon(
+  @DrawableRes drawableId: Int,
+  modifier: Modifier = Modifier,
+  enabled: Boolean = true,
+  colorBehindIcon: Color? = null,
+  onClick: () -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  val tintColor = remember(key1 = chanTheme) {
+    if (colorBehindIcon == null) {
+      ThemeEngine.resolveDrawableTintColor(chanTheme)
+    } else {
+      ThemeEngine.resolveDrawableTintColor(ThemeEngine.isDarkColor(colorBehindIcon.value))
+    }
+  }
+
+  val alpha = if (enabled) DefaultAlpha else ContentAlpha.disabled
+
+  val clickModifier = if (enabled) {
+    Modifier.kurobaClickable(
+      bounded = false,
+      onClick = { onClick() }
+    )
+  } else {
+    Modifier
+  }
+
+  Image(
+    modifier = modifier.then(clickModifier),
+    painter = painterResource(id = drawableId),
+    colorFilter = ColorFilter.tint(tintColor),
+    alpha = alpha,
+    contentDescription = null
+  )
+}
+
 @Composable
 fun KurobaComposeIcon(
   modifier: Modifier = Modifier,
@@ -655,7 +694,7 @@ fun KurobaComposeIcon(
   contentScale: ContentScale = ContentScale.Fit,
 ) {
   val chanTheme = LocalChanTheme.current
-  val alpha = if (enabled) 1f else ContentAlpha.disabled
+  val alpha = if (enabled) DefaultAlpha else ContentAlpha.disabled
 
   val tintColor = remember(
     key1 = chanTheme.backColor,
