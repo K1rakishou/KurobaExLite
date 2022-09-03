@@ -278,23 +278,22 @@ class ThreadScreen(
     LaunchedEffect(
       key1 = currentThreadDescriptor,
       block = {
-        snapshotFlow {
-          replyLayoutViewModel.getOrCreateReplyLayoutState(currentThreadDescriptor)
-            .replyLayoutVisibilityState.value
-        }.collect { replyLayoutVisibility ->
-          when (replyLayoutVisibility) {
-            ReplyLayoutVisibility.Closed -> {
-              kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
-            }
-            ReplyLayoutVisibility.Opened,
-            ReplyLayoutVisibility.Expanded -> {
-              if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
-                kurobaToolbarContainerState.setToolbar(replyToolbar)
+        val replyLayoutState = replyLayoutViewModel.getOrCreateReplyLayoutState(currentThreadDescriptor)
+
+        snapshotFlow { replyLayoutState.replyLayoutVisibilityState.value }
+          .collect { replyLayoutVisibility ->
+            when (replyLayoutVisibility) {
+              ReplyLayoutVisibility.Closed -> {
+                kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
+              }
+              ReplyLayoutVisibility.Opened,
+              ReplyLayoutVisibility.Expanded -> {
+                if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
+                  kurobaToolbarContainerState.setToolbar(replyToolbar)
+                }
               }
             }
           }
-        }
-
       }
     )
 

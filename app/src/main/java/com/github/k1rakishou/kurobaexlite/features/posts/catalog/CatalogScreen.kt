@@ -342,22 +342,22 @@ class CatalogScreen(
     LaunchedEffect(
       key1 = currentCatalogDescriptor,
       block = {
-        snapshotFlow {
-          replyLayoutViewModel.getOrCreateReplyLayoutState(currentCatalogDescriptor)
-            .replyLayoutVisibilityState.value
-        }.collect { replyLayoutVisibility ->
-          when (replyLayoutVisibility) {
-            ReplyLayoutVisibility.Closed -> {
-              kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
-            }
-            ReplyLayoutVisibility.Opened,
-            ReplyLayoutVisibility.Expanded -> {
-              if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
-                kurobaToolbarContainerState.setToolbar(replyToolbar)
+        val replyLayoutState = replyLayoutViewModel.getOrCreateReplyLayoutState(currentCatalogDescriptor)
+
+        snapshotFlow { replyLayoutState.replyLayoutVisibilityState.value }
+          .collect { replyLayoutVisibility ->
+            when (replyLayoutVisibility) {
+              ReplyLayoutVisibility.Closed -> {
+                kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
+              }
+              ReplyLayoutVisibility.Opened,
+              ReplyLayoutVisibility.Expanded -> {
+                if (!kurobaToolbarContainerState.contains(replyToolbar.toolbarKey)) {
+                  kurobaToolbarContainerState.setToolbar(replyToolbar)
+                }
               }
             }
           }
-        }
       }
     )
 

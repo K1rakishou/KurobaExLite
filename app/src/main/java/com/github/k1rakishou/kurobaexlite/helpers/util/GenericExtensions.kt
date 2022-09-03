@@ -218,7 +218,8 @@ inline fun <T> Collection<T>?.isNotNullNorEmpty(): Boolean {
   return this != null && this.size > 0
 }
 
-fun Throwable.errorMessageOrClassName(): String {
+@JvmOverloads
+fun Throwable.errorMessageOrClassName(userReadable: Boolean = false): String {
   if (!isExceptionImportant()) {
     return this::class.java.name
   }
@@ -227,6 +228,10 @@ fun Throwable.errorMessageOrClassName(): String {
     cause!!.message
   } else {
     message
+  }
+
+  if (userReadable && actualMessage.isNotNullNorBlank()) {
+    return actualMessage
   }
 
   val exceptionClassName = this::class.java.name

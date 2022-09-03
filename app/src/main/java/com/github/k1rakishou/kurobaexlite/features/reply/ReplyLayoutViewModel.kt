@@ -295,7 +295,7 @@ class ReplyLayoutViewModel(
       logcat(TAG) { "pickLocalFile($chanDescriptor) finish, success: ${pickResult.isSuccess}" }
 
       if (!pickResult.isSuccess) {
-        val errorMessage = pickResult.exceptionOrThrow().errorMessageOrClassName()
+        val errorMessage = pickResult.exceptionOrThrow().errorMessageOrClassName(userReadable = true)
 
         snackbarManager.errorToast(
           message = appResources.string(R.string.posts_screen_failed_to_pick_local_file, errorMessage),
