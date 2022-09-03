@@ -25,6 +25,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
@@ -34,9 +35,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
 @Composable
 fun ReplyLayoutContainer(
+  replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel(),
   chanDescriptor: ChanDescriptor?,
   replyLayoutState: IReplyLayoutState,
-  replyLayoutViewModel: ReplyLayoutViewModel,
   onReplayLayoutHeightChanged: (Dp) -> Unit,
   onPostedSuccessfully: (PostDescriptor) -> Unit,
   onAttachedMediaClicked: (AttachedMedia) -> Unit
@@ -168,7 +169,6 @@ fun ReplyLayoutContainer(
         replyLayoutState = replyLayoutState,
         replyLayoutHeight = replyLayoutHeightClampedDp,
         replyLayoutVisibility = replyLayoutVisibility,
-        attachedMediaList = attachedMediaList,
         onExpandReplyLayoutClicked = { replyLayoutState.expandReplyLayout() },
         onCollapseReplyLayoutClicked = { replyLayoutState.collapseReplyLayout() },
         onCloseReplyLayoutClicked = { replyLayoutState.closeReplyLayout() },
@@ -190,7 +190,6 @@ private fun ReplyLayout(
   replyLayoutState: ReplyLayoutState,
   replyLayoutHeight: Dp,
   replyLayoutVisibility: ReplyLayoutVisibility,
-  attachedMediaList: List<AttachedMedia>,
   onExpandReplyLayoutClicked: () -> Unit,
   onCollapseReplyLayoutClicked: () -> Unit,
   onCloseReplyLayoutClicked: () -> Unit,
@@ -202,6 +201,8 @@ private fun ReplyLayout(
   if (replyLayoutHeight < 0.dp) {
     return
   }
+
+  val attachedMediaList = replyLayoutState.attachedMediaList
 
   Column(
     modifier = Modifier
@@ -242,8 +243,8 @@ private fun ReplyLayout(
 
       ReplyAttachments(
         height = replyAttachmentsHeight,
+        replyLayoutState = replyLayoutState,
         replyLayoutVisibility = replyLayoutVisibility,
-        attachedMediaList = attachedMediaList,
         onAttachedMediaClicked = onAttachedMediaClicked,
         onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked,
       )

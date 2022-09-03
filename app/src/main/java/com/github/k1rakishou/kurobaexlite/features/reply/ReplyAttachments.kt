@@ -38,12 +38,14 @@ private const val COIL_FAILED_TO_DECODE_FRAME_ERROR_MSG =
 @Composable
 fun ReplyAttachments(
   height: Dp,
+  replyLayoutState: ReplyLayoutState,
   replyLayoutVisibility: ReplyLayoutVisibility,
-  attachedMediaList: List<AttachedMedia>,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
   onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
   val paddings = 8.dp
+  val attachedMediaList = replyLayoutState.attachedMediaList
+
   val mediaHeight = when (replyLayoutVisibility) {
     ReplyLayoutVisibility.Closed,
     ReplyLayoutVisibility.Opened -> height

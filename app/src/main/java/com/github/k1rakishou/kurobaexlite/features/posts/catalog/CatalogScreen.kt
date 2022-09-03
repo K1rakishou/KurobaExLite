@@ -474,7 +474,7 @@ private fun BoxScope.CatalogPostListScreen(
         ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerHeight
       }
 
-      PostListOptions(
+      return@derivedStateOf PostListOptions(
         isCatalogMode = isCatalogScreen,
         isInPopup = false,
         pullToRefreshEnabled = true,
@@ -611,7 +611,6 @@ private fun BoxScope.CatalogPostListScreen(
   ReplyLayoutContainer(
     chanDescriptor = catalogScreenViewModel.catalogDescriptor,
     replyLayoutState = replyLayoutStateProvider(),
-    replyLayoutViewModel = replyLayoutViewModel,
     onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
     onAttachedMediaClicked = { attachedMedia ->
       // TODO(KurobaEx): show options

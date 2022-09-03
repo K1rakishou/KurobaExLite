@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.reply
 
 import android.os.Bundle
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
@@ -393,6 +394,7 @@ class ReplyLayoutState(
 
 }
 
+@Immutable
 @Parcelize
 data class AttachedMedia(
   val path: String,
@@ -432,6 +434,7 @@ sealed class SendReplyState {
   object Finished : SendReplyState()
 }
 
+@Immutable
 enum class ReplyLayoutVisibility(val value: Int) {
   Closed(0),
   Opened(1),
