@@ -332,6 +332,7 @@ open class NavigationRouter(
   @Stable
   sealed class ScreenAnimation {
     abstract val screenKey: ScreenKey
+    abstract val animationDuration: Int
 
     fun isScreenBeingRemoved(): Boolean {
       return when (this) {
@@ -343,20 +344,40 @@ open class NavigationRouter(
       }
     }
 
-    data class Set(override val screenKey: ScreenKey) : ScreenAnimation() {
-      override fun toString(): String = "Set(key=${screenKey.key})"
+    data class Set(
+      override val screenKey: ScreenKey,
+      override val animationDuration: Int = 0
+    ) : ScreenAnimation() {
+      override fun toString(): String = "Set(key=${screenKey.key}, duration=${animationDuration})"
     }
-    data class Remove(override val screenKey: ScreenKey) : ScreenAnimation() {
-      override fun toString(): String = "Remove(key=${screenKey.key})"
+
+    data class Remove(
+      override val screenKey: ScreenKey,
+      override val animationDuration: Int = 0
+    ) : ScreenAnimation() {
+      override fun toString(): String = "Remove(key=${screenKey.key}, duration=${animationDuration})"
     }
-    data class Push(override val screenKey: ScreenKey) : ScreenAnimation() {
-      override fun toString(): String = "Push(key=${screenKey.key})"
+
+    data class Push(
+      override val screenKey: ScreenKey,
+      override val animationDuration: Int = defaultAnimationDuration
+    ) : ScreenAnimation() {
+      override fun toString(): String = "Push(key=${screenKey.key}, duration=${animationDuration})"
     }
-    data class Pop(override val screenKey: ScreenKey) : ScreenAnimation() {
-      override fun toString(): String = "Pop(key=${screenKey.key})"
+
+    data class Pop(
+      override val screenKey: ScreenKey,
+      override val animationDuration: Int = defaultAnimationDuration
+    ) : ScreenAnimation() {
+      override fun toString(): String = "Pop(key=${screenKey.key}, duration=${animationDuration})"
     }
-    data class Fade(override val screenKey: ScreenKey, val fadeType: FadeType) : ScreenAnimation() {
-      override fun toString(): String = "Fade(key=${screenKey.key}, fadeType=$fadeType)"
+
+    data class Fade(
+      override val screenKey: ScreenKey,
+      val fadeType: FadeType,
+      override val animationDuration: Int = defaultAnimationDuration
+    ) : ScreenAnimation() {
+      override fun toString(): String = "Fade(key=${screenKey.key}, fadeType=${fadeType}, duration=${animationDuration})"
     }
 
     enum class FadeType {
@@ -377,6 +398,10 @@ open class NavigationRouter(
 
     override fun hashCode(): Int {
       return screenKey.hashCode()
+    }
+
+    companion object {
+      private const val defaultAnimationDuration = 200
     }
 
   }

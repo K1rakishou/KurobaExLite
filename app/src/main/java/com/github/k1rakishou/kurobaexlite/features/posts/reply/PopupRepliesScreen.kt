@@ -108,8 +108,10 @@ class PopupRepliesScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
+  private var _unpresentAnimation: NavigationRouter.ScreenAnimation = NavigationRouter.ScreenAnimation.Pop(screenKey)
+
   override val unpresentAnimation: NavigationRouter.ScreenAnimation
-    get() = NavigationRouter.ScreenAnimation.Pop(screenKey)
+    get() = _unpresentAnimation
 
   @OptIn(ExperimentalMaterialApi::class)
   private val swipeableState = SwipeableState(
@@ -147,8 +149,24 @@ class PopupRepliesScreen(
           Anchors.Visible -> {
             // no-op
           }
-          Anchors.Back -> onBackPressed()
-          Anchors.Close -> stopPresenting()
+          Anchors.Back -> {
+            _unpresentAnimation = NavigationRouter.ScreenAnimation.Fade(
+              screenKey = screenKey,
+              animationDuration = 32,
+              fadeType = NavigationRouter.ScreenAnimation.FadeType.Out
+            )
+
+            onBackPressed()
+          }
+          Anchors.Close -> {
+            _unpresentAnimation = NavigationRouter.ScreenAnimation.Fade(
+              screenKey = screenKey,
+              animationDuration = 32,
+              fadeType = NavigationRouter.ScreenAnimation.FadeType.Out
+            )
+
+            stopPresenting()
+          }
         }
       }
     )
