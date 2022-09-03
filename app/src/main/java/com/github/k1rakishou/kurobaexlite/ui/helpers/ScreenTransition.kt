@@ -12,11 +12,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 
 @Composable
 fun ScreenTransition(
@@ -180,16 +182,38 @@ fun ScreenTransition(
   )
 
   if (canRender) {
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .graphicsLayer(
-          alpha = alphaAnimated,
-          scaleX = scaleAnimated,
-          scaleY = scaleAnimated
-        )
-    ) {
-      content()
+    if (composeScreen is FloatingComposeScreen) {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .graphicsLayer {
+            alpha = alphaAnimated
+          }
+          .drawBehind { drawRect(composeScreen.backgroundColor) }
+      ) {
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+              scaleX = scaleAnimated
+              scaleY = scaleAnimated
+            }
+        ) {
+          content()
+        }
+      }
+    } else {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .graphicsLayer {
+            alpha = alphaAnimated
+            scaleX = scaleAnimated
+            scaleY = scaleAnimated
+          }
+      ) {
+        content()
+      }
     }
   }
 }

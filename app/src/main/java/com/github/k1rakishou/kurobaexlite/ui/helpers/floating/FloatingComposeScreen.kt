@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.floating
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.annotation.CallSuper
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
@@ -42,12 +41,7 @@ abstract class FloatingComposeScreen(
   navigationRouter: NavigationRouter,
   private val canDismissByClickingOutside: Boolean = true
 ) : ComposeScreen(screenArgs, componentActivity, navigationRouter) {
-  private val backgroundColor = Color(
-    red = 0f,
-    green = 0f,
-    blue = 0f,
-    alpha = 0.6f
-  )
+  val backgroundColor = Color(red = 0f, green = 0f, blue = 0f, alpha = 0.6f)
 
   val horizPaddingDp by lazy { if (globalUiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
   val vertPaddingDp by lazy { if (globalUiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
@@ -105,7 +99,6 @@ abstract class FloatingComposeScreen(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(backgroundColor)
         .consumeClicks(enabled = true)
     ) {
       CardContent()
