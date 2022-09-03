@@ -77,7 +77,7 @@ open class NavigationRouter(
     }
 
     val screenAnimation = if (withAnimation) {
-      ScreenAnimation.Push(composeScreen.screenKey)
+      composeScreen.pushAnimation
     } else {
       ScreenAnimation.Set(composeScreen.screenKey)
     }
@@ -111,7 +111,7 @@ open class NavigationRouter(
     }
 
     val screenAnimation = if (withAnimation) {
-      ScreenAnimation.Pop(composeScreen.screenKey)
+      composeScreen.popAnimation
     } else {
       ScreenAnimation.Remove(composeScreen.screenKey)
     }
@@ -136,11 +136,10 @@ open class NavigationRouter(
   }
 
   open fun stopPresentingScreen(
-    screenKey: ScreenKey,
-    overrideAnimation: ScreenAnimation? = null
+    screenKey: ScreenKey
   ): Boolean {
     if (parentRouter != null) {
-      return parentRouter.stopPresentingScreen(screenKey, overrideAnimation)
+      return parentRouter.stopPresentingScreen(screenKey)
     }
 
     unreachable("Must never reach here because should be overridden by MainNavigationRouter")
@@ -373,11 +372,11 @@ open class NavigationRouter(
     }
 
     data class Fade(
-      override val screenKey: ScreenKey,
       val fadeType: FadeType,
+      override val screenKey: ScreenKey,
       override val animationDuration: Int = defaultAnimationDuration
     ) : ScreenAnimation() {
-      override fun toString(): String = "Fade(key=${screenKey.key}, fadeType=${fadeType}, duration=${animationDuration})"
+      override fun toString(): String = "Fade(fadeType=${fadeType}, key=${screenKey.key}, duration=${animationDuration})"
     }
 
     enum class FadeType {

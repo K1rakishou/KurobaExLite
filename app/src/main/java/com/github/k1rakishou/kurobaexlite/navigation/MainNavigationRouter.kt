@@ -101,15 +101,14 @@ class MainNavigationRouter : NavigationRouter(
 
     _screenAnimations.put(
       floatingComposeScreen.screenKey,
-      ScreenAnimation.Fade(floatingComposeScreen.screenKey, ScreenAnimation.FadeType.In)
+      floatingComposeScreen.presentAnimation
     )
 
     floatingComposeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Creating)
   }
 
   override fun stopPresentingScreen(
-    screenKey: ScreenKey,
-    overrideAnimation: ScreenAnimation?
+    screenKey: ScreenKey
   ): Boolean {
     val index = _floatingScreensStack.indexOfLast { screen -> screen.screenKey == screenKey }
     if (index < 0) {
@@ -130,7 +129,7 @@ class MainNavigationRouter : NavigationRouter(
 
     _screenAnimations.put(
       screenKey,
-      overrideAnimation ?: ScreenAnimation.Fade(screenKey, ScreenAnimation.FadeType.Out)
+      floatingComposeScreen.unpresentAnimation
     )
 
     return true

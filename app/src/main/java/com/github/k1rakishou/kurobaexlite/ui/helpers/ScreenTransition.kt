@@ -65,8 +65,6 @@ fun ScreenTransition(
   var alphaAnimated by remember(key1 = screenAnimation) { mutableStateOf(alphaInitial) }
   var canRender by remember(key1 = screenAnimation) { mutableStateOf(canRenderInitial) }
 
-  val animationDuration = 200
-
   LaunchedEffect(
     key1 = composeScreen.screenKey,
     key2 = screenAnimation,
@@ -85,7 +83,7 @@ fun ScreenTransition(
               targetValue = 1f,
               initialVelocity = 0f,
               animationSpec = FloatTweenSpec(
-                duration = animationDuration,
+                duration = screenAnimation.animationDuration,
                 delay = 0,
                 easing = FastOutSlowInEasing
               )
@@ -109,7 +107,7 @@ fun ScreenTransition(
               targetValue = 1f,
               initialVelocity = 0f,
               animationSpec = FloatTweenSpec(
-                duration = animationDuration,
+                duration = screenAnimation.animationDuration,
                 delay = 0,
                 easing = FastOutSlowInEasing
               )
@@ -146,7 +144,7 @@ fun ScreenTransition(
               targetValue = targetValue,
               initialVelocity = 0f,
               animationSpec = FloatTweenSpec(
-                duration = animationDuration,
+                duration = screenAnimation.animationDuration,
                 delay = 0,
                 easing = FastOutSlowInEasing
               )
@@ -186,18 +184,16 @@ fun ScreenTransition(
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .graphicsLayer {
-            alpha = alphaAnimated
-          }
+          .graphicsLayer(alpha = alphaAnimated)
           .drawBehind { drawRect(composeScreen.backgroundColor) }
       ) {
         Box(
           modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer {
-              scaleX = scaleAnimated
+            .graphicsLayer(
+              scaleX = scaleAnimated,
               scaleY = scaleAnimated
-            }
+            )
         ) {
           content()
         }
@@ -206,11 +202,11 @@ fun ScreenTransition(
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .graphicsLayer {
-            alpha = alphaAnimated
-            scaleX = scaleAnimated
+          .graphicsLayer(
+            alpha = alphaAnimated,
+            scaleX = scaleAnimated,
             scaleY = scaleAnimated
-          }
+          )
       ) {
         content()
       }

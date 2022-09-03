@@ -52,16 +52,16 @@ abstract class FloatingComposeScreen(
   open val presentAnimation: NavigationRouter.ScreenAnimation
     get() {
       return NavigationRouter.ScreenAnimation.Fade(
-        screenKey = screenKey,
-        fadeType = NavigationRouter.ScreenAnimation.FadeType.In
+        fadeType = NavigationRouter.ScreenAnimation.FadeType.In,
+        screenKey = screenKey
       )
     }
 
   open val unpresentAnimation: NavigationRouter.ScreenAnimation
     get() {
       return NavigationRouter.ScreenAnimation.Fade(
-        screenKey = screenKey,
-        fadeType = NavigationRouter.ScreenAnimation.FadeType.Out
+        fadeType = NavigationRouter.ScreenAnimation.FadeType.Out,
+        screenKey = screenKey
       )
     }
 
@@ -207,10 +207,7 @@ abstract class FloatingComposeScreen(
   }
 
   protected fun stopPresenting(): Boolean {
-    return navigationRouter.stopPresentingScreen(
-      screenKey = screenKey,
-      overrideAnimation = unpresentAnimation
-    )
+    return navigationRouter.stopPresentingScreen(screenKey)
   }
 
   protected class TouchPositionDependantAlignment(

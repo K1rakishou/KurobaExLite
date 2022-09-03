@@ -68,6 +68,12 @@ abstract class ComposeScreen protected constructor(
   val screenLifecycle: ScreenLifecycle
     get() = _screenLifecycle
 
+  open val pushAnimation: NavigationRouter.ScreenAnimation
+    get() = NavigationRouter.ScreenAnimation.Push(screenKey)
+
+  open val popAnimation: NavigationRouter.ScreenAnimation
+    get() = NavigationRouter.ScreenAnimation.Pop(screenKey)
+
   fun onNewArguments(newArgs: Bundle?) {
     savedStateViewModel.onNewArguments(newArgs)
   }

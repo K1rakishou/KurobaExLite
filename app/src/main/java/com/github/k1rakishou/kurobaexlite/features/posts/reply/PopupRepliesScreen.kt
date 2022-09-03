@@ -151,18 +151,18 @@ class PopupRepliesScreen(
           }
           Anchors.Back -> {
             _unpresentAnimation = NavigationRouter.ScreenAnimation.Fade(
+              fadeType = NavigationRouter.ScreenAnimation.FadeType.Out,
               screenKey = screenKey,
-              animationDuration = 32,
-              fadeType = NavigationRouter.ScreenAnimation.FadeType.Out
+              animationDuration = 32
             )
 
             onBackPressed()
           }
           Anchors.Close -> {
             _unpresentAnimation = NavigationRouter.ScreenAnimation.Fade(
+              fadeType = NavigationRouter.ScreenAnimation.FadeType.Out,
               screenKey = screenKey,
-              animationDuration = 32,
-              fadeType = NavigationRouter.ScreenAnimation.FadeType.Out
+              animationDuration = 32
             )
 
             stopPresenting()
