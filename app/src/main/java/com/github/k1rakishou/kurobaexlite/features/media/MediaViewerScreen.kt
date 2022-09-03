@@ -34,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -149,8 +151,10 @@ class MediaViewerScreen(
     }
   }
 
+  @OptIn(ExperimentalComposeUiApi::class)
   @Composable
   override fun CardContent() {
+    val softwareKeyboardController = LocalSoftwareKeyboardController.current
     val mediaViewerScreenState = mediaViewerScreenViewModel.mediaViewerScreenState
 
     val mediaViewerParamsMut by listenForArgumentsNullable<MediaViewerParams?>(mediaViewerParamsKey, null).collectAsState()
@@ -158,6 +162,11 @@ class MediaViewerScreen(
 
     val mediaViewerParams = mediaViewerParamsMut ?: return
     val openedFromScreen = openedFromScreenMut ?: return
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = { softwareKeyboardController?.hide() }
+    )
 
     LaunchedEffect(
       key1 = Unit,

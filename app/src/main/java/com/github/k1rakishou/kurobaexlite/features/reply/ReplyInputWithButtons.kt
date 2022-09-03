@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -11,13 +12,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.platform.LocalView
@@ -42,6 +50,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.LayoutOrientation
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SlotLayout
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun ReplyInputWithButtons(
@@ -97,8 +108,10 @@ fun ReplyInputWithButtons(
         ReplyInput(
           replyLayoutEnabled = replyLayoutEnabled,
           replyText = replyText,
+          replyLayoutVisibility = replyLayoutVisibility,
+          replyLayoutState = replyLayoutState,
           replyInputVisualTransformation = replyInputVisualTransformation,
-          replyLayoutState = replyLayoutState
+          onSendReplyClicked = onSendReplyClicked
         )
       }
 
@@ -124,24 +137,58 @@ fun ReplyInputWithButtons(
 private fun ReplyInput(
   replyLayoutEnabled: Boolean,
   replyText: TextFieldValue,
+  replyLayoutVisibility: ReplyLayoutVisibility,
+  replyLayoutState: ReplyLayoutState,
   replyInputVisualTransformation: VisualTransformation,
-  replyLayoutState: ReplyLayoutState
+  onSendReplyClicked: () -> Unit,
 ) {
+  val coroutineScope = rememberCoroutineScope()
+
   Column(
     modifier = Modifier
       .fillMaxSize()
       .padding(horizontal = 8.dp),
   ) {
+    val focusRequest = remember { FocusRequester() }
+    var prevReplyLayoutVisibility by remember { mutableStateOf<ReplyLayoutVisibility>(ReplyLayoutVisibility.Closed) }
+
+    DisposableEffect(
+      key1 = replyLayoutVisibility,
+      effect = {
+        var job: Job? = null
+
+        if (
+          replyLayoutVisibility != ReplyLayoutVisibility.Closed &&
+          prevReplyLayoutVisibility == ReplyLayoutVisibility.Closed
+        ) {
+          job = coroutineScope.launch {
+            delay(64)
+            focusRequest.requestFocus()
+          }
+        }
+
+        prevReplyLayoutVisibility = replyLayoutVisibility
+
+        onDispose {
+          job?.cancel()
+          focusRequest.freeFocus()
+        }
+      }
+    )
+
     KurobaComposeCustomTextField(
       modifier = Modifier
         .fillMaxWidth()
         .weight(1f)
-        .padding(vertical = 4.dp),
+        .padding(vertical = 4.dp)
+        .focusable()
+        .focusRequester(focusRequest),
       enabled = replyLayoutEnabled,
       value = replyText,
       singleLine = false,
       maxLines = Int.MAX_VALUE,
       visualTransformation = replyInputVisualTransformation,
+      keyboardActions = KeyboardActions(onDone = { onSendReplyClicked() }),
       onValueChange = { newTextFieldValue ->
         replyLayoutState.onReplyTextChanged(newTextFieldValue)
       }
@@ -188,10 +235,10 @@ private fun ReplyButtons(
   replyLayoutVisibility: ReplyLayoutVisibility,
   iconSize: Dp,
   replyLayoutEnabled: Boolean,
+  sendReplyState: SendReplyState,
   onExpandReplyLayoutClicked: () -> Unit,
   onCollapseReplyLayoutClicked: () -> Unit,
   onCloseReplyLayoutClicked: () -> Unit,
-  sendReplyState: SendReplyState,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit,
   replySendProgress: Float?

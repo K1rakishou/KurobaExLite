@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
@@ -39,6 +43,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class PostsScreenLocalSearchToolbar(
@@ -138,16 +143,37 @@ class PostsScreenLocalSearchToolbar(
         )
       },
       middlePart = {
+        val keyboardOptions = remember { KeyboardOptions(autoCorrect = false) }
+        val focusRequest = remember { FocusRequester() }
+
+        DisposableEffect(
+          key1 = Unit,
+          effect = {
+            val job = coroutineScope.launch {
+              delay(64)
+              focusRequest.requestFocus()
+            }
+
+            onDispose {
+              job.cancel()
+              focusRequest.freeFocus()
+            }
+          }
+        )
+
         KurobaComposeCustomTextField(
           modifier = Modifier
             .wrapContentHeight()
             .fillMaxWidth()
-            .focusable(),
+            .focusable()
+            .focusRequester(focusRequest),
           value = searchQuery,
           labelText = stringResource(R.string.type_to_search_hint),
           singleLine = true,
           maxLines = 1,
+          keyboardOptions = keyboardOptions,
           parentBackgroundColor = parentBgColor,
+          keyboardActions = KeyboardActions(onDone = { onSearchQueryUpdated.invoke(searchQuery.text) }),
           onValueChange = { updatedQuery ->
             if (searchQuery != updatedQuery) {
               searchQuery = updatedQuery

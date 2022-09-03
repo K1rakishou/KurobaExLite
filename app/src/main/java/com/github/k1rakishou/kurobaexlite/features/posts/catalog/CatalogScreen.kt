@@ -87,11 +87,7 @@ class CatalogScreen(
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
-  private val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
-
-  private val historyScreenViewModel = componentActivity.viewModel<HistoryScreenViewModel>()
-  private val bookmarksScreenViewModel = componentActivity.viewModel<BookmarksScreenViewModel>()
 
   private val catalogScreenToolbarActionHandler by lazy {
     CatalogScreenToolbarActionHandler(componentActivity, screenCoroutineScope)
@@ -429,7 +425,6 @@ private fun BoxScope.CatalogPostListScreen(
   historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel(),
   bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel(),
   homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel(),
-  replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel(),
   snackbarManager: SnackbarManager = koinRemember(),
   globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
   chanThreadManager: ChanThreadManager = koinRemember(),
