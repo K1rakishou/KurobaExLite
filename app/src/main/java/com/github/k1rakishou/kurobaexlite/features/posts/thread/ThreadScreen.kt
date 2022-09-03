@@ -304,7 +304,7 @@ class ThreadScreen(
         screenContentLoaded = screenContentLoaded,
         screenKey = screenKey,
         isCatalogScreen = isCatalogScreen,
-        replyLayoutState = replyLayoutState,
+        replyLayoutStateProvider = { replyLayoutState },
         postLongtapContentMenuProvider = { postLongtapContentMenu },
         linkableClickHelperProvider = { linkableClickHelper },
         showRepliesForPost = { replyViewMode -> showRepliesForPost(replyViewMode) },
@@ -369,7 +369,7 @@ private fun BoxScope.ThreadPostListScreen(
   screenContentLoaded: Boolean,
   screenKey: ScreenKey,
   isCatalogScreen: Boolean,
-  replyLayoutState: IReplyLayoutState,
+  replyLayoutStateProvider: () -> IReplyLayoutState,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
   linkableClickHelperProvider: () -> LinkableClickHelper,
   showRepliesForPost: (PopupRepliesScreen.ReplyViewMode) -> Unit,
@@ -513,7 +513,7 @@ private fun BoxScope.ThreadPostListScreen(
           return@PostsScreenFloatingActionButton
         }
 
-        replyLayoutState.openReplyLayout()
+        replyLayoutStateProvider().openReplyLayout()
       }
     )
   } else {
@@ -525,7 +525,7 @@ private fun BoxScope.ThreadPostListScreen(
             return@collectLatest
           }
 
-          replyLayoutState.openReplyLayout()
+          replyLayoutStateProvider().openReplyLayout()
         }
       }
     )
@@ -537,7 +537,7 @@ private fun BoxScope.ThreadPostListScreen(
 
   ReplyLayoutContainer(
     chanDescriptor = threadScreenViewModel.chanDescriptor,
-    replyLayoutState = replyLayoutState,
+    replyLayoutState = replyLayoutStateProvider(),
     replyLayoutViewModel = replyLayoutViewModel,
     onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
     onAttachedMediaClicked = { attachedMedia ->
