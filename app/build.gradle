@@ -199,7 +199,7 @@ dependencies {
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
     implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:e98f7d0fb3'
-    implementation 'com.github.K1rakishou:ComposeCustomTextSelection:b1686daeb9'
+    implementation 'com.github.K1rakishou:ComposeCustomTextSelection:8724bc088d'
 
     implementation "com.squareup.moshi:moshi-kotlin:${moshi}"
     ksp "com.squareup.moshi:moshi-kotlin-codegen:${moshi}"
