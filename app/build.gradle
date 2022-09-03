@@ -16,8 +16,8 @@ android {
         applicationId "com.github.k1rakishou.kurobaexlite"
         minSdk 21
         targetSdk 32
-        versionCode 10003
-        versionName "1.0.3"
+        versionCode 10004
+        versionName "1.0.4"
         archivesBaseName = "KurobaExLite"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
