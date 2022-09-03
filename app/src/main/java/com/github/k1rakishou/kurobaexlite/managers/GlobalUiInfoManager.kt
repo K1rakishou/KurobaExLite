@@ -523,7 +523,7 @@ class GlobalUiInfoManager(
     _currentDrawerVisibility = drawerVisibility
   }
 
-  private fun updateLayoutModeAndCurrentPage(
+  private suspend fun updateLayoutModeAndCurrentPage(
     layoutType: LayoutType,
     orientation: Int?,
     totalScreenWidth: Int
@@ -584,10 +584,10 @@ class GlobalUiInfoManager(
         availableWidthForCatalog < minCatalogSplitModelWidth
       ) {
         val pair = Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth)
-        _notEnoughWidthForSplitLayoutFlow.tryEmit(pair)
+        _notEnoughWidthForSplitLayoutFlow.emit(pair)
         currentUiLayoutModeState.value = MainUiLayoutMode.Phone
       } else {
-        _notEnoughWidthForSplitLayoutFlow.tryEmit(null)
+        _notEnoughWidthForSplitLayoutFlow.emit(null)
         currentUiLayoutModeState.value = uiLayoutMode
       }
     }

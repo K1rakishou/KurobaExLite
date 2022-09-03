@@ -149,7 +149,6 @@ class ReportIssueScreen(
     Column(
       modifier = Modifier
         .fillMaxSize()
-        .background(chanTheme.backColor)
         .padding(paddings)
     ) {
       var issueNumber by issueNumberState
