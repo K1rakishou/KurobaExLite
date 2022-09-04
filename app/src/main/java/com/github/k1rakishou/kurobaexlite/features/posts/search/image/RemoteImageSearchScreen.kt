@@ -390,7 +390,7 @@ class RemoteImageSearchScreen(
           modifier = Modifier
             .fillMaxSize()
             .padding(bottom = windowInsets.bottom),
-          errorMessage = result.error.errorMessageOrClassName()
+          errorMessage = result.error.errorMessageOrClassName(userReadable = true)
         )
 
         return

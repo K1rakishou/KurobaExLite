@@ -249,7 +249,7 @@ class MediaViewerScreen(
             description = DialogScreen.Text.String(
               context.resources.getString(
                 R.string.media_viewer_plugins_libs_installation_description_failure,
-                error.errorMessageOrClassName()
+                error.errorMessageOrClassName(userReadable = true)
               )
             ),
             positiveButton = DialogScreen.okButton()
@@ -400,7 +400,7 @@ class MediaViewerScreen(
           val message = context.resources.getString(
             R.string.media_viewer_download_failed,
             postImage.originalFileNameWithExtension(),
-            error.errorMessageOrClassName()
+            error.errorMessageOrClassName(userReadable = true)
           )
 
           snackbarManager.toast(message = message, screenKey = MainScreen.SCREEN_KEY)
@@ -1251,7 +1251,7 @@ private fun DisplayImageLoadError(
     modifier = Modifier.fillMaxSize(),
     additionalPaddings = additionalPaddings
   ) {
-    KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName()}")
+    KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName(userReadable = true)}")
   }
 }
 

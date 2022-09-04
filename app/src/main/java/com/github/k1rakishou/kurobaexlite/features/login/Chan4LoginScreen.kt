@@ -189,7 +189,7 @@ class Chan4LoginScreen(
             message = { throwable ->
               appResources.string(
                 R.string.chan4_login_failed_to_log_out,
-                throwable.errorMessageOrClassName()
+                throwable.errorMessageOrClassName(userReadable = true)
               )
             }
           )
@@ -218,7 +218,7 @@ class Chan4LoginScreen(
             message = { throwable ->
               appResources.string(
                 R.string.chan4_login_failed_to_log_in,
-                throwable.errorMessageOrClassName()
+                throwable.errorMessageOrClassName(userReadable = true)
               )
             }
           )

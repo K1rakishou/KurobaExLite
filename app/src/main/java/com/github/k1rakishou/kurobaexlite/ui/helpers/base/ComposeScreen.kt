@@ -249,7 +249,7 @@ abstract class ComposeScreen protected constructor(
   ): Result<T> {
     if (isFailure) {
       val message = message?.invoke(this.exceptionOrThrow())
-        ?: this.exceptionOrThrow().errorMessageOrClassName()
+        ?: this.exceptionOrThrow().errorMessageOrClassName(userReadable = true)
 
       val duration = if (longToast) {
         SnackbarManager.STANDARD_DELAY

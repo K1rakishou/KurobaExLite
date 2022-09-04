@@ -373,7 +373,7 @@ private fun BuildBoardsList(
         is AsyncData.Error -> {
           item(key = "error_indicator") {
             val errorMessage = remember(key1 = loadBoardsForSiteAsyncData) {
-              loadBoardsForSiteAsyncData.error.errorMessageOrClassName()
+              loadBoardsForSiteAsyncData.error.errorMessageOrClassName(userReadable = true)
             }
 
             KurobaComposeText(

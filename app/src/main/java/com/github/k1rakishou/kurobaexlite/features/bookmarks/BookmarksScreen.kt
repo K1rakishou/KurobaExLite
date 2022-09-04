@@ -231,7 +231,8 @@ class BookmarksScreen(
               bookmarksScreenViewModel.pruneInactiveBookmarks(
                 onFinished = { deleteResult ->
                   if (deleteResult.isFailure) {
-                    val errorMessage = deleteResult.exceptionOrThrow().errorMessageOrClassName()
+                    val errorMessage = deleteResult.exceptionOrThrow()
+                      .errorMessageOrClassName(userReadable = true)
 
                     snackbarManager.errorToast(
                       message = context.resources.getString(

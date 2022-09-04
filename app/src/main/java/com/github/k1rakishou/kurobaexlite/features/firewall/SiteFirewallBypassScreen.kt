@@ -177,7 +177,10 @@ class SiteFirewallBypassScreen(
       }
       is BypassResult.Error -> {
         logcatError(TAG) { "waitAndHandleResult() Error: ${cookieResult.exception.errorMessageOrClassName()}" }
-        snackbarManager.errorToast("Failed to pass firewall ${firewallType}, error: ${cookieResult.exception.errorMessageOrClassName()}")
+        snackbarManager.errorToast(
+          "Failed to pass firewall ${firewallType}, " +
+            "error: ${cookieResult.exception.errorMessageOrClassName(userReadable = true)}"
+        )
       }
       BypassResult.Canceled -> {
         logcatError(TAG) { "waitAndHandleResult() Canceled" }

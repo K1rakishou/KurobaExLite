@@ -516,7 +516,7 @@ private fun AlbumImageItem(
           val error = clickedImageResult.exceptionOrThrow()
 
           snackbarManager.errorToast(
-            message = error.errorMessageOrClassName(),
+            message = error.errorMessageOrClassName(userReadable = true),
             screenKey = MainScreen.SCREEN_KEY
           )
 

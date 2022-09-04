@@ -371,7 +371,7 @@ class CatalogScreen(
         onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
           val postImageData = if (postImageDataResult.isFailure) {
             snackbarManager.errorToast(
-              message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(),
+              message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(userReadable = true),
               screenKey = screenKey
             )
 

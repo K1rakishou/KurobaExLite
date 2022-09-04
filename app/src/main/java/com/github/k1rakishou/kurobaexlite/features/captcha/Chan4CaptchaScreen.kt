@@ -415,7 +415,7 @@ class Chan4CaptchaScreen(
               modifier = Modifier
                 .fillMaxSize()
                 .padding(vertical = 16.dp),
-              errorMessage = cia.error.errorMessageOrClassName()
+              errorMessage = cia.error.errorMessageOrClassName(userReadable = true)
             )
 
             null

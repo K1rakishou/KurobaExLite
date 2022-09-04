@@ -146,7 +146,8 @@ class AndroidHelpers(
 
         snackbarManager.toast(
           screenKey = MainScreen.SCREEN_KEY,
-          message = "Failed to open link because startActivity crashed with '${e.errorMessageOrClassName()}' error"
+          message = "Failed to open link because startActivity crashed with " +
+            "'${e.errorMessageOrClassName(userReadable = true)}' error"
         )
       }
 
@@ -215,7 +216,8 @@ class AndroidHelpers(
 
       snackbarManager.toast(
         screenKey = MainScreen.SCREEN_KEY,
-        message = "Failed to open intent because startActivity crashed with '${e.errorMessageOrClassName()}' error"
+        message = "Failed to open intent because startActivity crashed with " +
+          "'${e.errorMessageOrClassName(userReadable = true)}' error"
       )
 
       return false

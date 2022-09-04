@@ -55,7 +55,7 @@ data class ThreadStatusCellData(
       }
       is JsonDataException,
       is JsonEncodingException,
-      is ClientException -> error.errorMessageOrClassName()
+      is ClientException -> error.errorMessageOrClassName(userReadable = true)
       else -> {
         if (error.message != null) {
           return error.message!!

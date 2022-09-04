@@ -524,7 +524,7 @@ private fun LazyItemScope.PostListErrorContent(
   postsScreenViewModel: PostScreenViewModel
 ) {
   val errorMessage = remember(key1 = postListAsyncError) {
-    postListAsyncError.error.errorMessageOrClassName()
+    postListAsyncError.error.errorMessageOrClassName(userReadable = true)
   }
 
   val sizeModifier = if (isInPopup) {

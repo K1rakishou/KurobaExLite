@@ -297,7 +297,7 @@ class GlobalSearchScreen(
   @Composable
   private fun LazyItemScope.PageLoadErrorContent(throwable: Throwable) {
     val currentPage by globalSearchScreenViewModel.currentPageState
-    val errorMessage = remember(key1 = throwable) { throwable.errorMessageOrClassName() }
+    val errorMessage = remember(key1 = throwable) { throwable.errorMessageOrClassName(userReadable = true) }
 
     KurobaComposeErrorWithButton(
       modifier = Modifier
@@ -315,7 +315,7 @@ class GlobalSearchScreen(
     screenStateAsyncError: AsyncData.Error,
   ) {
     val errorMessage = remember(key1 = screenStateAsyncError) {
-      screenStateAsyncError.error.errorMessageOrClassName()
+      screenStateAsyncError.error.errorMessageOrClassName(userReadable = true)
     }
 
     KurobaComposeErrorWithButton(
