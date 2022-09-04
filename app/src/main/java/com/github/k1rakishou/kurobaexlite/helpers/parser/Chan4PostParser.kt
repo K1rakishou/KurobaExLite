@@ -93,6 +93,29 @@ class Chan4PostParser : AbstractSitePostParser() {
       return null
     }
 
+    if (href.startsWith(">>>/")) {
+      // Cross-board quote >>>/g/1234567890
+      val crossBoardLinkSplit = href.drop(4).split("/")
+
+      val boardCode = crossBoardLinkSplit.getOrNull(0)
+        ?: return null
+      val threadNo = crossBoardLinkSplit.getOrNull(1)?.toLongOrNull()
+        ?: return null
+
+      val quotedThread = PostDescriptor.create(
+        siteKey = postDescriptor.siteKey,
+        boardCode = boardCode,
+        threadNo = threadNo,
+        postNo = threadNo
+      )
+
+      return TextPartSpan.Linkable.Quote(
+        crossThread = true,
+        dead = isDeadLink,
+        postDescriptor = quotedThread
+      )
+    }
+
     if (href.startsWith("#") || href.startsWith(">>")) {
       // Internal quote, e.g. '#p370525473'
       // or

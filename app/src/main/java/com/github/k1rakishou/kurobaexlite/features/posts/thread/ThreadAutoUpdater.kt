@@ -52,28 +52,6 @@ class ThreadAutoUpdater(
     nextRunTime = SystemClock.elapsedRealtime() + (DELAYS.first() * 1000L)
   }
 
-  private fun pause() {
-    autoUpdaterJob?.cancel()
-    autoUpdaterJob = null
-
-    logcat(TAG) { "Thread auto-updater paused, currentThreadDescriptor=${currentThreadDescriptor}" }
-  }
-
-  private fun resume() {
-    val threadDescriptor = currentThreadDescriptor
-    if (threadDescriptor == null) {
-      logcat(TAG) { "Thread auto-updater cannot be resumed because currentThreadDescriptor is null" }
-      return
-    }
-
-    logcat(TAG) { "Thread auto-updater resumed, threadDescriptor=${threadDescriptor}" }
-
-    runAutoUpdaterLoop(
-      threadDescriptor = threadDescriptor,
-      isAfterAppLifecycleUpdate = true
-    )
-  }
-
   fun runAutoUpdaterLoop(threadDescriptor: ThreadDescriptor, isAfterAppLifecycleUpdate: Boolean) {
     if (currentThreadDescriptor == threadDescriptor && !isAfterAppLifecycleUpdate) {
       logcat(TAG, LogPriority.VERBOSE) {
@@ -128,6 +106,28 @@ class ThreadAutoUpdater(
     currentThreadDescriptor = null
     updateIndex = 0
     nextRunTime = null
+  }
+
+  private fun pause() {
+    autoUpdaterJob?.cancel()
+    autoUpdaterJob = null
+
+    logcat(TAG) { "Thread auto-updater paused, currentThreadDescriptor=${currentThreadDescriptor}" }
+  }
+
+  private fun resume() {
+    val threadDescriptor = currentThreadDescriptor
+    if (threadDescriptor == null) {
+      logcat(TAG) { "Thread auto-updater cannot be resumed because currentThreadDescriptor is null" }
+      return
+    }
+
+    logcat(TAG) { "Thread auto-updater resumed, threadDescriptor=${threadDescriptor}" }
+
+    runAutoUpdaterLoop(
+      threadDescriptor = threadDescriptor,
+      isAfterAppLifecycleUpdate = true
+    )
   }
 
   companion object {
