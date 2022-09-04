@@ -173,21 +173,16 @@ class PostCommentApplier {
               underline = true
 
               if (span is TextPartSpan.Linkable.Quote) {
-                if (span.postDescriptor.isOP && !span.crossThread) {
-                  this.append(" ")
-                  this.append(OP_POSTFIX)
-                }
-
-                if (span.crossThread) {
-                  this.append(" ")
-                  this.append(CROSS_THREAD_POSTFIX)
-                }
-
                 if (span.dead) {
                   this.append(" ")
                   this.append(DEAD_POSTFIX)
 
                   linethrough = true
+                }
+
+                if (span.postDescriptor.isOP && !span.crossThread) {
+                  this.append(" ")
+                  this.append(OP_POSTFIX)
                 }
 
                 val markedPostInfoSet = markedPosts[span.postDescriptor]
@@ -200,6 +195,11 @@ class PostCommentApplier {
                       }
                     }
                   }
+                }
+
+                if (span.crossThread) {
+                  this.append(" ")
+                  this.append(CROSS_THREAD_POSTFIX)
                 }
 
                 bold = parsedPostDataContext.highlightedPostDescriptor == span.postDescriptor
