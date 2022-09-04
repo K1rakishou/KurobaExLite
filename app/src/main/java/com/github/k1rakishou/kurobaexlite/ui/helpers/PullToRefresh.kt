@@ -66,7 +66,7 @@ fun PullToRefresh(
   pullThreshold: Dp = 128.dp,
   pullToRefreshState: PullToRefreshState,
   canPull: () -> Boolean = { true },
-  onTriggered: suspend () -> Unit,
+  onTriggered: () -> Unit,
   content: @Composable () -> Unit
 ) {
   val density = LocalDensity.current

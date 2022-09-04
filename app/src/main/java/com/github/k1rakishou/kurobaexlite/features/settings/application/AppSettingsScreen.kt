@@ -26,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingGroup
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreen
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
@@ -106,24 +107,6 @@ class AppSettingsScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        appSettingsScreenViewModel.showMenuItemsFlow.collectLatest { displayedMenuOptions ->
-          displayMenuOptionsAndWaitForResult(displayedMenuOptions)
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        appSettingsScreenViewModel.showScreenFlow.collectLatest { displayScreenRequest ->
-          displayScreen(displayScreenRequest)
-        }
-      }
-    )
-
     HandleBackPresses {
       if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
@@ -132,112 +115,14 @@ class AppSettingsScreen(
       return@HandleBackPresses popScreen()
     }
 
-    GradientBackground(
-      modifier = Modifier
-        .fillMaxSize()
-        .consumeClicks()
-    ) {
-      val currentScreen by appSettingsScreenViewModel.currentScreen.collectAsState()
-      val settingScreenMut by appSettingsScreenViewModel.settingScreen(currentScreen).collectAsState()
-      val settingScreen = settingScreenMut
-
-      if (settingScreen == null) {
-        KurobaComposeLoadingIndicator()
-      } else {
-        KurobaComposeFadeIn {
-          SettingScreen(settingScreen)
-        }
-      }
-    }
-  }
-
-  @Composable
-  private fun SettingScreen(settingScreen: SettingScreen) {
-    val windowInsets = LocalWindowInsets.current
-    val lazyListState = rememberLazyListState()
-    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-
-    val contentPadding = remember(key1 = windowInsets) {
-      PaddingValues(
-        top = windowInsets.top + toolbarHeight,
-        bottom = windowInsets.bottom
-      )
-    }
-
-    LazyColumnWithFastScroller(
-      lazyListState = lazyListState,
-      contentPadding = contentPadding,
-      content = {
-        val settingGroups = settingScreen.groups
-
-        items(
-          count = settingGroups.size,
-          key = { index -> settingGroups[index].groupKey },
-          itemContent = { index ->
-            val group = settingGroups[index]
-
-            SettingGroup(group)
-          }
-        )
-      }
+    ContentInternal(
+      displayMenuOptionsAndWaitForResult = { displayedMenuOptions ->
+        displayMenuOptionsAndWaitForResult(displayedMenuOptions)
+      },
+      displayScreen = { displayScreenRequest ->
+        displayScreen(displayScreenRequest)
+      },
     )
-  }
-
-  @Composable
-  private fun SettingGroup(group: SettingGroup) {
-    val chanTheme = LocalChanTheme.current
-
-    KurobaComposeCard(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-        .padding(vertical = 8.dp, horizontal = 4.dp)
-    ) {
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight()
-      ) {
-        if (group.groupName != null) {
-          Text(
-            modifier = Modifier
-              .fillMaxWidth()
-              .wrapContentHeight()
-              .padding(vertical = 8.dp, horizontal = 8.dp),
-            text = group.groupName,
-            color = chanTheme.accentColor,
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 18.sp
-          )
-        }
-
-        if (group.groupDescription != null) {
-          Text(
-            modifier = Modifier
-              .fillMaxWidth()
-              .wrapContentHeight()
-              .padding(vertical = 4.dp, horizontal = 8.dp),
-            text = group.groupDescription,
-            color = chanTheme.textColorSecondary,
-            fontSize = 14.sp
-          )
-        }
-
-        for ((index, settingItem) in group.settingItems.withIndex()) {
-          key(settingItem.key) {
-            settingItem.Content()
-
-            if (index < group.settingItems.lastIndex) {
-              KurobaComposeDivider(
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .padding(horizontal = 4.dp)
-              )
-            }
-          }
-        }
-      }
-    }
   }
 
   private fun displayScreen(
@@ -280,4 +165,139 @@ class AppSettingsScreen(
     val SCREEN_KEY = ScreenKey("AppSettingsScreen")
   }
 
+}
+
+
+@Composable
+private fun ContentInternal(
+  displayMenuOptionsAndWaitForResult: (AppSettingsScreenViewModel.DisplayedMenuOptions) -> Unit,
+  displayScreen: (AppSettingsScreenViewModel.DisplayScreenRequest) -> Unit
+) {
+  val appSettingsScreenViewModel: AppSettingsScreenViewModel = koinRememberViewModel()
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      appSettingsScreenViewModel.showMenuItemsFlow.collectLatest { displayedMenuOptions ->
+        displayMenuOptionsAndWaitForResult(displayedMenuOptions)
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      appSettingsScreenViewModel.showScreenFlow.collectLatest { displayScreenRequest ->
+        displayScreen(displayScreenRequest)
+      }
+    }
+  )
+
+  GradientBackground(
+    modifier = Modifier
+      .fillMaxSize()
+      .consumeClicks()
+  ) {
+    val currentScreen by appSettingsScreenViewModel.currentScreen.collectAsState()
+    val settingScreenMut by appSettingsScreenViewModel.settingScreen(currentScreen)
+      .collectAsState()
+    val settingScreen = settingScreenMut
+
+    if (settingScreen == null) {
+      KurobaComposeLoadingIndicator()
+    } else {
+      KurobaComposeFadeIn {
+        SettingScreen(settingScreen)
+      }
+    }
+  }
+}
+
+@Composable
+private fun SettingScreen(settingScreen: SettingScreen) {
+  val windowInsets = LocalWindowInsets.current
+  val lazyListState = rememberLazyListState()
+  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+
+  val contentPadding = remember(key1 = windowInsets) {
+    PaddingValues(
+      top = windowInsets.top + toolbarHeight,
+      bottom = windowInsets.bottom
+    )
+  }
+
+  LazyColumnWithFastScroller(
+    lazyListState = lazyListState,
+    contentPadding = contentPadding,
+    content = {
+      val settingGroups = settingScreen.groups
+
+      items(
+        count = settingGroups.size,
+        key = { index -> settingGroups[index].groupKey },
+        itemContent = { index ->
+          val group = settingGroups[index]
+
+          SettingGroup(group)
+        }
+      )
+    }
+  )
+}
+
+@Composable
+private fun SettingGroup(group: SettingGroup) {
+  val chanTheme = LocalChanTheme.current
+
+  KurobaComposeCard(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .padding(vertical = 8.dp, horizontal = 4.dp)
+  ) {
+    Column(
+      modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+    ) {
+      if (group.groupName != null) {
+        Text(
+          modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(vertical = 8.dp, horizontal = 8.dp),
+          text = group.groupName,
+          color = chanTheme.accentColor,
+          fontWeight = FontWeight.SemiBold,
+          fontSize = 18.sp
+        )
+      }
+
+      if (group.groupDescription != null) {
+        Text(
+          modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .padding(vertical = 4.dp, horizontal = 8.dp),
+          text = group.groupDescription,
+          color = chanTheme.textColorSecondary,
+          fontSize = 14.sp
+        )
+      }
+
+      for ((index, settingItem) in group.settingItems.withIndex()) {
+        key(settingItem.key) {
+          settingItem.Content()
+
+          if (index < group.settingItems.lastIndex) {
+            KurobaComposeDivider(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
+            )
+          }
+        }
+      }
+    }
+  }
 }

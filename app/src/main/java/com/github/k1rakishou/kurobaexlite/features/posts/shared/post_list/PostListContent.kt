@@ -95,7 +95,7 @@ internal fun PostListContent(
     PostListLoadingContent(isInPopup)
   },
   errorContent: @Composable LazyItemScope.(AsyncData.Error, Boolean) -> Unit = { postListAsyncError, isInPopup ->
-    PostListErrorContent(postListAsyncError, isInPopup, postsScreenViewModelProvider())
+    PostListErrorContent(postListAsyncError, isInPopup, postsScreenViewModelProvider)
   },
 ) {
   val postsScreenViewModel = postsScreenViewModelProvider()
@@ -276,7 +276,7 @@ internal fun PostListContent(
       lazyListState = lazyListState,
       chanDescriptor = chanDescriptor,
       orientation = postListOptions.orientation,
-      postsScreenViewModel = postsScreenViewModel
+      postsScreenViewModelProvider = postsScreenViewModelProvider
     )
   }
 }
@@ -419,19 +419,17 @@ private fun PostListInternal(
       topPadding = pullToRefreshTopPaddingDp,
       pullToRefreshState = pullToRefreshState,
       canPull = { searchQuery == null },
-      onTriggered = remember {
-        {
-          postsScreenViewModel.reload(
-            loadOptions = PostScreenViewModel.LoadOptions(
-              showLoadingIndicator = false,
-              forced = true
-            ),
-            onReloadFinished = {
-              pullToRefreshState.stopRefreshing()
-              postsScreenViewModel.scrollTop()
-            }
-          )
-        }
+      onTriggered = {
+        postsScreenViewModel.reload(
+          loadOptions = PostScreenViewModel.LoadOptions(
+            showLoadingIndicator = false,
+            forced = true
+          ),
+          onReloadFinished = {
+            pullToRefreshState.stopRefreshing()
+            postsScreenViewModel.scrollTop()
+          }
+        )
       }
     ) {
       LazyColumnWithFastScroller(
@@ -521,8 +519,10 @@ private fun PostListInternal(
 private fun LazyItemScope.PostListErrorContent(
   postListAsyncError: AsyncData.Error,
   isInPopup: Boolean,
-  postsScreenViewModel: PostScreenViewModel
+  postsScreenViewModelProvider: () -> PostScreenViewModel,
 ) {
+  val postsScreenViewModel = postsScreenViewModelProvider()
+
   val errorMessage = remember(key1 = postListAsyncError) {
     postListAsyncError.error.errorMessageOrClassName(userReadable = true)
   }
@@ -809,7 +809,7 @@ private fun RestoreScrollPosition(
   lazyListState: LazyListState,
   chanDescriptor: ChanDescriptor,
   orientation: Int,
-  postsScreenViewModel: PostScreenViewModel
+  postsScreenViewModelProvider: () -> PostScreenViewModel
 ) {
   var scrollPositionRestored by remember(key1 = orientation) { mutableStateOf(false) }
   if (scrollPositionRestored) {
@@ -832,7 +832,7 @@ private fun RestoreScrollPosition(
       key1 = chanDescriptor,
       key2 = orientation,
       block = {
-        postsScreenViewModel.restoreScrollPosition()
+        postsScreenViewModelProvider().restoreScrollPosition()
         scrollPositionRestored = true
       }
     )

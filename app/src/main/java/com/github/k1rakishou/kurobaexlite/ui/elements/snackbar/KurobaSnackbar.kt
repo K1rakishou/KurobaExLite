@@ -121,7 +121,6 @@ fun KurobaSnackbarContainer(
               isTablet = isTablet,
               chanTheme = chanTheme,
               snackbarInfo = snackbarInfo,
-              snackbarManager = snackbarManager,
               dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
             )
           }
@@ -153,9 +152,10 @@ private fun KurobaSnackbarLayout(
   isTablet: Boolean,
   chanTheme: ChanTheme,
   snackbarInfo: SnackbarInfo,
-  snackbarManager: SnackbarManager,
   dismissSnackbar: (SnackbarId) -> Unit
 ) {
+  val snackbarManager: SnackbarManager = koinRemember()
+
   val snackbarType = snackbarInfo.snackbarType
 
   val containerHorizPadding = if (isTablet) 14.dp else 10.dp
@@ -205,11 +205,7 @@ private fun KurobaSnackbarLayout(
       KurobaSnackbarContent(
         isTablet = isTablet,
         snackbarType = snackbarType,
-        hasClickableItems = snackbarInfo.hasClickableItems,
-        aliveUntil = snackbarInfo.aliveUntil,
-        snackbarId = snackbarInfo.snackbarId,
-        snackbarIdForCompose = snackbarInfo.snackbarIdForCompose,
-        content = snackbarInfo.content,
+        snackbarInfo = snackbarInfo,
         onSnackbarClicked = { snackbarClickable, snackbarId ->
           snackbarManager.onSnackbarElementClicked(snackbarClickable)
           dismissSnackbar(snackbarId)
@@ -224,16 +220,18 @@ private fun KurobaSnackbarLayout(
 private fun RowScope.KurobaSnackbarContent(
   isTablet: Boolean,
   snackbarType: SnackbarType,
-  hasClickableItems: Boolean,
-  aliveUntil: Long?,
-  content: List<SnackbarContentItem>,
-  snackbarId: SnackbarId,
-  snackbarIdForCompose: Long,
+  snackbarInfo: SnackbarInfo,
   onSnackbarClicked: (SnackbarClickable, SnackbarId) -> Unit,
   onDismissSnackbar: (SnackbarId) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val textSize = if (isTablet) 18.sp else 16.sp
+
+  val hasClickableItems = snackbarInfo.hasClickableItems
+  val aliveUntil = snackbarInfo.aliveUntil
+  val snackbarId = snackbarInfo.snackbarId
+  val snackbarIdForCompose = snackbarInfo.snackbarIdForCompose
+  val content = snackbarInfo.content
 
   if (!snackbarType.isToast && hasClickableItems && aliveUntil != null) {
     val startTime = remember(key1 = snackbarIdForCompose) { SystemClock.elapsedRealtime() }
@@ -344,6 +342,7 @@ fun rememberKurobaSnackbarState(
   }
 }
 
+@Stable
 class KurobaSnackbarState(
   private val tag: String?,
   private val maxSnackbarsAtTime: Int

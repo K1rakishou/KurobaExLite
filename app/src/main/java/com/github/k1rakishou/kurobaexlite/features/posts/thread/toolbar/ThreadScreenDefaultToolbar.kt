@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +29,8 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
@@ -43,7 +46,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 class ThreadScreenDefaultToolbar(
-  private val bookmarksManager: BookmarksManager,
   private val threadScreenViewModel: ThreadScreenViewModel,
   private val parsedPostDataCache: ParsedPostDataCache,
   private val globalUiInfoManager: GlobalUiInfoManager,
@@ -70,7 +72,7 @@ class ThreadScreenDefaultToolbar(
       return
     }
 
-    UpdateThreadBookmarkIcon()
+    UpdateThreadBookmarkIcon(state)
 
     LaunchedEffect(
       key1 = screenContentLoaded,
@@ -237,70 +239,7 @@ class ThreadScreenDefaultToolbar(
       })
   }
 
-  @Composable
-  private fun UpdateThreadBookmarkIcon() {
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        threadScreenViewModel.currentlyOpenedThreadFlow.collect { currentlyOpenedThreadDescriptor ->
-          val currentThreadDescriptor = threadScreenViewModel.threadDescriptor
-            ?: return@collect
-
-          if (currentlyOpenedThreadDescriptor != currentThreadDescriptor) {
-            return@collect
-          }
-
-          val isThreadBookmarked = bookmarksManager.contains(currentThreadDescriptor)
-
-          val bookmarkThreadIcon = state.bookmarkIcon()
-          if (isThreadBookmarked) {
-            bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_24
-          } else {
-            bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
-          }
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        bookmarksManager.bookmarkEventsFlow.collect { event ->
-          val currentThreadDescriptor = threadScreenViewModel.threadDescriptor
-
-          when (event) {
-            is BookmarksManager.Event.Created -> {
-              val isForThisThread = event.threadDescriptors
-                .any { threadDescriptor -> threadDescriptor == currentThreadDescriptor }
-
-              if (!isForThisThread) {
-                return@collect
-              }
-
-              val bookmarkThreadIcon = state.bookmarkIcon()
-              bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_24
-            }
-            is BookmarksManager.Event.Deleted -> {
-              val isForThisThread = event.threadDescriptors
-                .any { threadDescriptor -> threadDescriptor == currentThreadDescriptor }
-
-              if (!isForThisThread) {
-                return@collect
-              }
-
-              val bookmarkThreadIcon = state.bookmarkIcon()
-              bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
-            }
-            BookmarksManager.Event.Loaded,
-            is BookmarksManager.Event.Updated -> {
-              // no-op
-            }
-          }
-        }
-      }
-    )
-  }
-
+  @Stable
   class State(
     override val saveableComponentKey: String
   ) : ToolbarState {
@@ -372,4 +311,71 @@ class ThreadScreenDefaultToolbar(
     }
   }
 
+}
+
+@Composable
+private fun UpdateThreadBookmarkIcon(state: ThreadScreenDefaultToolbar.State) {
+  val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
+  val bookmarksManager: BookmarksManager = koinRemember()
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      threadScreenViewModel.currentlyOpenedThreadFlow.collect { currentlyOpenedThreadDescriptor ->
+        val currentThreadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@collect
+
+        if (currentlyOpenedThreadDescriptor != currentThreadDescriptor) {
+          return@collect
+        }
+
+        val isThreadBookmarked = bookmarksManager.contains(currentThreadDescriptor)
+
+        val bookmarkThreadIcon = state.bookmarkIcon()
+        if (isThreadBookmarked) {
+          bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_24
+        } else {
+          bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
+        }
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      bookmarksManager.bookmarkEventsFlow.collect { event ->
+        val currentThreadDescriptor = threadScreenViewModel.threadDescriptor
+
+        when (event) {
+          is BookmarksManager.Event.Created -> {
+            val isForThisThread = event.threadDescriptors
+              .any { threadDescriptor -> threadDescriptor == currentThreadDescriptor }
+
+            if (!isForThisThread) {
+              return@collect
+            }
+
+            val bookmarkThreadIcon = state.bookmarkIcon()
+            bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_24
+          }
+          is BookmarksManager.Event.Deleted -> {
+            val isForThisThread = event.threadDescriptors
+              .any { threadDescriptor -> threadDescriptor == currentThreadDescriptor }
+
+            if (!isForThisThread) {
+              return@collect
+            }
+
+            val bookmarkThreadIcon = state.bookmarkIcon()
+            bookmarkThreadIcon.drawableId.value = R.drawable.ic_baseline_bookmark_border_24
+          }
+          BookmarksManager.Event.Loaded,
+          is BookmarksManager.Event.Updated -> {
+            // no-op
+          }
+        }
+      }
+    }
+  )
 }

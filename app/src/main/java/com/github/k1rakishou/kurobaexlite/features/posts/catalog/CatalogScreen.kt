@@ -109,7 +109,6 @@ class CatalogScreen(
   override val defaultToolbar: KurobaChildToolbar by lazy {
     CatalogScreenDefaultToolbar(
       catalogScreenViewModel = catalogScreenViewModel,
-      parsedPostDataCache = parsedPostDataCache,
       onBackPressed = { globalUiInfoManager.openDrawer() },
       showCatalogSelectionScreen = {
         val catalogSelectionScreen = ComposeScreen.createScreen<CatalogSelectionScreen>(

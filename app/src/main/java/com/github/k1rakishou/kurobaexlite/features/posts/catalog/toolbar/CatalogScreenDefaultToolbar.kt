@@ -28,6 +28,7 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -43,7 +44,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 class CatalogScreenDefaultToolbar(
   private val catalogScreenViewModel: CatalogScreenViewModel,
-  private val parsedPostDataCache: ParsedPostDataCache,
   private val onBackPressed: suspend () -> Unit,
   private val showCatalogSelectionScreen: () -> Unit,
   private val showSortCatalogThreadsScreen: () -> Unit,
@@ -83,7 +83,6 @@ class CatalogScreenDefaultToolbar(
     )
 
     UpdateToolbarTitle(
-      parsedPostDataCache = parsedPostDataCache,
       postScreenState = catalogScreenViewModel.postScreenState,
       catalogScreenDefaultToolbarState = { state }
     )
@@ -165,11 +164,11 @@ class CatalogScreenDefaultToolbar(
 
   @Composable
   protected fun UpdateToolbarTitle(
-    parsedPostDataCache: ParsedPostDataCache,
     postScreenState: PostScreenState,
     catalogScreenDefaultToolbarState: () -> State?
   ) {
     val context = LocalContext.current
+    val parsedPostDataCache: ParsedPostDataCache = koinRemember()
     val postListAsyncMut by postScreenState.postsAsyncDataState.collectAsState()
     val postListAsync = postListAsyncMut
 

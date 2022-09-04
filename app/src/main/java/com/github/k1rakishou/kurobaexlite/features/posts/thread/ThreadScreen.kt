@@ -103,7 +103,6 @@ class ThreadScreen(
 
   override val defaultToolbar: KurobaChildToolbar by lazy {
     ThreadScreenDefaultToolbar(
-      bookmarksManager = bookmarksManager,
       threadScreenViewModel = threadScreenViewModel,
       parsedPostDataCache = parsedPostDataCache,
       globalUiInfoManager = globalUiInfoManager,
