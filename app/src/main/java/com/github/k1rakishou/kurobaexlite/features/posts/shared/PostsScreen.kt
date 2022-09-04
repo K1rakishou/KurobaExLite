@@ -32,11 +32,13 @@ import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.managers.Captcha
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.SiteCaptcha
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
@@ -63,170 +65,188 @@ abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
     navigationRouter.presentScreen(popupRepliesScreen)
   }
 
-  @Composable
-  protected fun ProcessCaptchaRequestEvents(
-    homeScreenViewModel: HomeScreenViewModel,
-    currentChanDescriptor: () -> ChanDescriptor?
-  ) {
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        homeScreenViewModel.captchaRequestsFlow.collect { (captchaRequest, siteCaptcha) ->
-          if (captchaRequest.chanDescriptor != currentChanDescriptor()) {
-            return@collect
-          }
-
-          val captchaScreen = when (siteCaptcha) {
-            SiteCaptcha.Chan4Captcha -> {
-              ComposeScreen.createScreen<Chan4CaptchaScreen>(
-                componentActivity = componentActivity,
-                navigationRouter = navigationRouter,
-                args = {
-                  putParcelable(Chan4CaptchaScreen.CHAN_DESCRIPTOR_ARG, captchaRequest.chanDescriptor)
-                },
-                callbacks = {
-                  callback<Captcha>(
-                    callbackKey = Chan4CaptchaScreen.ON_CAPTCHA_SOLVED,
-                    func = { captcha ->
-                      if (captchaRequest.completableDeferred.isActive) {
-                        captchaRequest.completableDeferred.complete(captcha)
-                      }
-                    }
-                  )
-
-                  callback(
-                    callbackKey = Chan4CaptchaScreen.ON_SCREEN_DISMISSED,
-                    func = {
-                      if (captchaRequest.completableDeferred.isActive) {
-                        captchaRequest.completableDeferred.completeExceptionally(CancellationException())
-                      }
-                    }
-                  )
-                }
-              )
-            }
-          }
-
-          navigationRouter.presentScreen(captchaScreen)
-        }
-      }
-    )
-  }
-
-  @Composable
-  protected fun PostListSearchButtons(
-    postsScreenViewModel: PostScreenViewModel,
-    searchToolbar: PostsScreenLocalSearchToolbar
-  ) {
-    val postsAsyncData by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-
-    val searchQueryMut by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
-    val searchQuery = searchQueryMut
-
-    val postsState = if (postsAsyncData !is AsyncData.Data) {
-      return
-    } else {
-      (postsAsyncData as AsyncData.Data).data
-    }
-
-    LaunchedEffect(
-      key1 = postsAsyncData,
-      block = {
-        postsState.searchQueryUpdatedFlow.collect {
-          if (!kurobaToolbarContainerState.contains(searchToolbar.toolbarKey)) {
-            return@collect
-          }
-
-          searchToolbar.onSearchUpdated(postsState.postsMatchedBySearchQuery)
-        }
-      }
-    )
-
-    if (searchQuery.isNullOrEmpty()) {
-      return
-    }
-
-    LaunchedEffect(
-      key1 = searchQuery,
-      block = {
-        if (searchQuery.length < PostsState.MIN_SEARCH_QUERY_LENGTH) {
-          return@LaunchedEffect
-        }
-
-        val firstPostDescriptor = searchToolbar.firstEntry()
-          ?: return@LaunchedEffect
-
-        postsScreenViewModel.scrollToPost(firstPostDescriptor)
-      }
-    )
-
-    val windowInsets = LocalWindowInsets.current
-    val density = LocalDensity.current
-
-    val offset = with(density) {
-      remember(key1 = windowInsets) {
-        IntOffset(x = -24.dp.roundToPx(), y = -(32.dp.roundToPx() + windowInsets.bottom.roundToPx()))
-      }
-    }
-
-    Box(
-      modifier = Modifier.fillMaxSize()
-    ) {
-      val bgColor = Color.White
-
-      val paddingBetweenButtons = 8.dp
-      val width = 48.dp
-      val height = 72.dp + paddingBetweenButtons
-
-      Card(
-        modifier = Modifier
-          .width(width)
-          .height(height)
-          .align(Alignment.BottomEnd)
-          .absoluteOffset { offset },
-        backgroundColor = bgColor
-      ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-          KurobaComposeIcon(
-            modifier = Modifier
-              .fillMaxWidth()
-              .height((height - paddingBetweenButtons) / 2)
-              .kurobaClickable(
-                onClick = {
-                  val prevPostDescriptor = searchToolbar.prevEntry()
-                    ?: return@kurobaClickable
-
-                  postsScreenViewModel.scrollToPost(prevPostDescriptor)
-                }
-              ),
-            drawableId = R.drawable.ic_baseline_keyboard_arrow_up_24,
-            iconColor = Color.Black
-          )
-
-          Spacer(modifier = Modifier.height(paddingBetweenButtons))
-
-          KurobaComposeIcon(
-            modifier = Modifier
-              .fillMaxWidth()
-              .height((height - paddingBetweenButtons) / 2)
-              .kurobaClickable(
-                onClick = {
-                  val nextPostDescriptor = searchToolbar.nextEntry()
-                    ?: return@kurobaClickable
-
-                  postsScreenViewModel.scrollToPost(nextPostDescriptor)
-                }
-              ),
-            drawableId = R.drawable.ic_baseline_keyboard_arrow_down_24,
-            iconColor = Color.Black
-          )
-        }
-      }
-    }
-  }
-
   companion object {
     private const val TAG = "PostsScreen"
   }
 
+}
+
+@Composable
+fun ProcessCaptchaRequestEvents(
+  currentChanDescriptorProvider: () -> ChanDescriptor?,
+  componentActivityProvider: () -> ComponentActivity,
+  navigationRouterProvider: () -> NavigationRouter
+) {
+  val homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel()
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      homeScreenViewModel.captchaRequestsFlow.collect { (captchaRequest, siteCaptcha) ->
+        if (captchaRequest.chanDescriptor != currentChanDescriptorProvider()) {
+          return@collect
+        }
+
+        val componentActivity = componentActivityProvider()
+        val navigationRouter = navigationRouterProvider()
+
+        val captchaScreen = when (siteCaptcha) {
+          SiteCaptcha.Chan4Captcha -> {
+            ComposeScreen.createScreen<Chan4CaptchaScreen>(
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter,
+              args = {
+                putParcelable(Chan4CaptchaScreen.CHAN_DESCRIPTOR_ARG, captchaRequest.chanDescriptor)
+              },
+              callbacks = {
+                callback<Captcha>(
+                  callbackKey = Chan4CaptchaScreen.ON_CAPTCHA_SOLVED,
+                  func = { captcha ->
+                    if (captchaRequest.completableDeferred.isActive) {
+                      captchaRequest.completableDeferred.complete(captcha)
+                    }
+                  }
+                )
+
+                callback(
+                  callbackKey = Chan4CaptchaScreen.ON_SCREEN_DISMISSED,
+                  func = {
+                    if (captchaRequest.completableDeferred.isActive) {
+                      captchaRequest.completableDeferred.completeExceptionally(CancellationException())
+                    }
+                  }
+                )
+              }
+            )
+          }
+        }
+
+        navigationRouter.presentScreen(captchaScreen)
+      }
+    }
+  )
+}
+
+@Composable
+fun <ToolbarType : KurobaChildToolbar> PostListSearchButtons(
+  postsScreenViewModelProvider: () -> PostScreenViewModel,
+  searchToolbarProvider: () -> PostsScreenLocalSearchToolbar,
+  kurobaToolbarContainerStateProvider: () -> KurobaToolbarContainerState<ToolbarType>
+) {
+  val postsScreenViewModel = postsScreenViewModelProvider()
+
+  val postsAsyncData by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+  val searchQueryMut by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
+
+  val searchQuery = searchQueryMut
+
+  val postsState = if (postsAsyncData !is AsyncData.Data) {
+    return
+  } else {
+    (postsAsyncData as AsyncData.Data).data
+  }
+
+  LaunchedEffect(
+    key1 = postsAsyncData,
+    block = {
+      postsState.searchQueryUpdatedFlow.collect {
+        val searchToolbar = searchToolbarProvider()
+        val kurobaToolbarContainerState = kurobaToolbarContainerStateProvider()
+
+        if (!kurobaToolbarContainerState.contains(searchToolbar.toolbarKey)) {
+          return@collect
+        }
+
+        searchToolbar.onSearchUpdated(postsState.postsMatchedBySearchQuery)
+      }
+    }
+  )
+
+  if (searchQuery.isNullOrEmpty()) {
+    return
+  }
+
+  LaunchedEffect(
+    key1 = searchQuery,
+    block = {
+      if (searchQuery.length < PostsState.MIN_SEARCH_QUERY_LENGTH) {
+        return@LaunchedEffect
+      }
+
+      val searchToolbar = searchToolbarProvider()
+
+      val firstPostDescriptor = searchToolbar.firstEntry()
+        ?: return@LaunchedEffect
+
+      postsScreenViewModel.scrollToPost(firstPostDescriptor)
+    }
+  )
+
+  val windowInsets = LocalWindowInsets.current
+  val density = LocalDensity.current
+
+  val offset = with(density) {
+    remember(key1 = windowInsets) {
+      IntOffset(x = -24.dp.roundToPx(), y = -(32.dp.roundToPx() + windowInsets.bottom.roundToPx()))
+    }
+  }
+
+  Box(
+    modifier = Modifier.fillMaxSize()
+  ) {
+    val bgColor = Color.White
+
+    val paddingBetweenButtons = 8.dp
+    val width = 48.dp
+    val height = 72.dp + paddingBetweenButtons
+
+    Card(
+      modifier = Modifier
+        .width(width)
+        .height(height)
+        .align(Alignment.BottomEnd)
+        .absoluteOffset { offset },
+      backgroundColor = bgColor
+    ) {
+      Column(modifier = Modifier.fillMaxSize()) {
+        KurobaComposeIcon(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height((height - paddingBetweenButtons) / 2)
+            .kurobaClickable(
+              onClick = {
+                val searchToolbar = searchToolbarProvider()
+
+                val prevPostDescriptor = searchToolbar.prevEntry()
+                  ?: return@kurobaClickable
+
+                postsScreenViewModel.scrollToPost(prevPostDescriptor)
+              }
+            ),
+          drawableId = R.drawable.ic_baseline_keyboard_arrow_up_24,
+          iconColor = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(paddingBetweenButtons))
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height((height - paddingBetweenButtons) / 2)
+            .kurobaClickable(
+              onClick = {
+                val searchToolbar = searchToolbarProvider()
+
+                val nextPostDescriptor = searchToolbar.nextEntry()
+                  ?: return@kurobaClickable
+
+                postsScreenViewModel.scrollToPost(nextPostDescriptor)
+              }
+            ),
+          drawableId = R.drawable.ic_baseline_keyboard_arrow_down_24,
+          iconColor = Color.Black
+        )
+      }
+    }
+  }
 }

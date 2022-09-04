@@ -31,10 +31,12 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.Catalog
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.search.global.GlobalSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchButtons
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.ProcessCaptchaRequestEvents
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
@@ -332,8 +334,9 @@ class CatalogScreen(
     }
 
     ProcessCaptchaRequestEvents(
-      homeScreenViewModel = homeScreenViewModel,
-      currentChanDescriptor = { catalogScreenViewModel.catalogDescriptor }
+      currentChanDescriptorProvider = { catalogScreenViewModel.catalogDescriptor },
+      componentActivityProvider = { componentActivity },
+      navigationRouterProvider = { navigationRouter }
     )
 
     val screenContentLoaded by screenContentLoadedFlow.collectAsState()
@@ -402,8 +405,9 @@ class CatalogScreen(
         },
         postListSearchButtons = {
           PostListSearchButtons(
-            postsScreenViewModel = catalogScreenViewModel,
-            searchToolbar = localSearchToolbar
+            postsScreenViewModelProvider = { catalogScreenViewModel },
+            searchToolbarProvider = { localSearchToolbar },
+            kurobaToolbarContainerStateProvider = { kurobaToolbarContainerState }
           )
         }
       )

@@ -31,9 +31,11 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchButtons
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.ProcessCaptchaRequestEvents
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
@@ -268,8 +270,9 @@ class ThreadScreen(
     }
 
     ProcessCaptchaRequestEvents(
-      homeScreenViewModel = homeScreenViewModel,
-      currentChanDescriptor = { threadScreenViewModel.threadDescriptor }
+      currentChanDescriptorProvider = { threadScreenViewModel.threadDescriptor },
+      componentActivityProvider = { componentActivity },
+      navigationRouterProvider = { navigationRouter }
     )
 
     val screenContentLoaded by screenContentLoadedFlow.collectAsState()
@@ -340,8 +343,9 @@ class ThreadScreen(
         },
         postListSearchButtons = {
           PostListSearchButtons(
-            postsScreenViewModel = threadScreenViewModel,
-            searchToolbar = localSearchToolbar
+            postsScreenViewModelProvider = { threadScreenViewModel },
+            searchToolbarProvider = { localSearchToolbar },
+            kurobaToolbarContainerStateProvider = { kurobaToolbarContainerState }
           )
         }
       )
