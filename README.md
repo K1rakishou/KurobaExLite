@@ -22,4 +22,5 @@ Things that are left to be implemented to achieve feature parity with Clover:
 - Catalog mode (grid/staggered grid).
 - Filters.
 - Theming options.
+
 If you think this list is missing a feature from Clover you can create an issue with a request to add it.
