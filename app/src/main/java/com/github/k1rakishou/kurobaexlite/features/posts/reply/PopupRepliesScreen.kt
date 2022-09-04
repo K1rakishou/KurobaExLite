@@ -34,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
@@ -58,15 +59,23 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen.Companion.buttonsHeight
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen.Companion.buttonsLayoutId
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen.Companion.postListLayoutId
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
+import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -86,17 +95,10 @@ class PopupRepliesScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
-  private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
-  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val popupRepliesScreenViewModel: PopupRepliesScreenViewModel by componentActivity.viewModel()
-  private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val replyViewMode: ReplyViewMode by requireArgumentLazy(REPLY_VIEW_MODE)
-
-  private val postListLayoutId = "PopupRepliesScreen_PostListContent"
-  private val buttonsLayoutId = "PopupRepliesScreen_Buttons"
-  private val buttonsHeight = 50.dp
 
   private val linkableClickHelper by lazy {
     LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
@@ -231,6 +233,8 @@ class PopupRepliesScreen(
     val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
     val postsAsyncDataState by popupRepliesScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
+    val coroutineScope = rememberCoroutineScope()
+
     val postListOptions by remember {
       derivedStateOf {
         PostListOptions(
@@ -254,141 +258,12 @@ class PopupRepliesScreen(
     if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
       PopupRepliesScreenContentLayout(
         postListOptions = postListOptions,
-        buttonsHeightPx = buttonsHeightPx
-      )
-    }
-
-    LaunchedEffect(
-      key1 = replyViewMode,
-      block = { popupRepliesScreenViewModel.loadRepliesForModeInitial(replyViewMode) }
-    )
-  }
-
-  @Composable
-  private fun PopupRepliesScreenContentLayout(
-    postListOptions: PostListOptions,
-    buttonsHeightPx: Int
-  ) {
-    Layout(
-      content = { PopupRepliesScreenContent(postListOptions) },
-      measurePolicy = { measurables, constraints ->
-        val placeables = measurables.map { measurable ->
-          when (measurable.layoutId) {
-            postListLayoutId -> {
-              measurable.measure(constraints.offset(vertical = -buttonsHeightPx))
-            }
-            buttonsLayoutId -> {
-              measurable.measure(
-                constraints.copy(
-                  minHeight = buttonsHeightPx,
-                  maxHeight = buttonsHeightPx
-                )
-              )
-            }
-            else -> error("Unexpected layoutId: \'${measurable.layoutId}\'")
-          }
-        }
-
-        val width = placeables.fastMap { it.width }.fastMaxBy { it } ?: 0
-        val height = placeables.fastSumBy { it.height }
-
-        layout(width, height) {
-          var takenHeight = 0
-
-          placeables.fastForEach {
-            it.placeRelative(0, takenHeight)
-            takenHeight += it.height
-          }
-        }
-      }
-    )
-  }
-
-  @Composable
-  private fun PopupRepliesScreenContent(
-    postListOptions: PostListOptions
-  ) {
-    val chanTheme = LocalChanTheme.current
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-
-    Box(
-      modifier = Modifier
-        .layoutId(postListLayoutId)
-        .animateContentSize()
-    ) {
-      PostListContent(
-        postListOptions = postListOptions,
-        postsScreenViewModelProvider = { popupRepliesScreenViewModel },
-        onPostCellClicked = { postCellData -> /*no-op*/ },
-        onPostCellLongClicked = { postCellData ->
-          postLongtapContentMenu.showMenu(
-            postListOptions = postListOptions,
-            postCellData = postCellData,
-            reparsePostsFunc = { postDescriptors ->
-              val chanDescriptor = if (postListOptions.isCatalogMode) {
-                catalogScreenViewModel.catalogDescriptor
-              } else {
-                threadScreenViewModel.threadDescriptor
-              }
-
-              if (chanDescriptor == null) {
-                return@showMenu
-              }
-
-              popupRepliesScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
-
-              // Reparse the threadScreenViewModel posts too
-              threadScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
-            }
-          )
-        },
-        onLinkableClicked = { postCellData, linkable ->
-          linkableClickHelper.processClickedLinkable(
-            context = context,
-            sourceScreenKey = screenKey,
-            postCellData = postCellData,
-            linkable = linkable,
-            loadThreadFunc = { threadDescriptor ->
-              threadScreenViewModel.loadThread(threadDescriptor)
-              stopPresenting()
-            },
-            loadCatalogFunc = { catalogDescriptor ->
-              catalogScreenViewModel.loadCatalog(catalogDescriptor)
-              stopPresenting()
-            },
-            showRepliesForPostFunc = { replyViewMode ->
-              coroutineScope.launch {
-                popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode)
-              }
-            }
-          )
-        },
-        onLinkableLongClicked = { postCellData, linkable ->
-          linkableClickHelper.processLongClickedLinkable(
-            sourceScreenKey = screenKey,
-            postCellData = postCellData,
-            linkable = linkable
-          )
-        },
-        onPostRepliesClicked = { postDescriptor ->
-          coroutineScope.launch {
-            popupRepliesScreenViewModel.loadRepliesForMode(ReplyViewMode.RepliesFrom(postDescriptor))
-          }
-        },
-        onCopySelectedText = { selectedText ->
-          androidHelpers.copyToClipboard("Selected text", selectedText)
-        },
-        onQuoteSelectedText = { withText, selectedText, postCellData ->
-          val threadDescriptor = threadScreenViewModel.threadDescriptor
-            ?: return@PostListContent
-
-          if (withText) {
-            replyLayoutViewModel.quotePostWithText(threadDescriptor, postCellData, selectedText)
-          } else {
-            replyLayoutViewModel.quotePost(threadDescriptor, postCellData)
-          }
-        },
+        buttonsHeightPx = buttonsHeightPx,
+        screenKey = screenKey,
+        postLongtapContentMenuProvider = { postLongtapContentMenu },
+        linkableClickHelperProvider = { linkableClickHelper },
+        stopPresenting = { stopPresenting() },
+        onBackPressed = { coroutineScope.launch { onBackPressed() } },
         onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
           val postImageData = if (postImageDataResult.isFailure) {
             snackbarManager.errorToast(
@@ -396,14 +271,14 @@ class PopupRepliesScreen(
               screenKey = screenKey
             )
 
-            return@PostListContent
+            return@PopupRepliesScreenContentLayout
           } else {
             postImageDataResult.getOrThrow()
           }
 
           val collectedImages = popupRepliesScreenViewModel.collectCurrentImages()
           if (collectedImages.isEmpty()) {
-            return@PostListContent
+            return@PopupRepliesScreenContentLayout
           }
 
           clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
@@ -424,52 +299,14 @@ class PopupRepliesScreen(
           )
 
           navigationRouter.presentScreen(mediaViewerScreen)
-        },
-        onPostListScrolled = { delta -> /*no-op*/ },
-        onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
-        onCurrentlyTouchingPostList = { touching -> /*no-op*/ },
-        onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
-        loadingContent = { isInPopup -> /*no-op*/ },
+        }
       )
     }
 
-    Row(
-      modifier = Modifier
-        .layoutId(buttonsLayoutId)
-        .fillMaxWidth()
-        .height(buttonsHeight)
-        .padding(vertical = 4.dp)
-    ) {
-      val textColor = if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
-        Color.LightGray
-      } else {
-        Color.DarkGray
-      }
-
-      Spacer(modifier = Modifier.width(8.dp))
-
-      KurobaComposeTextBarButton(
-        modifier = Modifier
-          .fillMaxHeight()
-          .weight(0.5f),
-        text = stringResource(id = R.string.back),
-        customTextColor = textColor,
-        onClick = { coroutineScope.launch { onBackPressed() } }
-      )
-
-      Spacer(modifier = Modifier.width(4.dp))
-
-      KurobaComposeTextBarButton(
-        modifier = Modifier
-          .fillMaxHeight()
-          .weight(0.5f),
-        customTextColor = textColor,
-        text = stringResource(id = R.string.close),
-        onClick = { stopPresenting() }
-      )
-
-      Spacer(modifier = Modifier.width(8.dp))
-    }
+    LaunchedEffect(
+      key1 = replyViewMode,
+      block = { popupRepliesScreenViewModel.loadRepliesForModeInitial(replyViewMode) }
+    )
   }
 
   @OptIn(ExperimentalMaterialApi::class)
@@ -514,6 +351,212 @@ class PopupRepliesScreen(
     const val REPLY_VIEW_MODE = "reply_view_mode"
 
     private val SCREEN_KEY = ScreenKey("PopupRepliesScreen")
+
+    internal val postListLayoutId = "PopupRepliesScreen_PostListContent"
+    internal val buttonsLayoutId = "PopupRepliesScreen_Buttons"
+
+    internal val buttonsHeight = 50.dp
   }
 
+}
+
+@Composable
+private fun PopupRepliesScreenContentLayout(
+  postListOptions: PostListOptions,
+  buttonsHeightPx: Int,
+  screenKey: ScreenKey,
+  postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  linkableClickHelperProvider: () -> LinkableClickHelper,
+  stopPresenting: () -> Unit,
+  onBackPressed: () -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+) {
+  Layout(
+    content = {
+      PopupRepliesScreenContent(
+        postListOptions = postListOptions,
+        screenKey = screenKey,
+        postLongtapContentMenuProvider = postLongtapContentMenuProvider,
+        linkableClickHelperProvider = linkableClickHelperProvider,
+        stopPresenting = stopPresenting,
+        onBackPressed = onBackPressed,
+        onPostImageClicked = onPostImageClicked
+      )
+    },
+    measurePolicy = { measurables, constraints ->
+      val placeables = measurables.map { measurable ->
+        when (measurable.layoutId) {
+          postListLayoutId -> {
+            measurable.measure(constraints.offset(vertical = -buttonsHeightPx))
+          }
+          buttonsLayoutId -> {
+            measurable.measure(
+              constraints.copy(
+                minHeight = buttonsHeightPx,
+                maxHeight = buttonsHeightPx
+              )
+            )
+          }
+          else -> error("Unexpected layoutId: \'${measurable.layoutId}\'")
+        }
+      }
+
+      val width = placeables.fastMap { it.width }.fastMaxBy { it } ?: 0
+      val height = placeables.fastSumBy { it.height }
+
+      layout(width, height) {
+        var takenHeight = 0
+
+        placeables.fastForEach {
+          it.placeRelative(0, takenHeight)
+          takenHeight += it.height
+        }
+      }
+    }
+  )
+}
+
+@Composable
+private fun PopupRepliesScreenContent(
+  postListOptions: PostListOptions,
+  screenKey: ScreenKey,
+  postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  linkableClickHelperProvider: () -> LinkableClickHelper,
+  stopPresenting: () -> Unit,
+  onBackPressed: () -> Unit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+) {
+  val chanTheme = LocalChanTheme.current
+  val context = LocalContext.current
+  val coroutineScope = rememberCoroutineScope()
+
+  val popupRepliesScreenViewModel: PopupRepliesScreenViewModel = koinRememberViewModel()
+  val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
+  val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
+  val replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel()
+  val androidHelpers: AndroidHelpers = koinRemember()
+
+  Box(
+    modifier = Modifier
+      .layoutId(postListLayoutId)
+      .animateContentSize()
+  ) {
+    PostListContent(
+      postListOptions = postListOptions,
+      postsScreenViewModelProvider = { popupRepliesScreenViewModel },
+      onPostCellClicked = { postCellData -> /*no-op*/ },
+      onPostCellLongClicked = { postCellData ->
+        postLongtapContentMenuProvider().showMenu(
+          postListOptions = postListOptions,
+          postCellData = postCellData,
+          reparsePostsFunc = { postDescriptors ->
+            val chanDescriptor = if (postListOptions.isCatalogMode) {
+              catalogScreenViewModel.catalogDescriptor
+            } else {
+              threadScreenViewModel.threadDescriptor
+            }
+
+            if (chanDescriptor == null) {
+              return@showMenu
+            }
+
+            popupRepliesScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
+
+            // Reparse the threadScreenViewModel posts too
+            threadScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
+          }
+        )
+      },
+      onLinkableClicked = { postCellData, linkable ->
+        linkableClickHelperProvider().processClickedLinkable(
+          context = context,
+          sourceScreenKey = screenKey,
+          postCellData = postCellData,
+          linkable = linkable,
+          loadThreadFunc = { threadDescriptor ->
+            threadScreenViewModel.loadThread(threadDescriptor)
+            stopPresenting()
+          },
+          loadCatalogFunc = { catalogDescriptor ->
+            catalogScreenViewModel.loadCatalog(catalogDescriptor)
+            stopPresenting()
+          },
+          showRepliesForPostFunc = { replyViewMode ->
+            coroutineScope.launch {
+              popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode)
+            }
+          }
+        )
+      },
+      onLinkableLongClicked = { postCellData, linkable ->
+        linkableClickHelperProvider().processLongClickedLinkable(
+          sourceScreenKey = screenKey,
+          postCellData = postCellData,
+          linkable = linkable
+        )
+      },
+      onPostRepliesClicked = { postDescriptor ->
+        coroutineScope.launch {
+          popupRepliesScreenViewModel.loadRepliesForMode(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
+        }
+      },
+      onCopySelectedText = { selectedText ->
+        androidHelpers.copyToClipboard("Selected text", selectedText)
+      },
+      onQuoteSelectedText = { withText, selectedText, postCellData ->
+        val threadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@PostListContent
+
+        if (withText) {
+          replyLayoutViewModel.quotePostWithText(threadDescriptor, postCellData, selectedText)
+        } else {
+          replyLayoutViewModel.quotePost(threadDescriptor, postCellData)
+        }
+      },
+      onPostImageClicked = onPostImageClicked,
+      onPostListScrolled = { delta -> /*no-op*/ },
+      onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
+      onCurrentlyTouchingPostList = { touching -> /*no-op*/ },
+      onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
+      loadingContent = { isInPopup -> /*no-op*/ },
+    )
+  }
+
+  Row(
+    modifier = Modifier
+      .layoutId(buttonsLayoutId)
+      .fillMaxWidth()
+      .height(buttonsHeight)
+      .padding(vertical = 4.dp)
+  ) {
+    val textColor = if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
+      Color.LightGray
+    } else {
+      Color.DarkGray
+    }
+
+    Spacer(modifier = Modifier.width(8.dp))
+
+    KurobaComposeTextBarButton(
+      modifier = Modifier
+        .fillMaxHeight()
+        .weight(0.5f),
+      text = stringResource(id = R.string.back),
+      customTextColor = textColor,
+      onClick = { coroutineScope.launch { onBackPressed() } }
+    )
+
+    Spacer(modifier = Modifier.width(4.dp))
+
+    KurobaComposeTextBarButton(
+      modifier = Modifier
+        .fillMaxHeight()
+        .weight(0.5f),
+      customTextColor = textColor,
+      text = stringResource(id = R.string.close),
+      onClick = { stopPresenting() }
+    )
+
+    Spacer(modifier = Modifier.width(8.dp))
+  }
 }
