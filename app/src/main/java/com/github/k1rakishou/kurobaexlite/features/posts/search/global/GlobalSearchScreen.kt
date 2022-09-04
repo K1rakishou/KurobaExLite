@@ -32,6 +32,9 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostCell
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -140,273 +143,11 @@ class GlobalSearchScreen(
     ) {
       GlobalSearchList(
         lazyListState = lazyListState,
-        paddingValues = paddingValues
+        paddingValues = paddingValues,
+        screenKey = screenKey,
+        catalogDescriptor = catalogDescriptor,
+        postSearchLongtapContentMenuProvider = { postSearchLongtapContentMenu }
       )
-    }
-  }
-
-  @Composable
-  private fun GlobalSearchList(
-    lazyListState: LazyListState,
-    paddingValues: PaddingValues,
-  ) {
-    val searchQuery by globalSearchScreenViewModel.searchQueryState
-
-    if (searchQuery.isNullOrEmpty()) {
-      SearchQueryIsEmpty()
-      return
-    }
-
-    val postsAsync by globalSearchScreenViewModel.postsAsyncState
-    val endReached by globalSearchScreenViewModel.endReachedState
-    val currentPage by globalSearchScreenViewModel.currentPageState
-
-    val pageLoadErrorMut by globalSearchScreenViewModel.pageLoadErrorState
-    val pageLoadError = pageLoadErrorMut
-
-    LazyColumnWithFastScroller(
-      lazyListContainerModifier = Modifier.fillMaxSize(),
-      lazyListModifier = Modifier.fillMaxSize(),
-      lazyListState = lazyListState,
-      contentPadding = paddingValues,
-      content = {
-        val foundPosts = when (val state = postsAsync) {
-          AsyncData.Uninitialized -> {
-            // no-op
-            return@LazyColumnWithFastScroller
-          }
-          is AsyncData.Error -> {
-            item(key = "list_error") { ListErrorContent(state) }
-            return@LazyColumnWithFastScroller
-          }
-          AsyncData.Loading -> {
-            item(key = "list_loading") { ListLoadingContent() }
-            return@LazyColumnWithFastScroller
-          }
-          is AsyncData.Data -> state.data
-        }
-
-        if (foundPosts.isEmpty()) {
-          item(key = "list_is_empty") { ListEmptyContent() }
-          return@LazyColumnWithFastScroller
-        }
-
-        items(
-          count = foundPosts.size,
-          key = { index -> foundPosts[index].postDescriptor },
-          itemContent = { index ->
-            val postCellData = foundPosts[index]
-
-            PostSearchCell(
-              index = index,
-              totalCount = foundPosts.size,
-              postCellData = postCellData
-            )
-          }
-        )
-
-        if (pageLoadError != null) {
-          item(
-            key = "page_load_error",
-            content = { PageLoadErrorContent(pageLoadError) }
-          )
-        } else if (endReached) {
-          item(
-            key = "end_reached",
-            content = { EndReachedIndicator() }
-          )
-        } else {
-          item(
-            key = "load_more_indicator_${currentPage}",
-            content = { LoadMoreIndicator(currentPage, lazyListState) }
-          )
-        }
-      }
-    )
-  }
-
-  @Composable
-  private fun PostSearchCell(
-    index: Int,
-    totalCount: Int,
-    postCellData: PostCellData
-  ) {
-    val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
-    val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
-
-    Column(
-      modifier = Modifier
-        .padding(cellsPadding)
-        .kurobaClickable(
-          onClick = {
-            ScreenCallbackStorage.invokeCallback(
-              screenKey = screenKey,
-              callbackKey = ON_POST_CLICKED,
-              p1 = postCellData.postDescriptor
-            )
-          },
-          onLongClick = { postSearchLongtapContentMenu.showMenu(postCellData) }
-        )
-    ) {
-      PostCell(
-        isCatalogMode = true,
-        chanDescriptor = catalogDescriptor,
-        detectLinkableClicks = false,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-        postCellData = postCellData,
-        onTextSelectionModeChanged = {
-          // no-op
-        },
-        onPostBind = {
-          // no-op
-        },
-        onPostUnbind = {
-          // no-op
-        },
-        onCopySelectedText = {
-          // no-op
-        },
-        onQuoteSelectedText = { _, _, _ ->
-          // no-op
-        },
-        onPostCellCommentClicked = { _, _, _ ->
-          // no-op
-        },
-        onPostCellCommentLongClicked = {  _, _, _ ->
-          // no-op
-        },
-        onPostRepliesClicked = {
-          // no-op
-        },
-        onPostImageClicked = { _, _, _ ->
-          // no-op
-        },
-        reparsePostSubject = { _, onPostSubjectParsed -> onPostSubjectParsed(null) }
-      )
-
-      if (index < (totalCount - 1)) {
-        KurobaComposeDivider(
-          modifier = Modifier.fillMaxWidth()
-        )
-      }
-    }
-  }
-
-  @Composable
-  private fun LazyItemScope.PageLoadErrorContent(throwable: Throwable) {
-    val currentPage by globalSearchScreenViewModel.currentPageState
-    val errorMessage = remember(key1 = throwable) { throwable.errorMessageOrClassName(userReadable = true) }
-
-    KurobaComposeErrorWithButton(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-        .padding(horizontal = 8.dp, vertical = 12.dp),
-      errorMessage = errorMessage,
-      buttonText = stringResource(R.string.reload),
-      onButtonClicked = { globalSearchScreenViewModel.reloadCurrentPage(currentPage) }
-    )
-  }
-
-  @Composable
-  private fun LazyItemScope.ListErrorContent(
-    screenStateAsyncError: AsyncData.Error,
-  ) {
-    val errorMessage = remember(key1 = screenStateAsyncError) {
-      screenStateAsyncError.error.errorMessageOrClassName(userReadable = true)
-    }
-
-    KurobaComposeErrorWithButton(
-      modifier = Modifier
-        .fillParentMaxSize()
-        .padding(8.dp),
-      errorMessage = errorMessage,
-      buttonText = stringResource(R.string.reload),
-      onButtonClicked = { globalSearchScreenViewModel.fullReload() }
-    )
-  }
-
-  @Composable
-  private fun LazyItemScope.EndReachedIndicator() {
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(42.dp)
-        .padding(8.dp),
-      contentAlignment = Alignment.Center
-    ) {
-      KurobaComposeText(text = stringResource(id = R.string.global_search_screen_end_of_results_reached))
-    }
-  }
-
-  @Composable
-  private fun LazyItemScope.LoadMoreIndicator(currentPage: Int, lazyListState: LazyListState) {
-    val currentLoadingPage by globalSearchScreenViewModel.currentLoadingPageState
-
-    KurobaComposeLoadingIndicator(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(42.dp)
-        .padding(8.dp)
-    )
-
-    if (currentPage <= 0 || currentPage == currentLoadingPage) {
-      return
-    }
-
-    val isLoadingIndicatorForPageVisible by remember(key1 = currentPage) {
-      derivedStateOf {
-        lazyListState.layoutInfo.visibleItemsInfo
-          .lastOrNull { lazyListItemInfo -> lazyListItemInfo.key == "load_more_indicator_${currentPage}" } != null
-      }
-    }
-
-    if (!isLoadingIndicatorForPageVisible) {
-      return
-    }
-
-    LaunchedEffect(
-      key1 = currentPage,
-      block = { globalSearchScreenViewModel.onNextPageRequested(currentPage, currentLoadingPage) }
-    )
-  }
-
-  @Composable
-  private fun LazyItemScope.ListLoadingContent() {
-    KurobaComposeLoadingIndicator(
-      modifier = Modifier
-        .fillParentMaxSize()
-        .padding(8.dp)
-    )
-  }
-
-  @Composable
-  private fun SearchQueryIsEmpty() {
-    Box(
-      modifier = Modifier.fillMaxSize(),
-      contentAlignment = Alignment.Center
-    ) {
-      KurobaComposeText(text = stringResource(id = R.string.global_search_screen_search_query_is_empty))
-    }
-  }
-
-  @Composable
-  private fun LazyItemScope.ListEmptyContent() {
-    val searchQueryMut by globalSearchScreenViewModel.searchQueryState
-    val searchQuery = searchQueryMut
-
-    if (searchQuery == null) {
-      return
-    }
-
-    Box(
-      modifier = Modifier.fillParentMaxSize(),
-      contentAlignment = Alignment.Center
-    ) {
-      val text = stringResource(id = R.string.global_search_screen_nothing_found_by_query, searchQuery)
-      KurobaComposeText(text = text)
     }
   }
 
@@ -419,4 +160,290 @@ class GlobalSearchScreen(
     val SCREEN_KEY = ScreenKey("GlobalSearchScreen")
   }
 
+}
+
+
+@Composable
+private fun GlobalSearchList(
+  lazyListState: LazyListState,
+  paddingValues: PaddingValues,
+  screenKey: ScreenKey,
+  catalogDescriptor: CatalogDescriptor,
+  postSearchLongtapContentMenuProvider: () -> PostSearchLongtapContentMenu
+) {
+  val globalSearchScreenViewModel: GlobalSearchScreenViewModel = koinRememberViewModel()
+  val searchQuery by globalSearchScreenViewModel.searchQueryState
+
+  if (searchQuery.isNullOrEmpty()) {
+    SearchQueryIsEmpty()
+    return
+  }
+
+  val postsAsync by globalSearchScreenViewModel.postsAsyncState
+  val endReached by globalSearchScreenViewModel.endReachedState
+  val currentPage by globalSearchScreenViewModel.currentPageState
+
+  val pageLoadErrorMut by globalSearchScreenViewModel.pageLoadErrorState
+  val pageLoadError = pageLoadErrorMut
+
+  LazyColumnWithFastScroller(
+    lazyListContainerModifier = Modifier.fillMaxSize(),
+    lazyListModifier = Modifier.fillMaxSize(),
+    lazyListState = lazyListState,
+    contentPadding = paddingValues,
+    content = {
+      val foundPosts = when (val state = postsAsync) {
+        AsyncData.Uninitialized -> {
+          // no-op
+          return@LazyColumnWithFastScroller
+        }
+        is AsyncData.Error -> {
+          item(key = "list_error") { ListErrorContent(state) }
+          return@LazyColumnWithFastScroller
+        }
+        AsyncData.Loading -> {
+          item(key = "list_loading") { ListLoadingContent() }
+          return@LazyColumnWithFastScroller
+        }
+        is AsyncData.Data -> state.data
+      }
+
+      if (foundPosts.isEmpty()) {
+        item(key = "list_is_empty") { ListEmptyContent() }
+        return@LazyColumnWithFastScroller
+      }
+
+      items(
+        count = foundPosts.size,
+        key = { index -> foundPosts[index].postDescriptor },
+        itemContent = { index ->
+          val postCellData = foundPosts[index]
+
+          PostSearchCell(
+            index = index,
+            totalCount = foundPosts.size,
+            screenKey = screenKey,
+            catalogDescriptor = catalogDescriptor,
+            postCellData = postCellData,
+            postSearchLongtapContentMenuProvider = postSearchLongtapContentMenuProvider
+          )
+        }
+      )
+
+      if (pageLoadError != null) {
+        item(
+          key = "page_load_error",
+          content = { PageLoadErrorContent(pageLoadError) }
+        )
+      } else if (endReached) {
+        item(
+          key = "end_reached",
+          content = { EndReachedIndicator() }
+        )
+      } else {
+        item(
+          key = "load_more_indicator_${currentPage}",
+          content = { LoadMoreIndicator(currentPage, lazyListState) }
+        )
+      }
+    }
+  )
+}
+
+@Composable
+private fun PostSearchCell(
+  index: Int,
+  totalCount: Int,
+  screenKey: ScreenKey,
+  catalogDescriptor: CatalogDescriptor,
+  postCellData: PostCellData,
+  postSearchLongtapContentMenuProvider: () -> PostSearchLongtapContentMenu
+) {
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+
+  val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
+  val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+  val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
+
+  Column(
+    modifier = Modifier
+      .padding(cellsPadding)
+      .kurobaClickable(
+        onClick = {
+          ScreenCallbackStorage.invokeCallback(
+            screenKey = screenKey,
+            callbackKey = GlobalSearchScreen.ON_POST_CLICKED,
+            p1 = postCellData.postDescriptor
+          )
+        },
+        onLongClick = { postSearchLongtapContentMenuProvider().showMenu(postCellData) }
+      )
+  ) {
+    PostCell(
+      isCatalogMode = true,
+      chanDescriptor = catalogDescriptor,
+      detectLinkableClicks = false,
+      postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+      postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+      postCellData = postCellData,
+      onTextSelectionModeChanged = {
+        // no-op
+      },
+      onPostBind = {
+        // no-op
+      },
+      onPostUnbind = {
+        // no-op
+      },
+      onCopySelectedText = {
+        // no-op
+      },
+      onQuoteSelectedText = { _, _, _ ->
+        // no-op
+      },
+      onPostCellCommentClicked = { _, _, _ ->
+        // no-op
+      },
+      onPostCellCommentLongClicked = {  _, _, _ ->
+        // no-op
+      },
+      onPostRepliesClicked = {
+        // no-op
+      },
+      onPostImageClicked = { _, _, _ ->
+        // no-op
+      },
+      reparsePostSubject = { _, onPostSubjectParsed -> onPostSubjectParsed(null) }
+    )
+
+    if (index < (totalCount - 1)) {
+      KurobaComposeDivider(
+        modifier = Modifier.fillMaxWidth()
+      )
+    }
+  }
+}
+
+@Composable
+private fun LazyItemScope.PageLoadErrorContent(throwable: Throwable) {
+  val globalSearchScreenViewModel: GlobalSearchScreenViewModel = koinRememberViewModel()
+
+  val currentPage by globalSearchScreenViewModel.currentPageState
+  val errorMessage = remember(key1 = throwable) { throwable.errorMessageOrClassName(userReadable = true) }
+
+  KurobaComposeErrorWithButton(
+    modifier = Modifier
+      .fillMaxWidth()
+      .wrapContentHeight()
+      .padding(horizontal = 8.dp, vertical = 12.dp),
+    errorMessage = errorMessage,
+    buttonText = stringResource(R.string.reload),
+    onButtonClicked = { globalSearchScreenViewModel.reloadCurrentPage(currentPage) }
+  )
+}
+
+@Composable
+private fun LazyItemScope.ListErrorContent(
+  screenStateAsyncError: AsyncData.Error,
+) {
+  val globalSearchScreenViewModel: GlobalSearchScreenViewModel = koinRememberViewModel()
+
+  val errorMessage = remember(key1 = screenStateAsyncError) {
+    screenStateAsyncError.error.errorMessageOrClassName(userReadable = true)
+  }
+
+  KurobaComposeErrorWithButton(
+    modifier = Modifier
+      .fillParentMaxSize()
+      .padding(8.dp),
+    errorMessage = errorMessage,
+    buttonText = stringResource(R.string.reload),
+    onButtonClicked = { globalSearchScreenViewModel.fullReload() }
+  )
+}
+
+@Composable
+private fun LazyItemScope.EndReachedIndicator() {
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(42.dp)
+      .padding(8.dp),
+    contentAlignment = Alignment.Center
+  ) {
+    KurobaComposeText(text = stringResource(id = R.string.global_search_screen_end_of_results_reached))
+  }
+}
+
+@Composable
+private fun LazyItemScope.LoadMoreIndicator(currentPage: Int, lazyListState: LazyListState) {
+  val globalSearchScreenViewModel: GlobalSearchScreenViewModel = koinRememberViewModel()
+
+  val currentLoadingPage by globalSearchScreenViewModel.currentLoadingPageState
+
+  KurobaComposeLoadingIndicator(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(42.dp)
+      .padding(8.dp)
+  )
+
+  if (currentPage <= 0 || currentPage == currentLoadingPage) {
+    return
+  }
+
+  val isLoadingIndicatorForPageVisible by remember(key1 = currentPage) {
+    derivedStateOf {
+      lazyListState.layoutInfo.visibleItemsInfo
+        .lastOrNull { lazyListItemInfo -> lazyListItemInfo.key == "load_more_indicator_${currentPage}" } != null
+    }
+  }
+
+  if (!isLoadingIndicatorForPageVisible) {
+    return
+  }
+
+  LaunchedEffect(
+    key1 = currentPage,
+    block = { globalSearchScreenViewModel.onNextPageRequested(currentPage, currentLoadingPage) }
+  )
+}
+
+@Composable
+private fun LazyItemScope.ListLoadingContent() {
+  KurobaComposeLoadingIndicator(
+    modifier = Modifier
+      .fillParentMaxSize()
+      .padding(8.dp)
+  )
+}
+
+@Composable
+private fun SearchQueryIsEmpty() {
+  Box(
+    modifier = Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+  ) {
+    KurobaComposeText(text = stringResource(id = R.string.global_search_screen_search_query_is_empty))
+  }
+}
+
+@Composable
+private fun LazyItemScope.ListEmptyContent() {
+  val globalSearchScreenViewModel: GlobalSearchScreenViewModel = koinRememberViewModel()
+
+  val searchQueryMut by globalSearchScreenViewModel.searchQueryState
+  val searchQuery = searchQueryMut
+
+  if (searchQuery == null) {
+    return
+  }
+
+  Box(
+    modifier = Modifier.fillParentMaxSize(),
+    contentAlignment = Alignment.Center
+  ) {
+    val text = stringResource(id = R.string.global_search_screen_nothing_found_by_query, searchQuery)
+    KurobaComposeText(text = text)
+  }
 }
