@@ -3,14 +3,16 @@ package com.github.k1rakishou.kurobaexlite.managers
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.os.SystemClock
 import java.util.concurrent.CopyOnWriteArrayList
+import logcat.LogPriority
 import logcat.logcat
 
 class ApplicationVisibilityManager : DefaultActivityLifecycleCallbacks() {
   private val listeners = CopyOnWriteArrayList<ApplicationVisibilityListener>()
 
   private var currentApplicationVisibility: ApplicationVisibility = ApplicationVisibility.Background
-  private var activityForegroundCounter = 0
+  private val createdActivities = mutableSetOf<String>()
 
   private var _switchedToForegroundAt: Long? = null
   val switchedToForegroundAt: Long?
@@ -25,29 +27,34 @@ class ApplicationVisibilityManager : DefaultActivityLifecycleCallbacks() {
   }
 
   override fun onActivityStarted(activity: Activity) {
-    val lastForeground = activityForegroundCounter
-    activityForegroundCounter++
+    val wasBackground = createdActivities.isEmpty()
+    val activityFullName = activity::class.java.name
+    createdActivities += activityFullName
 
-    if (activityForegroundCounter == lastForeground) {
+    logcat(TAG, LogPriority.VERBOSE) { "onActivityStarted('${activity::class.java.simpleName}')" }
+
+    if (!wasBackground || createdActivities.isEmpty()) {
       return
     }
 
     logcat(TAG) { "^^^ App went foreground ^^^" }
 
-    _switchedToForegroundAt = System.currentTimeMillis()
+    _switchedToForegroundAt = SystemClock.elapsedRealtime()
     currentApplicationVisibility = ApplicationVisibility.Foreground
-    listeners.forEach { listener -> listener.onApplicationVisibilityChanged(currentApplicationVisibility) }
+
+    listeners.forEach { listener ->
+      listener.onApplicationVisibilityChanged(currentApplicationVisibility)
+    }
   }
 
   override fun onActivityStopped(activity: Activity) {
-    val lastForeground = activityForegroundCounter
-    activityForegroundCounter--
+    val wasForeground = createdActivities.isNotEmpty()
+    val activityFullName = activity::class.java.name
+    createdActivities -= activityFullName
 
-    if (activityForegroundCounter < 0) {
-      activityForegroundCounter = 0
-    }
+    logcat(TAG, LogPriority.VERBOSE) { "onActivityStopped('${activity::class.java.simpleName}')" }
 
-    if (activityForegroundCounter == lastForeground) {
+    if (!wasForeground || createdActivities.isNotEmpty()) {
       return
     }
 
@@ -60,9 +67,9 @@ class ApplicationVisibilityManager : DefaultActivityLifecycleCallbacks() {
   fun getCurrentAppVisibility(): ApplicationVisibility = currentApplicationVisibility
   fun isAppInForeground(): Boolean = getCurrentAppVisibility() == ApplicationVisibility.Foreground
 
-  // Maybe because the app may get started for whatever reason (service got invoked by the OS) but
+  // "Maybe" because the app may get started for whatever reason (a service got invoked by the OS) but
   // no activities are going to start up.
-  fun isMaybeAppStartingUp(): Boolean = _switchedToForegroundAt == null
+  fun isAppStartingUpMaybe(): Boolean = _switchedToForegroundAt == null
 
   companion object {
     private const val TAG = "ApplicationVisibilityManager"
@@ -94,7 +101,6 @@ open class DefaultActivityLifecycleCallbacks : Application.ActivityLifecycleCall
 
   override fun onActivityDestroyed(activity: Activity) {
   }
-
 }
 
 sealed class ApplicationVisibility {

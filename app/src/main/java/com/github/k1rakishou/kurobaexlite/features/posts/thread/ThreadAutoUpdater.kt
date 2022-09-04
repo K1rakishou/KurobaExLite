@@ -70,12 +70,12 @@ class ThreadAutoUpdater(
 
     runAutoUpdaterLoop(
       threadDescriptor = threadDescriptor,
-      resuming = true
+      isAfterAppLifecycleUpdate = true
     )
   }
 
-  fun runAutoUpdaterLoop(threadDescriptor: ThreadDescriptor, resuming: Boolean = false) {
-    if (currentThreadDescriptor == threadDescriptor && !resuming) {
+  fun runAutoUpdaterLoop(threadDescriptor: ThreadDescriptor, isAfterAppLifecycleUpdate: Boolean) {
+    if (currentThreadDescriptor == threadDescriptor && !isAfterAppLifecycleUpdate) {
       logcat(TAG, LogPriority.VERBOSE) {
         "runAutoUpdaterLoop() skip because currentThreadDescriptor " +
           "($currentThreadDescriptor) == threadDescriptor ($threadDescriptor)"

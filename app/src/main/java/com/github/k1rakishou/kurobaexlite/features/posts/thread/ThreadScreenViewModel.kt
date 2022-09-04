@@ -479,7 +479,10 @@ class ThreadScreenViewModel(
         threadAutoUpdater.resetTimer()
       }
 
-      threadAutoUpdater.runAutoUpdaterLoop(threadDescriptor)
+      threadAutoUpdater.runAutoUpdaterLoop(
+        threadDescriptor = threadDescriptor,
+        isAfterAppLifecycleUpdate = false
+      )
     }
   }
 
