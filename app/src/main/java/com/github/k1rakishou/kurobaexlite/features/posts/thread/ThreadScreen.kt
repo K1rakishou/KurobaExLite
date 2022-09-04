@@ -357,13 +357,6 @@ class ThreadScreen(
 
 @Composable
 private fun BoxScope.ThreadPostListScreen(
-  catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel(),
-  threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel(),
-  homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel(),
-  replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel(),
-  snackbarManager: SnackbarManager = koinRemember(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
-  androidHelpers: AndroidHelpers = koinRemember(),
   screenContentLoaded: Boolean,
   screenKey: ScreenKey,
   isCatalogScreen: Boolean,
@@ -374,6 +367,14 @@ private fun BoxScope.ThreadPostListScreen(
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
+  val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
+  val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
+  val homeScreenViewModel = koinRememberViewModel<HomeScreenViewModel>()
+  val replyLayoutViewModel = koinRememberViewModel<ReplyLayoutViewModel>()
+  val snackbarManager = koinRemember<SnackbarManager>()
+  val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
+  val androidHelpers = koinRemember<AndroidHelpers>()
+
   val windowInsets = LocalWindowInsets.current
   val context = LocalContext.current
 

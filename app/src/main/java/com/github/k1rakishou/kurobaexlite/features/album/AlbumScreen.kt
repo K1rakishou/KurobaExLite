@@ -263,8 +263,6 @@ class AlbumScreen(
 
 @Composable
 private fun BoxScope.ToolbarInternal(
-  albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel(),
-  snackbarManager: SnackbarManager = koinRemember(),
   defaultToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcons>,
   selectionToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcons>,
   kurobaToolbarContainerState: KurobaToolbarContainerState<SimpleToolbar<AlbumScreen.ToolbarIcons>>,
@@ -273,6 +271,9 @@ private fun BoxScope.ToolbarInternal(
   onBackPressed: () -> Unit
 ) {
   val context = LocalContext.current
+
+  val albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel()
+  val snackbarManager: SnackbarManager = koinRemember()
 
   LaunchedEffect(
     key1 = Unit,
@@ -338,10 +339,6 @@ private fun BoxScope.ToolbarInternal(
 
 @Composable
 private fun ContentInternal(
-  albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel(),
-  mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember(),
-  snackbarManager: SnackbarManager = koinRemember(),
-  appResources: AppResources = koinRemember(),
   screenKey: ScreenKey,
   chanDescriptor: ChanDescriptor,
   paddingValues: PaddingValues,
@@ -351,6 +348,11 @@ private fun ContentInternal(
   onSelectionModeChanged: (Boolean) -> Unit,
   isTopmostScreen: () -> Boolean,
 ) {
+  val albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel()
+  val mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember()
+  val snackbarManager: SnackbarManager = koinRemember()
+  val appResources: AppResources = koinRemember()
+
   LaunchedEffect(
     key1 = Unit,
     block = {
@@ -476,13 +478,14 @@ private fun ContentInternal(
 
 @Composable
 private fun AlbumImageItem(
-  albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel(),
-  snackbarManager: SnackbarManager = koinRemember(),
-  clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember(),
   isInSelectionMode: Boolean,
   albumImage: AlbumScreenViewModel.AlbumImage,
   onThumbnailClicked: (IPostImage) -> Unit,
 ) {
+  val albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel()
+  val snackbarManager: SnackbarManager = koinRemember()
+  val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember()
+
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
   val selected = albumScreenViewModel.isImageSelected(albumImage)
 

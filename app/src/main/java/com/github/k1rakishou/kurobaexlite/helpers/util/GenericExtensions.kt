@@ -653,14 +653,14 @@ fun View.emulateMotionEvent(downTime: Long, eventTime: Long, action: Int, x: Flo
 }
 
 @Composable
-inline fun <reified T : ViewModel> koinRememberViewModel(): T {
-  val componentActivity = LocalComponentActivity.current
-  return remember { componentActivity.viewModel<T>().value }
+inline fun <reified T : Any> koinRemember(): T {
+  return remember { GlobalContext.get().get<T>() }
 }
 
 @Composable
-inline fun <reified T : Any> koinRemember(): T {
-  return remember { GlobalContext.get().get<T>() }
+inline fun <reified T : ViewModel> koinRememberViewModel(): T {
+  val componentActivity = LocalComponentActivity.current
+  return remember { componentActivity.koinViewModel<T>() }
 }
 
 inline fun <reified T : ViewModel> ComponentActivity.koinViewModel(): T {

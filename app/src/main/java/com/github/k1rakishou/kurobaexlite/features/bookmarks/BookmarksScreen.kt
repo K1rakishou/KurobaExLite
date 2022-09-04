@@ -353,13 +353,14 @@ class BookmarksScreen(
 
 @Composable
 private fun ContentInternal(
-  bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
-  snackbarManager: SnackbarManager = koinRemember(),
   openAppSettings: () -> Unit,
   showBookmarkOptions: () -> Unit,
   showRevertBookmarkDeletion: (ThreadBookmark, Int) -> Unit
 ) {
+  val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+  val snackbarManager: SnackbarManager = koinRemember()
+
   val windowInsets = LocalWindowInsets.current
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
@@ -461,15 +462,16 @@ private fun ContentInternal(
 
 @Composable
 private fun BookmarksList(
-  bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel(),
-  threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
   pullToRefreshState: PullToRefreshState,
   reorderableState: ReorderableState,
   showRevertBookmarkDeletion: (ThreadBookmark, Int) -> Unit
 ) {
   val context = LocalContext.current
   val windowInsets = LocalWindowInsets.current
+
+  val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
+  val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   val contentPadding = remember(key1 = windowInsets) { PaddingValues(bottom = windowInsets.bottom) }
   val pullToRefreshToPadding = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
@@ -686,7 +688,6 @@ private fun ThreadBookmarkHeader(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LazyItemScope.ThreadBookmarkItem(
-  bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel(),
   isInSearchMode: Boolean,
   canUseFancyAnimations: Boolean,
   threadBookmarkUi: ThreadBookmarkUi,
@@ -697,6 +698,8 @@ private fun LazyItemScope.ThreadBookmarkItem(
   val chanTheme = LocalChanTheme.current
   val itemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
   val animationDurationMs = 500
+
+  val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
   val isDrawerCurrentlyOpened by listenForDrawerVisibilityEvents()
 
   val textAnimationSpec = remember(key1 = isDrawerCurrentlyOpened) {
@@ -859,9 +862,9 @@ private fun LazyItemScope.ThreadBookmarkItem(
 }
 
 @Composable
-private fun listenForDrawerVisibilityEvents(
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember()
-): State<Boolean> {
+private fun listenForDrawerVisibilityEvents(): State<Boolean> {
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+
   val drawerVisibility by globalUiInfoManager.drawerVisibilityFlow
     .collectAsState(initial = DrawerVisibility.Closed)
 

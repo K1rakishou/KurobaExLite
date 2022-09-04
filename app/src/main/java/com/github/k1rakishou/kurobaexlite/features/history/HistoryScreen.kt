@@ -204,13 +204,14 @@ private fun ToolbarInternal(
 
 @Composable
 private fun ContentInternal(
-  historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel(),
-  snackbarManager: SnackbarManager = koinRemember(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
   screenKeyProvider: () -> ScreenKey
 ) {
   val windowInsets = LocalWindowInsets.current
   val context = LocalContext.current
+
+  val historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel()
+  val snackbarManager: SnackbarManager = koinRemember()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val navigationHistoryList = historyScreenViewModel.navigationHistoryList
@@ -373,12 +374,13 @@ private fun detectTouchingTopOrBottomOfList(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LazyItemScope.NavigationElement(
-  catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel(),
-  threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel(),
-  historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
   navigationElement: UiNavigationElement,
 ) {
+  val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
+  val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
+  val historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+
   Column(
     modifier = Modifier
       .animateItemPlacement()

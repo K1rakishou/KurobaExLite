@@ -246,8 +246,6 @@ private fun ToolbarInternal(
 
 @Composable
 private fun ContentInternal(
-  catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel(),
-  catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel = koinRememberViewModel(),
   catalogDescriptor: CatalogDescriptor?,
   paddingValues: PaddingValues,
   pullToRefreshState: PullToRefreshState,
@@ -255,6 +253,9 @@ private fun ContentInternal(
   popScreen: () -> Unit
 ) {
   val coroutineScope = rememberCoroutineScope()
+
+  val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
+  val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel = koinRememberViewModel()
 
   val searchQuery by catalogSelectionScreenViewModel.searchQueryState
   var loadBoardsForSiteEvent by remember { mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Uninitialized) }
@@ -300,13 +301,14 @@ private fun ContentInternal(
 
 @Composable
 private fun BuildBoardsList(
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
   catalogDescriptor: CatalogDescriptor?,
   searchQuery: String?,
   loadBoardsForSiteEvent: AsyncData<List<ChanBoardUiData>>,
   paddingValues: PaddingValues,
   onBoardClicked: (CatalogDescriptor) -> Unit
 ) {
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+
   val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
   val subtitleTextSize by globalUiInfoManager.textSubTitleSizeSp.collectAsState()
   val defaultHorizPadding = remember { globalUiInfoManager.defaultHorizPadding }

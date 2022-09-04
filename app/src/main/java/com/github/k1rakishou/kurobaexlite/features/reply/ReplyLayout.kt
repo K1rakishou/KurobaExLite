@@ -35,7 +35,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
 @Composable
 fun ReplyLayoutContainer(
-  replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel(),
   chanDescriptor: ChanDescriptor?,
   replyLayoutState: IReplyLayoutState,
   onReplayLayoutHeightChanged: (Dp) -> Unit,
@@ -51,6 +50,8 @@ fun ReplyLayoutContainer(
   val windowInsets = LocalWindowInsets.current
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val attachedMediaList = replyLayoutState.attachedMediaList
+
+  val replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel()
 
   val replyLayoutContainerOpenedHeightDefault = if (attachedMediaList.isEmpty()) {
     dimensionResource(id = R.dimen.reply_layout_container_opened_height_no_attachments)

@@ -286,8 +286,6 @@ class HomeScreen(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun ContentInternal(
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
-  snackbarManager: SnackbarManager = koinRemember(),
   showPagerSwipeExclusionZoneDialog: () -> Unit,
   isDrawerDragGestureCurrentlyAllowed: (Int, AbstractPage<ComposeScreenWithToolbar<*>>, Boolean, Boolean) -> Boolean,
   navigationRouterProvider: () -> NavigationRouter,
@@ -296,6 +294,9 @@ private fun ContentInternal(
   handleBackPresses: @Composable (HomeScreenPageConverter.PagesWrapper) -> Unit
 ) {
   val context = LocalContext.current
+
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+  val snackbarManager: SnackbarManager = koinRemember()
 
   ShowAndProcessSnackbars()
 
@@ -467,14 +468,14 @@ private fun ContentInternal(
 }
 
 @Composable
-private fun ShowAndProcessSnackbars(
-  catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel(),
-  threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel(),
-  snackbarManager: SnackbarManager = koinRemember(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
-  lastVisitedEndpointManager: LastVisitedEndpointManager = koinRemember(),
-) {
+private fun ShowAndProcessSnackbars() {
   val context = LocalContext.current
+
+  val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
+  val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
+  val snackbarManager: SnackbarManager = koinRemember()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+  val lastVisitedEndpointManager: LastVisitedEndpointManager = koinRemember()
 
   LaunchedEffect(
     key1 = Unit,
@@ -575,8 +576,6 @@ private fun ShowAndProcessSnackbars(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun HomeScreenContentActual(
-  homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
   maxDrawerWidth: Int,
   currentPageIndex: Int,
   targetPageIndex: Int,
@@ -593,6 +592,9 @@ private fun HomeScreenContentActual(
   val density = LocalDensity.current
   val view = LocalView.current
   val chanTheme = LocalChanTheme.current
+
+  val homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   // TODO(KurobaEx): extract into settings
   val draggableAreaSize = remember { with(density) { Size(width = 150.dp.toPx(), height = 80.dp.toPx()) } }
@@ -746,10 +748,11 @@ private fun HomeScreenContentActual(
 
 @Composable
 private fun ListenForFirewallBypassManagerEvents(
-  firewallBypassManager: FirewallBypassManager = koinRemember(),
   navigationRouterProvider: () -> NavigationRouter,
   showSiteFirewallBypassController: (FirewallType, HttpUrl, SiteKey) -> Unit
 ) {
+  val firewallBypassManager: FirewallBypassManager = koinRemember()
+
   LaunchedEffect(
     key1 = Unit,
     block = {

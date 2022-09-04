@@ -420,14 +420,6 @@ class CatalogScreen(
 
 @Composable
 private fun BoxScope.CatalogPostListScreen(
-  catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel(),
-  threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel(),
-  historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel(),
-  bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel(),
-  homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel(),
-  snackbarManager: SnackbarManager = koinRemember(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
-  chanThreadManager: ChanThreadManager = koinRemember(),
   screenContentLoaded: Boolean,
   screenKey: ScreenKey,
   isCatalogScreen: Boolean,
@@ -436,6 +428,15 @@ private fun BoxScope.CatalogPostListScreen(
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
+  val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
+  val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
+  val historyScreenViewModel = koinRememberViewModel<HistoryScreenViewModel>()
+  val bookmarksScreenViewModel = koinRememberViewModel<BookmarksScreenViewModel>()
+  val homeScreenViewModel = koinRememberViewModel<HomeScreenViewModel>()
+  val snackbarManager = koinRemember<SnackbarManager>()
+  val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
+  val chanThreadManager = koinRemember<ChanThreadManager>()
+
   val windowInsets = LocalWindowInsets.current
 
   val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()

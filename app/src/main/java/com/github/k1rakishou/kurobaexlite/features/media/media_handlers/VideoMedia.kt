@@ -73,7 +73,6 @@ private val durationFormatter = PeriodFormatterBuilder()
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun DisplayVideo(
-  snackbarManager: SnackbarManager = koinRemember(),
   pageIndex: Int,
   pagerState: PagerState,
   postImageDataLoadState: ImageLoadState.Ready,
@@ -90,6 +89,8 @@ fun DisplayVideo(
     LaunchedEffect(key1 = Unit, block = { onPlayerUnloaded() })
     return
   }
+
+  val snackbarManager: SnackbarManager = koinRemember()
 
   val librariesInstalledAndLoadedMut by produceState<Boolean?>(
     initialValue = null,

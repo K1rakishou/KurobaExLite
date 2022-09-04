@@ -84,14 +84,15 @@ class MainScreen(
 
 @Composable
 private fun ContentInternal(
-  mediaSaver: MediaSaver = koinRemember(),
-  globalUiInfoManager: GlobalUiInfoManager = koinRemember(),
   screenKey: ScreenKey,
   homeScreenProvider: () -> HomeScreen,
   navigationRouterProvider: () -> NavigationRouter,
   handleBackPresses: @Composable () -> Unit
 ) {
   val insets = LocalWindowInsets.current
+
+  val mediaSaver: MediaSaver = koinRemember()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   val contentPadding = remember(
     key1 = insets.left,

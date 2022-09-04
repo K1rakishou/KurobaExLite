@@ -80,7 +80,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
@@ -427,7 +426,6 @@ class MediaViewerScreen(
 
 @Composable
 private fun CardContentInternal(
-  clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember(),
   mediaViewerParams: MediaViewerParams,
   mediaViewerScreenState: MediaViewerScreenState,
   screenKey: ScreenKey,
@@ -440,6 +438,8 @@ private fun CardContentInternal(
 ) {
   val insets = LocalWindowInsets.current
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+
+  val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember()
 
   var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getBounds()) }
   var transitionFinished by remember { mutableStateOf(false) }
@@ -540,7 +540,6 @@ private fun CardContentInternal(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun BoxScope.ContentAfterTransition(
-  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
   mediaViewerScreenState: MediaViewerScreenState,
   screenKey: ScreenKey,
   availableSize: IntSize,
@@ -556,6 +555,7 @@ private fun BoxScope.ContentAfterTransition(
 ) {
   val chanTheme = LocalChanTheme.current
   val coroutineScope = rememberCoroutineScope()
+  val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
 
   var pagerStateHolderMut by remember { mutableStateOf<PagerState?>(null) }
   val pagerStateHolder = pagerStateHolderMut
@@ -687,7 +687,6 @@ private fun BoxScope.ContentAfterTransition(
 
 @Composable
 private fun TransitionPreview(
-  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
   animatable: Animatable<Float, AnimationVector1D>,
   clickedThumbnailBounds: ClickedThumbnailBoundsStorage.ClickedThumbnailBounds?,
   onTransitionFinished: suspend () -> Unit
@@ -710,6 +709,8 @@ private fun TransitionPreview(
   val bitmapMatrix = remember { Matrix() }
   val postImage = clickedThumbnailBounds.postImage
   val srcBounds = clickedThumbnailBounds.bounds
+
+  val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
 
   val bitmapPaint = remember {
     Paint().apply {
@@ -800,11 +801,12 @@ private fun TransitionPreview(
 
 @Composable
 private fun InitMediaViewerData(
-  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
-  appSettings: AppSettings = koinRemember(),
   mediaViewerScreenState: MediaViewerScreenState,
   mediaViewerParams: MediaViewerParams
 ) {
+  val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
+  val appSettings: AppSettings = koinRemember()
+
   LaunchedEffect(
     key1 = mediaViewerScreenState,
     key2 = mediaViewerParams,
@@ -840,8 +842,6 @@ private fun InitMediaViewerData(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun MediaViewerPagerContainer(
-  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
-  mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember(),
   availableSize: IntSize,
   toolbarHeight: Dp,
   openedFromScreen: ScreenKey,
@@ -855,6 +855,9 @@ private fun MediaViewerPagerContainer(
   val context = LocalContext.current
   val currentPageIndexForInitialScrollMut by mediaViewerScreenState.currentPageIndex
   val imagesMut = mediaViewerScreenState.mediaList
+
+  val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
+  val mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember()
 
   val currentPageIndexForInitialScroll = currentPageIndexForInitialScrollMut
   val images = imagesMut
@@ -1065,8 +1068,6 @@ private fun MediaViewerPagerContainer(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun PageContent(
-  mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel(),
-  snackbarManager: SnackbarManager = koinRemember(),
   page: Int,
   mediaViewerScreenState: MediaViewerScreenState,
   pagerState: PagerState,
@@ -1085,6 +1086,8 @@ private fun PageContent(
   val postImageDataLoadStateMut = images.getOrNull(page)
     ?: return
   val postImageDataLoadState = postImageDataLoadStateMut
+
+  val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
 
   DisposableEffect(
     key1 = Unit,
@@ -1202,7 +1205,6 @@ private fun PageContent(
               pagerState = pagerState,
               postImageDataLoadState = postImageDataLoadState,
               mpvSettingsProvider = mpvSettingsProvider,
-              snackbarManager = snackbarManager,
               checkLibrariesInstalledAndLoaded = checkLibrariesInstalledAndLoaded,
               onPlayerLoaded = { fullMediaLoaded = true },
               onPlayerUnloaded = { fullMediaLoaded = false },
