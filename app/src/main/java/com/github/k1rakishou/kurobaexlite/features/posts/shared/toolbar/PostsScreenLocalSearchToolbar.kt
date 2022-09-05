@@ -2,12 +2,14 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar
 
 import android.os.Bundle
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -195,26 +197,15 @@ class PostsScreenLocalSearchToolbar(
       val foundEntries by state.foundEntriesState
       val currentScrolledEntryIndex by state.currentScrolledEntryIndexState
 
-      Box(
+      Row(
         modifier = Modifier
           .fillMaxHeight()
           .wrapContentWidth(),
-        contentAlignment = Alignment.Center
+        verticalAlignment = Alignment.CenterVertically
       ) {
         val isSearchQueryLengthGood = searchQuery.text.length >= PostsState.MIN_SEARCH_QUERY_LENGTH
 
-        if (!isSearchQueryLengthGood && screenKey == CatalogScreen.SCREEN_KEY) {
-          KurobaComposeText(
-            modifier = Modifier
-              .wrapContentSize()
-              .padding(horizontal = 12.dp)
-              .kurobaClickable(
-                bounded = false,
-                onClick = { onGlobalSearchIconClicked(state.searchQuery.value.text) }
-              ),
-            text = stringResource(id = R.string.posts_screen_search_toolbar_global_search),
-          )
-        } else if (isSearchQueryLengthGood) {
+        if (isSearchQueryLengthGood) {
           val current = currentScrolledEntryIndex?.plus(1) ?: "?"
 
           val totalFoundText = if (foundEntries.isEmpty()) {
@@ -234,6 +225,21 @@ class PostsScreenLocalSearchToolbar(
                 }
               ),
             text = totalFoundText,
+          )
+        }
+
+        if (screenKey == CatalogScreen.SCREEN_KEY) {
+          Spacer(modifier = Modifier.width(8.dp))
+
+          KurobaComposeText(
+            modifier = Modifier
+              .wrapContentSize()
+              .padding(horizontal = 12.dp)
+              .kurobaClickable(
+                bounded = false,
+                onClick = { onGlobalSearchIconClicked(searchQuery.text) }
+              ),
+            text = stringResource(id = R.string.posts_screen_search_toolbar_global_search),
           )
         }
       }

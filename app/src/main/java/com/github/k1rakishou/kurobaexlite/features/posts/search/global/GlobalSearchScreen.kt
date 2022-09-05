@@ -38,7 +38,6 @@ import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleSearchToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
@@ -52,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -60,7 +60,7 @@ class GlobalSearchScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-) : HomeNavigationScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
+) : HomeNavigationScreen<SimpleSearchToolbar>(screenArgs, componentActivity, navigationRouter) {
   private val globalSearchScreenViewModel: GlobalSearchScreenViewModel by componentActivity.viewModel()
 
   private val postSearchLongtapContentMenu by lazy {
@@ -68,6 +68,7 @@ class GlobalSearchScreen(
   }
 
   private val catalogDescriptor: CatalogDescriptor by requireArgumentLazy(CATALOG_DESCRIPTOR)
+  private val searchQuery: String by requireArgumentLazy(SEARCH_QUERY)
 
   override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -76,7 +77,7 @@ class GlobalSearchScreen(
 
   private val defaultToolbarKey = "${screenKey.key}_search"
 
-  override val defaultToolbar: KurobaChildToolbar by lazy {
+  override val defaultToolbar: SimpleSearchToolbar by lazy {
     SimpleSearchToolbar(
       initialSearchQuery = globalSearchScreenViewModel.searchQueryState.value,
       toolbarKey = defaultToolbarKey,
@@ -91,7 +92,7 @@ class GlobalSearchScreen(
   }
 
   override val kurobaToolbarContainerState by lazy {
-    kurobaToolbarContainerViewModel.getOrCreate<KurobaChildToolbar>(screenKey)
+    kurobaToolbarContainerViewModel.getOrCreate<SimpleSearchToolbar>(screenKey)
   }
 
   override fun onStartDisposing(screenDisposeEvent: ScreenDisposeEvent) {
@@ -136,6 +137,17 @@ class GlobalSearchScreen(
       ).asPaddingValues()
     }
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        delay(100L)
+
+        if (searchQuery.isNotEmpty()) {
+          defaultToolbar.updateSearchQuery(searchQuery)
+        }
+      }
+    )
+
     GradientBackground(
       modifier = Modifier
         .fillMaxSize()
@@ -153,6 +165,7 @@ class GlobalSearchScreen(
 
   companion object {
     const val CATALOG_DESCRIPTOR = "catalog_descriptor"
+    const val SEARCH_QUERY = "search_query"
 
     const val CLOSE_CATALOG_SEARCH_TOOLBAR = "close_catalog_search_toolbar"
     const val ON_POST_CLICKED = "on_post_clicked"

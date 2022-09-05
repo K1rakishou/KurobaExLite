@@ -21,6 +21,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
@@ -50,6 +51,15 @@ class SimpleSearchToolbar(
     super.onDispose()
 
     onSearchQueryUpdated.invoke(null)
+  }
+
+  fun updateSearchQuery(searchQuery: String) {
+    state.searchQuery.value = TextFieldValue(
+      text = searchQuery,
+      selection = TextRange(searchQuery.length)
+    )
+
+    onSearchQueryUpdated(searchQuery)
   }
 
   @OptIn(ExperimentalComposeUiApi::class)

@@ -141,7 +141,6 @@ class Chan4PostParser : AbstractSitePostParser() {
 
     if (href.startsWith("/")) {
       // External quote
-
       val hrefPreprocessed = preprocessHref(href)
 
       when {

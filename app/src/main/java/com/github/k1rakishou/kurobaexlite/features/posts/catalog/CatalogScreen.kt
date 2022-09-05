@@ -203,14 +203,17 @@ class CatalogScreen(
       onToolbarCreated = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, true) },
       onToolbarDisposed = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, false) },
       onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
-      onGlobalSearchIconClicked = {
+      onGlobalSearchIconClicked = { currentQuery ->
         val descriptor = catalogScreenViewModel.catalogDescriptor
           ?: return@PostsScreenLocalSearchToolbar
 
         val globalSearchScreen = ComposeScreen.createScreen<GlobalSearchScreen>(
           componentActivity = componentActivity,
           navigationRouter = navigationRouter,
-          args = { putParcelable(GlobalSearchScreen.CATALOG_DESCRIPTOR, descriptor) },
+          args = {
+            putParcelable(GlobalSearchScreen.CATALOG_DESCRIPTOR, descriptor)
+            putString(GlobalSearchScreen.SEARCH_QUERY, currentQuery)
+          },
           callbacks = {
             callback<PostDescriptor>(
               callbackKey = GlobalSearchScreen.ON_POST_CLICKED,
