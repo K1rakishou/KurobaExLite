@@ -5,13 +5,9 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.util.fastForEachIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.util.findAllOccurrences
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.util.linkedMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.toHashSetByKey
@@ -20,7 +16,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -34,6 +29,7 @@ class PostsState(
 ) {
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
+  private val postCommentApplier: PostCommentApplier by inject(PostCommentApplier::class.java)
 
   @Volatile private var _lastUpdatedOn: Long = 0
   val lastUpdatedOn: Long
@@ -86,31 +82,23 @@ class PostsState(
       val parsedPostData = postCellData.parsedPostData
         ?: return@fastForEachIndexed
 
-      val foundOccurrencesInComment = parsedPostData
-        .processedPostComment
-        .text
-        .findAllOccurrences(query = searchQuery, minQueryLength = MIN_SEARCH_QUERY_LENGTH)
-
-      val foundOccurrencesInSubject = parsedPostData
-        .processedPostSubject
-        .text
-        .findAllOccurrences(query = searchQuery, minQueryLength = MIN_SEARCH_QUERY_LENGTH)
-
       val prevPost = _posts[index]
 
-      val newProcessedPostComment = markOrUnmarkSearchQuery(
+      val (foundOccurrencesInComment, newProcessedPostComment) = postCommentApplier.markOrUnmarkSearchQuery(
         chanTheme = chanTheme,
+        searchQuery = searchQuery,
+        minQueryLength = MIN_SEARCH_QUERY_LENGTH,
         string = postCellData.parsedPostData.processedPostComment,
-        occurrences = foundOccurrencesInComment
       )
 
-      val newProcessedPostSubject = markOrUnmarkSearchQuery(
+      val (foundOccurrencesInSubject, newProcessedPostSubject) = postCommentApplier.markOrUnmarkSearchQuery(
         chanTheme = chanTheme,
-        string = postCellData.parsedPostData.processedPostSubject,
-        occurrences = foundOccurrencesInSubject
+        searchQuery = searchQuery,
+        minQueryLength = MIN_SEARCH_QUERY_LENGTH,
+        string = postCellData.parsedPostData.processedPostSubject
       )
 
-      if (foundOccurrencesInComment.isNotEmpty() || foundOccurrencesInSubject.isNotEmpty()) {
+      if (foundOccurrencesInComment || foundOccurrencesInSubject) {
         _postsMatchedBySearchQuery += postCellData.postDescriptor
       }
 
@@ -272,63 +260,6 @@ class PostsState(
     }
   }
 
-  private fun markOrUnmarkSearchQuery(
-    chanTheme: ChanTheme,
-    string: AnnotatedString,
-    occurrences: List<IntRange>
-  ): AnnotatedString {
-    if (occurrences.isEmpty()) {
-      return removeSearchQuery(string)
-    }
-
-    val oldSpanStyles = string.spanStyles
-      .filter { spanStyle -> spanStyle.tag != SEARCH_QUERY_SPAN }
-
-    val newSpanStyles = mutableListWithCap<AnnotatedString.Range<SpanStyle>>(oldSpanStyles.size + occurrences.size)
-    newSpanStyles.addAll(oldSpanStyles)
-
-    val bgColor = chanTheme.accentColor
-    val fgColor = if (ThemeEngine.isDarkColor(bgColor)) {
-      Color.White
-    } else {
-      Color.Black
-    }
-
-    occurrences.forEach { range ->
-      newSpanStyles += AnnotatedString.Range<SpanStyle>(
-        item = SpanStyle(
-          color = fgColor,
-          background = bgColor,
-          fontWeight = FontWeight.Bold
-        ),
-        start = range.first,
-        end = range.last,
-        tag = SEARCH_QUERY_SPAN
-      )
-    }
-
-    return AnnotatedString(
-      text = string.text,
-      spanStyles = newSpanStyles,
-      paragraphStyles = string.paragraphStyles
-    )
-  }
-
-  private fun removeSearchQuery(string: AnnotatedString): AnnotatedString {
-    val newSpanStyles = string.spanStyles
-      .filter { spanStyle -> spanStyle.tag != SEARCH_QUERY_SPAN }
-
-    if (newSpanStyles.size == string.spanStyles.size) {
-      return string
-    }
-
-    return AnnotatedString(
-      text = string.text,
-      spanStyles = newSpanStyles,
-      paragraphStyles = string.paragraphStyles
-    )
-  }
-
   private fun updatePostListAnimationInfoMap(postDataList: Collection<PostCellData>) {
     // Pre-insert first batch of posts into the previousPostDataInfoMap so that we don't play
     // animations for recently opened catalogs/threads. We are doing this right inside of the
@@ -364,8 +295,6 @@ class PostsState(
 
   companion object {
     const val MIN_SEARCH_QUERY_LENGTH = 2
-
-    private const val SEARCH_QUERY_SPAN = "search_query_span"
   }
 
 }

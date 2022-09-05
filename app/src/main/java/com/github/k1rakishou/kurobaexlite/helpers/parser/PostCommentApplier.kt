@@ -8,6 +8,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.util.createAnnotationItem
+import com.github.k1rakishou.kurobaexlite.helpers.util.findAllOccurrences
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
@@ -46,6 +48,65 @@ class PostCommentApplier {
         }
       }
     }
+  }
+
+  fun markOrUnmarkSearchQuery(
+    chanTheme: ChanTheme,
+    searchQuery: String?,
+    minQueryLength: Int,
+    string: AnnotatedString
+  ): Pair<Boolean, AnnotatedString> {
+    val occurrences = string.text.findAllOccurrences(searchQuery, minQueryLength)
+    if (occurrences.isEmpty()) {
+      return false to removeSearchQuery(string)
+    }
+
+    val oldSpanStyles = string.spanStyles
+      .filter { spanStyle -> spanStyle.tag != SEARCH_QUERY_SPAN }
+
+    val newSpanStyles = mutableListWithCap<AnnotatedString.Range<SpanStyle>>(oldSpanStyles.size + occurrences.size)
+    newSpanStyles.addAll(oldSpanStyles)
+
+    val bgColor = chanTheme.accentColor
+    val fgColor = if (ThemeEngine.isDarkColor(bgColor)) {
+      Color.White
+    } else {
+      Color.Black
+    }
+
+    occurrences.forEach { range ->
+      newSpanStyles += AnnotatedString.Range<SpanStyle>(
+        item = SpanStyle(
+          color = fgColor,
+          background = bgColor,
+          fontWeight = FontWeight.Bold
+        ),
+        start = range.first,
+        end = range.last,
+        tag = SEARCH_QUERY_SPAN
+      )
+    }
+
+    return true to AnnotatedString(
+      text = string.text,
+      spanStyles = newSpanStyles,
+      paragraphStyles = string.paragraphStyles
+    )
+  }
+
+  private fun removeSearchQuery(string: AnnotatedString): AnnotatedString {
+    val newSpanStyles = string.spanStyles
+      .filter { spanStyle -> spanStyle.tag != SEARCH_QUERY_SPAN }
+
+    if (newSpanStyles.size == string.spanStyles.size) {
+      return string
+    }
+
+    return AnnotatedString(
+      text = string.text,
+      spanStyles = newSpanStyles,
+      paragraphStyles = string.paragraphStyles
+    )
   }
 
   @Suppress("UnnecessaryVariable")
@@ -351,6 +412,8 @@ class PostCommentApplier {
   companion object {
     private const val ELLIPSIZE = "..."
     private const val CLICK_TO_EXPAND = "[Click to expand]"
+
+    private const val SEARCH_QUERY_SPAN = "search_query_span"
 
     const val ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG = "[click_to_view_full_comment]"
     const val ANNOTATION_POST_LINKABLE = "[post_linkable]"

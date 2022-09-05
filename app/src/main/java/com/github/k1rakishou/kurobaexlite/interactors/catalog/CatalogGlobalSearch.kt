@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.catalog
 
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -17,6 +18,7 @@ import logcat.logcat
 class CatalogGlobalSearch(
   private val globalSearchRepository: GlobalSearchRepository,
   private val parsedPostDataCache: ParsedPostDataCache,
+  private val postCommentApplier: PostCommentApplier,
   private val themeEngine: ThemeEngine,
   private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
@@ -57,6 +59,7 @@ class CatalogGlobalSearch(
 
     val chanTheme = themeEngine.chanTheme
 
+    // TODO(KurobaEx): multi-threading?
     val parsedPosts = withContext(dispatcher) {
       return@withContext posts.map { postData ->
         val parsedPostData = parsedPostDataCache.calculateParsedPostData(
@@ -68,9 +71,32 @@ class CatalogGlobalSearch(
           chanTheme = chanTheme
         )
 
+        val (foundOccurrencesInComment, newProcessedPostComment) = postCommentApplier.markOrUnmarkSearchQuery(
+          chanTheme = chanTheme,
+          searchQuery = searchQuery,
+          minQueryLength = 1,
+          string = parsedPostData.processedPostComment
+        )
+
+        val (foundOccurrencesInSubject, newProcessedPostSubject) = postCommentApplier.markOrUnmarkSearchQuery(
+          chanTheme = chanTheme,
+          searchQuery = searchQuery,
+          minQueryLength = 1,
+          string = parsedPostData.processedPostSubject
+        )
+
+        val updatedParsedPostData = if (foundOccurrencesInComment || foundOccurrencesInSubject) {
+          parsedPostData.copy(
+            processedPostComment = newProcessedPostComment,
+            processedPostSubject = newProcessedPostSubject,
+          )
+        } else {
+          parsedPostData
+        }
+
         return@map PostCellData.fromPostData(
           postData = postData,
-          parsedPostData = parsedPostData
+          parsedPostData = updatedParsedPostData
         )
       }
     }

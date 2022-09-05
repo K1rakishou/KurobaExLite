@@ -590,7 +590,14 @@ object DependencyGraph {
     single {
       ModifyMarkedPosts(markedPostManager = get(), kurobaExLiteDatabase = get())
     }
-    single { CatalogGlobalSearch(globalSearchRepository = get(), parsedPostDataCache = get(), themeEngine = get()) }
+    single {
+      CatalogGlobalSearch(
+        globalSearchRepository = get(),
+        parsedPostDataCache = get(),
+        postCommentApplier = get(),
+        themeEngine = get()
+      )
+    }
     single { PersistBookmarks(bookmarksManager = get(), kurobaExLiteDatabase = get()) }
     single {
       UpdateBookmarkInfoUponThreadOpen(
