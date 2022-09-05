@@ -134,9 +134,11 @@ fun <ToolbarType : KurobaChildToolbar> PostListSearchButtons(
   kurobaToolbarContainerStateProvider: () -> KurobaToolbarContainerState<ToolbarType>
 ) {
   val postsScreenViewModel = postsScreenViewModelProvider()
+  val searchToolbar = searchToolbarProvider()
 
   val postsAsyncData by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
   val searchQueryMut by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
+  val foundEntries by searchToolbar.foundEntries
 
   val searchQuery = searchQueryMut
 
@@ -150,7 +152,6 @@ fun <ToolbarType : KurobaChildToolbar> PostListSearchButtons(
     key1 = postsAsyncData,
     block = {
       postsState.searchQueryUpdatedFlow.collect {
-        val searchToolbar = searchToolbarProvider()
         val kurobaToolbarContainerState = kurobaToolbarContainerStateProvider()
 
         if (!kurobaToolbarContainerState.contains(searchToolbar.toolbarKey)) {
@@ -162,7 +163,7 @@ fun <ToolbarType : KurobaChildToolbar> PostListSearchButtons(
     }
   )
 
-  if (searchQuery.isNullOrEmpty()) {
+  if (searchQuery.isNullOrEmpty() || foundEntries.isEmpty()) {
     return
   }
 
@@ -172,8 +173,6 @@ fun <ToolbarType : KurobaChildToolbar> PostListSearchButtons(
       if (searchQuery.length < PostsState.MIN_SEARCH_QUERY_LENGTH) {
         return@LaunchedEffect
       }
-
-      val searchToolbar = searchToolbarProvider()
 
       val firstPostDescriptor = searchToolbar.firstEntry()
         ?: return@LaunchedEffect
@@ -187,7 +186,10 @@ fun <ToolbarType : KurobaChildToolbar> PostListSearchButtons(
 
   val offset = with(density) {
     remember(key1 = windowInsets) {
-      IntOffset(x = -24.dp.roundToPx(), y = -(32.dp.roundToPx() + windowInsets.bottom.roundToPx()))
+      IntOffset(
+        x = -24.dp.roundToPx(),
+        y = -(32.dp.roundToPx() + windowInsets.bottom.roundToPx())
+      )
     }
   }
 

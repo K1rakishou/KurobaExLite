@@ -136,9 +136,9 @@ class PostsState(
 
         _posts[postIndex] = postCellData
       }
-
-      _searchQueryUpdatedFlow.tryEmit(Unit)
     }
+
+    _searchQueryUpdatedFlow.tryEmit(Unit)
   }
 
   /**

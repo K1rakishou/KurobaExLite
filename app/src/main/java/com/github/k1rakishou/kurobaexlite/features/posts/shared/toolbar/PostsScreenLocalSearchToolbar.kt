@@ -64,6 +64,8 @@ class PostsScreenLocalSearchToolbar(
 
   val searchQuery: String
     get() = state.searchQuery.value.text
+  val foundEntries: androidx.compose.runtime.State<List<PostDescriptor>>
+    get() = state.foundEntriesState
 
   override fun onCreate() {
     check(screenKey == CatalogScreen.SCREEN_KEY || screenKey == ThreadScreen.SCREEN_KEY) {
