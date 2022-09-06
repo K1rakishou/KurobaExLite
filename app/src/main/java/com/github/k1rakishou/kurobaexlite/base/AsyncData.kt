@@ -1,8 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.base
 
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 
-@Immutable
+@Stable
 sealed class AsyncData<out T> {
   object Uninitialized : AsyncData<Nothing>()
   object Loading : AsyncData<Nothing>()
