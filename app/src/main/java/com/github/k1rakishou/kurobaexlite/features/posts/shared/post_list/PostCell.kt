@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,7 +45,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.core.content.res.ResourcesCompat
@@ -66,9 +66,13 @@ import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -93,36 +97,33 @@ fun PostCell(
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onGoToPostClicked: ((PostCellData) -> Unit)?,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
-  val postComment = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostComment }
-  val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
-  val postFooterText = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.postFooterText }
-
   DisposableEffect(
     key1 = postCellData,
     effect = {
       onPostBind(postCellData)
       onDispose { onPostUnbind(postCellData) }
-    })
+    }
+  )
 
   Row(
     modifier = Modifier
       .wrapContentHeight()
       .padding(vertical = 8.dp)
   ) {
-    var columnSizeMut by remember { mutableStateOf<IntSize?>(null) }
-    val columnSize = columnSizeMut
+    var columnHeightMut by remember { mutableStateOf<Int?>(null) }
+    val columnHeight = columnHeightMut
 
     Column(
       modifier = Modifier
         .weight(1f)
-        .onSizeChanged { size -> columnSizeMut = size }
+        .onSizeChanged { size -> columnHeightMut = size.height }
     ) {
       PostCellTitle(
         chanDescriptor = chanDescriptor,
         postCellData = postCellData,
-        postSubject = postSubject,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         onPostImageClicked = onPostImageClicked,
         reparsePostSubject = reparsePostSubject
@@ -132,7 +133,6 @@ fun PostCell(
 
       PostCellComment(
         postCellData = postCellData,
-        postComment = postComment,
         isCatalogMode = isCatalogMode,
         detectLinkableClicks = detectLinkableClicks,
         onCopySelectedText = onCopySelectedText,
@@ -145,20 +145,70 @@ fun PostCell(
 
       PostCellFooter(
         postCellData = postCellData,
-        postFooterText = postFooterText,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         onPostRepliesClicked = onPostRepliesClicked
       )
     }
 
-    if (columnSize != null) {
-      PostCellMarks(columnSize, postCellData)
+    if (columnHeight != null) {
+      PostCellMarks(
+        columnHeight = columnHeight,
+        postCellData = postCellData
+      )
+
+      if (onGoToPostClicked != null) {
+        GoToPostButton(
+          columnHeight = columnHeight,
+          onGoToPostClicked = onGoToPostClicked,
+          postCellData = postCellData
+        )
+      }
     }
   }
 }
 
 @Composable
-private fun PostCellMarks(columnSize: IntSize, postCellData: PostCellData) {
+private fun RowScope.GoToPostButton(
+  columnHeight: Int,
+  onGoToPostClicked: (PostCellData) -> Unit,
+  postCellData: PostCellData
+) {
+  val chanTheme = LocalChanTheme.current
+  val heightDp = with(LocalDensity.current) { columnHeight.toDp() }
+
+  Spacer(modifier = Modifier.width(4.dp))
+
+  val cardBgColor = remember(key1 = chanTheme.backColor) {
+    if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
+      ThemeEngine.manipulateColor(chanTheme.backColor, 1.2f)
+    } else {
+      ThemeEngine.manipulateColor(chanTheme.backColor, 0.8f)
+    }
+  }
+
+  KurobaComposeCard(
+    modifier = Modifier
+      .width(38.dp)
+      .height(heightDp)
+      .kurobaClickable(bounded = true, onClick = { onGoToPostClicked(postCellData) }),
+    backgroundColor = cardBgColor
+  ) {
+    Box(
+      modifier = Modifier.fillMaxSize(),
+      contentAlignment = Alignment.Center
+    ) {
+      KurobaComposeIcon(
+        modifier = Modifier.size(28.dp),
+        drawableId = R.drawable.ic_baseline_chevron_right_24
+      )
+    }
+  }
+
+  Spacer(modifier = Modifier.width(4.dp))
+}
+
+@Composable
+private fun RowScope.PostCellMarks(columnHeight: Int, postCellData: PostCellData) {
   val parsedPostData = postCellData.parsedPostData
     ?: return
 
@@ -167,57 +217,54 @@ private fun PostCellMarks(columnSize: IntSize, postCellData: PostCellData) {
   }
 
   val chanTheme = LocalChanTheme.current
-  val heightDp = with(LocalDensity.current) { columnSize.height.toDp() }
+  val heightDp = with(LocalDensity.current) { columnHeight.toDp() }
   val totalCanvasWidth = 3.dp
   val lineWidthPx = with(LocalDensity.current) { remember { totalCanvasWidth.toPx() } }
   val pathEffect = remember { PathEffect.dashPathEffect(floatArrayOf(20f, 10f), 0f) }
 
-  Row {
-    Spacer(modifier = Modifier.width(4.dp))
+  Spacer(modifier = Modifier.width(4.dp))
 
-    Canvas(
-      modifier = Modifier
-        .width(totalCanvasWidth)
-        .height(heightDp),
-      onDraw = {
-        when {
-          parsedPostData.isPostMarkedAsMine -> {
-            drawLine(
-              color = chanTheme.postSavedReplyColor,
-              strokeWidth = lineWidthPx,
-              start = Offset.Zero,
-              end = Offset(0f, size.height)
-            )
-          }
-          parsedPostData.isReplyToPostMarkedAsMine -> {
-            drawLine(
-              color = chanTheme.postSavedReplyColor,
-              strokeWidth = lineWidthPx,
-              start = Offset.Zero,
-              end = Offset(0f, size.height),
-              pathEffect = pathEffect
-            )
-          }
-          else -> {
-            unreachable()
-          }
+  Canvas(
+    modifier = Modifier
+      .width(totalCanvasWidth)
+      .height(heightDp),
+    onDraw = {
+      when {
+        parsedPostData.isPostMarkedAsMine -> {
+          drawLine(
+            color = chanTheme.postSavedReplyColor,
+            strokeWidth = lineWidthPx,
+            start = Offset.Zero,
+            end = Offset(0f, size.height)
+          )
+        }
+        parsedPostData.isReplyToPostMarkedAsMine -> {
+          drawLine(
+            color = chanTheme.postSavedReplyColor,
+            strokeWidth = lineWidthPx,
+            start = Offset.Zero,
+            end = Offset(0f, size.height),
+            pathEffect = pathEffect
+          )
+        }
+        else -> {
+          unreachable()
         }
       }
-    )
-
-    Spacer(modifier = Modifier.width(4.dp))
-  }
+    }
+  )
 }
 
 @Composable
 private fun PostCellTitle(
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
-  postSubject: AnnotatedString?,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
+  val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
+
   Row(
     modifier = Modifier
       .wrapContentHeight()
@@ -225,27 +272,11 @@ private fun PostCellTitle(
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (postCellData.images.isNotNullNorEmpty()) {
-      val postImage = postCellData.images.first()
-      var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
-
-      Box(
-        modifier = Modifier
-          .wrapContentSize()
-          .onGloballyPositioned { layoutCoordinates ->
-            boundsInWindowMut = layoutCoordinates.boundsInWindow()
-          }
-      ) {
-        PostImageThumbnail(
-          modifier = Modifier.size(70.dp),
-          postImage = postImage,
-          onClickWithError = { clickedImageResult ->
-            val boundsInWindow = boundsInWindowMut
-              ?: return@PostImageThumbnail
-
-            onPostImageClicked(chanDescriptor, clickedImageResult, boundsInWindow)
-          }
-        )
-      }
+      PostCellThumbnail(
+        images = postCellData.images,
+        onPostImageClicked = onPostImageClicked,
+        chanDescriptor = chanDescriptor
+      )
 
       Spacer(modifier = Modifier.width(4.dp))
     }
@@ -257,46 +288,91 @@ private fun PostCellTitle(
           .height(42.dp)
       )
     } else {
-      var actualPostSubject by remember(key1 = postSubject) { mutableStateOf(postSubject) }
-
-      LaunchedEffect(
-        key1 = postCellData,
-        block = {
-          val initialTime = postCellData.timeMs
-            ?: return@LaunchedEffect
-
-          while (isActive) {
-            val now = System.currentTimeMillis()
-            val delay = if (now - initialTime <= 60_000L) 5000L else 60_000L
-
-            delay(delay)
-
-            val newPostSubject = suspendCancellableCoroutine<AnnotatedString?> { cancellableContinuation ->
-              reparsePostSubject(postCellData) { parsedPostSubject ->
-                cancellableContinuation.resumeSafe(
-                  parsedPostSubject
-                )
-              }
-            }
-
-            if (newPostSubject == null) {
-              return@LaunchedEffect
-            }
-
-            actualPostSubject = newPostSubject
-          }
-        })
-
-      Text(
-        modifier = Modifier.weight(1f),
-        text = actualPostSubject,
-        fontSize = postCellSubjectTextSizeSp,
-        inlineContent = inlinedContentForPostCell(
-          postCellData = postCellData,
-          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
-        )
+      PostCellSubject(
+        postSubject = postSubject,
+        postCellData = postCellData,
+        reparsePostSubject = reparsePostSubject,
+        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
       )
     }
+  }
+}
+
+@Composable
+private fun RowScope.PostCellSubject(
+  postSubject: AnnotatedString,
+  postCellData: PostCellData,
+  reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
+  postCellSubjectTextSizeSp: TextUnit
+) {
+  var actualPostSubject by remember(key1 = postSubject) { mutableStateOf(postSubject) }
+
+  LaunchedEffect(
+    key1 = postCellData,
+    block = {
+      val initialTime = postCellData.timeMs
+        ?: return@LaunchedEffect
+
+      while (isActive) {
+        val now = System.currentTimeMillis()
+        val delay = if (now - initialTime <= 60_000L) 5000L else 60_000L
+
+        delay(delay)
+
+        val newPostSubject =
+          suspendCancellableCoroutine<AnnotatedString?> { cancellableContinuation ->
+            reparsePostSubject(postCellData) { parsedPostSubject ->
+              cancellableContinuation.resumeSafe(
+                parsedPostSubject
+              )
+            }
+          }
+
+        if (newPostSubject == null) {
+          return@LaunchedEffect
+        }
+
+        actualPostSubject = newPostSubject
+      }
+    })
+
+  Text(
+    modifier = Modifier.weight(1f),
+    text = actualPostSubject,
+    fontSize = postCellSubjectTextSizeSp,
+    inlineContent = inlinedContentForPostCell(
+      postCellData = postCellData,
+      postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
+    )
+  )
+}
+
+@Composable
+private fun PostCellThumbnail(
+  images: List<PostCellImageData>,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  chanDescriptor: ChanDescriptor
+) {
+  val postImage = images.first()
+  var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
+
+  Box(
+    modifier = Modifier
+      .wrapContentSize()
+      .onGloballyPositioned { layoutCoordinates ->
+        boundsInWindowMut = layoutCoordinates.boundsInWindow()
+      }
+  ) {
+    PostImageThumbnail(
+      modifier = Modifier.size(70.dp),
+      postImage = postImage,
+      onClickWithError = { clickedImageResult ->
+        val boundsInWindow = boundsInWindowMut
+          ?: return@PostImageThumbnail
+
+        onPostImageClicked(chanDescriptor, clickedImageResult, boundsInWindow)
+      }
+    )
   }
 }
 
@@ -442,7 +518,6 @@ private fun PostCellIcon(postCellIcon: ParsedPostDataCache.PostCellIcon) {
 @Composable
 private fun PostCellComment(
   postCellData: PostCellData,
-  postComment: AnnotatedString?,
   isCatalogMode: Boolean,
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
@@ -454,6 +529,7 @@ private fun PostCellComment(
 ) {
   val chanTheme = LocalChanTheme.current
   val clickedTextBackgroundColorMap = remember(key1 = chanTheme) { createClickableTextColorMap(chanTheme) }
+  val postComment = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostComment }
   var isInSelectionMode by remember { mutableStateOf(false) }
 
   if (postComment.isNotNullNorBlank()) {
@@ -581,11 +657,11 @@ private fun PostCellCommentSelectionWrapper(
 @Composable
 private fun PostCellFooter(
   postCellData: PostCellData,
-  postFooterText: AnnotatedString?,
   postCellCommentTextSizeSp: TextUnit,
   onPostRepliesClicked: (PostCellData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+  val postFooterText = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.postFooterText }
 
   Row(
     modifier = Modifier

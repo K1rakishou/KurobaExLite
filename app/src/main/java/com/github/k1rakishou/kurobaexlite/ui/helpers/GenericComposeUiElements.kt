@@ -665,7 +665,6 @@ fun KurobaComposeCard(
   }
 }
 
-
 @Composable
 fun KurobaComposeClickableIcon(
   @DrawableRes drawableId: Int,
@@ -998,24 +997,6 @@ fun KurobaComposeSwitch(
     onCheckedChange = onCheckedChange,
     colors = chanTheme.switchColors()
   )
-}
-
-@Composable
-fun KurobaComposeCardView(
-  modifier: Modifier = Modifier,
-  backgroundColor: Color? = null,
-  shape: Shape = RoundedCornerShape(2.dp),
-  content: @Composable () -> Unit
-) {
-  val chanTheme = LocalChanTheme.current
-
-  Card(
-    modifier = modifier,
-    shape = shape,
-    backgroundColor = backgroundColor ?: chanTheme.backColor
-  ) {
-    content()
-  }
 }
 
 @Composable

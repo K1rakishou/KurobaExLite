@@ -240,7 +240,7 @@ class PopupRepliesScreen(
         PostListOptions(
           isCatalogMode = false,
           isInPopup = true,
-          ownerScreenKey = screenKey,
+          openedFromScreenKey = screenKey,
           pullToRefreshEnabled = false,
           contentPadding = PaddingValues(),
           mainUiLayoutMode = MainUiLayoutMode.Phone,
@@ -514,6 +514,15 @@ private fun PopupRepliesScreenContent(
         }
       },
       onPostImageClicked = onPostImageClicked,
+      onGoToPostClicked = { postCellData ->
+        if (postListOptions.isCatalogMode) {
+          // TODO(KurobaEx): open thread
+        } else {
+          threadScreenViewModel.scrollToPost(postCellData.postDescriptor)
+        }
+
+        stopPresenting()
+      },
       onPostListScrolled = { delta -> /*no-op*/ },
       onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
       onCurrentlyTouchingPostList = { touching -> /*no-op*/ },

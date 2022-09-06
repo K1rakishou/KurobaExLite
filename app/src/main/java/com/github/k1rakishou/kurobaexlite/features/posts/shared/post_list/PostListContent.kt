@@ -89,6 +89,7 @@ internal fun PostListContent(
   onCurrentlyTouchingPostList: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onGoToPostClicked: ((PostCellData) -> Unit)?,
   emptyContent: @Composable LazyItemScope.(Boolean, Boolean) -> Unit = { isInPopup, isCatalogMode ->
     PostListEmptyContent(isInPopup, isCatalogMode)
   },
@@ -113,7 +114,7 @@ internal fun PostListContent(
     return
   }
 
-  val openedFromScreenKey = postListOptions.ownerScreenKey
+  val openedFromScreenKey = postListOptions.openedFromScreenKey
   val postListAsyncMut by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
   val postListAsync = postListAsyncMut
   val postListAsyncUpdated by rememberUpdatedState(newValue = postListAsync)
@@ -260,6 +261,7 @@ internal fun PostListContent(
         onFastScrollerDragStateChanged(isDraggingFastScroller)
       },
       onPostImageClicked = onPostImageClicked,
+      onGoToPostClicked = onGoToPostClicked,
       emptyContent = emptyContent,
       loadingContent = loadingContent,
       errorContent = errorContent,
@@ -365,6 +367,7 @@ private fun PostListInternal(
   onPostRepliesClicked: (PostCellData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onGoToPostClicked: ((PostCellData) -> Unit)?,
   onCopySelectedText: (String) -> Unit,
   onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
   onPostListScrolled: (Float) -> Unit,
@@ -505,6 +508,7 @@ private fun PostListInternal(
                 onPostCellCommentLongClicked = onPostCellCommentLongClicked,
                 onPostRepliesClicked = onPostRepliesClicked,
                 onPostImageClicked = onPostImageClicked,
+                onGoToPostClicked = onGoToPostClicked,
                 reparsePostSubject = { postCellData, onPostSubjectParsed ->
                   postsScreenViewModel.reparsePostSubject(
                     postCellData = postCellData,
@@ -654,6 +658,7 @@ private fun LazyListScope.postList(
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onGoToPostClicked: ((PostCellData) -> Unit)?,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
   buildThreadStatusCell: @Composable (LazyItemScope.() -> Unit)? = null
 ) {
@@ -700,6 +705,7 @@ private fun LazyListScope.postList(
         onPostCellCommentLongClicked = onPostCellCommentLongClicked,
         onPostRepliesClicked = onPostRepliesClicked,
         onPostImageClicked = onPostImageClicked,
+        onGoToPostClicked = onGoToPostClicked,
         reparsePostSubject = reparsePostSubject
       )
 
@@ -738,6 +744,7 @@ private fun LazyItemScope.PostCellContainer(
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onGoToPostClicked: ((PostCellData) -> Unit)?,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
@@ -786,6 +793,7 @@ private fun LazyItemScope.PostCellContainer(
         onPostCellCommentLongClicked = onPostCellCommentLongClicked,
         onPostRepliesClicked = onPostRepliesClicked,
         onPostImageClicked = onPostImageClicked,
+        onGoToPostClicked = onGoToPostClicked,
         reparsePostSubject = reparsePostSubject
       )
 

@@ -329,6 +329,7 @@ private fun PostSearchCell(
       onPostImageClicked = { _, _, _ ->
         // no-op
       },
+      onGoToPostClicked = null,
       reparsePostSubject = { _, onPostSubjectParsed -> onPostSubjectParsed(null) }
     )
 

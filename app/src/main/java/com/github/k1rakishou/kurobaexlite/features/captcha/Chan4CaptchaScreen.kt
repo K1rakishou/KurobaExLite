@@ -56,7 +56,7 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowMainAxisAlignment
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCardView
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeSnappingSlider
@@ -295,7 +295,7 @@ class Chan4CaptchaScreen(
         }
       }
 
-      KurobaComposeCardView(
+      KurobaComposeCard(
         modifier = Modifier
           .wrapContentSize()
           .kurobaClickable(bounded = true, onClick = { onSuggestionClicked(captchaSuggestion) }),

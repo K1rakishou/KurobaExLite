@@ -410,7 +410,7 @@ private fun BoxScope.ThreadPostListScreen(
       return@derivedStateOf PostListOptions(
         isCatalogMode = isCatalogScreen,
         isInPopup = false,
-        ownerScreenKey = screenKey,
+        openedFromScreenKey = screenKey,
         pullToRefreshEnabled = true,
         contentPadding = PaddingValues(
           top = toolbarHeight + windowInsets.top,
@@ -487,6 +487,7 @@ private fun BoxScope.ThreadPostListScreen(
       }
     },
     onPostImageClicked = onPostImageClicked,
+    onGoToPostClicked = null,
     onPostListScrolled = { delta ->
       globalUiInfoManager.onContentListScrolling(screenKey, delta)
     },

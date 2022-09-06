@@ -10,7 +10,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 data class PostListOptions(
   val isCatalogMode: Boolean,
   val isInPopup: Boolean,
-  val ownerScreenKey: ScreenKey,
+  val openedFromScreenKey: ScreenKey,
   val pullToRefreshEnabled: Boolean,
   val detectLinkableClicks: Boolean,
   val mainUiLayoutMode: MainUiLayoutMode,
