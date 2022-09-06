@@ -154,7 +154,7 @@ class GlobalSearchScreen(
         .fillMaxSize()
         .consumeClicks()
     ) {
-      KurobaComposeFadeIn {
+      KurobaComposeFadeIn(delayMillis = 350) {
         GlobalSearchList(
           lazyListState = lazyListState,
           paddingValues = paddingValues,

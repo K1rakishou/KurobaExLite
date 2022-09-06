@@ -8,8 +8,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 
@@ -18,10 +20,18 @@ fun KurobaComposeFadeIn(
   modifier: Modifier = Modifier,
   durationMillis: Int = 250,
   delayMillis: Int = 100,
+  enabled: Boolean = true,
   key1: Any = Unit,
   content: @Composable () -> Unit
 ) {
-  var visible by remember(key1 = key1) { mutableStateOf(false) }
+  val movableContent = remember { movableContentOf { content() } }
+
+  if (!enabled) {
+    movableContent()
+    return
+  }
+
+  var visible by rememberSaveable(key1) { mutableStateOf(false) }
 
   AnimatedVisibility(
     modifier = modifier,
@@ -29,7 +39,7 @@ fun KurobaComposeFadeIn(
     enter = fadeIn(animationSpec = tween(durationMillis = durationMillis, delayMillis = delayMillis)),
     exit = fadeOut(animationSpec = snap())
   ) {
-    content()
+    movableContent()
   }
 
   LaunchedEffect(

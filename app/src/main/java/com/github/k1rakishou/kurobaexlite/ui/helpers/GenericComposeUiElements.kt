@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.FloatRange
 import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -58,6 +59,7 @@ import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -98,6 +100,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 private val DefaultFillMaxSizeModifier: Modifier = Modifier.fillMaxSize()
 private val DefaultNoopClickCallback = { }
@@ -106,9 +109,25 @@ private val DefaultNoopClickCallback = { }
 fun KurobaComposeLoadingIndicator(
   modifier: Modifier = DefaultFillMaxSizeModifier,
   overrideColor: Color? = null,
-  indicatorSize: Dp = 42.dp
+  indicatorSize: Dp = 42.dp,
+  fadeInTimeMs: Long = 300
 ) {
-  Box(modifier = modifier) {
+  var showLoadingIndicator by remember { mutableStateOf(false) }
+  val animationAlpha by animateFloatAsState(targetValue = if (showLoadingIndicator) 1f else 0f)
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      delay(fadeInTimeMs)
+      showLoadingIndicator = true
+    }
+  )
+
+  Box(
+    modifier = modifier.then(
+      Modifier.graphicsLayer { alpha = animationAlpha }
+    )
+  ) {
     val color = if (overrideColor == null) {
       val chanTheme = LocalChanTheme.current
       chanTheme.accentColor

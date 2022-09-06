@@ -203,9 +203,10 @@ internal fun PostListContent(
     )
   }
 
-  val shouldFadeIn = postListAsync is AsyncData.Data
-
-  KurobaComposeFadeIn(key1 = shouldFadeIn) {
+  KurobaComposeFadeIn(
+    enabled = !postListOptions.isInPopup,
+    key1 = postListAsync is AsyncData.Data
+  ) {
     PostListInternal(
       modifier = modifier,
       chanDescriptor = chanDescriptor,
