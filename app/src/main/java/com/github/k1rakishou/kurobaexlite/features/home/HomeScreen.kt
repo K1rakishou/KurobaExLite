@@ -121,6 +121,8 @@ class HomeScreen(
         }
       },
       handleBackPresses = { pagesWrapper ->
+        val pagesWrapperUpdated by rememberUpdatedState(newValue = pagesWrapper)
+
         HandleBackPresses {
           if (globalUiInfoManager.isDrawerOpenedOrOpening()) {
             globalUiInfoManager.closeDrawer()
@@ -134,9 +136,9 @@ class HomeScreen(
             ?: return@HandleBackPresses false
 
           // First, process all child screens
-          val currentScreenIndex = pagesWrapper.screenIndexByScreenKey(freshCurrentPageScreenKey)
+          val currentScreenIndex = pagesWrapperUpdated.screenIndexByScreenKey(freshCurrentPageScreenKey)
           if (currentScreenIndex != null) {
-            val currentPage = pagesWrapper.pageByIndex(currentScreenIndex)
+            val currentPage = pagesWrapperUpdated.pageByIndex(currentScreenIndex)
             if (currentPage != null) {
               for (childScreen in currentPage.childScreens.asReversed()) {
                 if (childScreen.composeScreen.onBackPressed()) {
@@ -343,7 +345,6 @@ private fun ContentInternal(
       historyScreenOnLeftSide = historyScreenOnLeftSide
     )
   }
-  val pagesWrapperUpdated by rememberUpdatedState(newValue = pagesWrapper)
 
   val initialScreenIndexMut = remember(
     key1 = currentScreenPage.screenKey,
@@ -450,7 +451,7 @@ private fun ContentInternal(
     }
   )
 
-  handleBackPresses(pagesWrapperUpdated)
+  handleBackPresses(pagesWrapper)
 
   HomeScreenContentActual(
     maxDrawerWidth = maxDrawerWidth,
