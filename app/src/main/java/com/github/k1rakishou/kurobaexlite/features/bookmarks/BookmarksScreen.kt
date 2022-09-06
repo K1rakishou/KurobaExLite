@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,16 +40,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -62,6 +65,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImagePainter
@@ -75,7 +79,8 @@ import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen.Boo
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen.BookmarkAnnotatedContent.Companion.circleCropTransformation
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen.BookmarkAnnotatedContent.Companion.deleteBookmarkIconWidth
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen.BookmarkAnnotatedContent.Companion.grayscaleTransformation
-import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen.BookmarkAnnotatedContent.Companion.noBookmarksMessageItemKey
+import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen.BookmarkAnnotatedContent.Companion.noBookmarksAddedMessageItemKey
+import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen.BookmarkAnnotatedContent.Companion.noBookmarksFoundMessageItemKey
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen.BookmarkAnnotatedContent.Companion.searchInputItemKey
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -83,6 +88,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.image.GrayscaleTransformation
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -102,6 +108,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentIt
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -130,6 +137,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class BookmarksScreen(
@@ -321,7 +329,8 @@ class BookmarksScreen(
 
       internal val deleteBookmarkIconWidth = 40.dp
       internal val searchInputItemKey = "search_input"
-      internal val noBookmarksMessageItemKey = "no_bookmarks_message"
+      internal val noBookmarksAddedMessageItemKey = "no_bookmarks_added_message"
+      internal val noBookmarksFoundMessageItemKey = "no_bookmarks_found_message"
       internal val bookmarkItemKey = "thread_bookmark"
 
       @Composable
@@ -488,22 +497,36 @@ private fun BookmarksList(
     stateSaver = TextFieldValue.Saver
   ) { mutableStateOf<TextFieldValue>(TextFieldValue()) }
 
-  val isInSearchMode by remember { derivedStateOf { searchQuery.text.isNotEmpty() } }
+  var bookmarkList by remember { mutableStateOf(bookmarkListBeforeFiltering) }
+  var isInSearchMode by remember { mutableStateOf(false) }
 
-  val bookmarkList by produceState(
-    initialValue = bookmarkListBeforeFiltering,
-    key1 = searchQuery,
-    key2 = bookmarkListBeforeFiltering,
-    producer = {
-      if (searchQuery.text.isEmpty()) {
-        value = bookmarkListBeforeFiltering
-        return@produceState
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      combine(
+        flow = snapshotFlow { bookmarkListBeforeFiltering },
+        flow2 = snapshotFlow { searchQuery },
+        transform = { a, b -> a to b }
+      ).collectLatest { (bookmarks, query) ->
+        if (query.text.isEmpty()) {
+          Snapshot.withMutableSnapshot {
+            bookmarkList = bookmarks
+            isInSearchMode = false
+          }
+
+          return@collectLatest
+        }
+
+        delay(250L)
+
+        val bookmarkListAfterFiltering = bookmarks
+          .filter { threadBookmarkUi -> threadBookmarkUi.matchesQuery(query.text) }
+
+        Snapshot.withMutableSnapshot {
+          bookmarkList = bookmarkListAfterFiltering
+          isInSearchMode = true
+        }
       }
-
-      delay(250L)
-
-      value = bookmarkListBeforeFiltering
-        .filter { threadBookmarkUi -> threadBookmarkUi.matchesQuery(searchQuery.text) }
     })
 
   PullToRefresh(
@@ -528,8 +551,8 @@ private fun BookmarksList(
       content = {
         if (bookmarkList.isEmpty() && !isInSearchMode) {
           item(
-            key = noBookmarksMessageItemKey,
-            contentType = "no_bookmarks_message_item",
+            key = noBookmarksAddedMessageItemKey,
+            contentType = noBookmarksAddedMessageItemKey,
             content = {
               KurobaComposeText(
                 modifier = Modifier
@@ -548,15 +571,16 @@ private fun BookmarksList(
             content = {
               SearchInput(
                 searchQuery = searchQuery,
-                onSearchQueryChanged = { query -> searchQuery = query }
+                onSearchQueryChanged = { query -> searchQuery = query },
+                onClearSearchQueryClicked = { searchQuery = TextFieldValue() }
               )
             }
           )
 
           if (bookmarkList.isEmpty() && isInSearchMode) {
             item(
-              key = noBookmarksMessageItemKey,
-              contentType = "no_bookmarks_message_found_by_query_item",
+              key = noBookmarksFoundMessageItemKey,
+              contentType = noBookmarksFoundMessageItemKey,
               content = {
                 KurobaComposeText(
                   modifier = Modifier
@@ -577,7 +601,7 @@ private fun BookmarksList(
                 val threadBookmarkUi = bookmarkList[index]
 
                 ThreadBookmarkItem(
-                  isInSearchMode = isInSearchMode,
+                  searchQuery = searchQuery.text,
                   canUseFancyAnimations = canUseFancyAnimations,
                   threadBookmarkUi = threadBookmarkUi,
                   reorderableState = reorderableState,
@@ -607,7 +631,8 @@ private fun BookmarksList(
 @Composable
 private fun SearchInput(
   searchQuery: TextFieldValue,
-  onSearchQueryChanged: (TextFieldValue) -> Unit
+  onSearchQueryChanged: (TextFieldValue) -> Unit,
+  onClearSearchQueryClicked: () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
 
@@ -623,25 +648,46 @@ private fun SearchInput(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
+      .padding(horizontal = 4.dp, vertical = 4.dp)
+      .background(color = bgColor, shape = RoundedCornerShape(corner = CornerSize(size = 4.dp))),
   ) {
     Spacer(modifier = Modifier.height(4.dp))
 
-    KurobaComposeCustomTextField(
-      modifier = Modifier
-        .fillMaxWidth()
-        .wrapContentHeight()
-        .padding(horizontal = 4.dp)
-        .background(color = bgColor, shape = RoundedCornerShape(corner = CornerSize(size = 4.dp))),
-      value = searchQuery,
-      parentBackgroundColor = chanTheme.backColor,
-      drawBottomIndicator = false,
-      singleLine = true,
-      maxLines = 1,
-      fontSize = 18.sp,
-      textFieldPadding = remember { PaddingValues(vertical = 4.dp, horizontal = 4.dp) },
-      labelText = stringResource(id = R.string.type_to_search_hint),
-      onValueChange = { newValue -> onSearchQueryChanged(newValue) }
-    )
+    Row {
+      val density = LocalDensity.current
+      var textFieldHeight by remember { mutableStateOf(0.dp) }
+
+      if (searchQuery.text.isNotEmpty() && textFieldHeight > 0.dp) {
+        Spacer(modifier = Modifier.width(4.dp))
+
+        KurobaComposeClickableIcon(
+          modifier = Modifier.size(textFieldHeight),
+          drawableId = R.drawable.ic_baseline_clear_24,
+          onClick = { onClearSearchQueryClicked() }
+        )
+
+        Spacer(modifier = Modifier.width(4.dp))
+      }
+
+      KurobaComposeCustomTextField(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight()
+          .onGloballyPositioned { layoutCoordinates ->
+            with(density) { textFieldHeight = layoutCoordinates.size.height.toDp() }
+          },
+        value = searchQuery,
+        parentBackgroundColor = chanTheme.backColor,
+        keyboardOptions = KeyboardOptions(autoCorrect = false),
+        drawBottomIndicator = false,
+        singleLine = true,
+        maxLines = 1,
+        fontSize = 18.sp,
+        textFieldPadding = remember { PaddingValues(vertical = 4.dp, horizontal = 4.dp) },
+        labelText = stringResource(id = R.string.type_to_search_hint),
+        onValueChange = { newValue -> onSearchQueryChanged(newValue) }
+      )
+    }
 
     Spacer(modifier = Modifier.height(4.dp))
   }
@@ -692,7 +738,7 @@ private fun ThreadBookmarkHeader(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LazyItemScope.ThreadBookmarkItem(
-  isInSearchMode: Boolean,
+  searchQuery: String,
   canUseFancyAnimations: Boolean,
   threadBookmarkUi: ThreadBookmarkUi,
   reorderableState: ReorderableState,
@@ -704,6 +750,8 @@ private fun LazyItemScope.ThreadBookmarkItem(
   val animationDurationMs = 500
 
   val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
+  val postCommentApplier: PostCommentApplier = koinRemember()
+
   val isDrawerCurrentlyOpened by listenForDrawerVisibilityEvents()
 
   val textAnimationSpec = remember(key1 = isDrawerCurrentlyOpened) {
@@ -768,7 +816,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
       .animateItemPlacement(),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    if (!isInSearchMode) {
+    if (searchQuery.isEmpty()) {
       KurobaComposeIcon(
         modifier = Modifier
           .size(deleteBookmarkIconWidth)
@@ -823,11 +871,30 @@ private fun LazyItemScope.ThreadBookmarkItem(
           chanTheme.textColorPrimary
         }
 
+        val textFormatted = remember(key1 = searchQuery) {
+          return@remember buildAnnotatedString {
+            val titleFormatted = buildAnnotatedString { withStyle(SpanStyle(color = textColor)) { append(title) } }
+
+            if (searchQuery.isNotEmpty()) {
+              val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
+                chanTheme = chanTheme,
+                searchQuery = searchQuery,
+                minQueryLength = 2,
+                string = titleFormatted
+              )
+
+              append(titleFormattedWithSearchQuery)
+            } else {
+              append(titleFormatted)
+            }
+          }
+        }
+
         KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .weight(0.5f),
-          text = title,
+          text = textFormatted,
           color = textColor,
           fontSize = 15.sp,
           maxLines = 1,
@@ -851,7 +918,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
       )
     }
 
-    if (!isInSearchMode) {
+    if (searchQuery.isEmpty()) {
       KurobaComposeIcon(
         modifier = Modifier
           .size(32.dp)

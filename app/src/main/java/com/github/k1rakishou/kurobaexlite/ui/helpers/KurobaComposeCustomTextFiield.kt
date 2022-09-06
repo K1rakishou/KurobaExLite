@@ -60,7 +60,7 @@ fun KurobaComposeCustomTextField(
   visualTransformation: VisualTransformation = VisualTransformation.None,
   textFieldPadding: PaddingValues = remember { PaddingValues() },
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-  keyboardActions: KeyboardActions = KeyboardActions(),
+  keyboardActions: KeyboardActions = KeyboardActions.Default,
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
   val chanTheme = LocalChanTheme.current

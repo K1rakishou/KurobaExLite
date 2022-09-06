@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
@@ -31,6 +32,7 @@ import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
@@ -188,6 +190,7 @@ private fun ReplyInput(
       singleLine = false,
       maxLines = Int.MAX_VALUE,
       visualTransformation = replyInputVisualTransformation,
+      keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
       keyboardActions = KeyboardActions(onDone = { onSendReplyClicked() }),
       onValueChange = { newTextFieldValue ->
         replyLayoutState.onReplyTextChanged(newTextFieldValue)
