@@ -349,7 +349,8 @@ abstract class ComposeScreen protected constructor(
       )
     }
 
-    fun <T : ComposeScreen> createScreenInternal(
+    @PublishedApi
+    internal fun <T : ComposeScreen> createScreenInternal(
       screenClass: KClass<T>,
       componentActivity: ComponentActivity,
       navigationRouter: NavigationRouter,

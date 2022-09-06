@@ -1,9 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import java.lang.ref.WeakReference
 
 object ScreenCallbackStorage {
-  private val callbackStorage = mutableMapOf<ScreenKey, MutableMap<String, IRememberableCallback>>()
+  private val callbackStorage = mutableMapOf<ScreenKey, MutableMap<String, WeakReference<IRememberableCallback>>>()
 
   fun onScreenDisposed(screenKey: ScreenKey) {
     callbackStorage.remove(screenKey)
@@ -11,7 +12,7 @@ object ScreenCallbackStorage {
 
   fun <T : IRememberableCallback> rememberCallback(screenKey: ScreenKey, callbackKey: String, callback: T): T {
     val callbacksForScreen = callbackStorage.getOrPut(key = screenKey, defaultValue = { mutableMapOf() })
-    callbacksForScreen[callbackKey] = callback
+    callbacksForScreen[callbackKey] = WeakReference(callback)
 
     return callback
   }
@@ -24,14 +25,14 @@ object ScreenCallbackStorage {
   }
 
   fun <T1 : Any> invokeCallback(screenKey: ScreenKey, callbackKey: String, p1: T1) {
-    val callback = callbackStorage[screenKey]?.get(callbackKey)
+    val callback = callbackStorage[screenKey]?.get(callbackKey)?.get()
       ?: return
 
     (callback as RememberableCallback1<T1>).invoke(p1)
   }
 
   fun <T1 : Any, T2: Any> invokeCallback(screenKey: ScreenKey, callbackKey: String, p1: T1, p2: T2) {
-    val callback = callbackStorage[screenKey]?.get(callbackKey)
+    val callback = callbackStorage[screenKey]?.get(callbackKey)?.get()
       ?: return
 
     (callback as RememberableCallback2<T1, T2>).invoke(p1, p2)
