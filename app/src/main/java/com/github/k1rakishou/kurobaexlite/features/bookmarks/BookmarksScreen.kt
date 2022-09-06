@@ -865,13 +865,13 @@ private fun LazyItemScope.ThreadBookmarkItem(
       modifier = Modifier.weight(1f)
     ) {
       if (title != null) {
-        val textColor = if (isDead) {
-          chanTheme.textColorHint
-        } else {
-          chanTheme.textColorPrimary
-        }
+        val textFormatted = remember(key1 = searchQuery, key2 = chanTheme, key3 = isDead) {
+          val textColor = if (isDead) {
+            chanTheme.textColorHint
+          } else {
+            chanTheme.textColorPrimary
+          }
 
-        val textFormatted = remember(key1 = searchQuery) {
           return@remember buildAnnotatedString {
             val titleFormatted = buildAnnotatedString { withStyle(SpanStyle(color = textColor)) { append(title) } }
 
@@ -895,7 +895,6 @@ private fun LazyItemScope.ThreadBookmarkItem(
             .fillMaxWidth()
             .weight(0.5f),
           text = textFormatted,
-          color = textColor,
           fontSize = 15.sp,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis

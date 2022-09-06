@@ -17,13 +17,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -32,6 +36,7 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.site.SiteSettingsScreen
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.sort.WeightedSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
@@ -66,8 +71,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -317,28 +325,36 @@ private fun BuildBoardsList(
   val defaultHorizPadding = remember { globalUiInfoManager.defaultHorizPadding }
   val defaultVertPadding = remember { globalUiInfoManager.defaultVertPadding }
 
-  val filteredBoardsAsyncData by produceState(
-    initialValue = loadBoardsForSiteEvent,
-    key1 = searchQuery,
-    key2 = loadBoardsForSiteEvent,
-    producer = {
-      if (loadBoardsForSiteEvent !is AsyncData.Data || searchQuery.isNullOrEmpty()) {
-        value = loadBoardsForSiteEvent
-        return@produceState
+  val loadBoardsForSiteEventUpdated by rememberUpdatedState(newValue = loadBoardsForSiteEvent)
+  val searchQueryUpdated by rememberUpdatedState(newValue = searchQuery)
+  var filteredBoardsAsyncData by remember { mutableStateOf(loadBoardsForSiteEvent) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      combine(
+        flow = snapshotFlow { loadBoardsForSiteEventUpdated },
+        flow2 = snapshotFlow { searchQueryUpdated },
+        transform = { a, b -> a to b }
+      ).collectLatest { (chanBoardUiAsyncData, query) ->
+        if (chanBoardUiAsyncData !is AsyncData.Data || query.isNullOrEmpty()) {
+          filteredBoardsAsyncData = chanBoardUiAsyncData
+          return@collectLatest
+        }
+
+        delay(250L)
+
+        val chanBoards = chanBoardUiAsyncData.data
+        val filteredBoards = chanBoards.filter { chanBoardUiData -> chanBoardUiData.matchesQuery(query) }
+        val sortedBoards = WeightedSorter.sort(
+          input = filteredBoards,
+          query = query,
+          textSelector = { chanBoardUiData -> chanBoardUiData.boardCode }
+        )
+
+        filteredBoardsAsyncData = AsyncData.Data(sortedBoards)
       }
-
-      val chanBoards = loadBoardsForSiteEvent.data
-      val filteredBoards = chanBoards.filter { chanBoardUiData -> chanBoardUiData.matchesQuery(searchQuery) }
-
-      val sortedBoards = WeightedSorter.sort(
-        input = filteredBoards,
-        query = searchQuery,
-        textSelector = { chanBoardUiData -> chanBoardUiData.boardCode }
-      )
-
-      value = AsyncData.Data(sortedBoards)
-    }
-  )
+    })
 
   val lazyListState = rememberLazyListState()
 
@@ -415,6 +431,7 @@ private fun BuildBoardsList(
           } else {
             buildChanBoardsList(
               catalogDescriptor = catalogDescriptor,
+              searchQuery = searchQuery,
               titleTextSize = titleTextSize,
               subtitleTextSize = subtitleTextSize,
               horizPadding = defaultHorizPadding,
@@ -430,6 +447,7 @@ private fun BuildBoardsList(
 
 private fun LazyListScope.buildChanBoardsList(
   catalogDescriptor: CatalogDescriptor?,
+  searchQuery: String?,
   titleTextSize: TextUnit,
   subtitleTextSize: TextUnit,
   horizPadding: Dp,
@@ -445,6 +463,7 @@ private fun LazyListScope.buildChanBoardsList(
 
       BuildChanBoardCell(
         catalogDescriptor = catalogDescriptor,
+        searchQuery = searchQuery,
         titleTextSize = titleTextSize,
         subtitleTextSize = subtitleTextSize,
         horizPadding = horizPadding,
@@ -459,6 +478,7 @@ private fun LazyListScope.buildChanBoardsList(
 @Composable
 private fun BuildChanBoardCell(
   catalogDescriptor: CatalogDescriptor?,
+  searchQuery: String?,
   titleTextSize: TextUnit,
   subtitleTextSize: TextUnit,
   horizPadding: Dp,
@@ -467,6 +487,8 @@ private fun BuildChanBoardCell(
   onBoardClicked: (CatalogDescriptor) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+  val postCommentApplier: PostCommentApplier = koinRemember()
+
   val bgColorWithAlpha = remember(key1 = chanTheme.highlighterColor) {
     chanTheme.highlighterColor.copy(alpha = 0.3f)
   }
@@ -485,20 +507,64 @@ private fun BuildChanBoardCell(
       .kurobaClickable(onClick = { onBoardClicked(chanBoardUiData.catalogDescriptor) })
       .padding(horizontal = horizPadding, vertical = vertPadding)
   ) {
-    KurobaComposeText(
-      text = chanBoardUiData.title,
-      color = chanTheme.textColorPrimary,
-      fontSize = titleTextSize,
-      maxLines = 1
-    )
+    kotlin.run {
+      val textFormatted = remember(key1 = searchQuery, key2 = chanTheme) {
+        return@remember buildAnnotatedString {
+          val titleFormatted = buildAnnotatedString {
+            withStyle(SpanStyle(color = chanTheme.textColorPrimary)) { append(chanBoardUiData.title) }
+          }
+
+          if (searchQuery != null && searchQuery.isNotEmpty()) {
+            val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
+              chanTheme = chanTheme,
+              searchQuery = searchQuery,
+              minQueryLength = 2,
+              string = titleFormatted
+            )
+
+            append(titleFormattedWithSearchQuery)
+          } else {
+            append(titleFormatted)
+          }
+        }
+      }
+
+      KurobaComposeText(
+        text = textFormatted,
+        fontSize = titleTextSize,
+        maxLines = 1
+      )
+    }
 
     if (chanBoardUiData.subtitle.isNotNullNorEmpty()) {
-      KurobaComposeText(
-        text = chanBoardUiData.subtitle,
-        color = chanTheme.textColorSecondary,
-        fontSize = subtitleTextSize,
-        maxLines = 3
-      )
+      kotlin.run {
+        val textFormatted = remember(key1 = searchQuery, key2 = chanTheme) {
+          return@remember buildAnnotatedString {
+            val subtitleFormatted = buildAnnotatedString {
+              withStyle(SpanStyle(color = chanTheme.textColorSecondary)) { append(chanBoardUiData.subtitle) }
+            }
+
+            if (searchQuery != null && searchQuery.isNotEmpty()) {
+              val (_, subtitleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
+                chanTheme = chanTheme,
+                searchQuery = searchQuery,
+                minQueryLength = 2,
+                string = subtitleFormatted
+              )
+
+              append(subtitleFormattedWithSearchQuery)
+            } else {
+              append(subtitleFormatted)
+            }
+          }
+        }
+
+        KurobaComposeText(
+          text = textFormatted,
+          fontSize = subtitleTextSize,
+          maxLines = 3
+        )
+      }
     }
   }
 }
