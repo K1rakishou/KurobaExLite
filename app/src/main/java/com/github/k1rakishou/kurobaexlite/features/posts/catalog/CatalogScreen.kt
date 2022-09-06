@@ -55,7 +55,6 @@ import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -84,11 +83,9 @@ class CatalogScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : PostsScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
-  private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
-  private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val catalogScreenToolbarActionHandler by lazy {
@@ -249,6 +246,12 @@ class CatalogScreen(
         )
 
         navigationRouter.pushScreen(globalSearchScreen)
+      },
+      showFoundPostsInPopup = { foundPostDescriptors ->
+        val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+          ?: return@PostsScreenLocalSearchToolbar
+
+        showFoundPostsInPopup(catalogDescriptor, foundPostDescriptors)
       },
       closeSearch = { toolbarKey -> kurobaToolbarContainerState.popToolbar(toolbarKey) }
     )

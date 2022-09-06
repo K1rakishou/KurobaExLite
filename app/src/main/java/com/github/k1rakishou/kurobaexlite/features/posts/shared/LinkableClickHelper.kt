@@ -3,7 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared
 import android.content.Context
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
@@ -66,7 +66,7 @@ class LinkableClickHelper(
     linkable: TextPartSpan.Linkable,
     loadThreadFunc: (ThreadDescriptor) -> Unit,
     loadCatalogFunc: (CatalogDescriptor) -> Unit,
-    showRepliesForPostFunc: (PopupRepliesScreen.ReplyViewMode) -> Unit
+    showRepliesForPostFunc: (PopupPostsScreen.PostViewMode) -> Unit
   ) {
     screenCoroutineScope.launch {
       logcat(TAG) {
@@ -116,7 +116,7 @@ class LinkableClickHelper(
             return@launch
           }
 
-          val replyTo = PopupRepliesScreen.ReplyViewMode.ReplyTo(linkable.postDescriptor)
+          val replyTo = PopupPostsScreen.PostViewMode.ReplyTo(linkable.postDescriptor)
           showRepliesForPostFunc(replyTo)
         }
         is TextPartSpan.Linkable.Board -> {

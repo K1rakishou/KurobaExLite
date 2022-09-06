@@ -28,7 +28,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchButtons
@@ -184,6 +184,12 @@ class ThreadScreen(
       onToolbarDisposed = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, false) },
       onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
       onGlobalSearchIconClicked = { unreachable() },
+      showFoundPostsInPopup = { foundPostDescriptors ->
+        val threadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@PostsScreenLocalSearchToolbar
+
+        showFoundPostsInPopup(threadDescriptor, foundPostDescriptors)
+      },
       closeSearch = { toolbarKey -> kurobaToolbarContainerState.popToolbar(toolbarKey) }
     )
   }
@@ -307,7 +313,7 @@ class ThreadScreen(
         replyLayoutStateProvider = { replyLayoutState },
         postLongtapContentMenuProvider = { postLongtapContentMenu },
         linkableClickHelperProvider = { linkableClickHelper },
-        showRepliesForPost = { replyViewMode -> showRepliesForPost(replyViewMode) },
+        showRepliesForPost = { postViewMode -> showRepliesForPost(postViewMode) },
         onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
           val postImageData = if (postImageDataResult.isFailure) {
             snackbarManager.errorToast(
@@ -366,7 +372,7 @@ private fun BoxScope.ThreadPostListScreen(
   replyLayoutStateProvider: () -> IReplyLayoutState,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
   linkableClickHelperProvider: () -> LinkableClickHelper,
-  showRepliesForPost: (PopupRepliesScreen.ReplyViewMode) -> Unit,
+  showRepliesForPost: (PopupPostsScreen.PostViewMode) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
@@ -460,7 +466,7 @@ private fun BoxScope.ThreadPostListScreen(
         loadCatalogFunc = { catalogDescriptor ->
           catalogScreenViewModel.loadCatalog(catalogDescriptor)
         },
-        showRepliesForPostFunc = { replyViewMode -> showRepliesForPost(replyViewMode) }
+        showRepliesForPostFunc = { postViewMode -> showRepliesForPost(postViewMode) }
       )
     },
     onLinkableLongClicked = { postCellData, linkable ->
@@ -471,7 +477,7 @@ private fun BoxScope.ThreadPostListScreen(
       )
     },
     onPostRepliesClicked = { postDescriptor ->
-      showRepliesForPost(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
+      showRepliesForPost(PopupPostsScreen.PostViewMode.RepliesFrom(postDescriptor))
     },
     onCopySelectedText = { selectedText ->
       androidHelpers.copyToClipboard("Selected text", selectedText)

@@ -226,10 +226,10 @@ abstract class ComposeScreen protected constructor(
     // to clear all cached data so that we don't get the same data on the next screen creation
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       savedStateViewModel.removeSavedStateHandle()
-
       screenCoroutineScope.cancelChildren()
-      ScreenCallbackStorage.onScreenDisposed(screenKey)
     }
+
+    ScreenCallbackStorage.onScreenDisposed(screenKey)
   }
 
   @Composable

@@ -59,13 +59,14 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen.Companion.buttonsHeight
-import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen.Companion.buttonsLayoutId
-import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen.Companion.postListLayoutId
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.buttonsHeight
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.buttonsLayoutId
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.postListLayoutId
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
@@ -73,10 +74,13 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
@@ -90,15 +94,15 @@ import kotlinx.parcelize.Parcelize
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
-class PopupRepliesScreen(
+class PopupPostsScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
-  private val popupRepliesScreenViewModel: PopupRepliesScreenViewModel by componentActivity.viewModel()
+  private val popupPostsScreenViewModel: PopupPostsScreenViewModel by componentActivity.viewModel()
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
-  private val replyViewMode: ReplyViewMode by requireArgumentLazy(REPLY_VIEW_MODE)
+  private val postViewMode: PostViewMode by requireArgumentLazy(REPLY_VIEW_MODE)
 
   private val linkableClickHelper by lazy {
     LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
@@ -231,14 +235,14 @@ class PopupRepliesScreen(
 
     val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
-    val postsAsyncDataState by popupRepliesScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
+    val postsAsyncDataState by popupPostsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
 
     val postListOptions by remember {
       derivedStateOf {
         PostListOptions(
-          isCatalogMode = false,
+          isCatalogMode = postViewMode.isCatalogMode,
           isInPopup = true,
           openedFromScreenKey = screenKey,
           pullToRefreshEnabled = false,
@@ -256,7 +260,7 @@ class PopupRepliesScreen(
     val buttonsHeightPx = with(density) { remember(key1 = buttonsHeight) { buttonsHeight.toPx().toInt() } }
 
     if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
-      PopupRepliesScreenContentLayout(
+      PopupPostsScreenContentLayout(
         postListOptions = postListOptions,
         buttonsHeightPx = buttonsHeightPx,
         screenKey = screenKey,
@@ -271,14 +275,14 @@ class PopupRepliesScreen(
               screenKey = screenKey
             )
 
-            return@PopupRepliesScreenContentLayout
+            return@PopupPostsScreenContentLayout
           } else {
             postImageDataResult.getOrThrow()
           }
 
-          val collectedImages = popupRepliesScreenViewModel.collectCurrentImages()
+          val collectedImages = popupPostsScreenViewModel.collectCurrentImages()
           if (collectedImages.isEmpty()) {
-            return@PopupRepliesScreenContentLayout
+            return@PopupPostsScreenContentLayout
           }
 
           clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
@@ -304,14 +308,14 @@ class PopupRepliesScreen(
     }
 
     LaunchedEffect(
-      key1 = replyViewMode,
-      block = { popupRepliesScreenViewModel.loadRepliesForModeInitial(replyViewMode) }
+      key1 = postViewMode,
+      block = { popupPostsScreenViewModel.loadRepliesForModeInitial(postViewMode) }
     )
   }
 
   @OptIn(ExperimentalMaterialApi::class)
   override suspend fun onFloatingControllerBackPressed(): Boolean {
-    if (popupRepliesScreenViewModel.popReplyChain()) {
+    if (popupPostsScreenViewModel.popReplyChain()) {
       swipeableState.snapTo(Anchors.Visible)
       return true
     }
@@ -321,7 +325,7 @@ class PopupRepliesScreen(
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
-      popupRepliesScreenViewModel.clearPostReplyChainStack()
+      popupPostsScreenViewModel.clearPostReplyChainStack()
     }
 
     super.onDisposed(screenDisposeEvent)
@@ -333,27 +337,64 @@ class PopupRepliesScreen(
     Close
   }
 
-  sealed class ReplyViewMode : Parcelable {
-    abstract val postDescriptor: PostDescriptor
+  sealed class PostViewMode : Parcelable {
+    val isCatalogMode: Boolean
+      get() {
+        return when (this) {
+          is PostList -> chanDescriptor is CatalogDescriptor
+          is RepliesFrom,
+          is ReplyTo -> false
+        }
+      }
 
     @Parcelize
     data class ReplyTo(
-      override val postDescriptor: PostDescriptor
-    ) : ReplyViewMode()
+      val postDescriptor: PostDescriptor
+    ) : PostViewMode()
 
     @Parcelize
     data class RepliesFrom(
-      override val postDescriptor: PostDescriptor
-    ) : ReplyViewMode()
+      val postDescriptor: PostDescriptor
+    ) : PostViewMode()
+
+    @Parcelize
+    data class PostList(
+      val chanDescriptor: ChanDescriptor,
+      val postNoWithSubNoList: List<Pair<Long, Long>>
+    ) : PostViewMode() {
+
+      fun asPostDescriptorList(): List<PostDescriptor> {
+        return postNoWithSubNoList.map { (postNo, postSubNo) ->
+          when (chanDescriptor) {
+            is CatalogDescriptor -> {
+              PostDescriptor.create(
+                threadDescriptor = ThreadDescriptor.create(chanDescriptor, postNo),
+                postNo = postNo,
+                postSubNo = postSubNo
+              )
+            }
+            is ThreadDescriptor -> {
+              return@map PostDescriptor.create(
+                threadDescriptor = chanDescriptor,
+                postNo = postNo,
+                postSubNo = postSubNo
+              )
+            }
+          }
+        }
+      }
+
+    }
+
   }
 
   companion object {
     const val REPLY_VIEW_MODE = "reply_view_mode"
 
-    private val SCREEN_KEY = ScreenKey("PopupRepliesScreen")
+    private val SCREEN_KEY = ScreenKey("PopupPostsScreen")
 
-    internal val postListLayoutId = "PopupRepliesScreen_PostListContent"
-    internal val buttonsLayoutId = "PopupRepliesScreen_Buttons"
+    internal val postListLayoutId = "PopupPostsScreen_PostListContent"
+    internal val buttonsLayoutId = "PopupPostsScreen_Buttons"
 
     internal val buttonsHeight = 50.dp
   }
@@ -361,7 +402,7 @@ class PopupRepliesScreen(
 }
 
 @Composable
-private fun PopupRepliesScreenContentLayout(
+private fun PopupPostsScreenContentLayout(
   postListOptions: PostListOptions,
   buttonsHeightPx: Int,
   screenKey: ScreenKey,
@@ -373,7 +414,7 @@ private fun PopupRepliesScreenContentLayout(
 ) {
   Layout(
     content = {
-      PopupRepliesScreenContent(
+      PopupPostsScreenContent(
         postListOptions = postListOptions,
         screenKey = screenKey,
         postLongtapContentMenuProvider = postLongtapContentMenuProvider,
@@ -417,7 +458,7 @@ private fun PopupRepliesScreenContentLayout(
 }
 
 @Composable
-private fun PopupRepliesScreenContent(
+private fun PopupPostsScreenContent(
   postListOptions: PostListOptions,
   screenKey: ScreenKey,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
@@ -430,10 +471,11 @@ private fun PopupRepliesScreenContent(
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
 
-  val popupRepliesScreenViewModel: PopupRepliesScreenViewModel = koinRememberViewModel()
+  val popupPostsScreenViewModel: PopupPostsScreenViewModel = koinRememberViewModel()
   val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
   val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val androidHelpers: AndroidHelpers = koinRemember()
 
   Box(
@@ -443,7 +485,7 @@ private fun PopupRepliesScreenContent(
   ) {
     PostListContent(
       postListOptions = postListOptions,
-      postsScreenViewModelProvider = { popupRepliesScreenViewModel },
+      postsScreenViewModelProvider = { popupPostsScreenViewModel },
       onPostCellClicked = { postCellData -> /*no-op*/ },
       onPostCellLongClicked = { postCellData ->
         postLongtapContentMenuProvider().showMenu(
@@ -460,7 +502,7 @@ private fun PopupRepliesScreenContent(
               return@showMenu
             }
 
-            popupRepliesScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
+            popupPostsScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
 
             // Reparse the threadScreenViewModel posts too
             threadScreenViewModel.reparsePostsByDescriptors(chanDescriptor, postDescriptors)
@@ -481,9 +523,9 @@ private fun PopupRepliesScreenContent(
             catalogScreenViewModel.loadCatalog(catalogDescriptor)
             stopPresenting()
           },
-          showRepliesForPostFunc = { replyViewMode ->
+          showRepliesForPostFunc = { postViewMode ->
             coroutineScope.launch {
-              popupRepliesScreenViewModel.loadRepliesForMode(replyViewMode)
+              popupPostsScreenViewModel.loadRepliesForMode(postViewMode)
             }
           }
         )
@@ -497,7 +539,7 @@ private fun PopupRepliesScreenContent(
       },
       onPostRepliesClicked = { postDescriptor ->
         coroutineScope.launch {
-          popupRepliesScreenViewModel.loadRepliesForMode(PopupRepliesScreen.ReplyViewMode.RepliesFrom(postDescriptor))
+          popupPostsScreenViewModel.loadRepliesForMode(PopupPostsScreen.PostViewMode.RepliesFrom(postDescriptor))
         }
       },
       onCopySelectedText = { selectedText ->
@@ -516,7 +558,8 @@ private fun PopupRepliesScreenContent(
       onPostImageClicked = onPostImageClicked,
       onGoToPostClicked = { postCellData ->
         if (postListOptions.isCatalogMode) {
-          // TODO(KurobaEx): open thread
+          threadScreenViewModel.loadThread(postCellData.postDescriptor.threadDescriptor)
+          globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
         } else {
           threadScreenViewModel.scrollToPost(postCellData.postDescriptor)
         }

@@ -29,12 +29,13 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupRepliesScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.managers.Captcha
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.SiteCaptcha
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
@@ -55,14 +56,38 @@ abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
   override val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(false)
   override val hasFab: Boolean = true
 
-  protected fun showRepliesForPost(replyViewMode: PopupRepliesScreen.ReplyViewMode) {
-    val popupRepliesScreen = ComposeScreen.createScreen<PopupRepliesScreen>(
+  protected fun showRepliesForPost(postViewMode: PopupPostsScreen.PostViewMode) {
+    val popupPostsScreen = ComposeScreen.createScreen<PopupPostsScreen>(
       componentActivity = componentActivity,
       navigationRouter = navigationRouter,
-      args = { putParcelable(PopupRepliesScreen.REPLY_VIEW_MODE, replyViewMode) }
+      args = { putParcelable(PopupPostsScreen.REPLY_VIEW_MODE, postViewMode) }
     )
 
-    navigationRouter.presentScreen(popupRepliesScreen)
+    navigationRouter.presentScreen(popupPostsScreen)
+  }
+
+  protected fun showFoundPostsInPopup(
+    chanDescriptor: ChanDescriptor,
+    foundPostDescriptors: List<PostDescriptor>
+  ) {
+    if (foundPostDescriptors.isEmpty()) {
+      return
+    }
+
+    val postViewMode = PopupPostsScreen.PostViewMode.PostList(
+      chanDescriptor = chanDescriptor,
+      postNoWithSubNoList = foundPostDescriptors.map { postDescriptor ->
+        postDescriptor.postNo to postDescriptor.postSubNo
+      }
+    )
+
+    val popupPostsScreen = ComposeScreen.createScreen<PopupPostsScreen>(
+      componentActivity = componentActivity,
+      navigationRouter = navigationRouter,
+      args = { putParcelable(PopupPostsScreen.REPLY_VIEW_MODE, postViewMode) }
+    )
+
+    navigationRouter.presentScreen(popupPostsScreen)
   }
 
   companion object {

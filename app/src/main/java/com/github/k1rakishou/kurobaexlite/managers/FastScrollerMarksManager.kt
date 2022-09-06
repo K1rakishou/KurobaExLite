@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import logcat.LogPriority
 import logcat.logcat
 
 class FastScrollerMarksManager(
@@ -73,7 +74,7 @@ class FastScrollerMarksManager(
         .map { it.postDescriptor }
     }
 
-    logcat(TAG) {
+    logcat(TAG, LogPriority.VERBOSE) {
       "postDataUpdatesFlow new event " +
         "chanDescriptor: ${chanDescriptor}, " +
         "postDescriptors: ${postDescriptors.size}"
@@ -90,7 +91,7 @@ class FastScrollerMarksManager(
       val marksList = fastScrollerMarkMap[chanDescriptor]?.marks
         ?: emptyList()
 
-      logcat(TAG) {
+      logcat(TAG, LogPriority.VERBOSE) {
         "postDataUpdatesFlow new event " +
           "chanDescriptor: ${chanDescriptor}, " +
           "postDescriptors: ${postDescriptors.size}, " +

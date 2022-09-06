@@ -54,6 +54,7 @@ class PostsScreenLocalSearchToolbar(
   val onToolbarDisposed: () -> Unit,
   val onSearchQueryUpdated: (String?) -> Unit,
   val onGlobalSearchIconClicked: (String) -> Unit,
+  val showFoundPostsInPopup: (List<PostDescriptor>) -> Unit,
   val closeSearch: suspend (toolbarKey: String) -> Unit
 ) : KurobaChildToolbar() {
   private val key = "${screenKey.key}_PostsScreenLocalSearchToolbar"
@@ -193,6 +194,7 @@ class PostsScreenLocalSearchToolbar(
     )
   }
 
+  @OptIn(ExperimentalComposeUiApi::class)
   private fun buildRightPart(): @Composable (RowScope.() -> Unit) {
     val func: @Composable (RowScope.() -> Unit) = {
       val searchQuery by state.searchQuery
@@ -206,6 +208,7 @@ class PostsScreenLocalSearchToolbar(
         verticalAlignment = Alignment.CenterVertically
       ) {
         val isSearchQueryLengthGood = searchQuery.text.length >= PostsState.MIN_SEARCH_QUERY_LENGTH
+        val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
 
         if (isSearchQueryLengthGood) {
           val current = currentScrolledEntryIndex?.plus(1) ?: "?"
@@ -221,9 +224,13 @@ class PostsScreenLocalSearchToolbar(
               .wrapContentSize()
               .padding(horizontal = 12.dp)
               .kurobaClickable(
+                enabled = foundEntries.isNotEmpty(),
                 bounded = false,
                 onClick = {
-                  // TODO(KurobaEx): show all found posts in popup?
+                  if (foundEntries.isNotEmpty()) {
+                    localSoftwareKeyboardController?.hide()
+                    showFoundPostsInPopup(foundEntries)
+                  }
                 }
               ),
             text = totalFoundText,

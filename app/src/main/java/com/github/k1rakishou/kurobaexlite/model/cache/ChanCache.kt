@@ -135,9 +135,9 @@ class ChanCache(
 
     when (chanDescriptor) {
       is CatalogDescriptor -> {
-        val chanCatalog = catalogs[chanDescriptor]
-        if (chanCatalog != null) {
-          resultList.addAll(chanCatalog.getPostDataList())
+        val catalogThreads = catalogs[chanDescriptor]?.getMany(postDescriptors)
+        if (catalogThreads.isNotNullNorEmpty()) {
+          resultList.addAll(catalogThreads)
         }
       }
       is ThreadDescriptor -> {

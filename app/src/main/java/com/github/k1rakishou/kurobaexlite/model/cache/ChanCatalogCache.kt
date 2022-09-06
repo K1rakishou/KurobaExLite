@@ -59,6 +59,12 @@ class ChanCatalogCache(
     }
   }
 
+  suspend fun getMany(postDescriptors: Collection<PostDescriptor>): List<IPostData> {
+    return mutex.withLockNonCancellable {
+      postDescriptors.mapNotNull { postDescriptor -> threadsMap[postDescriptor] }
+    }
+  }
+
   suspend fun getPostDataList(): List<OriginalPostData> {
     return mutex.withLockNonCancellable { threads.toList() }
   }
