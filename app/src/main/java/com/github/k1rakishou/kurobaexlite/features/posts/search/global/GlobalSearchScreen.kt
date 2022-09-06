@@ -51,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -153,13 +154,15 @@ class GlobalSearchScreen(
         .fillMaxSize()
         .consumeClicks()
     ) {
-      GlobalSearchList(
-        lazyListState = lazyListState,
-        paddingValues = paddingValues,
-        screenKey = screenKey,
-        catalogDescriptor = catalogDescriptor,
-        postSearchLongtapContentMenuProvider = { postSearchLongtapContentMenu }
-      )
+      KurobaComposeFadeIn {
+        GlobalSearchList(
+          lazyListState = lazyListState,
+          paddingValues = paddingValues,
+          screenKey = screenKey,
+          catalogDescriptor = catalogDescriptor,
+          postSearchLongtapContentMenuProvider = { postSearchLongtapContentMenu }
+        )
+      }
     }
   }
 

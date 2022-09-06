@@ -63,6 +63,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -182,13 +183,15 @@ class CatalogSelectionScreen(
         .fillMaxSize()
         .consumeClicks()
     ) {
-      ContentInternal(
-        catalogDescriptor = catalogDescriptor,
-        paddingValues = paddingValues,
-        pullToRefreshState = pullToRefreshState,
-        siteKeyProvider = { siteKey },
-        popScreen = { popScreen() }
-      )
+      KurobaComposeFadeIn {
+        ContentInternal(
+          catalogDescriptor = catalogDescriptor,
+          paddingValues = paddingValues,
+          pullToRefreshState = pullToRefreshState,
+          siteKeyProvider = { siteKey },
+          popScreen = { popScreen() }
+        )
+      }
     }
   }
 

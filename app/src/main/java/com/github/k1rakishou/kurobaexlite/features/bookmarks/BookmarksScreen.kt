@@ -120,6 +120,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.LayoutOrientation
 import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SlotLayout
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.ReorderableState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.detectReorder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.draggedItem
@@ -433,31 +434,33 @@ private fun ContentInternal(
   )
 
   GradientBackground {
-    SlotLayout(
-      modifier = Modifier.fillMaxSize(),
-      layoutOrientation = LayoutOrientation.Vertical,
-      builder = {
-        fixed(
-          size = toolbarHeight + windowInsets.top,
-          key = "DrawerHeader",
-          content = {
-            ThreadBookmarkHeader(
-              onShowAppSettingsClicked = { openAppSettings() },
-              onShowBookmarkOptionsClicked = { showBookmarkOptions() },
-            )
-          })
+    KurobaComposeFadeIn {
+      SlotLayout(
+        modifier = Modifier.fillMaxSize(),
+        layoutOrientation = LayoutOrientation.Vertical,
+        builder = {
+          fixed(
+            size = toolbarHeight + windowInsets.top,
+            key = "DrawerHeader",
+            content = {
+              ThreadBookmarkHeader(
+                onShowAppSettingsClicked = { openAppSettings() },
+                onShowBookmarkOptionsClicked = { showBookmarkOptions() },
+              )
+            })
 
-        dynamic(
-          weight = 1f,
-          key = "BookmarksList",
-          content = {
-            BookmarksList(
-              pullToRefreshState = pullToRefreshState,
-              reorderableState = reorderableState,
-              showRevertBookmarkDeletion = showRevertBookmarkDeletion
-            )
-          })
-      })
+          dynamic(
+            weight = 1f,
+            key = "BookmarksList",
+            content = {
+              BookmarksList(
+                pullToRefreshState = pullToRefreshState,
+                reorderableState = reorderableState,
+                showRevertBookmarkDeletion = showRevertBookmarkDeletion
+              )
+            })
+        })
+    }
   }
 }
 

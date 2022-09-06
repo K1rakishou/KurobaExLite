@@ -45,6 +45,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -135,12 +136,14 @@ class ReportIssueScreen(
         .fillMaxSize()
         .consumeClicks()
     ) {
-      BuildContent()
+      KurobaComposeFadeIn {
+        ContentInternal()
+      }
     }
   }
 
   @Composable
-  private fun BuildContent() {
+  private fun ContentInternal() {
     val chanTheme = LocalChanTheme.current
     val context = LocalContext.current
     val insets = LocalWindowInsets.current

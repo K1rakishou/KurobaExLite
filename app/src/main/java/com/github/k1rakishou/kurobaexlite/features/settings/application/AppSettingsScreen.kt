@@ -198,15 +198,14 @@ private fun ContentInternal(
       .fillMaxSize()
       .consumeClicks()
   ) {
-    val currentScreen by appSettingsScreenViewModel.currentScreen.collectAsState()
-    val settingScreenMut by appSettingsScreenViewModel.settingScreen(currentScreen)
-      .collectAsState()
-    val settingScreen = settingScreenMut
+    KurobaComposeFadeIn {
+      val currentScreen by appSettingsScreenViewModel.currentScreen.collectAsState()
+      val settingScreenMut by appSettingsScreenViewModel.settingScreen(currentScreen).collectAsState()
+      val settingScreen = settingScreenMut
 
-    if (settingScreen == null) {
-      KurobaComposeLoadingIndicator()
-    } else {
-      KurobaComposeFadeIn {
+      if (settingScreen == null) {
+        KurobaComposeLoadingIndicator()
+      } else {
         SettingScreen(settingScreen)
       }
     }

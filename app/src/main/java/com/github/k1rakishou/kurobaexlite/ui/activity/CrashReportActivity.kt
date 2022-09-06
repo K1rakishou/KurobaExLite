@@ -53,6 +53,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.verticalScrollbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -111,7 +112,13 @@ class CrashReportActivity : ComponentActivity() {
         GradientBackground(
           modifier = Modifier.fillMaxSize()
         ) {
-          Content(className = className, message = message, stacktrace = stacktrace)
+          KurobaComposeFadeIn {
+            ContentInternal(
+              className = className,
+              message = message,
+              stacktrace = stacktrace
+            )
+          }
         }
       }
     }
@@ -124,7 +131,7 @@ class CrashReportActivity : ComponentActivity() {
   }
 
   @Composable
-  private fun Content(
+  private fun ContentInternal(
     className: String,
     message: String,
     stacktrace: String

@@ -32,7 +32,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleTool
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
@@ -101,7 +100,6 @@ class SiteSettingsScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
-    val chanTheme = LocalChanTheme.current
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 

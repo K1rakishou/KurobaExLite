@@ -64,6 +64,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.detectListScrollEvents
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlinx.coroutines.delay
@@ -202,63 +203,67 @@ internal fun PostListContent(
     )
   }
 
-  PostListInternal(
-    modifier = modifier,
-    chanDescriptor = chanDescriptor,
-    lazyListState = lazyListState,
-    postListOptions = postListOptions,
-    postListAsync = postListAsync,
-    postsScreenViewModelProvider = postsScreenViewModelProvider,
-    onPostCellClicked = onPostCellClicked,
-    onPostCellLongClicked = onPostCellLongClicked,
-    onPostCellCommentClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
-      processClickedAnnotation(
-        postsScreenViewModel = postsScreenViewModel,
-        postCellData = postCellData,
-        postComment = postComment,
-        characterOffset = offset,
-        longClicked = false,
-        onLinkableClicked = onLinkableClicked,
-        onLinkableLongClicked = onLinkableLongClicked
-      )
-    },
-    onPostCellCommentLongClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
-      processClickedAnnotation(
-        postsScreenViewModel = postsScreenViewModel,
-        postCellData = postCellData,
-        postComment = postComment,
-        characterOffset = offset,
-        longClicked = true,
-        onLinkableClicked = onLinkableClicked,
-        onLinkableLongClicked = onLinkableLongClicked
-      )
-    },
-    onPostRepliesClicked = { postCellData: PostCellData ->
-      onPostRepliesClicked(postCellData.postDescriptor)
-    },
-    onThreadStatusCellClicked = {
-      postsScreenViewModel.resetTimer()
-      postsScreenViewModel.refresh()
-    },
-    onCopySelectedText = onCopySelectedText,
-    onQuoteSelectedText = onQuoteSelectedText,
-    onPostListScrolled = { scrollDelta ->
-      processPostListScrollEventFunc()
-      onPostListScrolled(scrollDelta)
-    },
-    onCurrentlyTouchingPostList = onCurrentlyTouchingPostList,
-    onFastScrollerDragStateChanged = { isDraggingFastScroller ->
-      if (!isDraggingFastScroller) {
-        processPostListScrollEventFunc()
-      }
+  val shouldFadeIn = postListAsync is AsyncData.Data
 
-      onFastScrollerDragStateChanged(isDraggingFastScroller)
-    },
-    onPostImageClicked = onPostImageClicked,
-    emptyContent = emptyContent,
-    loadingContent = loadingContent,
-    errorContent = errorContent,
-  )
+  KurobaComposeFadeIn(key1 = shouldFadeIn) {
+    PostListInternal(
+      modifier = modifier,
+      chanDescriptor = chanDescriptor,
+      lazyListState = lazyListState,
+      postListOptions = postListOptions,
+      postListAsync = postListAsync,
+      postsScreenViewModelProvider = postsScreenViewModelProvider,
+      onPostCellClicked = onPostCellClicked,
+      onPostCellLongClicked = onPostCellLongClicked,
+      onPostCellCommentClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
+        processClickedAnnotation(
+          postsScreenViewModel = postsScreenViewModel,
+          postCellData = postCellData,
+          postComment = postComment,
+          characterOffset = offset,
+          longClicked = false,
+          onLinkableClicked = onLinkableClicked,
+          onLinkableLongClicked = onLinkableLongClicked
+        )
+      },
+      onPostCellCommentLongClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
+        processClickedAnnotation(
+          postsScreenViewModel = postsScreenViewModel,
+          postCellData = postCellData,
+          postComment = postComment,
+          characterOffset = offset,
+          longClicked = true,
+          onLinkableClicked = onLinkableClicked,
+          onLinkableLongClicked = onLinkableLongClicked
+        )
+      },
+      onPostRepliesClicked = { postCellData: PostCellData ->
+        onPostRepliesClicked(postCellData.postDescriptor)
+      },
+      onThreadStatusCellClicked = {
+        postsScreenViewModel.resetTimer()
+        postsScreenViewModel.refresh()
+      },
+      onCopySelectedText = onCopySelectedText,
+      onQuoteSelectedText = onQuoteSelectedText,
+      onPostListScrolled = { scrollDelta ->
+        processPostListScrollEventFunc()
+        onPostListScrolled(scrollDelta)
+      },
+      onCurrentlyTouchingPostList = onCurrentlyTouchingPostList,
+      onFastScrollerDragStateChanged = { isDraggingFastScroller ->
+        if (!isDraggingFastScroller) {
+          processPostListScrollEventFunc()
+        }
+
+        onFastScrollerDragStateChanged(isDraggingFastScroller)
+      },
+      onPostImageClicked = onPostImageClicked,
+      emptyContent = emptyContent,
+      loadingContent = loadingContent,
+      errorContent = errorContent,
+    )
+  }
 
   if (postListAsync is AsyncData.Data) {
     // Call processPostListScrollEventFunc() as soon as we get the actual post data so that we can

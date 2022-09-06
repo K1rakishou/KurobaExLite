@@ -80,6 +80,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScr
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -203,38 +204,40 @@ class AlbumScreen(
     GradientBackground(
       modifier = Modifier.fillMaxSize()
     ) {
-      ContentInternal(
-        paddingValues = paddingValues,
-        screenKey = screenKey,
-        chanDescriptor = chanDescriptor,
-        defaultToolbarState = defaultToolbarState,
-        selectionToolbarState = selectionToolbarState,
-        onThumbnailClicked = { postImage ->
-          val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter,
-            args = {
-              val mediaViewerParams = when (val descriptor = chanDescriptor) {
-                is CatalogDescriptor -> MediaViewerParams.Catalog(descriptor, postImage.fullImageAsString)
-                is ThreadDescriptor -> MediaViewerParams.Thread(descriptor, postImage.fullImageAsString)
+      KurobaComposeFadeIn {
+        ContentInternal(
+          paddingValues = paddingValues,
+          screenKey = screenKey,
+          chanDescriptor = chanDescriptor,
+          defaultToolbarState = defaultToolbarState,
+          selectionToolbarState = selectionToolbarState,
+          onThumbnailClicked = { postImage ->
+            val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter,
+              args = {
+                val mediaViewerParams = when (val descriptor = chanDescriptor) {
+                  is CatalogDescriptor -> MediaViewerParams.Catalog(descriptor, postImage.fullImageAsString)
+                  is ThreadDescriptor -> MediaViewerParams.Thread(descriptor, postImage.fullImageAsString)
+                }
+
+                putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
+                putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
               }
+            )
 
-              putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
-              putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
+            navigationRouter.presentScreen(mediaViewerScreen)
+          },
+          onSelectionModeChanged = { isInSelectionMode ->
+            if (isInSelectionMode) {
+              kurobaToolbarContainerState.setToolbar(selectionToolbar)
+            } else if (kurobaToolbarContainerState.contains(selectionToolbarKey)) {
+              kurobaToolbarContainerState.popToolbar(selectionToolbarKey)
             }
-          )
-
-          navigationRouter.presentScreen(mediaViewerScreen)
-        },
-        onSelectionModeChanged = { isInSelectionMode ->
-          if (isInSelectionMode) {
-            kurobaToolbarContainerState.setToolbar(selectionToolbar)
-          } else if (kurobaToolbarContainerState.contains(selectionToolbarKey)) {
-            kurobaToolbarContainerState.popToolbar(selectionToolbarKey)
-          }
-        },
-        isTopmostScreen = { navigationRouter.isTopmostScreen(this@AlbumScreen) }
-      )
+          },
+          isTopmostScreen = { navigationRouter.isTopmostScreen(this@AlbumScreen) }
+        )
+      }
     }
   }
 

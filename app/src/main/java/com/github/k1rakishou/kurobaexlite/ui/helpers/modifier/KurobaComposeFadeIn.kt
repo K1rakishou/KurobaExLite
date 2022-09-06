@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.modifier
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,21 +18,22 @@ fun KurobaComposeFadeIn(
   modifier: Modifier = Modifier,
   durationMillis: Int = 250,
   delayMillis: Int = 100,
+  key1: Any = Unit,
   content: @Composable () -> Unit
 ) {
-  var visible by remember { mutableStateOf(false) }
+  var visible by remember(key1 = key1) { mutableStateOf(false) }
 
   AnimatedVisibility(
     modifier = modifier,
     visible = visible,
     enter = fadeIn(animationSpec = tween(durationMillis = durationMillis, delayMillis = delayMillis)),
-    exit = fadeOut()
+    exit = fadeOut(animationSpec = snap())
   ) {
     content()
   }
 
   LaunchedEffect(
-    key1 = Unit,
+    key1 = key1,
     block = { visible = true }
   )
 }
