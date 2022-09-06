@@ -1,16 +1,17 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.toolbar
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.rememberAnimateableStackContainerState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 
 @Composable
 fun <T : KurobaChildToolbar> KurobaToolbarContainer(
@@ -47,7 +48,8 @@ fun <T : KurobaChildToolbar> KurobaToolbarContainer(
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .background(bgColor),
+        .drawBehind { drawRect(bgColor) }
+        .consumeClicks(enabled = true),
       contentAlignment = Alignment.Center
     ) {
       childToolbar.Content()

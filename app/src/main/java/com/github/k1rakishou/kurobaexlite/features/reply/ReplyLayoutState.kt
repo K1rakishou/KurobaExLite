@@ -293,7 +293,7 @@ class ReplyLayoutState(
   private fun onReplyLayoutVisibilityStateChanged() {
     val replyLayoutVisibilityStateValue = _replyLayoutVisibilityState.value
     globalUiInfoManager.replyLayoutVisibilityStateChanged(screenKey, replyLayoutVisibilityStateValue)
-    bundle.putInt(replyLayoutVisibilityKey, replyLayoutVisibilityStateValue.value)
+    bundle.putInt(replyLayoutVisibilityKey, replyLayoutVisibilityStateValue.order)
   }
 
   fun getReplyData(chanDescriptor: ChanDescriptor, captchaSolution: CaptchaSolution): ReplyData {
@@ -435,7 +435,7 @@ sealed class SendReplyState {
 }
 
 @Immutable
-enum class ReplyLayoutVisibility(val value: Int) {
+enum class ReplyLayoutVisibility(val order: Int) {
   Closed(0),
   Opened(1),
   Expanded(2);
@@ -447,7 +447,7 @@ enum class ReplyLayoutVisibility(val value: Int) {
       }
 
       return values()
-        .firstOrNull { rlv -> rlv.value == value }
+        .firstOrNull { rlv -> rlv.order == value }
         ?: Closed
     }
   }

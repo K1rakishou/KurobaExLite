@@ -18,21 +18,21 @@ object ScreenCallbackStorage {
   }
 
   fun invokeCallback(screenKey: ScreenKey, callbackKey: String) {
-    val callback = callbackStorage[screenKey]?.get(callbackKey)
+    val callback: IRememberableCallback = callbackStorage[screenKey]?.get(callbackKey)?.get()
       ?: return
 
     (callback as RememberableCallback0).invoke()
   }
 
   fun <T1 : Any> invokeCallback(screenKey: ScreenKey, callbackKey: String, p1: T1) {
-    val callback = callbackStorage[screenKey]?.get(callbackKey)?.get()
+    val callback: IRememberableCallback = callbackStorage[screenKey]?.get(callbackKey)?.get()
       ?: return
 
     (callback as RememberableCallback1<T1>).invoke(p1)
   }
 
   fun <T1 : Any, T2: Any> invokeCallback(screenKey: ScreenKey, callbackKey: String, p1: T1, p2: T2) {
-    val callback = callbackStorage[screenKey]?.get(callbackKey)?.get()
+    val callback: IRememberableCallback = callbackStorage[screenKey]?.get(callbackKey)?.get()
       ?: return
 
     (callback as RememberableCallback2<T1, T2>).invoke(p1, p2)

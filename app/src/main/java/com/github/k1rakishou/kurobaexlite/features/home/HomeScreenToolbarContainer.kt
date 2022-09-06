@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +17,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -142,8 +142,8 @@ fun HomeScreenToolbarContainer(
     modifier = Modifier
       .fillMaxWidth()
       .height(toolbarTotalHeight)
-      .graphicsLayer { this.alpha = toolbarContainerAlpha }
-      .background(chanTheme.backColor)
+      .graphicsLayer { alpha = toolbarContainerAlpha }
+      .drawBehind { drawRect(chanTheme.backColor) }
       .passClicksThrough(passClicks = toolbarContainerAlpha < 0.99f)
       .consumeClicks(enabled = toolbarContainerAlpha > 0.99f)
   ) {

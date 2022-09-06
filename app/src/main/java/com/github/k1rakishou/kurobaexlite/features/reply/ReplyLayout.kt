@@ -146,7 +146,7 @@ fun ReplyLayoutContainer(
     Column(
       modifier = Modifier
         .offset(y = offsetYAnimated)
-        .consumeClicks(enabled = true)
+        .consumeClicks(enabled = replyLayoutVisibility.order > ReplyLayoutVisibility.Closed.order)
         .background(chanTheme.backColor)
     ) {
       if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
