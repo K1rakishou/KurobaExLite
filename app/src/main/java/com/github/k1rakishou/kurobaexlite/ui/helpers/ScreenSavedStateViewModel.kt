@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filterNotNull
 
-class SavedStateViewModel(
+class ScreenSavedStateViewModel(
   private val handle: SavedStateHandle
 ) : ViewModel() {
 
@@ -176,6 +176,6 @@ class KurobaSavedStateViewModelFactory(
     modelClass: Class<T>,
     handle: SavedStateHandle
   ): T {
-    return SavedStateViewModel(handle) as T
+    return ScreenSavedStateViewModel(handle) as T
   }
 }

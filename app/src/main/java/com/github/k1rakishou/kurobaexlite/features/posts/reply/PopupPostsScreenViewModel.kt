@@ -26,6 +26,7 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
 
   private val parsedReplyToCache = LruCache<PostDescriptor, List<PostCellData>>(32)
   private val parsedReplyFromCache = LruCache<PostDescriptor, List<PostCellData>>(32)
+  private val parsedPostsCache = mutableMapOf<PostDescriptor, PostCellData>()
 
   override val postScreenState: PostScreenState = threadScreenState
 
@@ -49,12 +50,14 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
         parsedReplyToCache[postViewMode.postDescriptor] ?: emptyList()
       }
       is PopupPostsScreen.PostViewMode.PostList -> {
-        emptyList<PostCellData>()
+        postViewMode.asPostDescriptorList
+          .mapNotNull { postDescriptor -> parsedPostsCache[postDescriptor] }
       }
     }
 
     return cachedPostCellDataList.flatMapNotNull { postCellData -> postCellData.images }
   }
+
   suspend fun loadRepliesForModeInitial(
     postViewMode: PopupPostsScreen.PostViewMode,
   ) {
@@ -70,7 +73,7 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
     postViewMode: PopupPostsScreen.PostViewMode,
     isPushing: Boolean = true
   ): Boolean {
-    if (isPushing && postViewMode !is PopupPostsScreen.PostViewMode.PostList) {
+    if (isPushing) {
       val indexOfExisting = postReplyChainStack.indexOfFirst { it == postViewMode }
       if (indexOfExisting >= 0) {
         // Move old on top of the stack
@@ -103,6 +106,7 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
     postReplyChainStack.clear()
     parsedReplyToCache.evictAll()
     parsedReplyFromCache.evictAll()
+    parsedPostsCache.clear()
   }
 
   private suspend fun loadPostList(postViewMode: PopupPostsScreen.PostViewMode.PostList): Boolean {
@@ -112,7 +116,7 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
       postViewMode = postViewMode,
       postCellDataList = chanCache.getManyForDescriptor(
         chanDescriptor = postViewMode.chanDescriptor,
-        postDescriptors = postViewMode.asPostDescriptorList()
+        postDescriptors = postViewMode.asPostDescriptorList
       )
     )
 
@@ -173,7 +177,9 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
         parsedReplyToCache[postViewMode.postDescriptor]
       }
       is PopupPostsScreen.PostViewMode.PostList -> {
-        null
+        postViewMode.asPostDescriptorList
+          .mapNotNull { postDescriptor -> parsedPostsCache[postDescriptor] }
+          .takeIf { posts -> posts.isNotEmpty() }
       }
     }
 
@@ -187,7 +193,7 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
 
     val chanTheme = themeEngine.chanTheme
 
-    val updatedPostDataList = withContext(Dispatchers.Default) {
+    val updatedPostDataList = withContext(Dispatchers.IO) {
       return@withContext postCellDataList.map { oldPostData ->
         val oldParsedPostDataContext = parsedPostDataCache.getParsedPostData(
           oldPostData.postDescriptor.threadDescriptor,
@@ -231,7 +237,9 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
         parsedReplyToCache.put(postViewMode.postDescriptor, updatedPostDataList)
       }
       is PopupPostsScreen.PostViewMode.PostList -> {
-        // no-op
+        updatedPostDataList.forEach { postCellData ->
+          parsedPostsCache[postCellData.postDescriptor] = postCellData
+        }
       }
     }
 

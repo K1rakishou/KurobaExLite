@@ -21,8 +21,8 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaSavedStateViewModelFactory
-import com.github.k1rakishou.kurobaexlite.ui.helpers.SavedStateViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenSavedStateViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import kotlin.properties.PropertyDelegateProvider
 import kotlin.properties.ReadWriteProperty
@@ -53,10 +53,10 @@ abstract class ComposeScreen protected constructor(
       KurobaSavedStateViewModelFactory(componentActivity, screenArgs)
     )
 
-    val savedStateViewModel = provider.get(key, SavedStateViewModel::class.java)
-    savedStateViewModel.onNewArguments(screenArgs)
+    val screenSavedStateViewModel = provider.get(key, ScreenSavedStateViewModel::class.java)
+    screenSavedStateViewModel.onNewArguments(screenArgs)
 
-    return@lazy savedStateViewModel
+    return@lazy screenSavedStateViewModel
   }
 
   private val backPressHandlers = mutableListOf<MainNavigationRouter.OnBackPressHandler>()
@@ -123,7 +123,7 @@ abstract class ComposeScreen protected constructor(
 
   protected fun <T : Any?> saveable(
     key: String,
-    saver: Saver<T, out Any> = SavedStateViewModel.saver<T>(),
+    saver: Saver<T, out Any> = ScreenSavedStateViewModel.saver<T>(),
     init: () -> T,
   ): PropertyDelegateProvider<Any?, ReadWriteProperty<Any?, T>> {
     return savedStateViewModel.saveable(key, saver, init)

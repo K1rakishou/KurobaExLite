@@ -45,7 +45,6 @@ fun PostImageThumbnail(
   onLongClick: (IPostImage) -> Unit = {},
 ) {
   val context = LocalContext.current
-  val chanTheme = LocalChanTheme.current
 
   var loadErrorMut by remember { mutableStateOf<Throwable?>(null) }
   val loadError = loadErrorMut

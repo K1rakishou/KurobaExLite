@@ -24,6 +24,7 @@ import androidx.compose.material.SwipeableState
 import androidx.compose.material.Text
 import androidx.compose.material.swipeable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -261,6 +262,7 @@ class PopupPostsScreen(
 
     if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
       PopupPostsScreenContentLayout(
+        postViewMode = postViewMode,
         postListOptions = postListOptions,
         buttonsHeightPx = buttonsHeightPx,
         screenKey = screenKey,
@@ -337,6 +339,7 @@ class PopupPostsScreen(
     Close
   }
 
+  @Immutable
   sealed class PostViewMode : Parcelable {
     val isCatalogMode: Boolean
       get() {
@@ -363,8 +366,8 @@ class PopupPostsScreen(
       val postNoWithSubNoList: List<Pair<Long, Long>>
     ) : PostViewMode() {
 
-      fun asPostDescriptorList(): List<PostDescriptor> {
-        return postNoWithSubNoList.map { (postNo, postSubNo) ->
+      val asPostDescriptorList by lazy {
+        return@lazy postNoWithSubNoList.map { (postNo, postSubNo) ->
           when (chanDescriptor) {
             is CatalogDescriptor -> {
               PostDescriptor.create(
@@ -403,6 +406,7 @@ class PopupPostsScreen(
 
 @Composable
 private fun PopupPostsScreenContentLayout(
+  postViewMode: PopupPostsScreen.PostViewMode,
   postListOptions: PostListOptions,
   buttonsHeightPx: Int,
   screenKey: ScreenKey,
@@ -415,6 +419,7 @@ private fun PopupPostsScreenContentLayout(
   Layout(
     content = {
       PopupPostsScreenContent(
+        postViewMode = postViewMode,
         postListOptions = postListOptions,
         screenKey = screenKey,
         postLongtapContentMenuProvider = postLongtapContentMenuProvider,
@@ -459,6 +464,7 @@ private fun PopupPostsScreenContentLayout(
 
 @Composable
 private fun PopupPostsScreenContent(
+  postViewMode: PopupPostsScreen.PostViewMode,
   postListOptions: PostListOptions,
   screenKey: ScreenKey,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
@@ -538,6 +544,10 @@ private fun PopupPostsScreenContent(
         )
       },
       onPostRepliesClicked = { postDescriptor ->
+        if (postViewMode is PopupPostsScreen.PostViewMode.PostList) {
+          return@PostListContent
+        }
+
         coroutineScope.launch {
           popupPostsScreenViewModel.loadRepliesForMode(PopupPostsScreen.PostViewMode.RepliesFrom(postDescriptor))
         }
