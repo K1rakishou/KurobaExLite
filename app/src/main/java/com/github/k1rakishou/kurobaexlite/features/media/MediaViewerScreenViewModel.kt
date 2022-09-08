@@ -28,6 +28,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
+import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
@@ -37,6 +38,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +69,7 @@ class MediaViewerScreenViewModel(
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub,
   private val imageLoader: ImageLoader,
   private val mediaSaver: MediaSaver,
+  private val postReplyChainManager: PostReplyChainManager
 ) : BaseViewModel() {
 
   val mpvInitialized: Boolean
@@ -367,6 +370,12 @@ class MediaViewerScreenViewModel(
     viewModelScope.launch {
       val result = mediaSaver.savePostImage(postImage)
       onResult(result)
+    }
+  }
+
+  suspend fun getReplyCountToPost(postDescriptor: PostDescriptor): Int {
+    return withContext(viewModelScope.coroutineContext) {
+      return@withContext postReplyChainManager.getRepliesFrom(postDescriptor).size
     }
   }
 

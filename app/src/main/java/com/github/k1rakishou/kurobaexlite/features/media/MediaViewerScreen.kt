@@ -24,7 +24,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +36,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -54,6 +58,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.withTranslation
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
@@ -730,8 +735,7 @@ private fun MediaViewerContentAfterTransition(
 
   val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
   val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
-  val images = mediaViewerScreenState.mediaList
-
+  val mediaList = mediaViewerScreenState.mediaList
   val bgColor = remember(chanTheme.backColor) { chanTheme.backColor.copy(alpha = 0.5f) }
 
   MediaViewerPagerContainer(
@@ -746,7 +750,7 @@ private fun MediaViewerContentAfterTransition(
     stopPresenting = stopPresenting,
   )
 
-  if (pagerStateHolder == null || images.isEmpty()) {
+  if (pagerStateHolder == null || mediaList.isEmpty()) {
     return
   }
 
@@ -800,22 +804,14 @@ private fun MediaViewerContentAfterTransition(
       modifier = Modifier.align(Alignment.BottomCenter)
     ) {
       if (currentLoadedMedia?.supportedMedia == true) {
-        Row {
-          Spacer(modifier = Modifier.weight(1f))
-
-          KurobaComposeClickableIcon(
-            modifier = Modifier
-              .graphicsLayer { alpha = mediaViewerUiAlpha }
-              .size(42.dp)
-              .background(bgColor, CircleShape)
-              .padding(8.dp),
-            drawableId = R.drawable.ic_baseline_comment_24,
-            enabled = mediaViewerUiVisible,
-            onClick = { onShowPostWithCommentsClicked() }
-          )
-
-          Spacer(modifier = Modifier.width(24.dp))
-        }
+        MediaViewerBottomIcons(
+          mediaViewerScreenState = mediaViewerScreenState,
+          currentPageIndex = currentPageIndex,
+          mediaViewerUiAlpha = mediaViewerUiAlpha,
+          bgColor = bgColor,
+          mediaViewerUiVisible = mediaViewerUiVisible,
+          onShowPostWithCommentsClicked = onShowPostWithCommentsClicked
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
       }
@@ -835,7 +831,7 @@ private fun MediaViewerContentAfterTransition(
       }
     }
 
-    if (images.isNotNullNorEmpty()) {
+    if (mediaList.isNotNullNorEmpty()) {
       val toolbarCalculatedHeight by toolbarTotalHeight
 
       val actualToolbarCalculatedHeight = remember(
@@ -858,13 +854,13 @@ private fun MediaViewerContentAfterTransition(
         ) {
           MediaViewerPreviewStrip(
             pagerState = pagerStateHolder,
-            images = images,
+            mediaList = mediaList,
             mediaViewerScreenState = mediaViewerScreenState,
             bgColor = bgColor,
             toolbarHeightPx = actualToolbarCalculatedHeight,
             onPreviewClicked = { postImage ->
               coroutineScope.launch {
-                images
+                mediaList
                   .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
                   .takeIf { index -> index >= 0 }
                   ?.let { scrollIndex -> pagerStateHolder.scrollToPage(scrollIndex) }
@@ -874,6 +870,82 @@ private fun MediaViewerContentAfterTransition(
         }
       }
     }
+  }
+}
+
+@Composable
+private fun MediaViewerBottomIcons(
+  mediaViewerScreenState: MediaViewerScreenState,
+  currentPageIndex: Int,
+  mediaViewerUiAlpha: Float,
+  bgColor: Color,
+  mediaViewerUiVisible: Boolean,
+  onShowPostWithCommentsClicked: () -> Unit
+) {
+  val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
+  val mediaList = mediaViewerScreenState.mediaList
+
+  Row {
+    Spacer(modifier = Modifier.weight(1f))
+
+    val currentPostImage = mediaList.getOrNull(currentPageIndex)?.postImage
+
+    val replyCountToCurrentImagePostMut by produceState<String?>(
+      initialValue = null,
+      key1 = currentPostImage,
+      producer = {
+        if (currentPostImage == null) {
+          value = null
+          return@produceState
+        }
+
+        val replyCount = mediaViewerScreenViewModel.getReplyCountToPost(currentPostImage.ownerPostDescriptor)
+        if (replyCount <= 0) {
+          value = null
+          return@produceState
+        }
+
+        val replyCountText = if (replyCount > 999) {
+          "999+"
+        } else {
+          replyCount.toString()
+        }
+
+        value = replyCountText
+      }
+    )
+    val replyCountToCurrentImagePost = replyCountToCurrentImagePostMut
+
+    Box {
+      KurobaComposeClickableIcon(
+        modifier = Modifier
+          .graphicsLayer { alpha = mediaViewerUiAlpha }
+          .size(42.dp)
+          .background(bgColor, CircleShape)
+          .padding(8.dp),
+        drawableId = R.drawable.ic_baseline_comment_24,
+        enabled = mediaViewerUiVisible,
+        onClick = { onShowPostWithCommentsClicked() }
+      )
+
+      if (replyCountToCurrentImagePost != null) {
+        val replyCountIconBg = remember { Color.Black.copy(alpha = 0.8f) }
+
+        Text(
+          modifier = Modifier
+            .graphicsLayer { alpha = mediaViewerUiAlpha }
+            .wrapContentSize()
+            .background(replyCountIconBg, RoundedCornerShape(25f))
+            .align(Alignment.TopEnd)
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+          text = replyCountToCurrentImagePost,
+          color = Color.White,
+          fontSize = 12.sp
+        )
+      }
+    }
+
+    Spacer(modifier = Modifier.width(24.dp))
   }
 }
 
@@ -1046,19 +1118,19 @@ private fun MediaViewerPagerContainer(
 ) {
   val context = LocalContext.current
   val currentPageIndexForInitialScrollMut by mediaViewerScreenState.currentPageIndex
-  val imagesMut = mediaViewerScreenState.mediaList
+  val mediaListMut = mediaViewerScreenState.mediaList
 
   val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
   val mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember()
 
   val currentPageIndexForInitialScroll = currentPageIndexForInitialScrollMut
-  val images = imagesMut
+  val mediaList = mediaListMut
 
-  if (currentPageIndexForInitialScroll == null || images.isEmpty()) {
+  if (currentPageIndexForInitialScroll == null || mediaList.isEmpty()) {
     return
   }
 
-  if (images.isEmpty()) {
+  if (mediaList.isEmpty()) {
     val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
 
     InsetsAwareBox(
@@ -1178,7 +1250,7 @@ private fun MediaViewerPagerContainer(
 
       mediaViewerScreenState.onCurrentPagerPageChanged(currentPageIndex)
 
-      val postImageData = images.getOrNull(currentPageIndex)?.postImage
+      val postImageData = mediaList.getOrNull(currentPageIndex)?.postImage
       if (postImageData == null) {
         return@LaunchedEffect
       }
@@ -1203,9 +1275,9 @@ private fun MediaViewerPagerContainer(
 
   HorizontalPager(
     modifier = Modifier.fillMaxSize(),
-    count = images.size,
+    count = mediaList.size,
     state = pagerState,
-    key = { page -> images.getOrNull(page)?.fullImageUrlAsString ?: "<null>" }
+    key = { page -> mediaList.getOrNull(page)?.fullImageUrlAsString ?: "<null>" }
   ) { page ->
     val mediaState = remember(key1 = page) {
       val prevMediaState = mediaViewerScreenState.getMediaStateByIndex(page)
@@ -1213,7 +1285,7 @@ private fun MediaViewerPagerContainer(
         return@remember prevMediaState
       }
 
-      val postImage = images
+      val postImage = mediaList
         .getOrNull(page)
         ?.postImage
         ?: return@remember null

@@ -384,6 +384,7 @@ object DependencyGraph {
         installMpvNativeLibrariesFromGithub = get(),
         imageLoader = get(),
         mediaSaver = get(),
+        postReplyChainManager = get()
       )
     }
 

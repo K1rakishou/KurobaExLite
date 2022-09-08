@@ -41,7 +41,7 @@ private const val TAG = "MediaViewerPreviewStrip"
 @Composable
 fun MediaViewerPreviewStrip(
   pagerState: PagerState,
-  images: List<ImageLoadState>,
+  mediaList: List<ImageLoadState>,
   mediaViewerScreenState: MediaViewerScreenState,
   bgColor: Color,
   toolbarHeightPx: Int?,
@@ -139,10 +139,10 @@ fun MediaViewerPreviewStrip(
       state = lazyListState
     ) {
       items(
-        count = images.size,
-        key = { index -> images[index].fullImageUrlAsString },
+        count = mediaList.size,
+        key = { index -> mediaList[index].fullImageUrlAsString },
         itemContent = { index ->
-          val postImage = images[index].postImage
+          val postImage = mediaList[index].postImage
 
           DisplayImagePreview(
             itemSize = itemSizeDp,
