@@ -31,7 +31,9 @@ class MediaViewerScreenState(
   private val appResources: AppResources,
   private val chanCache: ChanCache
 ) {
-  private var chanDescriptor: ChanDescriptor? = null
+  var chanDescriptor: ChanDescriptor? = null
+    private set
+
   private var sourceType: MediaViewerScreenViewModel.SourceType? = null
 
   private val scope = KurobaCoroutineScope()

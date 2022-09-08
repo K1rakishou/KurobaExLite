@@ -103,6 +103,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.model.data.originalFileNameWithExtension
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
@@ -465,6 +466,7 @@ class MediaViewerScreen(
 }
 
 
+@OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun MediaViewerContent(
   screenKey: ScreenKey,
@@ -494,6 +496,7 @@ private fun MediaViewerContent(
   var availableSizeMut by remember(key1 = Unit) { mutableStateOf<IntSize>(IntSize.Zero) }
   val availableSize = availableSizeMut
 
+  var pagerStateHolder by remember { mutableStateOf<PagerState?>(null) }
   val coroutineScope = rememberCoroutineScope()
 
   Box(
@@ -521,20 +524,32 @@ private fun MediaViewerContent(
           sheetPeekHeight = 0.dp,
           kurobaBottomSheetState = kurobaBottomSheetState,
           sheetBackgroundColor = chanTheme.backColor,
-          sheetContent = {
+          sheetContent = { paddingValues ->
             MediaViewerBottomSheet(
               chanDescriptor = mediaViewerParams.chanDescriptor,
               screenKey = screenKey,
               kurobaBottomSheetState = kurobaBottomSheetState,
-              mediaViewerScreenState = mediaViewerScreenState
+              mediaViewerScreenState = mediaViewerScreenState,
+              sheetPaddingValues = paddingValues,
+              scrollToImagesByIndex = { imageToScrollToIndex ->
+                pagerStateHolder?.let { pagerState ->
+                  if (pagerState.currentPage == imageToScrollToIndex) {
+                    return@let
+                  }
+
+                  coroutineScope.launch { pagerState.scrollToPage(imageToScrollToIndex) }
+                }
+              }
             )
           },
           content = {
             MediaViewerContentAfterTransition(
+              pagerState = pagerStateHolder,
               availableSize = availableSize,
               toolbarHeight = toolbarHeight,
               screenKey = screenKey,
               openedFromScreen = openedFromScreen,
+              onViewPagerInitialized = { pagerState -> pagerStateHolder = pagerState },
               onDownloadButtonClicked = onDownloadButtonClicked,
               onShowPostWithCommentsClicked = {
                 if (kurobaBottomSheetState.isCollapsedOrCollapsing) {
@@ -606,8 +621,11 @@ private fun MediaViewerBottomSheet(
   screenKey: ScreenKey,
   kurobaBottomSheetState: KurobaBottomSheetState,
   mediaViewerScreenState: MediaViewerScreenState,
+  sheetPaddingValues: PaddingValues,
+  scrollToImagesByIndex: (Int) -> Unit,
 ) {
   val insets = LocalWindowInsets.current
+  val coroutineScope = rememberCoroutineScope()
 
   val popupPostsScreenViewModel: PopupPostsScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
@@ -625,12 +643,12 @@ private fun MediaViewerBottomSheet(
 
   var postsLoadedOnce by remember(key1 = currentPageIndex) { mutableStateOf(false) }
   val postImage = currentPageIndex?.let { pageIndex -> mediaViewerScreenState.mediaList.getOrNull(pageIndex)?.postImage }
+  val sheetPaddingValuesUpdated by rememberUpdatedState(newValue = sheetPaddingValues)
 
   val postListOptions by remember {
     derivedStateOf {
       val paddingValues = PaddingValues(
-        top = if (insets.top > 0.dp && kurobaBottomSheetState.isExpandedOrExpanding) insets.top else 0.dp,
-        bottom = insets.bottom
+        bottom = insets.bottom + sheetPaddingValuesUpdated.calculateBottomPadding()
       )
 
       PostListOptions(
@@ -674,7 +692,22 @@ private fun MediaViewerBottomSheet(
         // no-op
       },
       onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
-        // no-op
+        val clickedPostImage = postImageDataResult.getOrNull()
+        if (clickedPostImage == null) {
+          // TODO(KurobaEx): toast?
+          return@PostListContent
+        }
+
+        val imageToScrollToIndex = mediaViewerScreenState.mediaList
+          .indexOfFirst { it.fullImageUrl == clickedPostImage.fullImageAsUrl }
+          .takeIf { index -> index >= 0 }
+
+        if (imageToScrollToIndex == null) {
+          return@PostListContent
+        }
+
+        coroutineScope.launch { kurobaBottomSheetState.collapse() }
+        scrollToImagesByIndex(imageToScrollToIndex)
       },
       onGoToPostClicked = { postCellData ->
         // no-op
@@ -711,11 +744,13 @@ private fun MediaViewerBottomSheet(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun MediaViewerContentAfterTransition(
+  pagerState: PagerState?,
   mediaViewerScreenState: MediaViewerScreenState,
   screenKey: ScreenKey,
   availableSize: IntSize,
   toolbarHeight: Dp,
   openedFromScreen: ScreenKey,
+  onViewPagerInitialized: (PagerState) -> Unit,
   onPreviewLoadingFinished: (IPostImage) -> Unit,
   onDownloadButtonClicked: (IPostImage) -> Unit,
   onShowPostWithCommentsClicked: () -> Unit,
@@ -730,9 +765,6 @@ private fun MediaViewerContentAfterTransition(
   val coroutineScope = rememberCoroutineScope()
   val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
 
-  var pagerStateHolderMut by remember { mutableStateOf<PagerState?>(null) }
-  val pagerStateHolder = pagerStateHolderMut
-
   val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
   val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
   val mediaList = mediaViewerScreenState.mediaList
@@ -743,14 +775,14 @@ private fun MediaViewerContentAfterTransition(
     toolbarHeight = toolbarHeight,
     openedFromScreen = openedFromScreen,
     mediaViewerScreenState = mediaViewerScreenState,
-    onViewPagerInitialized = { pagerState -> pagerStateHolderMut = pagerState },
+    onViewPagerInitialized = onViewPagerInitialized,
     onPreviewLoadingFinished = onPreviewLoadingFinished,
     onInstallMpvLibsFromGithubButtonClicked = onInstallMpvLibsFromGithubButtonClicked,
     loadFullImage = loadFullImage,
     stopPresenting = stopPresenting,
   )
 
-  if (pagerStateHolder == null || mediaList.isEmpty()) {
+  if (pagerState == null || mediaList.isEmpty()) {
     return
   }
 
@@ -774,13 +806,13 @@ private fun MediaViewerContentAfterTransition(
         backgroundColor = bgColor,
         screenKey = screenKey,
         mediaViewerScreenState = mediaViewerScreenState,
-        pagerState = pagerStateHolder,
+        pagerState = pagerState,
         onDownloadMediaClicked = { postImage -> onDownloadButtonClicked(postImage) },
         onBackPressed = { coroutineScope.launch { onBackPressed() } }
       )
     }
 
-    val currentPageIndex by remember { derivedStateOf { pagerStateHolder.currentPage } }
+    val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
     val currentLoadedMedia = remember(key1 = currentPageIndex) {
       mediaViewerScreenState.currentlyLoadedMediaMap[currentPageIndex]
     }
@@ -853,7 +885,7 @@ private fun MediaViewerContentAfterTransition(
             .passClicksThrough(passClicks = !mediaViewerUiVisible)
         ) {
           MediaViewerPreviewStrip(
-            pagerState = pagerStateHolder,
+            pagerState = pagerState,
             mediaList = mediaList,
             mediaViewerScreenState = mediaViewerScreenState,
             bgColor = bgColor,
@@ -863,7 +895,7 @@ private fun MediaViewerContentAfterTransition(
                 mediaList
                   .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
                   .takeIf { index -> index >= 0 }
-                  ?.let { scrollIndex -> pagerStateHolder.scrollToPage(scrollIndex) }
+                  ?.let { scrollIndex -> pagerState.scrollToPage(scrollIndex) }
               }
             }
           )
@@ -884,37 +916,14 @@ private fun MediaViewerBottomIcons(
 ) {
   val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
   val mediaList = mediaViewerScreenState.mediaList
+  val chanDescriptor = mediaViewerScreenState.chanDescriptor
+
+  if (chanDescriptor !is ThreadDescriptor) {
+    return
+  }
 
   Row {
     Spacer(modifier = Modifier.weight(1f))
-
-    val currentPostImage = mediaList.getOrNull(currentPageIndex)?.postImage
-
-    val replyCountToCurrentImagePostMut by produceState<String?>(
-      initialValue = null,
-      key1 = currentPostImage,
-      producer = {
-        if (currentPostImage == null) {
-          value = null
-          return@produceState
-        }
-
-        val replyCount = mediaViewerScreenViewModel.getReplyCountToPost(currentPostImage.ownerPostDescriptor)
-        if (replyCount <= 0) {
-          value = null
-          return@produceState
-        }
-
-        val replyCountText = if (replyCount > 999) {
-          "999+"
-        } else {
-          replyCount.toString()
-        }
-
-        value = replyCountText
-      }
-    )
-    val replyCountToCurrentImagePost = replyCountToCurrentImagePostMut
 
     Box {
       KurobaComposeClickableIcon(
@@ -927,6 +936,34 @@ private fun MediaViewerBottomIcons(
         enabled = mediaViewerUiVisible,
         onClick = { onShowPostWithCommentsClicked() }
       )
+
+      val currentPostImage = mediaList.getOrNull(currentPageIndex)?.postImage
+
+      val replyCountToCurrentImagePostMut by produceState<String?>(
+        initialValue = null,
+        key1 = currentPostImage,
+        producer = {
+          if (currentPostImage == null) {
+            value = null
+            return@produceState
+          }
+
+          val replyCount = mediaViewerScreenViewModel.getReplyCountToPost(currentPostImage.ownerPostDescriptor)
+          if (replyCount <= 0) {
+            value = null
+            return@produceState
+          }
+
+          val replyCountText = if (replyCount > 999) {
+            "999+"
+          } else {
+            replyCount.toString()
+          }
+
+          value = replyCountText
+        }
+      )
+      val replyCountToCurrentImagePost = replyCountToCurrentImagePostMut
 
       if (replyCountToCurrentImagePost != null) {
         val replyCountIconBg = remember { Color.Black.copy(alpha = 0.8f) }

@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -26,7 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
@@ -75,14 +76,20 @@ class KurobaBottomSheetState(
 ) : SwipeableState<KurobaBottomSheetValue>(defaultSheetValue) {
   var fullAvailableHeight: Float = 0f
 
+  val isExpanded: Boolean
+    get() = currentValue == KurobaBottomSheetValue.Expanded && targetValue == KurobaBottomSheetValue.Expanded
+
   val isExpandedOrExpanding: Boolean
     get() = currentValue == KurobaBottomSheetValue.Expanded || targetValue == KurobaBottomSheetValue.Expanded
 
   val isOpenedOrOpening: Boolean
-    get() = currentValue.order > KurobaBottomSheetValue.Collapsed.order || targetValue.order > KurobaBottomSheetValue.Collapsed.order
+    get() = currentValue == KurobaBottomSheetValue.Opened || targetValue == KurobaBottomSheetValue.Opened
 
   val isCollapsedOrCollapsing: Boolean
     get() = currentValue == KurobaBottomSheetValue.Collapsed || targetValue == KurobaBottomSheetValue.Collapsed
+
+  val isNotCollapsed: Boolean
+    get() = isExpandedOrExpanding || isOpenedOrOpening
 
   val offsetValueAsProgress: Float
     get() {
@@ -106,7 +113,7 @@ class KurobaBottomSheetState(
   }
 
   suspend fun onBackPressed(): Boolean {
-    if (isExpandedOrExpanding || isOpenedOrOpening) {
+    if (isNotCollapsed) {
       collapse()
       return true
     }
@@ -133,24 +140,27 @@ fun KurobaBottomSheet(
   scrimBgColor: Color = Color.Black,
   sheetGesturesEnabled: Boolean = true,
   sheetBackgroundColor: Color = Color.White,
-  sheetContent: @Composable ColumnScope.() -> Unit,
+  sheetContent: @Composable ColumnScope.(PaddingValues) -> Unit,
   content: @Composable (PaddingValues) -> Unit
 ) {
   val density = LocalDensity.current
+  val insets = LocalWindowInsets.current
+
   val sheetHeaderHeight = with(density) { sheetHeaderHeightDp.roundToPx() }
 
   BoxWithConstraints(modifier = modifier) {
+    val topInsetPx = with(density) { insets.top.toPx() }
     val fullHeight = constraints.maxHeight.toFloat()
     kurobaBottomSheetState.fullAvailableHeight = fullHeight
 
     val peekHeightPx = with(LocalDensity.current) { sheetPeekHeight.toPx() }
     var bottomSheetHeight by remember { mutableStateOf(fullHeight) }
 
-    val anchors = remember {
+    val anchors = remember(key1 = insets.top) {
       mapOf(
         (fullHeight - peekHeightPx) to KurobaBottomSheetValue.Collapsed,
         (fullHeight - (fullHeight * openedHeightPercentage)) to KurobaBottomSheetValue.Opened,
-        (fullHeight - bottomSheetHeight) to KurobaBottomSheetValue.Expanded
+        (fullHeight - bottomSheetHeight + topInsetPx) to KurobaBottomSheetValue.Expanded
       )
     }
 
@@ -184,6 +194,16 @@ fun KurobaBottomSheet(
             fraction = { 1f - (kurobaBottomSheetState.offset.value / fullHeight).coerceIn(0f, 1f) },
             color = scrimBgColorWithAlpha
           )
+
+          if (kurobaBottomSheetState.isExpandedOrExpanding && insets.top > 0.dp) {
+            Box(
+              modifier = Modifier
+                .height(insets.top)
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .drawBehind { drawRect(sheetBackgroundColor) }
+            )
+          }
         }
       },
       bottomSheet = {
@@ -195,13 +215,15 @@ fun KurobaBottomSheet(
         ) {
           SheetHeader(
             sheetHeaderHeight = sheetHeaderHeight.toFloat(),
-            fullHeight = fullHeight,
+            fullHeight = with(density) { fullHeight - insets.top.toPx() },
             sheetBackgroundColor = sheetBackgroundColor,
             kurobaBottomSheetState = kurobaBottomSheetState
           )
 
-          Column(modifier = Modifier.background(sheetBackgroundColor)) {
-            sheetContent()
+          Column(
+            modifier = Modifier.drawBehind { drawRect(sheetBackgroundColor) }
+          ) {
+            sheetContent(PaddingValues(bottom = insets.top))
           }
         }
       },
