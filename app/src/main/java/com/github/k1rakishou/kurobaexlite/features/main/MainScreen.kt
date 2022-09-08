@@ -61,10 +61,6 @@ class MainScreen(
         mainNavigationRouter.HandleBackPresses {
           // First, process all the floating screens
           for (floatingComposeScreen in mainNavigationRouter.floatingScreensStack.asReversed()) {
-            if (floatingComposeScreen.ignoreBackPresses) {
-              continue
-            }
-
             if (floatingComposeScreen.onBackPressed()) {
               return@HandleBackPresses true
             }

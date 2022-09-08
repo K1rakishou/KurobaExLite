@@ -481,6 +481,8 @@ private fun BoxScope.CatalogPostListScreen(
 
       return@derivedStateOf PostListOptions(
         isCatalogMode = isCatalogScreen,
+        showThreadStatusCell = false,
+        textSelectionEnabled = false,
         isInPopup = false,
         pullToRefreshEnabled = true,
         openedFromScreenKey = screenKey,
@@ -534,7 +536,7 @@ private fun BoxScope.CatalogPostListScreen(
     onLinkableLongClicked = { postCellData, linkable ->
       // no-op (for now?)
     },
-    onPostRepliesClicked = { postDescriptor ->
+    onPostRepliesClicked = { chanDescriptor, postDescriptor ->
       // no-op
     },
     onCopySelectedText = {

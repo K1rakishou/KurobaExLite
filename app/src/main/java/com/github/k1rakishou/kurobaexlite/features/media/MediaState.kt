@@ -9,13 +9,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 sealed class MediaState {
   abstract val pageIndex: Int
 
-  @Stable
-  class Static(
-    override val pageIndex: Int
-  ) : MediaState()
+  val supportedMedia: Boolean
+    get() = this is Static || this is Video
 
   @Stable
-  class Unsupported(
+  class Static(
     override val pageIndex: Int
   ) : MediaState()
 
@@ -85,5 +83,10 @@ sealed class MediaState {
     }
 
   }
+
+  @Stable
+  class Unsupported(
+    override val pageIndex: Int
+  ) : MediaState()
 
 }

@@ -81,7 +81,7 @@ internal fun PostListContent(
   onPostCellLongClicked: (PostCellData) -> Unit,
   onLinkableClicked: (PostCellData, TextPartSpan.Linkable) -> Unit,
   onLinkableLongClicked: (PostCellData, TextPartSpan.Linkable) -> Unit,
-  onPostRepliesClicked: (PostDescriptor) -> Unit,
+  onPostRepliesClicked: (ChanDescriptor, PostDescriptor) -> Unit,
   onCopySelectedText: (String) -> Unit,
   onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
   onPostListScrolled: (Float) -> Unit,
@@ -128,6 +128,7 @@ internal fun PostListContent(
       lazyListState = lazyListState,
       chanDescriptor = chanDescriptor,
       orientation = postListOptions.orientation,
+      isInPopup = postListOptions.isInPopup,
       onPostListTouchingTopOrBottomStateChanged = onPostListTouchingTopOrBottomStateChanged
     )
   }
@@ -239,8 +240,8 @@ internal fun PostListContent(
           onLinkableLongClicked = onLinkableLongClicked
         )
       },
-      onPostRepliesClicked = { postCellData: PostCellData ->
-        onPostRepliesClicked(postCellData.postDescriptor)
+      onPostRepliesClicked = { postCellData ->
+        onPostRepliesClicked(chanDescriptor, postCellData.postDescriptor)
       },
       onThreadStatusCellClicked = {
         postsScreenViewModel.resetTimer()
@@ -268,7 +269,7 @@ internal fun PostListContent(
     )
   }
 
-  if (postListAsync is AsyncData.Data) {
+  if (postListAsync is AsyncData.Data && !postListOptions.isInPopup) {
     // Call processPostListScrollEventFunc() as soon as we get the actual post data so that we can
     // reset the last seen post indicator in threads with few posts that fit the whole screen without
     // having to scroll it. Otherwise the indicator will stay (since we can't scroll the thread and
@@ -295,8 +296,13 @@ private fun processPostListScrollEvent(
   lazyListState: LazyListState,
   chanDescriptor: ChanDescriptor,
   orientation: Int,
+  isInPopup: Boolean,
   onPostListTouchingTopOrBottomStateChanged: (Boolean) -> Unit
 ) {
+  if (isInPopup) {
+    return
+  }
+
   if (postListAsync !is AsyncData.Data) {
     return
   }
@@ -380,6 +386,8 @@ private fun PostListInternal(
   val isInPopup = postListOptions.isInPopup
   val pullToRefreshEnabled = postListOptions.pullToRefreshEnabled
   val isCatalogMode = postListOptions.isCatalogMode
+  val showThreadStatusCell = postListOptions.showThreadStatusCell
+  val textSelectionEnabled = postListOptions.textSelectionEnabled
   val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
 
   val postsScreenViewModel = postsScreenViewModelProvider()
@@ -405,7 +413,7 @@ private fun PostListInternal(
   val pullToRefreshState = rememberPullToRefreshState()
 
   val buildThreadStatusCellFunc: @Composable ((LazyItemScope) -> Unit)? = if (
-    !isCatalogMode &&
+    showThreadStatusCell &&
     searchQuery == null &&
     postsScreenViewModel is ThreadScreenViewModel
   ) {
@@ -472,6 +480,7 @@ private fun PostListInternal(
 
               postList(
                 isCatalogMode = isCatalogMode,
+                textSelectionEnabled = textSelectionEnabled,
                 isInPopup = isInPopup,
                 chanDescriptor = chanDescriptor,
                 currentlyOpenedThread = currentlyOpenedThread,
@@ -639,6 +648,7 @@ private fun LazyListScope.postListAsyncDataContent(
 @Stable
 private fun LazyListScope.postList(
   isCatalogMode: Boolean,
+  textSelectionEnabled: Boolean,
   isInPopup: Boolean,
   chanDescriptor: ChanDescriptor,
   currentlyOpenedThread: ThreadDescriptor?,
@@ -685,6 +695,7 @@ private fun LazyListScope.postList(
       PostCellContainer(
         cellsPadding = cellsPadding,
         isCatalogMode = isCatalogMode,
+        textSelectionEnabled = textSelectionEnabled,
         chanDescriptor = chanDescriptor,
         currentlyOpenedThread = currentlyOpenedThread,
         isInPopup = isInPopup,
@@ -724,6 +735,7 @@ private fun LazyListScope.postList(
 private fun LazyItemScope.PostCellContainer(
   cellsPadding: PaddingValues,
   isCatalogMode: Boolean,
+  textSelectionEnabled: Boolean,
   chanDescriptor: ChanDescriptor,
   currentlyOpenedThread: ThreadDescriptor?,
   isInPopup: Boolean,
@@ -778,7 +790,7 @@ private fun LazyItemScope.PostCellContainer(
         .padding(cellsPadding)
     ) {
       PostCell(
-        isCatalogMode = isCatalogMode,
+        textSelectionEnabled = textSelectionEnabled,
         chanDescriptor = chanDescriptor,
         detectLinkableClicks = detectLinkableClicks,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,

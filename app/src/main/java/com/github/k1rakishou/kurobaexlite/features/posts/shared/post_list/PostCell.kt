@@ -82,7 +82,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 
 @Composable
 fun PostCell(
-  isCatalogMode: Boolean,
+  textSelectionEnabled: Boolean,
   chanDescriptor: ChanDescriptor,
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
@@ -133,7 +133,7 @@ fun PostCell(
 
       PostCellComment(
         postCellData = postCellData,
-        isCatalogMode = isCatalogMode,
+        textSelectionEnabled = textSelectionEnabled,
         detectLinkableClicks = detectLinkableClicks,
         onCopySelectedText = onCopySelectedText,
         onQuoteSelectedText = onQuoteSelectedText,
@@ -518,7 +518,7 @@ private fun PostCellIcon(postCellIcon: ParsedPostDataCache.PostCellIcon) {
 @Composable
 private fun PostCellComment(
   postCellData: PostCellData,
-  isCatalogMode: Boolean,
+  textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
   onCopySelectedText: (String) -> Unit,
@@ -534,7 +534,7 @@ private fun PostCellComment(
 
   if (postComment.isNotNullNorBlank()) {
     PostCellCommentSelectionWrapper(
-      isCatalogMode = isCatalogMode,
+      textSelectionEnabled = textSelectionEnabled,
       onCopySelectedText = onCopySelectedText,
       onQuoteSelectedText = { withText, selectedText -> onQuoteSelectedText(withText, selectedText, postCellData) },
       onTextSelectionModeChanged = { inSelectionMode ->
@@ -570,17 +570,18 @@ private fun PostCellComment(
 
 @Composable
 private fun PostCellCommentSelectionWrapper(
-  isCatalogMode: Boolean,
+  textSelectionEnabled: Boolean,
   onCopySelectedText: (String) -> Unit,
   onQuoteSelectedText: (Boolean, String) -> Unit,
   onTextSelectionModeChanged: (inSelectionMode: Boolean) -> Unit,
   content: @Composable (textModifier: Modifier, onTextLayout: (TextLayoutResult) -> Unit) -> Unit
 ) {
-  if (isCatalogMode) {
+  if (!textSelectionEnabled) {
     content(
       textModifier = Modifier,
       onTextLayout = {}
     )
+
     return
   }
 

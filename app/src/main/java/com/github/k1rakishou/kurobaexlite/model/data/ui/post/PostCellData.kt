@@ -9,11 +9,13 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 @Immutable
 data class PostCellData(
   val originalPostOrder: Int,
+  val chanDescriptor: ChanDescriptor,
   val postDescriptor: PostDescriptor,
   val postSubjectUnparsed: String,
   val postCommentUnparsed: String,
@@ -69,6 +71,7 @@ data class PostCellData(
 
   companion object {
     fun fromPostData(
+      chanDescriptor: ChanDescriptor,
       postData: IPostData,
       parsedPostData: ParsedPostData?
     ): PostCellData {
@@ -87,6 +90,7 @@ data class PostCellData(
 
       return PostCellData(
         originalPostOrder = postData.originalPostOrder,
+        chanDescriptor = chanDescriptor,
         postDescriptor = postData.postDescriptor,
         postSubjectUnparsed = postData.postSubjectUnparsed,
         postCommentUnparsed = postData.postCommentUnparsed,

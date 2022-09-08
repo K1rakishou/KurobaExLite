@@ -233,39 +233,6 @@ abstract class PostScreenViewModel(
     postScreenState.onEndLoading(catalogDescriptor)
   }
 
-  fun rememberPosition(
-    chanDescriptor: ChanDescriptor,
-    orientation: Int,
-    index: Int,
-    offset: Int
-  ) {
-    val contentLoaded = postScreenState.contentLoaded.value
-    if (!contentLoaded) {
-      return
-    }
-
-    val rememberedPosition = lazyColumnRememberedPositionCache.getOrPut(
-      key = chanDescriptor,
-      defaultValue = {
-        LazyColumnRememberedPosition(
-          index = index,
-          offset = offset,
-          orientation = orientation
-        )
-      }
-    )
-
-    rememberedPosition.index = index
-    rememberedPosition.offset = offset
-    rememberedPosition.orientation = orientation
-
-    lazyColumnRememberedPositionCache[chanDescriptor] = rememberedPosition
-  }
-
-  fun resetPosition(chanDescriptor: ChanDescriptor) {
-    lazyColumnRememberedPositionCache.remove(chanDescriptor)
-  }
-
   fun reparsePost(postCellData: PostCellData, parsedPostDataContext: ParsedPostDataContext) {
     reparsePosts(listOf(Pair(postCellData, parsedPostDataContext)))
   }
@@ -427,7 +394,11 @@ abstract class PostScreenViewModel(
           null
         }
 
-        resultList += PostCellData.fromPostData(postData, parsedPostData)
+        resultList += PostCellData.fromPostData(
+          chanDescriptor = chanDescriptor,
+          postData = postData,
+          parsedPostData = parsedPostData
+        )
       }
 
       return@withContext resultList
@@ -533,6 +504,7 @@ abstract class PostScreenViewModel(
 
                   mutex.withLock {
                     resultMap[postData.postDescriptor] = PostCellData.fromPostData(
+                      chanDescriptor = chanDescriptor,
                       postData = postData,
                       parsedPostData = parsedPostData
                     )
@@ -596,6 +568,7 @@ abstract class PostScreenViewModel(
 
                       mutex.withLock {
                         resultMap[postData.postDescriptor] = PostCellData.fromPostData(
+                          chanDescriptor = chanDescriptor,
                           postData = postData,
                           parsedPostData = parsedPostData
                         )
@@ -642,6 +615,124 @@ abstract class PostScreenViewModel(
         showPostsLoadingSnackbarJob.cancel()
       }
     }
+  }
+
+  private suspend fun calculatePostData(
+    chanDescriptor: ChanDescriptor,
+    postData: IPostData,
+    chanTheme: ChanTheme,
+    parsedPostDataContext: ParsedPostDataContext,
+    forced: Boolean = false
+  ): ParsedPostData {
+    return parsedPostDataCache.getOrCalculateParsedPostData(
+      chanDescriptor = chanDescriptor,
+      postData = postData,
+      parsedPostDataContext = parsedPostDataContext,
+      chanTheme = chanTheme,
+      forced = forced
+    )
+  }
+
+  fun scrollTop() {
+    viewModelScope.launch {
+      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollTop)
+    }
+  }
+
+  fun scrollBottom() {
+    viewModelScope.launch {
+      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollBottom)
+    }
+  }
+
+  fun scrollToPost(postDescriptor: PostDescriptor) {
+    viewModelScope.launch {
+      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollToItem(postDescriptor))
+    }
+  }
+
+  fun updateSearchQuery(searchQuery: String?) {
+    postScreenState.onSearchQueryUpdated(searchQuery)
+  }
+
+  fun onPostBind(postCellData: PostCellData) {
+    val descriptor = chanDescriptor
+      ?: return
+
+    val catalogMode = descriptor is CatalogDescriptor
+
+    postBindProcessor.onPostBind(
+      isCatalogMode = catalogMode,
+      postsParsedOnce = postsFullyParsedOnceFlow.value,
+      postDescriptor = postCellData.postDescriptor
+    )
+  }
+
+  fun onPostUnbind(postCellData: PostCellData) {
+    val descriptor = chanDescriptor
+      ?: return
+
+    val catalogMode = descriptor is CatalogDescriptor
+
+    postBindProcessor.onPostUnbind(
+      isCatalogMode = catalogMode,
+      postDescriptor = postCellData.postDescriptor
+    )
+  }
+
+  open fun resetTimer() {
+
+  }
+
+  suspend fun restoreScrollPosition() {
+    val currentChanDescriptor = chanDescriptor
+      ?: return
+
+    restoreScrollPosition(
+      chanDescriptor = currentChanDescriptor,
+      scrollToPost = null
+    )
+  }
+
+  fun rememberPosition(
+    chanDescriptor: ChanDescriptor,
+    orientation: Int,
+    index: Int,
+    offset: Int
+  ) {
+    val contentLoaded = postScreenState.contentLoaded.value
+    if (!contentLoaded) {
+      return
+    }
+
+    val rememberedPosition = lazyColumnRememberedPositionCache.getOrPut(
+      key = chanDescriptor,
+      defaultValue = {
+        LazyColumnRememberedPosition(
+          index = index,
+          offset = offset,
+          orientation = orientation
+        )
+      }
+    )
+
+    rememberedPosition.index = index
+    rememberedPosition.offset = offset
+    rememberedPosition.orientation = orientation
+
+    lazyColumnRememberedPositionCache[chanDescriptor] = rememberedPosition
+  }
+
+  fun resetPosition(chanDescriptor: ChanDescriptor) {
+    lazyColumnRememberedPositionCache.remove(chanDescriptor)
+  }
+
+  open fun onPostScrollChanged(
+    firstVisiblePostData: PostCellData,
+    lastVisiblePostData: PostCellData,
+    postListTouchingBottom: Boolean
+  ) {
+
   }
 
   private suspend fun restoreScrollPosition(
@@ -716,91 +807,6 @@ abstract class PostScreenViewModel(
     }
 
     logcat(tag = TAG) { "restoreScrollPosition($chanDescriptor, $scrollToPost) Nothing to restore" }
-  }
-
-  private suspend fun calculatePostData(
-    chanDescriptor: ChanDescriptor,
-    postData: IPostData,
-    chanTheme: ChanTheme,
-    parsedPostDataContext: ParsedPostDataContext,
-    forced: Boolean = false
-  ): ParsedPostData {
-    return parsedPostDataCache.getOrCalculateParsedPostData(
-      chanDescriptor = chanDescriptor,
-      postData = postData,
-      parsedPostDataContext = parsedPostDataContext,
-      chanTheme = chanTheme,
-      forced = forced
-    )
-  }
-
-  fun scrollTop() {
-    viewModelScope.launch {
-      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollTop)
-    }
-  }
-
-  fun scrollBottom() {
-    viewModelScope.launch {
-      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollBottom)
-    }
-  }
-
-  fun scrollToPost(postDescriptor: PostDescriptor) {
-    viewModelScope.launch {
-      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollToItem(postDescriptor))
-    }
-  }
-
-  fun updateSearchQuery(searchQuery: String?) {
-    postScreenState.onSearchQueryUpdated(searchQuery)
-  }
-
-  suspend fun restoreScrollPosition() {
-    val currentChanDescriptor = chanDescriptor
-      ?: return
-
-    restoreScrollPosition(
-      chanDescriptor = currentChanDescriptor,
-      scrollToPost = null
-    )
-  }
-
-  fun onPostBind(postCellData: PostCellData) {
-    val descriptor = chanDescriptor
-      ?: return
-
-    val catalogMode = descriptor is CatalogDescriptor
-
-    postBindProcessor.onPostBind(
-      isCatalogMode = catalogMode,
-      postsParsedOnce = postsFullyParsedOnceFlow.value,
-      postDescriptor = postCellData.postDescriptor
-    )
-  }
-
-  fun onPostUnbind(postCellData: PostCellData) {
-    val descriptor = chanDescriptor
-      ?: return
-
-    val catalogMode = descriptor is CatalogDescriptor
-
-    postBindProcessor.onPostUnbind(
-      isCatalogMode = catalogMode,
-      postDescriptor = postCellData.postDescriptor
-    )
-  }
-
-  open fun resetTimer() {
-
-  }
-
-  open fun onPostScrollChanged(
-    firstVisiblePostData: PostCellData,
-    lastVisiblePostData: PostCellData,
-    postListTouchingBottom: Boolean
-  ) {
-
   }
 
   data class ParsePostsOptions(

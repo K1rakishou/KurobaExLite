@@ -95,6 +95,7 @@ class CatalogGlobalSearch(
         }
 
         return@map PostCellData.fromPostData(
+          chanDescriptor = catalogDescriptor,
           postData = postData,
           parsedPostData = updatedParsedPostData
         )

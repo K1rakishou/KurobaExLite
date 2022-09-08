@@ -91,6 +91,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
@@ -227,6 +228,12 @@ class PopupPostsScreen(
   }
 
   @Composable
+  override fun DefaultFloatingScreenBackPressHandler() {
+    // Disable default back press handler, we have out custom.
+  }
+
+  @OptIn(ExperimentalMaterialApi::class)
+  @Composable
   override fun FloatingContent() {
     val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
@@ -244,6 +251,8 @@ class PopupPostsScreen(
       derivedStateOf {
         PostListOptions(
           isCatalogMode = postViewMode.isCatalogMode,
+          showThreadStatusCell = false,
+          textSelectionEnabled = true,
           isInPopup = true,
           openedFromScreenKey = screenKey,
           pullToRefreshEnabled = false,
@@ -259,6 +268,15 @@ class PopupPostsScreen(
 
     val density = LocalDensity.current
     val buttonsHeightPx = with(density) { remember(key1 = buttonsHeight) { buttonsHeight.toPx().toInt() } }
+
+    HandleBackPresses {
+      if (popupPostsScreenViewModel.popReplyChain(screenKey)) {
+        swipeableState.snapTo(Anchors.Visible)
+        return@HandleBackPresses true
+      }
+
+      return@HandleBackPresses stopPresenting()
+    }
 
     if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
       PopupPostsScreenContentLayout(
@@ -282,7 +300,7 @@ class PopupPostsScreen(
             postImageDataResult.getOrThrow()
           }
 
-          val collectedImages = popupPostsScreenViewModel.collectCurrentImages()
+          val collectedImages = popupPostsScreenViewModel.collectCurrentImages(screenKey, chanDescriptor)
           if (collectedImages.isEmpty()) {
             return@PopupPostsScreenContentLayout
           }
@@ -311,23 +329,13 @@ class PopupPostsScreen(
 
     LaunchedEffect(
       key1 = postViewMode,
-      block = { popupPostsScreenViewModel.loadRepliesForModeInitial(postViewMode) }
+      block = { popupPostsScreenViewModel.loadRepliesForModeInitial(screenKey, postViewMode) }
     )
-  }
-
-  @OptIn(ExperimentalMaterialApi::class)
-  override suspend fun onFloatingControllerBackPressed(): Boolean {
-    if (popupPostsScreenViewModel.popReplyChain()) {
-      swipeableState.snapTo(Anchors.Visible)
-      return true
-    }
-
-    return super.onFloatingControllerBackPressed()
   }
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
-      popupPostsScreenViewModel.clearPostReplyChainStack()
+      popupPostsScreenViewModel.clearPostReplyChainStack(screenKey)
     }
 
     super.onDisposed(screenDisposeEvent)
@@ -341,6 +349,8 @@ class PopupPostsScreen(
 
   @Immutable
   sealed class PostViewMode : Parcelable {
+    abstract val chanDescriptor: ChanDescriptor
+
     val isCatalogMode: Boolean
       get() {
         return when (this) {
@@ -352,20 +362,24 @@ class PopupPostsScreen(
 
     @Parcelize
     data class ReplyTo(
+      override val chanDescriptor: ChanDescriptor,
       val postDescriptor: PostDescriptor
     ) : PostViewMode()
 
     @Parcelize
     data class RepliesFrom(
-      val postDescriptor: PostDescriptor
+      override val chanDescriptor: ChanDescriptor,
+      val postDescriptor: PostDescriptor,
+      val includeThisPost: Boolean = false
     ) : PostViewMode()
 
     @Parcelize
     data class PostList(
-      val chanDescriptor: ChanDescriptor,
+      override val chanDescriptor: ChanDescriptor,
       val postNoWithSubNoList: List<Pair<Long, Long>>
     ) : PostViewMode() {
 
+      @IgnoredOnParcel
       val asPostDescriptorList by lazy {
         return@lazy postNoWithSubNoList.map { (postNo, postSubNo) ->
           when (chanDescriptor) {
@@ -531,7 +545,10 @@ private fun PopupPostsScreenContent(
           },
           showRepliesForPostFunc = { postViewMode ->
             coroutineScope.launch {
-              popupPostsScreenViewModel.loadRepliesForMode(postViewMode)
+              popupPostsScreenViewModel.loadRepliesForMode(
+                screenKey = screenKey,
+                postViewMode = postViewMode
+              )
             }
           }
         )
@@ -543,13 +560,19 @@ private fun PopupPostsScreenContent(
           linkable = linkable
         )
       },
-      onPostRepliesClicked = { postDescriptor ->
+      onPostRepliesClicked = { chanDescriptor, postDescriptor ->
         if (postViewMode is PopupPostsScreen.PostViewMode.PostList) {
           return@PostListContent
         }
 
         coroutineScope.launch {
-          popupPostsScreenViewModel.loadRepliesForMode(PopupPostsScreen.PostViewMode.RepliesFrom(postDescriptor))
+          popupPostsScreenViewModel.loadRepliesForMode(
+            screenKey = screenKey,
+            postViewMode = PopupPostsScreen.PostViewMode.RepliesFrom(
+              chanDescriptor = chanDescriptor,
+              postDescriptor = postDescriptor
+            )
+          )
         }
       },
       onCopySelectedText = { selectedText ->

@@ -14,13 +14,17 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -49,6 +53,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.core.graphics.withTranslation
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
@@ -70,6 +75,11 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerTool
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayFullImage
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayUnsupportedMedia
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayVideo
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -80,17 +90,23 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.model.data.originalFileNameWithExtension
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
-import com.github.k1rakishou.kurobaexlite.ui.helpers.Insets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaBottomSheet
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaBottomSheetState
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -102,6 +118,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberKurobaBottomSheetState
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.absoluteValue
@@ -111,6 +128,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import logcat.LogPriority
 import logcat.logcat
@@ -123,6 +141,7 @@ class MediaViewerScreen(
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
+  private val popupPostsScreenViewModel: PopupPostsScreenViewModel by componentActivity.viewModel()
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -133,6 +152,7 @@ class MediaViewerScreen(
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       mediaViewerScreenViewModel.onScreenDisposed()
+      popupPostsScreenViewModel.clearPostReplyChainStack(screenKey)
     }
 
     super.onDisposed(screenDisposeEvent)
@@ -147,6 +167,11 @@ class MediaViewerScreen(
     }
   }
 
+  @Composable
+  override fun DefaultFloatingScreenBackPressHandler() {
+    // Disable default back press handler, we have out custom.
+  }
+
   @OptIn(ExperimentalComposeUiApi::class)
   @Composable
   override fun CardContent() {
@@ -159,9 +184,10 @@ class MediaViewerScreen(
     val context = LocalContext.current
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
     val runtimePermissionsHelper = LocalRuntimePermissionsHelper.current
-    val coroutineScope = rememberCoroutineScope()
-
     val mediaViewerScreenState = mediaViewerScreenViewModel.mediaViewerScreenState
+
+    val coroutineScope = rememberCoroutineScope()
+    val kurobaBottomSheetState = rememberKurobaBottomSheetState()
 
     LaunchedEffect(
       key1 = Unit,
@@ -186,11 +212,21 @@ class MediaViewerScreen(
       }
     )
 
-    CardContentInternal(
-      mediaViewerParams = mediaViewerParams,
+    HandleBackPresses {
+      // We need MonotonicFrameClock to execute an animation
+      if (withContext(coroutineScope.coroutineContext) { kurobaBottomSheetState.onBackPressed() }) {
+        return@HandleBackPresses true
+      }
+
+      return@HandleBackPresses stopPresenting()
+    }
+
+    MediaViewerContent(
       screenKey = screenKey,
       openedFromScreen = openedFromScreen,
+      mediaViewerParams = mediaViewerParams,
       mediaViewerScreenState = mediaViewerScreenState,
+      kurobaBottomSheetState = kurobaBottomSheetState,
       onDownloadButtonClicked = { postImage ->
         onDownloadButtonClicked(
           context = context,
@@ -425,18 +461,20 @@ class MediaViewerScreen(
 
 
 @Composable
-private fun CardContentInternal(
-  mediaViewerParams: MediaViewerParams,
-  mediaViewerScreenState: MediaViewerScreenState,
+private fun MediaViewerContent(
   screenKey: ScreenKey,
   openedFromScreen: ScreenKey,
+  mediaViewerParams: MediaViewerParams,
+  mediaViewerScreenState: MediaViewerScreenState,
+  kurobaBottomSheetState: KurobaBottomSheetState,
   onDownloadButtonClicked: (IPostImage) -> Unit,
   onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
   loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
   onBackPressed: () -> Unit,
   stopPresenting: () -> Unit
 ) {
-  val insets = LocalWindowInsets.current
+  val chanTheme = LocalChanTheme.current
+  val bgColor = Color.Black
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
   val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember()
@@ -451,7 +489,7 @@ private fun CardContentInternal(
   var availableSizeMut by remember(key1 = Unit) { mutableStateOf<IntSize>(IntSize.Zero) }
   val availableSize = availableSizeMut
 
-  val bgColor = Color.Black
+  val coroutineScope = rememberCoroutineScope()
 
   Box(
     modifier = Modifier
@@ -473,37 +511,57 @@ private fun CardContentInternal(
         }
     ) {
       if (availableSize.width > 0 && availableSize.height > 0) {
-        ContentAfterTransition(
-          availableSize = availableSize,
-          toolbarHeight = toolbarHeight,
-          screenKey = screenKey,
-          openedFromScreen = openedFromScreen,
-          insets = insets,
-          onDownloadButtonClicked = onDownloadButtonClicked,
-          onBackPressed = onBackPressed,
-          onInstallMpvLibsFromGithubButtonClicked = onInstallMpvLibsFromGithubButtonClicked,
-          loadFullImage = loadFullImage,
-          stopPresenting = stopPresenting,
-          mediaViewerScreenState = mediaViewerScreenState,
-          onPreviewLoadingFinished = { postImage ->
-            if (previewLoadingFinished) {
-              return@ContentAfterTransition
-            }
+        KurobaBottomSheet(
+          modifier = Modifier.fillMaxSize(),
+          sheetPeekHeight = 0.dp,
+          kurobaBottomSheetState = kurobaBottomSheetState,
+          sheetBackgroundColor = chanTheme.backColor,
+          sheetContent = {
+            MediaViewerBottomSheet(
+              chanDescriptor = mediaViewerParams.chanDescriptor,
+              screenKey = screenKey,
+              kurobaBottomSheetState = kurobaBottomSheetState,
+              mediaViewerScreenState = mediaViewerScreenState
+            )
+          },
+          content = {
+            MediaViewerContentAfterTransition(
+              availableSize = availableSize,
+              toolbarHeight = toolbarHeight,
+              screenKey = screenKey,
+              openedFromScreen = openedFromScreen,
+              onDownloadButtonClicked = onDownloadButtonClicked,
+              onShowPostWithCommentsClicked = {
+                if (kurobaBottomSheetState.isCollapsedOrCollapsing) {
+                  coroutineScope.launch { kurobaBottomSheetState.open() }
+                }
+              },
+              onBackPressed = onBackPressed,
+              onInstallMpvLibsFromGithubButtonClicked = onInstallMpvLibsFromGithubButtonClicked,
+              loadFullImage = loadFullImage,
+              stopPresenting = stopPresenting,
+              mediaViewerScreenState = mediaViewerScreenState,
+              onPreviewLoadingFinished = { postImage ->
+                if (previewLoadingFinished) {
+                  return@MediaViewerContentAfterTransition
+                }
 
-            val bounds = clickedThumbnailBounds
-            val previewLoadingFinishedForOutThumbnail = bounds == null ||
-              postImage.fullImageAsString == bounds.postImage.fullImageAsString
+                val bounds = clickedThumbnailBounds
+                val previewLoadingFinishedForOutThumbnail = bounds == null ||
+                  postImage.fullImageAsString == bounds.postImage.fullImageAsString
 
-            logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
-              "onPreviewLoadingFinished() " +
-                "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
-                "got '${postImage.fullImageAsString}', " +
-                "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
-            }
+                logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
+                  "onPreviewLoadingFinished() " +
+                    "expected '${clickedThumbnailBounds?.postImage?.fullImageAsString}', " +
+                    "got '${postImage.fullImageAsString}', " +
+                    "previewLoadingFinishedForOutThumbnail=${previewLoadingFinishedForOutThumbnail}"
+                }
 
-            if (previewLoadingFinishedForOutThumbnail) {
-              previewLoadingFinished = true
-            }
+                if (previewLoadingFinishedForOutThumbnail) {
+                  previewLoadingFinished = true
+                }
+              }
+            )
           }
         )
       }
@@ -537,23 +595,133 @@ private fun CardContentInternal(
   }
 }
 
+@Composable
+private fun MediaViewerBottomSheet(
+  chanDescriptor: ChanDescriptor,
+  screenKey: ScreenKey,
+  kurobaBottomSheetState: KurobaBottomSheetState,
+  mediaViewerScreenState: MediaViewerScreenState,
+) {
+  val insets = LocalWindowInsets.current
+
+  val popupPostsScreenViewModel: PopupPostsScreenViewModel = koinRememberViewModel()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+  val androidHelpers: AndroidHelpers = koinRemember()
+
+  val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
+  val orientation = orientationMut
+  if (orientation == null) {
+    return
+  }
+
+  val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
+  val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
+  val currentPageIndex by mediaViewerScreenState.currentPageIndex
+
+  var postsLoadedOnce by remember(key1 = currentPageIndex) { mutableStateOf(false) }
+  val postImage = currentPageIndex?.let { pageIndex -> mediaViewerScreenState.mediaList.getOrNull(pageIndex)?.postImage }
+
+  val postListOptions by remember {
+    derivedStateOf {
+      val paddingValues = PaddingValues(
+        top = if (insets.top > 0.dp && kurobaBottomSheetState.isExpandedOrExpanding) insets.top else 0.dp,
+        bottom = insets.bottom
+      )
+
+      PostListOptions(
+        isCatalogMode = chanDescriptor is CatalogDescriptor,
+        showThreadStatusCell = false,
+        textSelectionEnabled = false,
+        isInPopup = true,
+        openedFromScreenKey = screenKey,
+        pullToRefreshEnabled = false,
+        contentPadding = paddingValues,
+        mainUiLayoutMode = MainUiLayoutMode.Phone,
+        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+        detectLinkableClicks = true,
+        orientation = orientation
+      )
+    }
+  }
+
+  Column(modifier = Modifier.fillMaxSize()) {
+    PostListContent(
+      postListOptions = postListOptions,
+      postsScreenViewModelProvider = { popupPostsScreenViewModel },
+      onPostCellClicked = { postCellData -> /*no-op*/ },
+      onPostCellLongClicked = { postCellData ->
+        // no-op
+      },
+      onLinkableClicked = { postCellData, linkable ->
+        // no-op
+      },
+      onLinkableLongClicked = { postCellData, linkable ->
+        // no-op
+      },
+      onPostRepliesClicked = { chanDescriptor, postDescriptor ->
+        // no-op
+      },
+      onCopySelectedText = { selectedText ->
+        androidHelpers.copyToClipboard("Selected text", selectedText)
+      },
+      onQuoteSelectedText = { withText, selectedText, postCellData ->
+        // no-op
+      },
+      onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
+        // no-op
+      },
+      onGoToPostClicked = { postCellData ->
+        // no-op
+      },
+      onPostListScrolled = { delta -> /*no-op*/ },
+      onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
+      onCurrentlyTouchingPostList = { touching -> /*no-op*/ },
+      onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
+    )
+  }
+
+  LaunchedEffect(
+    key1 = postImage,
+    block = {
+      if (postImage == null || postsLoadedOnce) {
+        return@LaunchedEffect
+      }
+
+      postsLoadedOnce = true
+
+      popupPostsScreenViewModel.clearPostReplyChainStack(screenKey)
+      popupPostsScreenViewModel.loadRepliesForModeInitial(
+        screenKey = screenKey,
+        postViewMode = PopupPostsScreen.PostViewMode.RepliesFrom(
+          chanDescriptor = chanDescriptor,
+          postDescriptor = postImage.ownerPostDescriptor,
+          includeThisPost = true
+        )
+      )
+    }
+  )
+}
+
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-private fun BoxScope.ContentAfterTransition(
+private fun MediaViewerContentAfterTransition(
   mediaViewerScreenState: MediaViewerScreenState,
   screenKey: ScreenKey,
   availableSize: IntSize,
   toolbarHeight: Dp,
   openedFromScreen: ScreenKey,
-  insets: Insets,
   onPreviewLoadingFinished: (IPostImage) -> Unit,
   onDownloadButtonClicked: (IPostImage) -> Unit,
+  onShowPostWithCommentsClicked: () -> Unit,
   onBackPressed: () -> Unit,
   onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
   loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
   stopPresenting: () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+  val insets = LocalWindowInsets.current
+
   val coroutineScope = rememberCoroutineScope()
   val mediaViewerScreenViewModel: MediaViewerScreenViewModel = koinRememberViewModel()
 
@@ -564,9 +732,7 @@ private fun BoxScope.ContentAfterTransition(
   val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
   val images = mediaViewerScreenState.mediaList
 
-  val bgColor = remember(chanTheme.backColor) {
-    chanTheme.backColor.copy(alpha = 0.5f)
-  }
+  val bgColor = remember(chanTheme.backColor) { chanTheme.backColor.copy(alpha = 0.5f) }
 
   MediaViewerPagerContainer(
     availableSize = availableSize,
@@ -590,96 +756,122 @@ private fun BoxScope.ContentAfterTransition(
     animationSpec = tween(durationMillis = 300)
   )
 
-  Box(
-    modifier = Modifier.Companion
-      .align(Alignment.TopCenter)
-      .alpha(mediaViewerUiAlpha)
-      .passClicksThrough(passClicks = !mediaViewerUiVisible)
-      .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
-      .background(bgColor)
-  ) {
-    MediaViewerToolbar(
-      toolbarHeight = toolbarHeight,
-      backgroundColor = bgColor,
-      screenKey = screenKey,
-      mediaViewerScreenState = mediaViewerScreenState,
-      pagerState = pagerStateHolder,
-      onDownloadMediaClicked = { postImage -> onDownloadButtonClicked(postImage) },
-      onBackPressed = { coroutineScope.launch { onBackPressed() } }
-    )
-  }
-
-  val currentPageIndex by remember { derivedStateOf { pagerStateHolder.currentPage } }
-  val currentLoadedMedia = remember(key1 = currentPageIndex) {
-    mediaViewerScreenState.currentlyLoadedMediaMap[currentPageIndex]
-  }
-
-  val targetAlpha = if (
-    mediaViewerScreenViewModel.mpvInitialized &&
-    currentLoadedMedia is MediaState.Video &&
-    mediaViewerUiVisible
-  ) {
-    1f
-  } else {
-    0f
-  }
-
-  val alphaAnimated by animateFloatAsState(
-    targetValue = targetAlpha,
-    animationSpec = tween(durationMillis = 300)
-  )
-
-  Column(
-    modifier = Modifier
-      .fillMaxWidth()
-      .align(Alignment.BottomCenter)
-      .passClicksThrough(passClicks = !mediaViewerUiVisible)
-      .graphicsLayer { this.alpha = alphaAnimated }
-      .background(bgColor)
-  ) {
-    if (currentLoadedMedia is MediaState.Video) {
-      MediaViewerScreenVideoControls(currentLoadedMedia)
+  Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+      modifier = Modifier.Companion
+        .align(Alignment.TopCenter)
+        .alpha(mediaViewerUiAlpha)
+        .passClicksThrough(passClicks = !mediaViewerUiVisible)
+        .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
+        .background(bgColor)
+    ) {
+      MediaViewerToolbar(
+        toolbarHeight = toolbarHeight,
+        backgroundColor = bgColor,
+        screenKey = screenKey,
+        mediaViewerScreenState = mediaViewerScreenState,
+        pagerState = pagerStateHolder,
+        onDownloadMediaClicked = { postImage -> onDownloadButtonClicked(postImage) },
+        onBackPressed = { coroutineScope.launch { onBackPressed() } }
+      )
     }
 
-    Spacer(modifier = Modifier.height(insets.bottom))
-  }
+    val currentPageIndex by remember { derivedStateOf { pagerStateHolder.currentPage } }
+    val currentLoadedMedia = remember(key1 = currentPageIndex) {
+      mediaViewerScreenState.currentlyLoadedMediaMap[currentPageIndex]
+    }
 
-  if (images.isNotNullNorEmpty()) {
-    val toolbarCalculatedHeight by toolbarTotalHeight
-
-    val actualToolbarCalculatedHeight = remember(
-      key1 = toolbarCalculatedHeight,
-      key2 = globalMediaViewerControlsVisible,
+    val targetAlpha = if (
+      mediaViewerScreenViewModel.mpvInitialized &&
+      currentLoadedMedia is MediaState.Video &&
+      mediaViewerUiVisible
     ) {
-      if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
-        return@remember null
+      1f
+    } else {
+      0f
+    }
+
+    val alphaAnimated by animateFloatAsState(
+      targetValue = targetAlpha,
+      animationSpec = tween(durationMillis = 300)
+    )
+
+    Column(
+      modifier = Modifier.align(Alignment.BottomCenter)
+    ) {
+      if (currentLoadedMedia?.supportedMedia == true) {
+        Row {
+          Spacer(modifier = Modifier.weight(1f))
+
+          KurobaComposeClickableIcon(
+            modifier = Modifier
+              .graphicsLayer { alpha = mediaViewerUiAlpha }
+              .size(42.dp)
+              .background(bgColor, CircleShape)
+              .padding(8.dp),
+            drawableId = R.drawable.ic_baseline_comment_24,
+            enabled = mediaViewerUiVisible,
+            onClick = { onShowPostWithCommentsClicked() }
+          )
+
+          Spacer(modifier = Modifier.width(24.dp))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
       }
 
-      return@remember toolbarCalculatedHeight
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .passClicksThrough(passClicks = !mediaViewerUiVisible)
+          .graphicsLayer { this.alpha = alphaAnimated }
+          .background(bgColor)
+      ) {
+        if (currentLoadedMedia is MediaState.Video) {
+          MediaViewerScreenVideoControls(currentLoadedMedia)
+        }
+
+        Spacer(modifier = Modifier.height(insets.bottom))
+      }
     }
 
-    if (toolbarCalculatedHeight != null) {
-      Box(
-        modifier = Modifier
-          .align(Alignment.TopCenter)
-          .alpha(mediaViewerUiAlpha)
-          .passClicksThrough(passClicks = !mediaViewerUiVisible)
+    if (images.isNotNullNorEmpty()) {
+      val toolbarCalculatedHeight by toolbarTotalHeight
+
+      val actualToolbarCalculatedHeight = remember(
+        key1 = toolbarCalculatedHeight,
+        key2 = globalMediaViewerControlsVisible,
       ) {
-        MediaViewerPreviewStrip(
-          pagerState = pagerStateHolder,
-          images = images,
-          mediaViewerScreenState = mediaViewerScreenState,
-          bgColor = bgColor,
-          toolbarHeightPx = actualToolbarCalculatedHeight,
-          onPreviewClicked = { postImage ->
-            coroutineScope.launch {
-              images
-                .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
-                .takeIf { index -> index >= 0 }
-                ?.let { scrollIndex -> pagerStateHolder.scrollToPage(scrollIndex) }
+        if (toolbarCalculatedHeight == null || !globalMediaViewerControlsVisible) {
+          return@remember null
+        }
+
+        return@remember toolbarCalculatedHeight
+      }
+
+      if (toolbarCalculatedHeight != null) {
+        Box(
+          modifier = Modifier
+            .align(Alignment.TopCenter)
+            .alpha(mediaViewerUiAlpha)
+            .passClicksThrough(passClicks = !mediaViewerUiVisible)
+        ) {
+          MediaViewerPreviewStrip(
+            pagerState = pagerStateHolder,
+            images = images,
+            mediaViewerScreenState = mediaViewerScreenState,
+            bgColor = bgColor,
+            toolbarHeightPx = actualToolbarCalculatedHeight,
+            onPreviewClicked = { postImage ->
+              coroutineScope.launch {
+                images
+                  .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
+                  .takeIf { index -> index >= 0 }
+                  ?.let { scrollIndex -> pagerStateHolder.scrollToPage(scrollIndex) }
+              }
             }
-          }
-        )
+          )
+        }
       }
     }
   }

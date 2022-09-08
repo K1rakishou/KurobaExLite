@@ -9,6 +9,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 @Immutable
 data class PostListOptions(
   val isCatalogMode: Boolean,
+  val showThreadStatusCell: Boolean,
+  val textSelectionEnabled: Boolean,
   val isInPopup: Boolean,
   val openedFromScreenKey: ScreenKey,
   val pullToRefreshEnabled: Boolean,

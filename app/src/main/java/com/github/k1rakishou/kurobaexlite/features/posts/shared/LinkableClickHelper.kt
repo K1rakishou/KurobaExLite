@@ -116,7 +116,11 @@ class LinkableClickHelper(
             return@launch
           }
 
-          val replyTo = PopupPostsScreen.PostViewMode.ReplyTo(linkable.postDescriptor)
+          val replyTo = PopupPostsScreen.PostViewMode.ReplyTo(
+            chanDescriptor = postCellData.chanDescriptor,
+            postDescriptor = linkable.postDescriptor
+          )
+
           showRepliesForPostFunc(replyTo)
         }
         is TextPartSpan.Linkable.Board -> {

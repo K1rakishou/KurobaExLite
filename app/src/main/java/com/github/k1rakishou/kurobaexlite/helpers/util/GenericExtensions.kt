@@ -20,9 +20,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import java.io.IOException
 import java.io.InterruptedIOException
 import java.io.Serializable
+import java.net.SocketTimeoutException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.regex.Matcher
 import javax.net.ssl.SSLException
@@ -258,6 +260,8 @@ fun Throwable.asLogIfImportantOrErrorMessage(): String {
 fun Throwable.isExceptionImportant(): Boolean {
   return when (this) {
     is CancellationException,
+    is SocketTimeoutException,
+    is TimeoutException,
     is InterruptedIOException,
     is InterruptedException,
     is FirewallDetectedException,

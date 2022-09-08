@@ -15,18 +15,16 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreenViewModel(savedStateHandle) {
   private val threadScreenState = PopupPostsScreenState()
-  private val postReplyChainStack = mutableListOf<PopupPostsScreen.PostViewMode>()
-
-  private val parsedReplyToCache = LruCache<PostDescriptor, List<PostCellData>>(32)
-  private val parsedReplyFromCache = LruCache<PostDescriptor, List<PostCellData>>(32)
-  private val parsedPostsCache = mutableMapOf<PostDescriptor, PostCellData>()
+  private val postDataStateMap = mutableMapOf<ScreenKey, PostDataState>()
 
   override val postScreenState: PostScreenState = threadScreenState
 
@@ -38,20 +36,29 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
     error("Refreshing reply popups is not supported")
   }
 
-  fun collectCurrentImages(): List<PostCellImageData> {
-    val postViewMode = postReplyChainStack.lastOrNull()
+  private fun getOrCreatePostDataStateForScreen(screenKey: ScreenKey, chanDescriptor: ChanDescriptor): PostDataState {
+    return postDataStateMap.getOrPut(
+      key = screenKey,
+      defaultValue = { PostDataState(chanDescriptor) }
+    )
+  }
+
+  fun collectCurrentImages(screenKey: ScreenKey, chanDescriptor: ChanDescriptor): List<PostCellImageData> {
+    val postDataState = getOrCreatePostDataStateForScreen(screenKey, chanDescriptor)
+
+    val postViewMode = postDataState.postReplyChainStack.lastOrNull()
       ?: return emptyList()
 
     val cachedPostCellDataList = when (postViewMode) {
       is PopupPostsScreen.PostViewMode.RepliesFrom -> {
-        parsedReplyFromCache[postViewMode.postDescriptor] ?: emptyList()
+        postDataState.parsedReplyFromCache[postViewMode.postDescriptor] ?: emptyList()
       }
       is PopupPostsScreen.PostViewMode.ReplyTo -> {
-        parsedReplyToCache[postViewMode.postDescriptor] ?: emptyList()
+        postDataState.parsedReplyToCache[postViewMode.postDescriptor] ?: emptyList()
       }
       is PopupPostsScreen.PostViewMode.PostList -> {
         postViewMode.asPostDescriptorList
-          .mapNotNull { postDescriptor -> parsedPostsCache[postDescriptor] }
+          .mapNotNull { postDescriptor -> postDataState.parsedPostsCache[postDescriptor] }
       }
     }
 
@@ -59,60 +66,104 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
   }
 
   suspend fun loadRepliesForModeInitial(
+    screenKey: ScreenKey,
     postViewMode: PopupPostsScreen.PostViewMode,
   ) {
-    if (postReplyChainStack.isEmpty()) {
-      loadRepliesForMode(postViewMode = postViewMode, isPushing = true)
+    val chanDescriptor = postViewMode.chanDescriptor
+    val postDataState = getOrCreatePostDataStateForScreen(screenKey, chanDescriptor)
+
+    if (postDataState.postReplyChainStack.isEmpty()) {
+      loadRepliesForMode(
+        screenKey = screenKey,
+        postViewMode = postViewMode,
+        isPushing = true
+      )
     } else {
-      val topReplyMode = postReplyChainStack.last()
-      loadRepliesForMode(postViewMode = topReplyMode, isPushing = true)
+      val topReplyMode = postDataState.postReplyChainStack.last()
+
+      loadRepliesForMode(
+        screenKey = screenKey,
+        postViewMode = topReplyMode,
+        isPushing = true
+      )
     }
   }
 
   suspend fun loadRepliesForMode(
+    screenKey: ScreenKey,
     postViewMode: PopupPostsScreen.PostViewMode,
     isPushing: Boolean = true
   ): Boolean {
+    val chanDescriptor = postViewMode.chanDescriptor
+    val postDataState = getOrCreatePostDataStateForScreen(screenKey, chanDescriptor)
+
     if (isPushing) {
-      val indexOfExisting = postReplyChainStack.indexOfFirst { it == postViewMode }
+      val indexOfExisting = postDataState.postReplyChainStack.indexOfFirst { it == postViewMode }
       if (indexOfExisting >= 0) {
         // Move old on top of the stack
-        postReplyChainStack.add(postReplyChainStack.removeAt(indexOfExisting))
+        postDataState.postReplyChainStack.add(postDataState.postReplyChainStack.removeAt(indexOfExisting))
       } else {
         // Add new on top of the stack
-        postReplyChainStack += postViewMode
+        postDataState.postReplyChainStack += postViewMode
       }
     }
 
     return when (postViewMode) {
-      is PopupPostsScreen.PostViewMode.ReplyTo -> loadReplyTo(postViewMode)
-      is PopupPostsScreen.PostViewMode.RepliesFrom -> loadRepliesFrom(postViewMode)
-      is PopupPostsScreen.PostViewMode.PostList -> loadPostList(postViewMode)
+      is PopupPostsScreen.PostViewMode.ReplyTo -> {
+        loadReplyTo(screenKey, chanDescriptor, postViewMode)
+      }
+      is PopupPostsScreen.PostViewMode.RepliesFrom -> {
+        loadRepliesFrom(screenKey, chanDescriptor, postViewMode)
+      }
+      is PopupPostsScreen.PostViewMode.PostList -> {
+        loadPostList(screenKey, chanDescriptor, postViewMode)
+      }
     }
   }
 
-  suspend fun popReplyChain(): Boolean {
-    postReplyChainStack.removeLastOrNull()
+  suspend fun popReplyChain(screenKey: ScreenKey): Boolean {
+    val postDataState = postDataStateMap.get(screenKey)
       ?: return false
 
-    val prevMode = postReplyChainStack.lastOrNull()
+    postDataState.postReplyChainStack.removeLastOrNull()
       ?: return false
 
-    return loadRepliesForMode(postViewMode = prevMode, isPushing = false)
+    val prevMode = postDataState.postReplyChainStack.lastOrNull()
+      ?: return false
+
+    return loadRepliesForMode(
+      screenKey = screenKey,
+      postViewMode = prevMode,
+      isPushing = false
+    )
   }
 
-  fun clearPostReplyChainStack() {
-    postScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
-    postReplyChainStack.clear()
-    parsedReplyToCache.evictAll()
-    parsedReplyFromCache.evictAll()
-    parsedPostsCache.clear()
+  fun clearPostReplyChainStack(screenKey: ScreenKey) {
+    val postDataState = postDataStateMap.remove(screenKey)
+    if (postDataStateMap.isEmpty()) {
+      postScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
+    }
+
+    if (postDataState == null) {
+      return
+    }
+
+    postDataState.postReplyChainStack.clear()
+    postDataState.parsedReplyToCache.evictAll()
+    postDataState.parsedReplyFromCache.evictAll()
+    postDataState.parsedPostsCache.clear()
   }
 
-  private suspend fun loadPostList(postViewMode: PopupPostsScreen.PostViewMode.PostList): Boolean {
+  private suspend fun loadPostList(
+    screenKey: ScreenKey,
+    chanDescriptor: ChanDescriptor,
+    postViewMode: PopupPostsScreen.PostViewMode.PostList
+  ): Boolean {
     postScreenState.updateChanDescriptor(postViewMode.chanDescriptor)
 
     val posts = parsePostDataList(
+      screenKey = screenKey,
+      chanDescriptor = chanDescriptor,
       postViewMode = postViewMode,
       postCellDataList = chanCache.getManyForDescriptor(
         chanDescriptor = postViewMode.chanDescriptor,
@@ -131,54 +182,97 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
     return true
   }
 
-  private suspend fun loadRepliesFrom(postViewMode: PopupPostsScreen.PostViewMode.RepliesFrom): Boolean {
+  private suspend fun loadRepliesFrom(
+    screenKey: ScreenKey,
+    chanDescriptor: ChanDescriptor,
+    postViewMode: PopupPostsScreen.PostViewMode.RepliesFrom
+  ): Boolean {
     val postDescriptor = postViewMode.postDescriptor
-    postScreenState.updateChanDescriptor(postDescriptor.threadDescriptor)
-    val repliesFrom = postReplyChainManager.getRepliesFrom(postDescriptor)
+    postScreenState.updateChanDescriptor(chanDescriptor)
+
+    val repliesFrom = postReplyChainManager.getRepliesFrom(postDescriptor).toMutableSet()
+    if (postViewMode.includeThisPost) {
+      repliesFrom += postDescriptor
+    }
 
     val posts = parsePostDataList(
+      screenKey = screenKey,
+      chanDescriptor = chanDescriptor,
       postViewMode = postViewMode,
-      postCellDataList = chanCache.getManyForDescriptor(postDescriptor.threadDescriptor, repliesFrom)
+      postCellDataList = chanCache.getManyForDescriptor(chanDescriptor, repliesFrom)
     )
 
     val sortedPosts = ThreadPostSorter.sortThreadPostCellData(posts)
 
-    postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(postDescriptor.threadDescriptor))
+    postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(chanDescriptor))
     postScreenState.insertOrUpdateMany(sortedPosts)
 
     return true
   }
 
-  private suspend fun loadReplyTo(postViewMode: PopupPostsScreen.PostViewMode.ReplyTo): Boolean {
+  private suspend fun loadReplyTo(
+    screenKey: ScreenKey,
+    chanDescriptor: ChanDescriptor,
+    postViewMode: PopupPostsScreen.PostViewMode.ReplyTo
+  ): Boolean {
     val postDescriptor = postViewMode.postDescriptor
-    postScreenState.updateChanDescriptor(postDescriptor.threadDescriptor)
+    postScreenState.updateChanDescriptor(chanDescriptor)
 
-    val threadPosts = chanCache.getThreadPost(postDescriptor)
-      ?.let { postData -> parsePostDataList(postViewMode, listOf(postData)) }
-      ?: emptyList()
+    val sortedPosts = when (chanDescriptor) {
+      is CatalogDescriptor -> {
+        val threadPosts = chanCache.getCatalogPost(postDescriptor)
+          ?.let { postData ->
+            return@let parsePostDataList(
+              screenKey = screenKey,
+              chanDescriptor = chanDescriptor,
+              postViewMode = postViewMode,
+              postCellDataList = listOf(postData)
+            )
+          }
+          ?: emptyList()
 
-    val sortedPosts = ThreadPostSorter.sortThreadPostCellData(threadPosts)
+        CatalogThreadSorter.sortCatalogPostCellData(threadPosts, appSettings.catalogSort.read())
+      }
+      is ThreadDescriptor -> {
+        val threadPosts = chanCache.getThreadPost(postDescriptor)
+          ?.let { postData ->
+            return@let parsePostDataList(
+              screenKey = screenKey,
+              chanDescriptor = chanDescriptor,
+              postViewMode = postViewMode,
+              postCellDataList = listOf(postData)
+            )
+          }
+          ?: emptyList()
 
-    postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(postDescriptor.threadDescriptor))
+        ThreadPostSorter.sortThreadPostCellData(threadPosts)
+      }
+    }
+
+    postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(chanDescriptor))
     postScreenState.insertOrUpdateMany(sortedPosts)
 
     return true
   }
 
   private suspend fun parsePostDataList(
+    screenKey: ScreenKey,
+    chanDescriptor: ChanDescriptor,
     postViewMode: PopupPostsScreen.PostViewMode,
     postCellDataList: List<IPostData>
   ): List<PostCellData> {
+    val postDataState = getOrCreatePostDataStateForScreen(screenKey, chanDescriptor)
+
     val fromCache = when (postViewMode) {
       is PopupPostsScreen.PostViewMode.RepliesFrom -> {
-        parsedReplyFromCache[postViewMode.postDescriptor]
+        postDataState.parsedReplyFromCache[postViewMode.postDescriptor]
       }
       is PopupPostsScreen.PostViewMode.ReplyTo -> {
-        parsedReplyToCache[postViewMode.postDescriptor]
+        postDataState.parsedReplyToCache[postViewMode.postDescriptor]
       }
       is PopupPostsScreen.PostViewMode.PostList -> {
         postViewMode.asPostDescriptorList
-          .mapNotNull { postDescriptor -> parsedPostsCache[postDescriptor] }
+          .mapNotNull { postDescriptor -> postDataState.parsedPostsCache[postDescriptor] }
           .takeIf { posts -> posts.isNotEmpty() }
       }
     }
@@ -196,8 +290,8 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
     val updatedPostDataList = withContext(Dispatchers.IO) {
       return@withContext postCellDataList.map { oldPostData ->
         val oldParsedPostDataContext = parsedPostDataCache.getParsedPostData(
-          oldPostData.postDescriptor.threadDescriptor,
-          oldPostData.postDescriptor
+          chanDescriptor = chanDescriptor,
+          postDescriptor = oldPostData.postDescriptor
         )?.parsedPostDataContext
 
         val highlightedPostDescriptor = when (postViewMode) {
@@ -208,11 +302,11 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
 
         val newParsedPostDataContext = oldParsedPostDataContext
           ?.copy(
-            isParsingCatalog = postViewMode.isCatalogMode,
+            isParsingCatalog = chanDescriptor is CatalogDescriptor,
             highlightedPostDescriptor = highlightedPostDescriptor
           )
           ?: ParsedPostDataContext(
-            isParsingCatalog = postViewMode.isCatalogMode,
+            isParsingCatalog = chanDescriptor is CatalogDescriptor,
             highlightedPostDescriptor = highlightedPostDescriptor
           )
 
@@ -223,6 +317,7 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
         )
 
         return@map PostCellData.fromPostData(
+          chanDescriptor = chanDescriptor,
           postData = oldPostData,
           parsedPostData = parsedPostData
         )
@@ -231,19 +326,28 @@ class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreen
 
     when (postViewMode) {
       is PopupPostsScreen.PostViewMode.RepliesFrom -> {
-        parsedReplyFromCache.put(postViewMode.postDescriptor, updatedPostDataList)
+        postDataState.parsedReplyFromCache.put(postViewMode.postDescriptor, updatedPostDataList)
       }
       is PopupPostsScreen.PostViewMode.ReplyTo -> {
-        parsedReplyToCache.put(postViewMode.postDescriptor, updatedPostDataList)
+        postDataState.parsedReplyToCache.put(postViewMode.postDescriptor, updatedPostDataList)
       }
       is PopupPostsScreen.PostViewMode.PostList -> {
         updatedPostDataList.forEach { postCellData ->
-          parsedPostsCache[postCellData.postDescriptor] = postCellData
+          postDataState.parsedPostsCache[postCellData.postDescriptor] = postCellData
         }
       }
     }
 
     return updatedPostDataList
+  }
+
+  class PostDataState(
+    val chanDescriptor: ChanDescriptor
+  ) {
+    val postReplyChainStack = mutableListOf<PopupPostsScreen.PostViewMode>()
+    val parsedReplyToCache = LruCache<PostDescriptor, List<PostCellData>>(32)
+    val parsedReplyFromCache = LruCache<PostDescriptor, List<PostCellData>>(32)
+    val parsedPostsCache = mutableMapOf<PostDescriptor, PostCellData>()
   }
 
 }

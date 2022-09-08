@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.floating
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.annotation.CallSuper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
@@ -46,7 +45,6 @@ abstract class FloatingComposeScreen(
   val horizPaddingDp by lazy { if (globalUiInfoManager.isTablet) HPADDING_TABLET_COMPOSE else HPADDING_COMPOSE }
   val vertPaddingDp by lazy { if (globalUiInfoManager.isTablet) VPADDING_TABLET_COMPOSE else VPADDING_COMPOSE }
 
-  open val ignoreBackPresses: Boolean = false
   open val contentAlignment: Alignment = Alignment.Center
 
   open val presentAnimation: NavigationRouter.ScreenAnimation
@@ -78,7 +76,7 @@ abstract class FloatingComposeScreen(
     val localFocusManager = LocalFocusManager.current
     val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
 
-    HandleBackPresses { onFloatingControllerBackPressed() }
+    DefaultFloatingScreenBackPressHandler()
 
     // Make sure the keyboard is getting closed when a floating screen is destroyed
     DisposableEffect(
@@ -92,6 +90,11 @@ abstract class FloatingComposeScreen(
     )
 
     BackgroundContent()
+  }
+
+  @Composable
+  open fun DefaultFloatingScreenBackPressHandler() {
+    HandleBackPresses { stopPresenting() }
   }
 
   @Composable
@@ -117,7 +120,7 @@ abstract class FloatingComposeScreen(
           hasClickIndication = false,
           onClick = {
             if (canDismissByClickingOutside) {
-              coroutineScope.launch { onFloatingControllerBackPressed() }
+              coroutineScope.launch { stopPresenting() }
             }
           }
         )
@@ -199,11 +202,6 @@ abstract class FloatingComposeScreen(
   @Composable
   fun maxAvailableWidthPx(): Float {
     return with(LocalDensity.current) { maxAvailableWidth().toPx() }
-  }
-
-  @CallSuper
-  open suspend fun onFloatingControllerBackPressed(): Boolean {
-    return stopPresenting()
   }
 
   protected fun stopPresenting(): Boolean {

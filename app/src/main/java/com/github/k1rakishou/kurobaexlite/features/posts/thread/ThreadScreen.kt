@@ -415,6 +415,8 @@ private fun BoxScope.ThreadPostListScreen(
 
       return@derivedStateOf PostListOptions(
         isCatalogMode = isCatalogScreen,
+        showThreadStatusCell = true,
+        textSelectionEnabled = true,
         isInPopup = false,
         openedFromScreenKey = screenKey,
         pullToRefreshEnabled = true,
@@ -476,8 +478,13 @@ private fun BoxScope.ThreadPostListScreen(
         linkable = linkable
       )
     },
-    onPostRepliesClicked = { postDescriptor ->
-      showRepliesForPost(PopupPostsScreen.PostViewMode.RepliesFrom(postDescriptor))
+    onPostRepliesClicked = { chanDescriptor, postDescriptor ->
+      val postViewMode = PopupPostsScreen.PostViewMode.RepliesFrom(
+        chanDescriptor = chanDescriptor,
+        postDescriptor = postDescriptor
+      )
+
+      showRepliesForPost(postViewMode)
     },
     onCopySelectedText = { selectedText ->
       androidHelpers.copyToClipboard("Selected text", selectedText)

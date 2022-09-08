@@ -296,7 +296,7 @@ private fun PostSearchCell(
       )
   ) {
     PostCell(
-      isCatalogMode = true,
+      textSelectionEnabled = false,
       chanDescriptor = catalogDescriptor,
       detectLinkableClicks = false,
       postCellCommentTextSizeSp = postCellCommentTextSizeSp,
