@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
@@ -78,16 +79,15 @@ class KurobaBottomSheetState(
 
   val isExpanded: Boolean
     get() = currentValue == KurobaBottomSheetValue.Expanded && targetValue == KurobaBottomSheetValue.Expanded
+  val isCollapsed: Boolean
+    get() = currentValue == KurobaBottomSheetValue.Collapsed && targetValue == KurobaBottomSheetValue.Collapsed
 
   val isExpandedOrExpanding: Boolean
     get() = currentValue == KurobaBottomSheetValue.Expanded || targetValue == KurobaBottomSheetValue.Expanded
-
   val isOpenedOrOpening: Boolean
     get() = currentValue == KurobaBottomSheetValue.Opened || targetValue == KurobaBottomSheetValue.Opened
-
   val isCollapsedOrCollapsing: Boolean
     get() = currentValue == KurobaBottomSheetValue.Collapsed || targetValue == KurobaBottomSheetValue.Collapsed
-
   val isNotCollapsed: Boolean
     get() = isExpandedOrExpanding || isOpenedOrOpening
 
@@ -211,7 +211,8 @@ fun KurobaBottomSheet(
           modifier = swipeable
             .fillMaxWidth()
             .requiredHeightIn(min = sheetPeekHeight)
-            .onGloballyPositioned { bottomSheetHeight = it.size.height.toFloat() },
+            .onGloballyPositioned { bottomSheetHeight = it.size.height.toFloat() }
+            .graphicsLayer { alpha = if (kurobaBottomSheetState.isCollapsed) 0f else 1f },
         ) {
           SheetHeader(
             sheetHeaderHeight = sheetHeaderHeight.toFloat(),
