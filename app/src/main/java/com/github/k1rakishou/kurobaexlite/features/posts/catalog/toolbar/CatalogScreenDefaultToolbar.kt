@@ -47,6 +47,7 @@ class CatalogScreenDefaultToolbar(
   private val onBackPressed: suspend () -> Unit,
   private val showCatalogSelectionScreen: () -> Unit,
   private val showSortCatalogThreadsScreen: () -> Unit,
+  private val showCatalogAlbumScreen: () -> Unit,
   private val showLocalSearchToolbar: () -> Unit,
   private val showOverflowMenu: () -> Unit,
 ) : KurobaChildToolbar() {
@@ -100,6 +101,9 @@ class CatalogScreenDefaultToolbar(
             }
             State.Icons.Sort -> {
               showSortCatalogThreadsScreen()
+            }
+            State.Icons.Album -> {
+              showCatalogAlbumScreen()
             }
             State.Icons.Overflow -> {
               showOverflowMenu()
@@ -257,6 +261,11 @@ class CatalogScreenDefaultToolbar(
         visible = false
       ),
       KurobaToolbarIcon(
+        key = Icons.Album,
+        drawableId = R.drawable.ic_baseline_image_24,
+        visible = false
+      ),
+      KurobaToolbarIcon(
         key = Icons.Overflow,
         drawableId = R.drawable.ic_baseline_more_vert_24
       ),
@@ -294,6 +303,7 @@ class CatalogScreenDefaultToolbar(
       Drawer,
       Search,
       Sort,
+      Album,
       Overflow
     }
 

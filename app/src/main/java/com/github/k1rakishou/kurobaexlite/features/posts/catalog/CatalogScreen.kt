@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreenViewModel
@@ -134,6 +135,18 @@ class CatalogScreen(
         )
 
         navigationRouter.presentScreen(sortCatalogThreadsScreen)
+      },
+      showCatalogAlbumScreen = {
+        val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+          ?: return@CatalogScreenDefaultToolbar
+
+        val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, catalogDescriptor) }
+        )
+
+        navigationRouter.pushScreen(albumScreen)
       },
       showOverflowMenu = {
         navigationRouter.presentScreen(
@@ -266,10 +279,6 @@ class CatalogScreen(
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.OpenThreadByIdentifier,
         text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier),
-      ),
-      FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.CatalogAlbum,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_album),
       ),
       FloatingMenuItem.Text(
         menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.CatalogDevMenu,

@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.catalog
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -16,7 +15,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
@@ -56,18 +54,6 @@ class CatalogScreenToolbarActionHandler(
           componentActivity = componentActivity,
           navigationRouter = navigationRouter
         )
-      }
-      ToolbarMenuItems.CatalogAlbum -> {
-        val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
-          ?: return
-
-        val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, catalogDescriptor) }
-        )
-
-        navigationRouter.pushScreen(albumScreen)
       }
       ToolbarMenuItems.CatalogDevMenu -> {
         handleDevMenu(
@@ -181,7 +167,6 @@ class CatalogScreenToolbarActionHandler(
     Reload,
     ScrollTop,
     ScrollBottom,
-    CatalogAlbum,
     CatalogDevMenu,
   }
 
