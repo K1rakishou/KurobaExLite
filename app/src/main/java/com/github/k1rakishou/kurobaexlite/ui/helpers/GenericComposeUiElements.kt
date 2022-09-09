@@ -677,18 +677,27 @@ fun KurobaComposeClickableIcon(
   modifier: Modifier = Modifier,
   enabled: Boolean = true,
   colorBehindIcon: Color? = null,
+  iconColor: Color? = null,
   onClick: () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val tintColor = remember(key1 = chanTheme) {
+  val alpha = if (enabled) DefaultAlpha else ContentAlpha.disabled
+
+  val tintColor = remember(
+    key1 = chanTheme.backColor,
+    key2 = colorBehindIcon,
+    key3 = iconColor
+  ) {
+    if (iconColor != null) {
+      return@remember iconColor
+    }
+
     if (colorBehindIcon == null) {
       ThemeEngine.resolveDrawableTintColor(chanTheme)
     } else {
       ThemeEngine.resolveDrawableTintColor(ThemeEngine.isDarkColor(colorBehindIcon.value))
     }
   }
-
-  val alpha = if (enabled) DefaultAlpha else ContentAlpha.disabled
 
   val clickModifier = if (enabled) {
     Modifier.kurobaClickable(

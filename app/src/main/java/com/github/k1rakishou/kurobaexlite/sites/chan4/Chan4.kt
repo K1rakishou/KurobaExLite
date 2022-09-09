@@ -66,7 +66,6 @@ class Chan4(
   private val chan4CatalogPagesInfo by lazy { CatalogPagesInfo(chan4DataSource) }
   private val chan4GlobalSearchInfo by lazy { GlobalSearchInfo(chan4DataSource) }
   private val chan4PasscodeInfo by lazy { Chan4PasscodeInfo(chan4DataSource) }
-
   private val chan4PostParser by lazy { Chan4PostParser() }
   private val icon by lazy { "https://s.4cdn.org/image/favicon.ico".toHttpUrl() }
 

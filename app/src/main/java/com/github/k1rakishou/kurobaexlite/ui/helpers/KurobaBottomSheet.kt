@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SwipeableState
@@ -49,9 +50,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
+import com.github.k1rakishou.kurobaexlite.R
 import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
@@ -145,8 +148,8 @@ fun KurobaBottomSheet(
 ) {
   val density = LocalDensity.current
   val insets = LocalWindowInsets.current
-
   val sheetHeaderHeight = with(density) { sheetHeaderHeightDp.roundToPx() }
+  val coroutineScope = rememberCoroutineScope()
 
   BoxWithConstraints(modifier = modifier) {
     val topInsetPx = with(density) { insets.top.toPx() }
@@ -165,7 +168,6 @@ fun KurobaBottomSheet(
     }
 
     val nestedScrollConnection = remember { PreUpPostDownNestedScrollConnection(kurobaBottomSheetState) }
-    val coroutineScope = rememberCoroutineScope()
 
     val swipeable = Modifier
       .nestedScroll(nestedScrollConnection)
@@ -218,7 +220,10 @@ fun KurobaBottomSheet(
             sheetHeaderHeight = sheetHeaderHeight.toFloat(),
             fullHeight = with(density) { fullHeight - insets.top.toPx() },
             sheetBackgroundColor = sheetBackgroundColor,
-            kurobaBottomSheetState = kurobaBottomSheetState
+            kurobaBottomSheetState = kurobaBottomSheetState,
+            onCollapseSheetIconClicked = {
+              coroutineScope.launch { kurobaBottomSheetState.collapse() }
+            }
           )
 
           Column(
@@ -238,7 +243,8 @@ fun SheetHeader(
   sheetHeaderHeight: Float,
   fullHeight: Float,
   sheetBackgroundColor: Color,
-  kurobaBottomSheetState: KurobaBottomSheetState
+  kurobaBottomSheetState: KurobaBottomSheetState,
+  onCollapseSheetIconClicked: () -> Unit
 ) {
   val density = LocalDensity.current
 
@@ -249,53 +255,71 @@ fun SheetHeader(
     ColorUtils.calculateLuminance(sheetBackgroundColor.toArgb()) < 0.5f
   }
 
-  Canvas(
+  val color = remember(key1 = isSheetBackgroundDark) {
+    if (isSheetBackgroundDark) {
+      Color.LightGray
+    } else {
+      Color.DarkGray
+    }
+  }
+
+  Box(
     modifier = Modifier
       .fillMaxWidth()
-      .height(sheetHeaderHeightDp),
-    onDraw = {
-      val progress = (kurobaBottomSheetState.offset.value / fullHeight).coerceIn(0f, 1f)
-      val radius = progress * (sheetHeaderHeight - (sheetHeaderHeight / 3f))
-      val cornerRadius = CornerRadius(radius, radius)
+      .height(sheetHeaderHeightDp)
+  ) {
+    val iconHorizOffsetDp = 20.dp
 
-      val roundRect = RoundRect(
-        left = 0f,
-        top = 0f,
-        right = size.width,
-        bottom = size.height,
-        topLeftCornerRadius = cornerRadius,
-        topRightCornerRadius = cornerRadius
-      )
+    Canvas(
+      modifier = Modifier.fillMaxSize(),
+      onDraw = {
+        val progress = (kurobaBottomSheetState.offset.value / fullHeight).coerceIn(0f, 1f)
+        val radius = progress * (sheetHeaderHeight - (sheetHeaderHeight / 3f))
+        val cornerRadius = CornerRadius(radius, radius)
 
-      path.reset()
-      path.addRoundRect(roundRect)
-      path.close()
+        val roundRect = RoundRect(
+          left = 0f,
+          top = 0f,
+          right = size.width,
+          bottom = size.height,
+          topLeftCornerRadius = cornerRadius,
+          topRightCornerRadius = cornerRadius
+        )
 
-      clipPath(
-        path = path,
-        clipOp = ClipOp.Intersect
-      ) {
-        drawRect(sheetBackgroundColor)
+        path.reset()
+        path.addRoundRect(roundRect)
+        path.close()
 
-        val gapWidth = this.size.width / 10f
-        val topLeft = (size / 2f) - Size((gapWidth / 2f), 0f)
+        clipPath(
+          path = path,
+          clipOp = ClipOp.Intersect
+        ) {
+          drawRect(sheetBackgroundColor)
 
-        translate(left = topLeft.width, top = topLeft.height) {
-          val color = if (isSheetBackgroundDark) {
-            Color.LightGray
-          } else {
-            Color.DarkGray
+          val gapWidth = this.size.width / 10f
+          val topLeft = (size / 2f) - Size((gapWidth / 2f), gapHeight / 2f)
+
+          translate(left = topLeft.width, top = topLeft.height) {
+            drawRoundRect(
+              color = color,
+              size = Size(gapWidth, gapHeight),
+              cornerRadius = CornerRadius(gapHeight / 2f, gapHeight / 2f)
+            )
           }
-
-          drawRoundRect(
-            color = color,
-            size = Size(gapWidth, gapHeight),
-            cornerRadius = CornerRadius(gapHeight / 2f, gapHeight / 2f)
-          )
         }
       }
-    }
-  )
+    )
+
+    KurobaComposeClickableIcon(
+      modifier = Modifier
+        .align(Alignment.CenterEnd)
+        .offset { IntOffset(x = -iconHorizOffsetDp.roundToPx(), y = 0) },
+      drawableId = R.drawable.ic_baseline_clear_24,
+      iconColor = color,
+      onClick = { onCollapseSheetIconClicked() }
+    )
+
+  }
 }
 
 @Stable
