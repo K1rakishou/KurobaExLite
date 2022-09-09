@@ -223,6 +223,12 @@ class AlbumScreen(
 
                 putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
                 putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
+              },
+              callbacks = {
+                callback(
+                  callbackKey = MediaViewerScreen.openingCatalogOrScreenCallbackKey,
+                  func = { popScreen() }
+                )
               }
             )
 

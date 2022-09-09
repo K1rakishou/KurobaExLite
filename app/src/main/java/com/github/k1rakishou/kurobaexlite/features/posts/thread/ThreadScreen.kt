@@ -51,7 +51,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
-import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -79,12 +78,10 @@ class ThreadScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : PostsScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
-  private val homeScreenViewModel: HomeScreenViewModel by componentActivity.viewModel()
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
   private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
-  private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
 
   private val threadScreenToolbarActionHandler by lazy {
     ThreadScreenToolbarActionHandler()

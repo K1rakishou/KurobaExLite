@@ -319,6 +319,12 @@ class PopupPostsScreen(
 
               putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
               putParcelable(MediaViewerScreen.openedFromScreenKey, screenKey)
+            },
+            callbacks = {
+              callback(
+                callbackKey = MediaViewerScreen.openingCatalogOrScreenCallbackKey,
+                func = { stopPresenting() }
+              )
             }
           )
 

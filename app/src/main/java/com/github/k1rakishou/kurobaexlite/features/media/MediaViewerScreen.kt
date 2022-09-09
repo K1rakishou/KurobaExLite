@@ -80,10 +80,13 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerTool
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayFullImage
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayUnsupportedMedia
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayVideo
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
@@ -118,6 +121,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
@@ -149,6 +153,10 @@ class MediaViewerScreen(
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
   private val popupPostsScreenViewModel: PopupPostsScreenViewModel by componentActivity.viewModel()
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
+
+  private val linkableClickHelper by lazy {
+    LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
+  }
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
@@ -237,6 +245,7 @@ class MediaViewerScreen(
       mediaViewerParams = mediaViewerParams,
       mediaViewerScreenState = mediaViewerScreenState,
       kurobaBottomSheetState = kurobaBottomSheetState,
+      linkableClickHelperProvider = { linkableClickHelper },
       onDownloadButtonClicked = { postImage ->
         onDownloadButtonClicked(
           context = context,
@@ -261,6 +270,10 @@ class MediaViewerScreen(
             onLoadProgressUpdated = onLoadProgressUpdated
           )
         }
+      },
+      onOpeningCatalogOrThread = {
+        stopPresenting()
+        ScreenCallbackStorage.invokeCallback(screenKey, openingCatalogOrScreenCallbackKey)
       },
       onBackPressed = { coroutineScope.launch { onBackPressed() } },
       stopPresenting = { stopPresenting() },
@@ -461,6 +474,8 @@ class MediaViewerScreen(
     const val mediaViewerParamsKey = "media_viewer_params"
     const val openedFromScreenKey = "opened_from_screen"
 
+    const val openingCatalogOrScreenCallbackKey = "on_opening_catalog_or_screen"
+
     val SCREEN_KEY = ScreenKey("MediaViewerScreen")
 
     private const val NEW_MEDIA_VIEWER_IMAGES_ADDED_TOAST_ID = "new_media_viewer_images_added_toast_id"
@@ -478,9 +493,11 @@ private fun MediaViewerContent(
   mediaViewerParams: MediaViewerParams,
   mediaViewerScreenState: MediaViewerScreenState,
   kurobaBottomSheetState: KurobaBottomSheetState,
+  linkableClickHelperProvider: () -> LinkableClickHelper,
   onDownloadButtonClicked: (IPostImage) -> Unit,
   onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
   loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
+  onOpeningCatalogOrThread: () -> Unit,
   onBackPressed: () -> Unit,
   stopPresenting: () -> Unit
 ) {
@@ -535,6 +552,7 @@ private fun MediaViewerContent(
               kurobaBottomSheetState = kurobaBottomSheetState,
               mediaViewerScreenState = mediaViewerScreenState,
               sheetPaddingValues = sheetPaddingValues,
+              linkableClickHelperProvider = linkableClickHelperProvider,
               scrollToImagesByIndex = { imageToScrollToIndex ->
                 pagerStateHolder?.let { pagerState ->
                   if (pagerState.currentPage == imageToScrollToIndex) {
@@ -543,6 +561,10 @@ private fun MediaViewerContent(
 
                   coroutineScope.launch { pagerState.scrollToPage(imageToScrollToIndex) }
                 }
+              },
+              onOpeningCatalogOrThread = {
+                coroutineScope.launch { kurobaBottomSheetState.collapse() }
+                onOpeningCatalogOrThread()
               }
             )
           },
@@ -626,12 +648,17 @@ private fun MediaViewerBottomSheet(
   kurobaBottomSheetState: KurobaBottomSheetState,
   mediaViewerScreenState: MediaViewerScreenState,
   sheetPaddingValues: PaddingValues,
+  linkableClickHelperProvider: () -> LinkableClickHelper,
   scrollToImagesByIndex: (Int) -> Unit,
+  onOpeningCatalogOrThread: () -> Unit
 ) {
   val insets = LocalWindowInsets.current
+  val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
 
   val popupPostsScreenViewModel: PopupPostsScreenViewModel = koinRememberViewModel()
+  val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
+  val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val androidHelpers: AndroidHelpers = koinRemember()
 
@@ -681,10 +708,32 @@ private fun MediaViewerBottomSheet(
         // no-op
       },
       onLinkableClicked = { postCellData, linkable ->
-        // no-op
+        linkableClickHelperProvider().processClickedLinkable(
+          context = context,
+          sourceScreenKey = screenKey,
+          postCellData = postCellData,
+          linkable = linkable,
+          loadThreadFunc = { threadDescriptor ->
+            threadScreenViewModel.loadThread(threadDescriptor)
+            onOpeningCatalogOrThread()
+          },
+          loadCatalogFunc = { catalogDescriptor ->
+            catalogScreenViewModel.loadCatalog(catalogDescriptor)
+            onOpeningCatalogOrThread()
+          },
+          showRepliesForPostFunc = { postViewMode ->
+            coroutineScope.launch {
+              popupPostsScreenViewModel.loadRepliesForMode(screenKey, postViewMode)
+            }
+          },
+        )
       },
       onLinkableLongClicked = { postCellData, linkable ->
-        // no-op
+        linkableClickHelperProvider().processLongClickedLinkable(
+          sourceScreenKey = screenKey,
+          postCellData = postCellData,
+          linkable = linkable
+        )
       },
       onPostRepliesClicked = { chanDescriptor, postDescriptor ->
         coroutineScope.launch {
@@ -721,7 +770,12 @@ private fun MediaViewerBottomSheet(
         scrollToImagesByIndex(imageToScrollToIndex)
       },
       onGoToPostClicked = { postCellData ->
-        // no-op
+        when (postCellData.chanDescriptor) {
+          is CatalogDescriptor -> catalogScreenViewModel.scrollToPost(postCellData.postDescriptor)
+          is ThreadDescriptor -> threadScreenViewModel.scrollToPost(postCellData.postDescriptor)
+        }
+
+        onOpeningCatalogOrThread()
       },
       onPostListScrolled = { delta -> /*no-op*/ },
       onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
