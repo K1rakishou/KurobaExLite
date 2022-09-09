@@ -54,7 +54,8 @@ class ProgressScreen(
       KurobaComposeLoadingIndicator(
         modifier = Modifier
           .fillMaxWidth()
-          .wrapContentHeight()
+          .wrapContentHeight(),
+        fadeInTimeMs = 0
       )
     }
   }

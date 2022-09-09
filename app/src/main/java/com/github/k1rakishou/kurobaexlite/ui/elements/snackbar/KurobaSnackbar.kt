@@ -285,7 +285,8 @@ private fun RowScope.KurobaSnackbarContent(
       SnackbarContentItem.LoadingIndicator -> {
         KurobaComposeLoadingIndicator(
           modifier = Modifier.wrapContentSize(),
-          indicatorSize = 24.dp
+          indicatorSize = 24.dp,
+          fadeInTimeMs = 0
         )
       }
       is SnackbarContentItem.Spacer -> {

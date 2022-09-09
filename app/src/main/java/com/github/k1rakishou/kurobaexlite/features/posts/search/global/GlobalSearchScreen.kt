@@ -402,7 +402,8 @@ private fun LazyItemScope.LoadMoreIndicator(currentPage: Int, lazyListState: Laz
     modifier = Modifier
       .fillMaxWidth()
       .height(42.dp)
-      .padding(8.dp)
+      .padding(8.dp),
+    fadeInTimeMs = 0
   )
 
   if (currentPage <= 0 || currentPage == currentLoadingPage) {

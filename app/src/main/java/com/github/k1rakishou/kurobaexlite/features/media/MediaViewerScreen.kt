@@ -1516,7 +1516,7 @@ private fun PageContent(
 
         val loadingProgress = loadingProgressMut
         if (loadingProgress == null && minimumLoadTimePassed) {
-          KurobaComposeLoadingIndicator()
+          KurobaComposeLoadingIndicator(fadeInTimeMs = 0)
         } else if (loadingProgress != null) {
           val restartIndex = loadingProgress.first
           val progress = loadingProgress.second
