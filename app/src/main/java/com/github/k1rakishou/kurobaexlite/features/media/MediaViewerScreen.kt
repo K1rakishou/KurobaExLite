@@ -219,6 +219,10 @@ class MediaViewerScreen(
     )
 
     HandleBackPresses {
+      if (popupPostsScreenViewModel.popReplyChain(screenKey)) {
+        return@HandleBackPresses true
+      }
+
       // We need MonotonicFrameClock to execute an animation
       if (withContext(coroutineScope.coroutineContext) { kurobaBottomSheetState.onBackPressed() }) {
         return@HandleBackPresses true
@@ -524,13 +528,13 @@ private fun MediaViewerContent(
           sheetPeekHeight = 0.dp,
           kurobaBottomSheetState = kurobaBottomSheetState,
           sheetBackgroundColor = chanTheme.backColor,
-          sheetContent = { paddingValues ->
+          sheetContent = { sheetPaddingValues ->
             MediaViewerBottomSheet(
               chanDescriptor = mediaViewerParams.chanDescriptor,
               screenKey = screenKey,
               kurobaBottomSheetState = kurobaBottomSheetState,
               mediaViewerScreenState = mediaViewerScreenState,
-              sheetPaddingValues = paddingValues,
+              sheetPaddingValues = sheetPaddingValues,
               scrollToImagesByIndex = { imageToScrollToIndex ->
                 pagerStateHolder?.let { pagerState ->
                   if (pagerState.currentPage == imageToScrollToIndex) {
@@ -683,7 +687,14 @@ private fun MediaViewerBottomSheet(
         // no-op
       },
       onPostRepliesClicked = { chanDescriptor, postDescriptor ->
-        // no-op
+        coroutineScope.launch {
+          val postViewMode = PopupPostsScreen.PostViewMode.RepliesFrom(
+            chanDescriptor = chanDescriptor,
+            postDescriptor = postDescriptor
+          )
+
+          popupPostsScreenViewModel.loadRepliesForMode(screenKey, postViewMode)
+        }
       },
       onCopySelectedText = { selectedText ->
         androidHelpers.copyToClipboard("Selected text", selectedText)
