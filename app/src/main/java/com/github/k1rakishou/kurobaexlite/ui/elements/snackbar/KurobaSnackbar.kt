@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.elements.snackbar
 
 import android.os.SystemClock
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -39,6 +41,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -175,6 +178,8 @@ private fun KurobaSnackbarLayout(
     SnackbarType.ErrorToast -> chanTheme.errorColor
   }
 
+  val snackbarAlpha = if (snackbarInfo.snackbarType.isToast) 0.8f else 1f
+
   KurobaComposeCard(
     modifier = Modifier
       .padding(
@@ -182,6 +187,7 @@ private fun KurobaSnackbarLayout(
         vertical = containerVertPadding
       )
       .wrapContentWidth()
+      .graphicsLayer { alpha = snackbarAlpha }
       .kurobaClickable(
         onClick = {
           if (snackbarInfo.hasClickableItems) {
@@ -206,6 +212,7 @@ private fun KurobaSnackbarLayout(
         isTablet = isTablet,
         snackbarType = snackbarType,
         snackbarInfo = snackbarInfo,
+        backgroundColor = backgroundColor,
         onSnackbarClicked = { snackbarClickable, snackbarId ->
           snackbarManager.onSnackbarElementClicked(snackbarClickable)
           dismissSnackbar(snackbarId)
@@ -221,6 +228,7 @@ private fun RowScope.KurobaSnackbarContent(
   isTablet: Boolean,
   snackbarType: SnackbarType,
   snackbarInfo: SnackbarInfo,
+  backgroundColor: Color,
   onSnackbarClicked: (SnackbarClickable, SnackbarId) -> Unit,
   onDismissSnackbar: (SnackbarId) -> Unit
 ) {
@@ -271,8 +279,7 @@ private fun RowScope.KurobaSnackbarContent(
       )
 
       KurobaComposeIcon(
-        modifier = Modifier
-          .size(14.dp),
+        modifier = Modifier.size(14.dp),
         drawableId = R.drawable.ic_baseline_close_24
       )
     }
@@ -324,6 +331,24 @@ private fun RowScope.KurobaSnackbarContent(
           text = snackbarContentItem.formattedText,
           customTextColor = snackbarContentItem.textColor ?: chanTheme.accentColor,
           onClick = { onSnackbarClicked(snackbarContentItem, snackbarId) }
+        )
+      }
+      is SnackbarContentItem.Icon -> {
+        val iconColor = remember(key1 = backgroundColor) {
+          if (ThemeEngine.isDarkColor(backgroundColor)) {
+            Color.White
+          } else {
+            Color.Black
+          }
+        }
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .wrapContentSize()
+            .padding(4.dp)
+            .align(Alignment.CenterVertically),
+          drawableId = snackbarContentItem.drawableId,
+          iconColor = iconColor
         )
       }
     }
@@ -516,6 +541,10 @@ sealed class SnackbarContentItem {
   ) : SnackbarContentItem(), SnackbarClickable {
     val formattedText by lazy { text.uppercase(Locale.ENGLISH) }
   }
+
+  data class Icon(
+    @DrawableRes val drawableId: Int,
+  ) : SnackbarContentItem()
 
   data class Spacer(val space: Dp) : SnackbarContentItem()
 }

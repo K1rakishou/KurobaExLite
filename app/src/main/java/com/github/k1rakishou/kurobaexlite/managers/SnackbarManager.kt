@@ -89,28 +89,6 @@ class SnackbarManager(
     )
   }
 
-  fun toast(
-    message: String,
-    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
-    toastId: String = nextToastId(),
-    duration: Duration = STANDARD_DELAY.milliseconds
-  ) {
-    pushSnackbar(
-      SnackbarInfo(
-        snackbarId = SnackbarId.Toast(toastId),
-        aliveUntil = SnackbarInfo.snackbarDuration(duration),
-        screenKey = screenKey,
-        content = listOf(
-          SnackbarContentItem.Text(
-            text = message,
-            takeWholeWidth = false
-          )
-        ),
-        snackbarType = SnackbarType.Toast
-      )
-    )
-  }
-
   fun errorToast(
     @StringRes messageId: Int,
     toastId: String = nextToastId(),
@@ -125,6 +103,30 @@ class SnackbarManager(
     )
   }
 
+  fun toast(
+    message: String,
+    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
+    toastId: String = nextToastId(),
+    duration: Duration = STANDARD_DELAY.milliseconds
+  ) {
+    pushSnackbar(
+      SnackbarInfo(
+        snackbarId = SnackbarId.Toast(toastId),
+        aliveUntil = SnackbarInfo.snackbarDuration(duration),
+        screenKey = screenKey,
+        content = listOf(
+          SnackbarContentItem.Icon(R.drawable.ic_baseline_clear_24),
+          SnackbarContentItem.Spacer(8.dp),
+          SnackbarContentItem.Text(
+            text = message,
+            takeWholeWidth = false
+          )
+        ),
+        snackbarType = SnackbarType.Toast
+      )
+    )
+  }
+
   fun errorToast(
     message: String,
     toastId: String = nextToastId(),
@@ -137,6 +139,8 @@ class SnackbarManager(
         aliveUntil = SnackbarInfo.snackbarDuration(duration),
         screenKey = screenKey,
         content = listOf(
+          SnackbarContentItem.Icon(R.drawable.ic_baseline_clear_24),
+          SnackbarContentItem.Spacer(8.dp),
           SnackbarContentItem.Text(
             text = message,
             takeWholeWidth = false

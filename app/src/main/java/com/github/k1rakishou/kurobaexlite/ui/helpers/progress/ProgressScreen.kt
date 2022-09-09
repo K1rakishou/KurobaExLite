@@ -57,6 +57,8 @@ class ProgressScreen(
           .wrapContentHeight(),
         fadeInTimeMs = 0
       )
+
+      Spacer(modifier = Modifier.height(24.dp))
     }
   }
 

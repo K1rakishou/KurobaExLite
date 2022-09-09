@@ -112,16 +112,22 @@ fun KurobaComposeLoadingIndicator(
   indicatorSize: Dp = 42.dp,
   fadeInTimeMs: Long = 300
 ) {
-  var showLoadingIndicator by remember { mutableStateOf(false) }
+  var showLoadingIndicator by remember {
+    val showByDefault = fadeInTimeMs <= 0
+    return@remember mutableStateOf(showByDefault)
+  }
+
   val animationAlpha by animateFloatAsState(targetValue = if (showLoadingIndicator) 1f else 0f)
 
-  LaunchedEffect(
-    key1 = Unit,
-    block = {
-      delay(fadeInTimeMs)
-      showLoadingIndicator = true
-    }
-  )
+  if (fadeInTimeMs > 0) {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        delay(fadeInTimeMs)
+        showLoadingIndicator = true
+      }
+    )
+  }
 
   Box(
     modifier = modifier.then(
