@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.interactors.catalog
 
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -58,6 +59,7 @@ class CatalogGlobalSearch(
     }
 
     val chanTheme = themeEngine.chanTheme
+    val postViewMode = PostViewMode.List
 
     // TODO(KurobaEx): multi-threading?
     val parsedPosts = withContext(dispatcher) {
@@ -66,6 +68,7 @@ class CatalogGlobalSearch(
           postData = postData,
           parsedPostDataContext = ParsedPostDataContext(
             isParsingCatalog = true,
+            postViewMode = postViewMode,
             revealFullPostComment = true
           ),
           chanTheme = chanTheme

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
+package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError

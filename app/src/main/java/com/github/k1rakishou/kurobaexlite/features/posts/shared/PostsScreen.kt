@@ -56,11 +56,11 @@ abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
   override val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(false)
   override val hasFab: Boolean = true
 
-  protected fun showRepliesForPost(postViewMode: PopupPostsScreen.PostViewMode) {
+  protected fun showRepliesForPost(popupPostViewMode: PopupPostsScreen.PopupPostViewMode) {
     val popupPostsScreen = ComposeScreen.createScreen<PopupPostsScreen>(
       componentActivity = componentActivity,
       navigationRouter = navigationRouter,
-      args = { putParcelable(PopupPostsScreen.REPLY_VIEW_MODE, postViewMode) }
+      args = { putParcelable(PopupPostsScreen.REPLY_VIEW_MODE, popupPostViewMode) }
     )
 
     navigationRouter.presentScreen(popupPostsScreen)
@@ -74,7 +74,7 @@ abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
       return
     }
 
-    val postViewMode = PopupPostsScreen.PostViewMode.PostList(
+    val popupPostViewMode = PopupPostsScreen.PopupPostViewMode.PostList(
       chanDescriptor = chanDescriptor,
       postNoWithSubNoList = foundPostDescriptors.map { postDescriptor ->
         postDescriptor.postNo to postDescriptor.postSubNo
@@ -84,7 +84,7 @@ abstract class PostsScreen<ToolbarType : KurobaChildToolbar>(
     val popupPostsScreen = ComposeScreen.createScreen<PopupPostsScreen>(
       componentActivity = componentActivity,
       navigationRouter = navigationRouter,
-      args = { putParcelable(PopupPostsScreen.REPLY_VIEW_MODE, postViewMode) }
+      args = { putParcelable(PopupPostsScreen.REPLY_VIEW_MODE, popupPostViewMode) }
     )
 
     navigationRouter.presentScreen(popupPostsScreen)

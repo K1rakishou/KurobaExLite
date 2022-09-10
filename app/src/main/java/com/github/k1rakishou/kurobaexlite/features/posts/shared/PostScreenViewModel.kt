@@ -10,10 +10,12 @@ import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.processDataCollectionConcurrently
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdateBookmarkInfoUponThreadOpen
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
@@ -86,6 +88,7 @@ abstract class PostScreenViewModel(
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
+  private var reparseCatalogPostsWithNewViewModeJob: Job? = null
 
   protected val _postsFullyParsedOnceFlow = MutableStateFlow(false)
   val postsFullyParsedOnceFlow: StateFlow<Boolean>
@@ -247,22 +250,55 @@ abstract class PostScreenViewModel(
     }
   }
 
-  suspend fun reparsePostsSuspend(postCellDataList: List<Pair<PostCellData, ParsedPostDataContext>>) {
+  fun reparseCatalogPostsWithNewViewMode() {
+    reparseCatalogPostsWithNewViewModeJob?.cancel()
+    reparseCatalogPostsWithNewViewModeJob = viewModelScope.launch(globalConstants.postParserDispatcher) {
+      val allCurrentPosts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)
+        ?.data
+        ?.posts
+        ?: return@launch
+
+      val catalogPostViewMode = appSettings.catalogPostViewMode.read().toPostViewMode()
+
+      val postCellDataList = allCurrentPosts.map { postCellData ->
+        val newParsedPostDataContext = postCellData.parsedPostDataContext
+          ?.copy(postViewMode = catalogPostViewMode)
+          ?: ParsedPostDataContext(
+            isParsingCatalog = true,
+            postViewMode = catalogPostViewMode
+          )
+
+        return@map postCellData to newParsedPostDataContext
+      }
+
+      reparsePostsSuspend(postCellDataList)
+      reparseCatalogPostsWithNewViewModeJob = null
+    }
+  }
+
+  private suspend fun reparsePostsSuspend(postCellDataList: List<Pair<PostCellData, ParsedPostDataContext>>) {
     if (postCellDataList.isEmpty()) {
       return
     }
 
     val chanTheme = themeEngine.chanTheme
+    val batchCount = globalConstants.coresCount.coerceAtLeast(2)
 
-    postCellDataList.forEach { (postCellData, parsedPostDataContext) ->
-      val parsedPostData = parsedPostDataCache.calculateParsedPostData(
+    val reparsedPostCellDataList = processDataCollectionConcurrently(
+      dataList = postCellDataList,
+      batchCount = batchCount,
+      dispatcher = globalConstants.postParserDispatcher
+    ) { (postCellData, parsedPostDataContext) ->
+      val newParsedPostData = parsedPostDataCache.calculateParsedPostData(
         postCellData = postCellData,
         chanTheme = chanTheme,
         parsedPostDataContext = parsedPostDataContext
       )
 
-      postScreenState.insertOrUpdate(postCellData.copy(parsedPostData = parsedPostData))
+      return@processDataCollectionConcurrently postCellData.copy(parsedPostData = newParsedPostData)
     }
+
+    postScreenState.insertOrUpdateMany(reparsedPostCellDataList)
   }
 
   fun reparsePostsByDescriptors(
@@ -349,6 +385,7 @@ abstract class PostScreenViewModel(
     chanDescriptor: ChanDescriptor,
     postDataList: List<IPostData>,
     isCatalogMode: Boolean,
+    postViewMode: PostViewMode,
     forced: Boolean
   ): List<PostCellData> {
     if (postDataList.isEmpty()) {
@@ -377,6 +414,7 @@ abstract class PostScreenViewModel(
 
       val resultList = mutableListWithCap<PostCellData>(postDataList.size)
 
+
       for (index in postDataList.indices) {
         val postData = postDataList[index]
 
@@ -386,7 +424,8 @@ abstract class PostScreenViewModel(
             postData = postData,
             chanTheme = chanTheme,
             parsedPostDataContext = ParsedPostDataContext(
-              isParsingCatalog = isCatalogMode
+              isParsingCatalog = isCatalogMode,
+              postViewMode = postViewMode
             ),
             forced = forced
           )
@@ -411,6 +450,7 @@ abstract class PostScreenViewModel(
     postCellDataList: List<PostData>,
     count: Int,
     isCatalogMode: Boolean,
+    postViewMode: PostViewMode
   ) {
     val chanTheme = themeEngine.chanTheme
 
@@ -431,7 +471,8 @@ abstract class PostScreenViewModel(
           postData = postData,
           chanTheme = chanTheme,
           parsedPostDataContext = ParsedPostDataContext(
-            isParsingCatalog = isCatalogMode
+            isParsingCatalog = isCatalogMode,
+            postViewMode = postViewMode
           )
         )
       }
@@ -442,6 +483,7 @@ abstract class PostScreenViewModel(
   fun parseRemainingPostsAsync(
     chanDescriptor: ChanDescriptor,
     postDataList: List<IPostData>,
+    postViewMode: PostViewMode,
     parsePostsOptions: ParsePostsOptions = ParsePostsOptions(),
     sorter: suspend (Collection<PostCellData>) -> List<PostCellData>,
     onStartParsingPosts: suspend () -> Unit,
@@ -497,7 +539,8 @@ abstract class PostScreenViewModel(
                     postData = postData,
                     chanTheme = chanTheme,
                     parsedPostDataContext = ParsedPostDataContext(
-                      isParsingCatalog = isParsingCatalog
+                      isParsingCatalog = isParsingCatalog,
+                      postViewMode = postViewMode
                     ),
                     forced = parsePostsOptions.forced
                   )
@@ -561,7 +604,8 @@ abstract class PostScreenViewModel(
                         postData = postData,
                         chanTheme = chanTheme,
                         parsedPostDataContext = ParsedPostDataContext(
-                          isParsingCatalog = isParsingCatalog
+                          isParsingCatalog = isParsingCatalog,
+                          postViewMode = postViewMode,
                         ),
                         forced = true
                       )
@@ -813,7 +857,7 @@ abstract class PostScreenViewModel(
     val forced: Boolean = false,
     // If set to true then along with new posts the posts these new posts reply to will be re-parsed
     // as well. This is needed to update the "X replies" PostCell text.
-    val parseRepliesTo: Boolean = false
+    val parseRepliesTo: Boolean = false,
   )
 
   data class LoadOptions(

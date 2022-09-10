@@ -6,6 +6,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.util.createAnnotationItem
 import com.github.k1rakishou.kurobaexlite.helpers.util.findAllOccurrences
@@ -368,7 +369,10 @@ class PostCommentApplier {
       append(ELLIPSIZE)
     }
 
-    return resultText to true
+    return when (parsedPostDataContext.postViewMode) {
+      PostViewMode.List -> resultText to true
+      PostViewMode.Grid -> resultText to false
+    }
   }
 
   private fun buildClickToViewFullSpan(

@@ -460,7 +460,7 @@ private fun ContentInternal(
   )
 
   LazyVerticalGridWithFastScroller(
-    modifier = Modifier.fillMaxSize(),
+    lazyGridContainerModifier = Modifier.fillMaxSize(),
     columns = GridCells.Fixed(3),
     lazyGridState = lazyGridState,
     contentPadding = paddingValues,

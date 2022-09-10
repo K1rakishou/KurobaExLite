@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.TextUnit
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 
@@ -19,5 +20,6 @@ data class PostListOptions(
   val contentPadding: PaddingValues,
   val postCellCommentTextSizeSp: TextUnit,
   val postCellSubjectTextSizeSp: TextUnit,
-  val orientation: Int
+  val orientation: Int,
+  val postViewMode: PostViewMode
 )

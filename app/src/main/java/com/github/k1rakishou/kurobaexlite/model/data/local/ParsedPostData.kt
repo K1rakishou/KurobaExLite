@@ -5,6 +5,7 @@ import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.helpers.hash.MurmurHashUtils
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPart
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
 @Immutable
@@ -38,6 +39,7 @@ data class ParsedPostData(
 @Immutable
 data class ParsedPostDataContext(
   val isParsingCatalog: Boolean,
+  val postViewMode: PostViewMode,
   val revealFullPostComment: Boolean = false,
   val textSpoilerOpenedPositionSet: Set<SpoilerPosition> = emptySet(),
   val highlightedPostDescriptor: PostDescriptor? = null
@@ -58,6 +60,7 @@ data class ParsedPostDataContext(
 
   fun murmurhash(): Murmur3Hash {
     return MurmurHashUtils.murmurhash3_x64_128(isParsingCatalog)
+      .combine(MurmurHashUtils.murmurhash3_x64_128(postViewMode))
       .combine(MurmurHashUtils.murmurhash3_x64_128(revealFullPostComment))
       .combine(MurmurHashUtils.murmurhash3_x64_128(textSpoilerOpenedPositionSet))
       .combine(MurmurHashUtils.murmurhash3_x64_128(highlightedPostDescriptor))

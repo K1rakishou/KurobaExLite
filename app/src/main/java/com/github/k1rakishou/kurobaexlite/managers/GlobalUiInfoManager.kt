@@ -19,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.SaveableComponent
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.getParcelableMap
 import com.github.k1rakishou.kurobaexlite.helpers.util.getSerializableMap
 import com.github.k1rakishou.kurobaexlite.helpers.util.putParcelableMap
@@ -116,6 +117,10 @@ class GlobalUiInfoManager(
   val textSubTitleSizeSp: StateFlow<TextUnit>
     get() = _textSubTitleSizeSp.asStateFlow()
 
+  private val _postViewMode = MutableStateFlow<PostViewMode?>(null)
+  val postViewMode: StateFlow<PostViewMode?>
+    get() = _postViewMode.asStateFlow()
+
   private val _postCellCommentTextSizeSp = MutableStateFlow(0.sp)
   val postCellCommentTextSizeSp: StateFlow<TextUnit>
     get() = _postCellCommentTextSizeSp.asStateFlow()
@@ -201,6 +206,7 @@ class GlobalUiInfoManager(
 
     _textTitleSizeSp.value = appSettings.textTitleSizeSp.read().sp
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
+    _postViewMode.value = appSettings.catalogPostViewMode.read().toPostViewMode()
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
     _historyEnabled.value = appSettings.historyEnabled.read()
@@ -237,6 +243,11 @@ class GlobalUiInfoManager(
     coroutineScope.launch {
       appSettings.textSubTitleSizeSp.listen()
         .collectLatest { value -> _textSubTitleSizeSp.value = value.sp }
+    }
+
+    coroutineScope.launch {
+      appSettings.catalogPostViewMode.listen()
+        .collectLatest { value -> _postViewMode.value = value.toPostViewMode() }
     }
 
     coroutineScope.launch {

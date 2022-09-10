@@ -48,6 +48,7 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewModeSetting
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -106,6 +107,7 @@ class CatalogScreen(
 
   override val defaultToolbar: KurobaChildToolbar by lazy {
     CatalogScreenDefaultToolbar(
+      appSettings = appSettings,
       catalogScreenViewModel = catalogScreenViewModel,
       onBackPressed = { globalUiInfoManager.openDrawer() },
       showCatalogSelectionScreen = {
@@ -147,6 +149,15 @@ class CatalogScreen(
         )
 
         navigationRouter.pushScreen(albumScreen)
+      },
+      toggleCatalogPostViewMode = {
+        val newCatalogPostViewMode = when (appSettings.catalogPostViewMode.read()) {
+          PostViewModeSetting.List -> PostViewModeSetting.Grid
+          PostViewModeSetting.Grid -> PostViewModeSetting.List
+        }
+
+        appSettings.catalogPostViewMode.write(newCatalogPostViewMode)
+        catalogScreenViewModel.reparseCatalogPostsWithNewViewMode()
       },
       showOverflowMenu = {
         navigationRouter.presentScreen(
@@ -466,6 +477,12 @@ private fun BoxScope.CatalogPostListScreen(
   val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
   val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
+  val catalogPostViewModeMut by globalUiInfoManager.postViewMode.collectAsState()
+  val catalogPostViewMode = catalogPostViewModeMut
+  if (catalogPostViewMode == null) {
+    return
+  }
+
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val fabSize = dimensionResource(id = R.dimen.fab_size)
   val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
@@ -479,7 +496,8 @@ private fun BoxScope.CatalogPostListScreen(
   val postListOptions by remember(
     windowInsets,
     replyLayoutVisibilityInfoStateForScreen,
-    replyLayoutContainerHeight
+    replyLayoutContainerHeight,
+    catalogPostViewMode
   ) {
     derivedStateOf {
       val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
@@ -503,7 +521,8 @@ private fun BoxScope.CatalogPostListScreen(
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         detectLinkableClicks = true,
-        orientation = orientation
+        orientation = orientation,
+        postViewMode = catalogPostViewMode
       )
     }
   }

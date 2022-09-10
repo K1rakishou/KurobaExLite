@@ -270,7 +270,10 @@ class PostsState(
 
     postDataList.forEach { postDataState ->
       postDataState.postServerDataHashForListAnimations?.let { hash ->
-        postListAnimationInfoMap[postDataState.postDescriptor] = PreviousPostDataInfo(hash, now)
+        postListAnimationInfoMap[postDataState.postDescriptor] = PreviousPostDataInfo(
+          hash = hash,
+          time = now
+        )
       }
     }
   }

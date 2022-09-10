@@ -18,11 +18,14 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPart
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
@@ -471,7 +474,9 @@ class ParsedPostDataCache(
         parsedPostDataContext = parsedPostDataContext,
       )
     } catch (error: Throwable) {
-      val postComment = "Error parsing ${postDescriptor.postNo}!\n\nError: ${error.asLog()}"
+      logcatError(TAG) { "Error parsing ${postDescriptor.postNo}! Error: ${error.asLog()}" }
+
+      val postComment = "Error parsing ${postDescriptor.postNo}!\n\nError: ${error.errorMessageOrClassName(userReadable = true)}"
       val postCommentAnnotated = AnnotatedString(postComment)
 
       return ParsedPostData(
@@ -561,10 +566,10 @@ class ParsedPostDataCache(
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
     val hasImages = postImages?.isNotNullNorEmpty() ?: false
-    val hasSubject = postSubjectParsed.isNotBlank()
+    val compactMode = parsedPostDataContext.postViewMode != PostViewMode.List
 
     return buildAnnotatedString(capacity = postSubjectParsed.length) {
-      if (hasSubject) {
+      if (postSubjectParsed.isNotBlank()) {
         val subjectAnnotatedString = AnnotatedString(
           text = postSubjectParsed,
           spanStyle = SpanStyle(
@@ -573,10 +578,16 @@ class ParsedPostDataCache(
         )
 
         append(subjectAnnotatedString)
-        append("\n")
       }
 
-      if (posterName.isNotNullNorBlank() || posterTripcode.isNotNullNorBlank() || posterId.isNotNullNorBlank()) {
+      val canAppendPostNameSection = !compactMode
+        && (posterName.isNotNullNorBlank() || posterTripcode.isNotNullNorBlank() || posterId.isNotNullNorBlank())
+
+      if (canAppendPostNameSection) {
+        if (length > 0) {
+          append("\n")
+        }
+
         appendNameTripcodeId(
           chanTheme = chanTheme,
           posterName = posterName,
@@ -585,47 +596,58 @@ class ParsedPostDataCache(
         )
       }
 
-      append(
-        buildAnnotatedString(capacity = 32) {
-          pushStyle(SpanStyle(color = chanTheme.postDetailsColor))
-
-          if (parsedPostDataContext.isParsingThread) {
-            append("#")
-            append((postIndex + 1).toString())
-            append(AppConstants.TEXT_SEPARATOR)
-          }
-
-          append("No. ")
-          append(postDescriptor.postNo.toString())
+      if (!compactMode) {
+        if (length > 0) {
+          append("\n")
         }
-      )
 
-      if (postTimeMs != null) {
         append(
           buildAnnotatedString(capacity = 32) {
             pushStyle(SpanStyle(color = chanTheme.postDetailsColor))
 
-            val timeString = DateUtils.getRelativeTimeSpanString(
-              postTimeMs,
-              System.currentTimeMillis(),
-              DateUtils.SECOND_IN_MILLIS,
-              0
-            ).toString()
+            if (parsedPostDataContext.isParsingThread) {
+              append("#")
+              append((postIndex + 1).toString())
+              append(AppConstants.TEXT_SEPARATOR)
+            }
 
-            append(AppConstants.TEXT_SEPARATOR)
-            append(timeString)
+            append("No. ")
+            append(postDescriptor.postNo.toString())
           }
         )
-      }
 
-      if (hasImages) {
-        appendImagesInfo(
-          chanTheme = chanTheme,
-          postImages = postImages
-        )
+        if (postTimeMs != null) {
+          append(
+            buildAnnotatedString(capacity = 32) {
+              pushStyle(SpanStyle(color = chanTheme.postDetailsColor))
+
+              val timeString = DateUtils.getRelativeTimeSpanString(
+                postTimeMs,
+                System.currentTimeMillis(),
+                DateUtils.SECOND_IN_MILLIS,
+                0
+              ).toString()
+
+              append(AppConstants.TEXT_SEPARATOR)
+              append(timeString)
+            }
+          )
+        }
+
+        if (hasImages) {
+          append("\n")
+          appendImagesInfo(
+            chanTheme = chanTheme,
+            postImages = postImages
+          )
+        }
       }
 
       if (postIcons.isNotEmpty() || archived || deleted || closed || sticky != null) {
+        if (length > 0) {
+          append("\n")
+        }
+
         appendPostIcons(
           archived = archived,
           deleted = deleted,
@@ -646,8 +668,6 @@ class ParsedPostDataCache(
     postIcons: List<PostIcon>,
     chanTheme: ChanTheme
   ) {
-    append("\n")
-
     append(
       buildAnnotatedString(capacity = 16) {
         if (archived) {
@@ -733,8 +753,6 @@ class ParsedPostDataCache(
     chanTheme: ChanTheme,
     postImages: List<IPostImage>?
   ) {
-    append("\n")
-
     val imagesInfoAnnotatedString = buildAnnotatedString(capacity = 64) {
       pushStyle(SpanStyle(color = chanTheme.postDetailsColor))
 
@@ -805,8 +823,6 @@ class ParsedPostDataCache(
         }
       }
     )
-
-    append("\n")
   }
 
   private fun calculatePosterIdTextColor(
@@ -842,6 +858,7 @@ class ParsedPostDataCache(
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString? {
     val isCatalogMode = parsedPostDataContext.isParsingCatalog
+    val compactMode = parsedPostDataContext.postViewMode != PostViewMode.List
     val hasThreadInfo = threadImagesTotal != null || threadRepliesTotal != null || threadPostersTotal != null
 
     if (isCatalogMode && hasThreadInfo) {
@@ -849,8 +866,14 @@ class ParsedPostDataCache(
         threadRepliesTotal
           ?.takeIf { repliesCount -> repliesCount > 0 }
           ?.let { repliesCount ->
+            val stringId = if (compactMode) {
+              R.plurals.reply_with_number_compact
+            } else {
+              R.plurals.reply_with_number
+            }
+
             val repliesText = appContext.resources.getQuantityString(
-              R.plurals.reply_with_number,
+              stringId,
               repliesCount,
               repliesCount
             )
@@ -865,8 +888,14 @@ class ParsedPostDataCache(
               append(", ")
             }
 
+            val stringId = if (compactMode) {
+              R.plurals.image_with_number_compact
+            } else {
+              R.plurals.image_with_number
+            }
+
             val imagesText = appContext.resources.getQuantityString(
-              R.plurals.image_with_number,
+              stringId,
               imagesCount,
               imagesCount
             )
@@ -881,8 +910,14 @@ class ParsedPostDataCache(
               append(", ")
             }
 
+            val stringId = if (compactMode) {
+              R.plurals.poster_with_number_compact
+            } else {
+              R.plurals.poster_with_number
+            }
+
             val imagesText = appContext.resources.getQuantityString(
-              R.plurals.poster_with_number,
+              stringId,
               postersCount,
               postersCount
             )

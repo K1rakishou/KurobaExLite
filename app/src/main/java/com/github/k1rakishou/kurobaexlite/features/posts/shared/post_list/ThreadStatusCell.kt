@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +39,7 @@ import kotlinx.coroutines.isActive
 internal val threadStatusCellKey = "thread_status_cell"
 
 @Composable
-internal fun LazyItemScope.ThreadStatusCell(
+internal fun ThreadStatusCell(
   padding: PaddingValues,
   threadScreenViewModelProvider: () -> ThreadScreenViewModel,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit

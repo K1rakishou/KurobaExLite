@@ -66,7 +66,7 @@ class LinkableClickHelper(
     linkable: TextPartSpan.Linkable,
     loadThreadFunc: (ThreadDescriptor) -> Unit,
     loadCatalogFunc: (CatalogDescriptor) -> Unit,
-    showRepliesForPostFunc: (PopupPostsScreen.PostViewMode) -> Unit
+    showRepliesForPostFunc: (PopupPostsScreen.PopupPostViewMode) -> Unit
   ) {
     screenCoroutineScope.launch {
       logcat(TAG) {
@@ -116,7 +116,7 @@ class LinkableClickHelper(
             return@launch
           }
 
-          val replyTo = PopupPostsScreen.PostViewMode.ReplyTo(
+          val replyTo = PopupPostsScreen.PopupPostViewMode.ReplyTo(
             chanDescriptor = postCellData.chanDescriptor,
             postDescriptor = linkable.postDescriptor
           )

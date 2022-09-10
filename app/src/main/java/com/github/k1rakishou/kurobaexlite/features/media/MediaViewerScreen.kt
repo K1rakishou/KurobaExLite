@@ -91,6 +91,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
@@ -694,7 +695,8 @@ private fun MediaViewerBottomSheet(
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         detectLinkableClicks = true,
-        orientation = orientation
+        orientation = orientation,
+        postViewMode = PostViewMode.List
       )
     }
   }
@@ -737,12 +739,12 @@ private fun MediaViewerBottomSheet(
       },
       onPostRepliesClicked = { chanDescriptor, postDescriptor ->
         coroutineScope.launch {
-          val postViewMode = PopupPostsScreen.PostViewMode.RepliesFrom(
+          val popupPostViewMode = PopupPostsScreen.PopupPostViewMode.RepliesFrom(
             chanDescriptor = chanDescriptor,
             postDescriptor = postDescriptor
           )
 
-          popupPostsScreenViewModel.loadRepliesForMode(screenKey, postViewMode)
+          popupPostsScreenViewModel.loadRepliesForMode(screenKey, popupPostViewMode)
         }
       },
       onCopySelectedText = { selectedText ->
@@ -796,7 +798,7 @@ private fun MediaViewerBottomSheet(
       popupPostsScreenViewModel.clearPostReplyChainStack(screenKey)
       popupPostsScreenViewModel.loadRepliesForModeInitial(
         screenKey = screenKey,
-        postViewMode = PopupPostsScreen.PostViewMode.RepliesFrom(
+        popupPostViewMode = PopupPostsScreen.PopupPostViewMode.RepliesFrom(
           chanDescriptor = chanDescriptor,
           postDescriptor = postImage.ownerPostDescriptor,
           includeThisPost = true

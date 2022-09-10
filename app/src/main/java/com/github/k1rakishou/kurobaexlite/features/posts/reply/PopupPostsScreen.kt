@@ -71,6 +71,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -104,7 +105,7 @@ class PopupPostsScreen(
   private val popupPostsScreenViewModel: PopupPostsScreenViewModel by componentActivity.viewModel()
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
-  private val postViewMode: PostViewMode by requireArgumentLazy(REPLY_VIEW_MODE)
+  private val popupPostViewMode: PopupPostViewMode by requireArgumentLazy(REPLY_VIEW_MODE)
 
   private val linkableClickHelper by lazy {
     LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
@@ -250,7 +251,7 @@ class PopupPostsScreen(
     val postListOptions by remember {
       derivedStateOf {
         PostListOptions(
-          isCatalogMode = postViewMode.isCatalogMode,
+          isCatalogMode = popupPostViewMode.isCatalogMode,
           showThreadStatusCell = false,
           textSelectionEnabled = true,
           isInPopup = true,
@@ -261,7 +262,8 @@ class PopupPostsScreen(
           postCellCommentTextSizeSp = postCellCommentTextSizeSp,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
           detectLinkableClicks = true,
-          orientation = orientation
+          orientation = orientation,
+          postViewMode = PostViewMode.List
         )
       }
     }
@@ -280,7 +282,7 @@ class PopupPostsScreen(
 
     if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
       PopupPostsScreenContentLayout(
-        postViewMode = postViewMode,
+        popupPostViewMode = popupPostViewMode,
         postListOptions = postListOptions,
         buttonsHeightPx = buttonsHeightPx,
         screenKey = screenKey,
@@ -334,8 +336,8 @@ class PopupPostsScreen(
     }
 
     LaunchedEffect(
-      key1 = postViewMode,
-      block = { popupPostsScreenViewModel.loadRepliesForModeInitial(screenKey, postViewMode) }
+      key1 = popupPostViewMode,
+      block = { popupPostsScreenViewModel.loadRepliesForModeInitial(screenKey, popupPostViewMode) }
     )
   }
 
@@ -354,7 +356,7 @@ class PopupPostsScreen(
   }
 
   @Immutable
-  sealed class PostViewMode : Parcelable {
+  sealed class PopupPostViewMode : Parcelable {
     abstract val chanDescriptor: ChanDescriptor
 
     val isCatalogMode: Boolean
@@ -370,20 +372,20 @@ class PopupPostsScreen(
     data class ReplyTo(
       override val chanDescriptor: ChanDescriptor,
       val postDescriptor: PostDescriptor
-    ) : PostViewMode()
+    ) : PopupPostViewMode()
 
     @Parcelize
     data class RepliesFrom(
       override val chanDescriptor: ChanDescriptor,
       val postDescriptor: PostDescriptor,
       val includeThisPost: Boolean = false
-    ) : PostViewMode()
+    ) : PopupPostViewMode()
 
     @Parcelize
     data class PostList(
       override val chanDescriptor: ChanDescriptor,
       val postNoWithSubNoList: List<Pair<Long, Long>>
-    ) : PostViewMode() {
+    ) : PopupPostViewMode() {
 
       @IgnoredOnParcel
       val asPostDescriptorList by lazy {
@@ -426,7 +428,7 @@ class PopupPostsScreen(
 
 @Composable
 private fun PopupPostsScreenContentLayout(
-  postViewMode: PopupPostsScreen.PostViewMode,
+  popupPostViewMode: PopupPostsScreen.PopupPostViewMode,
   postListOptions: PostListOptions,
   buttonsHeightPx: Int,
   screenKey: ScreenKey,
@@ -439,7 +441,7 @@ private fun PopupPostsScreenContentLayout(
   Layout(
     content = {
       PopupPostsScreenContent(
-        postViewMode = postViewMode,
+        popupPostViewMode = popupPostViewMode,
         postListOptions = postListOptions,
         screenKey = screenKey,
         postLongtapContentMenuProvider = postLongtapContentMenuProvider,
@@ -484,7 +486,7 @@ private fun PopupPostsScreenContentLayout(
 
 @Composable
 private fun PopupPostsScreenContent(
-  postViewMode: PopupPostsScreen.PostViewMode,
+  popupPostViewMode: PopupPostsScreen.PopupPostViewMode,
   postListOptions: PostListOptions,
   screenKey: ScreenKey,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
@@ -553,7 +555,7 @@ private fun PopupPostsScreenContent(
             coroutineScope.launch {
               popupPostsScreenViewModel.loadRepliesForMode(
                 screenKey = screenKey,
-                postViewMode = postViewMode
+                popupPostViewMode = postViewMode
               )
             }
           }
@@ -567,14 +569,14 @@ private fun PopupPostsScreenContent(
         )
       },
       onPostRepliesClicked = { chanDescriptor, postDescriptor ->
-        if (postViewMode is PopupPostsScreen.PostViewMode.PostList) {
+        if (popupPostViewMode is PopupPostsScreen.PopupPostViewMode.PostList) {
           return@PostListContent
         }
 
         coroutineScope.launch {
           popupPostsScreenViewModel.loadRepliesForMode(
             screenKey = screenKey,
-            postViewMode = PopupPostsScreen.PostViewMode.RepliesFrom(
+            popupPostViewMode = PopupPostsScreen.PopupPostViewMode.RepliesFrom(
               chanDescriptor = chanDescriptor,
               postDescriptor = postDescriptor
             )

@@ -28,7 +28,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.search.global.GlobalSearchScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostCellIconViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCellIconViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel

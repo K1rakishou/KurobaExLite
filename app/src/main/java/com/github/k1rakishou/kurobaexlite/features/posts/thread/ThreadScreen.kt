@@ -46,6 +46,7 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -369,7 +370,7 @@ private fun BoxScope.ThreadPostListScreen(
   replyLayoutStateProvider: () -> IReplyLayoutState,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
   linkableClickHelperProvider: () -> LinkableClickHelper,
-  showRepliesForPost: (PopupPostsScreen.PostViewMode) -> Unit,
+  showRepliesForPost: (PopupPostsScreen.PopupPostViewMode) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
@@ -425,7 +426,8 @@ private fun BoxScope.ThreadPostListScreen(
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         detectLinkableClicks = true,
-        orientation = orientation
+        orientation = orientation,
+        postViewMode = PostViewMode.List
       )
     }
   }
@@ -476,12 +478,12 @@ private fun BoxScope.ThreadPostListScreen(
       )
     },
     onPostRepliesClicked = { chanDescriptor, postDescriptor ->
-      val postViewMode = PopupPostsScreen.PostViewMode.RepliesFrom(
+      val popupPostViewMode = PopupPostsScreen.PopupPostViewMode.RepliesFrom(
         chanDescriptor = chanDescriptor,
         postDescriptor = postDescriptor
       )
 
-      showRepliesForPost(postViewMode)
+      showRepliesForPost(popupPostViewMode)
     },
     onCopySelectedText = { selectedText ->
       androidHelpers.copyToClipboard("Selected text", selectedText)

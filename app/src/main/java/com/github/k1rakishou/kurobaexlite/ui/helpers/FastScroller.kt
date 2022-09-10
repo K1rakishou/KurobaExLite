@@ -26,6 +26,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyGridStateWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyItemInfoWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyLayoutInfoWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
@@ -128,12 +130,14 @@ fun LazyColumnWithFastScroller(
 
 @Composable
 fun LazyVerticalGridWithFastScroller(
-  modifier: Modifier = Modifier,
+  lazyGridContainerModifier: Modifier = Modifier,
+  lazyGridModifier: Modifier = Modifier,
   scrollbarWidth: Int = DefaultScrollbarWidth(),
   scrollbarHeight: Int = DefaultScrollbarHeight(),
   columns: GridCells,
   lazyGridState: LazyGridState,
   contentPadding: PaddingValues,
+  fastScrollerMarks: FastScrollerMarksManager.FastScrollerMarks? = null,
   userScrollEnabled: Boolean = true,
   onFastScrollerDragStateChanged: ((Boolean) -> Unit)? = null,
   content: LazyGridScope.() -> Unit
@@ -150,7 +154,7 @@ fun LazyVerticalGridWithFastScroller(
 
   var scrollbarManualDragProgress by remember { mutableStateOf<Float?>(null) }
 
-  BoxWithConstraints(modifier = modifier) {
+  BoxWithConstraints(modifier = lazyGridContainerModifier) {
     val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
     val maxHeightPx = with(LocalDensity.current) { maxHeight.toPx().toInt() }
 
@@ -178,6 +182,7 @@ fun LazyVerticalGridWithFastScroller(
     ) {
       LazyVerticalGrid(
         modifier = Modifier
+          .then(lazyGridModifier)
           .scrollbar(
             lazyStateWrapper = lazyGridStateWrapper,
             scrollbarDimens = ScrollbarDimens.Vertical.Static(
@@ -188,6 +193,7 @@ fun LazyVerticalGridWithFastScroller(
             scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormal,
             scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDragged,
             contentPadding = contentPadding,
+            fastScrollerMarks = fastScrollerMarks,
             scrollbarManualDragProgress = scrollbarManualDragProgress
           ),
         columns = columns,
@@ -200,9 +206,9 @@ fun LazyVerticalGridWithFastScroller(
   }
 }
 
-suspend fun PointerInputScope.processFastScrollerInputs(
+suspend fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo>> PointerInputScope.processFastScrollerInputs(
   coroutineScope: CoroutineScope,
-  lazyStateWrapper: LazyStateWrapper,
+  lazyStateWrapper: LazyStateWrapper<ItemInfo, LayoutInfo>,
   width: Int,
   paddingTop: Int,
   paddingBottom: Int,

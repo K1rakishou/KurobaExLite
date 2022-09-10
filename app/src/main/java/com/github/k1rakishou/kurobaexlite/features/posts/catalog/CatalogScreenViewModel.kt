@@ -188,6 +188,8 @@ class CatalogScreenViewModel(
     }
 
     val catalogSortSetting = appSettings.catalogSort.read()
+    val catalogPostViewMode = appSettings.catalogPostViewMode.read().toPostViewMode()
+
     val sortedThreads = CatalogThreadSorter.sortCatalogPostData(
       catalogThreads = postsLoadResult.allCombinedForCatalog(),
       catalogSortSetting = catalogSortSetting
@@ -198,6 +200,7 @@ class CatalogScreenViewModel(
       chanDescriptor = catalogDescriptor,
       postDataList = sortedThreads,
       isCatalogMode = true,
+      postViewMode = catalogPostViewMode,
       forced = true
     )
 
@@ -211,6 +214,7 @@ class CatalogScreenViewModel(
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,
       postDataList = sortedThreads,
+      postViewMode = catalogPostViewMode,
       parsePostsOptions = ParsePostsOptions(forced = true),
       sorter = { postCellData ->
         CatalogThreadSorter.sortCatalogPostCellData(

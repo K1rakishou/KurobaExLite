@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
+package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
 import android.os.SystemClock
 import androidx.compose.animation.Animatable
@@ -26,7 +26,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PreviousPo
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 
 private val animationTranslationDelta = 100.dp
@@ -38,12 +37,8 @@ private val insertAnimationMaxTimeoutMs = 500
 internal fun PostCellContainerAnimated(
   animateInsertion: Boolean,
   animateUpdate: Boolean,
-  isCatalogMode: Boolean,
-  postCellData: PostCellData,
-  currentlyOpenedThread: ThreadDescriptor?,
   content: @Composable () -> Unit
 ) {
-  val chanTheme = LocalChanTheme.current
   var currentAnimation by remember { mutableStateOf<AnimationType?>(null) }
   val contentMovable = remember { movableContentOf { content() } }
 
@@ -71,19 +66,7 @@ internal fun PostCellContainerAnimated(
     }
   }
 
-  val bgColor = remember(
-    key1 = isCatalogMode,
-    key2 = currentlyOpenedThread,
-    key3 = postCellData.postDescriptor
-  ) {
-    if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
-      chanTheme.highlighterColor.copy(alpha = 0.3f)
-    } else {
-      Color.Unspecified
-    }
-  }
-
-  Box(modifier = Modifier.background(bgColor)) {
+  Box {
     contentMovable()
   }
 }
@@ -187,7 +170,12 @@ internal fun canAnimateUpdate(
   rememberedHashForListAnimations: Murmur3Hash?,
   postsParsedOnce: Boolean
 ): Boolean {
-  if (previousPostDataInfoMap == null || searchQuery != null || !postsParsedOnce || inPopup) {
+  if (
+    previousPostDataInfoMap == null
+    || searchQuery != null
+    || !postsParsedOnce
+    || inPopup
+  ) {
     return false
   }
 
@@ -214,11 +202,17 @@ internal fun canAnimateInsertion(
   inPopup: Boolean,
   postsParsedOnce: Boolean
 ): Boolean {
-  if (previousPostDataInfoMap == null || searchQuery != null || !postsParsedOnce || inPopup) {
+
+  if (
+    previousPostDataInfoMap == null
+    || searchQuery != null
+    || !postsParsedOnce
+    || inPopup
+  ) {
     return false
   }
 
-  val previousPostDataInfo = previousPostDataInfoMap[postCellData.postDescriptor]
+  val previousPostDataInfo = previousPostDataInfoMap.get(postCellData.postDescriptor)
   if (previousPostDataInfo == null) {
     return true
   }
@@ -229,8 +223,7 @@ internal fun canAnimateInsertion(
 
   val canAnimate = (previousPostDataInfo.time + insertAnimationMaxTimeoutMs) >= SystemClock.elapsedRealtime()
   if (canAnimate) {
-    previousPostDataInfoMap[postCellData.postDescriptor] =
-      previousPostDataInfo.copy(alreadyAnimatedInsertion = true)
+    previousPostDataInfoMap[postCellData.postDescriptor] = previousPostDataInfo.copy(alreadyAnimatedInsertion = true)
   }
 
   return canAnimate

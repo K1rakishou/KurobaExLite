@@ -11,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -133,6 +134,7 @@ class ThreadScreenViewModel(
       val threadPostsAsync = threadScreenState.postsAsyncDataState.value
       val threadDescriptor = chanThreadManager.currentlyOpenedThread
       val prevCellDataState = threadScreenState.threadCellDataState.value
+      val postViewMode = PostViewMode.List
 
       if (threadPostsAsync !is AsyncData.Data) {
         if (threadDescriptor == null) {
@@ -180,6 +182,7 @@ class ThreadScreenViewModel(
       parseRemainingPostsAsync(
         chanDescriptor = threadDescriptor,
         postDataList = postLoadResult.newAndUpdatedCombined(),
+        postViewMode = postViewMode,
         parsePostsOptions = ParsePostsOptions(
           forced = true,
           parseRepliesTo = true
@@ -342,6 +345,7 @@ class ThreadScreenViewModel(
 
     val cachedThreadPostsState = (threadScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data
     val allCombinedPosts = postLoadResult.allCombinedForThread()
+    val postViewMode = PostViewMode.List
 
     val startParsePost = if (loadOptions.scrollToPost != null) {
       // Set the lastViewedPostForScrollRestoration to scrollToPost so that we can actually start from
@@ -362,6 +366,7 @@ class ThreadScreenViewModel(
         chanDescriptor = threadDescriptor,
         postDataList = allCombinedPosts,
         isCatalogMode = false,
+        postViewMode = postViewMode,
         forced = false
       )
 
@@ -376,6 +381,7 @@ class ThreadScreenViewModel(
         chanDescriptor = threadDescriptor,
         postDataList = allCombinedPosts,
         isCatalogMode = false,
+        postViewMode = postViewMode,
         forced = false
       )
 
@@ -396,6 +402,7 @@ class ThreadScreenViewModel(
     parseRemainingPostsAsync(
       chanDescriptor = threadDescriptor,
       postDataList = allCombinedPosts,
+      postViewMode = postViewMode,
       parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
       sorter = { postCellDataCollection -> ThreadPostSorter.sortThreadPostCellData(postCellDataCollection) },
       onStartParsingPosts = {

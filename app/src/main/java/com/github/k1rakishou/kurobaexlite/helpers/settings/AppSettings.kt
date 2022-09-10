@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.helpers.settings
 import android.content.Context
 import android.os.Build
 import android.webkit.WebSettings
+import androidx.compose.runtime.Immutable
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
@@ -61,6 +62,7 @@ class AppSettings(
     NumberSetting(defaultValue, "post_subject_comment_text_size_sp", dataStore)
   }
   val catalogSort by lazy { JsonSetting(moshi.adapter(CatalogSortSetting::class.java), CatalogSortSetting(), "catalog_sort_setting", dataStore) }
+  val catalogPostViewMode by lazy { EnumSetting<PostViewModeSetting>(PostViewModeSetting.List, "catalog_post_view_mode", PostViewModeSetting::class.java, dataStore) }
   val navigationHistoryMaxSize by lazy { NumberSetting(256, "navigation_history_max_size", dataStore) }
   val lastRememberedFilePicker by lazy { StringSetting("", "last_remembered_file_picker", dataStore) }
   val mediaViewerUiVisible by lazy { BooleanSetting(true, "media_viewer_ui_visible", dataStore) }
@@ -119,17 +121,36 @@ enum class LayoutType {
 }
 
 @JsonClass(generateAdapter = true)
-data class CatalogSortSetting(
-  @Json (name = "sort") val sort: CatalogSort = CatalogSort.BUMP,
-  @Json (name = "ascending") val ascending: Boolean = false
-)
-
-@JsonClass(generateAdapter = true)
 data class IntPositionJson(
   val x: Int = 0,
   val y: Int = 0
 )
 
+enum class PostViewModeSetting(val mode: Int) {
+  List(0),
+  Grid(1);
+
+  fun toPostViewMode(): PostViewMode {
+    return when (this) {
+      List -> PostViewMode.List
+      Grid -> PostViewMode.Grid
+    }
+  }
+}
+
+@Immutable
+enum class PostViewMode {
+  List,
+  Grid
+}
+
+@JsonClass(generateAdapter = true)
+data class CatalogSortSetting(
+  @Json (name = "sort") val sort: CatalogSort = CatalogSort.BUMP,
+  @Json (name = "ascending") val ascending: Boolean = false
+)
+
+@Immutable
 enum class CatalogSort(val orderName: String) {
   BUMP("bump"),
   REPLY("reply"),

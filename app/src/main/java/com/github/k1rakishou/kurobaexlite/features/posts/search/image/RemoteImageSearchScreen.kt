@@ -504,7 +504,7 @@ private fun BuildImageSearchResults(
   )
 
   LazyVerticalGridWithFastScroller(
-    modifier = Modifier.fillMaxSize(),
+    lazyGridContainerModifier = Modifier.fillMaxSize(),
     lazyGridState = lazyGridState,
     columns = GridCells.Adaptive(minSize = RemoteImageSearchScreen.IMAGE_SIZE),
     contentPadding = paddingValues

@@ -4,8 +4,11 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridItemInfo
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -23,6 +26,8 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.debugInspectorInfo
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -50,13 +55,136 @@ sealed class ScrollbarDimens {
 }
 
 @Stable
-interface LazyStateWrapper {
+interface LazyItemInfoWrapper {
+  val index: Int
+  val key: Any
+  val offsetY: Int
+
+  companion object {
+    fun fromLazyListItemInfo(lazyListItemInfo: LazyListItemInfo): LazyListItemInfoWrapper {
+      return LazyListItemInfoWrapper(
+        index = lazyListItemInfo.index,
+        key = lazyListItemInfo.key,
+        offsetY = lazyListItemInfo.offset,
+        offset = lazyListItemInfo.offset,
+        size = lazyListItemInfo.size,
+      )
+    }
+
+    fun fromLazyGridItemInfo(lazyGridItemInfo: LazyGridItemInfo): LazyGridItemInfoWrapper {
+      return LazyGridItemInfoWrapper(
+        index = lazyGridItemInfo.index,
+        key = lazyGridItemInfo.key,
+        offsetY = lazyGridItemInfo.offset.y,
+        offset = lazyGridItemInfo.offset,
+        size = lazyGridItemInfo.size,
+      )
+    }
+
+
+  }
+
+}
+
+typealias GenericLazyStateWrapper = LazyStateWrapper<LazyItemInfoWrapper, LazyLayoutInfoWrapper<LazyItemInfoWrapper>>
+
+@Stable
+class LazyListItemInfoWrapper(
+  override val index: Int,
+  override val key: Any,
+  override val offsetY: Int,
+  val offset: Int,
+  val size: Int
+) : LazyItemInfoWrapper
+
+@Stable
+class LazyGridItemInfoWrapper(
+  override val index: Int,
+  override val key: Any,
+  override val offsetY: Int,
+  val offset: IntOffset,
+  val size: IntSize
+) : LazyItemInfoWrapper
+
+@Stable
+interface LazyLayoutInfoWrapper<T : LazyItemInfoWrapper> {
+  val visibleItemsInfo: List<T>
+  val viewportStartOffset: Int
+  val viewportEndOffset: Int
+  val totalItemsCount: Int
+  val viewportSize: IntSize get() = IntSize.Zero
+  val orientation: Orientation get() = Orientation.Vertical
+  val reverseLayout: Boolean get() = false
+  val beforeContentPadding: Int get() = 0
+  val afterContentPadding: Int get() = 0
+}
+
+@Stable
+class LazyListLayoutInfoWrapper(
+  val lazyListState: LazyListState
+) : LazyLayoutInfoWrapper<LazyListItemInfoWrapper> {
+
+  override val visibleItemsInfo: List<LazyListItemInfoWrapper>
+    get() {
+      return lazyListState.layoutInfo.visibleItemsInfo
+        .map { lazyListItemInfo -> LazyItemInfoWrapper.fromLazyListItemInfo(lazyListItemInfo) }
+    }
+  override val viewportStartOffset: Int
+    get() = lazyListState.layoutInfo.viewportStartOffset
+  override val viewportEndOffset: Int
+    get() = lazyListState.layoutInfo.viewportEndOffset
+  override val totalItemsCount: Int
+    get() = lazyListState.layoutInfo.totalItemsCount
+  override val viewportSize: IntSize
+    get() = lazyListState.layoutInfo.viewportSize
+  override val orientation: Orientation
+    get() = lazyListState.layoutInfo.orientation
+  override val reverseLayout: Boolean
+    get() = lazyListState.layoutInfo.reverseLayout
+  override val beforeContentPadding: Int
+    get() = lazyListState.layoutInfo.beforeContentPadding
+  override val afterContentPadding: Int
+    get() = lazyListState.layoutInfo.afterContentPadding
+}
+
+@Stable
+class LazyGridLayoutInfoWrapper(
+  val lazyGridState: LazyGridState
+) : LazyLayoutInfoWrapper<LazyGridItemInfoWrapper> {
+
+  override val visibleItemsInfo: List<LazyGridItemInfoWrapper>
+    get() {
+      return lazyGridState.layoutInfo.visibleItemsInfo
+        .map { lazyGridItemInfo -> LazyItemInfoWrapper.fromLazyGridItemInfo(lazyGridItemInfo) }
+    }
+  override val viewportStartOffset: Int
+    get() = lazyGridState.layoutInfo.viewportStartOffset
+  override val viewportEndOffset: Int
+    get() = lazyGridState.layoutInfo.viewportEndOffset
+  override val totalItemsCount: Int
+    get() = lazyGridState.layoutInfo.totalItemsCount
+  override val viewportSize: IntSize
+    get() = lazyGridState.layoutInfo.viewportSize
+  override val orientation: Orientation
+    get() = lazyGridState.layoutInfo.orientation
+  override val reverseLayout: Boolean
+    get() = lazyGridState.layoutInfo.reverseLayout
+  override val beforeContentPadding: Int
+    get() = lazyGridState.layoutInfo.beforeContentPadding
+  override val afterContentPadding: Int
+    get() = lazyGridState.layoutInfo.afterContentPadding
+}
+
+@Stable
+interface LazyStateWrapper<T : LazyItemInfoWrapper, V : LazyLayoutInfoWrapper<T>> {
   val isScrollInProgress: Boolean
   val firstVisibleItemIndex: Int?
+  val firstVisibleItemScrollOffset: Int?
   val visibleItemsCount: Int
   val fullyVisibleItemsCount: Int
   val totalItemsCount: Int
   val viewportHeight: Int
+  val layoutInfo: V
 
   suspend fun scrollToItem(index: Int, scrollOffset: Int = 0)
 }
@@ -64,12 +192,14 @@ interface LazyStateWrapper {
 @Stable
 class LazyListStateWrapper(
   val lazyListState: LazyListState
-) : LazyStateWrapper {
+) : LazyStateWrapper<LazyListItemInfoWrapper, LazyListLayoutInfoWrapper> {
 
   override val isScrollInProgress: Boolean
     get() = lazyListState.isScrollInProgress
   override val firstVisibleItemIndex: Int?
     get() = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
+  override val firstVisibleItemScrollOffset: Int?
+    get() = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.offset
   override val visibleItemsCount: Int
     get() = lazyListState.layoutInfo.visibleItemsInfo.size
   override val fullyVisibleItemsCount: Int
@@ -78,6 +208,8 @@ class LazyListStateWrapper(
     get() = lazyListState.layoutInfo.totalItemsCount
   override val viewportHeight: Int
     get() = lazyListState.layoutInfo.viewportEndOffset - lazyListState.layoutInfo.viewportStartOffset
+
+  override val layoutInfo: LazyListLayoutInfoWrapper = LazyListLayoutInfoWrapper(lazyListState)
 
   override suspend fun scrollToItem(index: Int, scrollOffset: Int) {
     lazyListState.scrollToItem(index, scrollOffset)
@@ -88,12 +220,14 @@ class LazyListStateWrapper(
 @Stable
 class LazyGridStateWrapper(
   val lazyGridState: LazyGridState
-) : LazyStateWrapper {
+) : LazyStateWrapper<LazyGridItemInfoWrapper, LazyGridLayoutInfoWrapper> {
 
   override val isScrollInProgress: Boolean
     get() = lazyGridState.isScrollInProgress
   override val firstVisibleItemIndex: Int?
     get() = lazyGridState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
+  override val firstVisibleItemScrollOffset: Int?
+    get() = lazyGridState.layoutInfo.visibleItemsInfo.firstOrNull()?.offset?.y
   override val visibleItemsCount: Int
     get() = lazyGridState.layoutInfo.visibleItemsInfo.size
   override val fullyVisibleItemsCount: Int
@@ -102,6 +236,8 @@ class LazyGridStateWrapper(
     get() = lazyGridState.layoutInfo.totalItemsCount
   override val viewportHeight: Int
     get() = lazyGridState.layoutInfo.viewportEndOffset - lazyGridState.layoutInfo.viewportStartOffset
+
+  override val layoutInfo: LazyGridLayoutInfoWrapper = LazyGridLayoutInfoWrapper(lazyGridState)
 
   override suspend fun scrollToItem(index: Int, scrollOffset: Int) {
     lazyGridState.scrollToItem(index, scrollOffset)
@@ -117,7 +253,6 @@ fun Modifier.scrollbar(
   scrollbarThumbColorDragged: Color? = null,
   contentPadding: PaddingValues = DefaultPaddingValues,
   scrollbarManualDragProgress: Float? = null,
-  isScrollInProgress: (LazyStateWrapper) -> Boolean = { lazyListState -> lazyListState.isScrollInProgress }
 ): Modifier {
   return composed {
     val chanTheme = LocalChanTheme.current
@@ -131,7 +266,7 @@ fun Modifier.scrollbar(
       scrollbarThumbColorDragged = scrollbarThumbColorDragged ?: chanTheme.scrollbarThumbColorDragged,
       contentPadding = contentPadding,
       scrollbarManualDragProgress = scrollbarManualDragProgress,
-      isScrollInProgress = isScrollInProgress
+      isScrollInProgress = { listStateWrapper -> listStateWrapper.isScrollInProgress }
     )
   }
 }
@@ -144,13 +279,12 @@ fun Modifier.scrollbar(
   scrollbarThumbColorDragged: Color? = null,
   contentPadding: PaddingValues = DefaultPaddingValues,
   scrollbarManualDragProgress: Float? = null,
-  isScrollInProgress: (LazyStateWrapper) -> Boolean = { lazyListState -> lazyListState.isScrollInProgress }
 ): Modifier {
   return composed {
     val chanTheme = LocalChanTheme.current
     val lazyListStateWrapper = remember { LazyGridStateWrapper(state) }
 
-    return@composed scrollbar(
+    return@composed scrollbar<LazyGridItemInfoWrapper, LazyGridLayoutInfoWrapper>(
       lazyStateWrapper = lazyListStateWrapper,
       scrollbarDimens = scrollbarDimens,
       scrollbarTrackColor = scrollbarTrackColor ?: chanTheme.scrollbarTrackColor,
@@ -158,7 +292,7 @@ fun Modifier.scrollbar(
       scrollbarThumbColorDragged = scrollbarThumbColorDragged ?: chanTheme.scrollbarThumbColorDragged,
       contentPadding = contentPadding,
       scrollbarManualDragProgress = scrollbarManualDragProgress,
-      isScrollInProgress = isScrollInProgress
+      isScrollInProgress = { listStateWrapper -> listStateWrapper.isScrollInProgress }
     )
   }
 }
@@ -166,8 +300,8 @@ fun Modifier.scrollbar(
 /**
  * scrollbar for LazyLists that use ScrollState (like verticalScroll())
  * */
-fun Modifier.scrollbar(
-  lazyStateWrapper: LazyStateWrapper,
+fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo>> Modifier.scrollbar(
+  lazyStateWrapper: LazyStateWrapper<ItemInfo, LayoutInfo>,
   scrollbarDimens: ScrollbarDimens,
   scrollbarTrackColor: Color,
   scrollbarThumbColorNormal: Color,
@@ -175,7 +309,7 @@ fun Modifier.scrollbar(
   contentPadding: PaddingValues,
   fastScrollerMarks: FastScrollerMarksManager.FastScrollerMarks? = null,
   scrollbarManualDragProgress: Float? = null,
-  isScrollInProgress: (LazyStateWrapper) -> Boolean = { lazyListState -> lazyListState.isScrollInProgress }
+  isScrollInProgress: (LazyStateWrapper<ItemInfo, LayoutInfo>) -> Boolean = { lazyListState -> lazyListState.isScrollInProgress }
 ): Modifier {
   return composed(
     inspectorInfo = debugInspectorInfo {
@@ -469,10 +603,10 @@ fun Modifier.verticalScrollbar(
   }
 }
 
-private fun ContentDrawScope.calculateDynamicScrollbarWidth(
+private fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo>> ContentDrawScope.calculateDynamicScrollbarWidth(
   leftPaddingPx: Float,
   rightPaddingPx: Float,
-  lazyStateWrapper: LazyStateWrapper,
+  lazyStateWrapper: LazyStateWrapper<ItemInfo, LayoutInfo>,
   firstVisibleElementIndex: Int,
   scrollbarMinWidth: Float,
   realScrollbarWidthDiff: Float?
@@ -497,10 +631,10 @@ private fun ContentDrawScope.calculateDynamicScrollbarWidth(
   return Pair(scrollbarOffsetX, scrollbarWidthAdjusted)
 }
 
-private fun ContentDrawScope.calculateDynamicScrollbarHeight(
+private fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo>> ContentDrawScope.calculateDynamicScrollbarHeight(
   topPaddingPx: Float,
   bottomPaddingPx: Float,
-  lazyStateWrapper: LazyStateWrapper,
+  lazyStateWrapper: LazyStateWrapper<ItemInfo, LayoutInfo>,
   firstVisibleElementIndex: Int,
   scrollbarMinHeight: Float,
   realScrollbarHeightDiff: Float?
@@ -526,11 +660,11 @@ private fun ContentDrawScope.calculateDynamicScrollbarHeight(
 }
 
 @Suppress("IfThenToElvis")
-private fun ContentDrawScope.calculateStaticScrollbarWidth(
+private fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo>> ContentDrawScope.calculateStaticScrollbarWidth(
   leftPaddingPx: Float,
   rightPaddingPx: Float,
   scrollbarManualDragProgress: Float?,
-  lazyStateWrapper: LazyStateWrapper,
+  lazyStateWrapper: LazyStateWrapper<ItemInfo, LayoutInfo>,
   firstVisibleElementIndex: Int,
   scrollbarWidth: Float
 ): Pair<Float, Float> {
@@ -548,11 +682,11 @@ private fun ContentDrawScope.calculateStaticScrollbarWidth(
 }
 
 @Suppress("IfThenToElvis")
-private fun ContentDrawScope.calculateStaticScrollbarHeight(
+private fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo>> ContentDrawScope.calculateStaticScrollbarHeight(
   topPaddingPx: Float,
   bottomPaddingPx: Float,
   scrollbarManualDragProgress: Float?,
-  lazyStateWrapper: LazyStateWrapper,
+  lazyStateWrapper: LazyStateWrapper<ItemInfo, LayoutInfo>,
   firstVisibleElementIndex: Int,
   scrollbarHeight: Float
 ): Pair<Float, Float> {
