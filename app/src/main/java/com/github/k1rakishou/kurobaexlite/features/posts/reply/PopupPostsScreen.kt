@@ -611,7 +611,7 @@ private fun PopupPostsScreenContent(
       onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
       onCurrentlyTouchingPostList = { touching -> /*no-op*/ },
       onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
-      loadingContent = { isInPopup -> /*no-op*/ },
+      loadingContent = { lazyItemScope, isInPopup -> /*no-op*/ },
     )
   }
 

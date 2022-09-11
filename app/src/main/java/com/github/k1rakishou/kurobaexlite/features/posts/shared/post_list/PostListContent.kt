@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -96,14 +97,14 @@ internal fun PostListContent(
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   onGoToPostClicked: ((PostCellData) -> Unit)?,
-  emptyContent: @Composable (Boolean, Boolean) -> Unit = { isInPopup, isCatalogMode ->
-    PostListEmptyContent(isInPopup, isCatalogMode)
+  emptyContent: @Composable (Any, Boolean, Boolean) -> Unit = { lazyItemScope, isInPopup, isCatalogMode ->
+    PostListEmptyContent(lazyItemScope, isInPopup, isCatalogMode)
   },
-  loadingContent: @Composable (Boolean) -> Unit = { isInPopup ->
-    PostListLoadingContent(isInPopup)
+  loadingContent: @Composable (Any, Boolean) -> Unit = { lazyItemScope, isInPopup ->
+    PostListLoadingContent(lazyItemScope, isInPopup)
   },
-  errorContent: @Composable (AsyncData.Error, Boolean) -> Unit = { postListAsyncError, isInPopup ->
-    PostListErrorContent(postListAsyncError, isInPopup, postsScreenViewModelProvider)
+  errorContent: @Composable (Any, AsyncData.Error, Boolean) -> Unit = { lazyItemScope, postListAsyncError, isInPopup ->
+    PostListErrorContent(lazyItemScope, postListAsyncError, isInPopup, postsScreenViewModelProvider)
   },
 ) {
   val postsScreenViewModel = postsScreenViewModelProvider()
@@ -403,9 +404,9 @@ private fun PostListInternal(
   onPostListScrolled: (Float) -> Unit,
   onCurrentlyTouchingPostList: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
-  emptyContent: @Composable (Boolean, Boolean) -> Unit,
-  loadingContent: @Composable (Boolean) -> Unit,
-  errorContent: @Composable (AsyncData.Error, Boolean) -> Unit,
+  emptyContent: @Composable ((Any, Boolean, Boolean) -> Unit),
+  loadingContent: @Composable ((Any, Boolean) -> Unit),
+  errorContent: @Composable ((Any, AsyncData.Error, Boolean) -> Unit),
 ) {
   val isInPopup = postListOptions.isInPopup
   val pullToRefreshEnabled = postListOptions.pullToRefreshEnabled
@@ -569,9 +570,9 @@ private fun PostsListMode(
   onPostListScrolled: (Float) -> Unit,
   onCurrentlyTouchingPostList: (Boolean) -> Unit,
   buildThreadStatusCellFunc: @Composable (() -> Unit)?,
-  emptyContent: @Composable() ((Boolean, Boolean) -> Unit),
-  loadingContent: @Composable() ((Boolean) -> Unit),
-  errorContent: @Composable() ((AsyncData.Error, Boolean) -> Unit),
+  emptyContent: @Composable ((Any, Boolean, Boolean) -> Unit),
+  loadingContent: @Composable ((Any, Boolean) -> Unit),
+  errorContent: @Composable ((Any, AsyncData.Error, Boolean) -> Unit),
   postsScreenViewModelProvider: () -> PostScreenViewModel,
 ) {
   val postsScreenViewModel = postsScreenViewModelProvider()
@@ -598,9 +599,15 @@ private fun PostsListMode(
     content = {
       postListAsyncDataContent(
         postListAsync = postListAsync,
-        emptyContent = { emptyContent(isInPopup, isCatalogMode) },
-        loadingContent = { loadingContent(isInPopup) },
-        errorContent = { postListAsyncError -> errorContent(postListAsyncError, isInPopup) },
+        emptyContent = { lazyItemScope ->
+          emptyContent(lazyItemScope, isInPopup, isCatalogMode)
+        },
+        loadingContent = { lazyItemScope ->
+          loadingContent(lazyItemScope, isInPopup)
+        },
+        errorContent = { lazyItemScope, postListAsyncError ->
+          errorContent(lazyItemScope, postListAsyncError, isInPopup)
+        },
         dataContent = { postListAsyncData ->
           val abstractPostsState = postListAsyncData.data
           val previousPostDataInfoMap = abstractPostsState.postListAnimationInfoMap
@@ -720,9 +727,9 @@ private fun PostsGridMode(
   onPostListScrolled: (Float) -> Unit,
   onCurrentlyTouchingPostList: (Boolean) -> Unit,
   buildThreadStatusCellFunc: @Composable (() -> Unit)?,
-  emptyContent: @Composable() ((Boolean, Boolean) -> Unit),
-  loadingContent: @Composable() ((Boolean) -> Unit),
-  errorContent: @Composable() ((AsyncData.Error, Boolean) -> Unit),
+  emptyContent: @Composable ((Any, Boolean, Boolean) -> Unit),
+  loadingContent: @Composable ((Any, Boolean) -> Unit),
+  errorContent: @Composable ((Any, AsyncData.Error, Boolean) -> Unit),
   postsScreenViewModelProvider: () -> PostScreenViewModel,
 ) {
   val postsScreenViewModel = postsScreenViewModelProvider()
@@ -751,9 +758,15 @@ private fun PostsGridMode(
     content = {
       postGridAsyncDataContent(
         postListAsync = postListAsync,
-        emptyContent = { emptyContent(isInPopup, isCatalogMode) },
-        loadingContent = { loadingContent(isInPopup) },
-        errorContent = { postListAsyncError -> errorContent(postListAsyncError, isInPopup) },
+        emptyContent = { lazyGridItemScope ->
+          emptyContent(lazyGridItemScope, isInPopup, isCatalogMode)
+        },
+        loadingContent = { lazyGridItemScope ->
+          loadingContent(lazyGridItemScope, isInPopup)
+        },
+        errorContent = { lazyGridItemScope, postListAsyncError ->
+          errorContent(lazyGridItemScope, postListAsyncError, isInPopup)
+        },
         dataContent = { postListAsyncData ->
           val abstractPostsState = postListAsyncData.data
           val previousPostDataInfoMap = abstractPostsState.postListAnimationInfoMap
@@ -848,6 +861,7 @@ private fun PostsGridMode(
 
 @Composable
 private fun PostListErrorContent(
+  lazyItemScope: Any,
   postListAsyncError: AsyncData.Error,
   isInPopup: Boolean,
   postsScreenViewModelProvider: () -> PostScreenViewModel,
@@ -863,7 +877,19 @@ private fun PostListErrorContent(
       .fillMaxWidth()
       .height(180.dp)
   } else {
-    Modifier.fillMaxSize()
+    when (lazyItemScope) {
+      is LazyItemScope -> {
+        with(lazyItemScope) {
+          Modifier.fillParentMaxSize()
+        }
+      }
+      is LazyGridItemScope -> {
+        Modifier.fillMaxSize()
+      }
+      else -> {
+        error("Unknown lazyItemScope: ${lazyItemScope::class.java.simpleName}")
+      }
+    }
   }
 
   KurobaComposeErrorWithButton(
@@ -877,13 +903,28 @@ private fun PostListErrorContent(
 }
 
 @Composable
-private fun PostListLoadingContent(isInPopup: Boolean) {
+private fun PostListLoadingContent(
+  lazyItemScope: Any,
+  isInPopup: Boolean
+) {
   val sizeModifier = if (isInPopup) {
     Modifier
       .fillMaxWidth()
       .height(180.dp)
   } else {
-    Modifier.fillMaxSize()
+    when (lazyItemScope) {
+      is LazyItemScope -> {
+        with(lazyItemScope) {
+          Modifier.fillParentMaxSize()
+        }
+      }
+      is LazyGridItemScope -> {
+        Modifier.fillMaxSize()
+      }
+      else -> {
+        error("Unknown lazyItemScope: ${lazyItemScope::class.java.simpleName}")
+      }
+    }
   }
 
   KurobaComposeLoadingIndicator(
@@ -895,6 +936,7 @@ private fun PostListLoadingContent(isInPopup: Boolean) {
 
 @Composable
 private fun PostListEmptyContent(
+  lazyItemScope: Any,
   isInPopup: Boolean,
   isCatalogMode: Boolean
 ) {
@@ -909,7 +951,19 @@ private fun PostListEmptyContent(
       .fillMaxWidth()
       .height(180.dp)
   } else {
-    Modifier.fillMaxSize()
+    when (lazyItemScope) {
+      is LazyItemScope -> {
+        with(lazyItemScope) {
+          Modifier.fillParentMaxSize()
+        }
+      }
+      is LazyGridItemScope -> {
+        Modifier.fillMaxSize()
+      }
+      else -> {
+        error("Unknown lazyItemScope: ${lazyItemScope::class.java.simpleName}")
+      }
+    }
   }
 
   Box(
@@ -924,9 +978,9 @@ private fun PostListEmptyContent(
 
 private fun LazyListScope.postListAsyncDataContent(
   postListAsync: AsyncData<PostsState>,
-  emptyContent: @Composable LazyItemScope.() -> Unit,
-  loadingContent: @Composable LazyItemScope.() -> Unit,
-  errorContent: @Composable LazyItemScope.(AsyncData.Error) -> Unit,
+  emptyContent: @Composable (LazyItemScope, ) -> Unit,
+  loadingContent: @Composable (LazyItemScope, ) -> Unit,
+  errorContent: @Composable (LazyItemScope, AsyncData.Error) -> Unit,
   dataContent: (AsyncData.Data<PostsState>) -> Unit
 ) {
   when (postListAsync) {
@@ -935,12 +989,12 @@ private fun LazyListScope.postListAsyncDataContent(
     }
     AsyncData.Loading -> {
       item(key = "loading_indicator") {
-        loadingContent()
+        loadingContent(this)
       }
     }
     is AsyncData.Error -> {
       item(key = "error_indicator") {
-        errorContent(postListAsync)
+        errorContent(this, postListAsync)
       }
     }
     is AsyncData.Data -> {
@@ -948,7 +1002,7 @@ private fun LazyListScope.postListAsyncDataContent(
 
       if (posts.isEmpty()) {
         item(key = "empty_indicator") {
-          emptyContent()
+          emptyContent(this)
         }
       } else {
         dataContent(postListAsync)
@@ -959,9 +1013,9 @@ private fun LazyListScope.postListAsyncDataContent(
 
 private fun LazyGridScope.postGridAsyncDataContent(
   postListAsync: AsyncData<PostsState>,
-  emptyContent: @Composable LazyGridItemScope.() -> Unit,
-  loadingContent: @Composable LazyGridItemScope.() -> Unit,
-  errorContent: @Composable LazyGridItemScope.(AsyncData.Error) -> Unit,
+  emptyContent: @Composable (LazyGridItemScope) -> Unit,
+  loadingContent: @Composable (LazyGridItemScope) -> Unit,
+  errorContent: @Composable (LazyGridItemScope, AsyncData.Error) -> Unit,
   dataContent: (AsyncData.Data<PostsState>) -> Unit
 ) {
   when (postListAsync) {
@@ -969,21 +1023,30 @@ private fun LazyGridScope.postGridAsyncDataContent(
       // no-op
     }
     AsyncData.Loading -> {
-      item(key = "loading_indicator") {
-        loadingContent()
+      item(
+        key = "loading_indicator",
+        span = { GridItemSpan(maxLineSpan) }
+      ) {
+        loadingContent(this)
       }
     }
     is AsyncData.Error -> {
-      item(key = "error_indicator") {
-        errorContent(postListAsync)
+      item(
+        key = "error_indicator",
+        span = { GridItemSpan(maxLineSpan) }
+      ) {
+        errorContent(this, postListAsync)
       }
     }
     is AsyncData.Data -> {
       val posts = postListAsync.data.posts
 
       if (posts.isEmpty()) {
-        item(key = "empty_indicator") {
-          emptyContent()
+        item(
+          key = "empty_indicator",
+          span = { GridItemSpan(maxLineSpan) }
+        ) {
+          emptyContent(this)
         }
       } else {
         dataContent(postListAsync)
