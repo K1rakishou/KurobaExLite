@@ -25,7 +25,8 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewMo
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.DefaultPopupPostsScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.MediaViewerPopupPostsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.search.global.GlobalSearchScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCellIconViewModel
@@ -358,7 +359,8 @@ object DependencyGraph {
       )
     }
 
-    viewModel { PopupPostsScreenViewModel(savedStateHandle = get()) }
+    viewModel { DefaultPopupPostsScreenViewModel(savedStateHandle = get()) }
+    viewModel { MediaViewerPopupPostsScreenViewModel(savedStateHandle = get()) }
     viewModel { CatalogSelectionScreenViewModel(retrieveSiteCatalogList = get()) }
     viewModel {
       val mpvSettings = MpvSettings(

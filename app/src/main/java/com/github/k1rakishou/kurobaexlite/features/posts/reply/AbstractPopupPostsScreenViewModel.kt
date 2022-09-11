@@ -23,7 +23,15 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class PopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreenViewModel(savedStateHandle) {
+class DefaultPopupPostsScreenViewModel(
+  savedStateHandle: SavedStateHandle
+) : AbstractPopupPostsScreenViewModel(savedStateHandle)
+
+class MediaViewerPopupPostsScreenViewModel(
+  savedStateHandle: SavedStateHandle
+) : AbstractPopupPostsScreenViewModel(savedStateHandle)
+
+abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreenViewModel(savedStateHandle) {
   private val threadScreenState = PopupPostsScreenState()
   private val postDataStateMap = mutableMapOf<ScreenKey, PostDataState>()
 

@@ -81,8 +81,8 @@ import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayF
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayUnsupportedMedia
 import com.github.k1rakishou.kurobaexlite.features.media.media_handlers.DisplayVideo
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.MediaViewerPopupPostsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
@@ -152,7 +152,7 @@ class MediaViewerScreen(
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val mediaViewerScreenViewModel: MediaViewerScreenViewModel by componentActivity.viewModel()
-  private val popupPostsScreenViewModel: PopupPostsScreenViewModel by componentActivity.viewModel()
+  private val popupPostsScreenViewModel: MediaViewerPopupPostsScreenViewModel by componentActivity.viewModel()
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
 
   private val linkableClickHelper by lazy {
@@ -657,7 +657,7 @@ private fun MediaViewerBottomSheet(
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
 
-  val popupPostsScreenViewModel: PopupPostsScreenViewModel = koinRememberViewModel()
+  val popupPostsScreenViewModel: MediaViewerPopupPostsScreenViewModel = koinRememberViewModel()
   val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
   val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()

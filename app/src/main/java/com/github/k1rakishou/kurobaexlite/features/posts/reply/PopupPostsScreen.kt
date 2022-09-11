@@ -102,7 +102,7 @@ class PopupPostsScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
-  private val popupPostsScreenViewModel: PopupPostsScreenViewModel by componentActivity.viewModel()
+  private val popupPostsScreenViewModel: DefaultPopupPostsScreenViewModel by componentActivity.viewModel()
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
 
   private val popupPostViewMode: PopupPostViewMode by requireArgumentLazy(REPLY_VIEW_MODE)
@@ -499,7 +499,7 @@ private fun PopupPostsScreenContent(
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
 
-  val popupPostsScreenViewModel: PopupPostsScreenViewModel = koinRememberViewModel()
+  val popupPostsScreenViewModel: DefaultPopupPostsScreenViewModel = koinRememberViewModel()
   val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
   val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel()
