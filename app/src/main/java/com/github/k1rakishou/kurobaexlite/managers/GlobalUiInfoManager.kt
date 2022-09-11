@@ -117,9 +117,9 @@ class GlobalUiInfoManager(
   val textSubTitleSizeSp: StateFlow<TextUnit>
     get() = _textSubTitleSizeSp.asStateFlow()
 
-  private val _postViewMode = MutableStateFlow<PostViewMode?>(null)
-  val postViewMode: StateFlow<PostViewMode?>
-    get() = _postViewMode.asStateFlow()
+  private val _catalogPostViewMode = MutableStateFlow<PostViewMode?>(null)
+  val catalogPostViewMode: StateFlow<PostViewMode?>
+    get() = _catalogPostViewMode.asStateFlow()
 
   private val _postCellCommentTextSizeSp = MutableStateFlow(0.sp)
   val postCellCommentTextSizeSp: StateFlow<TextUnit>
@@ -206,7 +206,7 @@ class GlobalUiInfoManager(
 
     _textTitleSizeSp.value = appSettings.textTitleSizeSp.read().sp
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
-    _postViewMode.value = appSettings.catalogPostViewMode.read().toPostViewMode()
+    _catalogPostViewMode.value = appSettings.catalogPostViewMode.read().toPostViewMode()
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
     _historyEnabled.value = appSettings.historyEnabled.read()
@@ -247,7 +247,7 @@ class GlobalUiInfoManager(
 
     coroutineScope.launch {
       appSettings.catalogPostViewMode.listen()
-        .collectLatest { value -> _postViewMode.value = value.toPostViewMode() }
+        .collectLatest { value -> _catalogPostViewMode.value = value.toPostViewMode() }
     }
 
     coroutineScope.launch {

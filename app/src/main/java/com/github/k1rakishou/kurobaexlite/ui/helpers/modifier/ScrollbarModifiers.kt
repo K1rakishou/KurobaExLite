@@ -178,8 +178,8 @@ class LazyGridLayoutInfoWrapper(
 @Stable
 interface LazyStateWrapper<T : LazyItemInfoWrapper, V : LazyLayoutInfoWrapper<T>> {
   val isScrollInProgress: Boolean
-  val firstVisibleItemIndex: Int?
-  val firstVisibleItemScrollOffset: Int?
+  val firstVisibleItemIndex: Int
+  val firstVisibleItemScrollOffset: Int
   val visibleItemsCount: Int
   val fullyVisibleItemsCount: Int
   val totalItemsCount: Int
@@ -196,10 +196,10 @@ class LazyListStateWrapper(
 
   override val isScrollInProgress: Boolean
     get() = lazyListState.isScrollInProgress
-  override val firstVisibleItemIndex: Int?
-    get() = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
-  override val firstVisibleItemScrollOffset: Int?
-    get() = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.offset
+  override val firstVisibleItemIndex: Int
+    get() = lazyListState.firstVisibleItemIndex
+  override val firstVisibleItemScrollOffset: Int
+    get() = lazyListState.firstVisibleItemScrollOffset
   override val visibleItemsCount: Int
     get() = lazyListState.layoutInfo.visibleItemsInfo.size
   override val fullyVisibleItemsCount: Int
@@ -224,10 +224,10 @@ class LazyGridStateWrapper(
 
   override val isScrollInProgress: Boolean
     get() = lazyGridState.isScrollInProgress
-  override val firstVisibleItemIndex: Int?
-    get() = lazyGridState.layoutInfo.visibleItemsInfo.firstOrNull()?.index
-  override val firstVisibleItemScrollOffset: Int?
-    get() = lazyGridState.layoutInfo.visibleItemsInfo.firstOrNull()?.offset?.y
+  override val firstVisibleItemIndex: Int
+    get() = lazyGridState.firstVisibleItemIndex
+  override val firstVisibleItemScrollOffset: Int
+    get() = lazyGridState.firstVisibleItemScrollOffset
   override val visibleItemsCount: Int
     get() = lazyGridState.layoutInfo.visibleItemsInfo.size
   override val fullyVisibleItemsCount: Int

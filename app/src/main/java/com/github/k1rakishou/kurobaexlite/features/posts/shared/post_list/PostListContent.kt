@@ -291,7 +291,7 @@ internal fun PostListContent(
     // having to scroll it. Otherwise the indicator will stay (since we can't scroll the thread and
     // we only ever update it on scroll events).
     LaunchedEffect(
-      key1 = postListAsync.data.chanDescriptor,
+      key1 = chanDescriptor,
       block = {
         processPostListScrollEventFunc()
       }
@@ -368,8 +368,8 @@ private fun processPostListScrollEvent(
 
   postsScreenViewModel.rememberPosition(
     chanDescriptor = chanDescriptor,
-    index = lazyStateWrapper.firstVisibleItemIndex ?: 0,
-    offset = lazyStateWrapper.firstVisibleItemScrollOffset ?: 0,
+    index = lazyStateWrapper.firstVisibleItemIndex,
+    offset = lazyStateWrapper.firstVisibleItemScrollOffset,
     orientation = orientation
   )
 }

@@ -477,7 +477,7 @@ private fun BoxScope.CatalogPostListScreen(
   val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
   val mainUiLayoutMode = mainUiLayoutModeMut ?: return
 
-  val catalogPostViewModeMut by globalUiInfoManager.postViewMode.collectAsState()
+  val catalogPostViewModeMut by globalUiInfoManager.catalogPostViewMode.collectAsState()
   val catalogPostViewMode = catalogPostViewModeMut
   if (catalogPostViewMode == null) {
     return
