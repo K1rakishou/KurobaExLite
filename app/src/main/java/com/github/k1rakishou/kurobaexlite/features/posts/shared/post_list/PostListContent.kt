@@ -286,13 +286,19 @@ internal fun PostListContent(
   }
 
   if (postListAsync is AsyncData.Data && !postListOptions.isInPopup) {
+    val hasVisibleItems by remember { derivedStateOf { lazyStateWrapper.layoutInfo.visibleItemsInfo.isNotEmpty() } }
     // Call processPostListScrollEventFunc() as soon as we get the actual post data so that we can
     // reset the last seen post indicator in threads with few posts that fit the whole screen without
     // having to scroll it. Otherwise the indicator will stay (since we can't scroll the thread and
     // we only ever update it on scroll events).
     LaunchedEffect(
       key1 = chanDescriptor,
+      key2 = hasVisibleItems,
       block = {
+        if (!hasVisibleItems) {
+          return@LaunchedEffect
+        }
+
         processPostListScrollEventFunc()
       }
     )
@@ -366,12 +372,14 @@ private fun processPostListScrollEvent(
     }
   }
 
-  postsScreenViewModel.rememberPosition(
-    chanDescriptor = chanDescriptor,
-    index = lazyStateWrapper.firstVisibleItemIndex,
-    offset = lazyStateWrapper.firstVisibleItemScrollOffset,
-    orientation = orientation
-  )
+  if (lazyStateWrapper.layoutInfo.visibleItemsInfo.isNotEmpty()) {
+    postsScreenViewModel.rememberPosition(
+      chanDescriptor = chanDescriptor,
+      index = lazyStateWrapper.firstVisibleItemIndex,
+      offset = lazyStateWrapper.firstVisibleItemScrollOffset,
+      orientation = orientation
+    )
+  }
 }
 
 @Composable
