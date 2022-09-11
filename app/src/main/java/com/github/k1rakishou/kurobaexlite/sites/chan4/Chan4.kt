@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
@@ -54,6 +55,7 @@ class Chan4(
   private val appSettings by inject<AppSettings>(AppSettings::class.java)
   private val moshi by inject<Moshi>(Moshi::class.java)
   private val proxiedOkHttpClient by inject<ProxiedOkHttpClient>(ProxiedOkHttpClient::class.java)
+  private val loadChanCatalog by inject<LoadChanCatalog>(LoadChanCatalog::class.java)
 
   private val chan4CatalogInfo by lazy { CatalogInfo(chan4DataSource) }
   private val chan4ThreadInfo by lazy { ThreadInfo(chan4DataSource) }
@@ -61,7 +63,7 @@ class Chan4(
   private val chan4PostImageInfo by lazy { PostImageInfo() }
   private val chan4RequestModifier by lazy { Chan4RequestModifier(this, appSettings) }
   private val chan4SiteSettings by lazy { Chan4SiteSettings(appContext, moshi) }
-  private val chan4ReplyInfo by lazy { Chan4ReplyInfo(this, proxiedOkHttpClient) }
+  private val chan4ReplyInfo by lazy { Chan4ReplyInfo(this, proxiedOkHttpClient, loadChanCatalog) }
   private val chan4BookmarkInfo by lazy { BookmarkInfo(chan4DataSource) }
   private val chan4CatalogPagesInfo by lazy { CatalogPagesInfo(chan4DataSource) }
   private val chan4GlobalSearchInfo by lazy { GlobalSearchInfo(chan4DataSource) }

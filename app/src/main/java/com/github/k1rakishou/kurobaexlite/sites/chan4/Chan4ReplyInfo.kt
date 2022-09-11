@@ -9,6 +9,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -33,11 +34,21 @@ import org.jsoup.Jsoup
 
 class Chan4ReplyInfo(
   private val site: Chan4,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient
+  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val loadChanCatalog: LoadChanCatalog
 ) : Site.ReplyInfo {
 
-  override fun replyUrl(chanDescriptor: ChanDescriptor): String {
-    return "https://sys.4channel.org/${chanDescriptor.boardCode}/post"
+  override suspend fun replyUrl(chanDescriptor: ChanDescriptor): String {
+    val workSafe = loadChanCatalog.await(chanDescriptor.catalogDescriptor())
+      .getOrNull()
+      ?.workSafe
+      ?: false
+
+    return if (workSafe) {
+      "https://sys.4channel.org/${chanDescriptor.boardCode}/post"
+    } else {
+      "https://sys.4chan.org/${chanDescriptor.boardCode}/post"
+    }
   }
 
   override fun sendReply(replyData: ReplyData): Flow<ReplyEvent> {
@@ -57,22 +68,21 @@ class Chan4ReplyInfo(
         requestBuilder.url(replyUrl)
         requestBuilder.addHeader("Referer", replyUrl)
         requestBuilder.post(multipartBody)
-
         site.requestModifier().modifyReplyRequest(site, requestBuilder)
 
         val request = requestBuilder.build()
-        val response = proxiedOkHttpClient.okHttpClient()
-          .suspendCall(request)
-          .unwrap()
 
-        setChan4CaptchaHeader(response.headers)
+        proxiedOkHttpClient.okHttpClient().suspendCall(request).unwrap().use { response ->
+          setChan4CaptchaHeader(response.headers)
 
-        val replyResponse = processResponse(
-          chanDescriptor = replyData.chanDescriptor,
-          responseString = response.body!!.string()
-        )
+          val replyResponse = processResponse(
+            chanDescriptor = replyData.chanDescriptor,
+            responseString = response.body?.string() ?: ""
+          )
 
-        send(ReplyEvent.Success(replyResponse))
+          send(ReplyEvent.Success(replyResponse))
+        }
+
       } catch (error: Throwable) {
         send(ReplyEvent.Error(error))
       }
@@ -83,24 +93,24 @@ class Chan4ReplyInfo(
     chanDescriptor: ChanDescriptor,
     responseString: String
   ): ReplyResponse {
-    val forgotCaptcha = responseString.contains(FORGOT_TO_SOLVE_CAPTCHA, ignoreCase = true)
-    val mistypedCaptcha = responseString.contains(MISTYPED_CAPTCHA, ignoreCase = true)
-
-    if (forgotCaptcha || mistypedCaptcha) {
-      logcatError(TAG) {
-        "processResponse() requireAuthentication " +
-        "(forgotCaptcha=$forgotCaptcha, mistypedCaptcha=$mistypedCaptcha)"
-      }
-
-      return ReplyResponse.AuthenticationRequired(
-        forgotCaptcha = forgotCaptcha,
-        mistypedCaptcha = mistypedCaptcha
-      )
-    }
-
     val errorMessageMatcher = ERROR_MESSAGE_PATTERN.matcher(responseString)
     if (errorMessageMatcher.find()) {
       val errorMessage = Jsoup.parse(errorMessageMatcher.group(1)).body().text()
+
+      val forgotCaptcha = errorMessage.contains(FORGOT_TO_SOLVE_CAPTCHA, ignoreCase = true)
+      val mistypedCaptcha = errorMessage.contains(MISTYPED_CAPTCHA, ignoreCase = true)
+
+      if (forgotCaptcha || mistypedCaptcha) {
+        logcatError(TAG) {
+          "processResponse() requireAuthentication " +
+            "(forgotCaptcha=$forgotCaptcha, mistypedCaptcha=$mistypedCaptcha)"
+        }
+
+        return ReplyResponse.AuthenticationRequired(
+          forgotCaptcha = forgotCaptcha,
+          mistypedCaptcha = mistypedCaptcha
+        )
+      }
 
       if (isBanned(errorMessage)) {
         return ReplyResponse.Banned(errorMessage)
@@ -269,19 +279,29 @@ class Chan4ReplyInfo(
       .firstOrNull { (_, value) -> value.startsWith(CAPTCHA_COOKIE_PREFIX) }
       ?.second
 
+    if (wholeCookieHeader.isNullOrEmpty()) {
+      logcat(TAG) { "setChan4CaptchaHeader() Set-Cookie header not found" }
+      return
+    }
+
     val newCookie = wholeCookieHeader
-      ?.substringAfter(CAPTCHA_COOKIE_PREFIX)
-      ?.substringBefore(';')
+      .substringAfter(CAPTCHA_COOKIE_PREFIX)
+      .substringBefore(';')
 
     val domain = wholeCookieHeader
-      ?.substringAfter(DOMAIN_PREFIX)
-      ?.substringBefore(';')
+      .substringAfter(DOMAIN_PREFIX)
+      .substringBefore(';')
 
     logcat(TAG) { "setChan4CaptchaHeader() newCookie='${newCookie.asFormattedToken()}', " +
       "domain='${domain}', wholeCookieHeader='${wholeCookieHeader}'" }
 
-    if (domain == null) {
-      logcat(TAG) { "setChan4CaptchaHeader() domain is null" }
+    if (newCookie.isEmpty()) {
+      logcat(TAG) { "setChan4CaptchaHeader() newCookie is empty" }
+      return
+    }
+
+    if (domain.isEmpty()) {
+      logcat(TAG) { "setChan4CaptchaHeader() domain is empty" }
       return
     }
 

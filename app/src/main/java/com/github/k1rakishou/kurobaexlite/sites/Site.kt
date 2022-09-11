@@ -79,7 +79,7 @@ interface Site {
   }
 
   interface ReplyInfo {
-    fun replyUrl(chanDescriptor: ChanDescriptor): String
+    suspend fun replyUrl(chanDescriptor: ChanDescriptor): String
     fun sendReply(replyData: ReplyData): Flow<ReplyEvent>
   }
 
