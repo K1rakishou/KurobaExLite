@@ -104,7 +104,7 @@ class CatalogScreenViewModel(
     loadCatalogJob?.cancel()
     loadCatalogJob = null
 
-    if (catalogDescriptor != null) {
+    if (catalogDescriptor != null && loadOptions.showLoadingIndicator) {
       resetPosition(catalogDescriptor)
     }
 

@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -287,7 +288,7 @@ internal fun PostListContent(
   }
 
   if (postListAsync is AsyncData.Data && !postListOptions.isInPopup) {
-    val hasVisibleItems by remember { derivedStateOf { lazyStateWrapper.layoutInfo.visibleItemsInfo.isNotEmpty() } }
+    val hasVisibleItems by remember { derivedStateOf { lazyStateWrapperUpdated.layoutInfo.visibleItemsInfo.isNotEmpty() } }
     // Call processPostListScrollEventFunc() as soon as we get the actual post data so that we can
     // reset the last seen post indicator in threads with few posts that fit the whole screen without
     // having to scroll it. Otherwise the indicator will stay (since we can't scroll the thread and
@@ -304,8 +305,29 @@ internal fun PostListContent(
       }
     )
 
+    val firstVisibleElementKey by remember {
+      derivedStateOf { lazyStateWrapperUpdated.layoutInfo.visibleItemsInfo.firstOrNull()?.key }
+    }
+
+    val firstPostDrawn = remember(
+      key1 = firstVisibleElementKey,
+      key2 = postListOptions.orientation
+    ) {
+      return@remember (firstVisibleElementKey as? String)
+        ?.startsWith(postCellKeyPrefix)
+        ?: false
+    }
+
+    val configuration = LocalConfiguration.current
+    LaunchedEffect(
+      key1 = configuration.orientation,
+      block = {
+        postsScreenViewModelProvider().onOrientationChanged(configuration.orientation)
+      }
+    )
+
     RestoreScrollPosition(
-      lazyStateWrapper = lazyStateWrapperUpdated as GenericLazyStateWrapper,
+      firstPostDrawn = firstPostDrawn,
       chanDescriptor = chanDescriptor,
       orientation = postListOptions.orientation,
       postsScreenViewModelProvider = postsScreenViewModelProvider
@@ -1161,7 +1183,7 @@ private fun PostCellContainer(
 
 @Composable
 private fun RestoreScrollPosition(
-  lazyStateWrapper: GenericLazyStateWrapper,
+  firstPostDrawn: Boolean,
   chanDescriptor: ChanDescriptor,
   orientation: Int,
   postsScreenViewModelProvider: () -> PostScreenViewModel
@@ -1169,17 +1191,6 @@ private fun RestoreScrollPosition(
   var scrollPositionRestored by remember(key1 = orientation) { mutableStateOf(false) }
   if (scrollPositionRestored) {
     return
-  }
-
-  val layoutInfo by remember(key1 = lazyStateWrapper) { derivedStateOf { lazyStateWrapper.layoutInfo } }
-
-  val firstPostDrawn = remember(key1 = layoutInfo, key2 = orientation) {
-    val firstVisibleElement = layoutInfo.visibleItemsInfo.firstOrNull()
-      ?: return@remember false
-
-    return@remember (firstVisibleElement.key as? String)
-      ?.startsWith(postCellKeyPrefix)
-      ?: false
   }
 
   if (firstPostDrawn) {

@@ -287,9 +287,8 @@ class ThreadScreenViewModel(
     onThreadLoadingStart(threadDescriptor, loadOptions)
     globalUiInfoManager.onLoadingErrorUpdatedOrRemoved(screenKey, false)
 
-    if (threadDescriptor != null) {
+    if (threadDescriptor != null && loadOptions.showLoadingIndicator) {
       val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)?.lastViewedPDForScroll
-
       resetPosition(threadDescriptor)
       threadScreenState.lastViewedPostForScrollRestoration.value = lastViewedPostDescriptor
     }

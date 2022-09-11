@@ -165,6 +165,11 @@ private fun PostCellGridModeLayout(
         (titlePlaceables.sumOf { it.measuredHeight }) -
         (footerPlaceables.sumOf { it.measuredHeight })
 
+      // Crashes on rotation
+      if (availableHeightForComment <= constraints.minHeight) {
+        return@Layout layout(constraints.maxWidth, constraints.maxHeight) {}
+      }
+
       val commentPlaceables = measurables[1]
         .map { measurable -> measurable.measure(constraints.copy(maxHeight = availableHeightForComment)) }
 

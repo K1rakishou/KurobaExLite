@@ -728,6 +728,10 @@ abstract class PostScreenViewModel(
 
   }
 
+  suspend fun onOrientationChanged(orientation: Int) {
+    postScreenState.onOrientationChanged(chanDescriptor)
+  }
+
   suspend fun restoreScrollPosition() {
     val currentChanDescriptor = chanDescriptor
       ?: return
@@ -736,6 +740,8 @@ abstract class PostScreenViewModel(
       chanDescriptor = currentChanDescriptor,
       scrollToPost = null
     )
+
+    postScreenState.onContentDrawnOnce(chanDescriptor)
   }
 
   fun rememberPosition(
@@ -744,8 +750,7 @@ abstract class PostScreenViewModel(
     index: Int,
     offset: Int
   ) {
-    val contentLoaded = postScreenState.contentLoaded.value
-    if (!contentLoaded) {
+    if (!postScreenState.contentLoadedAndDrawnOnce) {
       return
     }
 

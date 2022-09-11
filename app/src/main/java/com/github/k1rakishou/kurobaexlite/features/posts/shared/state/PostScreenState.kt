@@ -41,6 +41,13 @@ abstract class PostScreenState(
   val contentLoaded: StateFlow<Boolean>
     get() = _contentLoaded.asStateFlow()
 
+  private val _contentDrawnOnce = MutableStateFlow(false)
+  val contentDrawnOnce: StateFlow<Boolean>
+    get() = _contentDrawnOnce.asStateFlow()
+
+  val contentLoadedAndDrawnOnce: Boolean
+    get() = contentLoaded.value && contentDrawnOnce.value
+
   fun getPosts(postDescriptors: Collection<PostDescriptor>): List<PostCellData> {
     val postAsyncData = postsAsyncDataState.value
     if (postAsyncData !is AsyncData.Data) {
@@ -87,10 +94,19 @@ abstract class PostScreenState(
 
   suspend fun onStartLoading(chanDescriptor: ChanDescriptor?) {
     _contentLoaded.value = false
+    _contentDrawnOnce.value = false
   }
 
   suspend fun onEndLoading(chanDescriptor: ChanDescriptor?) {
     _contentLoaded.value = true
+  }
+
+  suspend fun onOrientationChanged(chanDescriptor: ChanDescriptor?) {
+    _contentDrawnOnce.value = false
+  }
+
+  suspend fun onContentDrawnOnce(chanDescriptor: ChanDescriptor?) {
+    _contentDrawnOnce.value = true
   }
 
   private fun <T> doWithDataState(func: (PostsState) -> T): T? {
