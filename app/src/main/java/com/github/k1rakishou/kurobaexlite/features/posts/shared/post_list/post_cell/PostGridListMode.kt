@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,13 +21,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -72,14 +74,9 @@ fun PostCellGridMode(
   val chanTheme = LocalChanTheme.current
   val isCatalogMode = chanDescriptor is CatalogDescriptor
 
-  val resultPaddings = remember(key1 = cellsPadding) {
-    return@remember PaddingValues(
-      start = cellsPadding.calculateStartPadding(LayoutDirection.Ltr),
-      end = cellsPadding.calculateEndPadding(LayoutDirection.Ltr),
-      top = cellsPadding.calculateTopPadding(),
-      bottom = cellsPadding.calculateBottomPadding()
-    )
-  }
+  val startPadding = remember(key1 = cellsPadding) { cellsPadding.calculateStartPadding(LayoutDirection.Ltr) }
+  val endPadding = remember(key1 = cellsPadding) { cellsPadding.calculateEndPadding(LayoutDirection.Ltr) }
+  val bottomPadding = remember(key1 = cellsPadding) { cellsPadding.calculateBottomPadding().coerceAtLeast(4.dp) }
 
   val postCellBackgroundColor = remember(
     key1 = isCatalogMode,
@@ -94,8 +91,7 @@ fun PostCellGridMode(
   }
 
   KurobaComposeCard(
-    modifier = Modifier
-      .padding(4.dp),
+    modifier = Modifier.padding(4.dp),
     backgroundColor = postCellBackgroundColor
   ) {
     Column(
@@ -103,42 +99,102 @@ fun PostCellGridMode(
         .fillMaxSize()
         .wrapContentHeight()
         .aspectRatio(ratio = 9f / 18f)
-        .padding(resultPaddings)
     ) {
-      PostCellTitle(
-        chanDescriptor = chanDescriptor,
-        postCellData = postCellData,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-        onPostImageClicked = onPostImageClicked
-      )
-
-      Spacer(modifier = Modifier.height(4.dp))
-
-      PostCellComment(
-        postCellData = postCellData,
-        textSelectionEnabled = textSelectionEnabled,
-        detectLinkableClicks = detectLinkableClicks,
-        onCopySelectedText = onCopySelectedText,
-        onQuoteSelectedText = onQuoteSelectedText,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        onPostCellCommentClicked = onPostCellCommentClicked,
-        onPostCellCommentLongClicked = onPostCellCommentLongClicked,
-        onTextSelectionModeChanged = onTextSelectionModeChanged
-      )
-
-      Spacer(modifier = Modifier.weight(1f))
-
-      PostCellFooter(
-        postCellData = postCellData,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        onPostRepliesClicked = onPostRepliesClicked
+      PostCellGridModeLayout(
+        title = {
+          PostCellTitle(
+            startPadding = startPadding,
+            endPadding = endPadding,
+            chanDescriptor = chanDescriptor,
+            postCellData = postCellData,
+            postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+            onPostImageClicked = onPostImageClicked
+          )
+        },
+        comment = {
+          PostCellComment(
+            startPadding = startPadding,
+            endPadding = endPadding,
+            postCellData = postCellData,
+            textSelectionEnabled = textSelectionEnabled,
+            detectLinkableClicks = detectLinkableClicks,
+            onCopySelectedText = onCopySelectedText,
+            onQuoteSelectedText = onQuoteSelectedText,
+            postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+            onPostCellCommentClicked = onPostCellCommentClicked,
+            onPostCellCommentLongClicked = onPostCellCommentLongClicked,
+            onTextSelectionModeChanged = onTextSelectionModeChanged
+          )
+        },
+        footer = {
+          PostCellFooter(
+            startPadding = startPadding,
+            endPadding = endPadding,
+            bottomPadding = bottomPadding,
+            postCellData = postCellData,
+            postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+            onPostRepliesClicked = onPostRepliesClicked
+          )
+        }
       )
     }
   }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+private fun PostCellGridModeLayout(
+  title: @Composable () -> Unit,
+  comment: @Composable () -> Unit,
+  footer: @Composable () -> Unit,
+) {
+  Layout(
+    contents = listOf(title, comment, footer),
+    measurePolicy = { measurables, constraints ->
+      require(constraints.hasBoundedHeight) {
+        "This layout cannot be used as a root of scrollable container because one of the children's " +
+          "height depends on the parent's height, it will be infinite in case of parent having infinite height."
+      }
+
+      // First measure the title and footer and leave the rest of the available vertical space
+      // to the comment
+      val titlePlaceables = measurables[0].map { measurable -> measurable.measure(constraints) }
+      val footerPlaceables = measurables[2].map { measurable -> measurable.measure(constraints) }
+
+      val availableHeightForComment = constraints.maxHeight -
+        (titlePlaceables.sumOf { it.measuredHeight }) -
+        (footerPlaceables.sumOf { it.measuredHeight })
+
+      val commentPlaceables = measurables[1]
+        .map { measurable -> measurable.measure(constraints.copy(maxHeight = availableHeightForComment)) }
+
+      return@Layout layout(constraints.maxWidth, constraints.maxHeight) {
+        var currentY = 0
+
+        titlePlaceables.forEach { placeable ->
+          placeable.place(0, currentY)
+          currentY += placeable.measuredHeight
+        }
+
+        commentPlaceables.forEach { placeable ->
+          placeable.place(0, currentY)
+          currentY += placeable.measuredHeight
+        }
+
+        footerPlaceables.forEach { placeable ->
+          placeable.place(0, currentY)
+          currentY += placeable.measuredHeight
+        }
+      }
+    }
+  )
+}
+
 @Composable
 private fun PostCellFooter(
+  startPadding: Dp,
+  endPadding: Dp,
+  bottomPadding: Dp,
   postCellData: PostCellData,
   postCellCommentTextSizeSp: TextUnit,
   onPostRepliesClicked: (PostCellData) -> Unit
@@ -155,24 +211,25 @@ private fun PostCellFooter(
     if (postFooterText.isNotNullNorEmpty()) {
       Text(
         modifier = Modifier
-          .weight(1f)
+          .fillMaxWidth()
           .wrapContentHeight()
           .kurobaClickable(onClick = { onPostRepliesClicked(postCellData) })
-          .padding(vertical = 4.dp),
+          .padding(start = startPadding, top = 4.dp, end = endPadding, bottom = bottomPadding),
         color = chanTheme.textColorSecondary,
         fontSize = postCellCommentTextSizeSp,
         text = postFooterText
       )
     } else {
-      Spacer(modifier = Modifier.weight(1f))
+      Spacer(modifier = Modifier.fillMaxWidth(1f))
     }
   }
-
 }
 
 
 @Composable
 private fun PostCellComment(
+  startPadding: Dp,
+  endPadding: Dp,
   postCellData: PostCellData,
   textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
@@ -188,7 +245,7 @@ private fun PostCellComment(
   val postComment = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostComment }
   var isInSelectionMode by remember { mutableStateOf(false) }
 
-  if (postComment.isNotNullNorBlank()) {
+  if (postComment != null) {
     PostCellCommentSelectionWrapper(
       textSelectionEnabled = textSelectionEnabled,
       onCopySelectedText = onCopySelectedText,
@@ -200,8 +257,8 @@ private fun PostCellComment(
     ) { textModifier, onTextLayout ->
       KurobaComposeClickableText(
         modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight()
+          .fillMaxSize()
+          .padding(start = startPadding, end = endPadding)
           .then(textModifier),
         fontSize = postCellCommentTextSizeSp,
         text = postComment,
@@ -216,17 +273,17 @@ private fun PostCellComment(
         onTextLayout = onTextLayout
       )
     }
-  } else if (postComment == null) {
+  } else {
     Shimmer(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(80.dp)
+      modifier = Modifier.fillMaxSize()
     )
   }
 }
 
 @Composable
-private fun ColumnScope.PostCellTitle(
+private fun PostCellTitle(
+  startPadding: Dp,
+  endPadding: Dp,
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
   postCellSubjectTextSizeSp: TextUnit,
@@ -244,15 +301,11 @@ private fun ColumnScope.PostCellTitle(
     Spacer(modifier = Modifier.height(4.dp))
   }
 
-  if (postSubject == null) {
-    Shimmer(
-      modifier = Modifier
-        .weight(1f)
-        .height(42.dp)
-    )
-  } else {
+  if (postSubject.isNotNullNorBlank()) {
     Text(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(start = startPadding, end = endPadding),
       text = postSubject,
       fontSize = postCellSubjectTextSizeSp,
       inlineContent = inlinedContentForPostCell(
@@ -260,7 +313,15 @@ private fun ColumnScope.PostCellTitle(
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
       )
     )
+  } else if (postSubject == null) {
+    Shimmer(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(start = startPadding, end = endPadding)
+    )
   }
+
+  Spacer(modifier = Modifier.height(4.dp))
 }
 
 @Composable

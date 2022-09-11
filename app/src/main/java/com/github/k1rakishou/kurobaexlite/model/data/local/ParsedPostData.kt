@@ -52,7 +52,10 @@ data class ParsedPostDataContext(
     }
 
     if (isParsingCatalog) {
-      return 200
+      return when (postViewMode) {
+        PostViewMode.List -> 200
+        PostViewMode.Grid -> Int.MAX_VALUE
+      }
     }
 
     return Int.MAX_VALUE
