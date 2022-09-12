@@ -136,6 +136,7 @@ class FloatingMenuScreen(
           BuildMenuItemContainer(
             menuItem = menuItem,
             index = index,
+            lastIndexInMenuList = topItems.lastIndex,
             onItemClicked = { clickedMenuItem ->
               coroutineScope.launch {
                 shouldCallOnDismiss = false
@@ -157,6 +158,7 @@ class FloatingMenuScreen(
   private fun BuildMenuItemContainer(
     menuItem: FloatingMenuItem,
     index: Int,
+    lastIndexInMenuList: Int,
     onItemClicked: (FloatingMenuItem) -> Unit,
     onOpenNestedMenu: (FloatingMenuItem.NestedItems) -> Unit
   ) {
@@ -256,7 +258,7 @@ class FloatingMenuScreen(
         }
       }
 
-      if (index < menuItems.lastIndex) {
+      if (index < lastIndexInMenuList) {
         KurobaComposeDivider(
           modifier = Modifier
             .fillMaxWidth()
