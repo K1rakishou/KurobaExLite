@@ -8,6 +8,8 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import logcat.logcat
 import okhttp3.HttpUrl
 
@@ -96,17 +98,19 @@ class KurobaLruDiskCache(
    * cache file meta with default parameters)
    * */
   suspend fun getOrCreateCacheFile(cacheFileType: CacheFileType, url: HttpUrl): File? {
-    if (ENABLE_LOGGING) {
-      logcat(TAG) { "getOrCreateCacheFile($cacheFileType, $url) start" }
+    return withContext(NonCancellable) {
+      if (ENABLE_LOGGING) {
+        logcat(TAG) { "getOrCreateCacheFile($cacheFileType, $url) start" }
+      }
+
+      val file = getInnerCacheByFileType(cacheFileType).getOrCreateCacheFile(url)
+
+      if (ENABLE_LOGGING) {
+        logcat(TAG) { "getOrCreateCacheFile($cacheFileType, $url) end -> ${file?.name}" }
+      }
+
+      return@withContext file
     }
-
-    val file = getInnerCacheByFileType(cacheFileType).getOrCreateCacheFile(url)
-
-    if (ENABLE_LOGGING) {
-      logcat(TAG) { "getOrCreateCacheFile($cacheFileType, $url) end -> ${file?.name}" }
-    }
-
-    return file
   }
 
   suspend fun getChunkCacheFileOrNull(
@@ -128,11 +132,13 @@ class KurobaLruDiskCache(
     chunkEnd: Long,
     url: HttpUrl
   ): File? {
-    if (ENABLE_LOGGING) {
-      logcat(TAG) { "getOrCreateChunkCacheFile($cacheFileType, $chunkStart..$chunkEnd, $url)" }
-    }
+    return withContext(NonCancellable) {
+      if (ENABLE_LOGGING) {
+        logcat(TAG) { "getOrCreateChunkCacheFile($cacheFileType, $chunkStart..$chunkEnd, $url)" }
+      }
 
-    return getInnerCacheByFileType(cacheFileType).getOrCreateChunkCacheFile(chunkStart, chunkEnd, url)
+      return@withContext getInnerCacheByFileType(cacheFileType).getOrCreateChunkCacheFile(chunkStart, chunkEnd, url)
+    }
   }
 
   suspend fun cacheFileExistsInMemoryCache(cacheFileType: CacheFileType, url: HttpUrl): Boolean {
@@ -146,20 +152,28 @@ class KurobaLruDiskCache(
     return exists
   }
 
-  suspend fun deleteCacheFileByUrlSuspend(cacheFileType: CacheFileType, url: HttpUrl): Boolean {
-    if (ENABLE_LOGGING) {
-      logcat(TAG) { "deleteCacheFileByUrlSuspend($cacheFileType, $url)" }
-    }
+  suspend fun deleteCacheFileByUrl(cacheFileType: CacheFileType, url: HttpUrl): Boolean {
+    return withContext(NonCancellable) {
+      if (ENABLE_LOGGING) {
+        logcat(TAG) { "deleteCacheFileByUrl($cacheFileType, $url)" }
+      }
 
-    return getInnerCacheByFileType(cacheFileType).deleteCacheFile(url)
+      return@withContext getInnerCacheByFileType(cacheFileType).deleteCacheFile(url)
+    }
   }
 
-  suspend fun deleteCacheFileByUrl(cacheFileType: CacheFileType, url: HttpUrl): Boolean {
-    if (ENABLE_LOGGING) {
-      logcat(TAG) { "deleteCacheFileByUrl($cacheFileType, $url)" }
-    }
+  /**
+   * Deletes a cache file with it's meta. Also decreases the total cache size variable by the size
+   * of the file.
+   * */
+  suspend fun deleteCacheFile(cacheFileType: CacheFileType, cacheFile: File): Boolean {
+    return withContext(NonCancellable) {
+      if (ENABLE_LOGGING) {
+        logcat(TAG) { "deleteCacheFile($cacheFileType, ${cacheFile.name})" }
+      }
 
-    return getInnerCacheByFileType(cacheFileType).deleteCacheFile(url)
+      return@withContext getInnerCacheByFileType(cacheFileType).deleteCacheFile(cacheFile)
+    }
   }
 
   suspend fun cacheFileExistsOnDisk(cacheFileType: CacheFileType, url: HttpUrl): Boolean {
@@ -193,26 +207,28 @@ class KurobaLruDiskCache(
   }
 
   suspend fun markFileDownloaded(cacheFileType: CacheFileType, file: File): Boolean {
-    val markedAsDownloaded = getInnerCacheByFileType(cacheFileType).markFileDownloaded(file)
-
-    if (ENABLE_LOGGING) {
-      logcat(TAG) { "markFileDownloaded($cacheFileType, ${file.name}) -> $markedAsDownloaded" }
-    }
-
-    if (markedAsDownloaded) {
-      val fileLen = file.length()
-      val totalSize = getInnerCacheByFileType(cacheFileType).fileWasAdded(fileLen)
+    return withContext(NonCancellable) {
+      val markedAsDownloaded = getInnerCacheByFileType(cacheFileType).markFileDownloaded(file)
 
       if (ENABLE_LOGGING) {
-        val maxSizeFormatted = getInnerCacheByFileType(cacheFileType).getMaxSize().asReadableFileSize()
-        val fileLenFormatted = fileLen.asReadableFileSize()
-        val totalSizeFormatted = totalSize.asReadableFileSize()
-
-        logcat(TAG) { "fileWasAdded($cacheFileType, ${file.name}, ${fileLenFormatted}) -> (${totalSizeFormatted} / ${maxSizeFormatted})" }
+        logcat(TAG) { "markFileDownloaded($cacheFileType, ${file.name}) -> $markedAsDownloaded" }
       }
-    }
 
-    return markedAsDownloaded
+      if (markedAsDownloaded) {
+        val fileLen = file.length()
+        val totalSize = getInnerCacheByFileType(cacheFileType).fileWasAdded(fileLen)
+
+        if (ENABLE_LOGGING) {
+          val maxSizeFormatted = getInnerCacheByFileType(cacheFileType).getMaxSize().asReadableFileSize()
+          val fileLenFormatted = fileLen.asReadableFileSize()
+          val totalSizeFormatted = totalSize.asReadableFileSize()
+
+          logcat(TAG) { "fileWasAdded($cacheFileType, ${file.name}, ${fileLenFormatted}) -> (${totalSizeFormatted} / ${maxSizeFormatted})" }
+        }
+      }
+
+      return@withContext markedAsDownloaded
+    }
   }
 
   suspend fun getSize(cacheFileType: CacheFileType): Long {
@@ -240,18 +256,6 @@ class KurobaLruDiskCache(
     }
 
     getInnerCacheByFileType(cacheFileType).clearCache()
-  }
-
-  /**
-   * Deletes a cache file with it's meta. Also decreases the total cache size variable by the size
-   * of the file.
-   * */
-  suspend fun deleteCacheFile(cacheFileType: CacheFileType, cacheFile: File): Boolean {
-    if (ENABLE_LOGGING) {
-      logcat(TAG) { "deleteCacheFile($cacheFileType, ${cacheFile.name})" }
-    }
-
-    return getInnerCacheByFileType(cacheFileType).deleteCacheFile(cacheFile)
   }
 
   private fun getInnerCacheByFileType(cacheFileType: CacheFileType): KurobaInnerLruDiskCache {

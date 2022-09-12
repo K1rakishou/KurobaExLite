@@ -165,7 +165,14 @@ internal class KurobaInnerLruDiskCache(
       return@withContext cacheHandlerSynchronizer.withLocalLock(fileId) {
         try {
           val cacheFile = getCacheFileByFileId(fileId)
-          if (!cacheFile.exists() && !cacheFile.createNewFile()) {
+
+          // Delete old file if it exists
+          if (cacheFile.exists()) {
+            cacheFile.delete()
+          }
+
+          // Create new fresh file
+          if (!cacheFile.createNewFile()) {
             throw IOException("Couldn't create cache file, path = ${cacheFile.name}")
           }
 

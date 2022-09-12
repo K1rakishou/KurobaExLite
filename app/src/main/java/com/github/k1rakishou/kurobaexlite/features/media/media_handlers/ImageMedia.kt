@@ -62,6 +62,17 @@ fun DisplayFullImage(
     override fun onFullImageLoaded() {
       onFullImageLoaded()
     }
+
+    override fun onFailedToDecodeTile(tileIndex: Int, totalTilesInTopLayer: Int, error: Throwable) {
+      logcatError {
+        "onFailedToDecodeTile() tileIndex=$tileIndex, totalTilesInTopLayer: $totalTilesInTopLayer, " +
+          "error=${error.errorMessageOrClassName()}"
+      }
+    }
+
+    override fun onInitializationCanceled() {
+      logcatError { "onInitializationCanceled()" }
+    }
   }
 
   val imageSourceProvider = remember(key1 = imageFile) {
@@ -115,7 +126,7 @@ fun DisplayFullImage(
   val state = rememberComposeSubsamplingScaleImageState(
     maxScale,
     scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
-    doubleTapZoom = 2f,
+    doubleTapZoom = 2f.coerceAtLeast(maxScale),
     maxScale = maxScale,
     maxMaxTileSize = { MaxTileSize.Auto() },
     minimumScaleType = { MinimumScaleType.ScaleTypeCustom },

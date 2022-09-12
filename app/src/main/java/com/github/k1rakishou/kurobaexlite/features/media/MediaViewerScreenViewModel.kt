@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.media
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import androidx.annotation.GuardedBy
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import coil.ImageLoader
@@ -81,6 +82,9 @@ class MediaViewerScreenViewModel(
     appResources = appResources,
     chanCache = chanCache
   )
+
+  @GuardedBy("itself")
+  private val activeMediaLoadRequests = mutableSetOf<String>()
 
   suspend fun initFromCatalogOrThreadDescriptor(
     chanDescriptor: ChanDescriptor,
@@ -206,6 +210,14 @@ class MediaViewerScreenViewModel(
   fun onScreenDisposed() {
     mediaViewerScreenState.destroy()
     mpvInitializer.destroy()
+  }
+
+  fun enqueueMediaLoadRequest(fullImageUrlAsString: String): Boolean {
+    return synchronized(activeMediaLoadRequests) { activeMediaLoadRequests.add(fullImageUrlAsString) }
+  }
+
+  fun removeEnqueuedMediaLoadRequest(fullImageUrlAsString: String): Boolean {
+    return synchronized(activeMediaLoadRequests) { activeMediaLoadRequests.remove(fullImageUrlAsString) }
   }
 
   suspend fun loadFullImageAndGetFile(

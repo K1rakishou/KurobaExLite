@@ -369,6 +369,37 @@ class MediaViewerScreen(
       return
     }
 
+    val fullImageUrlAsString = postImageDataLoadState.fullImageUrlAsString
+
+    if (!mediaViewerScreenViewModel.enqueueMediaLoadRequest(fullImageUrlAsString)) {
+      // Already enqueued
+      return
+    }
+
+    try {
+      loadFullImageAndListenForProgress(
+        index = index,
+        retriesCount = retriesCount,
+        appContext = appContenxt,
+        coroutineScope = coroutineScope,
+        postImageDataLoadState = postImageDataLoadState,
+        onLoadProgressUpdated = onLoadProgressUpdated,
+        mediaViewerScreenState = mediaViewerScreenState
+      )
+    } finally {
+      mediaViewerScreenViewModel.removeEnqueuedMediaLoadRequest(fullImageUrlAsString)
+    }
+  }
+
+  private suspend fun loadFullImageAndListenForProgress(
+    index: Int,
+    retriesCount: AtomicInteger,
+    appContext: Context,
+    coroutineScope: CoroutineScope,
+    postImageDataLoadState: ImageLoadState.PreparingForLoading,
+    onLoadProgressUpdated: (Int, Float) -> Unit,
+    mediaViewerScreenState: MediaViewerScreenState
+  ) {
     mediaViewerScreenViewModel.loadFullImageAndGetFile(postImageDataLoadState.postImage)
       .collect { imageLoadState ->
         when (imageLoadState) {
@@ -388,10 +419,11 @@ class MediaViewerScreen(
 
                   delay(currentRetryIndex * 1000L)
 
-                  loadFullImageInternal(
-                    appContenxt = appContenxt,
-                    coroutineScope = coroutineScope,
+                  loadFullImageAndListenForProgress(
+                    index = index,
                     retriesCount = retriesCount,
+                    appContext = appContext,
+                    coroutineScope = coroutineScope,
                     postImageDataLoadState = postImageDataLoadState,
                     mediaViewerScreenState = mediaViewerScreenState,
                     onLoadProgressUpdated = onLoadProgressUpdated
