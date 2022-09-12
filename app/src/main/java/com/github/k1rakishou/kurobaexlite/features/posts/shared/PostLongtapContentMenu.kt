@@ -3,6 +3,8 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -13,6 +15,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class PostLongtapContentMenu(
@@ -20,6 +24,8 @@ class PostLongtapContentMenu(
   private val navigationRouter: NavigationRouter,
   private val screenCoroutineScope: CoroutineScope
 ) {
+  private val replyLayoutViewModel by componentActivity.viewModel<ReplyLayoutViewModel>()
+
   private val markedPostManager: MarkedPostManager by inject(MarkedPostManager::class.java)
   private val modifyMarkedPosts: ModifyMarkedPosts by inject(ModifyMarkedPosts::class.java)
   private val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
@@ -32,6 +38,18 @@ class PostLongtapContentMenu(
     screenCoroutineScope.launch {
       val floatingMenuItems = mutableListOf<FloatingMenuItem>().apply {
         if (!postListOptions.isCatalogMode) {
+          this += FloatingMenuItem.Text(
+            menuItemKey = QUOTE,
+            menuItemData = postCellData.postDescriptor,
+            text = FloatingMenuItem.MenuItemText.Id(R.string.quote)
+          )
+
+          this += FloatingMenuItem.Text(
+            menuItemKey = QUOTE_TEXT,
+            menuItemData = postCellData.postDescriptor,
+            text = FloatingMenuItem.MenuItemText.Id(R.string.quote_text)
+          )
+
           if (markedPostManager.isPostMarkedAsMine(postCellData.postDescriptor)) {
             this += FloatingMenuItem.Text(
               menuItemKey = MARK_UNMARK_POST_AS_OWN,
@@ -52,30 +70,64 @@ class PostLongtapContentMenu(
         return@launch
       }
 
-      navigationRouter.presentScreen(
-        FloatingMenuScreen(
-          floatingMenuKey = FloatingMenuScreen.POST_LONGTAP_MENU,
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          menuItems = floatingMenuItems,
-          onMenuItemClicked = { menuItem ->
-            screenCoroutineScope.launch {
-              processClickedToolbarMenuItem(
-                menuItem = menuItem,
-                reparsePostsFunc = reparsePostsFunc
-              )
-            }
-          }
+      val selectedMenuItem = suspendCancellableCoroutine<FloatingMenuItem?> { cancellableContinuation ->
+        var selectedMenuItem: FloatingMenuItem? = null
+
+        navigationRouter.presentScreen(
+          FloatingMenuScreen(
+            floatingMenuKey = FloatingMenuScreen.POST_LONGTAP_MENU,
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            menuItems = floatingMenuItems,
+            onMenuItemClicked = { menuItem -> selectedMenuItem = menuItem },
+            onDismiss = { cancellableContinuation.resumeSafe(selectedMenuItem) }
+          )
         )
+      }
+
+      if (selectedMenuItem == null) {
+        return@launch
+      }
+
+      processClickedToolbarMenuItem(
+        menuItem = selectedMenuItem,
+        postCellData = postCellData,
+        reparsePostsFunc = reparsePostsFunc
       )
     }
   }
 
   private suspend fun processClickedToolbarMenuItem(
     menuItem: FloatingMenuItem,
+    postCellData: PostCellData,
     reparsePostsFunc: (Collection<PostDescriptor>) -> Unit
   ) {
     when (menuItem.menuItemKey as Int) {
+      QUOTE,
+      QUOTE_TEXT -> {
+        screenCoroutineScope.launch {
+          if (menuItem.menuItemKey == QUOTE) {
+            replyLayoutViewModel.quotePost(
+              chanDescriptor = postCellData.chanDescriptor,
+              postCellData = postCellData
+            )
+          } else {
+            val comment = postCellData.parsedPostData?.parsedPostComment
+            if (comment.isNullOrEmpty()) {
+              replyLayoutViewModel.quotePost(
+                chanDescriptor = postCellData.chanDescriptor,
+                postCellData = postCellData
+              )
+            } else {
+              replyLayoutViewModel.quotePostWithText(
+                chanDescriptor = postCellData.chanDescriptor,
+                postCellData = postCellData,
+                selectedText = comment
+              )
+            }
+          }
+        }
+      }
       MARK_MARK_POST_AS_OWN -> {
         val postDescriptor = menuItem.data as? PostDescriptor
           ?: return
@@ -106,8 +158,10 @@ class PostLongtapContentMenu(
   }
 
   companion object {
-    private const val MARK_MARK_POST_AS_OWN = 0
-    private const val MARK_UNMARK_POST_AS_OWN = 1
+    private const val QUOTE = 0
+    private const val QUOTE_TEXT = 1
+    private const val MARK_MARK_POST_AS_OWN = 2
+    private const val MARK_UNMARK_POST_AS_OWN = 3
   }
 
 }

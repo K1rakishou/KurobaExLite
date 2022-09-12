@@ -153,13 +153,6 @@ internal fun PostCellCommentSelectionWrapper(
           id = id++,
           order = order++,
           text = resources.getString(R.string.quote),
-          icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_chevron_right_24, theme),
-          callback = { selectedText -> onQuoteSelectedTextUpdated.invoke(false, selectedText.text) }
-        ),
-        SelectionToolbarMenu.Item(
-          id = id++,
-          order = order++,
-          text = resources.getString(R.string.quote_text),
           icon = ResourcesCompat.getDrawable(resources, R.drawable.ic_baseline_format_quote_24, theme),
           callback = { selectedText -> onQuoteSelectedTextUpdated.invoke(true, selectedText.text) }
         ),

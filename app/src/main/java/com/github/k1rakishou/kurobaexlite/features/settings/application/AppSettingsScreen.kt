@@ -145,7 +145,7 @@ class AppSettingsScreen(
       onMenuItemClicked = { floatingMenuItem ->
         displayedMenuOptions.result.complete(floatingMenuItem.menuItemKey as String)
       },
-      onDismiss = {
+      onNoItemsWereClicked = {
         displayedMenuOptions.result.complete(null)
       }
     )

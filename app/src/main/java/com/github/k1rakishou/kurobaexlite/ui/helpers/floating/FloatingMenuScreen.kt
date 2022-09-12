@@ -41,7 +41,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.launch
-import logcat.logcat
 
 // TODO(KurobaEx): screen parameters are not persisted across process death yet!
 class FloatingMenuScreen(
@@ -51,6 +50,7 @@ class FloatingMenuScreen(
   navigationRouter: NavigationRouter,
   menuItems: List<FloatingMenuItem>,
   private val onMenuItemClicked: (FloatingMenuItem) -> Unit,
+  private val onNoItemsWereClicked: () -> Unit = {},
   private val onDismiss: () -> Unit = {}
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val floatingMenuScreenKey = ScreenKey("FloatingMenuScreen_${floatingMenuKey}")
@@ -58,7 +58,7 @@ class FloatingMenuScreen(
   private val callbacksToInvokeMap = mutableMapOf<Any, FloatingMenuItem>()
   private val coroutineScope = KurobaCoroutineScope()
   private val menuItems by lazy { menuItems.filter { it.visible } }
-  private var shouldCallOnDismiss = true
+  private var noItemsWereClicked = true
 
   override val screenKey: ScreenKey = floatingMenuScreenKey
   override val contentAlignment: Alignment = touchPositionDependantAlignment
@@ -73,15 +73,16 @@ class FloatingMenuScreen(
       val callbacksWereEmpty = callbacksToInvokeMap.isEmpty()
 
       callbacksToInvokeMap.values.forEach { menuItem ->
-        logcat(tag = "FloatingMenuScreen") { "calling onMenuItemClicked(${menuItem.menuItemKey})" }
         onMenuItemClicked(menuItem)
       }
 
       callbacksToInvokeMap.clear()
 
-      if (shouldCallOnDismiss && callbacksWereEmpty) {
-        onDismiss()
+      if (noItemsWereClicked && callbacksWereEmpty) {
+        onNoItemsWereClicked()
       }
+
+      onDismiss()
     }
 
     super.onDisposed(screenDisposeEvent)
@@ -139,7 +140,7 @@ class FloatingMenuScreen(
             lastIndexInMenuList = topItems.lastIndex,
             onItemClicked = { clickedMenuItem ->
               coroutineScope.launch {
-                shouldCallOnDismiss = false
+                noItemsWereClicked = false
 
                 onMenuItemClicked(clickedMenuItem)
                 stopPresenting()
