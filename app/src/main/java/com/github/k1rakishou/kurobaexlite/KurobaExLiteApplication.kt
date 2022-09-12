@@ -23,14 +23,13 @@ class KurobaExLiteApplication : Application() {
   private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
   private val replyNotificationsHelper: ReplyNotificationsHelper by inject(ReplyNotificationsHelper::class.java)
 
-  private val globalExceptionHandler = CoroutineExceptionHandler { coroutineContext, exception ->
+  private val globalExceptionHandler = CoroutineExceptionHandler { coroutineContext, throwable ->
     logcatError {
       "[Global] Unhandled exception in coroutine: '${coroutineContext[CoroutineName.Key]?.name}', " +
-        "error: ${exception.asLog()}"
+        "error: ${throwable.asLog()}"
     }
 
-    showCrashReportActivity(exception)
-    throw exception
+    showCrashReportActivity(throwable)
   }
 
   private val appCoroutineScope = KurobaCoroutineScope(exceptionHandler = globalExceptionHandler)
@@ -50,22 +49,22 @@ class KurobaExLiteApplication : Application() {
     registerActivityLifecycleCallbacks(applicationVisibilityManager)
     replyNotificationsHelper.init()
 
-    Thread.setDefaultUncaughtExceptionHandler { thread, e ->
+    Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
       // if there's any uncaught crash stuff, just dump them to the log and exit immediately
-      logcatError { "Unhandled exception in thread: ${thread.name}, error: ${e.asLog()}" }
-      showCrashReportActivity(e)
+      logcatError { "Unhandled exception in thread: ${thread.name}, error: ${throwable.asLog()}" }
+      showCrashReportActivity(throwable)
     }
 
     LogcatLogger.install(KurobaExLiteLogger())
   }
 
-  private fun showCrashReportActivity(e: Throwable?) {
-    val message = e?.message ?: return
-    val stacktrace = e.stackTraceToString()
+  private fun showCrashReportActivity(throwable: Throwable): Nothing {
+    val message = throwable.message
+    val stacktrace = throwable.stackTraceToString()
 
     val bundle = Bundle()
       .apply {
-        putString(CrashReportActivity.EXCEPTION_CLASS_NAME_KEY, e::class.java.name)
+        putString(CrashReportActivity.EXCEPTION_CLASS_NAME_KEY, throwable::class.java.name)
         putString(CrashReportActivity.EXCEPTION_MESSAGE_KEY, message)
         putString(CrashReportActivity.EXCEPTION_STACKTRACE_KEY, stacktrace)
       }
@@ -78,7 +77,7 @@ class KurobaExLiteApplication : Application() {
     exitProcess(-1)
   }
 
-  class KurobaExLiteLogger : LogcatLogger {
+  private class KurobaExLiteLogger : LogcatLogger {
     override fun log(priority: LogPriority, tag: String, message: String) {
       when (priority) {
         LogPriority.VERBOSE -> Log.v("$GLOBAL_TAG | $tag", message)

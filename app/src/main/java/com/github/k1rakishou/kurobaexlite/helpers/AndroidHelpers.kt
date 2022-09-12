@@ -245,9 +245,9 @@ class AndroidHelpers(
     return systemGestures.left > 0 || systemGestures.right > 0
   }
 
-  enum class FlavorType {
-    Production,
-    Development
+  enum class FlavorType(val rawType: Int) {
+    Production(0),
+    Development(1)
   }
 
   companion object {

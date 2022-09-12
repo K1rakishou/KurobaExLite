@@ -47,15 +47,12 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeI
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class AppSettingsScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : HomeNavigationScreen<SimpleToolbar<AppSettingsScreen.ToolbarIcons>>(screenArgs, componentActivity, navigationRouter) {
-  private val appSettingsScreenViewModel by componentActivity.viewModel<AppSettingsScreenViewModel>()
-
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
   override val screenContentLoadedFlow: StateFlow<Boolean> = MutableStateFlow(true)

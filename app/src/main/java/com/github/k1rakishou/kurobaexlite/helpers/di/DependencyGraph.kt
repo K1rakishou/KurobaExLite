@@ -118,7 +118,7 @@ object DependencyGraph {
     val modules = mutableListOf<Module>()
 
     // Create everything eagerly to check for cycle dependencies when using dev builds
-    val createAtStart = BuildConfig.FLAVOR_TYPE == 2
+    val createAtStart = BuildConfig.FLAVOR_TYPE == AndroidHelpers.FlavorType.Development.rawType
 
     modules += module(createdAtStart = createAtStart) {
       system(application, appCoroutineScope)
