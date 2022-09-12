@@ -6,7 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 @Composable
 fun KurobaComposeFadeIn(
   modifier: Modifier = Modifier,
-  durationMillis: Int = 250,
+  durationMillis: Int = 200,
   delayMillis: Int = 100,
   enabled: Boolean = true,
   key1: Any = Unit,
@@ -42,8 +42,11 @@ fun KurobaComposeFadeIn(
     movableContent()
   }
 
-  LaunchedEffect(
+  DisposableEffect(
     key1 = key1,
-    block = { visible = true }
+    effect = {
+      visible = true
+      onDispose { visible = false }
+    }
   )
 }

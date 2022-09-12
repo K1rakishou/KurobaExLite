@@ -44,7 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEachIndexed
+import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
@@ -415,7 +415,7 @@ private fun ContentInternal(
   LaunchedEffect(
     key1 = Unit,
     block = {
-      delay(64)
+      delay(32)
       lazyGridState.scrollToItem(album.scrollIndex)
     }
   )
@@ -467,12 +467,10 @@ private fun ContentInternal(
     content = {
       val albumImages = album.albumImages
 
-      albumImages.fastForEachIndexed { index, albumImage ->
+      albumImages.fastForEach { albumImage ->
         item(
-          key = albumImages[index].postImage.fullImageAsString,
+          key = albumImage.postImage.fullImageAsString,
           content = {
-            val albumImage = albumImages[index]
-
             AlbumImageItem(
               isInSelectionMode = isInSelectionMode,
               albumImage = albumImage,
