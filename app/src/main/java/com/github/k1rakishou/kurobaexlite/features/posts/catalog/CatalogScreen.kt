@@ -20,7 +20,6 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreenViewModel
@@ -48,7 +47,7 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
-import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewModeSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -77,6 +76,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -107,7 +107,6 @@ class CatalogScreen(
 
   override val defaultToolbar: KurobaChildToolbar by lazy {
     CatalogScreenDefaultToolbar(
-      appSettings = appSettings,
       catalogScreenViewModel = catalogScreenViewModel,
       onBackPressed = { globalUiInfoManager.openDrawer() },
       showCatalogSelectionScreen = {
@@ -138,42 +137,23 @@ class CatalogScreen(
 
         navigationRouter.presentScreen(sortCatalogThreadsScreen)
       },
-      showCatalogAlbumScreen = {
-        val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
-          ?: return@CatalogScreenDefaultToolbar
-
-        val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, catalogDescriptor) }
-        )
-
-        navigationRouter.pushScreen(albumScreen)
-      },
-      toggleCatalogPostViewMode = {
-        val newCatalogPostViewMode = when (appSettings.catalogPostViewMode.read()) {
-          PostViewModeSetting.List -> PostViewModeSetting.Grid
-          PostViewModeSetting.Grid -> PostViewModeSetting.List
-        }
-
-        appSettings.catalogPostViewMode.write(newCatalogPostViewMode)
-        catalogScreenViewModel.reparseCatalogPostsWithNewViewMode()
-      },
       showOverflowMenu = {
-        navigationRouter.presentScreen(
-          FloatingMenuScreen(
-            floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter,
-            menuItems = floatingMenuItems,
-            onMenuItemClicked = { menuItem ->
-              catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(
-                navigationRouter = navigationRouter,
-                menuItem = menuItem
-              )
-            }
+        screenCoroutineScope.launch {
+          navigationRouter.presentScreen(
+            FloatingMenuScreen(
+              floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter,
+              menuItems = floatingMenuItems(),
+              onMenuItemClicked = { menuItem ->
+                catalogScreenToolbarActionHandler.processClickedToolbarMenuItem(
+                  navigationRouter = navigationRouter,
+                  menuItem = menuItem
+                )
+              }
+            )
           )
-        )
+        }
       },
       showLocalSearchToolbar = {
         kurobaToolbarContainerState.setToolbar(localSearchToolbar)
@@ -281,34 +261,62 @@ class CatalogScreen(
     )
   }
 
-  private val floatingMenuItems: List<FloatingMenuItem> by lazy {
-    listOf(
-      FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.Reload,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.reload)
-      ),
-      FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.OpenThreadByIdentifier,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier),
-      ),
-      FloatingMenuItem.Text(
-        menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.CatalogDevMenu,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_dev_menu),
-        visible = androidHelpers.isDevFlavor()
-      ),
-      FloatingMenuItem.Footer(
-        items = listOf(
-          FloatingMenuItem.Icon(
-            menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.ScrollTop,
-            iconId = R.drawable.ic_baseline_arrow_upward_24
-          ),
-          FloatingMenuItem.Icon(
-            menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.ScrollBottom,
-            iconId = R.drawable.ic_baseline_arrow_downward_24
+  private suspend fun floatingMenuItems(): List<FloatingMenuItem> {
+    val menuItems = mutableListOf<FloatingMenuItem>()
+
+    menuItems += FloatingMenuItem.Text(
+      menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.Reload,
+      text = FloatingMenuItem.MenuItemText.Id(R.string.reload)
+    )
+    menuItems += FloatingMenuItem.Text(
+      menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.Album,
+      text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_album)
+    )
+    menuItems += kotlin.run {
+      val catalogPostViewMode = appSettings.catalogPostViewMode.read().toPostViewMode()
+
+      return@run FloatingMenuItem.NestedItems(
+        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_catalog_post_view_mode),
+        moreItems = listOf(
+          FloatingMenuItem.Group(
+            checkedMenuItemKey = catalogPostViewMode,
+            groupItems = listOf(
+              FloatingMenuItem.Text(
+                menuItemKey = PostViewMode.List,
+                text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_catalog_list_view_mode)
+              ),
+              FloatingMenuItem.Text(
+                menuItemKey = PostViewMode.Grid,
+                text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_catalog_grid_view_mode)
+              ),
+            )
           )
         )
       )
+    }
+    menuItems += FloatingMenuItem.Text(
+      menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.OpenThreadByIdentifier,
+      text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_open_thread_by_identifier),
     )
+    menuItems += FloatingMenuItem.Text(
+      menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.CatalogDevMenu,
+      text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_dev_menu),
+      visible = androidHelpers.isDevFlavor()
+    )
+    menuItems += FloatingMenuItem.Footer(
+      items = listOf(
+        FloatingMenuItem.Icon(
+          menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.ScrollTop,
+          iconId = R.drawable.ic_baseline_arrow_upward_24
+        ),
+        FloatingMenuItem.Icon(
+          menuItemKey = CatalogScreenToolbarActionHandler.ToolbarMenuItems.ScrollBottom,
+          iconId = R.drawable.ic_baseline_arrow_downward_24
+        )
+      )
+    )
+
+    return menuItems
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY

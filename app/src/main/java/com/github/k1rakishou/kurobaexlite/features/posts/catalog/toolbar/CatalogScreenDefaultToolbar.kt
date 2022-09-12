@@ -28,8 +28,6 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
-import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewModeSetting
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -45,13 +43,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 class CatalogScreenDefaultToolbar(
-  private val appSettings: AppSettings,
   private val catalogScreenViewModel: CatalogScreenViewModel,
   private val onBackPressed: suspend () -> Unit,
   private val showCatalogSelectionScreen: () -> Unit,
   private val showSortCatalogThreadsScreen: () -> Unit,
-  private val showCatalogAlbumScreen: () -> Unit,
-  private val toggleCatalogPostViewMode: suspend () -> Unit,
   private val showLocalSearchToolbar: () -> Unit,
   private val showOverflowMenu: () -> Unit,
 ) : KurobaChildToolbar() {
@@ -74,25 +69,6 @@ class CatalogScreenDefaultToolbar(
           }
 
           toolbarIcon.visible.value = screenContentLoaded
-        }
-      }
-    )
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        appSettings.catalogPostViewMode.listen().collect { catalogPostViewMode ->
-          val catalogPostViewModeIcon = state.findIconByKey(State.Icons.PostViewMode)
-          if (catalogPostViewModeIcon == null) {
-            return@collect
-          }
-
-          val newDrawableId = when (catalogPostViewMode) {
-            PostViewModeSetting.List -> R.drawable.ic_baseline_view_list_24
-            PostViewModeSetting.Grid -> R.drawable.ic_baseline_view_module_24
-          }
-
-          catalogPostViewModeIcon.drawableId.value = newDrawableId
         }
       }
     )
@@ -124,12 +100,6 @@ class CatalogScreenDefaultToolbar(
             }
             State.Icons.Sort -> {
               showSortCatalogThreadsScreen()
-            }
-            State.Icons.Album -> {
-              showCatalogAlbumScreen()
-            }
-            State.Icons.PostViewMode -> {
-              toggleCatalogPostViewMode()
             }
             State.Icons.Overflow -> {
               showOverflowMenu()
@@ -287,16 +257,6 @@ class CatalogScreenDefaultToolbar(
         visible = false
       ),
       KurobaToolbarIcon(
-        key = Icons.Album,
-        drawableId = R.drawable.ic_baseline_image_24,
-        visible = false
-      ),
-      KurobaToolbarIcon(
-        key = Icons.PostViewMode,
-        drawableId = R.drawable.ic_baseline_view_list_24,
-        visible = false
-      ),
-      KurobaToolbarIcon(
         key = Icons.Overflow,
         drawableId = R.drawable.ic_baseline_more_vert_24
       ),
@@ -342,8 +302,6 @@ class CatalogScreenDefaultToolbar(
       Drawer,
       Search,
       Sort,
-      Album,
-      PostViewMode,
       Overflow
     }
 

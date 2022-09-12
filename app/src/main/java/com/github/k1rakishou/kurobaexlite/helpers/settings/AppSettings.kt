@@ -141,7 +141,14 @@ enum class PostViewModeSetting(val mode: Int) {
 @Immutable
 enum class PostViewMode {
   List,
-  Grid
+  Grid;
+
+  fun toPostViewModeSetting(): PostViewModeSetting {
+    return when (this) {
+      PostViewMode.List -> PostViewModeSetting.List
+      PostViewMode.Grid -> PostViewModeSetting.Grid
+    }
+  }
 }
 
 @JsonClass(generateAdapter = true)

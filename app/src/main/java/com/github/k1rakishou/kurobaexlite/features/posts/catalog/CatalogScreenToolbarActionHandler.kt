@@ -3,11 +3,14 @@ package com.github.k1rakishou.kurobaexlite.features.posts.catalog
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -15,10 +18,12 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
@@ -28,6 +33,7 @@ class CatalogScreenToolbarActionHandler(
 ) {
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val appResources: AppResources by inject(AppResources::class.java)
+  private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val bookmarkAllCatalogThreads: BookmarkAllCatalogThreads by inject(BookmarkAllCatalogThreads::class.java)
 
@@ -45,24 +51,44 @@ class CatalogScreenToolbarActionHandler(
 
     logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
-    when (menuItem.menuItemKey as ToolbarMenuItems) {
-      ToolbarMenuItems.Reload -> {
-        catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
+    if (menuItem.menuItemKey is ToolbarMenuItems) {
+      when (menuItem.menuItemKey) {
+        ToolbarMenuItems.Reload -> {
+          catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
+        }
+        ToolbarMenuItems.Album -> {
+          val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+            ?: return
+
+          val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, catalogDescriptor) }
+          )
+
+          navigationRouter.pushScreen(albumScreen)
+        }
+        ToolbarMenuItems.OpenThreadByIdentifier -> {
+          handleOpenThreadByIdentifier(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter
+          )
+        }
+        ToolbarMenuItems.CatalogDevMenu -> {
+          handleDevMenu(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+          )
+        }
+        ToolbarMenuItems.ScrollTop -> catalogScreenViewModel.scrollTop()
+        ToolbarMenuItems.ScrollBottom -> catalogScreenViewModel.scrollBottom()
       }
-      ToolbarMenuItems.OpenThreadByIdentifier -> {
-        handleOpenThreadByIdentifier(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter
-        )
+    } else if (menuItem.menuItemKey is PostViewMode) {
+      screenCoroutineScope.launch {
+        val newCatalogPostViewMode = (menuItem.menuItemKey as PostViewMode).toPostViewModeSetting()
+        appSettings.catalogPostViewMode.write(newCatalogPostViewMode)
+        catalogScreenViewModel.reparseCatalogPostsWithNewViewMode()
       }
-      ToolbarMenuItems.CatalogDevMenu -> {
-        handleDevMenu(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-        )
-      }
-      ToolbarMenuItems.ScrollTop -> catalogScreenViewModel.scrollTop()
-      ToolbarMenuItems.ScrollBottom -> catalogScreenViewModel.scrollBottom()
     }
   }
 
@@ -165,6 +191,7 @@ class CatalogScreenToolbarActionHandler(
   enum class ToolbarMenuItems {
     OpenThreadByIdentifier,
     Reload,
+    Album,
     ScrollTop,
     ScrollBottom,
     CatalogDevMenu,

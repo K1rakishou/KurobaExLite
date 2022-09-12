@@ -120,7 +120,7 @@ abstract class FloatingComposeScreen(
           hasClickIndication = false,
           onClick = {
             if (canDismissByClickingOutside) {
-              coroutineScope.launch { stopPresenting() }
+              coroutineScope.launch { onBackPressed() }
             }
           }
         )

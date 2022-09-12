@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.util.checkCanUseType
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -62,6 +63,11 @@ class FloatingMenuScreen(
   override val screenKey: ScreenKey = floatingMenuScreenKey
   override val contentAlignment: Alignment = touchPositionDependantAlignment
 
+  @Composable
+  override fun DefaultFloatingScreenBackPressHandler() {
+    // no-op, we have our own handler
+  }
+
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
       val callbacksWereEmpty = callbacksToInvokeMap.isEmpty()
@@ -89,6 +95,13 @@ class FloatingMenuScreen(
       block = { check(menuItems.isNotEmpty()) { "menuItems is empty!" } }
     )
 
+    val listOfMenuItems = remember { mutableStateListOf(menuItems) }
+
+    val topItems = listOfMenuItems.lastOrNull()
+    if (topItems == null) {
+      return
+    }
+
     val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
     val orientation = orientationMut
     if (orientation == null) {
@@ -99,14 +112,26 @@ class FloatingMenuScreen(
       (maxAvailableWidthPx() / 1.35f).toDp()
     }
 
+    HandleBackPresses {
+      if (listOfMenuItems.isNotEmpty()) {
+        listOfMenuItems.removeLast()
+      }
+
+      if (!listOfMenuItems.isEmpty()) {
+        return@HandleBackPresses true
+      }
+
+      return@HandleBackPresses stopPresenting()
+    }
+
     LazyColumn(
       modifier = Modifier.width(availableWidth),
       content = {
         items(
-          count = menuItems.size,
-          key = { index -> menuItems.get(index).menuItemKey }
+          count = topItems.size,
+          key = { index -> topItems.get(index).menuItemKey }
         ) { index ->
-          val menuItem = menuItems.get(index)
+          val menuItem = topItems.get(index)
 
           BuildMenuItemContainer(
             menuItem = menuItem,
@@ -118,7 +143,11 @@ class FloatingMenuScreen(
                 onMenuItemClicked(clickedMenuItem)
                 stopPresenting()
               }
-            })
+            },
+            onOpenNestedMenu = { clickedMenuItem ->
+              listOfMenuItems += clickedMenuItem.moreItems
+            }
+          )
         }
       }
     )
@@ -128,7 +157,8 @@ class FloatingMenuScreen(
   private fun BuildMenuItemContainer(
     menuItem: FloatingMenuItem,
     index: Int,
-    onItemClicked: (FloatingMenuItem) -> Unit
+    onItemClicked: (FloatingMenuItem) -> Unit,
+    onOpenNestedMenu: (FloatingMenuItem.NestedItems) -> Unit
   ) {
     Column(
       modifier = Modifier
@@ -163,7 +193,25 @@ class FloatingMenuScreen(
                 } else {
                   callbacksToInvokeMap.remove(clickedItem.menuItemKey)
                 }
-              })
+              }
+            )
+          }
+          is FloatingMenuItem.NestedItems -> {
+            Row(modifier = Modifier.fillMaxWidth()) {
+              BuildTitleAndSubtitleItems(
+                modifier = Modifier.weight(1f),
+                text = menuItem.text,
+                subText = null,
+                onItemClicked = { onOpenNestedMenu(menuItem) },
+              )
+
+              KurobaComposeIcon(
+                modifier = Modifier
+                  .size(40.dp)
+                  .padding(4.dp),
+                drawableId = R.drawable.ic_baseline_chevron_right_24
+              )
+            }
           }
           is FloatingMenuItem.Footer -> {
             Row(
@@ -557,6 +605,16 @@ sealed class FloatingMenuItem {
     override val menuItemKey: Any = keyCounter.getAndDecrement(),
     val checkedMenuItemKey: Any,
     val groupItems: List<Text>
+  ) : FloatingMenuItem() {
+    init {
+      require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }
+    }
+  }
+
+  data class NestedItems(
+    override val menuItemKey: Any = keyCounter.getAndDecrement(),
+    val text: MenuItemText,
+    val moreItems: List<FloatingMenuItem>
   ) : FloatingMenuItem() {
     init {
       require(checkCanUseType(menuItemKey)) { "Cannot use type: \'${menuItemKey::class.java.name}\' as the key!" }

@@ -107,6 +107,10 @@
     <string name="catalog_toolbar_enter_identifier">Enter catalog/thread identifier</string>
     <string name="catalog_toolbar_enter_identifier_description">ThreadId/board code/full catalog/thread/post url</string>
     <string name="catalog_toolbar_dev_menu">Dev menu</string>
+    <string name="catalog_toolbar_album">Album</string>
+    <string name="catalog_toolbar_catalog_post_view_mode">Catalog post view mode</string>
+    <string name="catalog_toolbar_catalog_list_view_mode">List mode</string>
+    <string name="catalog_toolbar_catalog_grid_view_mode">Grid mode</string>
     <string name="catalog_toolbar_bookmark_all_catalog_threads">Bookmark all catalog threads</string>
     <string name="catalog_toolbar_failed_to_parse_input">Failed to parse input: \'%1$s\'</string>
 
