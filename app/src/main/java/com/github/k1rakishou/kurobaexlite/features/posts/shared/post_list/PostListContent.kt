@@ -139,6 +139,22 @@ internal fun PostListContent(
   }
   val lazyStateWrapperUpdated by rememberUpdatedState(newValue = lazyStateWrapper)
 
+  // When switching from list to grid layout mode in the catalog we need to synchronized the current
+  // scroll position between them
+  LaunchedEffect(
+    key1 = postListOptions.postViewMode,
+    block = {
+      when (postListOptions.postViewMode) {
+        PostViewMode.List -> {
+          _lazyListState.scrollToItem(_lazyGridState.firstVisibleItemIndex)
+        }
+        PostViewMode.Grid -> {
+          _lazyGridState.scrollToItem(_lazyListState.firstVisibleItemIndex)
+        }
+      }
+    }
+  )
+
   fun processPostListScrollEventFunc() {
     processPostListScrollEvent(
       postsScreenViewModel = postsScreenViewModel,
