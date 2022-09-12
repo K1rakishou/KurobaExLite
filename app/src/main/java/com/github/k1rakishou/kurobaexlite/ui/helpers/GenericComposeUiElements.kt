@@ -761,13 +761,7 @@ fun Modifier.consumeClicks(enabled: Boolean = true): Modifier {
     return this
   }
 
-  return composed {
-    clickable(
-      interactionSource = remember { MutableInteractionSource() },
-      indication = null,
-      onClick = { /** no-op */ }
-    )
-  }
+  return pointerInput(key1 = Unit) { }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -776,9 +770,7 @@ fun Modifier.passClicksThrough(passClicks: Boolean = true): Modifier {
     return this
   }
 
-  return composed {
-    pointerInteropFilter(onTouchEvent = { false })
-  }
+  return pointerInteropFilter(onTouchEvent = { false })
 }
 
 @Composable
