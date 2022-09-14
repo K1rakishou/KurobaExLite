@@ -283,7 +283,10 @@ class GlobalUiInfoManager(
   }
 
   fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {
-    return _currentPageMapFlow[uiLayoutMode]!!
+    return _currentPageMapFlow.getOrPut(
+      key = uiLayoutMode,
+      defaultValue = { defaultCurrentPageByUiLayoutMode(uiLayoutMode) }
+    )
   }
 
   fun currentPage(): CurrentPage? {
@@ -295,8 +298,15 @@ class GlobalUiInfoManager(
   }
 
   fun updateMaxParentSize(availableWidth: Int, availableHeight: Int) {
-    _totalScreenWidthState.value = availableWidth
-    _totalScreenHeightState.value = availableHeight
+    val prevAvailableWidth = _totalScreenWidthState.value
+    if (prevAvailableWidth != availableWidth) {
+      _totalScreenWidthState.value = availableWidth
+    }
+
+    val prevAvailableHeight = _totalScreenHeightState.value
+    if (prevAvailableHeight != availableHeight) {
+      _totalScreenHeightState.value = availableHeight
+    }
   }
 
   fun setLastTouchPosition(x: Float, y: Float) {
@@ -569,17 +579,7 @@ class GlobalUiInfoManager(
 
     MainUiLayoutMode.values().forEach { layoutMode ->
       if (!_currentPageMapFlow.containsKey(layoutMode)) {
-        val screenKey = when (layoutMode) {
-          MainUiLayoutMode.Phone -> CatalogScreen.SCREEN_KEY
-          MainUiLayoutMode.Split -> CatalogScreen.SCREEN_KEY
-        }
-
-        val newCurrentPage = layoutModeDependantPage(
-          mainUiLayoutMode = layoutMode,
-          currentPage = CurrentPage(screenKey, false)
-        )
-
-        _currentPageMapFlow[layoutMode] = MutableStateFlow(newCurrentPage)
+        defaultCurrentPageByUiLayoutMode(layoutMode)
       }
     }
 
@@ -604,6 +604,20 @@ class GlobalUiInfoManager(
     }
 
     currentUiLayoutModeKnownDeferred.complete(Unit)
+  }
+
+  private fun defaultCurrentPageByUiLayoutMode(uiLayoutMode: MainUiLayoutMode): MutableStateFlow<CurrentPage> {
+    val screenKey = when (uiLayoutMode) {
+      MainUiLayoutMode.Phone -> CatalogScreen.SCREEN_KEY
+      MainUiLayoutMode.Split -> CatalogScreen.SCREEN_KEY
+    }
+
+    val newCurrentPage = layoutModeDependantPage(
+      mainUiLayoutMode = uiLayoutMode,
+      currentPage = CurrentPage(screenKey, false)
+    )
+
+    return MutableStateFlow(newCurrentPage)
   }
 
   private fun layoutModeDependantPage(

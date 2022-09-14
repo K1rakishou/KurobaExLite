@@ -11,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddToHistoryAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -36,6 +37,7 @@ class CatalogScreenToolbarActionHandler(
   private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val bookmarkAllCatalogThreads: BookmarkAllCatalogThreads by inject(BookmarkAllCatalogThreads::class.java)
+  private val addToHistoryAllCatalogThreads: AddToHistoryAllCatalogThreads by inject(AddToHistoryAllCatalogThreads::class.java)
 
   private lateinit var catalogScreenViewModel: CatalogScreenViewModel
   private lateinit var threadScreenViewModel: ThreadScreenViewModel
@@ -103,6 +105,11 @@ class CatalogScreenToolbarActionHandler(
       text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_bookmark_all_catalog_threads)
     )
 
+    floatingMenuItems += FloatingMenuItem.Text(
+      menuItemKey = DevMenuItems.AddToHistoryAllCatalogThreads,
+      text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_add_to_history_all_catalog_threads)
+    )
+
     navigationRouter.presentScreen(
       FloatingMenuScreen(
         floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW_LAYOUT_TYPE,
@@ -116,6 +123,12 @@ class CatalogScreenToolbarActionHandler(
                 ?: return@FloatingMenuScreen
 
               bookmarkAllCatalogThreads.await(catalogDescriptor)
+            }
+            DevMenuItems.AddToHistoryAllCatalogThreads -> {
+              val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+                ?: return@FloatingMenuScreen
+
+              addToHistoryAllCatalogThreads.await(catalogDescriptor)
             }
           }
         }
@@ -198,6 +211,7 @@ class CatalogScreenToolbarActionHandler(
   }
 
   enum class DevMenuItems {
+    AddToHistoryAllCatalogThreads,
     BookmarkAllCatalogThreads
   }
 

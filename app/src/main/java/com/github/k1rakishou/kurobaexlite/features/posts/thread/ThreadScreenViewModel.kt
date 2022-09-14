@@ -269,9 +269,10 @@ class ThreadScreenViewModel(
     loadOptions: LoadOptions,
     onReloadFinished: (() -> Unit)?
   ) {
+    val alreadyShowingPosts = threadScreenState.postsAsyncDataState.value is AsyncData.Data<PostsState>
     val reloadingTheSameThread = chanThreadManager.currentlyOpenedThread == threadDescriptor
 
-    if (!loadOptions.forced && reloadingTheSameThread) {
+    if (alreadyShowingPosts && reloadingTheSameThread && !loadOptions.forced) {
       onReloadFinished?.invoke()
       return
     }

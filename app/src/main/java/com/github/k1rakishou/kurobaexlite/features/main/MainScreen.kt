@@ -2,18 +2,17 @@ package com.github.k1rakishou.kurobaexlite.features.main
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreen
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
@@ -42,11 +41,6 @@ class MainScreen(
   @Composable
   override fun Content() {
     val homeScreen = remember {
-      val prevHomeScreen = navigationRouter.getScreenByKey(HomeScreen.SCREEN_KEY)
-      if (prevHomeScreen != null) {
-        return@remember prevHomeScreen as HomeScreen
-      }
-
       return@remember ComposeScreen.createScreen<HomeScreen>(
         componentActivity = componentActivity,
         navigationRouter = navigationRouter.childRouter(HomeScreen.SCREEN_KEY)
@@ -78,6 +72,7 @@ class MainScreen(
   }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun ContentInternal(
   screenKey: ScreenKey,
@@ -95,7 +90,6 @@ private fun ContentInternal(
     key2 = insets.right
   ) { PaddingValues(start = insets.left, end = insets.right) }
 
-  var contentSize by remember { mutableStateOf(IntSize.Zero) }
   val kurobaSnackbarState = rememberKurobaSnackbarState()
 
   LaunchedEffect(
@@ -127,11 +121,13 @@ private fun ContentInternal(
     modifier = Modifier
       .fillMaxSize()
       .padding(contentPadding)
-      .onSizeChanged { size -> contentSize = size }
+      .semantics { testTagsAsResourceId = true },
   ) {
-    if (contentSize.width > 0 && contentSize.height > 0) {
-      val availableWidth = contentSize.width
-      val availableHeight = contentSize.height
+    BoxWithConstraints(
+      modifier = Modifier.fillMaxSize()
+    ) {
+      val availableWidth = constraints.maxWidth
+      val availableHeight = constraints.maxHeight
 
       globalUiInfoManager.updateMaxParentSize(
         availableWidth = availableWidth,

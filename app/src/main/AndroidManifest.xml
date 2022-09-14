@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.github.k1rakishou.kurobaexlite">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <queries>
@@ -27,24 +29,26 @@
         android:supportsRtl="true"
         android:theme="@style/DefaultTheme">
 
+        <profileable
+            android:shell="true"
+            tools:targetApi="q" />
+
         <activity
             android:name="com.github.k1rakishou.kurobaexlite.ui.activity.MainActivity"
             android:exported="true"
-            android:windowSoftInputMode="adjustResize"
+            android:launchMode="singleTask"
             android:theme="@style/DefaultTheme"
-            android:launchMode="singleTask">
-
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".ui.activity.CrashReportActivity"
-            android:process=":crashReportProcess"
-            android:launchMode="singleTask" />
+            android:launchMode="singleTask"
+            android:process=":crashReportProcess" />
 
         <receiver
             android:name=".helpers.picker.SelectedFilePickerBroadcastReceiver"
@@ -52,7 +56,6 @@
         <receiver
             android:name=".helpers.notifications.ReplyNotificationDeleteIntentBroadcastReceiver"
             android:exported="false" />
-
     </application>
 
 </manifest>

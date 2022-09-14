@@ -258,7 +258,7 @@ class CatalogScreenDefaultToolbar(
       ),
       KurobaToolbarIcon(
         key = Icons.Overflow,
-        drawableId = R.drawable.ic_baseline_more_vert_24
+        drawableId = R.drawable.ic_baseline_more_vert_24,
       ),
     )
 

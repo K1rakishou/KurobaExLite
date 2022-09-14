@@ -22,7 +22,9 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
 
@@ -56,7 +58,7 @@ class BookmarksScreenViewModel(
 
     viewModelScope.launch {
       catalogPagesRepository.catalogPagesUpdatedFlow.collect { catalogDescriptor ->
-        processCatalogPageEvent(catalogDescriptor)
+        withContext(Dispatchers.Main) { processCatalogPageEvent(catalogDescriptor) }
       }
     }
 

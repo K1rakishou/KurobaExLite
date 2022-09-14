@@ -12,7 +12,7 @@ class ApplicationVisibilityManager : DefaultActivityLifecycleCallbacks() {
   private val listeners = CopyOnWriteArrayList<ApplicationVisibilityListener>()
 
   private var currentApplicationVisibility: ApplicationVisibility = ApplicationVisibility.Background
-  private val createdActivities = mutableSetOf<String>()
+  private val createdActivities = mutableMapOf<String, MutableSet<Int>>()
 
   private var _switchedToForegroundAt: Long? = null
   val switchedToForegroundAt: Long?
@@ -27,13 +27,18 @@ class ApplicationVisibilityManager : DefaultActivityLifecycleCallbacks() {
   }
 
   override fun onActivityStarted(activity: Activity) {
-    val wasBackground = createdActivities.isEmpty()
+    val wasBackground = createdActivities.values.all { it.isEmpty() }
     val activityFullName = activity::class.java.name
-    createdActivities += activityFullName
+    val activityHash = activity.hashCode()
 
-    logcat(TAG, LogPriority.VERBOSE) { "onActivityStarted('${activity::class.java.simpleName}')" }
+    createdActivities.getOrPut(
+      key = activityFullName,
+      defaultValue = { mutableSetOf() }
+    ).also { set -> set.add(activityHash) }
 
-    if (!wasBackground || createdActivities.isEmpty()) {
+    logcat(TAG, LogPriority.VERBOSE) { "onActivityStarted('${activity::class.java.simpleName}', ${activityHash})" }
+
+    if (!wasBackground || createdActivities.values.all { it.isEmpty() }) {
       return
     }
 
@@ -48,13 +53,14 @@ class ApplicationVisibilityManager : DefaultActivityLifecycleCallbacks() {
   }
 
   override fun onActivityStopped(activity: Activity) {
-    val wasForeground = createdActivities.isNotEmpty()
+    val wasForeground = createdActivities.values.any { it.isNotEmpty() }
     val activityFullName = activity::class.java.name
-    createdActivities -= activityFullName
+    val activityHash = activity.hashCode()
+    createdActivities[activityFullName]?.remove(activityHash)
 
-    logcat(TAG, LogPriority.VERBOSE) { "onActivityStopped('${activity::class.java.simpleName}')" }
+    logcat(TAG, LogPriority.VERBOSE) { "onActivityStopped('${activity::class.java.simpleName}', ${activityHash})" }
 
-    if (!wasForeground || createdActivities.isNotEmpty()) {
+    if (!wasForeground || createdActivities.values.any { it.isNotEmpty() }) {
       return
     }
 

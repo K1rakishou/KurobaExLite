@@ -104,7 +104,6 @@ fun LazyColumnWithFastScroller(
     ) {
       LazyColumn(
         modifier = Modifier
-          .then(lazyListModifier)
           .scrollbar(
             lazyStateWrapper = lazyListStateWrapper,
             scrollbarDimens = ScrollbarDimens.Vertical.Static(
@@ -117,7 +116,8 @@ fun LazyColumnWithFastScroller(
             contentPadding = contentPadding,
             fastScrollerMarks = fastScrollerMarks,
             scrollbarManualDragProgress = scrollbarDragProgress
-          ),
+          )
+          .then(lazyListModifier),
         userScrollEnabled = userScrollEnabled,
         state = lazyListState,
         contentPadding = contentPadding,

@@ -289,20 +289,21 @@ open class NavigationRouter(
       return
     }
 
-    if (!screenAnimation.isScreenBeingRemoved()) {
-      composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Created)
+    if (screenAnimation.isScreenBeingRemoved()) {
+      composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposed)
+
+      _navigationScreensStack
+        .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }
+        .takeIf { index -> index >= 0 }
+        ?.let { indexOfRemovedScreen ->
+          removingScreens.remove(screenAnimation.screenKey)
+          _navigationScreensStack.removeAt(indexOfRemovedScreen)
+        }
+
       return
     }
 
-    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposed)
-
-    _navigationScreensStack
-      .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }
-      .takeIf { index -> index >= 0 }
-      ?.let { indexOfRemovedScreen ->
-        removingScreens.remove(screenAnimation.screenKey)
-        _navigationScreensStack.removeAt(indexOfRemovedScreen)
-      }
+    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Created)
   }
 
   protected fun <T : ComposeScreen> MutableState<List<T>>.addScreen(

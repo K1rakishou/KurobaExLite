@@ -129,7 +129,6 @@ class UpdateManager(
       }
     }
 
-
     val versionCodeFromServer = extractVersionCodeFromTag(latestRelease)
     if (versionCodeFromServer == null) {
       return UpdateCheckResult.Error("Failed to extract versionCode from latestRelease object")

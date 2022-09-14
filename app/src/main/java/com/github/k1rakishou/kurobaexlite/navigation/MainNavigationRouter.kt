@@ -146,27 +146,43 @@ class MainNavigationRouter : NavigationRouter(
 
     _screenAnimations.remove(screenAnimation.screenKey)
 
-    val composeScreen = floatingScreensStack
-      .firstOrNull { composeScreen -> composeScreen.screenKey == screenAnimation.screenKey }
+    var composeScreen: ComposeScreen? = floatingScreensStack
+      .firstOrNull { screen -> screen.screenKey == screenAnimation.screenKey }
+
+    if (composeScreen == null) {
+      composeScreen = navigationScreensStack
+        .firstOrNull { screen -> screen.screenKey == screenAnimation.screenKey }
+    }
 
     if (composeScreen == null) {
       return
     }
 
-    if (!screenAnimation.isScreenBeingRemoved()) {
-      composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Created)
+    if (screenAnimation.isScreenBeingRemoved()) {
+      composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposed)
+
+      if (composeScreen is FloatingComposeScreen) {
+        _floatingScreensStack
+          .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }
+          .takeIf { index -> index >= 0 }
+          ?.let { indexOfRemovedScreen ->
+            removingScreens.remove(screenAnimation.screenKey)
+            _floatingScreensStack.removeAt(indexOfRemovedScreen)
+          }
+      } else {
+        _navigationScreensStack
+          .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }
+          .takeIf { index -> index >= 0 }
+          ?.let { indexOfRemovedScreen ->
+            removingScreens.remove(screenAnimation.screenKey)
+            _navigationScreensStack.removeAt(indexOfRemovedScreen)
+          }
+      }
+
       return
     }
 
-    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposed)
-
-    _floatingScreensStack
-      .indexOfFirst { screen -> screen.screenKey == screenAnimation.screenKey }
-      .takeIf { index -> index >= 0 }
-      ?.let { indexOfRemovedScreen ->
-        removingScreens.remove(screenAnimation.screenKey)
-        _floatingScreensStack.removeAt(indexOfRemovedScreen)
-      }
+    composeScreen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Created)
   }
 
   suspend fun onBackBackPressed(): Boolean {

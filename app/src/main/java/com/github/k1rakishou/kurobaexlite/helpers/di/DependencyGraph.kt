@@ -51,6 +51,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.RemoteImageSearchSettings
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddToHistoryAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ExtractRepliesToMyPosts
@@ -148,8 +149,8 @@ object DependencyGraph {
   }
 
   private fun Module.misc() {
-    single { AppSettings(appContext = get(), moshi = get(), fileName = "app_settings") }
-    single { RemoteImageSearchSettings(appContext = get(), moshi = get(), fileName = "remote_image_search_settings") }
+    single { AppSettings(fileName = "app_settings", appContext = get(), moshi = get()) }
+    single { RemoteImageSearchSettings(fileName = "remote_image_search_settings", appContext = get(), moshi = get()) }
 
     single { KurobaExLiteDatabase.buildDatabase(application = get()) }
 
@@ -623,6 +624,14 @@ object DependencyGraph {
         bookmarksManager = get(),
         kurobaExLiteDatabase = get(),
         parsedPostDataCache = get(),
+      )
+    }
+
+    single {
+      AddToHistoryAllCatalogThreads(
+        appScope = get(),
+        modifyNavigationHistory = get(),
+        chanCache = get()
       )
     }
 

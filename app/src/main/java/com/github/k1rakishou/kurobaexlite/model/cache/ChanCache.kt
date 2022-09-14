@@ -159,7 +159,7 @@ class ChanCache(
     return catalogs[catalogDescriptor]?.getPostDataList() ?: emptyList()
   }
 
-  suspend fun getCatalogPost(postDescriptor: PostDescriptor): IPostData? {
+  suspend fun getCatalogPost(postDescriptor: PostDescriptor): OriginalPostData? {
     return catalogs[postDescriptor.catalogDescriptor]?.getOriginalPost(postDescriptor)
   }
 

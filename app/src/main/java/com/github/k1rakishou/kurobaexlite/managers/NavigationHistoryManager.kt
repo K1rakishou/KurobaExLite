@@ -38,6 +38,24 @@ class NavigationHistoryManager {
     }
   }
 
+  suspend fun addMany(navigationElements: Collection<NavigationElement>) {
+    mutex.withLock {
+      navigationElements.forEach { newNavigationElement ->
+        val indexOfExisting = navigationHistory.indexOfFirst { existingNavigationElement ->
+          existingNavigationElement.chanDescriptor == newNavigationElement.chanDescriptor
+        }
+
+        if (indexOfExisting >= 0) {
+          return@forEach
+        }
+
+        navigationHistory.add(0, newNavigationElement)
+      }
+
+      _navigationUpdates.emit(NavigationUpdate.AddedMany(0, navigationElements))
+    }
+  }
+
   suspend fun addOrReorder(navigationElement: NavigationElement) {
     mutex.withLock {
       val indexOfExisting = navigationHistory.indexOfFirst { existingNavigationElement ->
@@ -110,6 +128,7 @@ sealed class NavigationUpdate {
   data class Loaded(val navigationElements: List<NavigationElement>) : NavigationUpdate()
 
   data class Added(val index: Int, val navigationElement: NavigationElement) : NavigationUpdate()
+  data class AddedMany(val index: Int, val navigationElements: Collection<NavigationElement>) : NavigationUpdate()
   data class Removed(val navigationElement: NavigationElement) : NavigationUpdate()
   data class Moved(val navigationElement: NavigationElement) : NavigationUpdate()
 }

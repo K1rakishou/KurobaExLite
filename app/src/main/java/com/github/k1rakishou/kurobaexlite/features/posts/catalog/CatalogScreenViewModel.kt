@@ -124,7 +124,10 @@ class CatalogScreenViewModel(
     loadOptions: LoadOptions,
     onReloadFinished: (() -> Unit)?
   ) {
-    if (!loadOptions.forced && chanThreadManager.currentlyOpenedCatalog == catalogDescriptor) {
+    val alreadyShowingPosts = catalogScreenState.postsAsyncDataState.value is AsyncData.Data<PostsState>
+    val reloadingTheSameCatalog = chanThreadManager.currentlyOpenedCatalog == catalogDescriptor
+
+    if (alreadyShowingPosts && reloadingTheSameCatalog && !loadOptions.forced) {
       onReloadFinished?.invoke()
       return
     }

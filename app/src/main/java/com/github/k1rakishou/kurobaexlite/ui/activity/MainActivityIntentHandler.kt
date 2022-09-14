@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.activity
 
 import android.content.Intent
+import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
@@ -13,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import logcat.logcat
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivityIntentHandler(
   private val globalUiInfoManager: GlobalUiInfoManager,
@@ -23,14 +25,10 @@ class MainActivityIntentHandler(
   private var catalogScreenViewModelLazy: Lazy<CatalogScreenViewModel>? = null
   private var bookmarksScreenViewModelLazy: Lazy<BookmarksScreenViewModel>? = null
 
-  fun onCreate(
-    threadScreenViewModelLazy: Lazy<ThreadScreenViewModel>,
-    catalogScreenViewModelLazy: Lazy<CatalogScreenViewModel>,
-    bookmarksScreenViewModelLazy: Lazy<BookmarksScreenViewModel>
-  ) {
-    this.threadScreenViewModelLazy = threadScreenViewModelLazy
-    this.catalogScreenViewModelLazy = catalogScreenViewModelLazy
-    this.bookmarksScreenViewModelLazy = bookmarksScreenViewModelLazy
+  fun onCreate(componentActivity: ComponentActivity) {
+    this.threadScreenViewModelLazy = componentActivity.viewModel()
+    this.catalogScreenViewModelLazy = componentActivity.viewModel()
+    this.bookmarksScreenViewModelLazy = componentActivity.viewModel()
   }
 
   fun onDestroy() {
@@ -39,7 +37,7 @@ class MainActivityIntentHandler(
     this.bookmarksScreenViewModelLazy = null
   }
 
-  suspend fun onNewIntent(intent: Intent) {
+  suspend fun onNewIntent(intent: Intent): Boolean {
     logcat(TAG) { "Got intent with action '${intent.action}'" }
 
     when (intent.action) {
@@ -54,10 +52,14 @@ class MainActivityIntentHandler(
 
         onReplyNotificationClicked(threadDescriptors, postDescriptors)
         markBookmarksAsSeen(threadDescriptors)
+
+        return true
       }
       AppConstants.Actions.REPLY_NOTIFICATION_DELETED_ACTION -> {
         // Handled in ReplyNotificationDeleteIntentBroadcastReceiver
+        return true
       }
+      else -> return false
     }
   }
 

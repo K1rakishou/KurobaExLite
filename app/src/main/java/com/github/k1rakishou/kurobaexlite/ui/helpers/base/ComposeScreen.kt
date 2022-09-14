@@ -68,6 +68,16 @@ abstract class ComposeScreen protected constructor(
   val screenLifecycle: ScreenLifecycle
     get() = _screenLifecycle
 
+  val screenIsAlive: Boolean
+    get() {
+      return when (screenLifecycle) {
+        ScreenLifecycle.Creating,
+        ScreenLifecycle.Created -> true
+        ScreenLifecycle.Disposing,
+        ScreenLifecycle.Disposed -> false
+      }
+    }
+
   open val pushAnimation: NavigationRouter.ScreenAnimation
     get() = NavigationRouter.ScreenAnimation.Push(screenKey)
 

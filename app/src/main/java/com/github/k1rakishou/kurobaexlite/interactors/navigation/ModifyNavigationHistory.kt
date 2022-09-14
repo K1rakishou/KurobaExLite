@@ -34,7 +34,11 @@ class ModifyNavigationHistory(
       postDescriptor = threadDescriptor.toOriginalPostDescriptor(),
       maxLength = AppConstants.navHistoryMaxTitleLength
     )
-    val firstImageThumbnailUrl = chanCache.getOriginalPost(threadDescriptor)?.images?.firstOrNull()?.thumbnailAsString
+
+    val firstImageThumbnailUrl = chanCache.getOriginalPost(threadDescriptor)
+      ?.images
+      ?.firstOrNull()
+      ?.thumbnailAsString
 
     val navigationElement = NavigationElement.Thread(
       chanDescriptor = threadDescriptor,
@@ -43,6 +47,37 @@ class ModifyNavigationHistory(
     )
 
     navigationHistoryManager.addOrReorder(navigationElement)
+  }
+
+  suspend fun addManyThreads(threadDescriptors: Collection<ThreadDescriptor>) {
+    if (threadDescriptors.isEmpty()) {
+      return
+    }
+
+    val navigationElements = threadDescriptors.map { threadDescriptor ->
+      val title = parsedPostDataCache.formatThreadToolbarTitle(
+        postDescriptor = threadDescriptor.toOriginalPostDescriptor(),
+        maxLength = AppConstants.navHistoryMaxTitleLength
+      )
+
+      var originalPost = chanCache.getOriginalPost(threadDescriptor)
+      if (originalPost == null) {
+        originalPost = chanCache.getCatalogPost(threadDescriptor.toOriginalPostDescriptor())
+      }
+
+      val firstImageThumbnailUrl = originalPost
+        ?.images
+        ?.firstOrNull()
+        ?.thumbnailAsString
+
+      return@map NavigationElement.Thread(
+        chanDescriptor = threadDescriptor,
+        title = title,
+        iconUrl = firstImageThumbnailUrl
+      )
+    }
+
+    navigationHistoryManager.addMany(navigationElements)
   }
 
   suspend fun remove(chanDescriptor: ChanDescriptor) {

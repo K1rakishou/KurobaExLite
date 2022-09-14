@@ -703,7 +703,8 @@ private fun HomeScreenContentActual(
       )
   ) {
     HorizontalPager(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier
+        .fillMaxSize(),
       state = pagerState,
       count = pagesWrapper.pagesCount,
       key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey()}
@@ -761,14 +762,7 @@ private fun ListenForFirewallBypassManagerEvents(
         val siteFirewallBypassScreen = navigationRouterProvider()
           .getScreenByKey(SiteFirewallBypassScreen.SCREEN_KEY)
 
-        val screenIsAlive = when (siteFirewallBypassScreen?.screenLifecycle) {
-          null -> false
-          ComposeScreen.ScreenLifecycle.Creating,
-          ComposeScreen.ScreenLifecycle.Created -> true
-          ComposeScreen.ScreenLifecycle.Disposing,
-          ComposeScreen.ScreenLifecycle.Disposed -> false
-        }
-
+        val screenIsAlive = siteFirewallBypassScreen?.screenIsAlive ?: false
         if (screenIsAlive) {
           return@collect
         }

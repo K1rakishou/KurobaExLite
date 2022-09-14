@@ -12,12 +12,14 @@ import com.github.k1rakishou.kurobaexlite.managers.NavigationUpdate
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class HistoryScreenViewModel(
   private val siteManager: SiteManager,
@@ -49,7 +51,7 @@ class HistoryScreenViewModel(
 
     viewModelScope.launch {
       navigationHistoryManager.navigationUpdates.collect { navigationUpdate ->
-        processNavigationUpdates(navigationUpdate)
+        withContext(Dispatchers.Main) { processNavigationUpdates(navigationUpdate) }
       }
     }
 
@@ -102,6 +104,19 @@ class HistoryScreenViewModel(
           _navigationHistoryList.add(index, uiElement)
         }
       }
+      is NavigationUpdate.AddedMany -> {
+        val index = navigationUpdate.index
+
+        navigationUpdate.navigationElements.forEach { navigationElement ->
+          val uiElement = navigationElement.toUiElement()
+
+          if (index < 0 || index > _navigationHistoryList.lastIndex) {
+            _navigationHistoryList.add(0, uiElement)
+          } else {
+            _navigationHistoryList.add(index, uiElement)
+          }
+        }
+      }
       is NavigationUpdate.Removed -> {
         val uiElement = navigationUpdate.navigationElement.toUiElement()
 
@@ -132,7 +147,8 @@ class HistoryScreenViewModel(
       }
       is NavigationUpdate.Loaded,
       is NavigationUpdate.Moved,
-      is NavigationUpdate.Added -> {
+      is NavigationUpdate.Added,
+      is NavigationUpdate.AddedMany -> {
         _scrollNavigationHistoryToTopEvents.tryEmit(Unit)
       }
     }

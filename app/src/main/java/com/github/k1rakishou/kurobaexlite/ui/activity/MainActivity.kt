@@ -14,11 +14,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
-import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
@@ -33,15 +30,12 @@ import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import kotlin.time.Duration.Companion.seconds
+import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
   private val mainActivityViewModel: MainActivityViewModel by viewModel()
-
-  private val threadScreenViewModelLazy: Lazy<ThreadScreenViewModel> = viewModel()
-  private val catalogScreenViewModelLazy: Lazy<CatalogScreenViewModel> = viewModel()
-  private val bookmarksScreenViewModelLazy: Lazy<BookmarksScreenViewModel> = viewModel()
 
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
@@ -69,13 +63,11 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
 
-    localFilePicker.attachActivity(this)
+    val isFreshStart = savedInstanceState == null
+    logcat(TAG) { "onCreate() start isFreshStart: $isFreshStart" }
 
-    mainActivityIntentHandler.onCreate(
-      threadScreenViewModelLazy = threadScreenViewModelLazy,
-      catalogScreenViewModelLazy = catalogScreenViewModelLazy,
-      bookmarksScreenViewModelLazy = bookmarksScreenViewModelLazy
-    )
+    localFilePicker.attachActivity(this)
+    mainActivityIntentHandler.onCreate(this)
     updateManager.checkForUpdates()
 
     WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -84,7 +76,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     appRestarter.attachActivity(this)
 
     clickedThumbnailBoundsStorage.clear()
-
     mainActivityViewModel.rootNavigationRouter.onLifecycleCreate()
 
     setContent {
@@ -113,12 +104,13 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   }
 
   override fun onDestroy() {
+    logcat(TAG) { "onDestroy()" }
+
     coroutineScope.cancelChildren()
     clickedThumbnailBoundsStorage.clear()
     localFilePicker.detachActivity()
     mainActivityIntentHandler.onDestroy()
     appRestarter.detachActivity()
-
     mainActivityViewModel.rootNavigationRouter.onLifecycleDestroy()
 
     super.onDestroy()
@@ -126,10 +118,17 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
   override fun onNewIntent(intent: Intent?) {
     if (intent == null) {
+      super.onNewIntent(intent)
       return
     }
 
-    intentExecutor.post { mainActivityIntentHandler.onNewIntent(intent) }
+    intentExecutor.post {
+      if (mainActivityIntentHandler.onNewIntent(intent)) {
+        return@post
+      }
+
+      super.onNewIntent(intent)
+    }
   }
 
   override fun onBackPressed() {

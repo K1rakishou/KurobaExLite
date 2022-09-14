@@ -276,7 +276,12 @@ fun HomeScreenDrawerLayout(
 
       RouterHost(
         navigationRouter = router,
-        defaultScreenFunc = { ComposeScreen.createScreen<BookmarksScreen>(componentActivity, navigationRouterProvider()) }
+        defaultScreenFunc = {
+          ComposeScreen.createScreen<BookmarksScreen>(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouterProvider()
+          )
+        }
       )
     }
   }

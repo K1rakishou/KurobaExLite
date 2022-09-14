@@ -754,6 +754,8 @@ abstract class PostScreenViewModel(
       return
     }
 
+    val wasAlreadyRemembered = lazyColumnRememberedPositionCache.contains(chanDescriptor)
+
     val rememberedPosition = lazyColumnRememberedPositionCache.getOrPut(
       key = chanDescriptor,
       defaultValue = {
@@ -764,6 +766,10 @@ abstract class PostScreenViewModel(
         )
       }
     )
+
+    if (index <= 0 && offset <= 0 && wasAlreadyRemembered) {
+      return
+    }
 
     rememberedPosition.index = index
     rememberedPosition.offset = offset
