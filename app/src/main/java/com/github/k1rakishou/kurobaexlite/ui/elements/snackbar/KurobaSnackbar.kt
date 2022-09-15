@@ -2,392 +2,68 @@ package com.github.k1rakishou.kurobaexlite.ui.elements.snackbar
 
 import android.os.SystemClock
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidthIn
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.github.k1rakishou.kurobaexlite.R
+import androidx.compose.ui.unit.IntSize
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
-import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
-import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
+import com.github.k1rakishou.kurobaexlite.helpers.util.iteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import org.koin.core.context.GlobalContext
 
-@Composable
-fun KurobaSnackbarContainer(
-  modifier: Modifier = Modifier,
-  screenKey: ScreenKey,
-  isTablet: Boolean,
-  kurobaSnackbarState: KurobaSnackbarState
-) {
-  BoxWithConstraints {
-    val snackbarManager = koinRemember<SnackbarManager>()
-    val insets = LocalWindowInsets.current
-    val chanTheme = LocalChanTheme.current
-    val maxContainerWidth = remember(key1 = maxWidth) { maxWidth - 16.dp }
-
-    val maxSnackbarWidth = (if (isTablet) 600.dp else 400.dp).coerceAtMost(maxContainerWidth)
-
-    LaunchedEffect(
-      key1 = kurobaSnackbarState,
-      block = {
-        snackbarManager.snackbarEventFlow.collect { snackbarInfoEvent ->
-          when (snackbarInfoEvent) {
-            is SnackbarInfoEvent.Push -> {
-              val evenScreenKey = safeScreenKey(snackbarInfoEvent.snackbarInfo.screenKey)
-              if (evenScreenKey == screenKey) {
-                kurobaSnackbarState.pushSnackbar(snackbarInfoEvent.snackbarInfo)
-              }
-            }
-            is SnackbarInfoEvent.Pop -> {
-              kurobaSnackbarState.popSnackbar(snackbarInfoEvent.id)
-            }
-          }
-        }
-      })
-
-    LaunchedEffect(
-      key1 = kurobaSnackbarState,
-      block = {
-        while (isActive) {
-          delay(250L)
-
-          kurobaSnackbarState.removeOldSnackbars()
-        }
-      })
-
-    Box(
-      modifier = modifier
-        .padding(
-          top = insets.top,
-          bottom = insets.bottom
-        )
-        .requiredWidthIn(max = maxSnackbarWidth),
-      contentAlignment = Alignment.BottomCenter
-    ) {
-      val activeSnackbars = kurobaSnackbarState.activeSnackbars
-
-      Column(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight(),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        for (snackbarInfo in activeSnackbars) {
-          key(snackbarInfo.snackbarId) {
-            KurobaSnackbarLayout(
-              isTablet = isTablet,
-              chanTheme = chanTheme,
-              snackbarInfo = snackbarInfo,
-              dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
-            )
-          }
-        }
-      }
-    }
-  }
-}
-
-/**
- * Snackbars can be only shown on MainScreen, CatalogScreen and ThreadScreen.
- * If the [screenKey] is neither of them then use MainScreen.SCREEN_KEY
- * Otherwise the snackbar won't be shown at all!
- * */
-private fun safeScreenKey(screenKey: ScreenKey): ScreenKey {
-  if (screenKey == CatalogScreen.SCREEN_KEY) {
-    return screenKey
-  }
-
-  if (screenKey == ThreadScreen.SCREEN_KEY) {
-    return screenKey
-  }
-
-  return MainScreen.SCREEN_KEY
-}
-
-@Composable
-private fun KurobaSnackbarLayout(
-  isTablet: Boolean,
-  chanTheme: ChanTheme,
-  snackbarInfo: SnackbarInfo,
-  dismissSnackbar: (SnackbarId) -> Unit
-) {
-  val snackbarManager: SnackbarManager = koinRemember()
-
-  val snackbarType = snackbarInfo.snackbarType
-
-  val containerHorizPadding = if (isTablet) 14.dp else 10.dp
-  val containerVertPadding = if (isTablet) 10.dp else 6.dp
-
-  var contentHorizPadding = if (isTablet) 10.dp else 6.dp
-  var contentVertPadding = if (isTablet) 14.dp else 8.dp
-
-  if (snackbarType.isToast) {
-    contentHorizPadding *= 1.5f
-    contentVertPadding *= 1.25f
-  }
-
-  val backgroundColor = when (snackbarInfo.snackbarType) {
-    SnackbarType.Default -> chanTheme.backColorSecondary
-    SnackbarType.Toast -> Color.White
-    SnackbarType.ErrorToast -> chanTheme.errorColor
-  }
-
-  val snackbarAlpha = if (snackbarInfo.snackbarType.isToast) 0.8f else 1f
-
-  KurobaComposeCard(
-    modifier = Modifier
-      .padding(
-        horizontal = containerHorizPadding,
-        vertical = containerVertPadding
-      )
-      .wrapContentWidth()
-      .graphicsLayer { alpha = snackbarAlpha }
-      .kurobaClickable(
-        onClick = {
-          if (snackbarInfo.hasClickableItems) {
-            return@kurobaClickable
-          }
-
-          dismissSnackbar(snackbarInfo.snackbarId)
-        }
-      ),
-    backgroundColor = backgroundColor
-  ) {
-    Row(
-      modifier = Modifier
-        .wrapContentHeight()
-        .padding(
-          horizontal = contentHorizPadding,
-          vertical = contentVertPadding
-        ),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      KurobaSnackbarContent(
-        isTablet = isTablet,
-        snackbarType = snackbarType,
-        snackbarInfo = snackbarInfo,
-        backgroundColor = backgroundColor,
-        onSnackbarClicked = { snackbarClickable, snackbarId ->
-          snackbarManager.onSnackbarElementClicked(snackbarClickable)
-          dismissSnackbar(snackbarId)
-        },
-        onDismissSnackbar = { snackbarId -> dismissSnackbar(snackbarId) }
-      )
-    }
-  }
-}
-
-@Composable
-private fun RowScope.KurobaSnackbarContent(
-  isTablet: Boolean,
-  snackbarType: SnackbarType,
-  snackbarInfo: SnackbarInfo,
-  backgroundColor: Color,
-  onSnackbarClicked: (SnackbarClickable, SnackbarId) -> Unit,
-  onDismissSnackbar: (SnackbarId) -> Unit
-) {
-  val chanTheme = LocalChanTheme.current
-  val textSize = if (isTablet) 18.sp else 16.sp
-
-  val hasClickableItems = snackbarInfo.hasClickableItems
-  val aliveUntil = snackbarInfo.aliveUntil
-  val snackbarId = snackbarInfo.snackbarId
-  val snackbarIdForCompose = snackbarInfo.snackbarIdForCompose
-  val content = snackbarInfo.content
-
-  if (!snackbarType.isToast && hasClickableItems && aliveUntil != null) {
-    val startTime = remember(key1 = snackbarIdForCompose) { SystemClock.elapsedRealtime() }
-    var progress by remember(key1 = snackbarIdForCompose) { mutableStateOf(1f) }
-
-    LaunchedEffect(
-      key1 = snackbarIdForCompose,
-      block = {
-        val timeDelta = aliveUntil - startTime
-        val delayMs = 16 * 5L
-
-        while (isActive) {
-          val currentTimeDelta = aliveUntil - SystemClock.elapsedRealtime()
-          if (currentTimeDelta < 0) {
-            break
-          }
-
-          progress = currentTimeDelta.toFloat() / timeDelta.toFloat()
-          delay(delayMs)
-        }
-
-        progress = 0f
-      }
-    )
-
-    Box(
-      modifier = Modifier.kurobaClickable(
-        bounded = false,
-        onClick = { onDismissSnackbar(snackbarId) }
-      ),
-      contentAlignment = Alignment.Center
-    ) {
-      KurobaComposeLoadingIndicator(
-        progress = progress,
-        modifier = Modifier.wrapContentSize(),
-        indicatorSize = 24.dp
-      )
-
-      KurobaComposeIcon(
-        modifier = Modifier.size(14.dp),
-        drawableId = R.drawable.ic_baseline_close_24
-      )
-    }
-
-    Spacer(modifier = Modifier.width(8.dp))
-  }
-
-  for (snackbarContentItem in content) {
-    when (snackbarContentItem) {
-      SnackbarContentItem.LoadingIndicator -> {
-        KurobaComposeLoadingIndicator(
-          modifier = Modifier.wrapContentSize(),
-          indicatorSize = 24.dp,
-          fadeInTimeMs = 0
-        )
-      }
-      is SnackbarContentItem.Spacer -> {
-        Spacer(modifier = Modifier.width(snackbarContentItem.space))
-      }
-      is SnackbarContentItem.Text -> {
-        val widthModifier = if (snackbarType.isToast || !snackbarContentItem.takeWholeWidth) {
-          Modifier.wrapContentWidth()
-        } else {
-          Modifier.weight(1f)
-        }
-
-        val textColor = if (snackbarContentItem.textColor != null) {
-          snackbarContentItem.textColor
-        } else {
-          when (snackbarType) {
-            SnackbarType.Default -> null
-            SnackbarType.ErrorToast -> Color.White
-            SnackbarType.Toast -> Color.Black
-          }
-        }
-
-        KurobaComposeText(
-          modifier = widthModifier,
-          fontSize = textSize,
-          color = textColor,
-          maxLines = 3,
-          overflow = TextOverflow.Ellipsis,
-          text = snackbarContentItem.formattedText
-        )
-      }
-      is SnackbarContentItem.Button -> {
-        KurobaComposeTextBarButton(
-          modifier = Modifier.wrapContentSize(),
-          text = snackbarContentItem.formattedText,
-          customTextColor = snackbarContentItem.textColor ?: chanTheme.accentColor,
-          onClick = { onSnackbarClicked(snackbarContentItem, snackbarId) }
-        )
-      }
-      is SnackbarContentItem.Icon -> {
-        val iconColor = remember(key1 = backgroundColor) {
-          if (ThemeEngine.isDarkColor(backgroundColor)) {
-            Color.White
-          } else {
-            Color.Black
-          }
-        }
-
-        KurobaComposeIcon(
-          modifier = Modifier
-            .wrapContentSize()
-            .padding(4.dp)
-            .align(Alignment.CenterVertically),
-          drawableId = snackbarContentItem.drawableId,
-          iconColor = iconColor
-        )
-      }
-    }
-  }
-}
 
 @Composable
 fun rememberKurobaSnackbarState(
-  keyTag: String? = null,
-  maxSnackbarsAtTime: Int = 5
+  keyTag: String? = null
 ): KurobaSnackbarState {
   return remember {
-    KurobaSnackbarState(
-      tag = keyTag,
-      maxSnackbarsAtTime = maxSnackbarsAtTime
-    )
+    KurobaSnackbarState(tag = keyTag)
   }
 }
 
 @Stable
 class KurobaSnackbarState(
-  private val tag: String?,
-  private val maxSnackbarsAtTime: Int
+  private val tag: String?
 ) {
   private val snackbarManager: SnackbarManager by lazy { GlobalContext.get().get() }
 
   private val _activeSnackbars = mutableStateListOf<SnackbarInfo>()
   val activeSnackbars: List<SnackbarInfo>
     get() = _activeSnackbars
+  
+  private val _snackbarAnimations = mutableStateMapOf<Long, SnackbarAnimation>()
+  val snackbarAnimations: Map<Long, SnackbarAnimation>
+    get() = _snackbarAnimations
 
   fun pushSnackbar(snackbarInfo: SnackbarInfo) {
     val indexOfSnackbar = _activeSnackbars
       .indexOfFirst { info -> info.snackbarId == snackbarInfo.snackbarId }
 
     if (indexOfSnackbar < 0) {
-      _activeSnackbars.add(snackbarInfo)
+      Snapshot.withMutableSnapshot {
+        _activeSnackbars.add(snackbarInfo)
+
+        val snackbarIdForCompose = snackbarInfo.snackbarIdForCompose
+        _snackbarAnimations[snackbarIdForCompose] = SnackbarAnimation.Push(snackbarIdForCompose)
+      }
+      
       updateSnackbarsCount()
     } else {
-      _activeSnackbars[indexOfSnackbar] = snackbarInfo
+      val prevSnackbarInfo = _activeSnackbars[indexOfSnackbar]
+      
+      if (prevSnackbarInfo != snackbarInfo || !prevSnackbarInfo.contentsEqual(snackbarInfo)) {
+        _activeSnackbars[indexOfSnackbar] = snackbarInfo
+      }
     }
   }
 
@@ -396,33 +72,80 @@ class KurobaSnackbarState(
       .indexOfFirst { snackbarInfo -> snackbarInfo.snackbarId == id }
 
     if (indexOfSnackbar >= 0) {
-      val removedSnackbar = _activeSnackbars.removeAt(indexOfSnackbar)
+      val snackbarInfo = _activeSnackbars.getOrNull(indexOfSnackbar) 
+        ?: return
 
-      val removedSnackbarInfo = SnackbarManager.RemovedSnackbarInfo(removedSnackbar.snackbarId, false)
-      onSnackbarsRemoved(setOf(removedSnackbarInfo))
-      updateSnackbarsCount()
+      val snackbarIdForCompose = snackbarInfo.snackbarIdForCompose
+      _snackbarAnimations[snackbarIdForCompose] = SnackbarAnimation.Pop(snackbarIdForCompose)
     }
+  }
+  
+  fun onAnimationEnded(snackbarAnimation: SnackbarAnimation) {
+    when (snackbarAnimation) {
+      is SnackbarAnimation.Push -> {
+        // no-op
+      }
+      is SnackbarAnimation.Pop -> {
+        val indexOfSnackbar = _activeSnackbars.indexOfFirst { snackbarInfo -> 
+          snackbarInfo.snackbarIdForCompose == snackbarAnimation.snackbarId 
+        }
+        
+        if (indexOfSnackbar >= 0) {
+          val removedSnackbar = _activeSnackbars.removeAt(indexOfSnackbar)
+          val removedSnackbarInfo = SnackbarManager.RemovedSnackbarInfo(removedSnackbar.snackbarId, false)
+          onSnackbarsRemoved(setOf(removedSnackbarInfo))
+          updateSnackbarsCount()
+        }
+      }
+    }
+
+    _snackbarAnimations.remove(snackbarAnimation.snackbarId)
   }
 
   fun removeOldSnackbars() {
     val currentTime = SystemClock.elapsedRealtime()
-    val removedSnackbars = mutableSetOf<SnackbarManager.RemovedSnackbarInfo>()
+    var currentSnackbarsCount = _activeSnackbars.size
+    val activeSnackbarsCopy = _activeSnackbars.toList()
 
-    _activeSnackbars.mutableIteration { mutableIterator, activeSnackbar ->
-      if (
-        activeSnackbar.aliveUntil != null
-        && (currentTime >= activeSnackbar.aliveUntil || _activeSnackbars.size > maxSnackbarsAtTime)
-      ) {
-        removedSnackbars += SnackbarManager.RemovedSnackbarInfo(activeSnackbar.snackbarId, true)
-        mutableIterator.remove()
+    activeSnackbarsCopy.iteration { _, activeSnackbar ->
+      if (activeSnackbar.aliveUntil != null && currentTime >= activeSnackbar.aliveUntil) {
+        val removedSnackbar = SnackbarManager.RemovedSnackbarInfo(activeSnackbar.snackbarId, true)
+        popSnackbar(removedSnackbar.snackbarId)
+
+        --currentSnackbarsCount
+        return@iteration true
       }
 
-      return@mutableIteration true
+      return@iteration false
     }
+  }
 
-    if (removedSnackbars.isNotEmpty()) {
-      onSnackbarsRemoved(removedSnackbars)
-      updateSnackbarsCount()
+  fun removeSnackbarsExceedingAvailableHeight(
+    visibleSnackbarSizeMap: Map<SnackbarId, IntSize>,
+    maxAvailableHeight: Int
+  ) {
+    val activeSnackbarsCount = _activeSnackbars.size
+
+    var totalTakenHeight = visibleSnackbarSizeMap.values
+      .sumOf { intSize -> intSize.height }
+
+    for (index in 0 until activeSnackbarsCount) {
+      if (totalTakenHeight < maxAvailableHeight) {
+        return
+      }
+
+      val snackbarToRemove = _activeSnackbars.getOrNull(index)
+      if (snackbarToRemove == null) {
+        return
+      }
+
+      val snackbarHeight = visibleSnackbarSizeMap[snackbarToRemove.snackbarId]?.height
+        ?: continue
+
+      val removedSnackbar = SnackbarManager.RemovedSnackbarInfo(snackbarToRemove.snackbarId, true)
+      popSnackbar(removedSnackbar.snackbarId)
+
+      totalTakenHeight -= snackbarHeight
     }
   }
 
@@ -452,6 +175,19 @@ class KurobaSnackbarState(
 
 }
 
+@Immutable
+sealed class SnackbarAnimation {
+  abstract val snackbarId: Long
+  
+  data class Push(
+    override val snackbarId: Long
+  ) : SnackbarAnimation()
+
+  data class Pop(
+    override val snackbarId: Long
+  ) : SnackbarAnimation()
+}
+
 sealed class SnackbarInfoEvent {
   data class Push(val snackbarInfo: SnackbarInfo) : SnackbarInfoEvent()
   data class Pop(val id: SnackbarId) : SnackbarInfoEvent()
@@ -470,7 +206,11 @@ class SnackbarInfo(
 
   val hasClickableItems: Boolean
     get() = content.any { contentItem -> contentItem is SnackbarClickable }
-
+  
+  fun contentsEqual(other: SnackbarInfo): Boolean {
+    return content == other.content
+  }
+  
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (javaClass != other?.javaClass) return false
@@ -576,6 +316,14 @@ sealed class SnackbarId(
 
   override fun hashCode(): Int {
     return id.hashCode()
+  }
+
+  override fun toString(): String {
+    if (this is Toast) {
+      return "Toast(${id})"
+    }
+
+    return "Snackbar(${id})"
   }
 
 }

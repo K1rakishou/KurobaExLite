@@ -448,6 +448,16 @@ inline fun <T> MutableCollection<T>.removeIfKt(filter: (T) -> Boolean): Boolean 
   return removed
 }
 
+inline fun <E> Collection<E>.iteration(func: (Iterator<E>, E) -> Boolean) {
+  val iterator = this.iterator()
+
+  while (iterator.hasNext()) {
+    if (!func(iterator, iterator.next())) {
+      return
+    }
+  }
+}
+
 inline fun <E> MutableCollection<E>.mutableIteration(func: (MutableIterator<E>, E) -> Boolean) {
   val iterator = this.iterator()
 

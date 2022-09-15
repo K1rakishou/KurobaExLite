@@ -31,8 +31,9 @@ fun Modifier.kurobaAnimateContentSize(
   finishedListener: ((initialValue: IntSize, targetValue: IntSize) -> Unit)? = null
 ): Modifier = composed(
   inspectorInfo = debugInspectorInfo {
-    name = "animateContentSize"
+    name = "kurobaAnimateContentSize"
     properties["animationSpec"] = animationSpec
+    properties["areEqual"] = areEqual
     properties["finishedListener"] = finishedListener
   }
 ) {

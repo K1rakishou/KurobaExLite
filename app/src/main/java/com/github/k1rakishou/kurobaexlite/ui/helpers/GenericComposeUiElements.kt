@@ -658,6 +658,7 @@ fun KurobaComposeCard(
   modifier: Modifier = Modifier,
   backgroundColor: Color? = null,
   shape: Shape = RoundedCornerShape(2.dp),
+  elevation: Dp = 1.dp,
   content: @Composable () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -665,7 +666,8 @@ fun KurobaComposeCard(
   Card(
     modifier = modifier,
     shape = shape,
-    backgroundColor = backgroundColor ?: chanTheme.backColor
+    backgroundColor = backgroundColor ?: chanTheme.backColorSecondary,
+    elevation = elevation
   ) {
     content()
   }

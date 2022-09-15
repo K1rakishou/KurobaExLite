@@ -14,7 +14,7 @@ data class DefaultDarkTheme(
   override val gradientBottomColor: Color = Color(0xffe01645),
   override val behindGradientColor: Color = Color(0xff202020),
   override val backColor: Color = Color(0xff282828),
-  override val backColorSecondary: Color = Color(0xff171717),
+  override val backColorSecondary: Color = Color(0xff191919),
   override val selectedOnBackColor: Color = Color(0xff474747),
   override val highlighterColor: Color = Color(0xff947383),
   override val errorColor: Color = Color(0xffff4444),

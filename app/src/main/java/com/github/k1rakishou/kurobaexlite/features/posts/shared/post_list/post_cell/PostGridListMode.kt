@@ -86,7 +86,7 @@ fun PostCellGridMode(
     if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
       chanTheme.highlighterColor.copy(alpha = 0.3f)
     } else {
-      chanTheme.backColor
+      chanTheme.backColorSecondary
     }
   }
 

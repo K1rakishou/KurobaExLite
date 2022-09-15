@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
@@ -137,6 +138,7 @@ abstract class FloatingComposeScreen(
           ),
         contentAlignment = remember { contentAlignment },
       ) {
+        val chanTheme = LocalChanTheme.current
         val maxWidthDp = maxAvailableWidth()
         val maxHeightDp = maxAvailableHeight()
 
@@ -145,7 +147,8 @@ abstract class FloatingComposeScreen(
             .wrapContentSize()
             .widthIn(max = maxWidthDp)
             .heightIn(max = maxHeightDp)
-            .consumeClicks()
+            .consumeClicks(),
+          backgroundColor = chanTheme.backColor
         ) {
           FloatingContent()
         }
