@@ -38,14 +38,10 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import logcat.logcat
@@ -66,6 +62,7 @@ class GlobalUiInfoManager(
     get() = Point(_lastTouchPosition.x, _lastTouchPosition.y)
 
   val orientations = arrayOf(
+    Configuration.ORIENTATION_UNDEFINED,
     Configuration.ORIENTATION_PORTRAIT,
     Configuration.ORIENTATION_LANDSCAPE
   )
@@ -77,9 +74,7 @@ class GlobalUiInfoManager(
   private val replyLayoutVisibilityInfoMap = mutableMapOf<ScreenKey, MutableState<ReplyLayoutVisibility>>()
 
   private var currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
-
-  val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
-  val currentOrientation = MutableStateFlow<Int?>(null)
+  private val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode>(MainUiLayoutMode.Phone)
 
   private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>?>(Channel.RENDEZVOUS)
   val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>?>
@@ -111,10 +106,10 @@ class GlobalUiInfoManager(
   val textSubTitleSizeSp: StateFlow<TextUnit>
     get() = _textSubTitleSizeSp.asStateFlow()
 
-  private val _catalogPostViewMode = MutableStateFlow<PostViewMode?>(null)
-  val catalogPostViewMode: StateFlow<PostViewMode?>
+  private val _catalogPostViewMode = MutableStateFlow<PostViewMode>(PostViewMode.List)
+  val catalogPostViewMode: StateFlow<PostViewMode>
     get() = _catalogPostViewMode.asStateFlow()
-  private val _catalogGridModeColumnCount = MutableStateFlow<Int>(3)
+  private val _catalogGridModeColumnCount = MutableStateFlow<Int>(2)
   val catalogGridModeColumnCount: StateFlow<Int>
     get() = _catalogGridModeColumnCount.asStateFlow()
   private val _albumGridModeColumnCount = MutableStateFlow<Int>(3)
@@ -221,29 +216,6 @@ class GlobalUiInfoManager(
     _historyScreenOnLeftSide.value = appSettings.historyScreenOnLeftSide.read()
 
     coroutineScope.launch {
-      combine(
-        flow = appSettings.layoutType.listen(),
-        flow2 = currentOrientation,
-        flow3 = totalScreenWidthState,
-        transform = { homeScreenLayout, orientation, totalScreenWidth ->
-          return@combine LayoutChangingSettings(
-            orientation = orientation,
-            homeScreenLayoutType = homeScreenLayout,
-            totalScreenWidth = totalScreenWidth
-          )
-        }
-      )
-        .distinctUntilChanged()
-        .collectLatest { (orientation, layoutType, totalScreenWidth) ->
-          updateLayoutModeAndCurrentPage(
-            layoutType = layoutType,
-            orientation = orientation,
-            totalScreenWidth = totalScreenWidth
-          )
-        }
-    }
-
-    coroutineScope.launch {
       appSettings.textTitleSizeSp.listen()
         .collectLatest { value -> _textTitleSizeSp.value = value.sp }
     }
@@ -338,14 +310,6 @@ class GlobalUiInfoManager(
       }
   }
 
-  fun drawerVisibilityFlow(coroutineScope: CoroutineScope): StateFlow<DrawerVisibility> {
-    return _drawerVisibilityFlow.stateIn(
-      scope = coroutineScope,
-      started = SharingStarted.Lazily,
-      initialValue = _currentDrawerVisibility
-    )
-  }
-
   fun getOrCreateHideableUiVisibilityInfo(screenKey: ScreenKey): HideableUiVisibilityInfo {
     return hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
@@ -365,7 +329,6 @@ class GlobalUiInfoManager(
     mainUiLayoutMode: MainUiLayoutMode
   ) {
     val currentUiLayoutMode = currentUiLayoutModeState.value
-      ?: return
 
     if (currentUiLayoutMode != mainUiLayoutMode) {
       return
@@ -395,7 +358,6 @@ class GlobalUiInfoManager(
     animate: Boolean = true
   ) {
     val currentUiLayoutMode = currentUiLayoutModeState.value
-      ?: return
 
     if (screenKey == currentPage(currentUiLayoutMode)?.screenKey) {
       return
@@ -561,32 +523,19 @@ class GlobalUiInfoManager(
     _currentDrawerVisibility = drawerVisibility
   }
 
-  private suspend fun updateLayoutModeAndCurrentPage(
+  suspend fun updateLayoutModeAndCurrentPage(
     layoutType: LayoutType,
-    orientation: Int?,
+    orientation: Int,
     totalScreenWidth: Int
-  ) {
-    if (orientation == null) {
-      val prevLayoutMode = currentUiLayoutModeState.value
-
-      if (prevLayoutMode == null) {
-        _currentPageMapFlow.clear()
-      } else {
-        _currentPageMapFlow.remove(prevLayoutMode)
-      }
-
-      currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
-      currentUiLayoutModeState.value = null
-      return
-    }
-
+  ) : MainUiLayoutMode {
     check(orientation in orientations) { "Unexpected orientation: ${orientation}" }
 
     val uiLayoutMode = when (layoutType) {
       LayoutType.Auto -> {
         when {
           isTablet -> MainUiLayoutMode.Split
-          orientation == Configuration.ORIENTATION_PORTRAIT -> MainUiLayoutMode.Phone
+          orientation == Configuration.ORIENTATION_PORTRAIT
+            || orientation == Configuration.ORIENTATION_UNDEFINED -> MainUiLayoutMode.Phone
           else -> MainUiLayoutMode.Split
         }
       }
@@ -602,25 +551,30 @@ class GlobalUiInfoManager(
 
     if (totalScreenWidth <= 0) {
       currentUiLayoutModeState.value = MainUiLayoutMode.Phone
-    } else {
-      val availableWidthForCatalog = totalScreenWidth * CATALOG_SCREEN_WEIGHT
-      val minCatalogSplitModelWidth =
-        with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
+      currentUiLayoutModeKnownDeferred.complete(Unit)
 
-      if (
-        uiLayoutMode == MainUiLayoutMode.Split &&
-        availableWidthForCatalog < minCatalogSplitModelWidth
-      ) {
-        val pair = Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth)
-        _notEnoughWidthForSplitLayoutFlow.emit(pair)
-        currentUiLayoutModeState.value = MainUiLayoutMode.Phone
-      } else {
-        _notEnoughWidthForSplitLayoutFlow.emit(null)
-        currentUiLayoutModeState.value = uiLayoutMode
-      }
+      return MainUiLayoutMode.Phone
     }
 
-    currentUiLayoutModeKnownDeferred.complete(Unit)
+    val availableWidthForCatalog = totalScreenWidth * CATALOG_SCREEN_WEIGHT
+    val minCatalogSplitModelWidth =
+      with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
+
+    if (
+      uiLayoutMode == MainUiLayoutMode.Split &&
+      availableWidthForCatalog < minCatalogSplitModelWidth
+    ) {
+      val pair = Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth)
+      _notEnoughWidthForSplitLayoutFlow.emit(pair)
+      currentUiLayoutModeState.value = MainUiLayoutMode.Phone
+
+      return MainUiLayoutMode.Phone
+    }
+
+    _notEnoughWidthForSplitLayoutFlow.emit(null)
+    currentUiLayoutModeState.value = uiLayoutMode
+
+    return uiLayoutMode
   }
 
   private fun defaultCurrentPageByUiLayoutMode(uiLayoutMode: MainUiLayoutMode): MutableStateFlow<CurrentPage> {

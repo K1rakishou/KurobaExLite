@@ -44,6 +44,7 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.SubcomposeLayoutState
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -94,6 +95,8 @@ fun KurobaSnackbarContainer(
 
     val insets = LocalWindowInsets.current
     val chanTheme = LocalChanTheme.current
+    val currentOrientation = LocalConfiguration.current.orientation
+    val currentOrientationUpdated by rememberUpdatedState(newValue = currentOrientation)
 
     val maxContainerWidth = remember(key1 = maxWidth) { maxWidth - 16.dp }
     val maxSnackbarWidth = (if (isTablet) 600.dp else 400.dp).coerceAtMost(maxContainerWidth)
@@ -132,13 +135,10 @@ fun KurobaSnackbarContainer(
             continue
           }
 
-          val currentOrientation = globalUiInfoManager.currentOrientation.value
-            ?: continue
-
           val totalTakenHeight = visibleSnackbarSizeMap.values
             .sumOf { intSize -> intSize.height }
 
-          val multiplier = when (currentOrientation) {
+          val multiplier = when (currentOrientationUpdated) {
             Configuration.ORIENTATION_PORTRAIT -> 0.5f
             Configuration.ORIENTATION_LANDSCAPE -> 0.7f
             else -> 0.5f

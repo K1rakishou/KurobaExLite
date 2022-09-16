@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
@@ -687,6 +688,7 @@ private fun MediaViewerBottomSheet(
 ) {
   val insets = LocalWindowInsets.current
   val context = LocalContext.current
+  val orientation = LocalConfiguration.current.orientation
   val coroutineScope = rememberCoroutineScope()
 
   val popupPostsScreenViewModel: MediaViewerPopupPostsScreenViewModel = koinRememberViewModel()
@@ -694,12 +696,6 @@ private fun MediaViewerBottomSheet(
   val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val androidHelpers: AndroidHelpers = koinRemember()
-
-  val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-  val orientation = orientationMut
-  if (orientation == null) {
-    return
-  }
 
   val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
   val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()

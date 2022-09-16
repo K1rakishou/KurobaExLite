@@ -1,18 +1,18 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.modifier
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberSaveableResettable
 
 @Composable
@@ -32,15 +32,32 @@ fun KurobaComposeFadeIn(
   }
 
   var visible by rememberSaveableResettable(key1) { mutableStateOf(false) }
+  val contentAlpha = remember { mutableStateOf(0f) }
 
-  AnimatedVisibility(
-    modifier = modifier,
-    visible = visible,
-    enter = fadeIn(animationSpec = tween(durationMillis = durationMillis, delayMillis = delayMillis)),
-    exit = fadeOut(animationSpec = snap())
+  Box(
+    modifier = modifier.then(
+      Modifier.graphicsLayer { alpha = contentAlpha.value }
+    ),
   ) {
     movableContent()
   }
+
+  LaunchedEffect(
+    key1 = visible,
+    block = {
+      val start = if (visible) 0f else 1f
+      val end = if (visible) 1f else 0f
+
+      animate(
+        initialValue = start,
+        targetValue = end,
+        initialVelocity = 0f,
+        animationSpec = tween(durationMillis, delayMillis)
+      ) { progress, _ ->
+        contentAlpha.value = progress
+      }
+    }
+  )
 
   DisposableEffect(
     key1 = key1,

@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -236,11 +237,7 @@ class PopupPostsScreen(
   @OptIn(ExperimentalMaterialApi::class)
   @Composable
   override fun FloatingContent() {
-    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-    val orientation = orientationMut
-    if (orientation == null) {
-      return
-    }
+    val orientation = LocalConfiguration.current.orientation
 
     val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
     val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()

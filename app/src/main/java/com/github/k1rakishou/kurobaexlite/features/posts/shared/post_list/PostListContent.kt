@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -35,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -141,18 +141,32 @@ internal fun PostListContent(
   }
   val lazyStateWrapperUpdated by rememberUpdatedState(newValue = lazyStateWrapper)
 
+  var prevPostViewMode by remember { mutableStateOf<PostViewMode?>(null) }
+
   // When switching from list to grid layout mode in the catalog we need to synchronized the current
   // scroll position between them
   LaunchedEffect(
     key1 = postListOptions.postViewMode,
     block = {
-      when (postListOptions.postViewMode) {
-        PostViewMode.List -> {
-          _lazyListState.scrollToItem(_lazyGridState.firstVisibleItemIndex)
+      try {
+        if (prevPostViewMode == null) {
+          return@LaunchedEffect
         }
-        PostViewMode.Grid -> {
-          _lazyGridState.scrollToItem(_lazyListState.firstVisibleItemIndex)
+
+        if (prevPostViewMode == postListOptions.postViewMode) {
+          return@LaunchedEffect
         }
+
+        when (postListOptions.postViewMode) {
+          PostViewMode.List -> {
+            _lazyListState.scrollToItem(_lazyGridState.firstVisibleItemIndex)
+          }
+          PostViewMode.Grid -> {
+            _lazyGridState.scrollToItem(_lazyListState.firstVisibleItemIndex)
+          }
+        }
+      } finally {
+        prevPostViewMode = postListOptions.postViewMode
       }
     }
   )
@@ -241,69 +255,71 @@ internal fun PostListContent(
     )
   }
 
-  KurobaComposeFadeIn(
-    enabled = !postListOptions.isInPopup,
-    key1 = postListAsync is AsyncData.Data
-  ) {
-    PostListInternal(
-      modifier = modifier,
-      chanDescriptor = chanDescriptor,
-      lazyStateWrapper = lazyStateWrapperUpdated as GenericLazyStateWrapper,
-      postListOptions = postListOptions,
-      postListAsync = postListAsync,
-      postsScreenViewModelProvider = postsScreenViewModelProvider,
-      onPostCellClicked = onPostCellClicked,
-      onPostCellLongClicked = onPostCellLongClicked,
-      onPostCellCommentClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
-        processClickedAnnotation(
-          postsScreenViewModel = postsScreenViewModel,
-          postCellData = postCellData,
-          postComment = postComment,
-          characterOffset = offset,
-          longClicked = false,
-          onLinkableClicked = onLinkableClicked,
-          onLinkableLongClicked = onLinkableLongClicked
-        )
-      },
-      onPostCellCommentLongClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
-        processClickedAnnotation(
-          postsScreenViewModel = postsScreenViewModel,
-          postCellData = postCellData,
-          postComment = postComment,
-          characterOffset = offset,
-          longClicked = true,
-          onLinkableClicked = onLinkableClicked,
-          onLinkableLongClicked = onLinkableLongClicked
-        )
-      },
-      onPostRepliesClicked = { postCellData ->
-        onPostRepliesClicked(chanDescriptor, postCellData.postDescriptor)
-      },
-      onThreadStatusCellClicked = {
-        postsScreenViewModel.resetTimer()
-        postsScreenViewModel.refresh()
-      },
-      onCopySelectedText = onCopySelectedText,
-      onQuoteSelectedText = onQuoteSelectedText,
-      onPostListScrolled = { scrollDelta ->
-        processPostListScrollEventFunc()
-        onPostListScrolled(scrollDelta)
-      },
-      onCurrentlyTouchingPostList = onCurrentlyTouchingPostList,
-      onFastScrollerDragStateChanged = { isDraggingFastScroller ->
-        if (!isDraggingFastScroller) {
-          processPostListScrollEventFunc()
-        }
+  DisposableEffect(
+    key1 = Unit,
+    effect = {
+      onDispose { postsScreenViewModelProvider().onPostListDisposed() }
+    }
+  )
 
-        onFastScrollerDragStateChanged(isDraggingFastScroller)
-      },
-      onPostImageClicked = onPostImageClicked,
-      onGoToPostClicked = onGoToPostClicked,
-      emptyContent = emptyContent,
-      loadingContent = loadingContent,
-      errorContent = errorContent,
-    )
-  }
+  PostListInternal(
+    modifier = modifier,
+    chanDescriptor = chanDescriptor,
+    lazyStateWrapper = lazyStateWrapperUpdated as GenericLazyStateWrapper,
+    postListOptions = postListOptions,
+    postListAsync = postListAsync,
+    postsScreenViewModelProvider = postsScreenViewModelProvider,
+    onPostCellClicked = onPostCellClicked,
+    onPostCellLongClicked = onPostCellLongClicked,
+    onPostCellCommentClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
+      processClickedAnnotation(
+        postsScreenViewModel = postsScreenViewModel,
+        postCellData = postCellData,
+        postComment = postComment,
+        characterOffset = offset,
+        longClicked = false,
+        onLinkableClicked = onLinkableClicked,
+        onLinkableLongClicked = onLinkableLongClicked
+      )
+    },
+    onPostCellCommentLongClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
+      processClickedAnnotation(
+        postsScreenViewModel = postsScreenViewModel,
+        postCellData = postCellData,
+        postComment = postComment,
+        characterOffset = offset,
+        longClicked = true,
+        onLinkableClicked = onLinkableClicked,
+        onLinkableLongClicked = onLinkableLongClicked
+      )
+    },
+    onPostRepliesClicked = { postCellData ->
+      onPostRepliesClicked(chanDescriptor, postCellData.postDescriptor)
+    },
+    onThreadStatusCellClicked = {
+      postsScreenViewModel.resetTimer()
+      postsScreenViewModel.refresh()
+    },
+    onCopySelectedText = onCopySelectedText,
+    onQuoteSelectedText = onQuoteSelectedText,
+    onPostListScrolled = { scrollDelta ->
+      processPostListScrollEventFunc()
+      onPostListScrolled(scrollDelta)
+    },
+    onCurrentlyTouchingPostList = onCurrentlyTouchingPostList,
+    onFastScrollerDragStateChanged = { isDraggingFastScroller ->
+      if (!isDraggingFastScroller) {
+        processPostListScrollEventFunc()
+      }
+
+      onFastScrollerDragStateChanged(isDraggingFastScroller)
+    },
+    onPostImageClicked = onPostImageClicked,
+    onGoToPostClicked = onGoToPostClicked,
+    emptyContent = emptyContent,
+    loadingContent = loadingContent,
+    errorContent = errorContent,
+  )
 
   if (postListAsync is AsyncData.Data && !postListOptions.isInPopup) {
     val hasVisibleItems by remember { derivedStateOf { lazyStateWrapperUpdated.layoutInfo.visibleItemsInfo.isNotEmpty() } }
@@ -335,14 +351,6 @@ internal fun PostListContent(
         ?.startsWith(postCellKeyPrefix)
         ?: false
     }
-
-    val configuration = LocalConfiguration.current
-    LaunchedEffect(
-      key1 = configuration.orientation,
-      block = {
-        postsScreenViewModelProvider().onOrientationChanged(configuration.orientation)
-      }
-    )
 
     RestoreScrollPosition(
       firstPostDrawn = firstPostDrawn,

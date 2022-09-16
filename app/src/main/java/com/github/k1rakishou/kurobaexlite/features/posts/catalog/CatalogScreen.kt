@@ -13,10 +13,12 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
@@ -24,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.main.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
@@ -353,16 +356,17 @@ class CatalogScreen(
 
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
+    val currentUiLayoutMode = LocalMainUiLayoutMode.current
+    val currentUiLayoutModeUpdated by rememberUpdatedState(newValue = currentUiLayoutMode)
+
     KurobaToolbarContainer(
       toolbarContainerKey = screenKey.key,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       canProcessBackEvent = {
-        val mainUiLayoutMode = globalUiInfoManager.currentUiLayoutModeState.value
-          ?: return@KurobaToolbarContainer false
         val currentPage = globalUiInfoManager.currentPage()
           ?: return@KurobaToolbarContainer false
 
-        return@KurobaToolbarContainer when (mainUiLayoutMode) {
+        return@KurobaToolbarContainer when (currentUiLayoutModeUpdated) {
           MainUiLayoutMode.Phone -> {
             currentPage.screenKey == screenKey
           }
@@ -503,21 +507,8 @@ private fun BoxScope.CatalogPostListScreen(
   val chanThreadManager = koinRemember<ChanThreadManager>()
 
   val windowInsets = LocalWindowInsets.current
-
-  val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-  val orientation = orientationMut
-  if (orientation == null) {
-    return
-  }
-
-  val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
-  val mainUiLayoutMode = mainUiLayoutModeMut ?: return
-
-  val catalogPostViewModeMut by globalUiInfoManager.catalogPostViewMode.collectAsState()
-  val catalogPostViewMode = catalogPostViewModeMut
-  if (catalogPostViewMode == null) {
-    return
-  }
+  val orientation = LocalConfiguration.current.orientation
+  val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val fabSize = dimensionResource(id = R.dimen.fab_size)
@@ -528,6 +519,7 @@ private fun BoxScope.CatalogPostListScreen(
   val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
   val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
   val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
+  val catalogPostViewMode by globalUiInfoManager.catalogPostViewMode.collectAsState()
 
   val postListOptions by remember(
     windowInsets,

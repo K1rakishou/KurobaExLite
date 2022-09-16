@@ -92,20 +92,20 @@ abstract class PostScreenState(
     _chanDescriptorFlow.value = chanDescriptor
   }
 
-  suspend fun onStartLoading(chanDescriptor: ChanDescriptor?) {
+  fun onStartLoading(chanDescriptor: ChanDescriptor?) {
     _contentLoaded.value = false
     _contentDrawnOnce.value = false
   }
 
-  suspend fun onEndLoading(chanDescriptor: ChanDescriptor?) {
+  fun onEndLoading(chanDescriptor: ChanDescriptor?) {
     _contentLoaded.value = true
   }
 
-  suspend fun onOrientationChanged(chanDescriptor: ChanDescriptor?) {
+  fun onPostListDisposed(chanDescriptor: ChanDescriptor?) {
     _contentDrawnOnce.value = false
   }
 
-  suspend fun onContentDrawnOnce(chanDescriptor: ChanDescriptor?) {
+  fun onContentDrawnOnce(chanDescriptor: ChanDescriptor?) {
     _contentDrawnOnce.value = true
   }
 

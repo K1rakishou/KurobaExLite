@@ -728,8 +728,8 @@ abstract class PostScreenViewModel(
 
   }
 
-  suspend fun onOrientationChanged(orientation: Int) {
-    postScreenState.onOrientationChanged(chanDescriptor)
+  fun onPostListDisposed() {
+    postScreenState.onPostListDisposed(chanDescriptor)
   }
 
   suspend fun restoreScrollPosition() {

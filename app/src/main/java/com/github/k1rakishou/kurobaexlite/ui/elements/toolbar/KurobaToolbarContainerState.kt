@@ -137,7 +137,7 @@ class KurobaToolbarContainerState<T : KurobaChildToolbar> {
   @Composable
   fun HandleBackPresses(backPressHandler: MainNavigationRouter.OnBackPressHandler) {
     DisposableEffect(
-      key1 = Unit,
+      key1 = backPressHandler,
       effect = {
         val localBackPressHandler = backPressHandler
 

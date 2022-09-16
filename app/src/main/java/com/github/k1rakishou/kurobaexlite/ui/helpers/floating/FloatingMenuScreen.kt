@@ -103,12 +103,6 @@ class FloatingMenuScreen(
       return
     }
 
-    val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-    val orientation = orientationMut
-    if (orientation == null) {
-      return
-    }
-
     val availableWidth = with(LocalDensity.current) {
       (maxAvailableWidthPx() / 1.35f).toDp()
     }

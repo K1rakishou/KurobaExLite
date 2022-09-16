@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -31,6 +32,7 @@ import com.github.k1rakishou.kurobaexlite.features.firewall.SiteFirewallBypassSc
 import com.github.k1rakishou.kurobaexlite.features.home.pages.AbstractPage
 import com.github.k1rakishou.kurobaexlite.features.home.pages.SinglePage
 import com.github.k1rakishou.kurobaexlite.features.home.pages.SplitPage
+import com.github.k1rakishou.kurobaexlite.features.main.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
@@ -112,7 +114,10 @@ class HomeScreen(
         }
       },
       handleBackPresses = { pagesWrapper ->
+        val mainUiLayoutMode = LocalMainUiLayoutMode.current
+
         val pagesWrapperUpdated by rememberUpdatedState(newValue = pagesWrapper)
+        val mainUiLayoutModeUpdated by rememberUpdatedState(newValue = mainUiLayoutMode)
 
         HandleBackPresses {
           if (globalUiInfoManager.isDrawerOpenedOrOpening()) {
@@ -120,10 +125,7 @@ class HomeScreen(
             return@HandleBackPresses true
           }
 
-          val currentMainUiLayoutMode = globalUiInfoManager.currentUiLayoutModeState.value
-            ?: return@HandleBackPresses false
-
-          val freshCurrentPageScreenKey = globalUiInfoManager.currentPage(currentMainUiLayoutMode)?.screenKey
+          val freshCurrentPageScreenKey = globalUiInfoManager.currentPage(mainUiLayoutModeUpdated)?.screenKey
             ?: return@HandleBackPresses false
 
           // First, process all child screens
@@ -254,7 +256,6 @@ class HomeScreen(
   }
 }
 
-
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun ContentInternal(
@@ -271,29 +272,13 @@ private fun ContentInternal(
 
   ShowAndProcessSnackbars()
 
-  val orientationMut by globalUiInfoManager.currentOrientation.collectAsState()
-  val orientation = orientationMut
-  if (orientation == null) {
-    return
-  }
-
-  var globalUiInfoManagerInitialized by remember { mutableStateOf(false) }
-
-  if (!globalUiInfoManagerInitialized) {
-    globalUiInfoManager.init()
-    globalUiInfoManagerInitialized = true
-  }
+  val orientation = LocalConfiguration.current.orientation
+  val mainUiLayoutMode = LocalMainUiLayoutMode.current
 
   ListenForFirewallBypassManagerEvents(
     navigationRouterProvider = navigationRouterProvider,
     showSiteFirewallBypassController = showSiteFirewallBypassController,
   )
-
-  val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
-  val mainUiLayoutMode = mainUiLayoutModeMut
-  if (mainUiLayoutMode == null) {
-    return
-  }
 
   val historyEnabled by globalUiInfoManager.historyEnabled.collectAsState()
   val historyScreenOnLeftSide by globalUiInfoManager.historyScreenOnLeftSide.collectAsState()

@@ -23,7 +23,7 @@ class MainNavigationRouter : NavigationRouter(
   @Composable
   fun HandleBackPresses(onBackPressHandler: OnBackPressHandler) {
     DisposableEffect(
-      key1 = Unit,
+      key1 = onBackPressHandler,
       effect = {
         val localBackPressHandler = onBackPressHandler
 

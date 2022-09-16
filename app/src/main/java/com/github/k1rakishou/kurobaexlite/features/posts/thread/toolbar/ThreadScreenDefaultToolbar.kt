@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.features.main.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
@@ -64,13 +65,7 @@ class ThreadScreenDefaultToolbar(
   @Composable
   override fun Content() {
     val screenContentLoaded by threadScreenViewModel.postScreenState.contentLoaded.collectAsState()
-
-    val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
-    val mainUiLayoutMode = mainUiLayoutModeMut
-
-    if (mainUiLayoutMode == null) {
-      return
-    }
+    val currentUiLayoutMode = LocalMainUiLayoutMode.current
 
     UpdateThreadBookmarkIcon(state)
 
@@ -120,7 +115,7 @@ class ThreadScreenDefaultToolbar(
 
     KurobaToolbarLayout(
       leftPart = {
-        if (mainUiLayoutMode == MainUiLayoutMode.Phone) {
+        if (currentUiLayoutMode == MainUiLayoutMode.Phone) {
           state.leftIcon.Content(onClick = { key -> state.onIconClicked(key) })
         }
       },

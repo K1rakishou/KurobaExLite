@@ -16,7 +16,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
+import com.github.k1rakishou.kurobaexlite.features.main.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
@@ -68,10 +68,11 @@ abstract class HomeNavigationScreen<ToolbarType : KurobaChildToolbar> protected 
   @OptIn(ExperimentalMaterialApi::class)
   @Composable
   private fun SwipeableScreen(content: @Composable () -> Unit) {
+    val currentUiLayoutMode = LocalMainUiLayoutMode.current
+
     BoxWithConstraints {
       var bgColor by remember { mutableStateOf(Color.Unspecified) }
 
-      val currentUiLayoutMode by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
       val currentDragToCloseEnabled by dragToCloseEnabledState
       val topHomeNavigationScreen = topHomeNavigationScreenExceptDefault()
       val screenWidth = constraints.maxWidth

@@ -7,10 +7,7 @@ import android.os.Looper
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.app.ActivityCompat
 import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
@@ -79,8 +76,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     mainActivityViewModel.rootNavigationRouter.onLifecycleCreate()
 
     setContent {
-      HandleOrientationChanges()
-
       ProvideAllTheStuff(
         componentActivity = this,
         window = window,
@@ -180,27 +175,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     super.onActivityResult(requestCode, resultCode, data)
 
     localFilePicker.onActivityResult(requestCode, resultCode, data)
-  }
-
-  @Composable
-  private fun HandleOrientationChanges() {
-    val orientation = LocalConfiguration.current.orientation
-
-    DisposableEffect(
-      key1 = orientation,
-      effect = {
-        globalUiInfoManager.currentOrientation.value = orientation
-
-        // We need to reset the currentOrientation upon configuration change (screen rotation) so
-        // that the layout is set into the default null state and nothing is drawn. We do that
-        // to avoid situations when a layout mode is built for incorrect orientation for split
-        // second after the orientation changes. This leads to nasty bugs like the search toolbar
-        // query not being restored upon configuration change and other stuff.
-        onDispose {
-          globalUiInfoManager.currentOrientation.value = null
-        }
-      }
-    )
   }
 
   private fun processSaveableComponents() {
