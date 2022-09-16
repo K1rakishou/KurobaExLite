@@ -92,7 +92,6 @@ class CatalogSelectionScreen(
 
   private val catalogDescriptor: CatalogDescriptor? by argumentOrNullLazy(CATALOG_DESCRIPTOR_ARG)
 
-  // TODO(KurobaEx): use "lastUsedSite" from the settings and update it too (once there are have multiple sites)
   private val siteKey: SiteKey
     get() = catalogDescriptor?.siteKey ?: Chan4.SITE_KEY
 

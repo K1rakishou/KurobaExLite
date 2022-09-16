@@ -11,9 +11,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberSaveableResettable
 
 @Composable
 fun KurobaComposeFadeIn(
@@ -31,7 +31,7 @@ fun KurobaComposeFadeIn(
     return
   }
 
-  var visible by rememberSaveable(key1) { mutableStateOf(false) }
+  var visible by rememberSaveableResettable(key1) { mutableStateOf(false) }
 
   AnimatedVisibility(
     modifier = modifier,
