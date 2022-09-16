@@ -55,51 +55,55 @@ class CatalogScreenToolbarActionHandler(
 
     logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
-    if (menuItem.menuItemKey is ToolbarMenuItems) {
-      when (menuItem.menuItemKey) {
-        ToolbarMenuItems.Reload -> {
-          catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
-        }
-        ToolbarMenuItems.Album -> {
-          val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
-            ?: return
+    when (menuItem.menuItemKey) {
+      is ToolbarMenuItems -> {
+        when (menuItem.menuItemKey) {
+          ToolbarMenuItems.Reload -> {
+            catalogScreenViewModel.reload(PostScreenViewModel.LoadOptions(deleteCached = true))
+          }
+          ToolbarMenuItems.Album -> {
+            val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+              ?: return
 
-          val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter,
-            args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, catalogDescriptor) }
-          )
+            val albumScreen = ComposeScreen.createScreen<AlbumScreen>(
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter,
+              args = { putParcelable(AlbumScreen.CHAN_DESCRIPTOR_ARG, catalogDescriptor) }
+            )
 
-          navigationRouter.pushScreen(albumScreen)
+            navigationRouter.pushScreen(albumScreen)
+          }
+          ToolbarMenuItems.OpenThreadByIdentifier -> {
+            handleOpenThreadByIdentifier(
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter
+            )
+          }
+          ToolbarMenuItems.CatalogDevMenu -> {
+            handleDevMenu(
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter,
+            )
+          }
+          ToolbarMenuItems.ScrollTop -> catalogScreenViewModel.scrollTop()
+          ToolbarMenuItems.ScrollBottom -> catalogScreenViewModel.scrollBottom()
         }
-        ToolbarMenuItems.OpenThreadByIdentifier -> {
-          handleOpenThreadByIdentifier(
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter
-          )
-        }
-        ToolbarMenuItems.CatalogDevMenu -> {
-          handleDevMenu(
-            componentActivity = componentActivity,
-            navigationRouter = navigationRouter,
-          )
-        }
-        ToolbarMenuItems.ScrollTop -> catalogScreenViewModel.scrollTop()
-        ToolbarMenuItems.ScrollBottom -> catalogScreenViewModel.scrollBottom()
       }
-    } else if (menuItem.menuItemKey is PostViewMode) {
-      screenCoroutineScope.launch {
-        val newCatalogPostViewMode = (menuItem.menuItemKey as PostViewMode).toPostViewModeSetting()
-        appSettings.catalogPostViewMode.write(newCatalogPostViewMode)
-        catalogScreenViewModel.reparseCatalogPostsWithNewViewMode()
+      is PostViewMode -> {
+        screenCoroutineScope.launch {
+          val newCatalogPostViewMode = (menuItem.menuItemKey as PostViewMode).toPostViewModeSetting()
+          appSettings.catalogPostViewMode.write(newCatalogPostViewMode)
+          catalogScreenViewModel.reparseCatalogPostsWithNewViewMode()
+        }
       }
-    } else if (menuItem.menuItemKey is CatalogGridModeColumnCountOption) {
-      val columnCount = (menuItem.menuItemKey as CatalogGridModeColumnCountOption)
-        .count
-        .coerceIn(AppSettings.CATALOG_MIN_COLUMN_COUNT, AppSettings.CATALOG_MAX_COLUMN_COUNT)
+      is CatalogGridModeColumnCountOption -> {
+        val columnCount = (menuItem.menuItemKey as CatalogGridModeColumnCountOption)
+          .count
+          .coerceIn(AppSettings.CATALOG_MIN_COLUMN_COUNT, AppSettings.CATALOG_MAX_COLUMN_COUNT)
 
-      screenCoroutineScope.launch {
-        appSettings.catalogGridModeColumnCount.write(columnCount)
+        screenCoroutineScope.launch {
+          appSettings.catalogGridModeColumnCount.write(columnCount)
+        }
       }
     }
   }

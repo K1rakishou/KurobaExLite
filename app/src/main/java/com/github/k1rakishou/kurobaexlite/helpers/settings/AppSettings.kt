@@ -96,6 +96,9 @@ class AppSettings(
     const val CATALOG_MIN_COLUMN_COUNT = 0
     const val CATALOG_MAX_COLUMN_COUNT = 4
 
+    const val ALBUM_MIN_COLUMN_COUNT = 0
+    const val ALBUM_MAX_COLUMN_COUNT = 5
+
     private const val USER_AGENT_FORMAT =
       "Mozilla/5.0 (Linux; Android %s; %s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.127 Mobile Safari/537.36"
   }

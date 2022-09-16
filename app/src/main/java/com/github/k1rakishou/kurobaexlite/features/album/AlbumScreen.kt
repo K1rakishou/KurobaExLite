@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.album
 
 import android.os.Bundle
+import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -54,12 +55,14 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnai
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinViewModel
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -80,11 +83,14 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScr
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
 
 class AlbumScreen(
   screenArgs: Bundle? = null,
@@ -167,6 +173,29 @@ class AlbumScreen(
         kurobaToolbarContainerState = kurobaToolbarContainerState,
         chanDescriptor = chanDescriptor,
         toolbarContainerKey = "${screenKey.key}_${keySuffix}",
+        showOverflowMenu = {
+          screenCoroutineScope.launch {
+            navigationRouter.presentScreen(
+              FloatingMenuScreen(
+                floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
+                componentActivity = componentActivity,
+                navigationRouter = navigationRouter,
+                menuItems = floatingMenuItems(),
+                onMenuItemClicked = { menuItem ->
+                  coroutineScope.launch {
+                    if (menuItem.menuItemKey is AlbumGridModeColumnCountOption) {
+                      val albumColumnCount = (menuItem.menuItemKey as AlbumGridModeColumnCountOption)
+                        .count
+                        .coerceIn(AppSettings.ALBUM_MIN_COLUMN_COUNT, AppSettings.ALBUM_MAX_COLUMN_COUNT)
+
+                      appSettings.albumColumnCount.write(albumColumnCount)
+                    }
+                  }
+                }
+              )
+            )
+          }
+        },
         onBackPressed = { coroutineScope.launch { onBackPressed() } }
       )
     }
@@ -247,6 +276,43 @@ class AlbumScreen(
     }
   }
 
+  private suspend fun floatingMenuItems(): List<FloatingMenuItem> {
+    val menuItems = mutableListOf<FloatingMenuItem>()
+
+    menuItems += kotlin.run {
+      val albumColumnCount = appSettings.albumColumnCount.read()
+      val checkedMenuItemKey = AlbumGridModeColumnCountOption(albumColumnCount)
+
+      return@run FloatingMenuItem.NestedItems(
+        text = FloatingMenuItem.MenuItemText.Id(R.string.album_toolbar_album_grid_mode_column_count),
+        moreItems = listOf(
+          FloatingMenuItem.Group(
+            checkedMenuItemKey = checkedMenuItemKey,
+            groupItems = (AppSettings.ALBUM_MIN_COLUMN_COUNT until AppSettings.ALBUM_MAX_COLUMN_COUNT).map { columnCount ->
+              val option = AlbumGridModeColumnCountOption(columnCount)
+
+              val text = if (columnCount == 0) {
+                appResources.string(R.string.catalog_toolbar_catalog_grid_mode_column_count_auto)
+              } else {
+                appResources.string(R.string.catalog_toolbar_catalog_grid_mode_column_count_n, columnCount)
+              }
+
+              return@map FloatingMenuItem.Text(
+                menuItemKey = option,
+                text = FloatingMenuItem.MenuItemText.String(text)
+              )
+            }
+          )
+        )
+      )
+    }
+
+    return menuItems
+  }
+
+  @Parcelize
+  data class AlbumGridModeColumnCountOption(val count: Int) : Parcelable
+
   interface ToolbarIcons
 
   enum class DefaultToolbarIcons : ToolbarIcons {
@@ -277,6 +343,7 @@ private fun BoxScope.ToolbarInternal(
   kurobaToolbarContainerState: KurobaToolbarContainerState<SimpleToolbar<AlbumScreen.ToolbarIcons>>,
   chanDescriptor: ChanDescriptor,
   toolbarContainerKey: String,
+  showOverflowMenu: () -> Unit,
   onBackPressed: () -> Unit
 ) {
   val context = LocalContext.current
@@ -295,7 +362,7 @@ private fun BoxScope.ToolbarInternal(
             onBackPressed()
           }
           AlbumScreen.DefaultToolbarIcons.Overflow -> {
-            // no-op
+            showOverflowMenu()
           }
         }
       }
@@ -359,6 +426,7 @@ private fun ContentInternal(
 ) {
   val albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel()
   val mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val snackbarManager: SnackbarManager = koinRemember()
   val appResources: AppResources = koinRemember()
 
@@ -459,9 +527,19 @@ private fun ContentInternal(
     }
   )
 
+  val albumGridModeColumnCount by globalUiInfoManager.albumGridModeColumnCount.collectAsState()
+
+  val columns = remember(key1 = albumGridModeColumnCount) {
+    if (albumGridModeColumnCount <= 0) {
+      GridCells.Adaptive(minSize = 140.dp)
+    } else {
+      GridCells.Fixed(count = albumGridModeColumnCount)
+    }
+  }
+
   LazyVerticalGridWithFastScroller(
     lazyGridContainerModifier = Modifier.fillMaxSize(),
-    columns = GridCells.Fixed(3),
+    columns = columns,
     lazyGridState = lazyGridState,
     contentPadding = paddingValues,
     content = {

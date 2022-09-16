@@ -123,6 +123,9 @@ class GlobalUiInfoManager(
   private val _catalogGridModeColumnCount = MutableStateFlow<Int>(3)
   val catalogGridModeColumnCount: StateFlow<Int>
     get() = _catalogGridModeColumnCount.asStateFlow()
+  private val _albumGridModeColumnCount = MutableStateFlow<Int>(3)
+  val albumGridModeColumnCount: StateFlow<Int>
+    get() = _albumGridModeColumnCount.asStateFlow()
 
   private val _postCellCommentTextSizeSp = MutableStateFlow(0.sp)
   val postCellCommentTextSizeSp: StateFlow<TextUnit>
@@ -211,6 +214,7 @@ class GlobalUiInfoManager(
     _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
     _catalogPostViewMode.value = appSettings.catalogPostViewMode.read().toPostViewMode()
     _catalogGridModeColumnCount.value = appSettings.catalogGridModeColumnCount.read()
+    _albumGridModeColumnCount.value = appSettings.albumColumnCount.read()
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
     _historyEnabled.value = appSettings.historyEnabled.read()
@@ -257,6 +261,11 @@ class GlobalUiInfoManager(
     coroutineScope.launch {
       appSettings.catalogGridModeColumnCount.listen()
         .collectLatest { value -> _catalogGridModeColumnCount.value = value }
+    }
+
+    coroutineScope.launch {
+      appSettings.albumColumnCount.listen()
+        .collectLatest { value -> _albumGridModeColumnCount.value = value }
     }
 
     coroutineScope.launch {
