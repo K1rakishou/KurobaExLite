@@ -33,7 +33,9 @@ abstract class ComposeScreenWithToolbar<ToolbarType : KurobaChildToolbar> protec
 
   @CallSuper
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
-    kurobaToolbarContainerState.popChildToolbars()
+    if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
+      kurobaToolbarContainerState.popChildToolbars()
+    }
 
     super.onDisposed(screenDisposeEvent)
   }
