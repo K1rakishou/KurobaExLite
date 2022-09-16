@@ -94,9 +94,8 @@ class HomeScreen(
     val coroutineScope = rememberCoroutineScope()
 
     ContentInternal(
-      isDrawerDragGestureCurrentlyAllowed = { currentPageIndex, currentPage, isFromNestedScroll ->
+      isDrawerDragGestureCurrentlyAllowed = { currentPage, isFromNestedScroll ->
         isDrawerDragGestureCurrentlyAllowed(
-          currentPageIndex = currentPageIndex,
           currentPage = currentPage,
           isFromNestedScroll = isFromNestedScroll
         )
@@ -202,14 +201,9 @@ class HomeScreen(
   }
 
   private fun isDrawerDragGestureCurrentlyAllowed(
-    currentPageIndex: Int,
     currentPage: AbstractPage<ComposeScreenWithToolbar<*>>?,
     isFromNestedScroll: Boolean
   ): Boolean {
-    if (currentPageIndex == 0) {
-      return false
-    }
-
     if (currentPage is SplitPage) {
       if (isFromNestedScroll) {
         if (!currentPage.canDragPager()) {
@@ -264,7 +258,7 @@ class HomeScreen(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun ContentInternal(
-  isDrawerDragGestureCurrentlyAllowed: (Int, AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
+  isDrawerDragGestureCurrentlyAllowed: (AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
   navigationRouterProvider: () -> NavigationRouter,
   homeScreenPageConverterProvider: () -> HomeScreenPageConverter,
   showSiteFirewallBypassController: (FirewallType, HttpUrl, SiteKey) -> Unit,
@@ -339,7 +333,7 @@ private fun ContentInternal(
     return
   }
 
-  val drawerLongtapGestureWidthZonePx = with(LocalDensity.current) { remember { 16.dp.toPx() } }
+  val drawerLongtapGestureWidthZonePx = with(LocalDensity.current) { remember { 24.dp.toPx() } }
   val maxDrawerWidth = with(LocalDensity.current) { remember { 600.dp.toPx().toInt() } }
   val drawerPhoneVisibleWindowWidth =
     with(LocalDensity.current) { remember { 40.dp.toPx().toInt() } }
@@ -559,7 +553,7 @@ private fun HomeScreenContentActual(
   drawerLongtapGestureWidthZonePx: Float,
   pagerState: PagerState,
   pagesWrapper: HomeScreenPageConverter.PagesWrapper,
-  isDrawerDragGestureCurrentlyAllowed: (Int, AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
+  isDrawerDragGestureCurrentlyAllowed: (AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
   navigationRouterProvider: () -> NavigationRouter,
 ) {
   val windowInsets = LocalWindowInsets.current
@@ -594,9 +588,7 @@ private fun HomeScreenContentActual(
   val nestedScrollConnection = remember(key1 = drawerWidth) {
     HomePagerNestedScrollConnection(
       currentPagerPage = { currentPageIndexUpdated },
-      isGestureCurrentlyAllowed = {
-        isDrawerDragGestureCurrentlyAllowed(currentPageIndexUpdated, currentPageUpdated, true)
-      },
+      isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentPageUpdated, true) },
       shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
       onDragging = { dragging, time, progress -> globalUiInfoManager.dragDrawer(dragging, time, progress) },
       onFling = { velocity -> globalUiInfoManager.flingDrawer(velocity) }
@@ -620,13 +612,7 @@ private fun HomeScreenContentActual(
             currentPagerPage = { currentPageIndex },
             isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
             onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
-            isGestureCurrentlyAllowed = {
-              isDrawerDragGestureCurrentlyAllowed(
-                currentPageIndexUpdated,
-                currentPageUpdated,
-                false
-              )
-            },
+            isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentPageUpdated, false) },
             onLongtapDragGestureDetected = {
               view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
               longtapDragGestureDetected = true
