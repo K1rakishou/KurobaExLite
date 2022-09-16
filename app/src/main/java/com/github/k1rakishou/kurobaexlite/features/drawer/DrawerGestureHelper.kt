@@ -4,7 +4,6 @@ import android.os.SystemClock
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -29,13 +28,11 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   drawerLongtapGestureWidthZonePx: Float,
   drawerPhoneVisibleWindowWidthPx: Float,
   drawerWidth: Float,
-  pagerSwipeExclusionZone: Rect,
   currentPagerPage: () -> Int,
   isDrawerOpened: () -> Boolean,
   onStopConsumingScrollEvents: () -> Unit,
-  isGestureCurrentlyAllowed: (insideSpecialZone: Boolean) -> Boolean,
+  isGestureCurrentlyAllowed: () -> Boolean,
   onLongtapDragGestureDetected: () -> Unit,
-  onFailedDrawerDragGestureDetected: () -> Unit,
   onDraggingDrawer: (dragging: Boolean, time: Long, current: Float) -> Unit
 ) {
   coroutineScope {
@@ -50,16 +47,14 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           return@awaitPointerEventScope null
         }
 
-        if (drawerWidth <= 0 || pagerSwipeExclusionZone.size.isEmpty()) {
+        if (drawerWidth <= 0) {
           return@awaitPointerEventScope null
         }
 
         val downEvent = firstEvent.changes.firstOrNull()
           ?: return@awaitPointerEventScope null
 
-        val insideSpecialZone = pagerSwipeExclusionZone.contains(downEvent.position)
-
-        if (!isGestureCurrentlyAllowed(insideSpecialZone)) {
+        if (!isGestureCurrentlyAllowed()) {
           return@awaitPointerEventScope null
         }
 
@@ -88,104 +83,36 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           if (downEvent.position.x > (drawerWidth - drawerPhoneVisibleWindowWidthPx)) {
             return@awaitPointerEventScope null
           }
-        } else {
-          if (insideSpecialZone) {
-            for (change in firstEvent.changes) {
-              change.consume()
-            }
+        } else if (currentPagerPage() != 0) {
+          onStopConsumingScrollEvents()
 
-            var isDrawerDragEvent = false
-            var isWrongDirectionScrollGesture = false
-
-            val firstEventTotalTravelDistance = firstEvent.changes
-              .fold(Offset.Zero) { acc, change -> acc + change.position }
-
-            val collectedEvents = mutableListOf<PointerEvent>()
-
-            while (isActive) {
-              val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
-              if (nextEvent.type != PointerEventType.Move) {
-                break
-              }
-
-              val nextEventTotalTravelDistance = nextEvent.changes
-                .fold(Offset.Zero) { acc, change -> acc + change.position }
-
-              val distanceDelta = nextEventTotalTravelDistance - firstEventTotalTravelDistance
-
-              if (distanceDelta.y.absoluteValue > distanceDelta.x.absoluteValue || distanceDelta.x < 0) {
-                isWrongDirectionScrollGesture = true
-                break
-              }
-
-              for (change in nextEvent.changes) {
-                change.consume()
-              }
-
-              collectedEvents += nextEvent
-
-              if (distanceDelta.x > viewConfiguration.touchSlop) {
-                isDrawerDragEvent = true
-                break
-              }
-            }
-
-            if (!isDrawerDragEvent) {
-              if (!isWrongDirectionScrollGesture) {
-                onFailedDrawerDragGestureDetected()
-              }
-
-              onStopConsumingScrollEvents()
-              return@awaitPointerEventScope null
-            }
-
-            prevDragPositionX = downEvent.position.x
-            prevTime = downEvent.uptimeMillis
-
-            downEvent.historical.fastForEach { historicalChange ->
-              onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
-            }
-            collectedEvents.fastForEach { pointerEvent ->
-              pointerEvent.changes.fastForEach { pointerInputChange ->
-                pointerInputChange.historical.forEach { historicalChange ->
-                  onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
-                }
-                onDraggingDrawer(true, pointerInputChange.uptimeMillis, pointerInputChange.position.x)
-              }
-            }
-
-            onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
-          } else if (currentPagerPage() != 0) {
-            onStopConsumingScrollEvents()
-
-            if (downEvent.position.x > drawerLongtapGestureWidthZonePx) {
-              return@awaitPointerEventScope null
-            }
-
-            for (change in firstEvent.changes) {
-              change.consume()
-            }
-
-            val longPress = kurobaAwaitLongPressOrCancellation(
-              initialDown = downEvent,
-              isActive = { isActive }
-            )
-
-            if (longPress == null || longPress.position.x > drawerLongtapGestureWidthZonePx) {
-              return@awaitPointerEventScope null
-            }
-
-            onLongtapDragGestureDetected()
-            prevDragPositionX = downEvent.position.x
-            prevTime = downEvent.uptimeMillis
-
-            downEvent.historical.fastForEach { historicalChange ->
-              onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
-            }
-            onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
-          } else {
+          if (downEvent.position.x > drawerLongtapGestureWidthZonePx) {
             return@awaitPointerEventScope null
           }
+
+          for (change in firstEvent.changes) {
+            change.consume()
+          }
+
+          val longPress = kurobaAwaitLongPressOrCancellation(
+            initialDown = downEvent,
+            isActive = { isActive }
+          )
+
+          if (longPress == null || longPress.position.x > drawerLongtapGestureWidthZonePx) {
+            return@awaitPointerEventScope null
+          }
+
+          onLongtapDragGestureDetected()
+          prevDragPositionX = downEvent.position.x
+          prevTime = downEvent.uptimeMillis
+
+          downEvent.historical.fastForEach { historicalChange ->
+            onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
+          }
+          onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
+        } else {
+          return@awaitPointerEventScope null
         }
 
         return@awaitPointerEventScope firstEvent

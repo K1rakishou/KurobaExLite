@@ -16,16 +16,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenDrawerLayout
@@ -69,9 +65,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
-import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDragGestureZone
-import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawPagerSwipeExclusionZoneTutorial
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
@@ -100,13 +94,11 @@ class HomeScreen(
     val coroutineScope = rememberCoroutineScope()
 
     ContentInternal(
-      showPagerSwipeExclusionZoneDialog = { showPagerSwipeExclusionZoneDialog() },
-      isDrawerDragGestureCurrentlyAllowed = { currentPageIndex, currentPage, isFromNestedScroll, isInsideSpecialZone ->
+      isDrawerDragGestureCurrentlyAllowed = { currentPageIndex, currentPage, isFromNestedScroll ->
         isDrawerDragGestureCurrentlyAllowed(
           currentPageIndex = currentPageIndex,
           currentPage = currentPage,
-          isFromNestedScroll = isFromNestedScroll,
-          isInsideSpecialZone = isInsideSpecialZone
+          isFromNestedScroll = isFromNestedScroll
         )
       },
       navigationRouterProvider = { navigationRouter },
@@ -209,28 +201,12 @@ class HomeScreen(
     }
   }
 
-  private fun showPagerSwipeExclusionZoneDialog() {
-    navigationRouter.presentScreen(
-      DialogScreen(
-        componentActivity = componentActivity,
-        navigationRouter = navigationRouter,
-        params = DialogScreen.Params(
-          title = DialogScreen.Text.Id(R.string.pager_exclusion_zone_dialog_title),
-          description = DialogScreen.Text.Id(R.string.pager_exclusion_zone_dialog_description),
-          positiveButton = DialogScreen.okButton()
-        ),
-        canDismissByClickingOutside = false
-      )
-    )
-  }
-
   private fun isDrawerDragGestureCurrentlyAllowed(
     currentPageIndex: Int,
     currentPage: AbstractPage<ComposeScreenWithToolbar<*>>?,
-    isFromNestedScroll: Boolean,
-    isInsideSpecialZone: Boolean
+    isFromNestedScroll: Boolean
   ): Boolean {
-    if (currentPageIndex == 0 && isInsideSpecialZone) {
+    if (currentPageIndex == 0) {
       return false
     }
 
@@ -288,8 +264,7 @@ class HomeScreen(
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun ContentInternal(
-  showPagerSwipeExclusionZoneDialog: () -> Unit,
-  isDrawerDragGestureCurrentlyAllowed: (Int, AbstractPage<ComposeScreenWithToolbar<*>>, Boolean, Boolean) -> Boolean,
+  isDrawerDragGestureCurrentlyAllowed: (Int, AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
   navigationRouterProvider: () -> NavigationRouter,
   homeScreenPageConverterProvider: () -> HomeScreenPageConverter,
   showSiteFirewallBypassController: (FirewallType, HttpUrl, SiteKey) -> Unit,
@@ -462,7 +437,6 @@ private fun ContentInternal(
     drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
     pagerState = pagerState,
     pagesWrapper = pagesWrapper,
-    showPagerSwipeExclusionZoneDialog = showPagerSwipeExclusionZoneDialog,
     isDrawerDragGestureCurrentlyAllowed = isDrawerDragGestureCurrentlyAllowed,
     navigationRouterProvider = navigationRouterProvider,
   )
@@ -585,40 +559,19 @@ private fun HomeScreenContentActual(
   drawerLongtapGestureWidthZonePx: Float,
   pagerState: PagerState,
   pagesWrapper: HomeScreenPageConverter.PagesWrapper,
-  showPagerSwipeExclusionZoneDialog: () -> Unit,
-  isDrawerDragGestureCurrentlyAllowed: (Int, AbstractPage<ComposeScreenWithToolbar<*>>, Boolean, Boolean) -> Boolean,
+  isDrawerDragGestureCurrentlyAllowed: (Int, AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
   navigationRouterProvider: () -> NavigationRouter,
 ) {
   val windowInsets = LocalWindowInsets.current
-  val density = LocalDensity.current
   val view = LocalView.current
   val chanTheme = LocalChanTheme.current
 
   val homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
-  // TODO(KurobaEx): extract into settings
-  val draggableAreaSize = remember { with(density) { Size(width = 150.dp.toPx(), height = 80.dp.toPx()) } }
-  val coroutineScope = rememberCoroutineScope()
-
   var drawerWidth by remember { mutableStateOf(0) }
-  var homeScreenSize by remember { mutableStateOf(IntSize.Zero) }
   var consumeAllScrollEvents by remember { mutableStateOf(false) }
   var longtapDragGestureDetected by remember { mutableStateOf(false) }
-  var failedDrawerDragGestureDetected by remember { mutableStateOf(false) }
-
-  val pagerSwipeExclusionZone = remember(key1 = homeScreenSize) {
-    if (homeScreenSize.width > 0 && homeScreenSize.height > 0) {
-      val bottomInsetPx = with(density) { windowInsets.bottom.roundToPx() }
-
-      Rect(
-        offset = Offset(0f, homeScreenSize.height - draggableAreaSize.height - bottomInsetPx),
-        size = draggableAreaSize
-      )
-    } else {
-      Rect.Zero
-    }
-  }
 
   val currentPageMut = remember(key1 = currentPageIndex, key2 = pagesWrapper) {
     pagesWrapper.pageByIndex(currentPageIndex)
@@ -642,7 +595,7 @@ private fun HomeScreenContentActual(
     HomePagerNestedScrollConnection(
       currentPagerPage = { currentPageIndexUpdated },
       isGestureCurrentlyAllowed = {
-        isDrawerDragGestureCurrentlyAllowed(currentPageIndexUpdated, currentPageUpdated, true, false)
+        isDrawerDragGestureCurrentlyAllowed(currentPageIndexUpdated, currentPageUpdated, true)
       },
       shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
       onDragging = { dragging, time, progress -> globalUiInfoManager.dragDrawer(dragging, time, progress) },
@@ -653,36 +606,31 @@ private fun HomeScreenContentActual(
   Box(
     modifier = Modifier
       .onSizeChanged { size ->
-        homeScreenSize = size
         drawerWidth = size.width.coerceAtMost(maxDrawerWidth) - drawerPhoneVisibleWindowWidth
       }
       .pointerInput(
         drawerLongtapGestureWidthZonePx,
         drawerPhoneVisibleWindowWidth,
         drawerWidth,
-        pagerSwipeExclusionZone,
         block = {
           detectDrawerDragGestures(
             drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
             drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
             drawerWidth = drawerWidth.toFloat(),
-            pagerSwipeExclusionZone = pagerSwipeExclusionZone,
             currentPagerPage = { currentPageIndex },
             isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
             onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
-            isGestureCurrentlyAllowed = { insideSpecialZone ->
+            isGestureCurrentlyAllowed = {
               isDrawerDragGestureCurrentlyAllowed(
                 currentPageIndexUpdated,
                 currentPageUpdated,
-                false,
-                insideSpecialZone
+                false
               )
             },
             onLongtapDragGestureDetected = {
               view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
               longtapDragGestureDetected = true
             },
-            onFailedDrawerDragGestureDetected = { failedDrawerDragGestureDetected = true },
             onDraggingDrawer = { dragging, time, progress ->
               globalUiInfoManager.dragDrawer(dragging, time, progress)
             }
@@ -690,12 +638,6 @@ private fun HomeScreenContentActual(
         }
       )
       .nestedScroll(nestedScrollConnection)
-      .drawPagerSwipeExclusionZoneTutorial(
-        failedDrawerDragGestureDetected = failedDrawerDragGestureDetected,
-        pagerSwipeExclusionZone = pagerSwipeExclusionZone,
-        onTutorialFinished = { coroutineScope.launch { showPagerSwipeExclusionZoneDialog() } },
-        resetFlag = { failedDrawerDragGestureDetected = false }
-      )
       .drawDragLongtapDragGestureZone(
         drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
         longtapDragGestureDetected = longtapDragGestureDetected,
