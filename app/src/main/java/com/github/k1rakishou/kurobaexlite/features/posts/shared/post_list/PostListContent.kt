@@ -55,6 +55,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -770,8 +772,19 @@ private fun PostsGridMode(
   errorContent: @Composable ((Any, AsyncData.Error, Boolean) -> Unit),
   postsScreenViewModelProvider: () -> PostScreenViewModel,
 ) {
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val postsScreenViewModel = postsScreenViewModelProvider()
+
   val fastScrollerMarks by postsScreenViewModel.fastScrollerMarksFlow.collectAsState()
+  val catalogGridModeColumnCount by globalUiInfoManager.catalogGridModeColumnCount.collectAsState()
+
+  val columns = remember(key1 = catalogGridModeColumnCount) {
+    if (catalogGridModeColumnCount <= 0) {
+      GridCells.Adaptive(minSize = 140.dp)
+    } else {
+      GridCells.Fixed(count = catalogGridModeColumnCount)
+    }
+  }
 
   LazyVerticalGridWithFastScroller(
     lazyGridContainerModifier = modifier.then(
@@ -787,8 +800,7 @@ private fun PostsGridMode(
           }
         )
     ),
-    // TODO(KurobaEx): extract into a setting
-    columns = GridCells.Fixed(2),
+    columns = columns,
     lazyGridState = lazyGridStateWrapper.lazyGridState,
     contentPadding = contentPadding,
     fastScrollerMarks = fastScrollerMarks,

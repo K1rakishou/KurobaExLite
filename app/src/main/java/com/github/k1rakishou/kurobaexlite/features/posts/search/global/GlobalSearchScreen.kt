@@ -31,7 +31,6 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCell
-import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
@@ -297,7 +296,6 @@ private fun PostSearchCell(
       )
   ) {
     PostCell(
-      postViewMode = PostViewMode.List,
       textSelectionEnabled = false,
       chanDescriptor = catalogDescriptor,
       // TODO(KurobaEx): mark this one?

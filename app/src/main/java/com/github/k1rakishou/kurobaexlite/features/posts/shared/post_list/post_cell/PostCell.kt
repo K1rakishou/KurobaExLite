@@ -33,7 +33,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 
 @Composable
 fun PostCell(
-  postViewMode: PostViewMode,
+  postViewMode: PostViewMode = PostViewMode.List,
   textSelectionEnabled: Boolean,
   chanDescriptor: ChanDescriptor,
   currentlyOpenedThread: ThreadDescriptor?,

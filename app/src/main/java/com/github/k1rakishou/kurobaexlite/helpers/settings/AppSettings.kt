@@ -61,6 +61,7 @@ class AppSettings(
     val defaultValue = if (isTablet) 16 else 14
     NumberSetting(defaultValue, "post_subject_comment_text_size_sp", dataStore)
   }
+
   val catalogSort by lazy { JsonSetting(moshi.adapter(CatalogSortSetting::class.java), CatalogSortSetting(), "catalog_sort_setting", dataStore) }
   val catalogPostViewMode by lazy { EnumSetting<PostViewModeSetting>(PostViewModeSetting.List, "catalog_post_view_mode", PostViewModeSetting::class.java, dataStore) }
   val navigationHistoryMaxSize by lazy { NumberSetting(256, "navigation_history_max_size", dataStore) }
@@ -73,6 +74,8 @@ class AppSettings(
   val lastUpdateCheckTime by lazy { NumberSetting<Long>(0L, "last_update_check_time", dataStore) }
   val lastCheckedVersionCode by lazy { NumberSetting<Long>(0L, "last_checked_version_code", dataStore) }
   val notifyAboutBetaUpdates by lazy { BooleanSetting(true, "notify_about_beta_updates", dataStore) }
+  val catalogGridModeColumnCount by lazy { NumberSetting<Int>(2, "catalog_grid_mode_column_count", dataStore) }
+  val albumColumnCount by lazy { NumberSetting<Int>(2, "album_column_count", dataStore) }
 
   val userAgent by lazy {
     val userAgent = try {
@@ -89,6 +92,9 @@ class AppSettings(
 
   companion object {
     private const val TAG = "AppSettings"
+
+    const val CATALOG_MIN_COLUMN_COUNT = 0
+    const val CATALOG_MAX_COLUMN_COUNT = 4
 
     private const val USER_AGENT_FORMAT =
       "Mozilla/5.0 (Linux; Android %s; %s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.127 Mobile Safari/537.36"

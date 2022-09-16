@@ -47,6 +47,7 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
@@ -290,6 +291,33 @@ class CatalogScreen(
                 text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_catalog_grid_view_mode)
               ),
             )
+          )
+        )
+      )
+    }
+    menuItems += kotlin.run {
+      val catalogGridModeColumnCount = appSettings.catalogGridModeColumnCount.read()
+      val checkedMenuItemKey = CatalogScreenToolbarActionHandler.CatalogGridModeColumnCountOption(catalogGridModeColumnCount)
+
+      return@run FloatingMenuItem.NestedItems(
+        text = FloatingMenuItem.MenuItemText.Id(R.string.catalog_toolbar_catalog_grid_mode_column_count),
+        moreItems = listOf(
+          FloatingMenuItem.Group(
+            checkedMenuItemKey = checkedMenuItemKey,
+            groupItems = (AppSettings.CATALOG_MIN_COLUMN_COUNT until AppSettings.CATALOG_MAX_COLUMN_COUNT).map { columnCount ->
+              val option = CatalogScreenToolbarActionHandler.CatalogGridModeColumnCountOption(columnCount)
+
+              val text = if (columnCount == 0) {
+                appResources.string(R.string.catalog_toolbar_catalog_grid_mode_column_count_auto)
+              } else {
+                appResources.string(R.string.catalog_toolbar_catalog_grid_mode_column_count_n, columnCount)
+              }
+
+              return@map FloatingMenuItem.Text(
+                menuItemKey = option,
+                text = FloatingMenuItem.MenuItemText.String(text)
+              )
+            }
           )
         )
       )

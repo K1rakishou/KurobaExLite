@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +40,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.create
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectClickedAnnotations
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
@@ -74,6 +77,9 @@ fun PostCellGridMode(
   val chanTheme = LocalChanTheme.current
   val isCatalogMode = chanDescriptor is CatalogDescriptor
 
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+  val catalogGridModeColumnCount by globalUiInfoManager.catalogGridModeColumnCount.collectAsState()
+
   val startPadding = remember(key1 = cellsPadding) { cellsPadding.calculateStartPadding(LayoutDirection.Ltr) }
   val endPadding = remember(key1 = cellsPadding) { cellsPadding.calculateEndPadding(LayoutDirection.Ltr) }
   val bottomPadding = remember(key1 = cellsPadding) { cellsPadding.calculateBottomPadding().coerceAtLeast(4.dp) }
@@ -90,6 +96,12 @@ fun PostCellGridMode(
     }
   }
 
+  val ratio = when {
+    catalogGridModeColumnCount <= 1 -> 9f / 12f
+    catalogGridModeColumnCount == 2 -> 9f / 16f
+    else -> 9f / 18f
+  }
+
   KurobaComposeCard(
     modifier = Modifier.padding(4.dp),
     backgroundColor = postCellBackgroundColor
@@ -98,7 +110,7 @@ fun PostCellGridMode(
       modifier = Modifier
         .fillMaxSize()
         .wrapContentHeight()
-        .aspectRatio(ratio = 9f / 18f)
+        .aspectRatio(ratio = ratio)
     ) {
       PostCellGridModeLayout(
         title = {

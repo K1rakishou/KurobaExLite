@@ -114,6 +114,9 @@
     <string name="catalog_toolbar_bookmark_all_catalog_threads">Bookmark all catalog threads</string>
     <string name="catalog_toolbar_add_to_history_all_catalog_threads">Add to history catalog threads</string>
     <string name="catalog_toolbar_failed_to_parse_input">Failed to parse input: \'%1$s\'</string>
+    <string name="catalog_toolbar_catalog_grid_mode_column_count">Catalog grid mode column count</string>
+    <string name="catalog_toolbar_catalog_grid_mode_column_count_auto">Auto</string>
+    <string name="catalog_toolbar_catalog_grid_mode_column_count_n">%1$d column(s)</string>
 
     <string name="thread_toolbar_open_external_thread_dialog_title">Open external thread?</string>
     <string name="thread_toolbar_open_external_thread_dialog_description">Open \'%1$s\'?</string>

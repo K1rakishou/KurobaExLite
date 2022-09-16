@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.catalog
 
+import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import com.github.k1rakishou.kurobaexlite.R
@@ -25,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
@@ -90,6 +92,14 @@ class CatalogScreenToolbarActionHandler(
         val newCatalogPostViewMode = (menuItem.menuItemKey as PostViewMode).toPostViewModeSetting()
         appSettings.catalogPostViewMode.write(newCatalogPostViewMode)
         catalogScreenViewModel.reparseCatalogPostsWithNewViewMode()
+      }
+    } else if (menuItem.menuItemKey is CatalogGridModeColumnCountOption) {
+      val columnCount = (menuItem.menuItemKey as CatalogGridModeColumnCountOption)
+        .count
+        .coerceIn(AppSettings.CATALOG_MIN_COLUMN_COUNT, AppSettings.CATALOG_MAX_COLUMN_COUNT)
+
+      screenCoroutineScope.launch {
+        appSettings.catalogGridModeColumnCount.write(columnCount)
       }
     }
   }
@@ -214,5 +224,8 @@ class CatalogScreenToolbarActionHandler(
     AddToHistoryAllCatalogThreads,
     BookmarkAllCatalogThreads
   }
+
+  @Parcelize
+  data class CatalogGridModeColumnCountOption(val count: Int) : Parcelable
 
 }
