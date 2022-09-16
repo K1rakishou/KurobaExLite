@@ -277,21 +277,17 @@ private fun ContentInternal(
     return
   }
 
-  val globalUiInfoViewModelInitialized by globalUiInfoManager.initialized
+  var globalUiInfoManagerInitialized by remember { mutableStateOf(false) }
 
-  LaunchedEffect(
-    key1 = Unit,
-    block = { globalUiInfoManager.init() }
-  )
+  if (!globalUiInfoManagerInitialized) {
+    globalUiInfoManager.init()
+    globalUiInfoManagerInitialized = true
+  }
 
   ListenForFirewallBypassManagerEvents(
     navigationRouterProvider = navigationRouterProvider,
     showSiteFirewallBypassController = showSiteFirewallBypassController,
   )
-
-  if (!globalUiInfoViewModelInitialized) {
-    return
-  }
 
   val mainUiLayoutModeMut by globalUiInfoManager.currentUiLayoutModeState.collectAsState()
   val mainUiLayoutMode = mainUiLayoutModeMut
@@ -612,7 +608,12 @@ private fun HomeScreenContentActual(
             currentPagerPage = { currentPageIndex },
             isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
             onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
-            isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentPageUpdated, false) },
+            isGestureCurrentlyAllowed = {
+              isDrawerDragGestureCurrentlyAllowed(
+                currentPageUpdated,
+                false
+              )
+            },
             onLongtapDragGestureDetected = {
               view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
               longtapDragGestureDetected = true

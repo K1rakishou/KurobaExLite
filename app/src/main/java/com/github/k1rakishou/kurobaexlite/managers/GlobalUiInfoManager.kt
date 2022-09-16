@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import logcat.logcat
 
 class GlobalUiInfoManager(
@@ -54,10 +55,6 @@ class GlobalUiInfoManager(
   private val appResources: AppResources,
   private val appSettings: AppSettings
 ) : SaveableComponent {
-  private val _initialized = mutableStateOf(false)
-  val initialized: State<Boolean>
-    get() = _initialized
-
   private val job = SupervisorJob()
   private val coroutineScope = CoroutineScope(Dispatchers.Main + job + appScope.coroutineContext)
 
@@ -83,9 +80,6 @@ class GlobalUiInfoManager(
 
   val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode?>(null)
   val currentOrientation = MutableStateFlow<Int?>(null)
-
-  val currentUiLayoutMode: MainUiLayoutMode?
-    get() = currentUiLayoutModeState.value
 
   private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>?>(Channel.RENDEZVOUS)
   val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>?>
@@ -207,7 +201,13 @@ class GlobalUiInfoManager(
     }
   }
 
-  suspend fun init() {
+  fun init(): Boolean {
+    runBlocking { initInternal() }
+    return true
+  }
+
+  private suspend fun initInternal() {
+    logcat { "UiInfoManager initialization started" }
     job.cancelChildren()
 
     _textTitleSizeSp.value = appSettings.textTitleSizeSp.read().sp
@@ -289,7 +289,6 @@ class GlobalUiInfoManager(
     }
 
     logcat { "UiInfoManager initialization finished" }
-    _initialized.value = true
   }
 
   suspend fun waitUntilLayoutModeIsKnown() {
