@@ -28,6 +28,14 @@ data class ThreadStatusCellData(
   val imageLimit: Boolean? = null
 ) {
 
+  fun isThreadDeleted(lastLoadError: Throwable?): Boolean {
+    if (lastLoadError is BadStatusResponseException && lastLoadError.isNotFoundError()) {
+      return true
+    }
+
+    return false
+  }
+
   fun errorMessage(context: Context, lastLoadError: Throwable?): String {
     val error = requireNotNull(lastLoadError) { "lastLoadError is null" }
 

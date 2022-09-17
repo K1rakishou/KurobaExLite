@@ -1,12 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar
 
 import android.os.Bundle
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -14,25 +14,21 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
-import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
-import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenDefaultToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
@@ -49,7 +45,7 @@ class CatalogScreenDefaultToolbar(
   private val showSortCatalogThreadsScreen: () -> Unit,
   private val showLocalSearchToolbar: () -> Unit,
   private val showOverflowMenu: () -> Unit,
-) : KurobaChildToolbar() {
+) : PostsScreenDefaultToolbar<CatalogScreenDefaultToolbar.State>() {
   private val key = "CatalogScreenDefaultToolbar"
   private val state: State = State("${key}_state")
 
@@ -68,7 +64,7 @@ class CatalogScreenDefaultToolbar(
             return@forEach
           }
 
-          toolbarIcon.visible.value = screenContentLoaded
+          toolbarIcon.enabled.value = screenContentLoaded
         }
       }
     )
@@ -83,8 +79,9 @@ class CatalogScreenDefaultToolbar(
     )
 
     UpdateToolbarTitle(
+      isCatalogMode = true,
       postScreenState = catalogScreenViewModel.postScreenState,
-      catalogScreenDefaultToolbarState = { state }
+      defaultToolbarState = { state }
     )
 
     LaunchedEffect(
@@ -114,42 +111,85 @@ class CatalogScreenDefaultToolbar(
         state.leftIcon.Content(onClick = { key -> state.onIconClicked(key) })
       },
       middlePart = {
+        val context = LocalContext.current
+
         val toolbarTitle by state.toolbarTitleState
         val toolbarSubtitle by state.toolbarSubtitleState
+        val siteIconUrl by state.siteIconUrl
+        val showClickableMenuIcon by state.showClickableMenuIcon
+        val contentFullyLoaded by state.contentFullyLoaded
 
         if (toolbarTitle != null) {
-          Column(
+          Row(
             modifier = Modifier
               .fillMaxHeight()
               .fillMaxWidth()
               .kurobaClickable(onClick = { state.onSelectCatalogClicked() }),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalAlignment = Alignment.CenterVertically
           ) {
-            Row {
-              Text(
-                text = toolbarTitle!!,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 16.sp
-              )
-
+            if (contentFullyLoaded) {
               Spacer(modifier = Modifier.width(8.dp))
 
-              KurobaComposeIcon(drawableId = R.drawable.ic_baseline_keyboard_arrow_down_24)
+              Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                  if (siteIconUrl != null) {
+                    val request = remember(key1 = siteIconUrl) {
+                      ImageRequest.Builder(context).data(siteIconUrl).build()
+                    }
 
-              Spacer(modifier = Modifier.width(8.dp))
-            }
+                    AsyncImage(
+                      modifier = Modifier.size(18.dp),
+                      model = request,
+                      contentDescription = null
+                    )
+                  }
 
-            if (toolbarSubtitle != null) {
-              Text(
-                text = toolbarSubtitle!!,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 12.sp
-              )
+                  Text(
+                    text = toolbarTitle!!,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 18.sp
+                  )
+                }
+
+                if (toolbarSubtitle != null) {
+                  Text(
+                    text = toolbarSubtitle!!,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 12.sp
+                  )
+                }
+              }
+
+              if (showClickableMenuIcon) {
+                KurobaComposeIcon(drawableId = R.drawable.ic_baseline_arrow_drop_down_24)
+
+                Spacer(modifier = Modifier.width(8.dp))
+              }
+            } else {
+              Row {
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Text(
+                  text = toolbarTitle!!,
+                  color = Color.White,
+                  maxLines = 1,
+                  overflow = TextOverflow.Ellipsis,
+                  fontSize = 18.sp
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                if (showClickableMenuIcon) {
+                  KurobaComposeIcon(drawableId = R.drawable.ic_baseline_arrow_drop_down_24)
+
+                  Spacer(modifier = Modifier.width(8.dp))
+                }
+              }
             }
           }
         }
@@ -162,83 +202,11 @@ class CatalogScreenDefaultToolbar(
     )
   }
 
-  @Composable
-  protected fun UpdateToolbarTitle(
-    postScreenState: PostScreenState,
-    catalogScreenDefaultToolbarState: () -> State?
-  ) {
-    val context = LocalContext.current
-    val parsedPostDataCache: ParsedPostDataCache = koinRemember()
-    val postListAsyncMut by postScreenState.postsAsyncDataState.collectAsState()
-    val postListAsync = postListAsyncMut
-
-    LaunchedEffect(
-      key1 = postListAsync,
-      block = {
-        when (postListAsync) {
-          AsyncData.Uninitialized -> {
-            val state = catalogScreenDefaultToolbarState()
-              ?: return@LaunchedEffect
-
-            val defaultToolbarTitle = context.resources.getString(R.string.toolbar_loading_empty)
-            state.toolbarTitleState.value = defaultToolbarTitle
-          }
-          AsyncData.Loading -> {
-            val state = catalogScreenDefaultToolbarState()
-              ?: return@LaunchedEffect
-
-            state.toolbarTitleState.value =
-              context.resources.getString(R.string.toolbar_loading_title)
-          }
-          is AsyncData.Error -> {
-            val state = catalogScreenDefaultToolbarState()
-              ?: return@LaunchedEffect
-
-            state.toolbarTitleState.value =
-              context.resources.getString(R.string.toolbar_loading_error)
-          }
-          is AsyncData.Data -> {
-            when (val chanDescriptor = postListAsync.data.chanDescriptor) {
-              is CatalogDescriptor -> {
-                val state = catalogScreenDefaultToolbarState()
-                  ?: return@LaunchedEffect
-
-                state.toolbarTitleState.value =
-                  parsedPostDataCache.formatCatalogToolbarTitle(chanDescriptor)
-              }
-              is ThreadDescriptor -> {
-                snapshotFlow { (postScreenState as ThreadScreenPostsState).originalPostState.value }
-                  .collect { originalPost ->
-                    if (originalPost == null) {
-                      return@collect
-                    }
-
-                    parsedPostDataCache.ensurePostDataLoaded(
-                      isCatalog = false,
-                      postDescriptor = originalPost.postDescriptor,
-                      func = {
-                        val state = catalogScreenDefaultToolbarState()
-                          ?: return@ensurePostDataLoaded
-
-                        val title = parsedPostDataCache.formatThreadToolbarTitle(originalPost.postDescriptor)
-                          ?: return@ensurePostDataLoaded
-
-                        state.toolbarTitleState.value = title
-                      }
-                    )
-                  }
-              }
-            }
-          }
-        }
-      })
-  }
-
   class State(
     override val saveableComponentKey: String
-  ) : ToolbarState {
-    val toolbarTitleState = mutableStateOf<String?>(null)
-    val toolbarSubtitleState = mutableStateOf<String?>(null)
+  ) : PostsScreenDefaultToolbar.PostsScreenToolbarState() {
+    val siteIconUrl = mutableStateOf<String?>(null)
+    val showClickableMenuIcon = mutableStateOf(true)
 
     val leftIcon = KurobaToolbarIcon(
       key = Icons.Drawer,
@@ -249,12 +217,12 @@ class CatalogScreenDefaultToolbar(
       KurobaToolbarIcon(
         key = Icons.Search,
         drawableId = R.drawable.ic_baseline_search_24,
-        visible = false
+        enabled = false
       ),
       KurobaToolbarIcon(
         key = Icons.Sort,
         drawableId = R.drawable.ic_baseline_sort_24,
-        visible = false
+        enabled = false
       ),
       KurobaToolbarIcon(
         key = Icons.Overflow,
@@ -274,12 +242,14 @@ class CatalogScreenDefaultToolbar(
       val bundle = Bundle()
       bundle.putString(TITLE_KEY, toolbarTitleState.value)
       bundle.putString(SUBTITLE_KEY, toolbarSubtitleState.value)
+      bundle.putString(SITE_ICON_KEY, siteIconUrl.value)
       return bundle
     }
 
     override fun restoreFromState(bundle: Bundle?) {
       bundle?.getString(TITLE_KEY)?.let { title -> toolbarTitleState.value = title }
       bundle?.getString(SUBTITLE_KEY)?.let { subtitle -> toolbarSubtitleState.value = subtitle }
+      bundle?.getString(SITE_ICON_KEY)?.let { siteIcon -> siteIconUrl.value = siteIcon }
     }
 
     fun findIconByKey(key: Icons) : KurobaToolbarIcon<Icons>? {
@@ -308,6 +278,7 @@ class CatalogScreenDefaultToolbar(
     companion object {
       private const val TITLE_KEY = "title"
       private const val SUBTITLE_KEY = "subtitle"
+      private const val SITE_ICON_KEY = "site_icon"
     }
   }
 

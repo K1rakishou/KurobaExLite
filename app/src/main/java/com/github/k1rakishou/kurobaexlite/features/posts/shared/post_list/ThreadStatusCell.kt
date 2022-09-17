@@ -84,7 +84,13 @@ internal fun ThreadStatusCell(
   ) {
     val context = LocalContext.current
 
-    val threadStatusCellText = remember(key1 = threadStatusCellDataUpdated, key2 = timeUntilNextUpdateSeconds) {
+    val threadStatusCellText = remember(
+      key1 = threadStatusCellDataUpdated,
+      key2 = timeUntilNextUpdateSeconds,
+      key3 = lastLoadError
+    ) {
+      val isThreadDeleted = threadStatusCellDataUpdated.isThreadDeleted(lastLoadError)
+
       buildAnnotatedString {
         if (threadStatusCellDataUpdated.totalReplies > 0) {
           append(threadStatusCellDataUpdated.totalReplies.toString())
@@ -109,7 +115,7 @@ internal fun ThreadStatusCell(
           append("P")
         }
 
-        if (threadStatusCellDataUpdated.threadPage != null) {
+        if (!isThreadDeleted && threadStatusCellDataUpdated.threadPage != null) {
           if (length > 0) {
             append(AppConstants.TEXT_SEPARATOR)
           }
@@ -177,8 +183,11 @@ internal fun ThreadStatusCell(
 
           append("\n")
           append(lastLoadErrorText)
-          append("\n")
-          append(context.resources.getString(R.string.thread_load_failed_tap_to_refresh))
+
+          if (!isThreadDeleted) {
+            append("\n")
+            append(context.resources.getString(R.string.thread_load_failed_tap_to_refresh))
+          }
         } else if (threadStatusCellDataUpdated.canRefresh()) {
           append("\n")
 

@@ -300,10 +300,6 @@ class ParsedPostDataCache(
     }
   }
 
-  fun formatCatalogToolbarTitle(catalogDescriptor: CatalogDescriptor): String {
-    return "${catalogDescriptor.siteKeyActual}/${catalogDescriptor.boardCode}/"
-  }
-
   suspend fun formatThreadToolbarTitle(postDescriptor: PostDescriptor, maxLength: Int = 64): String? {
     val parsedPostData = getParsedPostData(postDescriptor)
       ?: return null

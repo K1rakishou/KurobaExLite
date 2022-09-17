@@ -105,8 +105,6 @@ class ThreadScreen(
   override val defaultToolbar: KurobaChildToolbar by lazy {
     ThreadScreenDefaultToolbar(
       threadScreenViewModel = threadScreenViewModel,
-      parsedPostDataCache = parsedPostDataCache,
-      globalUiInfoManager = globalUiInfoManager,
       onBackPressed = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY, true) },
       toggleBookmarkState = { threadScreenViewModel.bookmarkOrUnbookmarkThread() },
       openThreadAlbum = {

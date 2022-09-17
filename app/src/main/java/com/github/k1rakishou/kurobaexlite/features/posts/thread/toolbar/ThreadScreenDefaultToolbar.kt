@@ -14,31 +14,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.main.LocalMainUiLayoutMode
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenDefaultToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
-import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
-import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
 import kotlinx.coroutines.channels.Channel
@@ -48,14 +37,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 class ThreadScreenDefaultToolbar(
   private val threadScreenViewModel: ThreadScreenViewModel,
-  private val parsedPostDataCache: ParsedPostDataCache,
-  private val globalUiInfoManager: GlobalUiInfoManager,
   private val onBackPressed: suspend () -> Unit,
   private val showLocalSearchToolbar: () -> Unit,
   private val toggleBookmarkState: () -> Unit,
   private val openThreadAlbum: () -> Unit,
   private val showOverflowMenu: () -> Unit,
-) : KurobaChildToolbar() {
+) : PostsScreenDefaultToolbar<ThreadScreenDefaultToolbar.State>() {
   private val key = "ThreadScreenDefaultToolbar"
   private val state: State = State("${key}_state")
 
@@ -77,15 +64,15 @@ class ThreadScreenDefaultToolbar(
             return@forEach
           }
 
-          toolbarIcon.visible.value = screenContentLoaded
+          toolbarIcon.enabled.value = screenContentLoaded
         }
       }
     )
 
     UpdateToolbarTitle(
-      parsedPostDataCache = parsedPostDataCache,
+      isCatalogMode = false,
       postScreenState = threadScreenViewModel.postScreenState,
-      catalogScreenDefaultToolbarState = { state }
+      defaultToolbarState = { state }
     )
 
     LaunchedEffect(
@@ -128,8 +115,7 @@ class ThreadScreenDefaultToolbar(
             modifier = Modifier
               .fillMaxHeight()
               .fillMaxWidth(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            verticalArrangement = Arrangement.Center
           ) {
             Row {
               Text(
@@ -163,83 +149,10 @@ class ThreadScreenDefaultToolbar(
     )
   }
 
-  @Composable
-  private fun UpdateToolbarTitle(
-    parsedPostDataCache: ParsedPostDataCache,
-    postScreenState: PostScreenState,
-    catalogScreenDefaultToolbarState: () -> State?
-  ) {
-    val context = LocalContext.current
-    val postListAsyncMut by postScreenState.postsAsyncDataState.collectAsState()
-    val postListAsync = postListAsyncMut
-
-    LaunchedEffect(
-      key1 = postListAsync,
-      block = {
-        when (postListAsync) {
-          AsyncData.Uninitialized -> {
-            val state = catalogScreenDefaultToolbarState()
-              ?: return@LaunchedEffect
-
-            state.toolbarTitleState.value = null
-          }
-          AsyncData.Loading -> {
-            val state = catalogScreenDefaultToolbarState()
-              ?: return@LaunchedEffect
-
-            state.toolbarTitleState.value =
-              context.resources.getString(R.string.toolbar_loading_title)
-          }
-          is AsyncData.Error -> {
-            val state = catalogScreenDefaultToolbarState()
-              ?: return@LaunchedEffect
-
-            state.toolbarTitleState.value =
-              context.resources.getString(R.string.toolbar_loading_error)
-          }
-          is AsyncData.Data -> {
-            when (val chanDescriptor = postListAsync.data.chanDescriptor) {
-              is CatalogDescriptor -> {
-                val state = catalogScreenDefaultToolbarState()
-                  ?: return@LaunchedEffect
-
-                state.toolbarTitleState.value =
-                  parsedPostDataCache.formatCatalogToolbarTitle(chanDescriptor)
-              }
-              is ThreadDescriptor -> {
-                snapshotFlow { (postScreenState as ThreadScreenPostsState).originalPostState.value }
-                  .collect { originalPost ->
-                    if (originalPost == null) {
-                      return@collect
-                    }
-
-                    parsedPostDataCache.ensurePostDataLoaded(
-                      isCatalog = false,
-                      postDescriptor = originalPost.postDescriptor,
-                      func = {
-                        val state = catalogScreenDefaultToolbarState()
-                          ?: return@ensurePostDataLoaded
-
-                        val title = parsedPostDataCache.formatThreadToolbarTitle(originalPost.postDescriptor)
-                          ?: return@ensurePostDataLoaded
-
-                        state.toolbarTitleState.value = title
-                      }
-                    )
-                  }
-              }
-            }
-          }
-        }
-      })
-  }
-
   @Stable
   class State(
     override val saveableComponentKey: String
-  ) : ToolbarState {
-    val toolbarTitleState = mutableStateOf<String?>(null)
-    val toolbarSubtitleState = mutableStateOf<String?>(null)
+  ) : PostsScreenDefaultToolbar.PostsScreenToolbarState() {
 
     val leftIcon = KurobaToolbarIcon(
       key = Icons.Back,
@@ -250,17 +163,17 @@ class ThreadScreenDefaultToolbar(
       KurobaToolbarIcon(
         key = Icons.Search,
         drawableId = R.drawable.ic_baseline_search_24,
-        visible = false
+        enabled = false
       ),
       KurobaToolbarIcon(
         key = Icons.Bookmark,
         drawableId = R.drawable.ic_baseline_bookmark_border_24,
-        visible = false
+        enabled = false
       ),
       KurobaToolbarIcon(
         key = Icons.Album,
         drawableId = R.drawable.ic_baseline_image_24,
-        visible = false
+        enabled = false
       ),
       KurobaToolbarIcon(
         key = Icons.Overflow,
