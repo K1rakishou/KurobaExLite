@@ -116,7 +116,7 @@ class UpdateManager(
     val title = latestRelease.title
       ?: return UpdateCheckResult.Error("Failed to find \'title\' in response from Github")
 
-    if (latestRelease.prerelease) {
+    if (latestRelease.prerelease && !forced) {
       val notifyAboutBetaUpdates = appSettings.notifyAboutBetaUpdates.read()
       if (!notifyAboutBetaUpdates) {
         logcat(TAG) {
@@ -140,7 +140,7 @@ class UpdateManager(
       .takeIf { lastVersionCode -> lastVersionCode > currentVersionCode }
       ?: currentVersionCode.toLong()
 
-    if (versionCodeFromServer <= lastCheckedVersionCode) {
+    if (versionCodeFromServer <= lastCheckedVersionCode && !forced) {
       logcat(TAG) {
         "versionCode ($versionCodeFromServer) <= lastCheckedVersionCode ($lastCheckedVersionCode), " +
           "currentVersionCode=${currentVersionCode}"
@@ -172,7 +172,7 @@ class UpdateManager(
   ) {
     setupChannels()
 
-    val contentText = "New version is available: ${tagName}"
+    val contentText = "New version is available: \'${tagName}\'.\nClick to open the release page."
 
     val notificationBuilder = NotificationCompat.Builder(
       appContext,
@@ -195,18 +195,26 @@ class UpdateManager(
     )
   }
 
-  private fun NotificationCompat.Builder.addOpenInBrowserAction(releaseUrl: String): NotificationCompat.Builder {
+  private fun NotificationCompat.Builder.addOpenInBrowserAction(
+    releaseUrl: String
+  ): NotificationCompat.Builder {
     val notificationIntent = Intent(Intent.ACTION_VIEW)
     notificationIntent.data = Uri.parse(releaseUrl)
 
-    val flags = if (androidHelpers.isAndroidM()) {
-      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    val flags = if (androidHelpers.isAndroidS()) {
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
     } else {
       PendingIntent.FLAG_UPDATE_CURRENT
     }
 
-    val pendingIntent = PendingIntent.getActivity(appContext, 0, notificationIntent, flags)
-    return addAction(0, "Open in browser", pendingIntent)
+    val pendingIntent = PendingIntent.getActivity(
+      appContext,
+      AppConstants.RequestCodes.nextRequestCode(),
+      notificationIntent,
+      flags
+    )
+
+    return setContentIntent(pendingIntent)
   }
 
   private fun setupChannels() {

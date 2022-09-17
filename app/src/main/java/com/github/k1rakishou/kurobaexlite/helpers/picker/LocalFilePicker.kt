@@ -276,11 +276,17 @@ class LocalFilePicker(
         SelectedFilePickerBroadcastReceiver::class.java
       )
 
+      val flags = if (androidHelpers.isAndroidS()) {
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+      } else {
+        PendingIntent.FLAG_UPDATE_CURRENT
+      }
+
       val pendingIntent = PendingIntent.getBroadcast(
         activity,
         AppConstants.RequestCodes.LOCAL_FILE_PICKER_LAST_SELECTION_REQUEST_CODE,
         receiverIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        flags
       )
 
       activity.registerReceiver(
