@@ -44,7 +44,12 @@ class UpdateChanThreadView(
       }
 
       if (lastVisiblePost != null) {
-        lastViewedPDForNewPosts = lastVisiblePost
+        val localLastViewedPDForNewPosts = lastViewedPDForNewPosts
+        if (localLastViewedPDForNewPosts == null) {
+          lastViewedPDForNewPosts = lastVisiblePost
+        } else {
+          lastViewedPDForNewPosts = maxOf(localLastViewedPDForNewPosts, lastVisiblePost)
+        }
       }
     }
 
