@@ -235,7 +235,7 @@ class FetchThreadBookmarkInfo(
     val lastViewedPostDescriptor = if (threadBookmark.lastViewedPostPostDescriptor != null) {
       threadBookmark.lastViewedPostPostDescriptor
     } else {
-      loadChanThreadView.execute(threadDescriptor)?.lastViewedPDForScroll
+      loadChanThreadView.execute(threadDescriptor)?.lastViewedPDForNewPosts
     }
 
     threadBookmark.updateThreadRepliesCount(threadBookmarkData.getPostsCountWithoutOP())
