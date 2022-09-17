@@ -543,6 +543,10 @@ class GlobalUiInfoManager(
       LayoutType.Split -> MainUiLayoutMode.Split
     }
 
+    if (currentUiLayoutModeState.value == uiLayoutMode) {
+      return currentUiLayoutModeState.value
+    }
+
     MainUiLayoutMode.values().forEach { layoutMode ->
       if (!_currentPageMapFlow.containsKey(layoutMode)) {
         defaultCurrentPageByUiLayoutMode(layoutMode)
@@ -567,6 +571,7 @@ class GlobalUiInfoManager(
       val pair = Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth)
       _notEnoughWidthForSplitLayoutFlow.emit(pair)
       currentUiLayoutModeState.value = MainUiLayoutMode.Phone
+      appSettings.layoutType.write(LayoutType.Phone)
 
       return MainUiLayoutMode.Phone
     }
