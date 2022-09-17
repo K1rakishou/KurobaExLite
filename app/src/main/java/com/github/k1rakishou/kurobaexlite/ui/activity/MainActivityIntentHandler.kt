@@ -111,6 +111,8 @@ class MainActivityIntentHandler(
     }
 
     globalUiInfoManager.waitUntilLayoutModeIsKnown()
+    globalUiInfoManager.waitUntilHomeScreenPagerDisplayed()
+
     globalUiInfoManager.updateCurrentPage(
       screenKey = ThreadScreen.SCREEN_KEY,
       animate = true

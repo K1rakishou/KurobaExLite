@@ -73,6 +73,7 @@ class GlobalUiInfoManager(
   private val hideableUiVisibilityInfoMap = mutableMapOf<ScreenKey, HideableUiVisibilityInfo>()
   private val replyLayoutVisibilityInfoMap = mutableMapOf<ScreenKey, MutableState<ReplyLayoutVisibility>>()
 
+  private val pagerDisplayedDeferred = CompletableDeferred<Unit>()
   private val currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
   private val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode>(MainUiLayoutMode.Phone)
 
@@ -269,6 +270,18 @@ class GlobalUiInfoManager(
     }
 
     currentUiLayoutModeKnownDeferred.await()
+  }
+
+  suspend fun waitUntilHomeScreenPagerDisplayed() {
+    if (pagerDisplayedDeferred.isCompleted) {
+      return
+    }
+
+    pagerDisplayedDeferred.await()
+  }
+
+  fun onPagerDisplayed() {
+    pagerDisplayedDeferred.complete(Unit)
   }
 
   fun currentPageFlow(uiLayoutMode: MainUiLayoutMode): StateFlow<CurrentPage> {

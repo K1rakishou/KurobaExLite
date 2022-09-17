@@ -71,6 +71,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDra
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
@@ -659,6 +660,17 @@ private fun HomeScreenContentActual(
         navigationRouterProvider = navigationRouterProvider,
       )
     }
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        try {
+          delay(250L)
+        } finally {
+          globalUiInfoManager.onPagerDisplayed()
+        }
+      }
+    )
   }
 }
 
