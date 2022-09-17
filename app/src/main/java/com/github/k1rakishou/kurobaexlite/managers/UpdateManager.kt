@@ -140,13 +140,24 @@ class UpdateManager(
       .takeIf { lastVersionCode -> lastVersionCode > currentVersionCode }
       ?: currentVersionCode.toLong()
 
-    if (versionCodeFromServer <= lastCheckedVersionCode && !forced) {
-      logcat(TAG) {
-        "versionCode ($versionCodeFromServer) <= lastCheckedVersionCode ($lastCheckedVersionCode), " +
-          "currentVersionCode=${currentVersionCode}"
-      }
+    if (forced) {
+      if (versionCodeFromServer <= currentVersionCode) {
+        logcat(TAG) {
+          "versionCodeFromServer ($versionCodeFromServer) <= currentVersionCode ($currentVersionCode), " +
+            "(already on the latest version)"
+        }
 
-      return UpdateCheckResult.AlreadyOnTheLatestVersion
+        return UpdateCheckResult.AlreadyOnTheLatestVersion
+      }
+    } else {
+      if (versionCodeFromServer <= lastCheckedVersionCode) {
+        logcat(TAG) {
+          "versionCodeFromServer ($versionCodeFromServer) <= lastCheckedVersionCode ($lastCheckedVersionCode), " +
+            "currentVersionCode=${currentVersionCode} (already on the latest version)"
+        }
+
+        return UpdateCheckResult.AlreadyOnTheLatestVersion
+      }
     }
 
     logcat(TAG) {
