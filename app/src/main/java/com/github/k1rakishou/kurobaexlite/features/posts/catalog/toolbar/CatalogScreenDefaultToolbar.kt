@@ -179,7 +179,7 @@ class CatalogScreenDefaultToolbar(
                   color = Color.White,
                   maxLines = 1,
                   overflow = TextOverflow.Ellipsis,
-                  fontSize = 18.sp
+                  fontSize = 16.sp
                 )
 
                 Spacer(modifier = Modifier.weight(1f))

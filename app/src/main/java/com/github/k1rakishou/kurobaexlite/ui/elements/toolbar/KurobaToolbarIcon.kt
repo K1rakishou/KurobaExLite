@@ -7,8 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
 
 class KurobaToolbarIcon<T : Any>(
   val key: T,
@@ -30,17 +29,13 @@ class KurobaToolbarIcon<T : Any>(
     val iconDrawableId by drawableId
     val enabled by enabled
 
-    KurobaComposeIcon(
+    KurobaComposeClickableIcon(
       modifier = Modifier
-        .kurobaClickable(
-          enabled = enabled,
-          bounded = false,
-          onClick = { onClick(key) }
-        )
         .size(KurobaChildToolbar.toolbarIconSize)
-        .padding(horizontal = KurobaChildToolbar.toolbarIconPadding),
+        .padding(KurobaChildToolbar.toolbarIconPadding),
+      drawableId = iconDrawableId,
       enabled = enabled,
-      drawableId = iconDrawableId
+      onClick = { onClick(key) }
     )
   }
 }

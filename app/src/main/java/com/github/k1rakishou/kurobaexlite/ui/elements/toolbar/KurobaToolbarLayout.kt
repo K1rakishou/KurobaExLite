@@ -24,7 +24,7 @@ fun KurobaToolbarLayout(
     modifier = Modifier
       .wrapContentSize()
   ) {
-    Spacer(modifier = Modifier.width(8.dp))
+    Spacer(modifier = Modifier.width(12.dp))
 
     if (leftPart != null) {
       Box(

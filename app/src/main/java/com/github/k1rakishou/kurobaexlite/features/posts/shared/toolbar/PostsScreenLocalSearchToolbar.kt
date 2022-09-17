@@ -39,8 +39,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineE
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -120,30 +120,27 @@ class PostsScreenLocalSearchToolbar(
 
     KurobaToolbarLayout(
       leftPart = {
-        KurobaComposeIcon(
+        KurobaComposeClickableIcon(
           modifier = Modifier
-            .kurobaClickable(
-              bounded = false,
-              onClick = {
-                coroutineScope.launch {
-                  if (searchQuery.text.isNotEmpty()) {
-                    searchQuery = TextFieldValue(text = "")
-
-                    onSearchQueryUpdated.invoke("")
-                  } else {
-                    searchDebouncer.stop()
-                    onSearchQueryUpdated.invoke(null)
-                    closeSearch(toolbarKey)
-                  }
-                }
-              }
-            )
             .size(toolbarIconSize)
-            .padding(horizontal = toolbarIconPadding),
+            .padding(toolbarIconPadding),
           drawableId = if (searchQuery.text.isNotEmpty()) {
             R.drawable.ic_baseline_clear_24
           } else {
             R.drawable.ic_baseline_arrow_back_24
+          },
+          onClick = {
+            coroutineScope.launch {
+              if (searchQuery.text.isNotEmpty()) {
+                searchQuery = TextFieldValue(text = "")
+
+                onSearchQueryUpdated.invoke("")
+              } else {
+                searchDebouncer.stop()
+                onSearchQueryUpdated.invoke(null)
+                closeSearch(toolbarKey)
+              }
+            }
           }
         )
       },
