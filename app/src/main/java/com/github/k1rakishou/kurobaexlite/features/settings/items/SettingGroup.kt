@@ -44,6 +44,7 @@ class SettingGroupBuilder(
   fun <T : Enum<T>> enum(
     title: String,
     delegate: EnumSetting<T>,
+    filterFunc: (T) -> Boolean = { true },
     showOptionsScreen: suspend (List<FloatingMenuItem>) -> String?,
     onSettingUpdated: (suspend () -> Unit)? = null,
     settingNameMapper: (Enum<T>) -> String = { enum -> enum.name },
@@ -58,6 +59,7 @@ class SettingGroupBuilder(
       enabled = enabled,
       delegate = delegate,
       settingNameMapper = settingNameMapper,
+      filterFunc = filterFunc,
       showOptionsScreen = showOptionsScreen,
       onSettingUpdated = onSettingUpdated
     )

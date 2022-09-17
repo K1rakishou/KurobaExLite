@@ -31,6 +31,7 @@ class EnumSettingItem<T : Enum<T>>(
   val enabled: Boolean,
   val delegate: EnumSetting<T>,
   val settingNameMapper: (Enum<T>) -> String,
+  val filterFunc: (T) -> Boolean = { true },
   val showOptionsScreen: suspend (List<FloatingMenuItem>) -> String?,
   val onSettingUpdated: (suspend () -> Unit)?
 ) : SettingItem(delegate.settingKey, title, subtitle, dependencies) {
@@ -58,8 +59,12 @@ class EnumSettingItem<T : Enum<T>>(
             coroutineScope.launch {
               val group = FloatingMenuItem.Group(
                 checkedMenuItemKey = delegate.read().name,
-                groupItems = delegate.enumValues.map { value ->
-                  FloatingMenuItem.Text(
+                groupItems = delegate.enumValues.mapNotNull { value ->
+                  if (!filterFunc(value)) {
+                    return@mapNotNull null
+                  }
+
+                  return@mapNotNull FloatingMenuItem.Text(
                     menuItemKey = value.name,
                     text = FloatingMenuItem.MenuItemText.String(settingNameMapper(value)),
                   )

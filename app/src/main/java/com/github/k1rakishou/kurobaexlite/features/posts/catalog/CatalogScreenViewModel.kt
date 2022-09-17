@@ -11,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
@@ -28,7 +29,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import logcat.asLog
 import logcat.logcat
 
 class CatalogScreenViewModel(
@@ -156,7 +156,7 @@ class CatalogScreenViewModel(
 
     if (postsLoadResultMaybe.isFailure) {
       val error = postsLoadResultMaybe.exceptionOrThrow()
-      logcatError { "loadCatalogInternal() error=${error.asLog()}" }
+      logcatError { "loadCatalogInternal() error=${error.asLogIfImportantOrErrorMessage()}" }
 
       catalogScreenState.lastLoadErrorState.value = error
       catalogScreenState.postsAsyncDataState.value = AsyncData.Error(error)

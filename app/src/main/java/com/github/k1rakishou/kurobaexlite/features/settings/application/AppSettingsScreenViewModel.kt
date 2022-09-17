@@ -94,16 +94,7 @@ class AppSettingsScreenViewModel(
           title = appResources.string(R.string.settings_screen_foreground_watcher_update_interval),
           delegate = appSettings.watcherIntervalForegroundSeconds,
           showOptionsScreen = { items -> displayOptionsAndWaitForSelection(items) },
-          settingNameMapper = { enum ->
-            when (enum as WatcherFg) {
-              WatcherFg.SEC_30 -> "30 seconds"
-              WatcherFg.SEC_60 -> "60 seconds"
-              WatcherFg.SEC_90 -> "90 seconds"
-              WatcherFg.SEC_120 -> "2 minutes"
-              WatcherFg.SEC_240 -> "4 minutes"
-              WatcherFg.SEC_300 -> "5 minutes"
-            }
-          },
+          settingNameMapper = { enum -> (enum as WatcherFg).text },
           onSettingUpdated = {
             BookmarkBackgroundWatcherWorker.restartBackgroundWork(
               appContext = appContext,
@@ -118,16 +109,19 @@ class AppSettingsScreenViewModel(
         enum(
           title = appResources.string(R.string.settings_screen_background_watcher_update_interval),
           delegate = appSettings.watcherIntervalBackgroundSeconds,
-          showOptionsScreen = { items -> displayOptionsAndWaitForSelection(items) },
-          settingNameMapper = { enum ->
-            when (enum as WatcherBg) {
-              WatcherBg.MIN_15 -> "15 minutes"
-              WatcherBg.MIN_30 -> "30 minutes"
-              WatcherBg.MIN_45 -> "45 minutes"
-              WatcherBg.MIN_60 -> "1 hour"
-              WatcherBg.MIN_120 -> "2 hours"
+          filterFunc = { watcherBg ->
+            if (androidHelpers.isDevFlavor()) {
+              return@enum true
             }
-          }
+
+            if (watcherBg == WatcherBg.MIN_1) {
+              return@enum false
+            }
+
+            return@enum true
+          },
+          showOptionsScreen = { items -> displayOptionsAndWaitForSelection(items) },
+          settingNameMapper = { enum -> (enum as WatcherBg).text }
         )
 
         boolean(

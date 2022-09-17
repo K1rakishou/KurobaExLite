@@ -67,7 +67,6 @@ class AppSettings(
   val navigationHistoryMaxSize by lazy { NumberSetting(256, "navigation_history_max_size", dataStore) }
   val lastRememberedFilePicker by lazy { StringSetting("", "last_remembered_file_picker", dataStore) }
   val mediaViewerUiVisible by lazy { BooleanSetting(true, "media_viewer_ui_visible", dataStore) }
-  val drawerDragGestureTutorialShown by lazy { BooleanSetting(false, "drawer_drag_gesture_tutorial_shown", dataStore) }
   val watcherIntervalForegroundSeconds by lazy { EnumSetting(WatcherFg.SEC_30, "watcher_interval_foreground_seconds", WatcherFg::class.java, dataStore) }
   val watcherIntervalBackgroundSeconds by lazy { EnumSetting(WatcherBg.MIN_30, "watcher_interval_background_seconds", WatcherBg::class.java, dataStore) }
   val replyNotifications by lazy { BooleanSetting(true, "reply_notifications_enabled", dataStore) }
@@ -105,21 +104,22 @@ class AppSettings(
 
 }
 
-enum class WatcherFg(val seconds: Int) {
-  SEC_30(30),
-  SEC_60(60),
-  SEC_90(90),
-  SEC_120(120),
-  SEC_240(240),
-  SEC_300(300),
+enum class WatcherFg(val seconds: Int, val text: String) {
+  SEC_30(30, "30 seconds"),
+  SEC_60(60, "60 seconds"),
+  SEC_90(90, "90 seconds"),
+  SEC_120(120, "2 minutes"),
+  SEC_240(240, "4 minutes"),
+  SEC_300(300, "5 minutes"),
 }
 
-enum class WatcherBg(val seconds: Int) {
-  MIN_15(15 * 60),
-  MIN_30(30 * 60),
-  MIN_45(45 * 60),
-  MIN_60(60 * 60),
-  MIN_120(120 * 60),
+enum class WatcherBg(val seconds: Int, val text: String) {
+  MIN_1(60, "1 minute (only for development!)"),
+  MIN_15(15 * 60, "15 minutes"),
+  MIN_30(30 * 60, "30 minutes"),
+  MIN_45(45 * 60, "45 minutes"),
+  MIN_60(60 * 60, "1 hour"),
+  MIN_120(120 * 60, "2 hours"),
 }
 
 enum class LayoutType {

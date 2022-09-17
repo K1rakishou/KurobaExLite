@@ -14,7 +14,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.BypassException
+import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import java.io.IOException
@@ -265,6 +267,8 @@ fun Throwable.isExceptionImportant(): Boolean {
     is InterruptedIOException,
     is InterruptedException,
     is FirewallDetectedException,
+    is BadStatusResponseException,
+    is EmptyBodyResponseException,
     is BypassException,
     is SSLException -> false
     else -> true

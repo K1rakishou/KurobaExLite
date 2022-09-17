@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
@@ -38,7 +39,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import logcat.asLog
 import logcat.logcat
 
 class ThreadScreenViewModel(
@@ -159,7 +159,7 @@ class ThreadScreenViewModel(
       val postLoadResultMaybe = chanThreadManager.loadThread(threadDescriptor)
       if (postLoadResultMaybe.isFailure) {
         val error = postLoadResultMaybe.exceptionOrThrow()
-        logcatError { "refresh($threadDescriptor) error=${error.asLog()}" }
+        logcatError { "refresh($threadDescriptor) error=${error.asLogIfImportantOrErrorMessage()}" }
 
         threadAutoUpdater.stopAutoUpdaterLoop()
 
@@ -301,7 +301,7 @@ class ThreadScreenViewModel(
     val postLoadResultMaybe = chanThreadManager.loadThread(threadDescriptor)
     if (postLoadResultMaybe.isFailure) {
       val error = postLoadResultMaybe.exceptionOrThrow()
-      logcatError { "loadThreadInternal() error=${error.asLog()}" }
+      logcatError { "loadThreadInternal() error=${error.asLogIfImportantOrErrorMessage()}" }
 
       threadAutoUpdater.stopAutoUpdaterLoop()
       threadScreenState.lastLoadErrorState.value = error

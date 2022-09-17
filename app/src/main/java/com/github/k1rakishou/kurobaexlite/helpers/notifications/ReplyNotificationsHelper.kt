@@ -160,7 +160,10 @@ class ReplyNotificationsHelper(
     unreadNotificationsGrouped: Map<ThreadDescriptor, Set<ThreadBookmarkReply>>,
     currentlyOpenedThread: ThreadDescriptor?
   ): Map<ThreadDescriptor, Set<ThreadBookmarkReply>> {
-    logcat(TAG) { "showNotificationForReplies(${unreadNotificationsGrouped.size}, $currentlyOpenedThread)" }
+    logcat(TAG) {
+      "showNotificationForReplies(unreadNotificationsGroupedCount=${unreadNotificationsGrouped.size}, " +
+        "currentlyOpenedThread=${currentlyOpenedThread})"
+    }
 
     if (unreadNotificationsGrouped.isEmpty()) {
       logcat(TAG) { "showNotificationForReplies() unreadNotificationsGrouped are empty" }
