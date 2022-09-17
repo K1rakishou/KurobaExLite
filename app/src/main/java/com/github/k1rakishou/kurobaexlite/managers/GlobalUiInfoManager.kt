@@ -73,7 +73,7 @@ class GlobalUiInfoManager(
   private val hideableUiVisibilityInfoMap = mutableMapOf<ScreenKey, HideableUiVisibilityInfo>()
   private val replyLayoutVisibilityInfoMap = mutableMapOf<ScreenKey, MutableState<ReplyLayoutVisibility>>()
 
-  private var currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
+  private val currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
   private val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode>(MainUiLayoutMode.Phone)
 
   private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>?>(Channel.RENDEZVOUS)
@@ -544,6 +544,7 @@ class GlobalUiInfoManager(
     }
 
     if (currentUiLayoutModeState.value == uiLayoutMode) {
+      currentUiLayoutModeKnownDeferred.complete(Unit)
       return currentUiLayoutModeState.value
     }
 
@@ -572,12 +573,14 @@ class GlobalUiInfoManager(
       _notEnoughWidthForSplitLayoutFlow.emit(pair)
       currentUiLayoutModeState.value = MainUiLayoutMode.Phone
       appSettings.layoutType.write(LayoutType.Phone)
+      currentUiLayoutModeKnownDeferred.complete(Unit)
 
       return MainUiLayoutMode.Phone
     }
 
     _notEnoughWidthForSplitLayoutFlow.emit(null)
     currentUiLayoutModeState.value = uiLayoutMode
+    currentUiLayoutModeKnownDeferred.complete(Unit)
 
     return uiLayoutMode
   }
