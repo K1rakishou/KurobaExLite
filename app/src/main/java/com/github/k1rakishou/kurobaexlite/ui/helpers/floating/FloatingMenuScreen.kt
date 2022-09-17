@@ -27,7 +27,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.util.checkCanUseType
@@ -55,7 +54,6 @@ class FloatingMenuScreen(
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val floatingMenuScreenKey = ScreenKey("FloatingMenuScreen_${floatingMenuKey}")
 
-  private val callbacksToInvokeMap = mutableMapOf<Any, FloatingMenuItem>()
   private val coroutineScope = KurobaCoroutineScope()
   private val menuItems by lazy { menuItems.filter { it.visible } }
   private var noItemsWereClicked = true
@@ -70,15 +68,7 @@ class FloatingMenuScreen(
 
   override fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     if (screenDisposeEvent == ScreenDisposeEvent.RemoveFromNavStack) {
-      val callbacksWereEmpty = callbacksToInvokeMap.isEmpty()
-
-      callbacksToInvokeMap.values.forEach { menuItem ->
-        onMenuItemClicked(menuItem)
-      }
-
-      callbacksToInvokeMap.clear()
-
-      if (noItemsWereClicked && callbacksWereEmpty) {
+      if (noItemsWereClicked) {
         onNoItemsWereClicked()
       }
 
@@ -170,13 +160,8 @@ class FloatingMenuScreen(
           is FloatingMenuItem.Check -> {
             BuildCheckMenuItem(
               item = menuItem,
-              onItemClicked = { isDefaultState, clickedItem ->
-                if (isDefaultState) {
-                  callbacksToInvokeMap.remove(clickedItem.menuItemKey)
-                } else {
-                  callbacksToInvokeMap.put(clickedItem.menuItemKey, clickedItem)
-                }
-              })
+              onItemClicked = { clickedItem -> onItemClicked(clickedItem) }
+            )
           }
           is FloatingMenuItem.Icon -> {
             BuildIconMenuItem(item = menuItem, onItemClicked = onItemClicked)
@@ -184,13 +169,7 @@ class FloatingMenuScreen(
           is FloatingMenuItem.Group -> {
             BuildRadioButtonGroup(
               itemGroup = menuItem,
-              onItemClicked = { invokeCallback, clickedItem ->
-                if (invokeCallback) {
-                  callbacksToInvokeMap.put(clickedItem.menuItemKey, clickedItem)
-                } else {
-                  callbacksToInvokeMap.remove(clickedItem.menuItemKey)
-                }
-              }
+              onItemClicked = { clickedItem -> onItemClicked(clickedItem) }
             )
           }
           is FloatingMenuItem.NestedItems -> {
@@ -297,7 +276,7 @@ class FloatingMenuScreen(
   @Composable
   private fun BuildCheckMenuItem(
     item: FloatingMenuItem.Check,
-    onItemClicked: (Boolean, FloatingMenuItem) -> Unit
+    onItemClicked: (FloatingMenuItem) -> Unit
   ) {
     var isCurrentlyChecked by remember { mutableStateOf(false) }
     var defaultChecked by remember { mutableStateOf<Boolean?>(null) }
@@ -318,7 +297,7 @@ class FloatingMenuScreen(
           }
 
           isCurrentlyChecked = !isCurrentlyChecked
-          onItemClicked(isCurrentlyChecked == defaultChecked, item)
+          onItemClicked(item)
         }
         .padding(horizontal = 0.dp, vertical = 4.dp),
       verticalAlignment = Alignment.CenterVertically
@@ -337,13 +316,12 @@ class FloatingMenuScreen(
       KurobaComposeCheckbox(
         modifier = Modifier.wrapContentSize(),
         currentlyChecked = isCurrentlyChecked,
-        onCheckChanged = { nowChecked ->
+        onCheckChanged = {
           if (defaultChecked == null) {
             return@KurobaComposeCheckbox
           }
 
-          isCurrentlyChecked = nowChecked
-          onItemClicked(isCurrentlyChecked == defaultChecked, item)
+          onItemClicked(item)
         }
       )
 
@@ -354,30 +332,16 @@ class FloatingMenuScreen(
   @Composable
   private fun BuildRadioButtonGroup(
     itemGroup: FloatingMenuItem.Group,
-    onItemClicked: (Boolean, FloatingMenuItem) -> Unit
+    onItemClicked: (FloatingMenuItem) -> Unit
   ) {
-    var currentlyCheckedItemKey by remember {
-      mutableStateOf(itemGroup.checkedMenuItemKey)
-    }
-
-    fun applyChecks(clickedItem: FloatingMenuItem.Text) {
-      currentlyCheckedItemKey = clickedItem.menuItemKey
-
-      itemGroup.groupItems.fastForEach { item ->
-        val checked = currentlyCheckedItemKey == item.menuItemKey
-        val isInitiallyChecked = currentlyCheckedItemKey == itemGroup.checkedMenuItemKey
-        val invokeCallback = checked && !isInitiallyChecked
-
-        onItemClicked(invokeCallback, item)
-      }
-    }
+    val currentlyCheckedItemKey by remember { mutableStateOf(itemGroup.checkedMenuItemKey) }
 
     Column {
       for ((index, groupItem) in itemGroup.groupItems.withIndex()) {
         key(groupItem.menuItemKey) {
           Row(
             modifier = Modifier
-              .kurobaClickable { applyChecks(groupItem) }
+              .kurobaClickable { onItemClicked(groupItem) }
               .padding(horizontal = 0.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
           ) {
@@ -394,7 +358,7 @@ class FloatingMenuScreen(
             KurobaComposeRadioButton(
               modifier = Modifier.wrapContentSize(),
               currentlySelected = currentlyCheckedItemKey == groupItem.menuItemKey,
-              onSelectionChanged = { applyChecks(groupItem) }
+              onSelectionChanged = { onItemClicked(groupItem) }
             )
 
             Spacer(modifier = Modifier.width(8.dp))
