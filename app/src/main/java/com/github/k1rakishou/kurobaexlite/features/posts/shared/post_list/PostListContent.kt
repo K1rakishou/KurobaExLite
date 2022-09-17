@@ -422,12 +422,17 @@ private fun processPostListScrollEvent(
   }
 
   if (lazyStateWrapper.layoutInfo.visibleItemsInfo.isNotEmpty()) {
-    postsScreenViewModel.rememberPosition(
-      chanDescriptor = chanDescriptor,
-      index = lazyStateWrapper.firstVisibleItemIndex,
-      offset = lazyStateWrapper.firstVisibleItemScrollOffset,
-      orientation = orientation
-    )
+    val firstVisibleItemIndex = lazyStateWrapper.firstVisibleItemIndex
+    val firstVisibleItemScrollOffset = lazyStateWrapper.firstVisibleItemScrollOffset ?: 0
+
+    if (firstVisibleItemIndex != null) {
+      postsScreenViewModel.rememberPosition(
+        chanDescriptor = chanDescriptor,
+        index = firstVisibleItemIndex,
+        offset = firstVisibleItemScrollOffset,
+        orientation = orientation
+      )
+    }
   }
 }
 
