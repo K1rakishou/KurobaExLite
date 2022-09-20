@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -93,7 +94,7 @@ fun ReplyLayoutContainer(
   ReplyLayoutBottomSheet(
     replyLayoutState = replyLayoutState,
     chanTheme = chanTheme,
-    content = { replyLayoutVisibility, targetHeight ->
+    content = { targetHeight ->
       if (targetHeight > 0.dp) {
         KurobaComposeDivider(modifier = Modifier.fillMaxWidth())
       }
@@ -101,9 +102,6 @@ fun ReplyLayoutContainer(
       ReplyLayout(
         replyLayoutHeight = targetHeight,
         replyLayoutState = replyLayoutState,
-        replyLayoutVisibility = replyLayoutVisibility,
-        onExpandReplyLayoutClicked = { replyLayoutState.expandReplyLayout() },
-        onContractReplyLayoutClicked = { replyLayoutState.contractReplyLayout() },
         onCancelReplySendClicked = { replyLayoutViewModel.cancelSendReply(replyLayoutState) },
         onSendReplyClicked = { replyLayoutViewModel.sendReply(chanDescriptor, replyLayoutState) },
         onAttachedMediaClicked = onAttachedMediaClicked,
@@ -117,14 +115,12 @@ fun ReplyLayoutContainer(
 private fun ReplyLayout(
   replyLayoutHeight: Dp,
   replyLayoutState: ReplyLayoutState,
-  replyLayoutVisibility: ReplyLayoutVisibility,
-  onExpandReplyLayoutClicked: () -> Unit,
-  onContractReplyLayoutClicked: () -> Unit,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
   onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
+  val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
   val attachedMediaList = replyLayoutState.attachedMediaList
 
   BoxWithConstraints(
@@ -154,8 +150,6 @@ private fun ReplyLayout(
       ReplyInputWithButtons(
         replyInputHeight = replyInputHeight,
         replyLayoutState = replyLayoutState,
-        onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
-        onContractReplyLayoutClicked = onContractReplyLayoutClicked,
         onCancelReplySendClicked = onCancelReplySendClicked,
         onSendReplyClicked = onSendReplyClicked
       )

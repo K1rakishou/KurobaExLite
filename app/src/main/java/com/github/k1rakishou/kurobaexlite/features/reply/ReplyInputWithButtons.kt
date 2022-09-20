@@ -27,12 +27,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.layout.FixedScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.OffsetMapping
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Dp
@@ -56,28 +54,13 @@ import kotlinx.coroutines.launch
 fun ReplyInputWithButtons(
   replyInputHeight: Dp,
   replyLayoutState: ReplyLayoutState,
-  onExpandReplyLayoutClicked: () -> Unit,
-  onContractReplyLayoutClicked: () -> Unit,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
   val iconSize = 40.dp
 
-  val replySendProgressMut by replyLayoutState.replySendProgressState
-  val replyText by replyLayoutState.replyText
-  val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
-  val sendReplyState by replyLayoutState.sendReplyState
-
-  val replySendProgress = replySendProgressMut
-
-  val replyLayoutEnabled = when (sendReplyState) {
-    SendReplyState.Started,
-    is SendReplyState.ReplySent -> false
-    is SendReplyState.Finished -> true
-  }
-
-  val replyInputVisualTransformation = remember {
+  val replyInputVisualTransformation = remember(key1 = chanTheme) {
     VisualTransformation { text ->
       val spannedText = buildAnnotatedString {
         append(text)
@@ -103,9 +86,6 @@ fun ReplyInputWithButtons(
     builder = {
       dynamic(1f, "ReplyInput") {
         ReplyInput(
-          replyLayoutEnabled = replyLayoutEnabled,
-          replyText = replyText,
-          replyLayoutVisibility = replyLayoutVisibility,
           replyLayoutState = replyLayoutState,
           replyInputVisualTransformation = replyInputVisualTransformation,
           onSendReplyClicked = onSendReplyClicked
@@ -114,15 +94,10 @@ fun ReplyInputWithButtons(
 
       fixed(50.dp, "ReplyButtons") {
         ReplyButtons(
-          replyLayoutVisibility = replyLayoutVisibility,
           iconSize = iconSize,
-          replyLayoutEnabled = replyLayoutEnabled,
-          onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
-          onContractReplyLayoutClicked = onContractReplyLayoutClicked,
-          sendReplyState = sendReplyState,
+          replyLayoutState = replyLayoutState,
           onCancelReplySendClicked = onCancelReplySendClicked,
-          onSendReplyClicked = onSendReplyClicked,
-          replySendProgress = replySendProgress
+          onSendReplyClicked = onSendReplyClicked
         )
       }
     }
@@ -131,14 +106,21 @@ fun ReplyInputWithButtons(
 
 @Composable
 private fun ReplyInput(
-  replyLayoutEnabled: Boolean,
-  replyText: TextFieldValue,
-  replyLayoutVisibility: ReplyLayoutVisibility,
   replyLayoutState: ReplyLayoutState,
   replyInputVisualTransformation: VisualTransformation,
   onSendReplyClicked: () -> Unit,
 ) {
   val coroutineScope = rememberCoroutineScope()
+
+  val replyText by replyLayoutState.replyText
+  val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
+  val sendReplyState by replyLayoutState.sendReplyState
+
+  val replyLayoutEnabled = when (sendReplyState) {
+    SendReplyState.Started,
+    is SendReplyState.ReplySent -> false
+    is SendReplyState.Finished -> true
+  }
 
   Column(
     modifier = Modifier
@@ -240,75 +222,26 @@ private fun ReplyFormattingButtons(replyLayoutState: ReplyLayoutState) {
 
 @Composable
 private fun ReplyButtons(
-  replyLayoutVisibility: ReplyLayoutVisibility,
   iconSize: Dp,
-  replyLayoutEnabled: Boolean,
-  sendReplyState: SendReplyState,
-  onExpandReplyLayoutClicked: () -> Unit,
-  onContractReplyLayoutClicked: () -> Unit,
+  replyLayoutState: ReplyLayoutState,
   onCancelReplySendClicked: () -> Unit,
-  onSendReplyClicked: () -> Unit,
-  replySendProgress: Float?
+  onSendReplyClicked: () -> Unit
 ) {
+  val replySendProgressMut by replyLayoutState.replySendProgressState
+  val sendReplyState by replyLayoutState.sendReplyState
+
+  val replySendProgress = replySendProgressMut
+
   Column(
     modifier = Modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
-    ExpandContractButton(
-      replyLayoutVisibility = replyLayoutVisibility,
-      iconSize = iconSize,
-      replyLayoutEnabled = replyLayoutEnabled,
-      onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
-      onContractReplyLayoutClicked = onContractReplyLayoutClicked
-    )
-
     SendReplyButton(
       sendReplyState = sendReplyState,
       iconSize = iconSize,
       onCancelReplySendClicked = onCancelReplySendClicked,
       onSendReplyClicked = onSendReplyClicked,
       replySendProgress = replySendProgress
-    )
-  }
-}
-
-@Composable
-private fun ExpandContractButton(
-  replyLayoutVisibility: ReplyLayoutVisibility,
-  iconSize: Dp,
-  replyLayoutEnabled: Boolean,
-  onExpandReplyLayoutClicked: () -> Unit,
-  onContractReplyLayoutClicked: () -> Unit
-) {
-  val drawableId = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
-    R.drawable.ic_baseline_arrow_drop_down_24
-  } else {
-    R.drawable.ic_baseline_arrow_drop_up_24
-  }
-
-  val iconScale = remember { FixedScale(2f) }
-
-  Box(modifier = Modifier.size(iconSize)) {
-    KurobaComposeIcon(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(4.dp)
-        .kurobaClickable(
-          enabled = replyLayoutEnabled,
-          bounded = false,
-          onClick = {
-            when (replyLayoutVisibility) {
-              ReplyLayoutVisibility.Collapsed -> {
-                // no-op
-              }
-              ReplyLayoutVisibility.Opened -> onExpandReplyLayoutClicked()
-              ReplyLayoutVisibility.Expanded -> onContractReplyLayoutClicked()
-            }
-          }
-        ),
-      drawableId = drawableId,
-      contentScale = iconScale,
-      enabled = replyLayoutEnabled
     )
   }
 }

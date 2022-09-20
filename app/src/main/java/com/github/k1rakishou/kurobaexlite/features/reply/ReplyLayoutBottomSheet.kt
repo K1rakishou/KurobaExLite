@@ -49,7 +49,7 @@ import kotlinx.coroutines.flow.combine
 fun ReplyLayoutBottomSheet(
   replyLayoutState: ReplyLayoutState,
   chanTheme: ChanTheme,
-  content: @Composable ColumnScope.(ReplyLayoutVisibility, Dp) -> Unit
+  content: @Composable ColumnScope.(Dp) -> Unit
 ) {
   val density = LocalDensity.current
   val windowInsets = LocalWindowInsets.current
@@ -233,7 +233,7 @@ fun ReplyLayoutBottomSheet(
           .toDp()
       }
 
-      content(replyLayoutVisibility, targetReplyLayoutHeight)
+      content(targetReplyLayoutHeight)
     }
   }
 }
