@@ -29,34 +29,47 @@ import coil.request.videoFrameMillis
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import kotlin.math.roundToInt
 
 private const val COIL_FAILED_TO_DECODE_FRAME_ERROR_MSG =
   "Often this means BitmapFactory could not decode the image data read from the input source"
 
 @Composable
 fun ReplyAttachments(
-  height: Dp,
+  replyAttachmentsHeight: Dp,
   replyLayoutState: ReplyLayoutState,
-  replyLayoutVisibility: ReplyLayoutVisibility,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
   onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
+  val density = LocalDensity.current
+
   val paddings = 8.dp
   val attachedMediaList = replyLayoutState.attachedMediaList
 
-  val mediaHeight = when (replyLayoutVisibility) {
-    ReplyLayoutVisibility.Closed,
-    ReplyLayoutVisibility.Opened -> height
-    ReplyLayoutVisibility.Expanded -> height / 2
+  val mediaHeight = with(density) {
+    when {
+      replyAttachmentsHeight > 120.dp -> 120.dp
+      replyAttachmentsHeight > 80.dp -> 80.dp
+      else -> {
+        replyAttachmentsHeight
+          .toPx()
+          // Quantize to avoid unnecessary re-measures/re-layouts/re-compositions when
+          // the amount of pixels the reply layout moved is less than 2dp
+          .quantize(2.dp.toPx())
+          .roundToInt()
+          .toDp()
+      }
+    }
   }
 
   LazyVerticalGrid(
     modifier = Modifier
       .fillMaxWidth()
-      .height(height),
-    columns = GridCells.Fixed(3),
+      .height(replyAttachmentsHeight),
+    columns = GridCells.Fixed(2),
     content = {
       attachedMediaList.forEach { attachedMedia ->
         item(

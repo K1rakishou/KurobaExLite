@@ -45,13 +45,16 @@ interface IReplyLayoutState {
   val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
 
   fun onBackPressed(): Boolean
+  fun collapseReplyLayout()
   fun openReplyLayout()
+  fun expandReplyLayout()
+  fun contractReplyLayout()
   fun detachMedia(attachedMedia: AttachedMedia)
 }
 
 @Stable
 class FakeReplyLayoutState : IReplyLayoutState {
-  private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Closed)
+  private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Collapsed)
   override val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
     get() = _replyLayoutVisibilityState
 
@@ -60,6 +63,18 @@ class FakeReplyLayoutState : IReplyLayoutState {
   }
 
   override fun openReplyLayout() {
+
+  }
+
+  override fun expandReplyLayout() {
+
+  }
+
+  override fun collapseReplyLayout() {
+
+  }
+
+  override fun contractReplyLayout() {
 
   }
 
@@ -79,7 +94,7 @@ class ReplyLayoutState(
   private val siteManager: SiteManager by lazy { GlobalContext.get().get() }
   private val appResources: AppResources by lazy { GlobalContext.get().get() }
 
-  private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Closed)
+  private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Collapsed)
   override val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
     get() = _replyLayoutVisibilityState
 
@@ -195,7 +210,7 @@ class ReplyLayoutState(
       _attachedMediaList.forEach { attachedMedia -> attachedMedia.deleteFile() }
 
       _attachedMediaList.clear()
-      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Closed
+      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Collapsed
       _replyText.value = TextFieldValue()
 
       onAttachedImagesUpdated()
@@ -238,40 +253,37 @@ class ReplyLayoutState(
     bundle.putString(replyTextKey, newTextFieldValue.text)
   }
 
+  override fun collapseReplyLayout() {
+    if (_replyLayoutVisibilityState.value != ReplyLayoutVisibility.Collapsed) {
+      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Collapsed
+      onReplyLayoutVisibilityStateChanged()
+    }
+  }
+
   override fun openReplyLayout() {
-    if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Closed) {
+    if (_replyLayoutVisibilityState.value != ReplyLayoutVisibility.Opened) {
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
       onReplyLayoutVisibilityStateChanged()
     }
   }
 
-  fun expandReplyLayout() {
-    if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Opened) {
+  override fun expandReplyLayout() {
+    if (_replyLayoutVisibilityState.value != ReplyLayoutVisibility.Expanded) {
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Expanded
       onReplyLayoutVisibilityStateChanged()
     }
   }
 
-  fun collapseReplyLayout() {
+  override fun contractReplyLayout() {
     if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Expanded) {
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
-      onReplyLayoutVisibilityStateChanged()
-    }
-  }
-
-  fun closeReplyLayout() {
-    if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Expanded) {
-      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
-      onReplyLayoutVisibilityStateChanged()
-    } else if (_replyLayoutVisibilityState.value == ReplyLayoutVisibility.Opened) {
-      _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Closed
       onReplyLayoutVisibilityStateChanged()
     }
   }
 
   override fun onBackPressed(): Boolean {
     val currentState = replyLayoutVisibilityState.value
-    if (currentState == ReplyLayoutVisibility.Closed) {
+    if (currentState == ReplyLayoutVisibility.Collapsed) {
       return false
     }
 
@@ -281,7 +293,7 @@ class ReplyLayoutState(
       return true
     }
 
-    _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Closed
+    _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Collapsed
     onReplyLayoutVisibilityStateChanged()
     return true
   }
@@ -436,19 +448,19 @@ sealed class SendReplyState {
 
 @Immutable
 enum class ReplyLayoutVisibility(val order: Int) {
-  Closed(0),
+  Collapsed(0),
   Opened(1),
   Expanded(2);
 
   companion object {
     fun fromRawValue(value: Int?): ReplyLayoutVisibility {
       if (value == null) {
-        return Closed
+        return Collapsed
       }
 
       return values()
         .firstOrNull { rlv -> rlv.order == value }
-        ?: Closed
+        ?: Collapsed
     }
   }
 }

@@ -116,7 +116,6 @@ fun KurobaComposeCustomTextField(
   var localInput by remember { mutableStateOf(value) }
 
   KurobaComposeCustomTextFieldInternal(
-    modifier = modifier,
     labelText = labelText,
     labelTextBottomOffset = labelTextBottomOffset,
     maxTextLength = maxTextLength,
@@ -157,8 +156,11 @@ fun KurobaComposeCustomTextField(
     textFieldContent = {
       CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
         BasicTextField(
-          modifier = indicatorLineModifier
-            .padding(bottom = lineTotalHeight)
+          modifier = modifier
+            .then(
+              indicatorLineModifier
+                .padding(bottom = lineTotalHeight)
+            )
             .then(Modifier.padding(textFieldPadding)),
           enabled = enabled,
           textStyle = textStyle,
@@ -200,7 +202,6 @@ fun KurobaComposeCustomTextField(
 
 @Composable
 private fun KurobaComposeCustomTextFieldInternal(
-  modifier: Modifier,
   labelText: String?,
   labelTextBottomOffset: Dp,
   maxTextLength: Int,
@@ -216,7 +217,6 @@ private fun KurobaComposeCustomTextFieldInternal(
   val labelTextBottomOffsetPx = with(LocalDensity.current) { labelTextBottomOffset.toPx().toInt() }
 
   SubcomposeLayout(
-    modifier = modifier,
     measurePolicy = { constraints ->
       val measurables = arrayOfNulls<Measurable?>(componentsCount)
 

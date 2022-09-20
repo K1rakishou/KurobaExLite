@@ -319,7 +319,7 @@ class GlobalUiInfoManager(
     return replyLayoutVisibilityInfoMap.entries
       .any { (replyLayoutScreenKey, replyLayoutVisibilityState) ->
         return@any replyLayoutScreenKey == screenKey &&
-          replyLayoutVisibilityState.value != ReplyLayoutVisibility.Closed
+          replyLayoutVisibilityState.value != ReplyLayoutVisibility.Collapsed
       }
   }
 
@@ -333,7 +333,7 @@ class GlobalUiInfoManager(
   fun replyLayoutVisibilityInfoStateForScreen(screenKey: ScreenKey): State<ReplyLayoutVisibility> {
     return replyLayoutVisibilityInfoMap.getOrPut(
       key = screenKey,
-      defaultValue = { mutableStateOf(ReplyLayoutVisibility.Closed) }
+      defaultValue = { mutableStateOf(ReplyLayoutVisibility.Collapsed) }
     )
   }
 
@@ -470,7 +470,7 @@ class GlobalUiInfoManager(
       defaultValue = { HideableUiVisibilityInfo() }
     )
 
-    hideableUiVisibilityInfo.update(replyLayoutOpened = replyLayoutVisibility != ReplyLayoutVisibility.Closed)
+    hideableUiVisibilityInfo.update(replyLayoutOpened = replyLayoutVisibility != ReplyLayoutVisibility.Collapsed)
   }
 
   fun onLoadingErrorUpdatedOrRemoved(screenKey: ScreenKey, hasLoadError: Boolean) {

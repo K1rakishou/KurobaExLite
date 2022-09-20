@@ -291,7 +291,7 @@ class ThreadScreen(
         snapshotFlow { replyLayoutState.replyLayoutVisibilityState.value }
           .collect { replyLayoutVisibility ->
             when (replyLayoutVisibility) {
-              ReplyLayoutVisibility.Closed -> {
+              ReplyLayoutVisibility.Collapsed -> {
                 kurobaToolbarContainerState.popToolbar(replyToolbar.toolbarKey)
               }
               ReplyLayoutVisibility.Opened,
@@ -401,7 +401,7 @@ private fun BoxScope.ThreadPostListScreen(
   val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
     derivedStateOf {
       val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
-        ReplyLayoutVisibility.Closed -> windowInsets.bottom
+        ReplyLayoutVisibility.Collapsed -> windowInsets.bottom
         ReplyLayoutVisibility.Opened,
         ReplyLayoutVisibility.Expanded -> windowInsets.bottom + replyLayoutContainerHeight
       }

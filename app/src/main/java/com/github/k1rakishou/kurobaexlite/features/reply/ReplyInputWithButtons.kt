@@ -27,9 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.FixedScale
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -41,8 +39,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
@@ -58,11 +54,10 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ReplyInputWithButtons(
-  height: Dp,
+  replyInputHeight: Dp,
   replyLayoutState: ReplyLayoutState,
   onExpandReplyLayoutClicked: () -> Unit,
-  onCollapseReplyLayoutClicked: () -> Unit,
-  onCloseReplyLayoutClicked: () -> Unit,
+  onContractReplyLayoutClicked: () -> Unit,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit
 ) {
@@ -103,7 +98,7 @@ fun ReplyInputWithButtons(
   SlotLayout(
     modifier = Modifier
       .fillMaxWidth()
-      .height(height),
+      .height(replyInputHeight),
     layoutOrientation = LayoutOrientation.Horizontal,
     builder = {
       dynamic(1f, "ReplyInput") {
@@ -123,8 +118,7 @@ fun ReplyInputWithButtons(
           iconSize = iconSize,
           replyLayoutEnabled = replyLayoutEnabled,
           onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
-          onCollapseReplyLayoutClicked = onCollapseReplyLayoutClicked,
-          onCloseReplyLayoutClicked = onCloseReplyLayoutClicked,
+          onContractReplyLayoutClicked = onContractReplyLayoutClicked,
           sendReplyState = sendReplyState,
           onCancelReplySendClicked = onCancelReplySendClicked,
           onSendReplyClicked = onSendReplyClicked,
@@ -152,7 +146,7 @@ private fun ReplyInput(
       .padding(horizontal = 8.dp),
   ) {
     val focusRequest = remember { FocusRequester() }
-    var prevReplyLayoutVisibility by remember { mutableStateOf<ReplyLayoutVisibility>(ReplyLayoutVisibility.Closed) }
+    var prevReplyLayoutVisibility by remember { mutableStateOf<ReplyLayoutVisibility>(ReplyLayoutVisibility.Collapsed) }
 
     DisposableEffect(
       key1 = replyLayoutVisibility,
@@ -160,12 +154,22 @@ private fun ReplyInput(
         var job: Job? = null
 
         if (
-          replyLayoutVisibility != ReplyLayoutVisibility.Closed &&
-          prevReplyLayoutVisibility == ReplyLayoutVisibility.Closed
+          replyLayoutVisibility != ReplyLayoutVisibility.Collapsed &&
+          prevReplyLayoutVisibility == ReplyLayoutVisibility.Collapsed
         ) {
+          job?.cancel()
           job = coroutineScope.launch {
             delay(64)
             focusRequest.requestFocus()
+          }
+        } else if (
+          replyLayoutVisibility == ReplyLayoutVisibility.Collapsed &&
+          prevReplyLayoutVisibility != ReplyLayoutVisibility.Collapsed
+        ) {
+          job?.cancel()
+          job = coroutineScope.launch {
+            delay(64)
+            focusRequest.freeFocus()
           }
         }
 
@@ -178,24 +182,25 @@ private fun ReplyInput(
       }
     )
 
-    KurobaComposeCustomTextField(
-      modifier = Modifier
-        .fillMaxWidth()
-        .weight(1f)
-        .padding(vertical = 4.dp)
-        .focusable()
-        .focusRequester(focusRequest),
-      enabled = replyLayoutEnabled,
-      value = replyText,
-      singleLine = false,
-      maxLines = Int.MAX_VALUE,
-      visualTransformation = replyInputVisualTransformation,
-      keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-      keyboardActions = KeyboardActions(onDone = { onSendReplyClicked() }),
-      onValueChange = { newTextFieldValue ->
-        replyLayoutState.onReplyTextChanged(newTextFieldValue)
-      }
-    )
+    Box(modifier = Modifier.weight(1f)) {
+      KurobaComposeCustomTextField(
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(vertical = 4.dp)
+          .focusable()
+          .focusRequester(focusRequest),
+        enabled = replyLayoutEnabled,
+        value = replyText,
+        singleLine = false,
+        maxLines = Int.MAX_VALUE,
+        visualTransformation = replyInputVisualTransformation,
+        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+        keyboardActions = KeyboardActions(onDone = { onSendReplyClicked() }),
+        onValueChange = { newTextFieldValue ->
+          replyLayoutState.onReplyTextChanged(newTextFieldValue)
+        }
+      )
+    }
 
     Spacer(modifier = Modifier.height(4.dp))
 
@@ -240,8 +245,7 @@ private fun ReplyButtons(
   replyLayoutEnabled: Boolean,
   sendReplyState: SendReplyState,
   onExpandReplyLayoutClicked: () -> Unit,
-  onCollapseReplyLayoutClicked: () -> Unit,
-  onCloseReplyLayoutClicked: () -> Unit,
+  onContractReplyLayoutClicked: () -> Unit,
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit,
   replySendProgress: Float?
@@ -250,12 +254,12 @@ private fun ReplyButtons(
     modifier = Modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
-    ExpandCollapseButton(
+    ExpandContractButton(
       replyLayoutVisibility = replyLayoutVisibility,
       iconSize = iconSize,
       replyLayoutEnabled = replyLayoutEnabled,
       onExpandReplyLayoutClicked = onExpandReplyLayoutClicked,
-      onCollapseReplyLayoutClicked = onCollapseReplyLayoutClicked
+      onContractReplyLayoutClicked = onContractReplyLayoutClicked
     )
 
     SendReplyButton(
@@ -265,23 +269,16 @@ private fun ReplyButtons(
       onSendReplyClicked = onSendReplyClicked,
       replySendProgress = replySendProgress
     )
-
-    Spacer(modifier = Modifier.weight(1f))
-
-    CloseReplyLayoutButton(
-      iconSize = iconSize,
-      onCloseReplyLayoutClicked = onCloseReplyLayoutClicked
-    )
   }
 }
 
 @Composable
-private fun ExpandCollapseButton(
+private fun ExpandContractButton(
   replyLayoutVisibility: ReplyLayoutVisibility,
   iconSize: Dp,
   replyLayoutEnabled: Boolean,
   onExpandReplyLayoutClicked: () -> Unit,
-  onCollapseReplyLayoutClicked: () -> Unit
+  onContractReplyLayoutClicked: () -> Unit
 ) {
   val drawableId = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
     R.drawable.ic_baseline_arrow_drop_down_24
@@ -301,11 +298,11 @@ private fun ExpandCollapseButton(
           bounded = false,
           onClick = {
             when (replyLayoutVisibility) {
-              ReplyLayoutVisibility.Closed -> {
+              ReplyLayoutVisibility.Collapsed -> {
                 // no-op
               }
               ReplyLayoutVisibility.Opened -> onExpandReplyLayoutClicked()
-              ReplyLayoutVisibility.Expanded -> onCollapseReplyLayoutClicked()
+              ReplyLayoutVisibility.Expanded -> onContractReplyLayoutClicked()
             }
           }
         ),
@@ -358,39 +355,5 @@ private fun SendReplyButton(
         progress = replySendProgress
       )
     }
-  }
-}
-
-@Composable
-private fun CloseReplyLayoutButton(
-  iconSize: Dp,
-  onCloseReplyLayoutClicked: () -> Unit
-) {
-  val androidHelpers = koinRemember<AndroidHelpers>()
-  val view = LocalView.current
-  val navigationGesturesUsed = remember { androidHelpers.navigationGesturesUsed(view) }
-
-  // Just press the back button on the navigation bar to close it.
-  if (!navigationGesturesUsed) {
-    return
-  }
-
-  val iconScale = remember { FixedScale(2f) }
-
-  Box(modifier = Modifier.size(iconSize)) {
-    KurobaComposeIcon(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(4.dp)
-        .graphicsLayer {
-          rotationZ = 90f
-        }
-        .kurobaClickable(
-          bounded = false,
-          onClick = onCloseReplyLayoutClicked
-        ),
-      drawableId = R.drawable.ic_baseline_chevron_right_24,
-      contentScale = iconScale,
-    )
   }
 }
