@@ -2,8 +2,8 @@
 <resources>
     <dimen name="toolbar_height">40dp</dimen>
 
-    <dimen name="reply_layout_container_opened_height_no_attachments">140dp</dimen>
-    <dimen name="reply_layout_container_opened_height_with_attachments">220dp</dimen>
+    <dimen name="reply_layout_container_opened_height_no_attachments">180dp</dimen>
+    <dimen name="reply_layout_container_opened_height_with_attachments">250dp</dimen>
 
     <dimen name="fab_size">56dp</dimen>
     <dimen name="post_list_fab_end_offset">24dp</dimen>

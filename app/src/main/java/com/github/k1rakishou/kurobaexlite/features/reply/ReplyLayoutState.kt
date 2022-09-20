@@ -106,6 +106,22 @@ class ReplyLayoutState(
   val replyText: State<TextFieldValue>
     get() = _replyText
 
+  private val _subject = mutableStateOf(TextFieldValue())
+  val subject: State<TextFieldValue>
+    get() = _subject
+
+  private val _name = mutableStateOf(TextFieldValue())
+  val name: State<TextFieldValue>
+    get() = _name
+
+  private val _options = mutableStateOf(TextFieldValue())
+  val options: State<TextFieldValue>
+    get() = _options
+
+  private val _maxCommentLength = mutableStateOf(0)
+  val maxCommentLength: State<Int>
+    get() = _maxCommentLength
+
   private val _attachedMediaList = mutableStateListOf<AttachedMedia>()
   val attachedMediaList: List<AttachedMedia>
     get() = _attachedMediaList
@@ -155,14 +171,49 @@ class ReplyLayoutState(
   }
 
   private fun restoreFromBundle() {
-    val replyTextFromBundle = bundle.getString(replyTextKey) ?: ""
+    bundle.getString(replyTextKey).let { replyTextFromBundle ->
+      val actualReplyText = replyTextFromBundle ?: ""
 
-    val textFieldValue = TextFieldValue(
-      text = replyTextFromBundle,
-      selection = TextRange(replyTextFromBundle.length)
-    )
+      val textFieldValue = TextFieldValue(
+        text = actualReplyText,
+        selection = TextRange(actualReplyText.length)
+      )
 
-    onReplyTextChanged(textFieldValue)
+      onReplyTextChanged(textFieldValue)
+    }
+
+    bundle.getString(subjectTextKey).let { subjectTextFromBundle ->
+      val actualSubjectText = subjectTextFromBundle ?: ""
+
+      val textFieldValue = TextFieldValue(
+        text = actualSubjectText,
+        selection = TextRange(actualSubjectText.length)
+      )
+
+      onSubjectChanged(textFieldValue)
+    }
+
+    bundle.getString(nameTextKey).let { nameTextFromBundle ->
+      val actualNameText = nameTextFromBundle ?: ""
+
+      val textFieldValue = TextFieldValue(
+        text = actualNameText,
+        selection = TextRange(actualNameText.length)
+      )
+
+      onNameChanged(textFieldValue)
+    }
+
+    bundle.getString(optionsTextKey).let { optionsTextFromBundle ->
+      val actualOptionsText = optionsTextFromBundle ?: ""
+
+      val textFieldValue = TextFieldValue(
+        text = actualOptionsText,
+        selection = TextRange(actualOptionsText.length)
+      )
+
+      onOptionsChanged(textFieldValue)
+    }
 
     _replyLayoutVisibilityState.value = bundle.getInt(replyLayoutVisibilityKey)
       .let { ReplyLayoutVisibility.fromRawValue(it) }
@@ -180,7 +231,6 @@ class ReplyLayoutState(
     logcat(TAG) {
       "restoreFromBundle() " +
         "replyLayoutVisibilityState=${_replyLayoutVisibilityState.value}, " +
-        "replyText=\'${replyTextFromBundle.take(32)}\', " +
         "attachedImages=\'${_attachedMediaList.joinToString(transform = { it.path })}\'"
     }
   }
@@ -253,6 +303,21 @@ class ReplyLayoutState(
     bundle.putString(replyTextKey, newTextFieldValue.text)
   }
 
+  fun onSubjectChanged(newTextFieldValue: TextFieldValue) {
+    _subject.value = newTextFieldValue
+    bundle.putString(subjectTextKey, newTextFieldValue.text)
+  }
+
+  fun onNameChanged(newTextFieldValue: TextFieldValue) {
+    _name.value = newTextFieldValue
+    bundle.putString(nameTextKey, newTextFieldValue.text)
+  }
+
+  fun onOptionsChanged(newTextFieldValue: TextFieldValue) {
+    _options.value = newTextFieldValue
+    bundle.putString(optionsTextKey, newTextFieldValue.text)
+  }
+
   override fun collapseReplyLayout() {
     if (_replyLayoutVisibilityState.value != ReplyLayoutVisibility.Collapsed) {
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Collapsed
@@ -312,6 +377,9 @@ class ReplyLayoutState(
     return ReplyData(
       chanDescriptor = chanDescriptor,
       message = replyText.value.text,
+      subject = subject.value.text.takeIf { it.isNotEmpty() },
+      name = name.value.text.takeIf { it.isNotEmpty() },
+      options = options.value.text.takeIf { it.isNotEmpty() },
       attachedMediaList = attachedMediaList,
       captchaSolution = captchaSolution
     )
@@ -399,6 +467,9 @@ class ReplyLayoutState(
     private const val TAG = "ReplyLayoutState"
 
     private const val replyTextKey = "replyText"
+    private const val subjectTextKey = "subjectText"
+    private const val nameTextKey = "nameText"
+    private const val optionsTextKey = "optionsText"
     private const val attachedMediaListKey = "attachedMediaList"
     private const val replyLayoutVisibilityKey = "replyLayoutVisibility"
     const val chanDescriptorKey = "chanDescriptor"

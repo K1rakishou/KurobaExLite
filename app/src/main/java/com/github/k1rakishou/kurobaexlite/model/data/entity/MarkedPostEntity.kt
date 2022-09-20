@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.model.data.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Embedded
 import androidx.room.Entity
@@ -11,11 +12,13 @@ import androidx.room.Query
 @Entity(tableName = MarkedPostEntity.TABLE_NAME)
 class MarkedPostEntity(
   @PrimaryKey @Embedded(prefix = "marked_post_") val postKey: PostKey,
-  val type: Int
+  @ColumnInfo(name = TYPE) val type: Int
 ) {
 
   companion object {
     const val TABLE_NAME = "marked_posts"
+
+    const val TYPE = "type"
   }
 }
 

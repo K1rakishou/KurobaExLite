@@ -182,13 +182,12 @@ class Chan4ReplyInfo(
       formBuilder.addFormDataPart("resto", threadNo.toString())
     }
 
-    if (replyData.postName.isNotNullNorEmpty()) {
-      formBuilder.addFormDataPart("name", replyData.postName)
+    if (replyData.name.isNotNullNorEmpty()) {
+      formBuilder.addFormDataPart("name", replyData.name)
     }
 
-    if (replyData.options.isNotEmpty()) {
-      // TODO(KurobaEx):
-      //  formBuilder.addFormDataPart("email", replyData.options)
+    if (replyData.options.isNotNullNorEmpty()) {
+      formBuilder.addFormDataPart("email", replyData.options)
     }
 
     if (chanDescriptor is CatalogDescriptor && replyData.subject.isNotNullNorEmpty()) {

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -55,6 +57,8 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -78,6 +82,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
@@ -90,6 +95,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -793,6 +800,103 @@ fun KurobaComposeTextFieldLabel(text: String) {
 
 @Composable
 fun KurobaComposeTextField(
+  value: TextFieldValue,
+  modifier: Modifier = Modifier,
+  onValueChange: (TextFieldValue) -> Unit,
+  maxLines: Int = Int.MAX_VALUE,
+  singleLine: Boolean = false,
+  keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+  keyboardActions: KeyboardActions = KeyboardActions(),
+  textStyle: TextStyle = LocalTextStyle.current,
+  visualTransformation: VisualTransformation = VisualTransformation.None,
+  enabled: Boolean = true,
+  readOnly: Boolean = false,
+  isError: Boolean = false,
+  shape: Shape = TextFieldDefaults.TextFieldShape,
+  label: @Composable (() -> Unit)? = null,
+  placeholder: @Composable (() -> Unit)? = null,
+  leadingIcon: @Composable (() -> Unit)? = null,
+  trailingIcon: @Composable (() -> Unit)? = null,
+  interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+) {
+  val chanTheme = LocalChanTheme.current
+  val view = LocalView.current
+
+  DisposableEffect(
+    key1 = view,
+    effect = {
+      if (view.isAttachedToWindow) {
+        view.requestApplyInsets()
+      }
+
+      onDispose {
+        if (view.isAttachedToWindow) {
+          view.requestApplyInsets()
+        }
+      }
+    }
+  )
+
+  val textSelectionColors = remember(key1 = chanTheme.accentColor) {
+    TextSelectionColors(
+      handleColor = Color.Transparent,
+      backgroundColor = chanTheme.accentColor.copy(alpha = 0.4f)
+    )
+  }
+
+  CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
+    val colors = chanTheme.textFieldColors()
+
+    // If color is not provided via the text style, use content color as a default
+    val textColor = textStyle.color.takeOrElse {
+      colors.textColor(enabled).value
+    }
+    val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
+
+    @OptIn(ExperimentalMaterialApi::class)
+    BasicTextField(
+      value = value,
+      modifier = modifier
+        .background(colors.backgroundColor(enabled).value, shape)
+        .indicatorLine(enabled, isError, interactionSource, colors)
+        .defaultMinSize(
+          minWidth = TextFieldDefaults.MinWidth,
+          minHeight = TextFieldDefaults.MinHeight
+        ),
+      onValueChange = onValueChange,
+      enabled = enabled,
+      readOnly = readOnly,
+      textStyle = mergedTextStyle,
+      cursorBrush = SolidColor(colors.cursorColor(isError).value),
+      visualTransformation = visualTransformation,
+      keyboardOptions = keyboardOptions,
+      keyboardActions = keyboardActions,
+      interactionSource = interactionSource,
+      singleLine = singleLine,
+      maxLines = maxLines,
+      decorationBox = @Composable { innerTextField ->
+        TextFieldDefaults.TextFieldDecorationBox(
+          value = value.text,
+          visualTransformation = visualTransformation,
+          innerTextField = innerTextField,
+          placeholder = placeholder,
+          label = label,
+          leadingIcon = leadingIcon,
+          trailingIcon = trailingIcon,
+          singleLine = singleLine,
+          enabled = enabled,
+          isError = isError,
+          interactionSource = interactionSource,
+          colors = colors,
+          contentPadding = remember { PaddingValues(4.dp) }
+        )
+      }
+    )
+  }
+}
+
+@Composable
+fun KurobaComposeTextField(
   value: String,
   modifier: Modifier = Modifier,
   onValueChange: (String) -> Unit,
@@ -801,6 +905,7 @@ fun KurobaComposeTextField(
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
   keyboardActions: KeyboardActions = KeyboardActions(),
   textStyle: TextStyle = LocalTextStyle.current,
+  visualTransformation: VisualTransformation = VisualTransformation.None,
   enabled: Boolean = true,
   label: @Composable (() -> Unit)? = null
 ) {
@@ -838,6 +943,7 @@ fun KurobaComposeTextField(
       onValueChange = onValueChange,
       maxLines = maxLines,
       singleLine = singleLine,
+      visualTransformation = visualTransformation,
       keyboardOptions = keyboardOptions,
       keyboardActions = keyboardActions,
       colors = chanTheme.textFieldColors(),

@@ -1,8 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Column
@@ -14,6 +16,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.ContentAlpha
+import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -120,38 +123,14 @@ fun KurobaComposeCustomTextField(
     labelTextBottomOffset = labelTextBottomOffset,
     maxTextLength = maxTextLength,
     labelTextContent = {
-      val isFocused by interactionSource.collectIsFocusedAsState()
-
-      AnimatedVisibility(
-        visible = !enabled || (!isFocused && localInput.text.isEmpty()),
-        enter = fadeIn(),
-        exit = fadeOut()
-      ) {
-        val alpha = if (enabled) {
-          ContentAlpha.medium
-        } else {
-          ContentAlpha.disabled
-        }
-
-        val hintColor = remember(key1 = parentBackgroundColor, key2 = alpha) {
-          if (parentBackgroundColor.isUnspecified) {
-            Color.DarkGray.copy(alpha = alpha)
-          } else {
-            if (ThemeEngine.isDarkColor(parentBackgroundColor)) {
-              Color.LightGray.copy(alpha = alpha)
-            } else {
-              Color.DarkGray.copy(alpha = alpha)
-            }
-          }
-        }
-
-        Text(
-          modifier = Modifier.padding(textFieldPadding),
-          text = labelText!!,
-          fontSize = fontSize,
-          color = hintColor
-        )
-      }
+      KurobaCustomLabelText(
+        enabled = enabled,
+        inputText = localInput.text,
+        labelText = labelText,
+        fontSize = fontSize,
+        parentBackgroundColor = parentBackgroundColor,
+        interactionSource = interactionSource,
+      )
     },
     textFieldContent = {
       CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
@@ -198,6 +177,52 @@ fun KurobaComposeCustomTextField(
       }
     }
   )
+}
+
+@Composable
+private fun KurobaCustomLabelText(
+  enabled: Boolean,
+  inputText: String,
+  labelText: String?,
+  fontSize: TextUnit,
+  parentBackgroundColor: Color = Color.Unspecified,
+  interactionSource: InteractionSource
+) {
+  if (labelText == null) {
+    return
+  }
+
+  val isFocused by interactionSource.collectIsFocusedAsState()
+
+  AnimatedVisibility(
+    visible = !enabled || (!isFocused && inputText.isEmpty()),
+    enter = fadeIn(),
+    exit = fadeOut()
+  ) {
+    val alpha = if (enabled) {
+      ContentAlpha.medium
+    } else {
+      ContentAlpha.disabled
+    }
+
+    val hintColor = remember(key1 = parentBackgroundColor, key2 = alpha, key3 = isFocused) {
+      if (parentBackgroundColor.isUnspecified) {
+        return@remember Color.DarkGray.copy(alpha = alpha)
+      }
+
+      return@remember if (ThemeEngine.isDarkColor(parentBackgroundColor)) {
+        Color.LightGray.copy(alpha = alpha)
+      } else {
+        Color.DarkGray.copy(alpha = alpha)
+      }
+    }
+
+    Text(
+      text = labelText,
+      fontSize = fontSize,
+      color = hintColor
+    )
+  }
 }
 
 @Composable
@@ -333,5 +358,58 @@ private fun Modifier.drawIndicatorLine(
     } else {
       drawFunc()
     }
+  }
+}
+
+@Composable
+fun KurobaLabelText(
+  enabled: Boolean,
+  labelText: String?,
+  fontSize: TextUnit,
+  parentBackgroundColor: Color = Color.Unspecified,
+  interactionSource: InteractionSource
+) {
+  if (labelText == null) {
+    return
+  }
+
+  val isFocused by interactionSource.collectIsFocusedAsState()
+
+  AnimatedVisibility(
+    visible = true,
+    enter = fadeIn(),
+    exit = fadeOut()
+  ) {
+    val alpha = if (enabled) {
+      ContentAlpha.medium
+    } else {
+      ContentAlpha.disabled
+    }
+
+    val contentColor = LocalContentColor.current
+
+    val hintColor = remember(parentBackgroundColor, alpha, isFocused) {
+      if (isFocused && enabled) {
+        return@remember contentColor.copy(alpha = alpha)
+      }
+
+      if (parentBackgroundColor.isUnspecified) {
+        return@remember Color.DarkGray.copy(alpha = alpha)
+      }
+
+      return@remember if (ThemeEngine.isDarkColor(parentBackgroundColor)) {
+        Color.LightGray.copy(alpha = alpha)
+      } else {
+        Color.DarkGray.copy(alpha = alpha)
+      }
+    }
+
+    val hintColorAnimated by animateColorAsState(targetValue = hintColor)
+
+    Text(
+      text = labelText,
+      fontSize = fontSize,
+      color = hintColorAnimated
+    )
   }
 }

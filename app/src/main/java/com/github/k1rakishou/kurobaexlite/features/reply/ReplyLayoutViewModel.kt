@@ -23,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.managers.Captcha
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -233,6 +234,7 @@ class ReplyLayoutViewModel(
           .catch { error -> emit(ReplyEvent.Error(error)) }
           .collect { replyEvent ->
             processReplyEvents(
+              replyData = replyData,
               replyEvent = replyEvent,
               replyLayoutState = replyLayoutState,
               screenKey = screenKey,
@@ -432,6 +434,7 @@ class ReplyLayoutViewModel(
   }
 
   private suspend fun processReplyEvents(
+    replyData: ReplyData,
     replyEvent: ReplyEvent,
     replyLayoutState: ReplyLayoutState,
     screenKey: ScreenKey,

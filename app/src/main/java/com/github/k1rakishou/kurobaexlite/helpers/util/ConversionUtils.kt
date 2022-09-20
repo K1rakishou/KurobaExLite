@@ -1,10 +1,24 @@
 package com.github.k1rakishou.kurobaexlite.helpers.util
 
 import android.graphics.Color
+import java.util.Locale
 import okhttp3.internal.and
 
 
 object ConversionUtils {
+  private val HEX_ARRAY = "0123456789ABCDEF".lowercase(Locale.ENGLISH).toCharArray()
+
+  fun bytesToHex(bytes: ByteArray): String {
+    val result = CharArray(bytes.size * 2)
+    var c = 0
+
+    for (b in bytes) {
+      result[c++] = HEX_ARRAY[b.toInt() shr 4 and 0xf]
+      result[c++] = HEX_ARRAY[b.toInt() and 0xf]
+    }
+
+    return String(result)
+  }
 
   @JvmStatic
   fun intToByteArray(value: Int): ByteArray {

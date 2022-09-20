@@ -96,10 +96,8 @@ abstract class ChanTheme {
   fun textFieldColors(): TextFieldColors {
     val disabledAlpha = ContentAlpha.disabled
 
-    val backColorDisabled =
-      remember(key1 = backColor) { backColor.copy(alpha = disabledAlpha) }
-    val iconColor =
-      remember(key1 = backColor) { backColor.copy(alpha = TextFieldDefaults.IconOpacity) }
+    val backColorDisabled = remember(key1 = backColor) { backColor.copy(alpha = disabledAlpha) }
+    val iconColor = remember(key1 = backColor) { backColor.copy(alpha = TextFieldDefaults.IconOpacity) }
 
     return TextFieldDefaults.outlinedTextFieldColors(
       textColor = textColorPrimary,
