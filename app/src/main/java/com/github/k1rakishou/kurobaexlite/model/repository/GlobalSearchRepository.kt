@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.model.repoository
+package com.github.k1rakishou.kurobaexlite.model.repository
 
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage

@@ -50,17 +50,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.RemoteImageSearchSettings
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddToHistoryAllCatalogThreads
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmarks
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ExtractRepliesToMyPosts
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.PersistBookmarks
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdateBookmarkInfoUponThreadOpen
-import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.*
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.CatalogGlobalSearch
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
@@ -73,30 +63,12 @@ import com.github.k1rakishou.kurobaexlite.interactors.navigation.PersistNavigati
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
-import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
-import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
-import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
-import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
-import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
-import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
-import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
-import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
-import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
-import com.github.k1rakishou.kurobaexlite.managers.ISiteManager
-import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
-import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
-import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
-import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
-import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
-import com.github.k1rakishou.kurobaexlite.managers.ReportManager
-import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
+import com.github.k1rakishou.kurobaexlite.managers.*
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
-import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
-import com.github.k1rakishou.kurobaexlite.model.repoository.GlobalSearchRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.GlobalSearchRepository
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityIntentHandler
@@ -104,11 +76,11 @@ import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainerViewModel
 import com.squareup.moshi.Moshi
-import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import java.io.File
 
 object DependencyGraph {
 

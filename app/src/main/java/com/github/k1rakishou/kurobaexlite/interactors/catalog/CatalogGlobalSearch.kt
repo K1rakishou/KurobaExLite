@@ -9,7 +9,7 @@ import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.repoository.GlobalSearchRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.GlobalSearchRepository
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers

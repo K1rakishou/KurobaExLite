@@ -6,15 +6,15 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
-import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
 import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.JsonEncodingException
+import org.apache.http.conn.ConnectTimeoutException
 import java.net.SocketException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.CancellationException
 import javax.net.ssl.SSLException
-import org.apache.http.conn.ConnectTimeoutException
 
 data class ThreadStatusCellData(
   val totalReplies: Int = 0,

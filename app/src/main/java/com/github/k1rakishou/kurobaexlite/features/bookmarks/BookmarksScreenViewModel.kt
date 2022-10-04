@@ -21,7 +21,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookma
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkUi
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -82,7 +82,10 @@ class BookmarksScreenViewModel(
     }
   }
 
-  fun deleteBookmark(threadDescriptor: ThreadDescriptor, onBookmarkDeleted: (ThreadBookmark, Int) -> Unit) {
+  fun deleteBookmark(
+    threadDescriptor: ThreadDescriptor,
+    onBookmarkDeleted: (ThreadBookmark, Int) -> Unit
+  ) {
     viewModelScope.launch {
       val oldPosition = _bookmarksList
         .indexOfFirst { threadBookmarkUi -> threadBookmarkUi.threadDescriptor == threadDescriptor }

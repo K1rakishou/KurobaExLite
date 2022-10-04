@@ -5,7 +5,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.model.repoository.CatalogPagesRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
 import org.joda.time.DateTime
 
 @Stable
