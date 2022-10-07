@@ -168,7 +168,7 @@ class CatalogScreen(
   private val replyToolbar: KurobaChildToolbar by lazy {
     CatalogScreenReplyToolbar(
       threadScreenViewModel = threadScreenViewModel,
-      closeReplyLayout = { replyLayoutState.onBackPressed() },
+      closeReplyLayout = { replyLayoutState.collapseReplyLayout() },
       pickLocalFile = {
         val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
           ?: return@CatalogScreenReplyToolbar

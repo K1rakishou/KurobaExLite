@@ -28,8 +28,8 @@ open class NavigationRouter(
   protected val childRouters = linkedMapOf<ScreenKey, NavigationRouter>()
   protected val removingScreens = mutableSetOf<ScreenKey>()
 
-  fun navigationScreensStackExcept(thisScreen: ComposeScreen): List<ComposeScreen> {
-    return navigationScreensStack.filter { screen -> screen.screenKey != thisScreen.screenKey }
+  fun navigationScreensStackExcept(composeScreen: ComposeScreen): List<ComposeScreen> {
+    return navigationScreensStack.filter { screen -> screen.screenKey != composeScreen.screenKey }
   }
 
   open fun screenExistsInThisRouter(screenKey: ScreenKey): Boolean {

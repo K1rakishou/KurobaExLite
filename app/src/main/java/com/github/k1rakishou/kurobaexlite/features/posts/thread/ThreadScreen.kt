@@ -142,7 +142,7 @@ class ThreadScreen(
   private val replyToolbar: KurobaChildToolbar by lazy {
     ThreadScreenReplyToolbar(
       threadScreenViewModel = threadScreenViewModel,
-      closeReplyLayout = { replyLayoutState.onBackPressed() },
+      closeReplyLayout = { replyLayoutState.collapseReplyLayout() },
       pickLocalFile = {
         val threadDescriptor = threadScreenViewModel.threadDescriptor
           ?: return@ThreadScreenReplyToolbar
