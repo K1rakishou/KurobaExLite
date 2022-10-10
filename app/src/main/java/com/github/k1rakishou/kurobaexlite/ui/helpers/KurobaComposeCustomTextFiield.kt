@@ -118,6 +118,7 @@ fun KurobaComposeCustomTextField(
   var localInput by remember { mutableStateOf(value) }
 
   KurobaComposeCustomTextFieldInternal(
+    singleLine = singleLine,
     labelText = labelText,
     labelTextBottomOffset = labelTextBottomOffset,
     maxTextLength = maxTextLength,
@@ -217,6 +218,7 @@ private fun KurobaCustomLabelText(
     }
 
     Text(
+      modifier = Modifier.padding(horizontal = 4.dp),
       text = labelText,
       fontSize = fontSize,
       color = hintColor
@@ -229,6 +231,7 @@ private fun KurobaComposeCustomTextFieldInternal(
   labelText: String?,
   labelTextBottomOffset: Dp,
   maxTextLength: Int,
+  singleLine: Boolean,
   labelTextContent: @Composable () -> Unit,
   textFieldContent: @Composable () -> Unit,
   textCounterContent: @Composable () -> Unit
@@ -308,7 +311,10 @@ private fun KurobaComposeCustomTextFieldInternal(
 
           when (index) {
             labelTextSlotId -> {
-              if (maxHeight > placeable.height + labelTextBottomOffsetPx) {
+              if (singleLine) {
+                val y = (maxHeight - placeable.height) / 2
+                placeable.placeRelative(0, y)
+              } else if (maxHeight > placeable.height + labelTextBottomOffsetPx) {
                 val y = maxHeight - (placeable.height + labelTextBottomOffsetPx)
                 placeable.placeRelative(0, y)
               } else {
