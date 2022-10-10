@@ -67,7 +67,12 @@ fun ReplyAttachments(
       .then(additionalModifier)
   ) {
     val mediaHeight = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) 120.dp else 80.dp
-    val mediaWidth = (this.maxWidth - paddings) / 2
+
+    val mediaWidth = if (this.maxWidth > 250.dp) {
+      (this.maxWidth - paddings) / 2
+    } else {
+      this.maxWidth
+    }
 
     FlowRow(
       modifier = Modifier.fillMaxSize(),

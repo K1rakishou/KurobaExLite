@@ -244,13 +244,12 @@ private suspend fun handleDragStop(
   }
 
   try {
-    val start = lastDragPosition
     val target = anchors[newReplyLayoutVisibility]!!
-    var prevValue = start
+    var prevValue = lastDragPosition
 
     draggableState.drag(dragPriority = MutatePriority.PreventUserInput) {
       Animatable<Int, AnimationVector1D>(
-        initialValue = start,
+        initialValue = lastDragPosition,
         typeConverter = Int.VectorConverter,
         visibilityThreshold = 1
       ).animateTo(targetValue = target, initialVelocity = velocity.toInt()) {
