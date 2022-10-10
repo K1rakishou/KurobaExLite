@@ -1,16 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -94,77 +89,27 @@ fun ReplyLayoutContainer(
   ReplyLayoutBottomSheet(
     replyLayoutState = replyLayoutState,
     chanTheme = chanTheme,
-    content = { targetHeight ->
+    content = { targetHeight, draggableState, onDragStarted, onDragStopped ->
       if (targetHeight > 0.dp) {
         KurobaComposeDivider(modifier = Modifier.fillMaxWidth())
       }
 
-      ReplyLayout(
-        replyLayoutHeight = targetHeight,
-        replyLayoutState = replyLayoutState,
-        onCancelReplySendClicked = { replyLayoutViewModel.cancelSendReply(replyLayoutState) },
-        onSendReplyClicked = { replyLayoutViewModel.sendReply(chanDescriptor, replyLayoutState) },
-        onAttachedMediaClicked = onAttachedMediaClicked,
-        onRemoveAttachedMediaClicked = { attachedMedia -> replyLayoutState.detachMedia(attachedMedia) }
-      )
-    }
-  )
-}
-
-@Composable
-private fun ReplyLayout(
-  replyLayoutHeight: Dp,
-  replyLayoutState: ReplyLayoutState,
-  onCancelReplySendClicked: () -> Unit,
-  onSendReplyClicked: () -> Unit,
-  onAttachedMediaClicked: (AttachedMedia) -> Unit,
-  onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
-) {
-  val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
-  val attachedMediaList = replyLayoutState.attachedMediaList
-
-  BoxWithConstraints(
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(replyLayoutHeight)
-  ) {
-    val density = LocalDensity.current
-
-    Column(modifier = Modifier.fillMaxSize()) {
-      val replyInputHeightPercentage = if (replyLayoutHeight >= 160.dp) {
-        when {
-          replyLayoutVisibility == ReplyLayoutVisibility.Collapsed -> 100f
-          attachedMediaList.isEmpty() -> 100f
-          else -> 70f
-        }
-      } else {
-        100f
-      }
-
-      val spacerHeight = 8.dp
-      val replyLayoutHeightExcludingSpacer = replyLayoutHeight - spacerHeight
-      val replyInputHeight = with(density) {
-        ((replyLayoutHeightExcludingSpacer.toPx() / 100f) * replyInputHeightPercentage).toDp()
-      }
-
-      ReplyInputWithButtons(
-        replyInputHeight = replyInputHeight,
-        replyLayoutState = replyLayoutState,
-        onCancelReplySendClicked = onCancelReplySendClicked,
-        onSendReplyClicked = onSendReplyClicked
-      )
-
-      val replyAttachmentsHeight = replyLayoutHeightExcludingSpacer - replyInputHeight
-      if (attachedMediaList.isNotEmpty() && replyAttachmentsHeight > 32.dp) {
-        Spacer(modifier = Modifier.height(spacerHeight))
-
-        ReplyAttachments(
-          replyAttachmentsHeight = replyAttachmentsHeight,
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(targetHeight)
+      ) {
+        ReplyLayoutContent(
           replyLayoutState = replyLayoutState,
+          draggableStateProvider = { draggableState },
+          onDragStarted = onDragStarted,
+          onDragStopped = onDragStopped,
+          onCancelReplySendClicked = { replyLayoutViewModel.cancelSendReply(replyLayoutState) },
+          onSendReplyClicked = { replyLayoutViewModel.sendReply(chanDescriptor, replyLayoutState) },
           onAttachedMediaClicked = onAttachedMediaClicked,
-          onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked,
+          onRemoveAttachedMediaClicked = { attachedMedia -> replyLayoutState.detachMedia(attachedMedia) }
         )
       }
     }
-  }
+  )
 }

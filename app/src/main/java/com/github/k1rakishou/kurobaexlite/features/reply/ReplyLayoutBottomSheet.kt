@@ -5,14 +5,25 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FixedThreshold
 import androidx.compose.material.ThresholdConfig
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -39,7 +50,7 @@ import kotlin.math.roundToInt
 fun ReplyLayoutBottomSheet(
   replyLayoutState: ReplyLayoutState,
   chanTheme: ChanTheme,
-  content: @Composable ColumnScope.(Dp) -> Unit
+  content: @Composable ColumnScope.(Dp, DraggableState, suspend () -> Unit, suspend (Float) -> Unit) -> Unit
 ) {
   val density = LocalDensity.current
   val windowInsets = LocalWindowInsets.current
@@ -105,7 +116,7 @@ fun ReplyLayoutBottomSheet(
     )
 
     LaunchedEffect(
-      key1 = Unit,
+      key1 = replyLayoutState,
       block = {
         val prevAnchors = mutableMapOf<ReplyLayoutVisibility, Int>()
 
@@ -157,57 +168,6 @@ fun ReplyLayoutBottomSheet(
     Column(
       modifier = Modifier
         .offset { IntOffset(x = 0, y = dragOffsetAnimatable.value) }
-        .draggable(
-          state = draggableState,
-          orientation = Orientation.Vertical,
-          onDragStarted = {
-            dragStartPositionY = dragOffsetAnimatable.value
-          },
-          onDragStopped = { velocity ->
-            val newReplyLayoutVisibility = keyByPosition(
-              density = density,
-              anchors = anchorsUpdated.value,
-              lastPosition = dragStartPositionY,
-              position = dragOffsetAnimatable.value,
-              threshold = threshold
-            )
-
-            dragStartPositionY = 0
-
-            if (currentReplyLayoutVisibility == newReplyLayoutVisibility) {
-              return@draggable
-            }
-
-            // Set the currentReplyLayoutVisibility to avoid playing the default collapse/expand
-            // animations since we will be playing a custom velocity-based one.
-            currentReplyLayoutVisibility = newReplyLayoutVisibility
-
-            when (newReplyLayoutVisibility) {
-              ReplyLayoutVisibility.Collapsed -> replyLayoutState.collapseReplyLayout()
-              ReplyLayoutVisibility.Opened -> replyLayoutState.openReplyLayout()
-              ReplyLayoutVisibility.Expanded -> replyLayoutState.expandReplyLayout()
-            }
-
-            try {
-              val start = lastDragPosition
-              val target = anchors[newReplyLayoutVisibility]!!
-              var prevValue = start
-
-              draggableState.drag(dragPriority = MutatePriority.PreventUserInput) {
-                Animatable<Int, AnimationVector1D>(
-                  initialValue = start,
-                  typeConverter = Int.VectorConverter,
-                  visibilityThreshold = 1
-                ).animateTo(targetValue = target, initialVelocity = velocity.toInt()) {
-                  dragBy(this.value.toFloat() - prevValue)
-                  prevValue = this.value
-                }
-              }
-            } catch (ignored: CancellationException) {
-              // no-op
-            }
-          }
-        )
         .fillMaxSize()
         .consumeClicks(enabled = replyLayoutVisibility.order > ReplyLayoutVisibility.Collapsed.order)
         .background(chanTheme.backColor)
@@ -223,8 +183,89 @@ fun ReplyLayoutBottomSheet(
           .toDp()
       }
 
-      content(targetReplyLayoutHeight)
+      content(
+        targetReplyLayoutHeight,
+        draggableState,
+        { dragStartPositionY = dragOffsetAnimatable.value },
+        { velocity ->
+          handleDragStop(
+            density = density,
+            anchorsUpdated = anchorsUpdated,
+            dragStartPositionY = dragStartPositionY,
+            currentReplyLayoutVisibility = currentReplyLayoutVisibility,
+            dragOffsetAnimatable = dragOffsetAnimatable,
+            threshold = threshold,
+            replyLayoutState = replyLayoutState,
+            lastDragPosition = lastDragPosition,
+            anchors = anchors,
+            draggableState = draggableState,
+            velocity = velocity,
+            updateDragStartPositionY = { dragStartPositionY = 0 },
+            updateReplyLayoutVisibility = { newReplyLayoutVisibility -> currentReplyLayoutVisibility = newReplyLayoutVisibility }
+          )
+        }
+      )
     }
+  }
+}
+
+@OptIn(ExperimentalMaterialApi::class)
+private suspend fun handleDragStop(
+  density: Density,
+  anchorsUpdated: State<Map<ReplyLayoutVisibility, Int>>,
+  dragStartPositionY: Int,
+  currentReplyLayoutVisibility: ReplyLayoutVisibility,
+  dragOffsetAnimatable: Animatable<Int, AnimationVector1D>,
+  threshold: FixedThreshold,
+  replyLayoutState: ReplyLayoutState,
+  lastDragPosition: Int,
+  anchors: Map<ReplyLayoutVisibility, Int>,
+  draggableState: DraggableState,
+  velocity: Float,
+  updateDragStartPositionY: () -> Unit,
+  updateReplyLayoutVisibility: (ReplyLayoutVisibility) -> Unit
+) {
+  val newReplyLayoutVisibility = keyByPosition(
+    density = density,
+    anchors = anchorsUpdated.value,
+    lastPosition = dragStartPositionY,
+    position = dragOffsetAnimatable.value,
+    threshold = threshold
+  )
+
+  updateDragStartPositionY()
+
+  if (currentReplyLayoutVisibility == newReplyLayoutVisibility) {
+    return
+  }
+
+  // Set the currentReplyLayoutVisibility to avoid playing the default collapse/expand
+  // animations since we will be playing a custom velocity-based one.
+  updateReplyLayoutVisibility(newReplyLayoutVisibility)
+
+  when (newReplyLayoutVisibility) {
+    ReplyLayoutVisibility.Collapsed -> replyLayoutState.collapseReplyLayout()
+    ReplyLayoutVisibility.Opened -> replyLayoutState.openReplyLayout()
+    ReplyLayoutVisibility.Expanded -> replyLayoutState.expandReplyLayout()
+  }
+
+  try {
+    val start = lastDragPosition
+    val target = anchors[newReplyLayoutVisibility]!!
+    var prevValue = start
+
+    draggableState.drag(dragPriority = MutatePriority.PreventUserInput) {
+      Animatable<Int, AnimationVector1D>(
+        initialValue = start,
+        typeConverter = Int.VectorConverter,
+        visibilityThreshold = 1
+      ).animateTo(targetValue = target, initialVelocity = velocity.toInt()) {
+        dragBy(this.value.toFloat() - prevValue)
+        prevValue = this.value
+      }
+    }
+  } catch (ignored: CancellationException) {
+    // no-op
   }
 }
 

@@ -16,7 +16,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.LocalContentColor
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -373,6 +372,7 @@ fun KurobaLabelText(
     return
   }
 
+  val chanTheme = LocalChanTheme.current
   val isFocused by interactionSource.collectIsFocusedAsState()
 
   AnimatedVisibility(
@@ -381,16 +381,14 @@ fun KurobaLabelText(
     exit = fadeOut()
   ) {
     val alpha = if (enabled) {
-      ContentAlpha.medium
+      ContentAlpha.high
     } else {
       ContentAlpha.disabled
     }
 
-    val contentColor = LocalContentColor.current
-
     val hintColor = remember(parentBackgroundColor, alpha, isFocused) {
       if (isFocused && enabled) {
-        return@remember contentColor.copy(alpha = alpha)
+        return@remember chanTheme.accentColor.copy(alpha = alpha)
       }
 
       if (parentBackgroundColor.isUnspecified) {

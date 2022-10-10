@@ -106,8 +106,8 @@ import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import java.util.Locale
 import kotlinx.coroutines.delay
+import java.util.*
 
 private val DefaultFillMaxSizeModifier: Modifier = Modifier.fillMaxSize()
 private val DefaultNoopClickCallback = { }
@@ -559,6 +559,8 @@ fun KurobaComposeTextBarButton(
     onClick = onClick,
     enabled = enabled,
     modifier = modifier,
+    elevation = null,
+    colors = chanTheme.barButtonColors(),
     content = {
       val textColor = customTextColor
         ?: chanTheme.textColorPrimary
@@ -579,8 +581,6 @@ fun KurobaComposeTextBarButton(
         fontSize = fontSize
       )
     },
-    elevation = null,
-    colors = chanTheme.barButtonColors()
   )
 }
 

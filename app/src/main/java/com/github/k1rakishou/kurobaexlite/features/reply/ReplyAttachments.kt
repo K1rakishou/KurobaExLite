@@ -2,16 +2,21 @@ package com.github.k1rakishou.kurobaexlite.features.reply
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,68 +34,65 @@ import coil.request.videoFrameMillis
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
+import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import kotlin.math.roundToInt
 
 private const val COIL_FAILED_TO_DECODE_FRAME_ERROR_MSG =
   "Often this means BitmapFactory could not decode the image data read from the input source"
 
 @Composable
 fun ReplyAttachments(
-  replyAttachmentsHeight: Dp,
   replyLayoutState: ReplyLayoutState,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
   onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
 ) {
-  val density = LocalDensity.current
-
   val paddings = 8.dp
   val attachedMediaList = replyLayoutState.attachedMediaList
+  val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
 
-  val mediaHeight = with(density) {
-    when {
-      replyAttachmentsHeight > 120.dp -> 120.dp
-      replyAttachmentsHeight > 80.dp -> 80.dp
-      else -> {
-        replyAttachmentsHeight
-          .toPx()
-          // Quantize to avoid unnecessary re-measures/re-layouts/re-compositions when
-          // the amount of pixels the reply layout moved is less than 2dp
-          .quantize(2.dp.toPx())
-          .roundToInt()
-          .toDp()
+  val additionalModifier = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) {
+    Modifier.wrapContentHeight()
+  } else {
+    val scrollState = rememberScrollState()
+
+    Modifier
+      .height(90.dp)
+      .verticalScroll(state = scrollState)
+  }
+
+  BoxWithConstraints(
+    modifier = Modifier
+      .fillMaxWidth()
+      .then(additionalModifier)
+  ) {
+    val mediaHeight = if (replyLayoutVisibility == ReplyLayoutVisibility.Expanded) 120.dp else 80.dp
+    val mediaWidth = (this.maxWidth - paddings) / 2
+
+    FlowRow(
+      modifier = Modifier.fillMaxSize(),
+      mainAxisSpacing = 2.dp,
+      crossAxisSpacing = 2.dp
+    ) {
+      attachedMediaList.forEach { attachedMedia ->
+        key(attachedMedia.path) {
+          AttachedMediaThumbnail(
+            mediaWidth = mediaWidth,
+            mediaHeight = mediaHeight,
+            paddings = paddings,
+            attachedMedia = attachedMedia,
+            onAttachedMediaClicked = onAttachedMediaClicked,
+            onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked
+          )
+        }
       }
     }
   }
-
-  LazyVerticalGrid(
-    modifier = Modifier
-      .fillMaxWidth()
-      .height(replyAttachmentsHeight),
-    columns = GridCells.Fixed(2),
-    content = {
-      attachedMediaList.forEach { attachedMedia ->
-        item(
-          key = attachedMedia.path,
-          content = {
-            AttachedMediaThumbnail(
-              mediaHeight = mediaHeight,
-              paddings = paddings,
-              attachedMedia = attachedMedia,
-              onAttachedMediaClicked = onAttachedMediaClicked,
-              onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked
-            )
-          }
-        )
-      }
-    }
-  )
 }
 
 @Composable
 private fun AttachedMediaThumbnail(
+  mediaWidth: Dp,
   mediaHeight: Dp,
   paddings: Dp,
   attachedMedia: AttachedMedia,
@@ -105,7 +107,7 @@ private fun AttachedMediaThumbnail(
 
   Box(
     modifier = Modifier
-      .fillMaxWidth()
+      .width(mediaWidth)
       .height(mediaHeight)
   ) {
     SubcomposeAsyncImage(
@@ -117,7 +119,7 @@ private fun AttachedMediaThumbnail(
         .data(attachedMediaFile)
         .crossfade(true)
         .size(mediaHeightPx)
-        .videoFrameMillis(1000L)
+        .videoFrameMillis(frameMillis = 1000L)
         .build(),
       contentDescription = null,
       contentScale = ContentScale.Crop,

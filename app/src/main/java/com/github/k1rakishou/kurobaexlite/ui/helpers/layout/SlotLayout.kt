@@ -7,7 +7,7 @@ import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.unit.Dp
-import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurableReturned
+import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurable
 
 @Composable
 fun SlotLayout(
@@ -57,7 +57,7 @@ fun SlotLayout(
         val measurable = subcompose(
           slotId = slot.key,
           content = { slot.content() }
-        ).ensureSingleMeasurableReturned()
+        ).ensureSingleMeasurable()
 
         measurables[index] = measurable
       }

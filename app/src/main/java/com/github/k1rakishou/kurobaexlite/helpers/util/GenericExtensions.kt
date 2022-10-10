@@ -11,6 +11,7 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
@@ -19,24 +20,6 @@ import com.github.k1rakishou.kurobaexlite.model.BypassException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
-import java.io.IOException
-import java.io.InterruptedIOException
-import java.io.Serializable
-import java.net.SocketTimeoutException
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
-import java.util.Locale
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.regex.Matcher
-import javax.net.ssl.SSLException
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.contract
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.floor
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -59,6 +42,24 @@ import okio.Buffer
 import okio.ByteString.Companion.decodeBase64
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.context.GlobalContext
+import java.io.IOException
+import java.io.InterruptedIOException
+import java.io.Serializable
+import java.net.SocketTimeoutException
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.util.*
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.regex.Matcher
+import javax.net.ssl.SSLException
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
 
 
 fun <T> CancellableContinuation<T>.resumeValueSafe(value: T) {
@@ -113,7 +114,7 @@ fun safeCapacity(initialCapacity: Int): Int {
   }
 }
 
-fun <T> List<T>.ensureSingleMeasurableReturned(): T {
+fun List<Measurable>.ensureSingleMeasurable(): Measurable {
   if (size != 1) {
     error(
       "Expected subcompose() to have only return a single measurable but got ${size} instead. " +

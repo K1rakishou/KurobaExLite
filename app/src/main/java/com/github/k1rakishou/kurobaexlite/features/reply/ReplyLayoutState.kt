@@ -23,10 +23,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.FormattingButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import java.io.File
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -39,6 +37,7 @@ import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import logcat.logcat
 import org.koin.core.context.GlobalContext
+import java.io.File
 
 @Stable
 interface IReplyLayoutState {
@@ -93,6 +92,9 @@ class ReplyLayoutState(
   private val globalUiInfoManager: GlobalUiInfoManager by lazy { GlobalContext.get().get() }
   private val siteManager: SiteManager by lazy { GlobalContext.get().get() }
   private val appResources: AppResources by lazy { GlobalContext.get().get() }
+
+  val isCatalogMode: Boolean
+    get() = chanDescriptor is CatalogDescriptor
 
   private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Collapsed)
   override val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
@@ -153,11 +155,7 @@ class ReplyLayoutState(
     get() = _replyFormattingButtons.asStateFlow()
 
   init {
-    when (chanDescriptor) {
-      is CatalogDescriptor -> bundle.putParcelable(chanDescriptorKey, chanDescriptor)
-      is ThreadDescriptor -> bundle.putParcelable(chanDescriptorKey, chanDescriptor)
-    }
-
+    bundle.putParcelable(chanDescriptorKey, chanDescriptor)
     restoreFromBundle()
     initReplyFormattingButtons()
   }
@@ -456,6 +454,24 @@ class ReplyLayoutState(
 
       onReplyTextChanged(textFieldValue)
     }
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as ReplyLayoutState
+
+    if (screenKey != other.screenKey) return false
+    if (chanDescriptor != other.chanDescriptor) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = screenKey.hashCode()
+    result = 31 * result + chanDescriptor.hashCode()
+    return result
   }
 
   data class ToastMessage(

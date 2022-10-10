@@ -172,7 +172,8 @@ class CrashReportActivity : ComponentActivity() {
         Box(
           modifier = Modifier
             .fillMaxWidth()
-            .wrapContentSize(), contentAlignment = Alignment.Center
+            .wrapContentSize(),
+          contentAlignment = Alignment.Center
         ) {
           KurobaComposeText(
             text = stringResource(id = R.string.crash_report_activity_title),
