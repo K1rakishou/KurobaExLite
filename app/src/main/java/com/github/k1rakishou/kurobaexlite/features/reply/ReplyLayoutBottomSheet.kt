@@ -192,8 +192,7 @@ fun ReplyLayoutBottomSheet(
             density = density,
             anchorsUpdated = anchorsUpdated,
             dragStartPositionY = dragStartPositionY,
-            currentReplyLayoutVisibility = currentReplyLayoutVisibility,
-            dragOffsetAnimatable = dragOffsetAnimatable,
+            currentPositionY = dragOffsetAnimatable.value,
             threshold = threshold,
             replyLayoutState = replyLayoutState,
             lastDragPosition = lastDragPosition,
@@ -214,8 +213,7 @@ private suspend fun handleDragStop(
   density: Density,
   anchorsUpdated: State<Map<ReplyLayoutVisibility, Int>>,
   dragStartPositionY: Int,
-  currentReplyLayoutVisibility: ReplyLayoutVisibility,
-  dragOffsetAnimatable: Animatable<Int, AnimationVector1D>,
+  currentPositionY: Int,
   threshold: FixedThreshold,
   replyLayoutState: ReplyLayoutState,
   lastDragPosition: Int,
@@ -229,15 +227,11 @@ private suspend fun handleDragStop(
     density = density,
     anchors = anchorsUpdated.value,
     lastPosition = dragStartPositionY,
-    position = dragOffsetAnimatable.value,
+    position = currentPositionY,
     threshold = threshold
   )
 
   updateDragStartPositionY()
-
-  if (currentReplyLayoutVisibility == newReplyLayoutVisibility) {
-    return
-  }
 
   // Set the currentReplyLayoutVisibility to avoid playing the default collapse/expand
   // animations since we will be playing a custom velocity-based one.
