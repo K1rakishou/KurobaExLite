@@ -24,7 +24,6 @@ import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
@@ -36,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 class AppSettingsScreenViewModel(
   @SuppressLint("StaticFieldLeak") private val appContext: Context,
@@ -137,15 +137,6 @@ class AppSettingsScreenViewModel(
         boolean(
           title = appResources.string(R.string.settings_screen_history_enabled),
           delegate = appSettings.historyEnabled
-        )
-
-        boolean(
-          title = appResources.string(R.string.settings_screen_history_on_left_side),
-          subtitleBuilder = {
-            append(appResources.string(R.string.settings_screen_history_on_left_side_description))
-          },
-          delegate = appSettings.historyScreenOnLeftSide,
-          dependencies = listOf(appSettings.historyEnabled)
         )
       }
     )

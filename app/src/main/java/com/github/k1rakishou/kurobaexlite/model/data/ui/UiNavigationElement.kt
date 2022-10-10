@@ -7,6 +7,8 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 
 @Immutable
 sealed class UiNavigationElement {
+  abstract fun matchesQuery(text: String): Boolean
+
   val key: Any
     get() = chanDescriptor
 
@@ -15,12 +17,24 @@ sealed class UiNavigationElement {
   data class Catalog(
     override val chanDescriptor: CatalogDescriptor,
     val iconUrl: String?
-  ) : UiNavigationElement()
+  ) : UiNavigationElement() {
+
+    override fun matchesQuery(text: String): Boolean {
+      return chanDescriptor.asReadableString().contains(text, ignoreCase = true)
+    }
+
+  }
 
   data class Thread(
     override val chanDescriptor: ThreadDescriptor,
     val title: String?,
     val iconUrl: String?
-  ) : UiNavigationElement()
+  ) : UiNavigationElement() {
+
+    override fun matchesQuery(text: String): Boolean {
+      return title?.contains(text, ignoreCase = true) ?: false
+    }
+
+  }
 
 }

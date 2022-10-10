@@ -43,7 +43,7 @@ class AppSettings(
 
   val layoutType by lazy { EnumSetting<LayoutType>(LayoutType.Auto, "layout_type", LayoutType::class.java, dataStore) }
   val historyEnabled by lazy { BooleanSetting(true, "history_enabled", dataStore) }
-  val historyScreenOnLeftSide by lazy { BooleanSetting(true, "history_screen_on_left_side", dataStore) }
+  val drawerContentType by lazy { EnumSetting(DrawerContentType.Bookmarks, "drawer_content_type", DrawerContentType::class.java, dataStore) }
 
   val textTitleSizeSp by lazy {
     val defaultValue = if (isTablet) 16 else 14
@@ -186,4 +186,10 @@ enum class CatalogSort(val orderName: String) {
       return BUMP != o
     }
   }
+}
+
+@Immutable
+enum class DrawerContentType {
+  History,
+  Bookmarks
 }

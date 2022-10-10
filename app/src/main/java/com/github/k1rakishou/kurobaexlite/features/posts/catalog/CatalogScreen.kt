@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.bookmarks.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.main.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams

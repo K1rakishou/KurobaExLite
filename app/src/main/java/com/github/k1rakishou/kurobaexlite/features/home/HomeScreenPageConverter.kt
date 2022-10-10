@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.home
 
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Stable
-import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreen
 import com.github.k1rakishou.kurobaexlite.features.home.pages.AbstractPage
 import com.github.k1rakishou.kurobaexlite.features.home.pages.SinglePage
 import com.github.k1rakishou.kurobaexlite.features.home.pages.SplitPage
@@ -20,13 +19,6 @@ class HomeScreenPageConverter(
   private val componentActivity: ComponentActivity,
   private val navigationRouter: NavigationRouter
 ) {
-  private val historyScreen by lazy {
-    ComposeScreen.createScreen<HistoryScreen>(
-      componentActivity = componentActivity,
-      navigationRouter = navigationRouter.childRouter(HistoryScreen.SCREEN_KEY)
-    )
-  }
-
   private val catalogScreen by lazy {
     ComposeScreen.createScreen<CatalogScreen>(
       componentActivity = componentActivity,
@@ -43,37 +35,19 @@ class HomeScreenPageConverter(
 
   fun convertScreensToPages(
     uiLayoutMode: MainUiLayoutMode,
-    historyEnabled: Boolean,
-    historyScreenOnLeftSide: Boolean,
   ): PagesWrapper {
     val pages = mutableListOf<AbstractPage<ComposeScreenWithToolbar<*>>>()
 
     when (uiLayoutMode) {
       MainUiLayoutMode.Phone -> {
-        if (historyEnabled && historyScreenOnLeftSide) {
-          pages += SinglePage.of(historyScreen)
-        }
-
         pages += SinglePage.of(catalogScreen)
         pages += SinglePage.of(threadScreen)
-
-        if (historyEnabled && !historyScreenOnLeftSide) {
-          pages += SinglePage.of(historyScreen)
-        }
       }
       MainUiLayoutMode.Split -> {
-        if (historyEnabled && historyScreenOnLeftSide) {
-          pages += SinglePage.of(historyScreen)
-        }
-
         pages += SplitPage.of(
           Pair(catalogScreen, GlobalUiInfoManager.CATALOG_SCREEN_WEIGHT),
           Pair(threadScreen, GlobalUiInfoManager.THREAD_SCREEN_WEIGHT)
         )
-
-        if (historyEnabled && !historyScreenOnLeftSide) {
-          pages += SinglePage.of(historyScreen)
-        }
       }
     }
 

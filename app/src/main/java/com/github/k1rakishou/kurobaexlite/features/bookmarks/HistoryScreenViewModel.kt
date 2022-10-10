@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.history
+package com.github.k1rakishou.kurobaexlite.features.bookmarks
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.viewModelScope

@@ -86,6 +86,9 @@
     <string name="downloading_file">Downloading file, this may take some time</string>
     <string name="loading_please_wait">Loading, please wait…</string>
 
+    <string name="type_to_search_bookmarks_hint">Type to search bookmarks</string>
+    <string name="type_to_search_history_hint">Type to search history</string>
+
     <string name="main_activity_press_back_again_to_exit">Press back again to exit the app</string>
     <string name="main_screen_view_model_failed_to_load_bookmarks_from_database">Failed to load bookmarks from database, error: \'%1$s\'</string>
 
@@ -207,6 +210,8 @@
 
     <string name="history_screen_toolbar_title">History</string>
     <string name="navigation_history_screen_removed_navigation_item_text">Removed history \'%1$s\'</string>
+    <string name="history_screen_no_history_added">No history added yet</string>
+    <string name="history_screen_nothing_found_by_query">No history found by query \'%1$s\'</string>
 
     <string name="thread_bookmarks_screen_removed_bookmark_item_text">Removed bookmark \'%1$s\'</string>
 
@@ -272,7 +277,7 @@
     <string name="bookmark_screen_failed_to_delete_inactive">Failed to deleted inactive bookmarks, error: \'%1$s\'</string>
     <string name="bookmark_screen_deleted_n_inactive">Deleted %1$d inactive bookmarks</string>
     <string name="bookmark_screen_no_inactive_to_delete">No inactive bookmarks found</string>
-    <string name="bookmark_screen_bookmarks_added">No bookmarks added yet</string>
+    <string name="bookmark_screen_no_bookmarks_added">No bookmarks added yet</string>
     <string name="bookmark_screen_found_by_query">No bookmarks found by query \'%1$s\'</string>
     <string name="bookmark_screen_prune_inactive_bookmarks_dialog">Prune inactive bookmarks?</string>
     <string name="bookmark_screen_prune_inactive_bookmarks_dialog_negative_button">Do not</string>
@@ -286,8 +291,6 @@
 
     <string name="settings_screen_history_group">History</string>
     <string name="settings_screen_history_enabled">Track navigation history</string>
-    <string name="settings_screen_history_on_left_side">History screen on left side</string>
-    <string name="settings_screen_history_on_left_side_description">When enabled, the history screen will be inserted as the first page (leftmost) of the ViewPager otherwise as the last page (rightmost)</string>
 
     <string name="settings_screen_ui_group">Interface</string>
     <string name="settings_screen_layout_mode">Layout mode</string>

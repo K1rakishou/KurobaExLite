@@ -68,8 +68,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDragGestureZone
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -80,6 +78,8 @@ import logcat.LogPriority
 import logcat.logcat
 import okhttp3.HttpUrl
 import org.koin.java.KoinJavaComponent.inject
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class HomeScreen(
   screenArgs: Bundle? = null,
@@ -281,20 +281,10 @@ private fun ContentInternal(
     showSiteFirewallBypassController = showSiteFirewallBypassController,
   )
 
-  val historyEnabled by globalUiInfoManager.historyEnabled.collectAsState()
-  val historyScreenOnLeftSide by globalUiInfoManager.historyScreenOnLeftSide.collectAsState()
   val currentScreenPage by globalUiInfoManager.currentPageFlow(mainUiLayoutMode).collectAsState()
 
-  val pagesWrapper = remember(
-    key1 = historyScreenOnLeftSide,
-    key2 = mainUiLayoutMode,
-    key3 = historyEnabled
-  ) {
-    return@remember homeScreenPageConverterProvider().convertScreensToPages(
-      uiLayoutMode = mainUiLayoutMode,
-      historyEnabled = historyEnabled,
-      historyScreenOnLeftSide = historyScreenOnLeftSide
-    )
+  val pagesWrapper = remember(key1 = mainUiLayoutMode) {
+    return@remember homeScreenPageConverterProvider().convertScreensToPages(mainUiLayoutMode)
   }
 
   val initialScreenIndexMut = remember(
@@ -365,8 +355,7 @@ private fun ContentInternal(
 
   LaunchedEffect(
     key1 = mainUiLayoutMode,
-    key2 = historyScreenOnLeftSide,
-    key3 = pageCount,
+    key2 = pageCount,
     block = {
       if (pageCount <= 0) {
         return@LaunchedEffect

@@ -1,9 +1,6 @@
-package com.github.k1rakishou.kurobaexlite.features.history
+package com.github.k1rakishou.kurobaexlite.features.bookmarks
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,25 +13,29 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImagePainter
@@ -44,15 +45,12 @@ import coil.request.ImageRequest
 import coil.size.Size
 import coil.transform.CircleCropTransformation
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreen.Companion.circleCropTransformation
-import com.github.k1rakishou.kurobaexlite.features.history.HistoryScreen.Companion.deleteNavElementIconWidth
-import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectTouches
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
@@ -60,162 +58,79 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
-import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.detectListScrollEvents
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
+import kotlin.time.Duration.Companion.milliseconds
 
-class HistoryScreen(
-  screenArgs: Bundle? = null,
-  componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter
-) : HomeNavigationScreen<SimpleToolbar<HistoryScreen.ToolbarIcons>>(screenArgs, componentActivity, navigationRouter) {
-  override val screenKey: ScreenKey = SCREEN_KEY
-  override val hasFab: Boolean = false
-  override val dragToCloseEnabledState: MutableState<Boolean> = mutableStateOf(false)
-  override val screenContentLoadedFlow: StateFlow<Boolean> by lazy { MutableStateFlow(true) }
+private const val TAG = "HistoryList"
+private val deleteNavElementIconWidth = 40.dp
+private val circleCropTransformation = CircleCropTransformation()
 
-  private val defaultToolbarKey = "${screenKey.key}_toolbar"
-  private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
-
-  private val defaultToolbarState by lazy {
-    SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
-      .titleId(R.string.history_screen_toolbar_title)
-      .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
-      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
-      .build(defaultToolbarStateKey)
-  }
-
-  override val defaultToolbar by lazy {
-    SimpleToolbar(
-      toolbarKey = defaultToolbarKey,
-      simpleToolbarState = defaultToolbarState
-    )
-  }
-
-  override val kurobaToolbarContainerState by lazy {
-    kurobaToolbarContainerViewModel.getOrCreate<SimpleToolbar<ToolbarIcons>>(screenKey)
-  }
-
-  @Composable
-  override fun Toolbar(boxScope: BoxScope) {
-    val coroutineScope = rememberCoroutineScope()
-
-    val historyScreenOnLeftSideMut by appSettings.historyScreenOnLeftSide.listen().collectAsState(initial = null)
-    val historyScreenOnLeftSideUpdated by rememberUpdatedState(newValue = historyScreenOnLeftSideMut)
-
-    ToolbarInternal(
-      defaultToolbarState = defaultToolbarState,
-      kurobaToolbarContainerState = kurobaToolbarContainerState,
-      screenKeyProvider = { screenKey },
-      onBackPressed = {
-        coroutineScope.launch {
-          if (!kurobaToolbarContainerState.onBackPressed()) {
-            if (historyScreenOnLeftSideUpdated == true) {
-              globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
-            } else {
-              globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
-            }
-          }
-        }
-      }
-    )
-  }
-
-  @Composable
-  override fun HomeNavigationScreenContent() {
-    ContentInternal(
-      screenKeyProvider = { screenKey }
-    )
-  }
-
-  enum class ContentType {
-    Catalog,
-    Thread
-  }
-
-  enum class SnackbarButton {
-    UndoNavHistoryDeletion
-  }
-
-  enum class ToolbarIcons {
-    Back,
-    Overflow
-  }
-
-  companion object {
-    internal const val TAG = "HistoryScreen"
-    val SCREEN_KEY = ScreenKey("HistoryScreen")
-
-    internal val deleteNavElementIconWidth = 40.dp
-    internal val circleCropTransformation = CircleCropTransformation()
-  }
-
-}
+private const val noHistoryAddedMessageItemKey = "no_history_added_message"
+private const val noHistoryFoundMessageItemKey = "no_history_found_message"
+private const val searchInputItemKey = "search_input"
 
 @Composable
-private fun ToolbarInternal(
-  defaultToolbarState: SimpleToolbarState<HistoryScreen.ToolbarIcons>,
-  kurobaToolbarContainerState: KurobaToolbarContainerState<SimpleToolbar<HistoryScreen.ToolbarIcons>>,
-  screenKeyProvider: () -> ScreenKey,
-  onBackPressed: () -> Unit
-) {
-  LaunchedEffect(
-    key1 = Unit,
-    block = {
-      defaultToolbarState.iconClickEvents.collect { icon ->
-        when (icon) {
-          HistoryScreen.ToolbarIcons.Back -> {
-            onBackPressed()
-          }
-          HistoryScreen.ToolbarIcons.Overflow -> {
-            // no-op
-          }
-        }
-      }
-    }
-  )
-
-  KurobaToolbarContainer(
-    toolbarContainerKey = screenKeyProvider().key,
-    kurobaToolbarContainerState = kurobaToolbarContainerState,
-    canProcessBackEvent = { true }
-  )
-}
-
-
-@Composable
-private fun ContentInternal(
-  screenKeyProvider: () -> ScreenKey
-) {
+fun HistoryList() {
   val windowInsets = LocalWindowInsets.current
   val context = LocalContext.current
 
   val historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel()
   val snackbarManager: SnackbarManager = koinRemember()
-  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
-  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-  val navigationHistoryList = historyScreenViewModel.navigationHistoryList
+  val navigationHistoryListBeforeFiltering = historyScreenViewModel.navigationHistoryList
   val lazyListState = rememberLazyListState()
+
+  val contentPadding = remember(key1 = windowInsets) {
+    PaddingValues(bottom = windowInsets.bottom)
+  }
+
+  var searchQuery by rememberSaveable(
+    key = "history_search_query",
+    stateSaver = TextFieldValue.Saver
+  ) { mutableStateOf<TextFieldValue>(TextFieldValue()) }
+
+  var navigationHistoryList by remember { mutableStateOf(navigationHistoryListBeforeFiltering) }
+  var isInSearchMode by remember { mutableStateOf(false) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      combine(
+        flow = snapshotFlow { navigationHistoryListBeforeFiltering },
+        flow2 = snapshotFlow { searchQuery },
+        transform = { a, b -> a to b }
+      ).collectLatest { (navigationHistory, query) ->
+        if (query.text.isEmpty()) {
+          Snapshot.withMutableSnapshot {
+            navigationHistoryList = navigationHistory
+            isInSearchMode = false
+          }
+
+          return@collectLatest
+        }
+
+        delay(250L)
+
+        val historyListAfterFiltering = navigationHistory
+          .filter { uiNavigationElement -> uiNavigationElement.matchesQuery(query.text) }
+
+        Snapshot.withMutableSnapshot {
+          navigationHistoryList = historyListAfterFiltering
+          isInSearchMode = true
+        }
+      }
+    })
 
   LaunchedEffect(
     key1 = Unit,
@@ -259,7 +174,7 @@ private fun ContentInternal(
               ),
               SnackbarContentItem.Spacer(space = 8.dp),
               SnackbarContentItem.Button(
-                key = HistoryScreen.SnackbarButton.UndoNavHistoryDeletion,
+                key = BookmarksScreen.HistorySnackbarButton.UndoNavHistoryDeletion,
                 text = context.getString(R.string.undo),
                 data = Pair(index, uiNavElement)
               ),
@@ -270,110 +185,90 @@ private fun ContentInternal(
       }
     })
 
-  LaunchedEffect(
-    key1 = Unit,
-    block = {
-      snackbarManager.snackbarElementsClickFlow.collectLatest { snackbarClickable ->
-        if (snackbarClickable.key !is HistoryScreen.SnackbarButton) {
-          return@collectLatest
-        }
-
-        when (snackbarClickable.key as HistoryScreen.SnackbarButton) {
-          HistoryScreen.SnackbarButton.UndoNavHistoryDeletion -> {
-            val pair = snackbarClickable.data as? Pair<Int, UiNavigationElement>
-              ?: return@collectLatest
-
-            val prevIndex = pair.first
-            val uiNavigationElement = pair.second
-
-            historyScreenViewModel.undoNavElementDeletion(prevIndex, uiNavigationElement)
-          }
-        }
-      }
-    })
-
-  val contentPadding = remember(key1 = windowInsets) {
-    PaddingValues(top = toolbarHeight + windowInsets.top, bottom = windowInsets.bottom)
-  }
-
   LazyColumnWithFastScroller(
-    lazyListContainerModifier = Modifier
-      .fillMaxSize()
-      .detectListScrollEvents(
-        token = "onHistoryListScrolled",
-        onListScrolled = { delta ->
-          globalUiInfoManager.onContentListScrolling(screenKeyProvider(), delta)
+    lazyListContainerModifier = Modifier.fillMaxSize(),
+    lazyListState = lazyListState,
+    contentPadding = contentPadding,
+    content = {
+      if (navigationHistoryList.isEmpty() && !isInSearchMode) {
+        item(
+          key = noHistoryAddedMessageItemKey,
+          contentType = noHistoryAddedMessageItemKey,
+          content = {
+            KurobaComposeText(
+              modifier = Modifier
+                .fillParentMaxSize()
+                .padding(8.dp),
+              text = stringResource(id = R.string.history_screen_no_history_added),
+              textAlign = TextAlign.Center,
+              fontSize = 16.sp
+            )
+          }
+        )
+      } else {
+        item(
+          key = searchInputItemKey,
+          contentType = searchInputItemKey,
+          content = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+              DrawerSearchInput(
+                modifier = Modifier
+                  .weight(1f)
+                  .wrapContentHeight(),
+                searchQuery = searchQuery,
+                searchingBookmarks = false,
+                onSearchQueryChanged = { query -> searchQuery = query },
+                onClearSearchQueryClicked = { searchQuery = TextFieldValue() }
+              )
 
-          detectTouchingTopOrBottomOfList(
-            lazyListState = lazyListState,
-            onListTouchingTopOrBottomStateChanged = { touching ->
-              globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(
-                screenKey = screenKeyProvider(),
-                touching = touching
+              Spacer(modifier = Modifier.width(8.dp))
+
+              DrawerContentTypeToggleIcon()
+
+              Spacer(modifier = Modifier.width(8.dp))
+            }
+          }
+        )
+
+        if (navigationHistoryList.isEmpty() && isInSearchMode) {
+          item(
+            key = noHistoryFoundMessageItemKey,
+            contentType = noHistoryFoundMessageItemKey,
+            content = {
+              KurobaComposeText(
+                modifier = Modifier
+                  .fillParentMaxSize()
+                  .padding(8.dp),
+                text = stringResource(id = R.string.history_screen_nothing_found_by_query, searchQuery.text),
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp
+              )
+            }
+          )
+        } else {
+          items(
+            count = navigationHistoryList.size,
+            key = { index -> navigationHistoryList[index].key },
+            contentType = { "history_item" },
+            itemContent = { index ->
+              val navigationElement = navigationHistoryList[index]
+
+              NavigationElement(
+                searchQuery = searchQuery.text,
+                navigationElement = navigationElement
               )
             }
           )
         }
-      )
-      .pointerInput(
-        key1 = Unit,
-        block = {
-          detectTouches { touching ->
-            globalUiInfoManager.onCurrentlyTouchingContentList(screenKeyProvider(), touching)
-          }
-        }
-      ),
-    onFastScrollerDragStateChanged = { dragging ->
-      globalUiInfoManager.onFastScrollerDragStateChanged(screenKeyProvider(), dragging)
-    },
-    lazyListState = lazyListState,
-    contentPadding = contentPadding,
-    content = {
-      items(
-        count = navigationHistoryList.size,
-        key = { index -> navigationHistoryList[index].key },
-        contentType = { index ->
-          return@items when (navigationHistoryList[index]) {
-            is UiNavigationElement.Catalog -> HistoryScreen.ContentType.Catalog
-            is UiNavigationElement.Thread -> HistoryScreen.ContentType.Thread
-          }
-        },
-        itemContent = { index ->
-          val navigationElement = navigationHistoryList[index]
-
-          NavigationElement(
-            navigationElement = navigationElement
-          )
-        }
-      )
+      }
     }
   )
-}
-
-private fun detectTouchingTopOrBottomOfList(
-  lazyListState: LazyListState,
-  onListTouchingTopOrBottomStateChanged: (Boolean) -> Unit
-) {
-  val firstVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()
-  val lastVisibleItem = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()
-  val maxAllowedOffset = 64
-
-  if (firstVisibleItem != null && lastVisibleItem != null) {
-    val firstVisibleItemIndex = firstVisibleItem.index
-    val firstVisibleItemOffset = firstVisibleItem.offset
-    val lastVisibleItemIndex = lastVisibleItem.index
-
-    val totalCount = lazyListState.layoutInfo.totalItemsCount
-    val touchingTop = firstVisibleItemIndex <= 0 && firstVisibleItemOffset in 0..maxAllowedOffset
-    val touchingBottom = lastVisibleItemIndex >= (totalCount - 1)
-
-    onListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
-  }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LazyItemScope.NavigationElement(
+  searchQuery: String,
   navigationElement: UiNavigationElement,
 ) {
   val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
@@ -388,6 +283,7 @@ private fun LazyItemScope.NavigationElement(
     when (navigationElement) {
       is UiNavigationElement.Catalog -> {
         CatalogNavigationElement(
+          searchQuery = searchQuery,
           navigationElement = navigationElement,
           onItemClicked = { element ->
             catalogScreenViewModel.loadCatalog(element.chanDescriptor)
@@ -401,6 +297,7 @@ private fun LazyItemScope.NavigationElement(
       }
       is UiNavigationElement.Thread -> {
         ThreadNavigationElement(
+          searchQuery = searchQuery,
           navigationElement = navigationElement,
           onItemClicked = { element ->
             threadScreenViewModel.loadThread(element.chanDescriptor)
@@ -418,10 +315,13 @@ private fun LazyItemScope.NavigationElement(
 
 @Composable
 private fun CatalogNavigationElement(
+  searchQuery: String,
   navigationElement: UiNavigationElement.Catalog,
   onItemClicked: (UiNavigationElement.Catalog) -> Unit,
   onRemoveClicked: (UiNavigationElement.Catalog) -> Unit
 ) {
+  val chanTheme = LocalChanTheme.current
+  val postCommentApplier = koinRemember<PostCommentApplier>()
 
   Row(
     modifier = Modifier
@@ -455,11 +355,30 @@ private fun CatalogNavigationElement(
       Spacer(modifier = Modifier.width(8.dp))
     }
 
-    val title = remember { navigationElement.chanDescriptor.asReadableString() }
+    val textFormatted = remember(key1 = searchQuery, key2 = chanTheme) {
+      val title = navigationElement.chanDescriptor.asReadableString()
+
+      return@remember buildAnnotatedString {
+        val titleFormatted = buildAnnotatedString { withStyle(SpanStyle(color = chanTheme.textColorPrimary)) { append(title) } }
+
+        if (searchQuery.isNotEmpty()) {
+          val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
+            chanTheme = chanTheme,
+            searchQuery = searchQuery,
+            minQueryLength = 2,
+            string = titleFormatted
+          )
+
+          append(titleFormattedWithSearchQuery)
+        } else {
+          append(titleFormatted)
+        }
+      }
+    }
 
     KurobaComposeText(
       modifier = Modifier.fillMaxWidth(),
-      text = title,
+      text = textFormatted,
       fontSize = 15.sp,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
@@ -469,10 +388,14 @@ private fun CatalogNavigationElement(
 
 @Composable
 private fun ThreadNavigationElement(
+  searchQuery: String,
   navigationElement: UiNavigationElement.Thread,
   onItemClicked: (UiNavigationElement.Thread) -> Unit,
   onRemoveClicked: (UiNavigationElement.Thread) -> Unit
 ) {
+  val chanTheme = LocalChanTheme.current
+  val postCommentApplier = koinRemember<PostCommentApplier>()
+
   Row(
     modifier = Modifier
       .fillMaxWidth()
@@ -505,17 +428,34 @@ private fun ThreadNavigationElement(
       Spacer(modifier = Modifier.width(8.dp))
     }
 
-    val title = remember {
-      if (navigationElement.title.isNullOrEmpty()) {
+    val textFormatted = remember(key1 = searchQuery, key2 = chanTheme) {
+      val title = if (navigationElement.title.isNullOrEmpty()) {
         navigationElement.chanDescriptor.asReadableString()
       } else {
         navigationElement.title
+      }
+
+      return@remember buildAnnotatedString {
+        val titleFormatted = buildAnnotatedString { withStyle(SpanStyle(color = chanTheme.textColorPrimary)) { append(title) } }
+
+        if (searchQuery.isNotEmpty()) {
+          val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
+            chanTheme = chanTheme,
+            searchQuery = searchQuery,
+            minQueryLength = 2,
+            string = titleFormatted
+          )
+
+          append(titleFormattedWithSearchQuery)
+        } else {
+          append(titleFormatted)
+        }
       }
     }
 
     KurobaComposeText(
       modifier = Modifier.fillMaxWidth(),
-      text = title,
+      text = textFormatted,
       fontSize = 15.sp,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
@@ -559,7 +499,7 @@ private fun NavigationIcon(
         val state = painter.state
 
         if (state is AsyncImagePainter.State.Error) {
-          logcatError(HistoryScreen.TAG) {
+          logcatError(TAG) {
             "NavigationIcon() url=${iconUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
           }
 

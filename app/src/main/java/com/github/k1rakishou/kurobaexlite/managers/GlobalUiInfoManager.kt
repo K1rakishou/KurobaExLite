@@ -127,10 +127,6 @@ class GlobalUiInfoManager(
   private val _historyEnabled = MutableStateFlow(true)
   val historyEnabled: StateFlow<Boolean>
     get() = _historyEnabled.asStateFlow()
-
-  private val _historyScreenOnLeftSide = MutableStateFlow(false)
-  val historyScreenOnLeftSide: StateFlow<Boolean>
-    get() = _historyScreenOnLeftSide.asStateFlow()
   // ^^^ Settings
 
   override val saveableComponentKey: String = SAVE_STATE_KEY
@@ -214,7 +210,6 @@ class GlobalUiInfoManager(
     _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
     _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
     _historyEnabled.value = appSettings.historyEnabled.read()
-    _historyScreenOnLeftSide.value = appSettings.historyScreenOnLeftSide.read()
 
     coroutineScope.launch {
       appSettings.textTitleSizeSp.listen()
@@ -249,11 +244,6 @@ class GlobalUiInfoManager(
     coroutineScope.launch {
       appSettings.postCellSubjectTextSizeSp.listen()
         .collectLatest { value -> _postCellSubjectTextSizeSp.value = value.sp }
-    }
-
-    coroutineScope.launch {
-      appSettings.historyScreenOnLeftSide.listen()
-        .collectLatest { value -> _historyScreenOnLeftSide.value = value }
     }
 
     coroutineScope.launch {
