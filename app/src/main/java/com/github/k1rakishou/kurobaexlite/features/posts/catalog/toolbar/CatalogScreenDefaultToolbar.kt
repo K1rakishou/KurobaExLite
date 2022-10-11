@@ -149,8 +149,8 @@ class CatalogScreenDefaultToolbar(
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
                   )
                 }
 

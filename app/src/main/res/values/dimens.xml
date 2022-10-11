@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="toolbar_height">40dp</dimen>
+    <dimen name="toolbar_height">48dp</dimen>
 
     <dimen name="reply_layout_container_opened_height_no_attachments">180dp</dimen>
     <dimen name="reply_layout_container_opened_height_with_attachments">250dp</dimen>
