@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,7 +59,6 @@ import androidx.compose.material.Switch
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
-import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -106,6 +106,7 @@ import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawIndicatorLine
 import kotlinx.coroutines.delay
 import java.util.*
 
@@ -853,12 +854,19 @@ fun KurobaComposeTextField(
     }
     val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
 
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
     @OptIn(ExperimentalMaterialApi::class)
     BasicTextField(
       value = value,
       modifier = modifier
         .background(colors.backgroundColor(enabled).value, shape)
-        .indicatorLine(enabled, isError, interactionSource, colors)
+        .drawIndicatorLine(
+          enabled = enabled,
+          isError = isError,
+          isFocused = isFocused,
+          lineWidth = 2.dp
+        )
         .defaultMinSize(
           minWidth = TextFieldDefaults.MinWidth,
           minHeight = TextFieldDefaults.MinHeight

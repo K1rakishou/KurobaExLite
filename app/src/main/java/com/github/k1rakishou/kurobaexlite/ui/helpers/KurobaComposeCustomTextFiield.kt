@@ -24,11 +24,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.Placeable
@@ -41,9 +38,9 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawIndicatorLine
 
 @Composable
 fun KurobaComposeCustomTextField(
@@ -66,7 +63,6 @@ fun KurobaComposeCustomTextField(
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
   val chanTheme = LocalChanTheme.current
-  val textFieldColors = chanTheme.textFieldColors()
   val cursorBrush = remember(key1 = chanTheme) { SolidColor(chanTheme.accentColor) }
   val lineTotalHeight = if (drawBottomIndicator) 4.dp else 0.dp
   val labelTextBottomOffset = if (drawBottomIndicator) 2.dp else 0.dp
@@ -93,14 +89,12 @@ fun KurobaComposeCustomTextField(
   }
 
   val indicatorLineModifier = if (drawBottomIndicator) {
-    val indicatorColorState = textFieldColors.indicatorColor(
-      enabled = enabled,
-      isError = false,
-      interactionSource = interactionSource
-    )
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     Modifier.drawIndicatorLine(
-      color = indicatorColorState.value,
+      enabled = enabled,
+      isError = false,
+      isFocused = isFocused,
       lineWidth = 2.dp,
       verticalOffset = 2.dp
     )
@@ -336,34 +330,6 @@ private fun KurobaComposeCustomTextFieldInternal(
       }
     }
   )
-}
-
-private fun Modifier.drawIndicatorLine(
-  color: Color,
-  lineWidth: Dp = 1.dp,
-  verticalOffset: Dp = Dp.Unspecified
-): Modifier {
-  return drawBehind {
-    val strokeWidth = lineWidth.value * density
-    val y = size.height - strokeWidth / 2
-
-    val drawFunc = {
-      drawLine(
-        color,
-        Offset(0f, y),
-        Offset(size.width, y),
-        strokeWidth
-      )
-    }
-
-    if (verticalOffset.isSpecified) {
-      translate(top = verticalOffset.toPx()) {
-        drawFunc()
-      }
-    } else {
-      drawFunc()
-    }
-  }
 }
 
 @Composable
