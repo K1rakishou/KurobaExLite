@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FixedThreshold
+import androidx.compose.material.SwipeableDefaults
 import androidx.compose.material.ThresholdConfig
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -108,9 +109,9 @@ fun ReplyLayoutBottomSheet(
       onDelta = { dragged ->
         val prevDragOffset = dragOffsetAnimatable.value
         val newDragOffset = (prevDragOffset + dragged).quantize(1f)
-        val target = newDragOffset.toInt()
-        lastDragPosition = target
+        val target = newDragOffset.toInt().coerceIn(minPositionY, maxPositionY)
 
+        lastDragPosition = target
         dragRequests.tryEmit(DragRequest.Snap(target))
       }
     )
@@ -188,7 +189,7 @@ fun ReplyLayoutBottomSheet(
         draggableState,
         { dragStartPositionY = dragOffsetAnimatable.value },
         { velocity ->
-          handleDragStop(
+          performFling(
             density = density,
             anchorsUpdated = anchorsUpdated,
             dragStartPositionY = dragStartPositionY,
@@ -209,7 +210,7 @@ fun ReplyLayoutBottomSheet(
 }
 
 @OptIn(ExperimentalMaterialApi::class)
-private suspend fun handleDragStop(
+private suspend fun performFling(
   density: Density,
   anchorsUpdated: State<Map<ReplyLayoutVisibility, Int>>,
   dragStartPositionY: Int,
@@ -228,7 +229,8 @@ private suspend fun handleDragStop(
     anchors = anchorsUpdated.value,
     lastPosition = dragStartPositionY,
     position = currentPositionY,
-    threshold = threshold
+    threshold = threshold,
+    velocity = velocity
   )
 
   updateDragStartPositionY()
@@ -252,7 +254,7 @@ private suspend fun handleDragStop(
         initialValue = lastDragPosition,
         typeConverter = Int.VectorConverter,
         visibilityThreshold = 1
-      ).animateTo(targetValue = target, initialVelocity = velocity.toInt()) {
+      ).animateTo(targetValue = target) {
         dragBy(this.value.toFloat() - prevValue)
         prevValue = this.value
       }
@@ -269,12 +271,15 @@ private fun keyByPosition(
   lastPosition: Int,
   position: Int,
   threshold: ThresholdConfig,
+  velocity: Float
 ): ReplyLayoutVisibility {
   val targetValue = computeTarget(
     offset = position,
     lastValue = lastPosition,
     anchors = anchors.values,
-    thresholds = { a, b -> with(threshold) { density.computeThreshold(a.toFloat(), b.toFloat()) } }
+    thresholds = { a, b -> with(threshold) { density.computeThreshold(a.toFloat(), b.toFloat()) } },
+    velocity = velocity,
+    velocityThreshold = with(density) { SwipeableDefaults.VelocityThreshold.toPx() }
   )
 
   val targetReplyLayoutVisibility = anchors.entries
@@ -289,7 +294,9 @@ private fun computeTarget(
   offset: Int,
   lastValue: Int,
   anchors: Collection<Int>,
-  thresholds: (Int, Int) -> Float
+  thresholds: (Int, Int) -> Float,
+  velocity: Float,
+  velocityThreshold: Float
 ): Int {
   val bounds = findBounds(offset, anchors)
   return when (bounds.size) {
@@ -299,11 +306,21 @@ private fun computeTarget(
       val lower = bounds[0]
       val upper = bounds[1]
       if (lastValue <= offset) {
-        val threshold = thresholds(lower, upper)
-        if (offset < threshold) lower else upper
+        // Swiping from lower to upper (positive).
+        if (velocity >= velocityThreshold) {
+          return upper
+        } else {
+          val threshold = thresholds(lower, upper)
+          if (offset < threshold) lower else upper
+        }
       } else {
-        val threshold = thresholds(upper, lower)
-        if (offset > threshold) upper else lower
+        // Swiping from upper to lower (negative).
+        if (velocity <= -velocityThreshold) {
+          return lower
+        } else {
+          val threshold = thresholds(upper, lower)
+          if (offset > threshold) upper else lower
+        }
       }
     }
   }
