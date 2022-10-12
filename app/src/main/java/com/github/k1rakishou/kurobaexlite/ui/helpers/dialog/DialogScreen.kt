@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
@@ -84,8 +85,7 @@ class DialogScreen(
     )
 
     val dialogWidth = if (globalUiInfoManager.isTablet) {
-      val availableWidth = maxAvailableWidth()
-      availableWidth - (availableWidth / 2)
+      (maxAvailableWidth() / 2).coerceAtLeast(300.dp)
     } else {
       maxAvailableWidth()
     }
@@ -96,22 +96,26 @@ class DialogScreen(
         .padding(all = 8.dp)
     ) {
       KurobaComposeText(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(vertical = 8.dp),
         text = params.title.actualText(),
-        fontSize = 18.sp
+        maxLines = 4,
+        overflow = TextOverflow.Ellipsis,
+        fontSize = 22.sp
       )
 
       if (params.description != null) {
-        Spacer(modifier = Modifier.height(4.dp))
         val maxHeight = (maxAvailableHeight() - insets.bottom - insets.top) / 2
 
         KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = maxHeight)
+            .padding(vertical = 8.dp)
             .verticalScroll(state = rememberScrollState()),
           text = params.description.actualText(),
-          fontSize = 14.sp
+          fontSize = 16.sp
         )
       }
 
@@ -138,7 +142,7 @@ class DialogScreen(
             }
           )
 
-          Spacer(modifier = Modifier.height(4.dp))
+          Spacer(modifier = Modifier.height(8.dp))
 
           val label: @Composable (() -> Unit)? = if (input.hint != null) {
             buildInputLabel(input.hint!!)
@@ -166,7 +170,7 @@ class DialogScreen(
         }
       }
 
-      Spacer(modifier = Modifier.height(4.dp))
+      Spacer(modifier = Modifier.height(8.dp))
 
       Row(
         modifier = Modifier.fillMaxWidth(),

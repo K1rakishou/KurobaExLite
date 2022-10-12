@@ -246,8 +246,7 @@ class BookmarksScreen(
               )
             }
           )
-        ),
-        canDismissByClickingOutside = false
+        )
       )
     )
   }
