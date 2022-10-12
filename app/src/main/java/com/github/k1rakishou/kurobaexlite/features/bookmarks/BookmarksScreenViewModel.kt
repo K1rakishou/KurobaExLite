@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -112,7 +113,7 @@ class BookmarksScreenViewModel(
   }
 
   fun onMove(from: Int, to: Int) {
-    _bookmarksList.move(from, to)
+    Snapshot.withMutableSnapshot { _bookmarksList.move(from, to) }
   }
 
   suspend fun onMoveConfirmed(from: Int, to: Int) {

@@ -34,6 +34,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -215,6 +216,8 @@ private fun KurobaCustomLabelText(
       modifier = Modifier.padding(horizontal = 4.dp),
       text = labelText,
       fontSize = fontSize,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
       color = hintColor
     )
   }

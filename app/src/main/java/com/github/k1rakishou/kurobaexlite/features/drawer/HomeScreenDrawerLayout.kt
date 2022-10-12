@@ -168,7 +168,7 @@ fun HomeScreenDrawerLayout(
 
   val componentActivity = LocalComponentActivity.current
   val density = LocalDensity.current
-  val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
+  val drawerWidthDp = with(density) { drawerWidth.toDp() }
 
   drawerSwipeState.InitDrawerState(
     drawerWidth = drawerWidth,
