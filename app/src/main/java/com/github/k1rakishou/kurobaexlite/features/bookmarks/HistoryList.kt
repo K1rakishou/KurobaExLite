@@ -19,7 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot
@@ -32,7 +32,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -78,10 +77,11 @@ private val circleCropTransformation = CircleCropTransformation()
 
 private const val noHistoryAddedMessageItemKey = "no_history_added_message"
 private const val noHistoryFoundMessageItemKey = "no_history_found_message"
-private const val searchInputItemKey = "search_input"
 
 @Composable
-fun HistoryList() {
+fun HistoryList(
+  searchQuery: String,
+) {
   val windowInsets = LocalWindowInsets.current
   val context = LocalContext.current
 
@@ -95,23 +95,19 @@ fun HistoryList() {
     PaddingValues(bottom = windowInsets.bottom)
   }
 
-  var searchQuery by rememberSaveable(
-    key = "history_search_query",
-    stateSaver = TextFieldValue.Saver
-  ) { mutableStateOf<TextFieldValue>(TextFieldValue()) }
-
   var navigationHistoryList by remember { mutableStateOf(navigationHistoryListBeforeFiltering) }
   var isInSearchMode by remember { mutableStateOf(false) }
+  val searchQueryUpdated by rememberUpdatedState(newValue = searchQuery)
 
   LaunchedEffect(
     key1 = Unit,
     block = {
       combine(
         flow = snapshotFlow { navigationHistoryListBeforeFiltering },
-        flow2 = snapshotFlow { searchQuery },
+        flow2 = snapshotFlow { searchQueryUpdated },
         transform = { a, b -> a to b }
       ).collectLatest { (navigationHistory, query) ->
-        if (query.text.isEmpty()) {
+        if (query.isEmpty()) {
           Snapshot.withMutableSnapshot {
             navigationHistoryList = navigationHistory
             isInSearchMode = false
@@ -123,7 +119,7 @@ fun HistoryList() {
         delay(250L)
 
         val historyListAfterFiltering = navigationHistory
-          .filter { uiNavigationElement -> uiNavigationElement.matchesQuery(query.text) }
+          .filter { uiNavigationElement -> uiNavigationElement.matchesQuery(query) }
 
         Snapshot.withMutableSnapshot {
           navigationHistoryList = historyListAfterFiltering
@@ -190,47 +186,8 @@ fun HistoryList() {
     lazyListState = lazyListState,
     contentPadding = contentPadding,
     content = {
-      if (navigationHistoryList.isEmpty() && !isInSearchMode) {
-        item(
-          key = noHistoryAddedMessageItemKey,
-          contentType = noHistoryAddedMessageItemKey,
-          content = {
-            KurobaComposeText(
-              modifier = Modifier
-                .fillParentMaxSize()
-                .padding(8.dp),
-              text = stringResource(id = R.string.history_screen_no_history_added),
-              textAlign = TextAlign.Center,
-              fontSize = 16.sp
-            )
-          }
-        )
-      } else {
-        item(
-          key = searchInputItemKey,
-          contentType = searchInputItemKey,
-          content = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-              DrawerSearchInput(
-                modifier = Modifier
-                  .weight(1f)
-                  .wrapContentHeight(),
-                searchQuery = searchQuery,
-                searchingBookmarks = false,
-                onSearchQueryChanged = { query -> searchQuery = query },
-                onClearSearchQueryClicked = { searchQuery = TextFieldValue() }
-              )
-
-              Spacer(modifier = Modifier.width(8.dp))
-
-              DrawerContentTypeToggleIcon()
-
-              Spacer(modifier = Modifier.width(8.dp))
-            }
-          }
-        )
-
-        if (navigationHistoryList.isEmpty() && isInSearchMode) {
+      if (navigationHistoryList.isEmpty()) {
+        if (isInSearchMode) {
           item(
             key = noHistoryFoundMessageItemKey,
             contentType = noHistoryFoundMessageItemKey,
@@ -239,27 +196,42 @@ fun HistoryList() {
                 modifier = Modifier
                   .fillParentMaxSize()
                   .padding(8.dp),
-                text = stringResource(id = R.string.history_screen_nothing_found_by_query, searchQuery.text),
+                text = stringResource(id = R.string.history_screen_nothing_found_by_query, searchQuery),
                 textAlign = TextAlign.Center,
                 fontSize = 16.sp
               )
             }
           )
         } else {
-          items(
-            count = navigationHistoryList.size,
-            key = { index -> navigationHistoryList[index].key },
-            contentType = { "history_item" },
-            itemContent = { index ->
-              val navigationElement = navigationHistoryList[index]
-
-              NavigationElement(
-                searchQuery = searchQuery.text,
-                navigationElement = navigationElement
+          item(
+            key = noHistoryAddedMessageItemKey,
+            contentType = noHistoryAddedMessageItemKey,
+            content = {
+              KurobaComposeText(
+                modifier = Modifier
+                  .fillParentMaxSize()
+                  .padding(8.dp),
+                text = stringResource(id = R.string.history_screen_no_history_added),
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp
               )
             }
           )
         }
+      } else {
+        items(
+          count = navigationHistoryList.size,
+          key = { index -> navigationHistoryList[index].key },
+          contentType = { "history_item" },
+          itemContent = { index ->
+            val navigationElement = navigationHistoryList[index]
+
+            NavigationElement(
+              searchQuery = searchQuery,
+              navigationElement = navigationElement
+            )
+          }
+        )
       }
     }
   )

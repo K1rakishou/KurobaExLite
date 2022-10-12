@@ -60,7 +60,7 @@ fun DrawerSearchInput(
   Column(
     modifier = modifier.then(
       Modifier
-        .padding(horizontal = 4.dp, vertical = 4.dp)
+        .padding(horizontal = 8.dp, vertical = 8.dp)
         .background(color = bgColor, shape = RoundedCornerShape(corner = CornerSize(size = 4.dp)))
     ),
   ) {

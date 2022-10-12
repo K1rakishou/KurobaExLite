@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -31,7 +30,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot
@@ -50,7 +49,6 @@ import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -97,6 +95,7 @@ import kotlinx.coroutines.flow.combine
 
 @Composable
 fun BookmarksList(
+  searchQuery: String,
   pullToRefreshState: PullToRefreshState,
   reorderableState: ReorderableState,
   showRevertBookmarkDeletion: (ThreadBookmark, Int) -> Unit
@@ -114,23 +113,19 @@ fun BookmarksList(
   val bookmarkListBeforeFiltering = bookmarksScreenViewModel.bookmarksList
   val canUseFancyAnimations by bookmarksScreenViewModel.canUseFancyAnimations
 
-  var searchQuery by rememberSaveable(
-    key = "bookmarks_search_query",
-    stateSaver = TextFieldValue.Saver
-  ) { mutableStateOf<TextFieldValue>(TextFieldValue()) }
-
   var bookmarkList by remember { mutableStateOf(bookmarkListBeforeFiltering) }
   var isInSearchMode by remember { mutableStateOf(false) }
+  val searchQueryUpdated by rememberUpdatedState(newValue = searchQuery)
 
   LaunchedEffect(
     key1 = Unit,
     block = {
       combine(
         flow = snapshotFlow { bookmarkListBeforeFiltering },
-        flow2 = snapshotFlow { searchQuery },
+        flow2 = snapshotFlow { searchQueryUpdated },
         transform = { a, b -> a to b }
       ).collectLatest { (bookmarks, query) ->
-        if (query.text.isEmpty()) {
+        if (query.isEmpty()) {
           Snapshot.withMutableSnapshot {
             bookmarkList = bookmarks
             isInSearchMode = false
@@ -142,7 +137,7 @@ fun BookmarksList(
         delay(250L)
 
         val bookmarkListAfterFiltering = bookmarks
-          .filter { threadBookmarkUi -> threadBookmarkUi.matchesQuery(query.text) }
+          .filter { threadBookmarkUi -> threadBookmarkUi.matchesQuery(query) }
 
         Snapshot.withMutableSnapshot {
           bookmarkList = bookmarkListAfterFiltering
@@ -164,54 +159,14 @@ fun BookmarksList(
         .reorderable(
           state = reorderableState,
           canDragOver = { key, _ -> (key as? String)?.startsWith(BookmarksScreen.BookmarkAnnotatedContent.bookmarkItemKey) == true },
-          // "idx - 1" because we have the SearchInput as the first item of the list
-          onMove = { from, to -> bookmarksScreenViewModel.onMove(from - 1, to - 1) },
-          onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from - 1, to - 1) }
+          onMove = { from, to -> bookmarksScreenViewModel.onMove(from, to) },
+          onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from, to) }
         ),
       lazyListState = reorderableState.lazyListState,
       contentPadding = contentPadding,
       content = {
-        if (bookmarkList.isEmpty() && !isInSearchMode) {
-          item(
-            key = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksAddedMessageItemKey,
-            contentType = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksAddedMessageItemKey,
-            content = {
-              KurobaComposeText(
-                modifier = Modifier
-                  .fillParentMaxSize()
-                  .padding(8.dp),
-                text = stringResource(id = R.string.bookmark_screen_no_bookmarks_added),
-                textAlign = TextAlign.Center,
-                fontSize = 16.sp
-              )
-            }
-          )
-        } else {
-          item(
-            key = BookmarksScreen.BookmarkAnnotatedContent.searchInputItemKey,
-            contentType = "search_input_item",
-            content = {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                DrawerSearchInput(
-                  modifier = Modifier
-                    .weight(1f)
-                    .wrapContentHeight(),
-                  searchQuery = searchQuery,
-                  searchingBookmarks = true,
-                  onSearchQueryChanged = { query -> searchQuery = query },
-                  onClearSearchQueryClicked = { searchQuery = TextFieldValue() }
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                DrawerContentTypeToggleIcon()
-
-                Spacer(modifier = Modifier.width(8.dp))
-              }
-            }
-          )
-
-          if (bookmarkList.isEmpty() && isInSearchMode) {
+        if (bookmarkList.isEmpty()) {
+          if (isInSearchMode) {
             item(
               key = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksFoundMessageItemKey,
               contentType = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksFoundMessageItemKey,
@@ -220,42 +175,57 @@ fun BookmarksList(
                   modifier = Modifier
                     .fillParentMaxSize()
                     .padding(8.dp),
-                  text = stringResource(id = R.string.bookmark_screen_found_by_query, searchQuery.text),
+                  text = stringResource(id = R.string.bookmark_screen_found_by_query, searchQuery),
                   textAlign = TextAlign.Center,
                   fontSize = 16.sp
                 )
               }
             )
           } else {
-            items(
-              count = bookmarkList.size,
-              key = { index -> dragKey(bookmarkList[index].threadDescriptor) },
-              contentType = { "bookmark_item" },
-              itemContent = { index ->
-                val threadBookmarkUi = bookmarkList[index]
-
-                ThreadBookmarkItem(
-                  searchQuery = searchQuery.text,
-                  canUseFancyAnimations = canUseFancyAnimations,
-                  threadBookmarkUi = threadBookmarkUi,
-                  reorderableState = reorderableState,
-                  onBookmarkClicked = { clickedThreadBookmarkUi ->
-                    threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
-                    globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
-                    globalUiInfoManager.closeDrawer(withAnimation = true)
-                  },
-                  onBookmarkDeleted = { clickedThreadBookmarkUi ->
-                    bookmarksScreenViewModel.deleteBookmark(
-                      threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
-                      onBookmarkDeleted = { deletedBookmark, oldPosition ->
-                        showRevertBookmarkDeletion(deletedBookmark, oldPosition)
-                      }
-                    )
-                  },
+            item(
+              key = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksAddedMessageItemKey,
+              contentType = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksAddedMessageItemKey,
+              content = {
+                KurobaComposeText(
+                  modifier = Modifier
+                    .fillParentMaxSize()
+                    .padding(8.dp),
+                  text = stringResource(id = R.string.bookmark_screen_no_bookmarks_added),
+                  textAlign = TextAlign.Center,
+                  fontSize = 16.sp
                 )
               }
             )
           }
+        } else {
+          items(
+            count = bookmarkList.size,
+            key = { index -> dragKey(bookmarkList[index].threadDescriptor) },
+            contentType = { "bookmark_item" },
+            itemContent = { index ->
+              val threadBookmarkUi = bookmarkList[index]
+
+              ThreadBookmarkItem(
+                searchQuery = searchQuery,
+                canUseFancyAnimations = canUseFancyAnimations,
+                threadBookmarkUi = threadBookmarkUi,
+                reorderableState = reorderableState,
+                onBookmarkClicked = { clickedThreadBookmarkUi ->
+                  threadScreenViewModel.loadThread(clickedThreadBookmarkUi.threadDescriptor)
+                  globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
+                  globalUiInfoManager.closeDrawer(withAnimation = true)
+                },
+                onBookmarkDeleted = { clickedThreadBookmarkUi ->
+                  bookmarksScreenViewModel.deleteBookmark(
+                    threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
+                    onBookmarkDeleted = { deletedBookmark, oldPosition ->
+                      showRevertBookmarkDeletion(deletedBookmark, oldPosition)
+                    }
+                  )
+                },
+              )
+            }
+          )
         }
       }
     )

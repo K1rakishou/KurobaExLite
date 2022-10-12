@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -29,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +39,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import coil.transform.CircleCropTransformation
 import com.github.k1rakishou.kurobaexlite.R
@@ -69,8 +73,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.LayoutOrientation
-import com.github.k1rakishou.kurobaexlite.ui.helpers.layout.SlotLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.rememberReorderState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
 import kotlinx.coroutines.flow.collectLatest
@@ -287,7 +289,6 @@ class BookmarksScreen(
       internal val grayscaleTransformation = GrayscaleTransformation()
 
       internal val deleteBookmarkIconWidth = 40.dp
-      internal val searchInputItemKey = "search_input"
       internal val noBookmarksAddedMessageItemKey = "no_bookmarks_added_message"
       internal val noBookmarksFoundMessageItemKey = "no_bookmarks_found_message"
       internal val bookmarkItemKey = "thread_bookmark"
@@ -428,55 +429,71 @@ private fun ContentInternal(
 
   val drawerContentType by appSettings.drawerContentType.listen().collectAsState(initial = null)
 
-  GradientBackground {
-    SlotLayout(
-      modifier = Modifier.fillMaxSize(),
-      layoutOrientation = LayoutOrientation.Vertical,
-      builder = {
-        fixed(
-          size = toolbarHeight + windowInsets.top,
-          key = "DrawerHeader",
-          content = {
-            ThreadBookmarkHeader(
-              onShowAppSettingsClicked = { openAppSettings() },
-              onShowBookmarkOptionsClicked = { showBookmarkOptions() },
-            )
-          }
-        )
+  var searchQuery by rememberSaveable(
+    key = "search_query",
+    stateSaver = TextFieldValue.Saver
+  ) { mutableStateOf<TextFieldValue>(TextFieldValue()) }
 
-        dynamic(
-          weight = 1f,
-          key = "ItemsList",
-          content = {
-            Box(modifier = Modifier.fillMaxSize()) {
-              AnimatedContent(
-                targetState = drawerContentType,
-                transitionSpec = {
-                  fadeIn(animationSpec = tween(220, delayMillis = 90)) with
-                    fadeOut(animationSpec = tween(90))
-                }
-              ) { state ->
-                when (state) {
-                  null -> {
-                    // no-op
-                  }
-                  DrawerContentType.History -> {
-                    HistoryList()
-                  }
-                  DrawerContentType.Bookmarks -> {
-                    BookmarksList(
-                      pullToRefreshState = pullToRefreshState,
-                      reorderableState = reorderableState,
-                      showRevertBookmarkDeletion = showRevertBookmarkDeletion
-                    )
-                  }
-                }
-              }
-            }
-          }
+  GradientBackground(modifier = Modifier.consumeClicks()) {
+    Column(modifier = Modifier.fillMaxSize()) {
+      Box(modifier = Modifier.height(toolbarHeight + windowInsets.top)) {
+        ThreadBookmarkHeader(
+          onShowAppSettingsClicked = { openAppSettings() },
+          onShowBookmarkOptionsClicked = { showBookmarkOptions() },
         )
       }
-    )
+
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        DrawerSearchInput(
+          modifier = Modifier
+            .weight(1f)
+            .wrapContentHeight(),
+          searchQuery = searchQuery,
+          searchingBookmarks = true,
+          onSearchQueryChanged = { query -> searchQuery = query },
+          onClearSearchQueryClicked = { searchQuery = TextFieldValue() }
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        DrawerContentTypeToggleIcon()
+
+        Spacer(modifier = Modifier.width(8.dp))
+      }
+
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1f)
+      ) {
+        AnimatedContent(
+          targetState = drawerContentType,
+          transitionSpec = {
+            fadeIn(animationSpec = tween(220, delayMillis = 90)) with
+              fadeOut(animationSpec = tween(90))
+          }
+        ) { state ->
+          when (state) {
+            null -> {
+              // no-op
+            }
+            DrawerContentType.History -> {
+              HistoryList(
+                searchQuery = searchQuery.text
+              )
+            }
+            DrawerContentType.Bookmarks -> {
+              BookmarksList(
+                searchQuery = searchQuery.text,
+                pullToRefreshState = pullToRefreshState,
+                reorderableState = reorderableState,
+                showRevertBookmarkDeletion = showRevertBookmarkDeletion
+              )
+            }
+          }
+        }
+      }
+    }
   }
 }
 
