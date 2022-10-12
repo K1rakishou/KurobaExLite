@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.features.reply
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.VectorConverter
-import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -249,7 +248,7 @@ private suspend fun performFling(
     val target = anchors[newReplyLayoutVisibility]!!
     var prevValue = lastDragPosition
 
-    draggableState.drag(dragPriority = MutatePriority.PreventUserInput) {
+    draggableState.drag {
       Animatable<Int, AnimationVector1D>(
         initialValue = lastDragPosition,
         typeConverter = Int.VectorConverter,

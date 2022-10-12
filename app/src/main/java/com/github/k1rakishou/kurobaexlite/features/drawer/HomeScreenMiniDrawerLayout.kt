@@ -27,6 +27,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.snapshots.Snapshot
@@ -221,7 +223,10 @@ private fun BuildMiniDrawerElement(
   val context = LocalContext.current
   val bookmarksManager = koinRemember<BookmarksManager>()
 
-  val additionalBookmarkInfo by remember { mutableStateOf<AdditionalBookmarkInfo>(AdditionalBookmarkInfo()) }
+  val additionalBookmarkInfo by rememberSaveable(stateSaver = AdditionalBookmarkInfo.Saver()) {
+    mutableStateOf<AdditionalBookmarkInfo>(AdditionalBookmarkInfo())
+  }
+
   val isBookmarkedThreadDead by additionalBookmarkInfo.isDead
 
   LaunchedEffect(
@@ -413,11 +418,16 @@ private fun BoxScope.MiniDrawerBookmarkInfo(additionalBookmarkInfo: AdditionalBo
 }
 
 @Stable
-private class AdditionalBookmarkInfo {
-  val isDead = mutableStateOf(false)
-  val newPosts = mutableStateOf(0)
-  val totalPosts = mutableStateOf(0)
-  val hasNewQuotes = mutableStateOf(false)
+private class AdditionalBookmarkInfo(
+  isDead: Boolean = false,
+  newPosts: Int = 0,
+  totalPosts: Int = 0,
+  hasNewQuotes: Boolean = false,
+) {
+  val isDead = mutableStateOf(isDead)
+  val newPosts = mutableStateOf(newPosts)
+  val totalPosts = mutableStateOf(totalPosts)
+  val hasNewQuotes = mutableStateOf(hasNewQuotes)
 
   val canShow: Boolean
     get() = totalPosts.value > 0
@@ -429,6 +439,27 @@ private class AdditionalBookmarkInfo {
       totalPosts.value = 0
       hasNewQuotes.value = false
     }
+  }
+
+  companion object {
+    fun Saver() = listSaver<AdditionalBookmarkInfo, Any>(
+      save = {
+        listOf(
+          it.isDead.value,
+          it.newPosts.value,
+          it.totalPosts.value,
+          it.hasNewQuotes.value
+        )
+      },
+      restore = {
+        AdditionalBookmarkInfo(
+          isDead = it[0] as Boolean,
+          newPosts = it[1] as Int,
+          totalPosts = it[2] as Int,
+          hasNewQuotes = it[3] as Boolean,
+        )
+      }
+    )
   }
 }
 
