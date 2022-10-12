@@ -272,16 +272,18 @@
     <string name="reply_notifications_new_replies">You have %1$d new replies</string>
     <string name="reply_notifications_reply_format">Reply from %1$d to your post %2$d</string>
 
-    <string name="bookmark_screen_toolbar_prune_inactive">Prune inactive bookmarks</string>
-    <string name="bookmark_screen_toolbar_prune_inactive_description">Bookmarks of archived/deleted/unwatched threads will be removed</string>
-    <string name="bookmark_screen_failed_to_delete_inactive">Failed to deleted inactive bookmarks, error: \'%1$s\'</string>
-    <string name="bookmark_screen_deleted_n_inactive">Deleted %1$d inactive bookmarks</string>
-    <string name="bookmark_screen_no_inactive_to_delete">No inactive bookmarks found</string>
+    <string name="bookmark_screen_toolbar_prune_dead">Prune dead bookmarks</string>
+    <string name="bookmark_screen_toolbar_prune_dead_description">Bookmarks of archived or deleted threads will be removed</string>
+    <string name="bookmark_screen_failed_to_delete_dead_bookmarks">Failed to deleted inactive bookmarks, error: \'%1$s\'</string>
+    <string name="bookmark_screen_deleted_n_dead_bookmarks">Deleted %1$d dead bookmarks</string>
+    <string name="bookmark_screen_no_dead_bookmarks_to_delete">No dead bookmarks found</string>
     <string name="bookmark_screen_no_bookmarks_added">No bookmarks added yet</string>
     <string name="bookmark_screen_found_by_query">No bookmarks found by query \'%1$s\'</string>
-    <string name="bookmark_screen_prune_inactive_bookmarks_dialog">Prune inactive bookmarks?</string>
-    <string name="bookmark_screen_prune_inactive_bookmarks_dialog_negative_button">Do not</string>
-    <string name="bookmark_screen_prune_inactive_bookmarks_dialog_positive_button">Prune</string>
+    <string name="bookmark_screen_prune_dead_bookmarks_no_inactive_bookmarks">No dead bookmarks found</string>
+    <string name="bookmark_screen_prune_dead_bookmarks_no_inactive_bookmarks_description">This action will delete bookmarks of archived or deleted threads (%1$d in total). Are you sure you want to continue?</string>
+    <string name="bookmark_screen_prune_dead_bookmarks_dialog">Prune dead bookmarks?</string>
+    <string name="bookmark_screen_prune_dead_bookmarks_dialog_negative_button">Do not</string>
+    <string name="bookmark_screen_prune_dead_bookmarks_dialog_positive_button">Prune</string>
 
     <string name="settings_screen_thread_watcher_group">Thread watcher</string>
     <string name="settings_screen_thread_watcher_group_description">Foreground update interval is used when the app is in foreground (currently visible), otherwise when the app is not visible or killed by the user or the OS the background update interval is used</string>

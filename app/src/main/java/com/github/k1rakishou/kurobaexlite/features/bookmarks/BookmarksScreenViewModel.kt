@@ -84,6 +84,10 @@ class BookmarksScreenViewModel(
     }
   }
 
+  suspend fun countDeadBookmarks(): Int {
+    return bookmarksList.count { threadBookmarkUi -> threadBookmarkUi.threadBookmarkStatsUi.isDead() }
+  }
+
   fun deleteBookmark(
     threadDescriptor: ThreadDescriptor,
     onBookmarkDeleted: (ThreadBookmark, Int) -> Unit
@@ -156,10 +160,10 @@ class BookmarksScreenViewModel(
     _bookmarksToMark.clear()
   }
 
-  fun pruneInactiveBookmarks(onFinished: (Result<Int>) -> Unit) {
+  fun pruneDeadBookmarks(onFinished: (Result<Int>) -> Unit) {
     viewModelScope.launch {
-      val inactiveBookmarks = bookmarksManager.getInactiveBookmarkDescriptors()
-      val deleteResult = deleteBookmarks.deleteManyBookmarks(inactiveBookmarks)
+      val deadBookmarks = bookmarksManager.getDeadBookmarkDescriptors()
+      val deleteResult = deleteBookmarks.deleteManyBookmarks(deadBookmarks)
       onFinished(deleteResult)
     }
   }

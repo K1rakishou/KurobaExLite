@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.DrawerContentType
@@ -16,7 +16,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
 
 
 @Composable
-fun DrawerContentTypeToggleIcon() {
+fun DrawerContentTypeToggleIcon(
+  iconSize: Dp
+) {
   val appSettings = koinRemember<AppSettings>()
 
   val drawerContentTypeMut by appSettings.drawerContentType.listen().collectAsState(initial = null)
@@ -34,7 +36,7 @@ fun DrawerContentTypeToggleIcon() {
   }
 
   KurobaComposeClickableIcon(
-    modifier = Modifier.size(36.dp),
+    modifier = Modifier.size(iconSize),
     drawableId = drawableId,
     enabled = !coroutineTask.isRunning,
     onClick = {

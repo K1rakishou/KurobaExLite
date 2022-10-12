@@ -10,8 +10,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.with
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,7 +62,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -75,6 +72,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.rememberReorderState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -91,8 +89,8 @@ class BookmarksScreen(
     listOf(
       FloatingMenuItem.Text(
         menuItemKey = ToolbarMenuItems.PruneInactiveBookmarks,
-        text = FloatingMenuItem.MenuItemText.Id(R.string.bookmark_screen_toolbar_prune_inactive),
-        subText = FloatingMenuItem.MenuItemText.Id(R.string.bookmark_screen_toolbar_prune_inactive_description)
+        text = FloatingMenuItem.MenuItemText.Id(R.string.bookmark_screen_toolbar_prune_dead),
+        subText = FloatingMenuItem.MenuItemText.Id(R.string.bookmark_screen_toolbar_prune_dead_description)
       ),
     )
   }
@@ -112,6 +110,7 @@ class BookmarksScreen(
         coroutineScope.launch {
           showBookmarkOptions(
             context = context,
+            coroutineScope = coroutineScope,
             drawerContentType = appSettings.drawerContentType.read()
           )
         }
@@ -153,7 +152,11 @@ class BookmarksScreen(
     )
   }
 
-  private fun showBookmarkOptions(context: Context, drawerContentType: DrawerContentType) {
+  private fun showBookmarkOptions(
+    context: Context,
+    coroutineScope: CoroutineScope,
+    drawerContentType: DrawerContentType
+  ) {
     val menuItems = when (drawerContentType) {
       DrawerContentType.History -> {
         return
@@ -168,9 +171,11 @@ class BookmarksScreen(
         navigationRouter = navigationRouter,
         menuItems = menuItems,
         onMenuItemClicked = { menuItem ->
-          when (menuItem.menuItemKey as ToolbarMenuItems) {
-            ToolbarMenuItems.PruneInactiveBookmarks -> {
-              onPruneInactiveBookmarksItemClicked(context)
+          coroutineScope.launch {
+            when (menuItem.menuItemKey as ToolbarMenuItems) {
+              ToolbarMenuItems.PruneInactiveBookmarks -> {
+                onPruneInactiveBookmarksItemClicked(context)
+              }
             }
           }
         }
@@ -178,23 +183,35 @@ class BookmarksScreen(
     )
   }
 
-  private fun onPruneInactiveBookmarksItemClicked(
+  private suspend fun onPruneInactiveBookmarksItemClicked(
     context: Context
   ) {
+    val deadBookmarksCount = bookmarksScreenViewModel.countDeadBookmarks()
+    if (deadBookmarksCount <= 0) {
+      snackbarManager.toast(message = appResources.string(R.string.bookmark_screen_prune_dead_bookmarks_no_inactive_bookmarks))
+      return
+    }
+
+    val description = appResources.string(
+      R.string.bookmark_screen_prune_dead_bookmarks_no_inactive_bookmarks_description,
+      deadBookmarksCount
+    )
+
     navigationRouter.presentScreen(
       DialogScreen(
         componentActivity = componentActivity,
         navigationRouter = navigationRouter,
         params = DialogScreen.Params(
-          title = DialogScreen.Text.Id(R.string.bookmark_screen_prune_inactive_bookmarks_dialog),
+          title = DialogScreen.Text.Id(R.string.bookmark_screen_prune_dead_bookmarks_dialog),
+          description = DialogScreen.Text.String(description),
           negativeButton = DialogScreen.DialogButton(
-            buttonText = R.string.bookmark_screen_prune_inactive_bookmarks_dialog_negative_button
+            buttonText = R.string.bookmark_screen_prune_dead_bookmarks_dialog_negative_button
           ),
           positiveButton = DialogScreen.PositiveDialogButton(
-            buttonText = R.string.bookmark_screen_prune_inactive_bookmarks_dialog_positive_button,
+            buttonText = R.string.bookmark_screen_prune_dead_bookmarks_dialog_positive_button,
             isActionDangerous = true,
             onClick = {
-              bookmarksScreenViewModel.pruneInactiveBookmarks(
+              bookmarksScreenViewModel.pruneDeadBookmarks(
                 onFinished = { deleteResult ->
                   if (deleteResult.isFailure) {
                     val errorMessage = deleteResult.exceptionOrThrow()
@@ -202,7 +219,7 @@ class BookmarksScreen(
 
                     snackbarManager.errorToast(
                       message = context.resources.getString(
-                        R.string.bookmark_screen_failed_to_delete_inactive,
+                        R.string.bookmark_screen_failed_to_delete_dead_bookmarks,
                         errorMessage
                       ),
                       screenKey = MainScreen.SCREEN_KEY
@@ -213,14 +230,14 @@ class BookmarksScreen(
                     if (deletedCount > 0) {
                       snackbarManager.toast(
                         message = context.resources.getString(
-                          R.string.bookmark_screen_deleted_n_inactive,
+                          R.string.bookmark_screen_deleted_n_dead_bookmarks,
                           deletedCount
                         ),
                         screenKey = MainScreen.SCREEN_KEY
                       )
                     } else {
                       snackbarManager.toast(
-                        message = context.resources.getString(R.string.bookmark_screen_no_inactive_to_delete),
+                        message = context.resources.getString(R.string.bookmark_screen_no_dead_bookmarks_to_delete),
                         screenKey = MainScreen.SCREEN_KEY
                       )
                     }
@@ -434,14 +451,11 @@ private fun ContentInternal(
     stateSaver = TextFieldValue.Saver
   ) { mutableStateOf<TextFieldValue>(TextFieldValue()) }
 
+  val iconSize = 36.dp
+
   GradientBackground(modifier = Modifier.consumeClicks()) {
     Column(modifier = Modifier.fillMaxSize()) {
-      Box(modifier = Modifier.height(toolbarHeight + windowInsets.top)) {
-        ThreadBookmarkHeader(
-          onShowAppSettingsClicked = { openAppSettings() },
-          onShowBookmarkOptionsClicked = { showBookmarkOptions() },
-        )
-      }
+      Spacer(modifier = Modifier.height(windowInsets.top))
 
       Row(verticalAlignment = Alignment.CenterVertically) {
         DrawerSearchInput(
@@ -449,14 +463,32 @@ private fun ContentInternal(
             .weight(1f)
             .wrapContentHeight(),
           searchQuery = searchQuery,
-          searchingBookmarks = true,
+          searchingBookmarks = drawerContentType == DrawerContentType.Bookmarks,
           onSearchQueryChanged = { query -> searchQuery = query },
           onClearSearchQueryClicked = { searchQuery = TextFieldValue() }
         )
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        DrawerContentTypeToggleIcon()
+        DrawerContentTypeToggleIcon(iconSize = iconSize)
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(iconSize)
+            .kurobaClickable(bounded = false, onClick = { openAppSettings() }),
+          drawableId = R.drawable.ic_baseline_settings_24
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(iconSize)
+            .kurobaClickable(bounded = false, onClick = { showBookmarkOptions() }),
+          drawableId = R.drawable.ic_baseline_more_vert_24
+        )
 
         Spacer(modifier = Modifier.width(8.dp))
       }
@@ -493,48 +525,6 @@ private fun ContentInternal(
           }
         }
       }
-    }
-  }
-}
-
-@Composable
-private fun ThreadBookmarkHeader(
-  onShowAppSettingsClicked: () -> Unit,
-  onShowBookmarkOptionsClicked: () -> Unit
-) {
-  val chanTheme = LocalChanTheme.current
-  val windowInsets = LocalWindowInsets.current
-
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(chanTheme.backColor)
-      .consumeClicks(enabled = true)
-  ) {
-    Spacer(modifier = Modifier.height(windowInsets.top))
-
-    Row(
-      modifier = Modifier.fillMaxSize(),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.End
-    ) {
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(28.dp)
-          .kurobaClickable(bounded = false, onClick = { onShowAppSettingsClicked() }),
-        drawableId = R.drawable.ic_baseline_settings_24
-      )
-
-      Spacer(modifier = Modifier.width(8.dp))
-
-      KurobaComposeIcon(
-        modifier = Modifier
-          .size(28.dp)
-          .kurobaClickable(bounded = false, onClick = { onShowBookmarkOptionsClicked() }),
-        drawableId = R.drawable.ic_baseline_more_vert_24
-      )
-
-      Spacer(modifier = Modifier.width(8.dp))
     }
   }
 }

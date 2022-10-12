@@ -82,6 +82,14 @@ class BookmarksManager {
     }
   }
 
+  suspend fun getDeadBookmarkDescriptors(): List<ThreadDescriptor> {
+    return mutex.withLock {
+      threadBookmarks.values
+        .filter { threadBookmark -> threadBookmark.isDead() }
+        .map { threadBookmark -> threadBookmark.threadDescriptor }
+    }
+  }
+
   suspend fun getActiveThreadBookmarkReplies(): Map<ThreadDescriptor, Set<ThreadBookmarkReply>> {
     return mutex.withLock {
       val resultMap = mutableMapOf<ThreadDescriptor, Set<ThreadBookmarkReply>>()
@@ -165,14 +173,6 @@ class BookmarksManager {
     }
 
     return updated
-  }
-
-  suspend fun getInactiveBookmarkDescriptors(): List<ThreadDescriptor> {
-    return mutex.withLock {
-      threadBookmarks.values
-        .filter { threadBookmark -> !threadBookmark.isActive() }
-        .map { threadBookmark -> threadBookmark.threadDescriptor }
-    }
   }
 
   suspend fun removeBookmark(threadDescriptor: ThreadDescriptor): ThreadBookmark? {
