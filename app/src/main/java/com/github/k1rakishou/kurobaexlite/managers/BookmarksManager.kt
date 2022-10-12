@@ -39,7 +39,7 @@ class BookmarksManager {
         }
       }
     } finally {
-      _bookmarkEventsFlow.emit(Event.Loaded)
+      _bookmarkEventsFlow.emit(Event.Loaded(threadBookmarksFromDatabase.map { it.threadDescriptor }))
       initializationFlag.complete(Unit)
     }
   }
@@ -215,7 +215,7 @@ class BookmarksManager {
   }
 
   sealed class Event(val threadDescriptors: List<ThreadDescriptor>) {
-    object Loaded : Event(emptyList())
+    class Loaded(threadDescriptors: List<ThreadDescriptor>) : Event(threadDescriptors)
     class Created(val index: Int?, threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
     class Updated(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)
     class Deleted(threadDescriptors: List<ThreadDescriptor>): Event(threadDescriptors)

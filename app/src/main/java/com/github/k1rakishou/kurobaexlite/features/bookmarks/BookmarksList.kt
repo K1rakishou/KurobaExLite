@@ -497,7 +497,7 @@ private fun ThreadBookmarkAdditionalInfo(
     targetValueByState = { state -> state.newQuotes.value }
   )
   val totalPostsAnimated by transition.animateInt(
-    label = "Total posts text textAnimationSpec",
+    label = "Total posts text animation",
     transitionSpec = { textAnimationSpecProvider() },
     targetValueByState = { state -> state.totalPosts.value }
   )
@@ -606,14 +606,18 @@ private fun BookmarkThumbnail(
       }
     }
 
-    SubcomposeAsyncImage(
-      modifier = Modifier.fillMaxSize(),
-      model = ImageRequest.Builder(context)
+    val imageRequest = remember(key1 = isDead, key2 = iconUrl) {
+      ImageRequest.Builder(context)
         .data(iconUrl)
         .crossfade(true)
         .transformations(transformations)
         .size(Size.ORIGINAL)
-        .build(),
+        .build()
+    }
+
+    SubcomposeAsyncImage(
+      modifier = Modifier.fillMaxSize(),
+      model = imageRequest,
       contentScale = ContentScale.Crop,
       contentDescription = null,
       content = {

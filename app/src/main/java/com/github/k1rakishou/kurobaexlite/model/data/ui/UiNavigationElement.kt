@@ -13,10 +13,11 @@ sealed class UiNavigationElement {
     get() = chanDescriptor
 
   abstract val chanDescriptor: ChanDescriptor
+  abstract val iconUrl: String?
 
   data class Catalog(
     override val chanDescriptor: CatalogDescriptor,
-    val iconUrl: String?
+    override val iconUrl: String?
   ) : UiNavigationElement() {
 
     override fun matchesQuery(text: String): Boolean {
@@ -28,7 +29,7 @@ sealed class UiNavigationElement {
   data class Thread(
     override val chanDescriptor: ThreadDescriptor,
     val title: String?,
-    val iconUrl: String?
+    override val iconUrl: String?
   ) : UiNavigationElement() {
 
     override fun matchesQuery(text: String): Boolean {

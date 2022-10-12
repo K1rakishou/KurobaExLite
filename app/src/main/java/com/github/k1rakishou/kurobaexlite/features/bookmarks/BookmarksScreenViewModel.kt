@@ -5,6 +5,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -44,6 +45,7 @@ class BookmarksScreenViewModel(
   private val _bookmarksList = mutableStateListOf<ThreadBookmarkUi>()
   val bookmarksList: List<ThreadBookmarkUi>
     get() = _bookmarksList
+  val bookmarksListFlow = snapshotFlow { _bookmarksList.toList() }
 
   private val _canUseFancyAnimations = mutableStateOf(false)
   val canUseFancyAnimations: State<Boolean>
@@ -182,7 +184,7 @@ class BookmarksScreenViewModel(
 
   private suspend fun processBookmarkEvent(event: BookmarksManager.Event) {
     when (event) {
-      BookmarksManager.Event.Loaded -> {
+      is BookmarksManager.Event.Loaded -> {
         // no-op
       }
       is BookmarksManager.Event.Created -> {

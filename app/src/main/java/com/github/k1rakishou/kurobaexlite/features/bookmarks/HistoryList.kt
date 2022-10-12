@@ -141,7 +141,7 @@ fun HistoryList() {
           ?: return@collectLatest
 
         if (firstCompletelyVisibleItem.index <= 1) {
-          lazyListState.scrollToItem(0)
+          lazyListState.animateScrollToItem(0)
         }
       }
     })

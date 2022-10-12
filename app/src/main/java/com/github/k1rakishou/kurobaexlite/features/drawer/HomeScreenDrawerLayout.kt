@@ -24,9 +24,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -35,6 +36,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
 import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
@@ -63,12 +65,21 @@ class DrawerSwipeState(
   @Composable
   fun InitDrawerState(
     drawerWidth: Int,
-    density: Density
+    mainUiLayoutMode: MainUiLayoutMode
   ) {
-    val anchors = remember {
+    val density = LocalDensity.current
+
+    val miniDrawerWidth = if (mainUiLayoutMode == MainUiLayoutMode.Phone) {
+      0f
+    } else {
+      val miniDrawerWidthDp = dimensionResource(id = R.dimen.home_screen_mini_drawer_width)
+      with(density) { miniDrawerWidthDp.toPx() }
+    }
+
+    val anchors = remember(drawerWidth, miniDrawerWidth) {
       mapOf(
-        Pair(-(drawerWidth.toFloat()), State.Closed),
-        Pair(0f, State.Opened),
+        Pair(-(drawerWidth.toFloat() + miniDrawerWidth), State.Closed),
+        Pair(-miniDrawerWidth, State.Opened),
       )
     }
 
@@ -119,6 +130,7 @@ class DrawerSwipeState(
 @Composable
 fun HomeScreenDrawerLayout(
   drawerWidth: Int,
+  mainUiLayoutMode: MainUiLayoutMode,
   navigationRouterProvider: () -> NavigationRouter
 ) {
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
@@ -158,7 +170,10 @@ fun HomeScreenDrawerLayout(
   val density = LocalDensity.current
   val drawerWidthDp = with(density) { remember(key1 = drawerWidth) { drawerWidth.toDp() } }
 
-  drawerSwipeState.InitDrawerState(drawerWidth, density)
+  drawerSwipeState.InitDrawerState(
+    drawerWidth = drawerWidth,
+    mainUiLayoutMode = mainUiLayoutMode
+  )
 
   val clickable by remember(key1 = drawerVisibility) {
     derivedStateOf {

@@ -4,7 +4,10 @@ import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,9 +26,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenDrawerLayout
+import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenMiniDrawerLayout
 import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestures
 import com.github.k1rakishou.kurobaexlite.features.firewall.BypassResult
 import com.github.k1rakishou.kurobaexlite.features.firewall.SiteFirewallBypassScreen
@@ -305,11 +310,6 @@ private fun ContentInternal(
     return
   }
 
-  val drawerLongtapGestureWidthZonePx = with(LocalDensity.current) { remember { 24.dp.toPx() } }
-  val maxDrawerWidth = with(LocalDensity.current) { remember { 600.dp.toPx().toInt() } }
-  val drawerPhoneVisibleWindowWidth =
-    with(LocalDensity.current) { remember { 40.dp.toPx().toInt() } }
-
   // rememberSaveable currently does not recreate objects when it's keys change, instead it uses
   // the restored object from the saver. This causes crashes when going from portrait to landscape
   // when we are currently on a thread viewpager page since the pagerState.currentPage ends up
@@ -394,12 +394,9 @@ private fun ContentInternal(
   handleBackPresses(pagesWrapper)
 
   HomeScreenContentActual(
-    maxDrawerWidth = maxDrawerWidth,
     currentPageIndex = currentPageIndex,
     targetPageIndex = targetPageIndex,
     mainUiLayoutMode = mainUiLayoutMode,
-    drawerPhoneVisibleWindowWidth = drawerPhoneVisibleWindowWidth,
-    drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
     pagerState = pagerState,
     pagesWrapper = pagesWrapper,
     isDrawerDragGestureCurrentlyAllowed = isDrawerDragGestureCurrentlyAllowed,
@@ -516,12 +513,9 @@ private fun ShowAndProcessSnackbars() {
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 private fun HomeScreenContentActual(
-  maxDrawerWidth: Int,
   currentPageIndex: Int,
   targetPageIndex: Int,
   mainUiLayoutMode: MainUiLayoutMode,
-  drawerPhoneVisibleWindowWidth: Int,
-  drawerLongtapGestureWidthZonePx: Float,
   pagerState: PagerState,
   pagesWrapper: HomeScreenPageConverter.PagesWrapper,
   isDrawerDragGestureCurrentlyAllowed: (AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
@@ -530,6 +524,11 @@ private fun HomeScreenContentActual(
   val windowInsets = LocalWindowInsets.current
   val view = LocalView.current
   val chanTheme = LocalChanTheme.current
+  val density = LocalDensity.current
+
+  val drawerLongtapGestureWidthZonePx = with(density) { remember { 24.dp.toPx() } }
+  val maxDrawerWidth = with(density) { 600.dp.roundToPx() }
+  val drawerPhoneVisibleWindowWidth = with(density) { remember { 40.dp.toPx().toInt() } }
 
   val homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
@@ -566,100 +565,114 @@ private fun HomeScreenContentActual(
     )
   }
 
-  Box(
-    modifier = Modifier
-      .onSizeChanged { size ->
-        drawerWidth = size.width.coerceAtMost(maxDrawerWidth) - drawerPhoneVisibleWindowWidth
-      }
-      .pointerInput(
-        drawerLongtapGestureWidthZonePx,
-        drawerPhoneVisibleWindowWidth,
-        drawerWidth,
-        block = {
-          detectDrawerDragGestures(
-            drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
-            drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
-            drawerWidth = drawerWidth.toFloat(),
-            currentPagerPage = { currentPageIndex },
-            isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
-            onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
-            isGestureCurrentlyAllowed = {
-              isDrawerDragGestureCurrentlyAllowed(
-                currentPageUpdated,
-                false
-              )
-            },
-            onLongtapDragGestureDetected = {
-              view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-              longtapDragGestureDetected = true
-            },
-            onDraggingDrawer = { dragging, time, progress ->
-              globalUiInfoManager.dragDrawer(dragging, time, progress)
-            }
-          )
-        }
-      )
-      .nestedScroll(nestedScrollConnection)
-      .drawDragLongtapDragGestureZone(
-        drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
-        longtapDragGestureDetected = longtapDragGestureDetected,
-        resetFlag = { longtapDragGestureDetected = false }
-      )
-  ) {
-    HorizontalPager(
-      modifier = Modifier
-        .fillMaxSize(),
-      state = pagerState,
-      count = pagesWrapper.pagesCount,
-      key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey()}
-    ) { page ->
-      val childPage = remember(key1 = page) { pagesWrapper.pageByIndex(page) }
-        ?: return@HorizontalPager
-
-      val transitionIsProgress by remember { derivedStateOf { currentPageIndex != targetPageIndex } }
+  Row {
+    if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+      val miniDrawerWidth = dimensionResource(id = R.dimen.home_screen_mini_drawer_width)
 
       Box(
         modifier = Modifier
-          .fillMaxSize()
-          .consumeClicks(enabled = transitionIsProgress)
+          .fillMaxHeight()
+          .width(miniDrawerWidth)
       ) {
-        childPage.Content()
+        HomeScreenMiniDrawerLayout()
       }
     }
 
-    HomeScreenToolbarContainer(
-      insets = windowInsets,
-      chanTheme = chanTheme,
-      pagerState = pagerState,
-      pagesWrapper = pagesWrapper,
-      mainUiLayoutMode = mainUiLayoutMode
-    )
+    Box(
+      modifier = Modifier
+        .onSizeChanged { size ->
+          drawerWidth = size.width.coerceAtMost(maxDrawerWidth) - drawerPhoneVisibleWindowWidth
+        }
+        .pointerInput(
+          drawerLongtapGestureWidthZonePx,
+          drawerPhoneVisibleWindowWidth,
+          drawerWidth,
+          block = {
+            detectDrawerDragGestures(
+              drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
+              drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
+              drawerWidth = drawerWidth.toFloat(),
+              currentPagerPage = { currentPageIndex },
+              isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
+              onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
+              isGestureCurrentlyAllowed = {
+                isDrawerDragGestureCurrentlyAllowed(
+                  currentPageUpdated,
+                  false
+                )
+              },
+              onLongtapDragGestureDetected = {
+                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                longtapDragGestureDetected = true
+              },
+              onDraggingDrawer = { dragging, time, progress ->
+                globalUiInfoManager.dragDrawer(dragging, time, progress)
+              }
+            )
+          }
+        )
+        .nestedScroll(nestedScrollConnection)
+        .drawDragLongtapDragGestureZone(
+          drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
+          longtapDragGestureDetected = longtapDragGestureDetected,
+          resetFlag = { longtapDragGestureDetected = false }
+        )
+    ) {
+      HorizontalPager(
+        modifier = Modifier.fillMaxSize(),
+        state = pagerState,
+        count = pagesWrapper.pagesCount,
+        key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey()}
+      ) { page ->
+        val childPage = remember(key1 = page) { pagesWrapper.pageByIndex(page) }
+          ?: return@HorizontalPager
 
-    HomeScreenFloatingActionButton(
-      insets = windowInsets,
-      pagerState = pagerState,
-      pagesWrapper = pagesWrapper,
-      mainUiLayoutMode = mainUiLayoutMode,
-      onFabClicked = { screenKey -> homeScreenViewModel.onHomeScreenFabClicked(screenKey) }
-    )
+        val transitionIsProgress by remember { derivedStateOf { currentPageIndex != targetPageIndex } }
 
-    if (drawerWidth > 0) {
-      HomeScreenDrawerLayout(
-        drawerWidth = drawerWidth,
-        navigationRouterProvider = navigationRouterProvider,
-      )
-    }
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        try {
-          delay(250L)
-        } finally {
-          globalUiInfoManager.onPagerDisplayed()
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .consumeClicks(enabled = transitionIsProgress)
+        ) {
+          childPage.Content()
         }
       }
-    )
+
+      HomeScreenToolbarContainer(
+        insets = windowInsets,
+        chanTheme = chanTheme,
+        pagerState = pagerState,
+        pagesWrapper = pagesWrapper,
+        mainUiLayoutMode = mainUiLayoutMode
+      )
+
+      HomeScreenFloatingActionButton(
+        insets = windowInsets,
+        pagerState = pagerState,
+        pagesWrapper = pagesWrapper,
+        mainUiLayoutMode = mainUiLayoutMode,
+        onFabClicked = { screenKey -> homeScreenViewModel.onHomeScreenFabClicked(screenKey) }
+      )
+
+      if (drawerWidth > 0) {
+        HomeScreenDrawerLayout(
+          drawerWidth = drawerWidth,
+          mainUiLayoutMode = mainUiLayoutMode,
+          navigationRouterProvider = navigationRouterProvider,
+        )
+      }
+
+      LaunchedEffect(
+        key1 = Unit,
+        block = {
+          try {
+            delay(250L)
+          } finally {
+            globalUiInfoManager.onPagerDisplayed()
+          }
+        }
+      )
+    }
   }
 }
 

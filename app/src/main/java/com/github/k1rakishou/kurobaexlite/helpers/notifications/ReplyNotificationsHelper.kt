@@ -40,10 +40,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivity
-import java.util.EnumSet
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.regex.Pattern
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filter
@@ -55,6 +51,10 @@ import okhttp3.HttpUrl
 import org.joda.time.DateTime
 import org.nibor.autolink.LinkExtractor
 import org.nibor.autolink.LinkType
+import java.util.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.regex.Pattern
 
 class ReplyNotificationsHelper(
   private val appContext: Context,
@@ -79,7 +79,7 @@ class ReplyNotificationsHelper(
         .filter { bookmarkEvent ->
           return@filter when (bookmarkEvent) {
             is BookmarksManager.Event.Created -> false
-            BookmarksManager.Event.Loaded,
+            is BookmarksManager.Event.Loaded,
             is BookmarksManager.Event.Deleted,
             is BookmarksManager.Event.Updated -> true
           }

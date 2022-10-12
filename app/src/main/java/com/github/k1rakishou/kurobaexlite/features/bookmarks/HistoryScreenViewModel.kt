@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.bookmarks
 
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -12,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.managers.NavigationUpdate
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
@@ -32,6 +34,7 @@ class HistoryScreenViewModel(
   private val _navigationHistoryList = mutableStateListOf<UiNavigationElement>()
   val navigationHistoryList: List<UiNavigationElement>
     get() = _navigationHistoryList
+  val navigationHistoryListFlow = snapshotFlow { _navigationHistoryList.toList() }
 
   private val _removedElementsFlow = MutableSharedFlow<Pair<Int, UiNavigationElement>>(
     extraBufferCapacity = Channel.UNLIMITED
@@ -69,6 +72,12 @@ class HistoryScreenViewModel(
   fun undoNavElementDeletion(prevIndex: Int, uiNavigationElement: UiNavigationElement) {
     viewModelScope.launch {
       modifyNavigationHistory.undoDeletion(prevIndex, uiNavigationElement.toNavigationElement())
+    }
+  }
+
+  fun reorderNavigationElement(chanDescriptor: ChanDescriptor) {
+    viewModelScope.launch {
+      modifyNavigationHistory.moveToTop(chanDescriptor)
     }
   }
 

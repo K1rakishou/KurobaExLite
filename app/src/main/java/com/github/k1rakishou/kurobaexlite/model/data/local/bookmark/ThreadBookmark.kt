@@ -7,10 +7,10 @@ import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadLocalPostKey
 import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import java.util.BitSet
-import kotlin.math.max
 import okhttp3.HttpUrl
 import org.joda.time.DateTime
+import java.util.*
+import kotlin.math.max
 
 class ThreadBookmark private constructor(
   val threadDescriptor: ThreadDescriptor,
@@ -62,6 +62,7 @@ class ThreadBookmark private constructor(
   fun isFirstFetch(): Boolean = state.get(BOOKMARK_STATE_FIRST_FETCH)
   fun isError(): Boolean = state.get(BOOKMARK_STATE_ERROR)
   fun isFilterWatchBookmark(): Boolean = state.get(BOOKMARK_FILTER_WATCH)
+  fun isDead(): Boolean = state.get(BOOKMARK_STATE_THREAD_DELETED) || state.get(BOOKMARK_STATE_THREAD_ARCHIVED)
 
   fun clearFirstFetchFlag() {
     if (state.get(BOOKMARK_STATE_FIRST_FETCH)) {
