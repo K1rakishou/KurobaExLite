@@ -68,6 +68,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowSizeClass
+import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowWidthSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -525,6 +527,7 @@ private fun HomeScreenContentActual(
   val view = LocalView.current
   val chanTheme = LocalChanTheme.current
   val density = LocalDensity.current
+  val windowSizeClass = LocalWindowSizeClass.current
 
   val drawerLongtapGestureWidthZonePx = with(density) { remember { 24.dp.toPx() } }
   val maxDrawerWidth = with(density) { 600.dp.roundToPx() }
@@ -566,7 +569,7 @@ private fun HomeScreenContentActual(
   }
 
   Row {
-    if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+    if (mainUiLayoutMode == MainUiLayoutMode.Split && windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded) {
       val miniDrawerWidth = dimensionResource(id = R.dimen.home_screen_mini_drawer_width)
 
       Box(

@@ -28,6 +28,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.ChildScreenSearchInfo
 import com.github.k1rakishou.kurobaexlite.model.data.ui.CurrentPage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.HideableUiVisibilityInfo
+import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowSizeClass
+import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowWidthSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -529,17 +531,18 @@ class GlobalUiInfoManager(
   suspend fun updateLayoutModeAndCurrentPage(
     layoutType: LayoutType,
     orientation: Int,
-    totalScreenWidth: Int
+    totalScreenWidth: Int,
+    windowSizeClass: WindowSizeClass
   ) : MainUiLayoutMode {
     check(orientation in orientations) { "Unexpected orientation: ${orientation}" }
 
     val uiLayoutMode = when (layoutType) {
       LayoutType.Auto -> {
-        when {
-          isTablet -> MainUiLayoutMode.Split
-          orientation == Configuration.ORIENTATION_PORTRAIT
-            || orientation == Configuration.ORIENTATION_UNDEFINED -> MainUiLayoutMode.Phone
-          else -> MainUiLayoutMode.Split
+        when (windowSizeClass.widthSizeClass) {
+          WindowWidthSizeClass.Compact -> MainUiLayoutMode.Phone
+          WindowWidthSizeClass.Medium -> MainUiLayoutMode.Split
+          WindowWidthSizeClass.Expanded -> MainUiLayoutMode.Split
+          else -> MainUiLayoutMode.Phone
         }
       }
       LayoutType.Phone -> MainUiLayoutMode.Phone
@@ -565,8 +568,7 @@ class GlobalUiInfoManager(
     }
 
     val availableWidthForCatalog = totalScreenWidth * CATALOG_SCREEN_WEIGHT
-    val minCatalogSplitModelWidth =
-      with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
+    val minCatalogSplitModelWidth = with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
 
     if (
       uiLayoutMode == MainUiLayoutMode.Split &&
@@ -631,8 +633,8 @@ class GlobalUiInfoManager(
     private const val CURRENT_PAGE = "current_page"
     private const val IS_DRAWER_OPENED = "is_drawer_opened"
 
-    const val CATALOG_SCREEN_WEIGHT = .4f
-    const val THREAD_SCREEN_WEIGHT = .6f
+    const val CATALOG_SCREEN_WEIGHT = .5f
+    const val THREAD_SCREEN_WEIGHT = .5f
 
     private val minCatalogSplitModelWidthDp = 200.dp
   }

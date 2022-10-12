@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreen
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.Tuple4
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
@@ -37,6 +38,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.flow.collectLatest
@@ -105,6 +107,7 @@ private fun ProvideLocalMainUiLayoutMode(content: @Composable () -> Unit) {
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val appSettings: AppSettings = koinRemember()
   val orientation = LocalConfiguration.current.orientation
+  val windowSizeClass = LocalWindowSizeClass.current
 
   var currentMainUiLayoutMode by remember { mutableStateOf(MainUiLayoutMode.Phone) }
 
@@ -115,13 +118,15 @@ private fun ProvideLocalMainUiLayoutMode(content: @Composable () -> Unit) {
         flow = appSettings.layoutType.listen(),
         flow2 = snapshotFlow { orientation },
         flow3 = snapshotFlow { globalUiInfoManager.totalScreenWidthState.value },
-        transform = { t1, t2, t3 -> Triple(t1, t2, t3) }
+        flow4 = snapshotFlow { windowSizeClass },
+        transform = { t1, t2, t3, t4 -> Tuple4(t1, t2, t3, t4) }
       )
-        .collectLatest { (layoutType, orientation, totalScreenWidth) ->
+        .collectLatest { (layoutType, orientation, totalScreenWidth, windowSizeClass) ->
           currentMainUiLayoutMode = globalUiInfoManager.updateLayoutModeAndCurrentPage(
             layoutType = layoutType,
             orientation = orientation,
-            totalScreenWidth = totalScreenWidth
+            totalScreenWidth = totalScreenWidth,
+            windowSizeClass = windowSizeClass
           )
         }
     }

@@ -42,6 +42,8 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaSwipeableState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowSizeClass
+import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowWidthSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlin.math.absoluteValue
@@ -68,8 +70,12 @@ class DrawerSwipeState(
     mainUiLayoutMode: MainUiLayoutMode
   ) {
     val density = LocalDensity.current
+    val windowSizeClass = LocalWindowSizeClass.current
 
-    val miniDrawerWidth = if (mainUiLayoutMode == MainUiLayoutMode.Phone) {
+    val miniDrawerWidth = if (
+      mainUiLayoutMode == MainUiLayoutMode.Phone ||
+      windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded
+    ) {
       0f
     } else {
       val miniDrawerWidthDp = dimensionResource(id = R.dimen.home_screen_mini_drawer_width)

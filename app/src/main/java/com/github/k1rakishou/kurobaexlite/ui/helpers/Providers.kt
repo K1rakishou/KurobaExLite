@@ -14,6 +14,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.toComposeRect
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -26,14 +28,16 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.window.layout.WindowMetricsCalculator
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 
-val LocalChanTheme = staticCompositionLocalOf<ChanTheme> { error("Theme not provided") }
-val LocalComponentActivity = staticCompositionLocalOf<ComponentActivity> { error("ComponentActivity not provided") }
-val LocalWindowInsets = compositionLocalOf<Insets> { error("Not initialized") }
-val LocalRuntimePermissionsHelper = compositionLocalOf<RuntimePermissionsHelper> { error("Not initialized") }
+val LocalChanTheme = staticCompositionLocalOf<ChanTheme> { error("LocalChanTheme not provided") }
+val LocalComponentActivity = staticCompositionLocalOf<ComponentActivity> { error("LocalComponentActivity not provided") }
+val LocalWindowInsets = compositionLocalOf<Insets> { error("LocalWindowInsets not initialized") }
+val LocalRuntimePermissionsHelper = compositionLocalOf<RuntimePermissionsHelper> { error("LocalRuntimePermissionsHelper not initialized") }
+val LocalWindowSizeClass = staticCompositionLocalOf<WindowSizeClass> { error("LocalWindowSizeClass not initialized") }
 
 @Composable
 fun ProvideAllTheStuff(
@@ -48,11 +52,31 @@ fun ProvideAllTheStuff(
       ProvideWindowInsets(window = window) {
         ProvideChanTheme(themeEngine = themeEngine) {
           ProvideLocalRuntimePermissionsHelper(runtimePermissionsHelper = runtimePermissionsHelper) {
-            content()
+            ProvideWindowClassSize(activity = componentActivity) {
+              content()
+            }
           }
         }
       }
     }
+  }
+}
+
+@Composable
+private fun ProvideWindowClassSize(activity: ComponentActivity, content: @Composable () -> Unit) {
+  // Observe view configuration changes and recalculate the size class on each change. We can't
+  // use Activity#onConfigurationChanged as this will sometimes fail to be called on different
+  // API levels, hence why this function needs to be @Composable so we can observe the
+  // ComposeView's configuration changes.
+  @Suppress("UNUSED_VARIABLE") val configuration = LocalConfiguration.current
+
+  val density = LocalDensity.current
+  val metrics = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(activity)
+  val size = with(density) { metrics.bounds.toComposeRect().size.toDpSize() }
+  val windowClassSize = WindowSizeClass.calculateFromSize(size)
+
+  CompositionLocalProvider(LocalWindowSizeClass provides windowClassSize) {
+    content()
   }
 }
 
