@@ -289,6 +289,7 @@ private fun LazyItemScope.NavigationElement(
             catalogScreenViewModel.loadCatalog(element.chanDescriptor)
             globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY)
             historyScreenViewModel.reorderNavigationElement(element)
+            globalUiInfoManager.closeDrawer(withAnimation = true)
           },
           onRemoveClicked = { element ->
             historyScreenViewModel.removeNavigationElement(element)
@@ -303,6 +304,7 @@ private fun LazyItemScope.NavigationElement(
             threadScreenViewModel.loadThread(element.chanDescriptor)
             globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
             historyScreenViewModel.reorderNavigationElement(element)
+            globalUiInfoManager.closeDrawer(withAnimation = true)
           },
           onRemoveClicked = { element ->
             historyScreenViewModel.removeNavigationElement(element)
