@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.settings.report
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -22,7 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -38,8 +41,9 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleTool
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Collapsable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaLabelText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
@@ -147,7 +151,16 @@ class ReportIssueScreen(
     val chanTheme = LocalChanTheme.current
     val context = LocalContext.current
     val insets = LocalWindowInsets.current
-    val paddings = remember { PaddingValues(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp + insets.bottom) }
+    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
+
+    val paddings = remember {
+      PaddingValues(
+        start = 8.dp,
+        end = 8.dp,
+        top = toolbarHeight + insets.top + 8.dp,
+        bottom = 8.dp + insets.bottom
+      )
+    }
 
     Column(
       modifier = Modifier
@@ -181,52 +194,87 @@ class ReportIssueScreen(
         )
       }
 
-      KurobaComposeCustomTextField(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight(),
-        value = issueNumber,
-        textColor = chanTheme.textColorPrimary,
-        parentBackgroundColor = chanTheme.backColor,
-        maxLines = 1,
-        singleLine = true,
-        maxTextLength = 10,
-        labelText = stringResource(id = R.string.report_issue_screen_issue_number),
-        keyboardOptions = issueNumberKbOptions,
-        onValueChange = { number -> issueNumber = number }
-      )
+      Spacer(modifier = Modifier.height(8.dp))
+
+      kotlin.run {
+        val interactionSource = remember { MutableInteractionSource() }
+        KurobaComposeTextField(
+          modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+          value = issueNumber,
+          maxLines = 1,
+          singleLine = true,
+          label = {
+            val labelText = stringResource(R.string.report_issue_screen_issue_number)
+
+            KurobaLabelText(
+              labelText = labelText,
+              interactionSource = interactionSource
+            )
+          },
+          keyboardOptions = issueNumberKbOptions,
+          onValueChange = { number -> issueNumber = number },
+          interactionSource = interactionSource
+        )
+      }
 
       Spacer(modifier = Modifier.height(8.dp))
 
-      KurobaComposeCustomTextField(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight(),
-        value = reportTitle,
-        enabled = issueNumber.text.isEmpty(),
-        textColor = chanTheme.textColorPrimary,
-        parentBackgroundColor = chanTheme.backColor,
-        maxLines = 1,
-        singleLine = true,
-        maxTextLength = ReportManager.MAX_TITLE_LENGTH,
-        labelText = stringResource(id = R.string.report_issue_screen_issue_title),
-        onValueChange = { title -> reportTitle = title }
-      )
+      kotlin.run {
+        val interactionSource = remember { MutableInteractionSource() }
+        KurobaComposeTextField(
+          modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+          value = reportTitle,
+          enabled = issueNumber.text.isEmpty(),
+          maxLines = 1,
+          singleLine = true,
+          label = {
+            val labelText = stringResource(
+              R.string.report_issue_screen_issue_title,
+              reportTitle.text.length,
+              ReportManager.MAX_TITLE_LENGTH
+            )
+
+            KurobaLabelText(
+              enabled = issueNumber.text.isEmpty(),
+              labelText = labelText,
+              interactionSource = interactionSource
+            )
+          },
+          onValueChange = { title -> reportTitle = title },
+          interactionSource = interactionSource
+        )
+      }
 
       Spacer(modifier = Modifier.height(8.dp))
 
-      KurobaComposeCustomTextField(
-        modifier = Modifier
-          .fillMaxWidth()
-          .wrapContentHeight(),
-        value = reportDescription,
-        textColor = chanTheme.textColorPrimary,
-        parentBackgroundColor = chanTheme.backColor,
-        maxLines = 4,
-        maxTextLength = ReportManager.MAX_DESCRIPTION_LENGTH,
-        labelText = stringResource(id = R.string.report_issue_screen_issue_description),
-        onValueChange = { description -> reportDescription = description }
-      )
+      kotlin.run {
+        val interactionSource = remember { MutableInteractionSource() }
+        KurobaComposeTextField(
+          modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+          value = reportDescription,
+          maxLines = 4,
+          label = {
+            val labelText = stringResource(
+              R.string.report_issue_screen_issue_description,
+              reportDescription.text.length,
+              ReportManager.MAX_DESCRIPTION_LENGTH
+            )
+
+            KurobaLabelText(
+              labelText = labelText,
+              interactionSource = interactionSource
+            )
+          },
+          onValueChange = { description -> reportDescription = description },
+          interactionSource = interactionSource
+        )
+      }
 
       Spacer(modifier = Modifier.height(8.dp))
 
@@ -289,16 +337,26 @@ class ReportIssueScreen(
           collapsedByDefault = true
         ) {
           if (reportLogs.text.isNotEmpty()) {
-            KurobaComposeCustomTextField(
+            val interactionSource = remember { MutableInteractionSource() }
+            KurobaComposeTextField(
               modifier = Modifier
                 .fillMaxWidth()
                 .wrapContentHeight(),
-              textColor = chanTheme.textColorPrimary,
-              parentBackgroundColor = chanTheme.backColor,
               value = reportLogs,
-              maxTextLength = ReportManager.MAX_LOGS_LENGTH,
-              fontSize = 12.sp,
-              onValueChange = { }
+              readOnly = true,
+              textStyle = TextStyle(fontSize = 12.sp),
+              label = {
+                val labelText = remember(reportLogs.text.length) {
+                  "${reportLogs.text.length}/${ReportManager.MAX_LOGS_LENGTH}"
+                }
+
+                KurobaLabelText(
+                  labelText = labelText,
+                  interactionSource = interactionSource
+                )
+              },
+              onValueChange = { },
+              interactionSource = interactionSource
             )
           } else {
             KurobaComposeText(text = stringResource(id = R.string.report_issue_screen_loading_logs))

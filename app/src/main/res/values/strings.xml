@@ -340,8 +340,8 @@
     <string name="report_issue_screen_note">It\'s very recommended to attach link to a post/thread/image if the problem is with any of those so it\'s easier to reproduce and test! The more information you provide the better!</string>
     <string name="report_issue_screen_last_logs">Last logs</string>
     <string name="report_issue_screen_issue_number">Existing issue number (to leave a comment)</string>
-    <string name="report_issue_screen_issue_title">Issue title</string>
-    <string name="report_issue_screen_issue_description">Issue description</string>
+    <string name="report_issue_screen_issue_title">Issue title (%1$d/%2$d)</string>
+    <string name="report_issue_screen_issue_description">Issue description (%1$d/%2$d)</string>
     <string name="report_issue_screen_description_cannot_be_empty_error_comment_mode">Description cannot be empty!</string>
     <string name="report_issue_screen_error_while_trying_to_send_report">Error while trying to send report: %1$s</string>
     <string name="report_issue_screen_title_cannot_be_empty_error">Title cannot be empty!</string>

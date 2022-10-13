@@ -337,9 +337,9 @@ private fun KurobaComposeCustomTextFieldInternal(
 
 @Composable
 fun KurobaLabelText(
-  enabled: Boolean,
+  enabled: Boolean = true,
   labelText: String?,
-  fontSize: TextUnit,
+  fontSize: TextUnit = 13.sp,
   parentBackgroundColor: Color = Color.Unspecified,
   interactionSource: InteractionSource
 ) {
@@ -367,7 +367,11 @@ fun KurobaLabelText(
       }
 
       if (parentBackgroundColor.isUnspecified) {
-        return@remember Color.DarkGray.copy(alpha = alpha)
+        if (chanTheme.isDarkTheme) {
+          return@remember Color.LightGray.copy(alpha = alpha)
+        } else {
+          return@remember Color.DarkGray.copy(alpha = alpha)
+        }
       }
 
       return@remember if (ThemeEngine.isDarkColor(parentBackgroundColor)) {
