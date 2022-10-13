@@ -94,6 +94,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardFlagsJsonAdapter
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.GlobalSearchRepository
@@ -162,7 +163,7 @@ object DependencyGraph {
     }
 
     single { GlobalConstants(get()) }
-    single { Moshi.Builder().build() }
+    single { createMoshi() }
     single { PostCommentParser(siteManager = get()) }
     single { PostCommentApplier() }
     single { FullScreenHelpers(get()) }
@@ -240,6 +241,12 @@ object DependencyGraph {
     }
 
     single { Chan4CaptchaSolverHelper(moshi = get(), appContext = get()) }
+  }
+
+  private fun createMoshi(): Moshi {
+    return Moshi.Builder()
+      .add(BoardFlagsJsonAdapter())
+      .build()
   }
 
   private fun Module.managers() {

@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
@@ -52,7 +53,6 @@ import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
-import java.net.HttpCookie
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
@@ -60,6 +60,7 @@ import logcat.logcat
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
+import java.net.HttpCookie
 
 @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 class Chan4DataSource(
@@ -305,7 +306,11 @@ class Chan4DataSource(
             boardTitle = boardTitle,
             boardDescription = boardDescription,
             workSafe = boardDataJson.workSafe == 1,
-            maxAttachFilesPerPost = 1
+            maxAttachFilesPerPost = 1,
+            flags = boardDataJson.boardFlags
+              ?.list
+              ?.map { boardFlagJson -> BoardFlag(boardFlagJson.key, boardFlagJson.name) }
+              ?: emptyList()
           )
         }
 

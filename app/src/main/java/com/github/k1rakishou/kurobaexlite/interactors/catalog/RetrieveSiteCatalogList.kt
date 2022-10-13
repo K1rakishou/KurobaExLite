@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.interactors.catalog
 
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -10,8 +11,12 @@ import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.entity.CatalogKey
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogEntitySorted
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogFlagEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogSortOrderEntity
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
+import com.github.k1rakishou.kurobaexlite.model.database.Daos
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
@@ -35,23 +40,33 @@ class RetrieveSiteCatalogList(
       if (!forceReload) {
         logcat(TAG) { "Reading from database..." }
 
-        val readCatalogsResult = kurobaExLiteDatabase.call { chanCatalogDao.selectAllForSiteOrdered(siteKey.key) }
+        val readCatalogsResult = kurobaExLiteDatabase.transaction {
+          val catalogListFromDatabase = chanCatalogDao.selectAllForSiteOrdered(siteKey.key)
+
+          return@transaction catalogListFromDatabase
+            .sortedBy { catalogEntity -> catalogEntity.chanCatalogSortOrderEntity.sortOrder }
+            .map { catalogEntity ->
+              val flags = chanCatalogFlagDao.selectCatalogFlags(
+                siteKey = catalogEntity.chanCatalogEntity.catalogKey.siteKey,
+                boardCode = catalogEntity.chanCatalogEntity.catalogKey.boardCode
+              ).map { chanCatalogFlagEntity -> BoardFlag(chanCatalogFlagEntity.flagKey, chanCatalogFlagEntity.flagName) }
+
+              return@map catalogEntity.toChanCatalog(flags)
+            }
+        }
+
         if (readCatalogsResult.isSuccess) {
           logcat(TAG) { "Reading from database... SUCCESS" }
 
-          val catalogListFromDatabase = readCatalogsResult.getOrThrow()
-          if (catalogListFromDatabase.isNotEmpty()) {
-            logcat(TAG) { "Got catalogs from the database: count=${catalogListFromDatabase.size}" }
-
-            val chanCatalogsFromDatabase = catalogListFromDatabase
-              .sortedBy { catalogEntity -> catalogEntity.chanCatalogSortOrderEntity.sortOrder }
-              .map { catalogEntity -> catalogEntity.toChanCatalog() }
+          val chanCatalogsFromDatabase = readCatalogsResult.getOrThrow()
+          if (chanCatalogsFromDatabase.isNotEmpty()) {
+            logcat(TAG) { "Got catalogs from the database: count=${chanCatalogsFromDatabase.size}" }
 
             catalogManager.insertMany(chanCatalogsFromDatabase)
             return@Try chanCatalogsFromDatabase
           }
 
-          logcat(TAG) { "Cached catalogs cannot be used: cachedCatalogsCount: ${catalogListFromDatabase.size}" }
+          logcat(TAG) { "Cached catalogs cannot be used: cachedCatalogsCount: ${chanCatalogsFromDatabase.size}" }
 
           // fallthrough
         } else {
@@ -72,7 +87,7 @@ class RetrieveSiteCatalogList(
 
       val loadBoardsError = loadBoardsResult.exceptionOrNull()
       if (loadBoardsError != null) {
-        logcatError(TAG) { "siteBoardsDataSource.loadBoards($siteKey) -> error (${loadBoardsError.errorMessageOrClassName()})" }
+        logcatError(TAG) { "siteBoardsDataSource.loadBoards($siteKey) -> error (${loadBoardsError.asLogIfImportantOrErrorMessage()})" }
         throw GetSiteBoardListException("Failed to load board list for site \'$siteKey\'", loadBoardsError)
       }
 
@@ -102,75 +117,9 @@ class RetrieveSiteCatalogList(
           databaseIdMap[catalogDescriptor] = databaseId
         }
 
-        kotlin.run {
-          val toInsert = mutableListWithCap<ChanCatalogEntity>(siteCatalogs.size / 2)
-          val toUpdate = mutableListWithCap<ChanCatalogEntity>(siteCatalogs.size / 2)
-
-          siteCatalogs.forEach { chanCatalog ->
-            if (databaseIdMap.containsKey(chanCatalog.catalogDescriptor)) {
-              toUpdate += ChanCatalogEntity(
-                catalogKey = CatalogKey.fromCatalogDescriptor(chanCatalog.catalogDescriptor),
-                databaseId = databaseIdMap[chanCatalog.catalogDescriptor]!!,
-                boardTitle = chanCatalog.boardTitle,
-                boardDescription = chanCatalog.boardDescription,
-                workSafe = chanCatalog.workSafe
-              )
-            } else {
-              toInsert += ChanCatalogEntity(
-                catalogKey = CatalogKey.fromCatalogDescriptor(chanCatalog.catalogDescriptor),
-                boardTitle = chanCatalog.boardTitle,
-                boardDescription = chanCatalog.boardDescription,
-                workSafe = chanCatalog.workSafe
-              )
-            }
-          }
-
-          logcat(TAG) { "insertChanCatalogEntityList() toInsert=${toInsert.size}" }
-          if (toInsert.isNotEmpty()) {
-            val insertDatabaseIdMap = chanCatalogDao.insertChanCatalogEntityList(toInsert)
-            databaseIdMap.putAll(insertDatabaseIdMap)
-          }
-
-          logcat(TAG) { "updateChanCatalogEntityList() toUpdate=${toUpdate.size}" }
-          if (toUpdate.isNotEmpty()) {
-            chanCatalogDao.updateChanCatalogEntityList(toUpdate)
-          }
-        }
-
-        run {
-          val chanCatalogSortOrderEntityList = mutableListWithCap<ChanCatalogSortOrderEntity>(
-            initialCapacity = catalogEntityListSorted.size + siteCatalogs.size
-          )
-          chanCatalogSortOrderEntityList.addAll(
-            catalogEntityListSorted.map { it.chanCatalogSortOrderEntity }
-          )
-
-          val maxSortOrder = chanCatalogSortOrderEntityList.lastOrNull()?.sortOrder?.plus(1) ?: 0
-
-          siteCatalogs.forEachIndexed { index, chanCatalog ->
-            val databaseId = databaseIdMap[chanCatalog.catalogDescriptor]
-            if (databaseId == null || databaseId <= 0L) {
-              return@forEachIndexed
-            }
-
-            val alreadyExists = chanCatalogSortOrderEntityList
-              .indexOfFirst { it.ownerDatabaseId == databaseId } >= 0
-
-            if (alreadyExists) {
-              return@forEachIndexed
-            }
-
-            chanCatalogSortOrderEntityList += ChanCatalogSortOrderEntity(
-              ownerDatabaseId = databaseId,
-              sortOrder = maxSortOrder + index
-            )
-          }
-
-          logcat(TAG) { "replaceChanCatalogSortOrderEntityList() chanCatalogSortOrderEntityList=${chanCatalogSortOrderEntityList.size}" }
-          if (chanCatalogSortOrderEntityList.isNotEmpty()) {
-            chanCatalogDao.replaceChanCatalogSortOrderEntityList(chanCatalogSortOrderEntityList)
-          }
-        }
+        insertOrUpdateBoards(siteCatalogs, databaseIdMap)
+        insertOrUpdateBoardOrders(catalogEntityListSorted, siteCatalogs, databaseIdMap)
+        insertOrUpdateBoardFlags(siteCatalogs)
       }.onFailure { error ->
         logcatError(TAG) { "Inserting ${siteCatalogs.size} siteCatalogs into database... ERROR, error=${error.errorMessageOrClassName()}" }
       }.onSuccess {
@@ -180,6 +129,116 @@ class RetrieveSiteCatalogList(
       catalogManager.insertMany(siteCatalogs)
 
       return@Try siteCatalogs
+    }
+  }
+
+  private suspend fun Daos.insertOrUpdateBoardFlags(siteCatalogs: List<ChanCatalog>) {
+    siteCatalogs.forEach { siteCatalog ->
+      if (siteCatalog.flags.isEmpty()) {
+        return@forEach
+      }
+
+      val siteKey = siteCatalog.catalogDescriptor.siteKeyActual
+      val boardCode = siteCatalog.catalogDescriptor.boardCode
+
+      val chanCatalogFlagEntities = siteCatalog.flags.mapIndexed { sortOrder, boardFlag ->
+        ChanCatalogFlagEntity(
+          catalogKey = CatalogKey(
+            siteKey = siteKey,
+            boardCode = boardCode
+          ),
+          flagKey = boardFlag.key,
+          flagName = boardFlag.name,
+          sortOrder = sortOrder
+        )
+      }
+
+      chanCatalogFlagDao.replaceCatalogFlags(
+        siteKey = siteKey,
+        boardCode = boardCode,
+        newChanCatalogFlagEntities = chanCatalogFlagEntities
+      )
+    }
+  }
+
+  private suspend fun Daos.insertOrUpdateBoardOrders(
+    catalogEntityListSorted: List<ChanCatalogEntitySorted>,
+    siteCatalogs: List<ChanCatalog>,
+    databaseIdMap: Map<ChanDescriptor, Long>
+  ) {
+    run {
+      val chanCatalogSortOrderEntityList = mutableListWithCap<ChanCatalogSortOrderEntity>(
+        initialCapacity = catalogEntityListSorted.size + siteCatalogs.size
+      )
+      chanCatalogSortOrderEntityList.addAll(
+        catalogEntityListSorted.map { it.chanCatalogSortOrderEntity }
+      )
+
+      val maxSortOrder = chanCatalogSortOrderEntityList.lastOrNull()?.sortOrder?.plus(1) ?: 0
+
+      siteCatalogs.forEachIndexed { index, chanCatalog ->
+        val databaseId = databaseIdMap[chanCatalog.catalogDescriptor]
+        if (databaseId == null || databaseId <= 0L) {
+          return@forEachIndexed
+        }
+
+        val alreadyExists = chanCatalogSortOrderEntityList
+          .indexOfFirst { it.ownerDatabaseId == databaseId } >= 0
+
+        if (alreadyExists) {
+          return@forEachIndexed
+        }
+
+        chanCatalogSortOrderEntityList += ChanCatalogSortOrderEntity(
+          ownerDatabaseId = databaseId,
+          sortOrder = maxSortOrder + index
+        )
+      }
+
+      logcat(TAG) { "replaceChanCatalogSortOrderEntityList() chanCatalogSortOrderEntityList=${chanCatalogSortOrderEntityList.size}" }
+      if (chanCatalogSortOrderEntityList.isNotEmpty()) {
+        chanCatalogDao.replaceChanCatalogSortOrderEntityList(chanCatalogSortOrderEntityList)
+      }
+    }
+  }
+
+  private suspend fun Daos.insertOrUpdateBoards(
+    siteCatalogs: List<ChanCatalog>,
+    databaseIdMap: MutableMap<ChanDescriptor, Long>
+  ) {
+    kotlin.run {
+      val toInsert = mutableListWithCap<ChanCatalogEntity>(siteCatalogs.size / 2)
+      val toUpdate = mutableListWithCap<ChanCatalogEntity>(siteCatalogs.size / 2)
+
+      siteCatalogs.forEach { chanCatalog ->
+        if (databaseIdMap.containsKey(chanCatalog.catalogDescriptor)) {
+          toUpdate += ChanCatalogEntity(
+            catalogKey = CatalogKey.fromCatalogDescriptor(chanCatalog.catalogDescriptor),
+            databaseId = databaseIdMap[chanCatalog.catalogDescriptor]!!,
+            boardTitle = chanCatalog.boardTitle,
+            boardDescription = chanCatalog.boardDescription,
+            workSafe = chanCatalog.workSafe
+          )
+        } else {
+          toInsert += ChanCatalogEntity(
+            catalogKey = CatalogKey.fromCatalogDescriptor(chanCatalog.catalogDescriptor),
+            boardTitle = chanCatalog.boardTitle,
+            boardDescription = chanCatalog.boardDescription,
+            workSafe = chanCatalog.workSafe
+          )
+        }
+      }
+
+      logcat(TAG) { "insertChanCatalogEntityList() toInsert=${toInsert.size}" }
+      if (toInsert.isNotEmpty()) {
+        val insertDatabaseIdMap = chanCatalogDao.insertChanCatalogEntityList(toInsert)
+        databaseIdMap.putAll(insertDatabaseIdMap)
+      }
+
+      logcat(TAG) { "updateChanCatalogEntityList() toUpdate=${toUpdate.size}" }
+      if (toUpdate.isNotEmpty()) {
+        chanCatalogDao.updateChanCatalogEntityList(toUpdate)
+      }
     }
   }
 

@@ -10,6 +10,8 @@ import androidx.room.withTransaction
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogFlagDao
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogFlagEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogSortOrderEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewEntity
@@ -24,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.entity.ThreadBookmarkSortOr
 import com.github.k1rakishou.kurobaexlite.model.database.converters.BitSetTypeConverter
 import com.github.k1rakishou.kurobaexlite.model.database.converters.DateTimeTypeConverter
 import com.github.k1rakishou.kurobaexlite.model.database.converters.HttpUrlTypeConverter
+import com.github.k1rakishou.kurobaexlite.model.database.migations.Migration_v1_to_v2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -36,9 +39,10 @@ import kotlinx.coroutines.withContext
     ChanCatalogSortOrderEntity::class,
     ThreadBookmarkEntity::class,
     ThreadBookmarkReplyEntity::class,
-    ThreadBookmarkSortOrderEntity::class
+    ThreadBookmarkSortOrderEntity::class,
+    ChanCatalogFlagEntity::class
   ],
-  version = 1,
+  version = 2,
   exportSchema = true
 )
 @TypeConverters(
@@ -82,6 +86,9 @@ abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
         DATABASE_NAME
       )
         .fallbackToDestructiveMigrationOnDowngrade()
+        .addMigrations(
+          Migration_v1_to_v2()
+        )
         .build()
     }
   }
@@ -93,4 +100,5 @@ interface Daos {
   val markedPostDao: MarkedPostDao
   val chanCatalogDao: ChanCatalogDao
   val threadBookmarkDao: ThreadBookmarkDao
+  val chanCatalogFlagDao: ChanCatalogFlagDao
 }

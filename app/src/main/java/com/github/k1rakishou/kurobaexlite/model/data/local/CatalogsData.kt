@@ -11,5 +11,11 @@ data class ChanCatalog(
   val boardTitle: String?,
   val boardDescription: String?,
   val workSafe: Boolean,
-  val maxAttachFilesPerPost: Int
+  val maxAttachFilesPerPost: Int,
+  val flags: List<BoardFlag>
+)
+
+data class BoardFlag(
+  val key: String,
+  val name: String
 )

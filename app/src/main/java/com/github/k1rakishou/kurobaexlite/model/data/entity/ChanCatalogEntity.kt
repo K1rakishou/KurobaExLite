@@ -14,6 +14,7 @@ import androidx.room.Relation
 import androidx.room.Transaction
 import androidx.room.Update
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 
@@ -31,13 +32,14 @@ data class ChanCatalogEntity(
   @ColumnInfo(name = "work_safe") val workSafe: Boolean
 ) {
 
-  fun toChanCatalog(): ChanCatalog {
+  fun toChanCatalog(flags: List<BoardFlag>): ChanCatalog {
     return ChanCatalog(
       catalogDescriptor = catalogKey.catalogDescriptor,
       boardTitle = boardTitle,
       boardDescription = boardDescription,
       workSafe = workSafe,
-      maxAttachFilesPerPost = 1
+      maxAttachFilesPerPost = 1,
+      flags = flags
     )
   }
 
@@ -79,8 +81,8 @@ data class ChanCatalogEntitySorted(
   val chanCatalogSortOrderEntity: ChanCatalogSortOrderEntity
 ) {
 
-  fun toChanCatalog(): ChanCatalog {
-    return chanCatalogEntity.toChanCatalog()
+  fun toChanCatalog(flags: List<BoardFlag>): ChanCatalog {
+    return chanCatalogEntity.toChanCatalog(flags)
   }
 
 }
