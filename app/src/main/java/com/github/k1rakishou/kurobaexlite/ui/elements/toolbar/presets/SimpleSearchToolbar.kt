@@ -25,6 +25,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.helpers.util.freeFocusSafe
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
@@ -120,7 +121,7 @@ class SimpleSearchToolbar(
 
             onDispose {
               job.cancel()
-              focusRequest.freeFocus()
+              focusRequest.freeFocusSafe()
             }
           }
         )

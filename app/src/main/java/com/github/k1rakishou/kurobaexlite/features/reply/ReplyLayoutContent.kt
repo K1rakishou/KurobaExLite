@@ -60,6 +60,7 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastSumBy
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurable
+import com.github.k1rakishou.kurobaexlite.helpers.util.freeFocusSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -471,7 +472,7 @@ private fun ColumnScope.ReplyTextField(
         prevReplyLayoutVisibility != ReplyLayoutVisibility.Collapsed &&
         replyLayoutVisibility == ReplyLayoutVisibility.Collapsed
       ) {
-        focusRequest.freeFocus()
+        focusRequest.freeFocusSafe()
 
         if (!globalUiInfoManager.isAnyReplyLayoutOpened()) {
           localSoftwareKeyboardController?.hide()
@@ -486,7 +487,7 @@ private fun ColumnScope.ReplyTextField(
     key1 = Unit,
     effect = {
       onDispose {
-        focusRequest.freeFocus()
+        focusRequest.freeFocusSafe()
 
         if (!globalUiInfoManager.isAnyReplyLayoutOpened()) {
           localSoftwareKeyboardController?.hide()

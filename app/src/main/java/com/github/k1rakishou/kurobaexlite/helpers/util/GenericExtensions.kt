@@ -11,6 +11,7 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
@@ -1034,5 +1035,14 @@ suspend fun CompletableDeferred<*>.awaitSilently() {
     await()
   } catch (ignored: CancellationException) {
     // no-op
+  }
+}
+
+fun FocusRequester.freeFocusSafe() {
+  try {
+    // Sometimes crashes with NPE somewhere inside findFocusNode()
+    freeFocus()
+  } catch (ignored: Throwable) {
+
   }
 }
