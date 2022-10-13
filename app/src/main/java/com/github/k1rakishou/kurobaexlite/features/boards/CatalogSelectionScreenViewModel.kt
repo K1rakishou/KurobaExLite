@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.boards
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
@@ -12,12 +13,12 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 import logcat.asLog
+import java.util.concurrent.atomic.AtomicBoolean
 
 class CatalogSelectionScreenViewModel(
   private val retrieveSiteCatalogList: RetrieveSiteCatalogList
@@ -25,9 +26,15 @@ class CatalogSelectionScreenViewModel(
   private val boardsCache = mutableMapOf<CatalogDescriptor, ChanCatalog>()
   private val loadedBoardsPerSite = mutableMapOf<SiteKey, MutableList<CatalogDescriptor>>()
 
+  private val _loadedBoardsForSite = mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Uninitialized)
+  val loadedBoardsForSite: State<AsyncData<List<ChanBoardUiData>>>
+    get() = _loadedBoardsForSite
+
   private val _searchQueryState = mutableStateOf<String?>(null)
   val searchQueryState: State<String?>
     get() = _searchQueryState
+
+  private var boardsForSiteLoading = AtomicBoolean(false)
 
   fun updateSearchQuery(value: String?) {
     _searchQueryState.value = value
@@ -35,9 +42,16 @@ class CatalogSelectionScreenViewModel(
 
   fun getOrLoadBoardsForSite(
     siteKey: SiteKey,
-    forceReload: Boolean
-  ): Flow<AsyncData<List<ChanBoardUiData>>> {
-    return channelFlow {
+    forceReload: Boolean,
+    hidePullToRefreshIndicator: (() -> Unit)? = null
+  ) {
+    if (!boardsForSiteLoading.compareAndSet(false, true)) {
+      return
+    }
+
+    viewModelScope.launch {
+      coroutineContext[Job.Key]!!.invokeOnCompletion { boardsForSiteLoading.set(false) }
+
       val loadedBoardsForSite = loadedBoardsPerSite.getOrPut(
         key = siteKey,
         defaultValue = { mutableListWithCap(64) }
@@ -47,18 +61,16 @@ class CatalogSelectionScreenViewModel(
         val chanBoards = loadedBoardsForSite
           .mapNotNull { catalogDescriptor -> boardsCache[catalogDescriptor] }
 
-        send(AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) }))
-        return@channelFlow
+        _loadedBoardsForSite.value = AsyncData.Data(chanBoards.map { mapChanBoardToChanBoardUiData(it) })
+        return@launch
       }
 
       val emitLoadingStateJob = coroutineScope {
         launch {
-          if (forceReload) {
-            return@launch
-          }
-
           delay(125L)
-          send(AsyncData.Loading)
+
+          hidePullToRefreshIndicator?.invoke()
+          _loadedBoardsForSite.value = AsyncData.Loading
         }
       }
 
@@ -74,16 +86,16 @@ class CatalogSelectionScreenViewModel(
             "error=${siteBoardsResult.exceptionOrThrow().asLog()}"
         )
 
-        send(AsyncData.Error(exception))
-        return@channelFlow
+        _loadedBoardsForSite.value = AsyncData.Error(exception)
+        return@launch
       } else {
         siteBoardsResult.getOrThrow()
       }
 
       if (siteBoards.isEmpty()) {
         val exception = BoardsScreenException("Boards list for site \'$siteKey\' is empty")
-        send(AsyncData.Error(exception))
-        return@channelFlow
+        _loadedBoardsForSite.value = AsyncData.Error(exception)
+        return@launch
       }
 
       siteBoards.forEach { chanBoard ->
@@ -94,7 +106,7 @@ class CatalogSelectionScreenViewModel(
         }
       }
 
-      send(AsyncData.Data(siteBoards.map { mapChanBoardToChanBoardUiData(it) }))
+      _loadedBoardsForSite.value = AsyncData.Data(siteBoards.map { mapChanBoardToChanBoardUiData(it) })
     }
   }
 

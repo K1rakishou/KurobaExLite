@@ -104,6 +104,7 @@ class CatalogSelectionScreen(
       .titleId(R.string.board_selection_screen_toolbar_title)
       .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Search, drawableId = R.drawable.ic_baseline_search_24))
+      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Refresh, drawableId = R.drawable.ic_baseline_refresh_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.SiteOptions, drawableId = R.drawable.ic_baseline_settings_24))
       .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
       .build(defaultToolbarStateKey)
@@ -139,6 +140,14 @@ class CatalogSelectionScreen(
       screenKey = screenKey,
       switchToSearchToolbar = {
         kurobaToolbarContainerState.setToolbar(searchToolbar)
+      },
+      refreshSiteBoardInfo = {
+        coroutineScope.launch {
+          catalogSelectionScreenViewModel.getOrLoadBoardsForSite(
+            siteKey = siteKey,
+            forceReload = true
+          )
+        }
       },
       showSiteSettingsScreen = {
         val siteSettingsScreen = ComposeScreen.createScreen<SiteSettingsScreen>(
@@ -205,6 +214,7 @@ class CatalogSelectionScreen(
   enum class ToolbarIcons {
     Back,
     Search,
+    Refresh,
     SiteOptions,
     Overflow
   }
@@ -223,6 +233,7 @@ private fun ToolbarInternal(
   screenKey: ScreenKey,
   showSiteSettingsScreen: () -> Unit,
   switchToSearchToolbar: () -> Unit,
+  refreshSiteBoardInfo: () -> Unit,
   onBackPressed: () -> Unit
 ) {
   LaunchedEffect(
@@ -232,6 +243,9 @@ private fun ToolbarInternal(
         when (key) {
           CatalogSelectionScreen.ToolbarIcons.Search -> {
             switchToSearchToolbar()
+          }
+          CatalogSelectionScreen.ToolbarIcons.Refresh -> {
+            refreshSiteBoardInfo()
           }
           CatalogSelectionScreen.ToolbarIcons.SiteOptions -> {
             showSiteSettingsScreen()
@@ -268,14 +282,15 @@ private fun ContentInternal(
   val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel = koinRememberViewModel()
 
   val searchQuery by catalogSelectionScreenViewModel.searchQueryState
-  var loadBoardsForSiteEvent by remember { mutableStateOf<AsyncData<List<ChanBoardUiData>>>(AsyncData.Uninitialized) }
+  val loadedBoardsForSite by catalogSelectionScreenViewModel.loadedBoardsForSite
 
   LaunchedEffect(
     key1 = Unit,
     block = {
-      catalogSelectionScreenViewModel
-        .getOrLoadBoardsForSite(siteKey = siteKeyProvider(), forceReload = false)
-        .collect { boardsListAsync -> loadBoardsForSiteEvent = boardsListAsync }
+      catalogSelectionScreenViewModel.getOrLoadBoardsForSite(
+        siteKey = siteKeyProvider(),
+        forceReload = false
+      )
     }
   )
 
@@ -286,18 +301,18 @@ private fun ContentInternal(
     topPadding = pullToRefreshToPadding,
     onTriggered = {
       coroutineScope.launch {
-        catalogSelectionScreenViewModel
-          .getOrLoadBoardsForSite(siteKey = siteKeyProvider(), forceReload = true)
-          .collect { boardsListAsync -> loadBoardsForSiteEvent = boardsListAsync }
-
-        pullToRefreshState.stopRefreshing()
+        catalogSelectionScreenViewModel.getOrLoadBoardsForSite(
+          siteKey = siteKeyProvider(),
+          forceReload = true,
+          hidePullToRefreshIndicator = { pullToRefreshState.stopRefreshing() }
+        )
       }
     }
   ) {
     BuildBoardsList(
       catalogDescriptor = catalogDescriptor,
       searchQuery = searchQuery,
-      loadBoardsForSiteEvent = loadBoardsForSiteEvent,
+      loadedBoardsForSite = loadedBoardsForSite,
       paddingValues = paddingValues,
       onBoardClicked = { clickedCatalogDescriptor ->
         coroutineScope.launch {
@@ -313,7 +328,7 @@ private fun ContentInternal(
 private fun BuildBoardsList(
   catalogDescriptor: CatalogDescriptor?,
   searchQuery: String?,
-  loadBoardsForSiteEvent: AsyncData<List<ChanBoardUiData>>,
+  loadedBoardsForSite: AsyncData<List<ChanBoardUiData>>,
   paddingValues: PaddingValues,
   onBoardClicked: (CatalogDescriptor) -> Unit
 ) {
@@ -324,15 +339,15 @@ private fun BuildBoardsList(
   val defaultHorizPadding = remember { globalUiInfoManager.defaultHorizPadding }
   val defaultVertPadding = remember { globalUiInfoManager.defaultVertPadding }
 
-  val loadBoardsForSiteEventUpdated by rememberUpdatedState(newValue = loadBoardsForSiteEvent)
+  val loadedBoardsForSiteUpdated by rememberUpdatedState(newValue = loadedBoardsForSite)
   val searchQueryUpdated by rememberUpdatedState(newValue = searchQuery)
-  var filteredBoardsAsyncData by remember { mutableStateOf(loadBoardsForSiteEvent) }
+  var filteredBoardsAsyncData by remember { mutableStateOf(loadedBoardsForSite) }
 
   LaunchedEffect(
     key1 = Unit,
     block = {
       combine(
-        flow = snapshotFlow { loadBoardsForSiteEventUpdated },
+        flow = snapshotFlow { loadedBoardsForSiteUpdated },
         flow2 = snapshotFlow { searchQueryUpdated },
         transform = { a, b -> a to b }
       ).collectLatest { (chanBoardUiAsyncData, query) ->
