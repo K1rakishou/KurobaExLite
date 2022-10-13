@@ -163,12 +163,21 @@ private fun ReplyInputLeftPart(
     is SendReplyState.Finished -> true
   }
 
+  val replyInputFocusRequest = remember { FocusRequester() }
+
   ReplyLayoutLeftPartCustomLayout(
     modifier = Modifier
       .fillMaxSize()
       .padding(horizontal = 8.dp),
     additionalInputsContent = {
       if (replyLayoutVisibilityState == ReplyLayoutVisibility.Expanded) {
+        DisposableEffect(
+          key1 = Unit,
+          effect = {
+            onDispose { replyInputFocusRequest.requestFocus() }
+          }
+        )
+
         Column {
           if (replyLayoutState.isCatalogMode) {
             SubjectTextField(
@@ -201,6 +210,7 @@ private fun ReplyInputLeftPart(
     replyInputContent = {
       Column {
         ReplyTextField(
+          focusRequesterProvider = { replyInputFocusRequest },
           replyLayoutState = replyLayoutState,
           replyLayoutEnabled = replyLayoutEnabled,
           onSendReplyClicked = onSendReplyClicked
@@ -423,6 +433,7 @@ private fun ColumnScope.OptionsTextField(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun ColumnScope.ReplyTextField(
+  focusRequesterProvider: () -> FocusRequester,
   replyLayoutState: ReplyLayoutState,
   replyLayoutEnabled: Boolean,
   onSendReplyClicked: () -> Unit,
@@ -432,7 +443,6 @@ private fun ColumnScope.ReplyTextField(
 
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
-  val focusRequest = remember { FocusRequester() }
   var prevReplyLayoutVisibility by remember { mutableStateOf<ReplyLayoutVisibility>(ReplyLayoutVisibility.Collapsed) }
 
   val replyText by replyLayoutState.replyText
@@ -466,13 +476,13 @@ private fun ColumnScope.ReplyTextField(
         prevReplyLayoutVisibility == ReplyLayoutVisibility.Collapsed &&
         replyLayoutVisibility != ReplyLayoutVisibility.Collapsed
       ) {
-        focusRequest.requestFocus()
+        focusRequesterProvider().requestFocus()
         localSoftwareKeyboardController?.show()
       } else if (
         prevReplyLayoutVisibility != ReplyLayoutVisibility.Collapsed &&
         replyLayoutVisibility == ReplyLayoutVisibility.Collapsed
       ) {
-        focusRequest.freeFocusSafe()
+        focusRequesterProvider().freeFocusSafe()
 
         if (!globalUiInfoManager.isAnyReplyLayoutOpened()) {
           localSoftwareKeyboardController?.hide()
@@ -487,7 +497,7 @@ private fun ColumnScope.ReplyTextField(
     key1 = Unit,
     effect = {
       onDispose {
-        focusRequest.freeFocusSafe()
+        focusRequesterProvider().freeFocusSafe()
 
         if (!globalUiInfoManager.isAnyReplyLayoutOpened()) {
           localSoftwareKeyboardController?.hide()
@@ -538,7 +548,7 @@ private fun ColumnScope.ReplyTextField(
     modifier = Modifier
       .fillMaxSize()
       .padding(vertical = 4.dp)
-      .focusRequester(focusRequest)
+      .focusRequester(focusRequesterProvider())
       .then(minHeightModifier),
     enabled = replyLayoutEnabled,
     value = replyText,

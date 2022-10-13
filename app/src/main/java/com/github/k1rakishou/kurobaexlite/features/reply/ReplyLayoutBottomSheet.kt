@@ -133,8 +133,8 @@ fun ReplyLayoutBottomSheet(
             ?: return@collect
 
           dragRequests.emit(DragRequest.Animate(target))
-
           currentReplyLayoutVisibility = replyLayoutVisibility
+
           if (anchors != prevAnchors) {
             prevAnchors.clear()
             prevAnchors.putAll(anchors)
