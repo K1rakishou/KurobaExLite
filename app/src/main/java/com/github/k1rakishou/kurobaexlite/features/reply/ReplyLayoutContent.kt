@@ -27,14 +27,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
@@ -42,6 +43,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -58,7 +60,9 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastSumBy
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurable
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -68,9 +72,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaLabelText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.verticalScrollbar
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun ReplyLayoutContent(
@@ -418,6 +419,7 @@ private fun ColumnScope.OptionsTextField(
 }
 
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun ColumnScope.ReplyTextField(
   replyLayoutState: ReplyLayoutState,
@@ -425,7 +427,9 @@ private fun ColumnScope.ReplyTextField(
   onSendReplyClicked: () -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
-  val coroutineScope = rememberCoroutineScope()
+  val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
+
+  val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
   val focusRequest = remember { FocusRequester() }
   var prevReplyLayoutVisibility by remember { mutableStateOf<ReplyLayoutVisibility>(ReplyLayoutVisibility.Collapsed) }
@@ -454,36 +458,39 @@ private fun ColumnScope.ReplyTextField(
     }
   }
 
-  DisposableEffect(
+  LaunchedEffect(
     key1 = replyLayoutVisibility,
-    effect = {
-      var job: Job? = null
-
+    block = {
       if (
-        replyLayoutVisibility != ReplyLayoutVisibility.Collapsed &&
-        prevReplyLayoutVisibility == ReplyLayoutVisibility.Collapsed
+        prevReplyLayoutVisibility == ReplyLayoutVisibility.Collapsed &&
+        replyLayoutVisibility != ReplyLayoutVisibility.Collapsed
       ) {
-        job?.cancel()
-        job = coroutineScope.launch {
-          delay(64)
-          focusRequest.requestFocus()
-        }
+        focusRequest.requestFocus()
+        localSoftwareKeyboardController?.show()
       } else if (
-        replyLayoutVisibility == ReplyLayoutVisibility.Collapsed &&
-        prevReplyLayoutVisibility != ReplyLayoutVisibility.Collapsed
+        prevReplyLayoutVisibility != ReplyLayoutVisibility.Collapsed &&
+        replyLayoutVisibility == ReplyLayoutVisibility.Collapsed
       ) {
-        job?.cancel()
-        job = coroutineScope.launch {
-          delay(64)
-          focusRequest.freeFocus()
+        focusRequest.freeFocus()
+
+        if (!globalUiInfoManager.isAnyReplyLayoutOpened()) {
+          localSoftwareKeyboardController?.hide()
         }
       }
 
       prevReplyLayoutVisibility = replyLayoutVisibility
+    }
+  )
 
+  DisposableEffect(
+    key1 = Unit,
+    effect = {
       onDispose {
-        job?.cancel()
         focusRequest.freeFocus()
+
+        if (!globalUiInfoManager.isAnyReplyLayoutOpened()) {
+          localSoftwareKeyboardController?.hide()
+        }
       }
     }
   )

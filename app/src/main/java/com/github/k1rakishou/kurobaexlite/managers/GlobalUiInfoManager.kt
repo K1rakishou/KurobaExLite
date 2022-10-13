@@ -315,6 +315,11 @@ class GlobalUiInfoManager(
       }
   }
 
+  fun isAnyReplyLayoutOpened(): Boolean {
+    return replyLayoutVisibilityInfoMap.values
+      .any { replyLayoutVisibilityState -> replyLayoutVisibilityState.value != ReplyLayoutVisibility.Collapsed }
+  }
+
   fun getOrCreateHideableUiVisibilityInfo(screenKey: ScreenKey): HideableUiVisibilityInfo {
     return hideableUiVisibilityInfoMap.getOrPut(
       key = screenKey,
