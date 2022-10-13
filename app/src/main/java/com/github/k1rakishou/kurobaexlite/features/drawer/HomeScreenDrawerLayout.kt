@@ -36,14 +36,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
 import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
-import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaSwipeableState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowSizeClass
-import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowWidthSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlin.math.absoluteValue
@@ -67,19 +64,15 @@ class DrawerSwipeState(
   @Composable
   fun InitDrawerState(
     drawerWidth: Int,
-    mainUiLayoutMode: MainUiLayoutMode
+    miniDrawerDisplayed: Boolean
   ) {
     val density = LocalDensity.current
-    val windowSizeClass = LocalWindowSizeClass.current
 
-    val miniDrawerWidth = if (
-      mainUiLayoutMode == MainUiLayoutMode.Phone ||
-      windowSizeClass.widthSizeClass != WindowWidthSizeClass.Expanded
-    ) {
-      0f
-    } else {
+    val miniDrawerWidth = if (miniDrawerDisplayed) {
       val miniDrawerWidthDp = dimensionResource(id = R.dimen.home_screen_mini_drawer_width)
       with(density) { miniDrawerWidthDp.toPx() }
+    } else {
+      0f
     }
 
     val anchors = remember(drawerWidth, miniDrawerWidth) {
@@ -136,7 +129,7 @@ class DrawerSwipeState(
 @Composable
 fun HomeScreenDrawerLayout(
   drawerWidth: Int,
-  mainUiLayoutMode: MainUiLayoutMode,
+  miniDrawerDisplayed: Boolean,
   navigationRouterProvider: () -> NavigationRouter
 ) {
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
@@ -178,7 +171,7 @@ fun HomeScreenDrawerLayout(
 
   drawerSwipeState.InitDrawerState(
     drawerWidth = drawerWidth,
-    mainUiLayoutMode = mainUiLayoutMode
+    miniDrawerDisplayed = miniDrawerDisplayed
   )
 
   val clickable by remember(key1 = drawerVisibility) {

@@ -3,8 +3,10 @@ package com.github.k1rakishou.kurobaexlite.features.home
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
@@ -48,6 +50,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
+import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
@@ -69,6 +72,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowSizeClass
+import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowWidthSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
@@ -569,17 +573,13 @@ private fun HomeScreenContentActual(
   }
 
   Row {
-    if (mainUiLayoutMode == MainUiLayoutMode.Split && windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded) {
-      val miniDrawerWidth = dimensionResource(id = R.dimen.home_screen_mini_drawer_width)
+    var miniDrawerDisplayed by remember { mutableStateOf(false) }
 
-      Box(
-        modifier = Modifier
-          .fillMaxHeight()
-          .width(miniDrawerWidth)
-      ) {
-        HomeScreenMiniDrawerLayout()
-      }
-    }
+    HomeScreenMiniDrawer(
+      mainUiLayoutMode = mainUiLayoutMode,
+      windowSizeClass = windowSizeClass,
+      onMiniDrawerDisplayFlagChanged = { nowDisplayed -> miniDrawerDisplayed = nowDisplayed }
+    )
 
     Box(
       modifier = Modifier
@@ -660,7 +660,7 @@ private fun HomeScreenContentActual(
       if (drawerWidth > 0) {
         HomeScreenDrawerLayout(
           drawerWidth = drawerWidth,
-          mainUiLayoutMode = mainUiLayoutMode,
+          miniDrawerDisplayed = miniDrawerDisplayed,
           navigationRouterProvider = navigationRouterProvider,
         )
       }
@@ -675,6 +675,58 @@ private fun HomeScreenContentActual(
           }
         }
       )
+    }
+  }
+}
+
+@Composable
+private fun RowScope.HomeScreenMiniDrawer(
+  mainUiLayoutMode: MainUiLayoutMode,
+  windowSizeClass: WindowSizeClass,
+  onMiniDrawerDisplayFlagChanged: (Boolean) -> Unit
+) {
+  val bookmarksManager: BookmarksManager = koinRemember()
+  var hasAnyBookmarks by remember { mutableStateOf(false) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      hasAnyBookmarks = bookmarksManager.hasBookmarks()
+
+      bookmarksManager.bookmarkEventsFlow.collect { event ->
+        when (event) {
+          is BookmarksManager.Event.Loaded,
+          is BookmarksManager.Event.Created,
+          is BookmarksManager.Event.Deleted -> {
+            hasAnyBookmarks = bookmarksManager.hasBookmarks()
+          }
+          is BookmarksManager.Event.Updated -> {
+            // no-op
+          }
+        }
+      }
+    }
+  )
+
+  val miniDrawerWidth = dimensionResource(id = R.dimen.home_screen_mini_drawer_width)
+
+  val miniDrawerDisplayed = mainUiLayoutMode == MainUiLayoutMode.Split &&
+    windowSizeClass.widthSizeClass == WindowWidthSizeClass.Expanded &&
+    hasAnyBookmarks
+
+  LaunchedEffect(
+    key1 = miniDrawerDisplayed,
+    block = { onMiniDrawerDisplayFlagChanged(miniDrawerDisplayed) }
+  )
+
+  AnimatedVisibility(
+    modifier = Modifier
+      .fillMaxHeight()
+      .width(miniDrawerWidth),
+    visible = miniDrawerDisplayed
+  ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+      HomeScreenMiniDrawerLayout()
     }
   }
 }

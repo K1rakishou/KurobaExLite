@@ -633,8 +633,8 @@ class GlobalUiInfoManager(
     private const val CURRENT_PAGE = "current_page"
     private const val IS_DRAWER_OPENED = "is_drawer_opened"
 
-    const val CATALOG_SCREEN_WEIGHT = .5f
-    const val THREAD_SCREEN_WEIGHT = .5f
+    const val CATALOG_SCREEN_WEIGHT = .4f
+    const val THREAD_SCREEN_WEIGHT = .6f
 
     private val minCatalogSplitModelWidthDp = 200.dp
   }

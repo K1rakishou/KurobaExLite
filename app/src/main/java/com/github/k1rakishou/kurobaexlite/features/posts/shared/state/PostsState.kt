@@ -41,6 +41,9 @@ class PostsState(
   val posts: List<PostCellData>
     get() = _posts
 
+  val postsCopy: List<PostCellData>
+    get() = _posts.toList()
+
   private val _postsMatchedBySearchQuery = LinkedHashSet<PostDescriptor>()
   val postsMatchedBySearchQuery: Set<PostDescriptor>
     get() = _postsMatchedBySearchQuery
@@ -78,7 +81,7 @@ class PostsState(
     val modifyQueryMap = mutableMapOf<PostDescriptor, PostCellData>()
     _postsMatchedBySearchQuery.clear()
 
-    posts.fastForEachIndexed { index, postCellData ->
+    _posts.fastForEachIndexed { index, postCellData ->
       val parsedPostData = postCellData.parsedPostData
         ?: return@fastForEachIndexed
 

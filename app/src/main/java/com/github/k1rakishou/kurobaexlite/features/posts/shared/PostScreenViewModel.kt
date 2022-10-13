@@ -40,8 +40,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTimedValue
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
@@ -65,6 +63,8 @@ import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTimedValue
 
 abstract class PostScreenViewModel(
   protected val savedStateHandle: SavedStateHandle
@@ -255,7 +255,7 @@ abstract class PostScreenViewModel(
     reparseCatalogPostsWithNewViewModeJob = viewModelScope.launch(globalConstants.postParserDispatcher) {
       val allCurrentPosts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)
         ?.data
-        ?.posts
+        ?.postsCopy
         ?: return@launch
 
       val catalogPostViewMode = appSettings.catalogPostViewMode.read().toPostViewMode()
@@ -795,7 +795,7 @@ abstract class PostScreenViewModel(
     scrollToPost: PostDescriptor?
   ) {
     if (scrollToPost != null) {
-      val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts?.toList()
+      val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.postsCopy?.toList()
         ?: emptyList()
 
       val index = posts
@@ -833,7 +833,7 @@ abstract class PostScreenViewModel(
       return
     }
 
-    val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.posts
+    val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.postsCopy
     val lastViewedPostDescriptor = postScreenState.lastViewedPostForScrollRestoration.value
 
     if (posts != null && lastViewedPostDescriptor != null) {

@@ -47,8 +47,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import java.util.Locale
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -60,6 +58,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import logcat.asLog
 import logcat.logcat
+import java.util.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 class ParsedPostDataCache(
   private val appContext: Context,
@@ -91,7 +91,7 @@ class ParsedPostDataCache(
   val chanDescriptorPostsUpdatedFlow: SharedFlow<ChanDescriptor>
     get() = _chanDescriptorPostsUpdatedFlow.asSharedFlow()
 
-  suspend fun ensurePostDataLoaded(
+  suspend fun doWithPostDataOnceItsLoaded(
     isCatalog: Boolean,
     postDescriptor: PostDescriptor,
     func: suspend () -> Unit

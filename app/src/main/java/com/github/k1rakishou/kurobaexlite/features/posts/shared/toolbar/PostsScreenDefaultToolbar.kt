@@ -99,15 +99,15 @@ abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScr
                       return@collect
                     }
 
-                    parsedPostDataCache.ensurePostDataLoaded(
+                    parsedPostDataCache.doWithPostDataOnceItsLoaded(
                       isCatalog = false,
                       postDescriptor = originalPost.postDescriptor,
                       func = {
                         val state = defaultToolbarState()
-                          ?: return@ensurePostDataLoaded
+                          ?: return@doWithPostDataOnceItsLoaded
 
                         val title = parsedPostDataCache.formatThreadToolbarTitle(originalPost.postDescriptor)
-                          ?: return@ensurePostDataLoaded
+                          ?: return@doWithPostDataOnceItsLoaded
 
                         state.toolbarTitleState.value = title
                         state.contentFullyLoaded.value = true

@@ -52,6 +52,12 @@ class BookmarksManager {
     return mutex.withLock { threadBookmarks.values.count { threadBookmark -> threadBookmark.isActive() } }
   }
 
+  suspend fun hasBookmarks(): Boolean {
+    return mutex.withLock {
+      return@withLock threadBookmarks.isNotEmpty()
+    }
+  }
+
   suspend fun hasActiveBookmarks(): Boolean {
     return mutex.withLock {
       return@withLock threadBookmarks.any { (_, threadBookmark) -> threadBookmark.isActive() }

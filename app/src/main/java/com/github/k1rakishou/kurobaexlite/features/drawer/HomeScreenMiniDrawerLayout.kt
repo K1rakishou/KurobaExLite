@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -320,13 +321,14 @@ private fun BoxScope.MiniDrawerHistoryInfo(miniDrawerHistoryElement: MiniDrawerE
 
   val density = LocalDensity.current
 
-  val bgColor = remember { Color.Black.copy(alpha = 0.7f) }
+  val bgColor = remember { Color.Black.copy(alpha = 0.5f) }
   val cornerRadius = with(density) {
     remember { CornerRadius(4.dp.toPx(), 4.dp.toPx()) }
   }
 
   val formattedText = remember {
-    miniDrawerHistoryElement.chanDescriptor.asReadableString()
+    val chanDescriptor = miniDrawerHistoryElement.chanDescriptor
+    return@remember "${chanDescriptor.siteKey.key}\n/${chanDescriptor.boardCode}/"
   }
 
   Text(
@@ -336,8 +338,9 @@ private fun BoxScope.MiniDrawerHistoryInfo(miniDrawerHistoryElement: MiniDrawerE
       .drawBehind { drawRoundRect(color = bgColor, cornerRadius = cornerRadius) }
       .padding(horizontal = 4.dp, vertical = 2.dp),
     text = formattedText,
-    maxLines = 1,
+    maxLines = 2,
     overflow = TextOverflow.Ellipsis,
+    textAlign = TextAlign.Center,
     fontSize = 12.sp,
     color = Color.White
   )

@@ -394,7 +394,7 @@ private fun processPostListScrollEvent(
     onPostListTouchingTopOrBottomStateChanged(touchingTop || touchingBottom)
   }
 
-  val postDataList = (postListAsync as? AsyncData.Data)?.data?.posts
+  val postDataList = (postListAsync as? AsyncData.Data)?.data?.postsCopy
   val visibleItemsInfo = lazyStateWrapper.layoutInfo.visibleItemsInfo
 
   if (postDataList != null) {
