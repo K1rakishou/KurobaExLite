@@ -73,8 +73,8 @@ class AppSettings(
   val lastUpdateCheckTime by lazy { NumberSetting<Long>(0L, "last_update_check_time", dataStore) }
   val lastCheckedVersionCode by lazy { NumberSetting<Long>(0L, "last_checked_version_code", dataStore) }
   val notifyAboutBetaUpdates by lazy { BooleanSetting(true, "notify_about_beta_updates", dataStore) }
-  val catalogGridModeColumnCount by lazy { NumberSetting<Int>(2, "catalog_grid_mode_column_count", dataStore) }
-  val albumColumnCount by lazy { NumberSetting<Int>(2, "album_column_count", dataStore) }
+  val catalogGridModeColumnCount by lazy { NumberSetting<Int>(0, "catalog_grid_mode_column_count", dataStore) }
+  val albumColumnCount by lazy { NumberSetting<Int>(0, "album_column_count", dataStore) }
 
   val userAgent by lazy {
     val userAgent = try {
