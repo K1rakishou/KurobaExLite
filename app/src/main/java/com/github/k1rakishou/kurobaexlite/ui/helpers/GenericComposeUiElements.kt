@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.FloatRange
-import androidx.annotation.StringRes
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -12,6 +11,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -57,7 +57,6 @@ import androidx.compose.material.RadioButton
 import androidx.compose.material.Surface
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
-import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
@@ -90,7 +89,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -784,22 +782,6 @@ fun Modifier.passClicksThrough(passClicks: Boolean = true): Modifier {
 }
 
 @Composable
-fun KurobaComposeTextFieldLabel(@StringRes textId: Int) {
-  KurobaComposeTextFieldLabel(stringResource(id = textId))
-}
-
-@Composable
-fun KurobaComposeTextFieldLabel(text: String) {
-  val chanTheme = LocalChanTheme.current
-
-  Text(
-    text = text,
-    color = chanTheme.textColorHint,
-    fontSize = 12.sp
-  )
-}
-
-@Composable
 fun KurobaComposeTextField(
   value: TextFieldValue,
   modifier: Modifier = Modifier,
@@ -814,7 +796,7 @@ fun KurobaComposeTextField(
   readOnly: Boolean = false,
   isError: Boolean = false,
   shape: Shape = TextFieldDefaults.TextFieldShape,
-  label: @Composable (() -> Unit)? = null,
+  label: @Composable ((InteractionSource) -> Unit)? = null,
   placeholder: @Composable (() -> Unit)? = null,
   leadingIcon: @Composable (() -> Unit)? = null,
   trailingIcon: @Composable (() -> Unit)? = null,
@@ -883,12 +865,18 @@ fun KurobaComposeTextField(
       singleLine = singleLine,
       maxLines = maxLines,
       decorationBox = @Composable { innerTextField ->
+        val labelFunc: (@Composable (() -> Unit))? = if (label == null) {
+          null
+        } else {
+          { label(interactionSource) }
+        }
+
         TextFieldDefaults.TextFieldDecorationBox(
           value = value.text,
           visualTransformation = visualTransformation,
           innerTextField = innerTextField,
           placeholder = placeholder,
-          label = label,
+          label = labelFunc,
           leadingIcon = leadingIcon,
           trailingIcon = trailingIcon,
           singleLine = singleLine,
@@ -899,63 +887,6 @@ fun KurobaComposeTextField(
           contentPadding = remember { PaddingValues(4.dp) }
         )
       }
-    )
-  }
-}
-
-@Composable
-fun KurobaComposeTextField(
-  value: String,
-  modifier: Modifier = Modifier,
-  onValueChange: (String) -> Unit,
-  maxLines: Int = Int.MAX_VALUE,
-  singleLine: Boolean = false,
-  keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-  keyboardActions: KeyboardActions = KeyboardActions(),
-  textStyle: TextStyle = LocalTextStyle.current,
-  visualTransformation: VisualTransformation = VisualTransformation.None,
-  enabled: Boolean = true,
-  label: @Composable (() -> Unit)? = null
-) {
-  val chanTheme = LocalChanTheme.current
-  val view = LocalView.current
-
-  DisposableEffect(
-    key1 = view,
-    effect = {
-      if (view.isAttachedToWindow) {
-        view.requestApplyInsets()
-      }
-
-      onDispose {
-        if (view.isAttachedToWindow) {
-          view.requestApplyInsets()
-        }
-      }
-    }
-  )
-
-  val textSelectionColors = remember(key1 = chanTheme.accentColor) {
-    TextSelectionColors(
-      handleColor = chanTheme.accentColor,
-      backgroundColor = chanTheme.accentColor.copy(alpha = 0.4f)
-    )
-  }
-
-  CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
-    TextField(
-      modifier = modifier,
-      enabled = enabled,
-      value = value,
-      label = label,
-      onValueChange = onValueChange,
-      maxLines = maxLines,
-      singleLine = singleLine,
-      visualTransformation = visualTransformation,
-      keyboardOptions = keyboardOptions,
-      keyboardActions = keyboardActions,
-      colors = chanTheme.textFieldColors(),
-      textStyle = textStyle
     )
   }
 }

@@ -39,7 +39,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -68,9 +70,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import java.util.*
 
 class Chan4CaptchaScreen(
   screenArgs: Bundle? = null,
@@ -185,7 +187,7 @@ class Chan4CaptchaScreen(
             }
 
             prevSolution = solution
-            currentInputValue = solution
+            currentInputValue = TextFieldValue(solution)
 
             captchaSolution.sliderOffset?.let { sliderOffset ->
               scrollValueState.value = sliderOffset.coerceIn(0f, 1f)
@@ -199,9 +201,9 @@ class Chan4CaptchaScreen(
         .wrapContentHeight()
         .padding(horizontal = 16.dp),
       value = currentInputValue,
-      onValueChange = { newValue -> currentInputValue = newValue.uppercase(Locale.ENGLISH) },
+      onValueChange = { newValue -> currentInputValue = newValue.copy(text = newValue.text.uppercase(Locale.ENGLISH)) },
       keyboardActions = KeyboardActions(
-        onDone = { verifyCaptcha(captchaInfo, currentInputValue) }
+        onDone = { verifyCaptcha(captchaInfo, currentInputValue.text) }
       ),
       keyboardOptions = KeyboardOptions(
         autoCorrect = false,
@@ -215,9 +217,14 @@ class Chan4CaptchaScreen(
       Spacer(modifier = Modifier.height(8.dp))
 
       CaptchaSuggestions(
-        currentInputValue = currentInputValue,
+        currentInputValue = currentInputValue.text,
         captchaSuggestions = captchaSuggestions,
-        onSuggestionClicked = { clickedSuggestion -> currentInputValue = clickedSuggestion }
+        onSuggestionClicked = { clickedSuggestion ->
+          currentInputValue = TextFieldValue(
+            text = clickedSuggestion,
+            selection = TextRange(clickedSuggestion.lastIndex)
+          )
+        }
       )
     }
 
@@ -373,10 +380,10 @@ class Chan4CaptchaScreen(
           val currentInputValue = captchaInfo?.currentInputValue
             ?: return@KurobaComposeTextBarButton
 
-          verifyCaptcha(captchaInfo, currentInputValue.value)
+          verifyCaptcha(captchaInfo, currentInputValue.value.text)
         },
         enabled = captchaInfo != null
-          && (captchaInfo.isNoopChallenge() || captchaInfo.currentInputValue.value.isNotEmpty())
+          && (captchaInfo.isNoopChallenge() || captchaInfo.currentInputValue.value.text.isNotEmpty())
           && !solvingInProgress,
         text = stringResource(id = R.string.chan4_captcha_layout_verify)
       )

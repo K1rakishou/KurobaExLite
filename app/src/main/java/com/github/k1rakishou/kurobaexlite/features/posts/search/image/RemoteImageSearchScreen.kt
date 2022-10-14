@@ -328,7 +328,7 @@ private fun ContentInternal(
         .fillMaxWidth(),
       onValueChange = { newValue ->
         searchQuery = newValue
-        remoteImageSearchScreenViewModel.onSearchQueryChanged(newValue)
+        remoteImageSearchScreenViewModel.onSearchQueryChanged(newValue.text)
       },
       singleLine = true,
       maxLines = 1,

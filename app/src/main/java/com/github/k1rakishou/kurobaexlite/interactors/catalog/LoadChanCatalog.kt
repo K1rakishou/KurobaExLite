@@ -6,9 +6,7 @@ import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
-import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 
 class LoadChanCatalog(
   private val catalogManager: CatalogManager,
@@ -17,10 +15,7 @@ class LoadChanCatalog(
 
   suspend fun await(chanDescriptor: ChanDescriptor): Result<ChanCatalog?> {
     return Result.Try {
-      val catalogDescriptor = when (chanDescriptor) {
-        is CatalogDescriptor -> chanDescriptor
-        is ThreadDescriptor -> chanDescriptor.catalogDescriptor
-      }
+      val catalogDescriptor = chanDescriptor.catalogDescriptor()
 
       val catalogFromCache = catalogManager.byCatalogDescriptor(catalogDescriptor)
       if (catalogFromCache != null) {

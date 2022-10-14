@@ -1,9 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -22,9 +22,11 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.ContentAlpha
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -34,12 +36,15 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalFocusManager
@@ -62,11 +67,16 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurable
 import com.github.k1rakishou.kurobaexlite.helpers.util.freeFocusSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaLabelText
@@ -83,7 +93,8 @@ fun ReplyLayoutContent(
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
-  onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
+  onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit,
+  onFlagSelectorClicked: (ChanDescriptor) -> Unit
 ) {
   val iconSize = 40.dp
   val replyButtonsWidth = 50.dp
@@ -123,6 +134,7 @@ fun ReplyLayoutContent(
         onSendReplyClicked = onSendReplyClicked,
         onAttachedMediaClicked = onAttachedMediaClicked,
         onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked,
+        onFlagSelectorClicked = onFlagSelectorClicked
       )
     }
 
@@ -149,9 +161,11 @@ private fun ReplyInputLeftPart(
   replyLayoutState: ReplyLayoutState,
   onSendReplyClicked: () -> Unit,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
-  onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit
+  onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit,
+  onFlagSelectorClicked: (ChanDescriptor) -> Unit
 ) {
   val focusManager = LocalFocusManager.current
+  val replyLayoutViewModel = koinRememberViewModel<ReplyLayoutViewModel>()
 
   val sendReplyState by replyLayoutState.sendReplyState
   val replyLayoutVisibilityState by replyLayoutState.replyLayoutVisibilityState
@@ -164,6 +178,11 @@ private fun ReplyInputLeftPart(
   }
 
   val replyInputFocusRequest = remember { FocusRequester() }
+
+  LaunchedEffect(
+    key1 = replyLayoutState.chanDescriptor,
+    block = { replyLayoutViewModel.loadLastUsedFlag(replyLayoutState.chanDescriptor) }
+  )
 
   ReplyLayoutLeftPartCustomLayout(
     modifier = Modifier
@@ -201,6 +220,12 @@ private fun ReplyInputLeftPart(
             replyLayoutState = replyLayoutState,
             replyLayoutEnabled = replyLayoutEnabled,
             onMoveFocus = { focusManager.moveFocus(FocusDirection.Down) }
+          )
+
+          FlagSelector(
+            replyLayoutState = replyLayoutState,
+            replyLayoutEnabled = replyLayoutEnabled,
+            onFlagSelectorClicked = onFlagSelectorClicked
           )
 
           Spacer(modifier = Modifier.height(4.dp))
@@ -312,10 +337,7 @@ private fun ColumnScope.SubjectTextField(
   replyLayoutEnabled: Boolean,
   onMoveFocus: () -> Unit
 ) {
-  val chanTheme = LocalChanTheme.current
-
   val textStyle = remember { TextStyle(fontSize = 16.sp) }
-  val interactionSource = remember { MutableInteractionSource() }
   val labelText = stringResource(id = R.string.reply_subject_label_text)
 
   val subject by replyLayoutState.subject
@@ -333,17 +355,15 @@ private fun ColumnScope.SubjectTextField(
       imeAction = ImeAction.Next
     ),
     keyboardActions = KeyboardActions(onNext = { onMoveFocus() }),
-    label = {
+    label = { interactionSource ->
       KurobaLabelText(
         enabled = replyLayoutEnabled,
         labelText = labelText,
         fontSize = 14.sp,
-        parentBackgroundColor = chanTheme.backColor,
         interactionSource = interactionSource
       )
     },
-    onValueChange = { newTextFieldValue -> replyLayoutState.onSubjectChanged(newTextFieldValue) },
-    interactionSource = interactionSource
+    onValueChange = { newTextFieldValue -> replyLayoutState.onSubjectChanged(newTextFieldValue) }
   )
 }
 
@@ -353,10 +373,7 @@ private fun ColumnScope.NameTextField(
   replyLayoutEnabled: Boolean,
   onMoveFocus: () -> Unit
 ) {
-  val chanTheme = LocalChanTheme.current
-
   val textStyle = remember { TextStyle(fontSize = 16.sp) }
-  val interactionSource = remember { MutableInteractionSource() }
   val labelText = stringResource(id = R.string.reply_name_label_text)
 
   val name by replyLayoutState.name
@@ -374,18 +391,105 @@ private fun ColumnScope.NameTextField(
       imeAction = ImeAction.Next
     ),
     keyboardActions = KeyboardActions(onNext = { onMoveFocus() }),
-    label = {
+    label = { interactionSource ->
       KurobaLabelText(
         enabled = replyLayoutEnabled,
         labelText = labelText,
         fontSize = 14.sp,
-        parentBackgroundColor = chanTheme.backColor,
         interactionSource = interactionSource
       )
     },
-    onValueChange = { newTextFieldValue -> replyLayoutState.onNameChanged(newTextFieldValue) },
-    interactionSource = interactionSource
+    onValueChange = { newTextFieldValue -> replyLayoutState.onNameChanged(newTextFieldValue) }
   )
+}
+
+@Composable
+private fun ColumnScope.FlagSelector(
+  replyLayoutState: ReplyLayoutState,
+  replyLayoutEnabled: Boolean,
+  onFlagSelectorClicked: (ChanDescriptor) -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  val loadChanCatalog = koinRemember<LoadChanCatalog>()
+
+  var flags by remember { mutableStateOf<List<BoardFlag>>(emptyList()) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      flags = loadChanCatalog.await(replyLayoutState.chanDescriptor).getOrNull()
+        ?.flags
+        ?: emptyList()
+    }
+  )
+
+  if (flags.isEmpty()) {
+    return
+  }
+
+  var lastUsedFlagMut by remember { mutableStateOf<BoardFlag?>(null) }
+  val lastUsedFlag = lastUsedFlagMut
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      lastUsedFlagMut = replyLayoutState.flag.value
+
+      snapshotFlow { replyLayoutState.flag.value }
+        .collect { newSelectedFlag -> lastUsedFlagMut = newSelectedFlag }
+    }
+  )
+
+  if (lastUsedFlag == null) {
+    return
+  }
+
+  val lastUsedFlagText = remember(key1 = lastUsedFlag) { "[${lastUsedFlag.key}] ${lastUsedFlag.name}" }
+  val flagSelectorAlpha = if (replyLayoutEnabled) 1f else ContentAlpha.disabled
+
+  Spacer(modifier = Modifier.height(12.dp))
+
+  KurobaComposeText(
+    color = chanTheme.textColorHint,
+    text = stringResource(id = R.string.reply_flag_label_text)
+  )
+
+  Spacer(modifier = Modifier.height(4.dp))
+
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(42.dp)
+      .border(
+        width = 1.dp,
+        brush = SolidColor(chanTheme.defaultColors.controlNormalColor),
+        shape = RoundedCornerShape(4.dp)
+      )
+      .kurobaClickable(
+        enabled = replyLayoutEnabled,
+        bounded = true,
+        onClick = { onFlagSelectorClicked(replyLayoutState.chanDescriptor) }
+      )
+      .padding(horizontal = 8.dp, vertical = 2.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    KurobaComposeText(
+      modifier = Modifier
+        .weight(1f)
+        .wrapContentHeight()
+        .graphicsLayer { alpha = flagSelectorAlpha },
+      text = lastUsedFlagText,
+      fontSize = 16.sp
+    )
+
+    Spacer(modifier = Modifier.width(8.dp))
+
+    KurobaComposeIcon(drawableId = R.drawable.ic_baseline_arrow_drop_down_24)
+
+    Spacer(modifier = Modifier.width(8.dp))
+  }
+
+  Spacer(modifier = Modifier.height(4.dp))
 }
 
 @Composable
@@ -394,10 +498,7 @@ private fun ColumnScope.OptionsTextField(
   replyLayoutEnabled: Boolean,
   onMoveFocus: () -> Unit
 ) {
-  val chanTheme = LocalChanTheme.current
-
   val textStyle = remember { TextStyle(fontSize = 16.sp) }
-  val interactionSource = remember { MutableInteractionSource() }
   val labelText = stringResource(id = R.string.reply_options_label_text)
 
   val options by replyLayoutState.options
@@ -415,17 +516,15 @@ private fun ColumnScope.OptionsTextField(
       imeAction = ImeAction.Next
     ),
     keyboardActions = KeyboardActions(onNext = { onMoveFocus() }),
-    label = {
+    label = { interactionSource ->
       KurobaLabelText(
         enabled = replyLayoutEnabled,
         labelText = labelText,
         fontSize = 14.sp,
-        parentBackgroundColor = chanTheme.backColor,
         interactionSource = interactionSource
       )
     },
-    onValueChange = { newTextFieldValue -> replyLayoutState.onOptionsChanged(newTextFieldValue) },
-    interactionSource = interactionSource
+    onValueChange = { newTextFieldValue -> replyLayoutState.onOptionsChanged(newTextFieldValue) }
   )
 }
 
@@ -442,9 +541,7 @@ private fun ColumnScope.ReplyTextField(
   val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
 
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
-
   var prevReplyLayoutVisibility by remember { mutableStateOf<ReplyLayoutVisibility>(ReplyLayoutVisibility.Collapsed) }
-
   val replyText by replyLayoutState.replyText
   val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
   val maxCommentLength by replyLayoutState.maxCommentLength
@@ -510,7 +607,6 @@ private fun ColumnScope.ReplyTextField(
   val postCommentText = stringResource(id = R.string.reply_input_thread_comment_label_text)
 
   val textStyle = remember { TextStyle(fontSize = 16.sp) }
-  val interactionSource = remember { MutableInteractionSource() }
 
   val labelText = remember(replyLayoutState.isCatalogMode, replyText.text.length) {
     buildString {
@@ -561,17 +657,15 @@ private fun ColumnScope.ReplyTextField(
       imeAction = ImeAction.Done
     ),
     keyboardActions = KeyboardActions(onDone = { onSendReplyClicked() }),
-    label = {
+    label = { interactionSource ->
       KurobaLabelText(
         enabled = replyLayoutEnabled,
         labelText = labelText,
         fontSize = 14.sp,
-        parentBackgroundColor = chanTheme.backColor,
         interactionSource = interactionSource
       )
     },
-    onValueChange = { newTextFieldValue -> replyLayoutState.onReplyTextChanged(newTextFieldValue) },
-    interactionSource = interactionSource
+    onValueChange = { newTextFieldValue -> replyLayoutState.onReplyTextChanged(newTextFieldValue) }
   )
 }
 

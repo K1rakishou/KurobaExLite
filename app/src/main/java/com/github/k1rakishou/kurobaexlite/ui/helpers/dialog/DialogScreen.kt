@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.dialog
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -119,14 +121,18 @@ class DialogScreen(
         )
       }
 
-      val inputValueStates: List<MutableState<String>> = remember {
+      val inputValueStates: List<MutableState<TextFieldValue>> = remember {
         params.inputs.map { input ->
           val initialValueString = when (input) {
             is Input.Number -> input.initialValue?.toString()
             is Input.String -> input.initialValue
           }
 
-          return@map mutableStateOf(initialValueString ?: "")
+          if (initialValueString == null) {
+            return@map mutableStateOf(TextFieldValue())
+          }
+
+          return@map mutableStateOf(TextFieldValue(initialValueString))
         }
       }
 
@@ -144,7 +150,7 @@ class DialogScreen(
 
           Spacer(modifier = Modifier.height(8.dp))
 
-          val label: @Composable (() -> Unit)? = if (input.hint != null) {
+          val label: @Composable ((InteractionSource) -> Unit)? = if (input.hint != null) {
             buildInputLabel(input.hint!!)
           } else {
             null
@@ -159,7 +165,7 @@ class DialogScreen(
             value = value,
             keyboardOptions = keyboardOptions,
             onValueChange = { newValue ->
-              if (input is Input.Number && newValue.toIntOrNull() == null) {
+              if (input is Input.Number && newValue.text.toIntOrNull() == null) {
                 return@KurobaComposeTextField
               }
 
@@ -211,7 +217,7 @@ class DialogScreen(
         KurobaComposeTextBarButton(
           modifier = Modifier.wrapContentSize(),
           onClick = {
-            val results = inputValueStates.map { it.value }
+            val results = inputValueStates.map { it.value.text }
             params.positiveButton.onClick?.invoke(results)
             stopPresenting()
           },
@@ -222,7 +228,7 @@ class DialogScreen(
     }
   }
 
-  private fun buildInputLabel(hint: Text): @Composable (() -> Unit) = {
+  private fun buildInputLabel(hint: Text): @Composable ((InteractionSource) -> Unit) = {
     val chanTheme = LocalChanTheme.current
 
     Text(

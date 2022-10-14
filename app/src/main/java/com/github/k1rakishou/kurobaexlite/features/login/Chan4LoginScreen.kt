@@ -18,13 +18,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextFieldLabel
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaLabelText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -92,15 +93,20 @@ class Chan4LoginScreen(
     blockInput: Boolean,
     onLoginClicked: (String, String) -> Unit
   ) {
-    var token by remember { mutableStateOf("") }
-    var pin by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf(TextFieldValue()) }
+    var pin by remember { mutableStateOf(TextFieldValue()) }
 
     KurobaComposeTextField(
       modifier = Modifier.fillMaxWidth(),
       value = token,
       enabled = !blockInput,
       onValueChange = { value -> token = value },
-      label = { KurobaComposeTextFieldLabel(R.string.chan4_setting_passcode_token) }
+      label = { interactionSource ->
+        KurobaLabelText(
+          labelText = stringResource(id = R.string.chan4_setting_passcode_token),
+          interactionSource = interactionSource
+        )
+      }
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -110,7 +116,12 @@ class Chan4LoginScreen(
       value = pin,
       enabled = !blockInput,
       onValueChange = { value -> pin = value },
-      label = { KurobaComposeTextFieldLabel(R.string.chan4_setting_passcode_pin) }
+      label = { interactionSource ->
+        KurobaLabelText(
+          labelText = stringResource(id = R.string.chan4_setting_passcode_pin),
+          interactionSource = interactionSource
+        )
+      }
     )
 
     Spacer(modifier = Modifier.height(24.dp))
@@ -130,8 +141,8 @@ class Chan4LoginScreen(
 
       KurobaComposeTextBarButton(
         modifier = Modifier.wrapContentSize(),
-        enabled = !blockInput && token.isNotEmpty() && pin.isNotEmpty(),
-        onClick = { onLoginClicked(token, pin) },
+        enabled = !blockInput && token.text.isNotEmpty() && pin.text.isNotEmpty(),
+        onClick = { onLoginClicked(token.text, pin.text) },
         text = stringResource(id = R.string.chan4_login_screen_login)
       )
     }
@@ -145,10 +156,15 @@ class Chan4LoginScreen(
   ) {
     KurobaComposeTextField(
       modifier = Modifier.fillMaxWidth(),
-      value = currentPasscodeCookie,
+      value = remember(key1 = currentPasscodeCookie) { TextFieldValue(currentPasscodeCookie) },
       enabled = !blockInput,
       onValueChange = { },
-      label = { KurobaComposeTextFieldLabel(R.string.chan4_setting_passcode_cookie) }
+      label = { interactionSource ->
+        KurobaLabelText(
+          labelText = stringResource(id = R.string.chan4_setting_passcode_cookie),
+          interactionSource = interactionSource
+        )
+      }
     )
 
     Spacer(modifier = Modifier.height(24.dp))

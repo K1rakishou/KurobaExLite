@@ -20,6 +20,8 @@ abstract class SiteSettings(
   private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "${key}_site_settings")
   protected val dataStore by lazy { appContext.dataStore }
 
+  val lastUsedBoardFlags by lazy { StringSetting("", "last_used_board_flags", dataStore) }
+
   abstract val cloudFlareClearanceCookie: StringSetting
 
   abstract suspend fun isLoggedIn(): Boolean

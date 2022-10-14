@@ -7,6 +7,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -25,8 +26,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import java.io.IOException
-import kotlin.math.abs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,6 +38,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.logcat
 import okhttp3.Request
+import java.io.IOException
+import kotlin.math.abs
 
 class Chan4CaptchaViewModel(
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
@@ -430,7 +431,7 @@ class Chan4CaptchaViewModel(
     val captchaInfoRawString: String?,
     captchaSolution: Chan4CaptchaSolverHelper.CaptchaSolution?
   ) {
-    var currentInputValue = mutableStateOf<String>("")
+    var currentInputValue = mutableStateOf(TextFieldValue())
     var sliderValue = mutableStateOf(0f)
     val captchaSolution = mutableStateOf<Chan4CaptchaSolverHelper.CaptchaSolution?>(captchaSolution)
 
@@ -443,7 +444,7 @@ class Chan4CaptchaViewModel(
     }
 
     fun reset() {
-      currentInputValue.value = ""
+      currentInputValue.value = TextFieldValue()
       sliderValue.value = 0f
     }
 

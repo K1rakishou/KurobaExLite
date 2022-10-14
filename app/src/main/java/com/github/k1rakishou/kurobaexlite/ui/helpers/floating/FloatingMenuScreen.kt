@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,8 +39,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeRadioButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import java.util.concurrent.atomic.AtomicLong
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.scrollbar
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicLong
 
 // TODO(KurobaEx): screen parameters are not persisted across process death yet!
 class FloatingMenuScreen(
@@ -80,6 +83,8 @@ class FloatingMenuScreen(
 
   @Composable
   override fun FloatingContent() {
+    val density = LocalDensity.current
+
     // Make sure menuItems is never empty
     LaunchedEffect(
       key1 = menuItems,
@@ -109,8 +114,19 @@ class FloatingMenuScreen(
       return@HandleBackPresses stopPresenting()
     }
 
+    val lazyListState = rememberLazyListState()
+
     LazyColumn(
-      modifier = Modifier.width(availableWidth),
+      modifier = Modifier
+        .width(availableWidth)
+        .scrollbar(
+          state = lazyListState,
+          scrollbarDimens = ScrollbarDimens.Vertical.Static(
+            width = with(density) { 2.dp.roundToPx() },
+            height = with(density) { 20.dp.roundToPx() }
+          )
+        ),
+      state = lazyListState,
       content = {
         items(
           count = topItems.size,
@@ -495,6 +511,7 @@ class FloatingMenuScreen(
     const val BOOKMARKS_OVERFLOW = "bookmarks_overflow_menu"
     const val APP_SETTINGS_LIST_OPTION_MENU = "app_settings_list_option_menu"
     const val REMOTE_IMAGE_SEARCH_OPTIONS_MENUS = "remote_image_search_options_menu"
+    const val FLAG_SELECTOR = "flag_selector"
   }
 }
 

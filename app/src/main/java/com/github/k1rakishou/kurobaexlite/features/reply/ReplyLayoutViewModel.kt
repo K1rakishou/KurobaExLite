@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.reply
 import android.os.Bundle
 import android.os.Parcelable
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.R
@@ -23,10 +24,13 @@ import com.github.k1rakishou.kurobaexlite.managers.Captcha
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
+import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.ReplyEvent
@@ -34,7 +38,6 @@ import com.github.k1rakishou.kurobaexlite.sites.ReplyResponse
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
-import java.lang.ref.WeakReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -47,6 +50,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.logcat
+import java.lang.ref.WeakReference
 
 class ReplyLayoutViewModel(
   private val savedStateHandle: SavedStateHandle,
@@ -68,47 +72,14 @@ class ReplyLayoutViewModel(
   val pickFileResultFlow: SharedFlow<PickFileResult>
     get() = _pickFileResultFlow.asSharedFlow()
 
+  private val _lastUsedBoardFlagMap = mutableStateMapOf<CatalogDescriptor, BoardFlag>()
+  val lastUsedBoardFlagMap: Map<CatalogDescriptor, BoardFlag>
+    get() = _lastUsedBoardFlagMap
+
   override suspend fun onViewModelReady() {
     super.onViewModelReady()
 
     processReplyLayoutStates()
-  }
-
-  private suspend fun processReplyLayoutStates() {
-    val replyLayoutStateKeys = savedStateHandle.keys()
-      .filter { key -> key.startsWith("reply_layout_state_") }
-
-    if (replyLayoutStateKeys.isEmpty()) {
-      logcat(TAG) { "processReplyLayoutStates() replyLayoutStateKeys is empty, doing cleanup()" }
-      localFilePicker.cleanup()
-      return
-    }
-
-    logcat(TAG) { "processReplyLayoutStates() found ${replyLayoutStateKeys.size} keys in savedStateHandle" }
-
-    val restoredReplyLayoutStates = replyLayoutStateKeys
-      .mapNotNull { replyLayoutStateKey -> savedStateHandle.get<Bundle>(replyLayoutStateKey) }
-      .mapNotNull { bundle ->
-        val chanDescriptor = bundle.getParcelable<Parcelable>(ReplyLayoutState.chanDescriptorKey) as? ChanDescriptor
-            ?: return@mapNotNull null
-
-        val screenKey = when (chanDescriptor) {
-          is CatalogDescriptor -> CatalogScreen.SCREEN_KEY
-          is ThreadDescriptor -> ThreadScreen.SCREEN_KEY
-        }
-
-        return@mapNotNull ReplyLayoutState(
-          screenKey = screenKey,
-          chanDescriptor = chanDescriptor,
-          bundle = bundle
-        )
-      }
-
-    restoredReplyLayoutStates.forEach { replyLayoutState ->
-      replyLayoutStateMap[replyLayoutState.chanDescriptor] = replyLayoutState
-    }
-
-    logcat(TAG) { "processReplyLayoutStates() restored ${restoredReplyLayoutStates.size} replyLayoutStates" }
   }
 
   fun getOrCreateReplyLayoutState(chanDescriptor: ChanDescriptor?): IReplyLayoutState {
@@ -431,6 +402,122 @@ class ReplyLayoutViewModel(
       postDescriptor = postCellData.postDescriptor,
       comment = selectedText
     )
+  }
+
+  suspend fun loadLastUsedFlag(chanDescriptor: ChanDescriptor) {
+    val chanCatalog = loadChanCatalog.await(chanDescriptor).getOrNull()
+      ?: return
+
+    if (chanCatalog.flags.isEmpty()) {
+      return
+    }
+
+    val lastUsedFlag = if (!loadLastUsedBoardFlags(chanDescriptor.catalogDescriptor(), chanCatalog)) {
+      chanCatalog.flags.first()
+    } else {
+      lastUsedBoardFlagMap[chanDescriptor.catalogDescriptor()]
+    }
+
+    replyLayoutStateMap[chanDescriptor]?.onFlagChanged(lastUsedFlag)
+  }
+
+  suspend fun storeLastUsedFlag(chanDescriptor: ChanDescriptor, boardFlag: BoardFlag) {
+    if (lastUsedBoardFlagMap[chanDescriptor.catalogDescriptor()] == boardFlag) {
+      return
+    }
+
+    val lastUsedBoardFlags = siteManager.bySiteKey(chanDescriptor.siteKey)
+      ?.siteSettings
+      ?.lastUsedBoardFlags
+      ?: return
+
+    _lastUsedBoardFlagMap[chanDescriptor.catalogDescriptor()] = boardFlag
+
+    val resultString = _lastUsedBoardFlagMap.entries.joinToString(
+      separator = ";",
+      transform = { (descriptor, boardFlag) -> "${descriptor.siteKeyActual}=${descriptor.boardCode}=${boardFlag.key}" }
+    )
+
+    lastUsedBoardFlags.write(resultString)
+    replyLayoutStateMap[chanDescriptor]?.onFlagChanged(boardFlag)
+  }
+
+  private suspend fun loadLastUsedBoardFlags(catalogDescriptor: CatalogDescriptor, chanCatalog: ChanCatalog): Boolean {
+    if (lastUsedBoardFlagMap.containsKey(catalogDescriptor)) {
+      return true
+    }
+
+    val lastUsedBoardFlags = siteManager.bySiteKey(catalogDescriptor.siteKey)
+      ?.siteSettings
+      ?.lastUsedBoardFlags
+      ?.read()
+
+    if (lastUsedBoardFlags.isNullOrEmpty()) {
+      return false
+    }
+
+    for (lastUsedBoardFlag in lastUsedBoardFlags.split(';')) {
+      val split = lastUsedBoardFlag.split('=')
+
+      if (split.size != 3) {
+        continue
+      }
+
+      val siteKey = split[0]
+      val boardCode = split[1]
+      val flagKey = split[2]
+
+      val descriptor = CatalogDescriptor(SiteKey(siteKey), boardCode)
+      if (descriptor != catalogDescriptor) {
+        continue
+      }
+
+      val boardFlag = chanCatalog.flags
+        .firstOrNull { boardFlag -> boardFlag.key == flagKey }
+        ?: chanCatalog.flags.first()
+
+      _lastUsedBoardFlagMap[descriptor] = boardFlag
+      return true
+    }
+
+    return false
+  }
+
+  private suspend fun processReplyLayoutStates() {
+    val replyLayoutStateKeys = savedStateHandle.keys()
+      .filter { key -> key.startsWith("reply_layout_state_") }
+
+    if (replyLayoutStateKeys.isEmpty()) {
+      logcat(TAG) { "processReplyLayoutStates() replyLayoutStateKeys is empty, doing cleanup()" }
+      localFilePicker.cleanup()
+      return
+    }
+
+    logcat(TAG) { "processReplyLayoutStates() found ${replyLayoutStateKeys.size} keys in savedStateHandle" }
+
+    val restoredReplyLayoutStates = replyLayoutStateKeys
+      .mapNotNull { replyLayoutStateKey -> savedStateHandle.get<Bundle>(replyLayoutStateKey) }
+      .mapNotNull { bundle ->
+        val chanDescriptor = bundle.getParcelable<Parcelable>(ReplyLayoutState.chanDescriptorKey) as? ChanDescriptor
+          ?: return@mapNotNull null
+
+        val screenKey = when (chanDescriptor) {
+          is CatalogDescriptor -> CatalogScreen.SCREEN_KEY
+          is ThreadDescriptor -> ThreadScreen.SCREEN_KEY
+        }
+
+        return@mapNotNull ReplyLayoutState(
+          screenKey = screenKey,
+          chanDescriptor = chanDescriptor,
+          bundle = bundle
+        )
+      }
+
+    restoredReplyLayoutStates.forEach { replyLayoutState ->
+      replyLayoutStateMap[replyLayoutState.chanDescriptor] = replyLayoutState
+    }
+
+    logcat(TAG) { "processReplyLayoutStates() restored ${restoredReplyLayoutStates.size} replyLayoutStates" }
   }
 
   private suspend fun processReplyEvents(

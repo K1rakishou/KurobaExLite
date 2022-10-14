@@ -435,6 +435,7 @@ class CatalogScreen(
         screenKey = screenKey,
         isCatalogScreen = isCatalogScreen,
         replyLayoutStateProvider = { replyLayoutState },
+        navigationRouterProvider = { navigationRouter },
         postLongtapContentMenuProvider = { postLongtapContentMenu },
         onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
           val postImageData = if (postImageDataResult.isFailure) {
@@ -494,6 +495,7 @@ private fun BoxScope.CatalogPostListScreen(
   isCatalogScreen: Boolean,
   replyLayoutStateProvider: () -> IReplyLayoutState,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  navigationRouterProvider: () -> NavigationRouter,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
@@ -675,6 +677,7 @@ private fun BoxScope.CatalogPostListScreen(
   ReplyLayoutContainer(
     chanDescriptor = catalogScreenViewModel.catalogDescriptor,
     replyLayoutState = replyLayoutStateProvider(),
+    navigationRouterProvider = navigationRouterProvider,
     onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
     onAttachedMediaClicked = { attachedMedia ->
       // TODO(KurobaEx): show options

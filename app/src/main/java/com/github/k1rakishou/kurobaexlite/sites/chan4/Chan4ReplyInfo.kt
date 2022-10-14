@@ -20,8 +20,6 @@ import com.github.k1rakishou.kurobaexlite.sites.ReplyEvent
 import com.github.k1rakishou.kurobaexlite.sites.ReplyResponse
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
-import java.util.regex.Matcher
-import java.util.regex.Pattern
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import logcat.logcat
@@ -31,6 +29,8 @@ import okhttp3.MultipartBody
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.jsoup.Jsoup
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 class Chan4ReplyInfo(
   private val site: Chan4,
@@ -209,21 +209,8 @@ class Chan4ReplyInfo(
       }
     }
 
-    if (replyData.flag.isNotNullNorEmpty()) {
-      formBuilder.addFormDataPart("flag", replyData.flag)
-    } else {
-      // TODO(KurobaEx):
-      //  val lastUsedCountryFlagPerBoardString =
-      //    site.getSettingBySettingId<StringSetting>(SiteSetting.SiteSettingId.LastUsedCountryFlagPerBoard)?.get()
-      //
-      //  if (lastUsedCountryFlagPerBoardString != null) {
-      //    val lastUsedFlag = staticBoardFlagInfoRepository.get().extractFlagCodeOrDefault(
-      //      lastUsedCountryFlagPerBoardString,
-      //      replyChanDescriptor.boardCode()
-      //    )
-      //
-      //    formBuilder.addFormDataPart("flag", lastUsedFlag)
-      //  }
+    if (replyData.flag != null) {
+      formBuilder.addFormDataPart("flag", replyData.flag.key)
     }
 
     val attachedMedia = replyData.attachedMediaList.firstOrNull()

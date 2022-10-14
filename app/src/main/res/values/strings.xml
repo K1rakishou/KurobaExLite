@@ -255,6 +255,7 @@
     <string name="reply_subject_label_text">Subject</string>
     <string name="reply_name_label_text">Name</string>
     <string name="reply_options_label_text">Options</string>
+    <string name="reply_flag_label_text">Flag</string>
 
     <string name="image_pick_delegate_select_file_picker">Select a file picker to open a file…</string>
 

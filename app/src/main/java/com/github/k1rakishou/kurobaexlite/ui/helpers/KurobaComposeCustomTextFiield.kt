@@ -340,7 +340,6 @@ fun KurobaLabelText(
   enabled: Boolean = true,
   labelText: String?,
   fontSize: TextUnit = 13.sp,
-  parentBackgroundColor: Color = Color.Unspecified,
   interactionSource: InteractionSource
 ) {
   if (labelText == null) {
@@ -361,24 +360,12 @@ fun KurobaLabelText(
       ContentAlpha.disabled
     }
 
-    val hintColor = remember(parentBackgroundColor, alpha, isFocused) {
+    val hintColor = remember(alpha, isFocused) {
       if (isFocused && enabled) {
         return@remember chanTheme.accentColor.copy(alpha = alpha)
       }
 
-      if (parentBackgroundColor.isUnspecified) {
-        if (chanTheme.isDarkTheme) {
-          return@remember Color.LightGray.copy(alpha = alpha)
-        } else {
-          return@remember Color.DarkGray.copy(alpha = alpha)
-        }
-      }
-
-      return@remember if (ThemeEngine.isDarkColor(parentBackgroundColor)) {
-        Color.LightGray.copy(alpha = alpha)
-      } else {
-        Color.DarkGray.copy(alpha = alpha)
-      }
+      return@remember chanTheme.textColorHint.copy(alpha = alpha)
     }
 
     val hintColorAnimated by animateColorAsState(targetValue = hintColor)

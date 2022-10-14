@@ -14,8 +14,8 @@ data class ReplyData(
   val password: String = generateDefaultPassword(),
   val subject: String? = null,
   val name: String? = null,
-  val flag: String? = null,
-  val options: String? = null
+  val flag: BoardFlag? = null,
+  val options: String? = null,
 ) {
   fun isValid(): Boolean {
     if (message.isEmpty() && attachedMediaList.isEmpty()) {

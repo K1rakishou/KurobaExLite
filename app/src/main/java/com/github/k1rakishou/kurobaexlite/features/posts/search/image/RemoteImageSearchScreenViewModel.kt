@@ -4,6 +4,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -17,7 +18,6 @@ import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException
 import com.github.k1rakishou.kurobaexlite.model.FirewallType
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,8 +45,7 @@ class RemoteImageSearchScreenViewModel(
   val solvingCaptcha: StateFlow<String?>
     get() = _solvingCaptcha.asStateFlow()
 
-  var searchQuery = mutableStateOf("")
-  val searchErrorToastFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
+  var searchQuery = mutableStateOf(TextFieldValue())
 
   private var activeSearchJob: Job? = null
 
@@ -62,7 +61,7 @@ class RemoteImageSearchScreenViewModel(
       }
 
       _lastUsedSearchInstance.value = ImageSearchInstanceType.Yandex
-      searchQuery.value = ""
+      searchQuery.value = TextFieldValue()
     }
   }
 
@@ -92,8 +91,8 @@ class RemoteImageSearchScreenViewModel(
     val newQuery = searchQuery.value
 
     val searchResults = _searchResults[newImageSearchInstanceType]
-    if ((searchResults !is AsyncData.Data || prevQuery != newQuery) && newQuery.isNotEmpty()) {
-      onSearchQueryChanged(newQuery)
+    if ((searchResults !is AsyncData.Data || prevQuery != newQuery.text) && newQuery.text.isNotEmpty()) {
+      onSearchQueryChanged(newQuery.text)
     }
   }
 
@@ -115,11 +114,11 @@ class RemoteImageSearchScreenViewModel(
       imageSearchInstance.updateLazyListState(0, 0)
     }
 
-    onSearchQueryChanged(searchQuery.value)
+    onSearchQueryChanged(searchQuery.value.text)
   }
 
   fun reloadCurrentPage() {
-    doSearchInternal(searchQuery.value)
+    doSearchInternal(searchQuery.value.text)
   }
 
   fun onSearchQueryChanged(newQuery: String) {
@@ -145,7 +144,7 @@ class RemoteImageSearchScreenViewModel(
 
     imageSearchInstance.updateCurrentPage(page)
 
-    doSearchInternal(searchQuery.value)
+    doSearchInternal(searchQuery.value.text)
   }
 
   private fun doSearchInternal(query: String, debounce: Boolean = false) {

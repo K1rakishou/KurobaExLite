@@ -19,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -120,6 +121,10 @@ class ReplyLayoutState(
   val options: State<TextFieldValue>
     get() = _options
 
+  private val _flag = mutableStateOf<BoardFlag?>(null)
+  val flag: State<BoardFlag?>
+    get() = _flag
+
   private val _maxCommentLength = mutableStateOf(0)
   val maxCommentLength: State<Int>
     get() = _maxCommentLength
@@ -211,6 +216,10 @@ class ReplyLayoutState(
       )
 
       onOptionsChanged(textFieldValue)
+    }
+
+    bundle.getParcelable<BoardFlag>(flagKey).let { flagFromBundle ->
+      onFlagChanged(flagFromBundle)
     }
 
     _replyLayoutVisibilityState.value = bundle.getInt(replyLayoutVisibilityKey)
@@ -316,6 +325,11 @@ class ReplyLayoutState(
     bundle.putString(optionsTextKey, newTextFieldValue.text)
   }
 
+  fun onFlagChanged(boardFlag: BoardFlag?) {
+    _flag.value = boardFlag
+    bundle.putParcelable(flagKey, boardFlag)
+  }
+
   override fun collapseReplyLayout() {
     if (_replyLayoutVisibilityState.value != ReplyLayoutVisibility.Collapsed) {
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Collapsed
@@ -377,6 +391,7 @@ class ReplyLayoutState(
       message = replyText.value.text,
       subject = subject.value.text.takeIf { it.isNotEmpty() },
       name = name.value.text.takeIf { it.isNotEmpty() },
+      flag = flag.value,
       options = options.value.text.takeIf { it.isNotEmpty() },
       attachedMediaList = attachedMediaList,
       captchaSolution = captchaSolution
@@ -486,6 +501,7 @@ class ReplyLayoutState(
     private const val subjectTextKey = "subjectText"
     private const val nameTextKey = "nameText"
     private const val optionsTextKey = "optionsText"
+    private const val flagKey = "flag"
     private const val attachedMediaListKey = "attachedMediaList"
     private const val replyLayoutVisibilityKey = "replyLayoutVisibility"
     const val chanDescriptorKey = "chanDescriptor"

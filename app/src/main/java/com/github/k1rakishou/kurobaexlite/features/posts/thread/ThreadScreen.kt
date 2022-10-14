@@ -313,6 +313,7 @@ class ThreadScreen(
         replyLayoutStateProvider = { replyLayoutState },
         postLongtapContentMenuProvider = { postLongtapContentMenu },
         linkableClickHelperProvider = { linkableClickHelper },
+        navigationRouterProvider = { navigationRouter },
         showRepliesForPost = { postViewMode -> showRepliesForPost(postViewMode) },
         onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
           val postImageData = if (postImageDataResult.isFailure) {
@@ -372,6 +373,7 @@ private fun BoxScope.ThreadPostListScreen(
   replyLayoutStateProvider: () -> IReplyLayoutState,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
   linkableClickHelperProvider: () -> LinkableClickHelper,
+  navigationRouterProvider: () -> NavigationRouter,
   showRepliesForPost: (PopupPostsScreen.PopupPostViewMode) -> Unit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   postListSearchButtons: @Composable () -> Unit
@@ -549,6 +551,7 @@ private fun BoxScope.ThreadPostListScreen(
   ReplyLayoutContainer(
     chanDescriptor = threadScreenViewModel.chanDescriptor,
     replyLayoutState = replyLayoutStateProvider(),
+    navigationRouterProvider = navigationRouterProvider,
     onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
     onAttachedMediaClicked = { attachedMedia ->
       // TODO(KurobaEx): show options

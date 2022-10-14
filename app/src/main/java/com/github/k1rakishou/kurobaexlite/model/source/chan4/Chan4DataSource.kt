@@ -4,6 +4,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
@@ -301,16 +302,24 @@ class Chan4DataSource(
           val boardTitle = boardDataJson.boardTitle
           val boardDescription = boardDataJson.boardDescription?.let { HtmlUnescape.unescape(it) }
 
+          val allFlags = mutableListWithCap<BoardFlag>(64)
+
+          val loadedFlags = boardDataJson.boardFlags
+            ?.list
+            ?.map { boardFlagJson -> BoardFlag(boardFlagJson.key, boardFlagJson.name) }
+
+          if (loadedFlags.isNotNullNorEmpty()) {
+            allFlags += BoardFlag("0", "Default")
+            allFlags.addAll(loadedFlags)
+          }
+
           return@mapNotNull ChanCatalog(
             catalogDescriptor = CatalogDescriptor(input, boardCode),
             boardTitle = boardTitle,
             boardDescription = boardDescription,
             workSafe = boardDataJson.workSafe == 1,
             maxAttachFilesPerPost = 1,
-            flags = boardDataJson.boardFlags
-              ?.list
-              ?.map { boardFlagJson -> BoardFlag(boardFlagJson.key, boardFlagJson.name) }
-              ?: emptyList()
+            flags = allFlags
           )
         }
 
