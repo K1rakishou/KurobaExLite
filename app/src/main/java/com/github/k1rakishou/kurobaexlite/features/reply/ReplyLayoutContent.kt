@@ -40,13 +40,17 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -571,7 +575,7 @@ private fun ColumnScope.ReplyTextField(
     block = {
       if (
         prevReplyLayoutVisibility == ReplyLayoutVisibility.Collapsed &&
-        replyLayoutVisibility != ReplyLayoutVisibility.Collapsed
+        replyLayoutVisibility == ReplyLayoutVisibility.Opened
       ) {
         focusRequesterProvider().requestFocus()
         localSoftwareKeyboardController?.show()
@@ -707,10 +711,14 @@ private fun ReplyInputRightPart(
   onCancelReplySendClicked: () -> Unit,
   onSendReplyClicked: () -> Unit
 ) {
+  val chanTheme = LocalChanTheme.current
+  val density = LocalDensity.current
+
   val replySendProgressMut by replyLayoutState.replySendProgressState
+  val replySendProgress = replySendProgressMut
   val sendReplyState by replyLayoutState.sendReplyState
 
-  val replySendProgress = replySendProgressMut
+  val padding = with(density) { 4.dp.toPx() }
 
   Column(
     modifier = Modifier
@@ -720,7 +728,18 @@ private fun ReplyInputRightPart(
         orientation = Orientation.Vertical,
         onDragStarted = { onDragStarted() },
         onDragStopped = { velocity -> onDragStopped(velocity) }
-      ),
+      )
+      .drawBehind {
+        drawRect(
+          color = chanTheme.backColorSecondary,
+          topLeft = Offset(x = padding, y = padding),
+          size = Size(
+            width = this.size.width - (padding * 2),
+            height = this.size.height - (padding * 2)
+          ),
+          alpha = 0.4f,
+        )
+    },
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     SendReplyButton(
