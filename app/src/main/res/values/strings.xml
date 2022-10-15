@@ -249,7 +249,6 @@
     <string name="reply_view_model_unknown_posting_error">Unknown posting error: \'%1$s\'</string>
     <string name="reply_view_model_posting_rate_limit_error">You have to wait \'%1$s\' seconds before you can post again</string>
     <string name="reply_view_model_reply_sent_successfully">Reply sent successfully</string>
-    <string name="reply_attached_media_removed">Removed \'%1$s\'</string>
     <string name="reply_input_new_thread_label_text">Comment new thread</string>
     <string name="reply_input_thread_comment_label_text">Comment reply</string>
     <string name="reply_subject_label_text">Subject</string>
@@ -260,9 +259,7 @@
     <string name="image_pick_delegate_select_file_picker">Select a file picker to open a file…</string>
 
     <string name="posts_screen_search_toolbar_global_search">Global</string>
-    <string name="posts_screen_successfully_picked_local_files">Successfully picked %1$d local file(s)</string>
     <string name="posts_screen_failed_to_pick_local_file">Failed to pick local file, error: \'%1$s\'</string>
-    <string name="posts_screen_successfully_picked_remote_file">Successfully picked remote file \'%1$s\'</string>
     <string name="posts_screen_failed_to_pick_remote_file">Failed to pick remote file, error: \'%1$s\'</string>
 
     <string name="global_search_screen_end_of_results_reached">End of results reached</string>

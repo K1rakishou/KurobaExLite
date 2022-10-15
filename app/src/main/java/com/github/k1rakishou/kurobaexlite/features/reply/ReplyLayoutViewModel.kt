@@ -287,11 +287,6 @@ class ReplyLayoutViewModel(
       )
 
       _pickFileResultFlow.emit(pickFileResult)
-
-      snackbarManager.toast(
-        message = appResources.string(R.string.posts_screen_successfully_picked_local_files, newPickedMedias.size),
-        screenKey = snackbarManager.screenKeyFromDescriptor(chanDescriptor)
-      )
     }
   }
 
@@ -366,20 +361,12 @@ class ReplyLayoutViewModel(
       val newPickedMedia = pickResult.getOrNull()
         ?: return@launch
 
-      val resultFileName = pickResult.getOrThrow().actualFileName
-
-
       val pickFileResult = PickFileResult(
         chanDescriptor = chanDescriptor,
         newPickedMedias = listOf(newPickedMedia)
       )
 
       _pickFileResultFlow.emit(pickFileResult)
-
-      snackbarManager.toast(
-        message = appResources.string(R.string.posts_screen_successfully_picked_remote_file, resultFileName),
-        screenKey = snackbarManager.screenKeyFromDescriptor(chanDescriptor)
-      )
     }
   }
 

@@ -14,7 +14,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.getSelectedText
 import androidx.compose.ui.text.input.getTextAfterSelection
 import androidx.compose.ui.text.input.getTextBeforeSelection
-import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -291,9 +290,6 @@ class ReplyLayoutState(
     _attachedMediaList -= attachedMedia
     attachedMedia.deleteFile()
     onAttachedImagesUpdated()
-
-    val message = appResources.string(R.string.reply_attached_media_removed, attachedMedia.actualFileName)
-    replyShowInfoToast(message, toastId = "attached_media_removed")
   }
 
   fun onReplyTextChanged(text: String) {
