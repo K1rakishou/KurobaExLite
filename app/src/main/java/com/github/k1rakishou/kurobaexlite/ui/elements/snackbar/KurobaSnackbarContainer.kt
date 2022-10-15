@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.size
@@ -46,7 +45,6 @@ import androidx.compose.ui.layout.SubcomposeLayoutState
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,7 +54,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurable
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
-import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
@@ -68,12 +65,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.isZero
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -91,7 +86,6 @@ fun KurobaSnackbarContainer(
     contentAlignment = Alignment.BottomCenter
   ) {
     val snackbarManager = koinRemember<SnackbarManager>()
-    val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
 
     val insets = LocalWindowInsets.current
     val chanTheme = LocalChanTheme.current
@@ -342,13 +336,10 @@ private fun KurobaSnackbarItem(
     SnackbarType.ErrorToast -> chanTheme.errorColor
   }
 
-  var snackbarContentSize by remember { mutableStateOf(IntSize.Zero) }
-  var animatedOffsetX by remember { mutableStateOf(0) }
   var animatedAlpha by remember { mutableStateOf(0f) }
-  var pushPopAnimationJob by remember { mutableStateOf<Job?>(null) }
+  var fadeInOrOutAnimationJob by remember { mutableStateOf<Job?>(null) }
 
   val snackbarAnimationUpdated by rememberUpdatedState(newValue = snackbarAnimation)
-  val snackbarContentSizeUpdated by rememberUpdatedState(newValue = snackbarContentSize)
 
   DisposableEffect(
     key1 = Unit,
@@ -358,33 +349,27 @@ private fun KurobaSnackbarItem(
   LaunchedEffect(
     key1 = Unit,
     block = {
-      combine(
-        flow = snapshotFlow { snackbarAnimationUpdated },
-        flow2 = snapshotFlow { snackbarContentSizeUpdated },
-        transform = { t1, t2 -> t1 to t2 }
-      )
-        .collect { (latestSnackbarAnimation, latestSnackbarContentSize) ->
-          if (latestSnackbarAnimation == null || latestSnackbarContentSize.isZero()) {
+      snapshotFlow { snackbarAnimationUpdated }
+        .collect { latestSnackbarAnimation ->
+          if (latestSnackbarAnimation == null) {
             return@collect
           }
 
           when (latestSnackbarAnimation) {
             is SnackbarAnimation.Push,
             is SnackbarAnimation.Pop -> {
-              pushPopAnimationJob?.cancel()
-              pushPopAnimationJob = launch {
-                animatePushPop(
+              fadeInOrOutAnimationJob?.cancel()
+              fadeInOrOutAnimationJob = launch {
+                animateFadeInOrOut(
                   animationDuration = animationDuration,
                   maxSnackbarAlpha = maxSnackbarAlpha,
                   snackbarAnimation = latestSnackbarAnimation,
-                  snackbarContentSize = latestSnackbarContentSize,
-                  onAnimationTick = { offsetX, alpha ->
-                    animatedOffsetX = offsetX
+                  onAnimationTick = { alpha ->
                     animatedAlpha = alpha
                   },
                   onAnimationEnded = { snackbarAnimation ->
                     onAnimationEnded(snackbarAnimation)
-                    pushPopAnimationJob = null
+                    fadeInOrOutAnimationJob = null
                   }
                 )
               }
@@ -394,7 +379,7 @@ private fun KurobaSnackbarItem(
     }
   )
 
-  val animationInProgress = layoutAnimationIsInProgress || pushPopAnimationJob != null
+  val animationInProgress = layoutAnimationIsInProgress || fadeInOrOutAnimationJob != null
 
   val clickableModifier = if (animationInProgress) {
     Modifier
@@ -415,9 +400,7 @@ private fun KurobaSnackbarItem(
       .fillMaxWidth()
       .wrapContentHeight()
       .graphicsLayer { alpha = animatedAlpha }
-      .offset { IntOffset(x = animatedOffsetX, y = 0) }
       .onGloballyPositioned { layoutCoordinates ->
-        snackbarContentSize = layoutCoordinates.size
         onSnackbarSizeChanged(snackbarInfo.snackbarId, layoutCoordinates.size)
       },
     contentAlignment = Alignment.Center
@@ -458,12 +441,11 @@ private fun KurobaSnackbarItem(
   }
 }
 
-private suspend fun animatePushPop(
+private suspend fun animateFadeInOrOut(
   animationDuration: Int,
   maxSnackbarAlpha: Float,
   snackbarAnimation: SnackbarAnimation,
-  snackbarContentSize: IntSize,
-  onAnimationTick: (animatedOffsetX: Int, animatedAlpha: Float) -> Unit,
+  onAnimationTick: (alpha: Float) -> Unit,
   onAnimationEnded: (SnackbarAnimation) -> Unit
 ) {
   try {
@@ -480,16 +462,12 @@ private suspend fun animatePushPop(
               easing = FastOutSlowInEasing
             )
           ) { progress, _ ->
-            val animatedOffsetX = snackbarContentSize.width - (progress * snackbarContentSize.width).toInt()
             val animatedAlpha = (progress * maxSnackbarAlpha)
-
-            onAnimationTick(animatedOffsetX, animatedAlpha)
+            onAnimationTick(animatedAlpha)
           }
         } finally {
-          val animatedOffsetX = snackbarContentSize.width - (1f * snackbarContentSize.width).toInt()
           val animatedAlpha = (1f * maxSnackbarAlpha)
-
-          onAnimationTick(animatedOffsetX, animatedAlpha)
+          onAnimationTick(animatedAlpha)
         }
       }
       is SnackbarAnimation.Pop -> {
@@ -504,16 +482,12 @@ private suspend fun animatePushPop(
               easing = FastOutSlowInEasing
             )
           ) { progress, _ ->
-            val animatedOffsetX = snackbarContentSize.width - (progress * snackbarContentSize.width).toInt()
             val animatedAlpha = (progress * maxSnackbarAlpha)
-
-            onAnimationTick(animatedOffsetX, animatedAlpha)
+            onAnimationTick(animatedAlpha)
           }
         } finally {
-          val animatedOffsetX = snackbarContentSize.width - (0f * snackbarContentSize.width).toInt()
           val animatedAlpha = (0f * maxSnackbarAlpha)
-
-          onAnimationTick(animatedOffsetX, animatedAlpha)
+          onAnimationTick(animatedAlpha)
         }
       }
     }
