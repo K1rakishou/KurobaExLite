@@ -53,8 +53,10 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -423,6 +425,10 @@ private fun BoxScope.ToolbarInternal(
             albumScreenViewModel.downloadSelectedImages(
               chanDescriptor = chanDescriptor,
               onResult = { activeDownload ->
+                if (activeDownload == null) {
+                  return@downloadSelectedImages
+                }
+
                 val message = context.resources.getString(
                   R.string.media_viewer_download_success_multiple,
                   activeDownload.downloaded,
@@ -475,10 +481,15 @@ private fun ContentInternal(
           return@collect
         }
 
+        val openedFromScreenKey = when (chanDescriptor) {
+          is CatalogDescriptor -> CatalogScreen.SCREEN_KEY
+          is ThreadDescriptor -> ThreadScreen.SCREEN_KEY
+        }
+
         // Hardcode for now, we only have 1 snackbar emitted from the albumScreenViewModel
         snackbarManager.toast(
           message = message,
-          screenKey = screenKey,
+          screenKey = openedFromScreenKey,
           toastId = AlbumScreen.NEW_ALBUM_IMAGES_ADDED_TOAST_ID
         )
       }

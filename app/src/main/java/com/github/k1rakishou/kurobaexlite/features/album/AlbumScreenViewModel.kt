@@ -100,12 +100,12 @@ class AlbumScreenViewModel(
 
   fun downloadSelectedImages(
     chanDescriptor: ChanDescriptor,
-    onResult: (MediaSaver.ActiveDownload) -> Unit
+    onResult: (MediaSaver.ActiveDownload?) -> Unit
   ) {
     val selectedImagesCopy = selectedImages.toMap()
 
     if (selectedImagesCopy.isEmpty()) {
-      onResult(MediaSaver.ActiveDownload(0, 0, 0))
+      onResult(null)
       return
     }
 
@@ -129,7 +129,7 @@ class AlbumScreenViewModel(
         return@launch
       }
 
-      val activeDownload = mediaSaver.savePostImages(imagesToSave)
+      val activeDownload = mediaSaver.savePostImages(chanDescriptor, imagesToSave)
       onResult(activeDownload)
     }
   }

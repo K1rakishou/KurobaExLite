@@ -189,6 +189,7 @@ object DependencyGraph {
 
     single {
       MediaSaver(
+        appScope = get(),
         applicationContext = get(),
         androidHelpers = get(),
         globalConstants = get(),

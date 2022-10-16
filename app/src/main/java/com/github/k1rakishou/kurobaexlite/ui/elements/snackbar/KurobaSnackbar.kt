@@ -16,10 +16,10 @@ import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.helpers.util.iteration
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import java.util.Locale
+import org.koin.core.context.GlobalContext
+import java.util.*
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.time.Duration
-import org.koin.core.context.GlobalContext
 
 
 @Composable
@@ -45,6 +45,8 @@ class KurobaSnackbarState(
   val snackbarAnimations: Map<Long, SnackbarAnimation>
     get() = _snackbarAnimations
 
+  private var isSnackbarVisible = false
+
   fun pushSnackbar(snackbarInfo: SnackbarInfo) {
     val indexOfSnackbar = _activeSnackbars
       .indexOfFirst { info -> info.snackbarId == snackbarInfo.snackbarId }
@@ -55,6 +57,7 @@ class KurobaSnackbarState(
 
         val snackbarIdForCompose = snackbarInfo.snackbarIdForCompose
         _snackbarAnimations[snackbarIdForCompose] = SnackbarAnimation.Push(snackbarIdForCompose)
+        isSnackbarVisible = true
       }
       
       updateSnackbarsCount()
@@ -62,7 +65,14 @@ class KurobaSnackbarState(
       val prevSnackbarInfo = _activeSnackbars[indexOfSnackbar]
       
       if (prevSnackbarInfo != snackbarInfo || !prevSnackbarInfo.contentsEqual(snackbarInfo)) {
+        val snackbarIdForCompose = snackbarInfo.snackbarIdForCompose
+
         _activeSnackbars[indexOfSnackbar] = snackbarInfo
+
+        if (!isSnackbarVisible) {
+          _snackbarAnimations[snackbarIdForCompose] = SnackbarAnimation.Push(snackbarIdForCompose)
+          isSnackbarVisible = true
+        }
       }
     }
   }
@@ -77,6 +87,7 @@ class KurobaSnackbarState(
 
       val snackbarIdForCompose = snackbarInfo.snackbarIdForCompose
       _snackbarAnimations[snackbarIdForCompose] = SnackbarAnimation.Pop(snackbarIdForCompose)
+      isSnackbarVisible = false
     }
   }
   
@@ -113,10 +124,9 @@ class KurobaSnackbarState(
         popSnackbar(removedSnackbar.snackbarId)
 
         --currentSnackbarsCount
-        return@iteration true
       }
 
-      return@iteration false
+      return@iteration true
     }
   }
 
@@ -186,6 +196,22 @@ sealed class SnackbarAnimation {
   data class Pop(
     override val snackbarId: Long
   ) : SnackbarAnimation()
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as SnackbarAnimation
+
+    if (snackbarId != other.snackbarId) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    return snackbarId.hashCode()
+  }
+
 }
 
 sealed class SnackbarInfoEvent {

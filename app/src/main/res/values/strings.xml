@@ -208,6 +208,11 @@
     <string name="media_viewer_new_images_added">%1$d new image(s)</string>
     <string name="media_viewer_media_not_supported">Media \'%1$s\' is not supported</string>
 
+    <string name="media_saver_select_download_to_cancel">Select which active download to cancel</string>
+    <string name="media_saver_snackbar_catalog_prefix">Catalog \'%1$s\'</string>
+    <string name="media_saver_snackbar_thread_prefix">Thread \'%1$s\'</string>
+    <string name="media_saver_snackbar_postfix">with total: %1$d images to download</string>
+
     <string name="history_screen_toolbar_title">History</string>
     <string name="navigation_history_screen_removed_navigation_item_text">Removed history \'%1$s\'</string>
     <string name="history_screen_no_history_added">No history added yet</string>
