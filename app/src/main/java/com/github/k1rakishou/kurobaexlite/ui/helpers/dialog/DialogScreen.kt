@@ -86,11 +86,7 @@ class DialogScreen(
       effect = { onDispose { keyboardController?.hide() } }
     )
 
-    val dialogWidth = if (globalUiInfoManager.isTablet) {
-      (maxAvailableWidth() / 2).coerceAtLeast(300.dp)
-    } else {
-      maxAvailableWidth()
-    }
+    val dialogWidth = maxAvailableWidth()
 
     Column(
       modifier = Modifier

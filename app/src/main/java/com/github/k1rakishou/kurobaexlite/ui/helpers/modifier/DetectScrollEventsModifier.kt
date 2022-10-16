@@ -14,7 +14,7 @@ import androidx.core.os.HandlerCompat
 
 fun Modifier.detectListScrollEvents(
   token: String,
-  notifyIntervalMs: Long = 32L,
+  notifyIntervalMs: Long = 100L,
   onListScrolled: (Float) -> Unit
 ): Modifier {
   return composed {

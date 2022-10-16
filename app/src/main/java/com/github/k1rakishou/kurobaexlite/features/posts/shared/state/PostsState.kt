@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.state
 
 import android.os.SystemClock
+import androidx.annotation.GuardedBy
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -22,6 +23,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import org.koin.java.KoinJavaComponent.inject
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 @Stable
 class PostsState(
@@ -31,22 +35,33 @@ class PostsState(
   private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   private val postCommentApplier: PostCommentApplier by inject(PostCommentApplier::class.java)
 
-  @Volatile private var _lastUpdatedOn: Long = 0
+  @GuardedBy("rwLock")
+  private var _lastUpdatedOn: Long = 0
+  @get:GuardedBy("rwLock")
   val lastUpdatedOn: Long
-    get() = _lastUpdatedOn
+    get() = rwLock.read { _lastUpdatedOn }
 
+  private val rwLock = ReentrantReadWriteLock()
+
+  @GuardedBy("rwLock")
   private val postIndexes = linkedMapWithCap<PostDescriptor, Int>(128)
 
+  @GuardedBy("rwLock")
   private val _posts = mutableStateListOf<PostCellData>()
   val posts: List<PostCellData>
     get() = _posts
 
+  @get:GuardedBy("rwLock")
   val postsCopy: List<PostCellData>
-    get() = _posts.toList()
+    get() = rwLock.read { _posts.toList() }
 
+  @GuardedBy("rwLock")
   private val _postsMatchedBySearchQuery = LinkedHashSet<PostDescriptor>()
+  @get:GuardedBy("rwLock")
   val postsMatchedBySearchQuery: Set<PostDescriptor>
-    get() = _postsMatchedBySearchQuery
+    get() = rwLock.read { _postsMatchedBySearchQuery.toSet() }
+
+  val postListAnimationInfoMap = mutableStateMapOf<PostDescriptor, PreviousPostDataInfo>()
 
   private val _searchQueryUpdatedFlow = MutableSharedFlow<Unit>(
     extraBufferCapacity = 1,
@@ -55,22 +70,22 @@ class PostsState(
   val searchQueryUpdatedFlow: SharedFlow<Unit>
     get() = _searchQueryUpdatedFlow.asSharedFlow()
 
-  val postListAnimationInfoMap = mutableStateMapOf<PostDescriptor, PreviousPostDataInfo>()
-
   fun postIndexByPostDescriptor(postDescriptor: PostDescriptor): Int? {
-    return postIndexes[postDescriptor]
+    return rwLock.read { postIndexes[postDescriptor] }
   }
 
   fun getPosts(postDescriptors: Collection<PostDescriptor>): List<PostCellData> {
     val resultList = mutableListWithCap<PostCellData>(postDescriptors.size)
 
-    postDescriptors.forEach { postDescriptor ->
-      val postIndex = postIndexes[postDescriptor]
-        ?: return@forEach
-      val postCellData = _posts.getOrNull(postIndex)
-        ?: return@forEach
+    rwLock.read {
+      postDescriptors.forEach { postDescriptor ->
+        val postIndex = postIndexes[postDescriptor]
+          ?: return@forEach
+        val postCellData = _posts.getOrNull(postIndex)
+          ?: return@forEach
 
-      resultList += postCellData
+        resultList += postCellData
+      }
     }
 
     return resultList
@@ -79,53 +94,56 @@ class PostsState(
   fun onSearchQueryUpdated(searchQuery: String?) {
     val chanTheme = themeEngine.chanTheme
     val modifyQueryMap = mutableMapOf<PostDescriptor, PostCellData>()
-    _postsMatchedBySearchQuery.clear()
 
-    _posts.fastForEachIndexed { index, postCellData ->
-      val parsedPostData = postCellData.parsedPostData
-        ?: return@fastForEachIndexed
+    rwLock.write {
+      _postsMatchedBySearchQuery.clear()
 
-      val prevPost = _posts[index]
+      _posts.fastForEachIndexed { index, postCellData ->
+        val parsedPostData = postCellData.parsedPostData
+          ?: return@fastForEachIndexed
 
-      val (foundOccurrencesInComment, newProcessedPostComment) = postCommentApplier.markOrUnmarkSearchQuery(
-        chanTheme = chanTheme,
-        searchQuery = searchQuery,
-        minQueryLength = MIN_SEARCH_QUERY_LENGTH,
-        string = postCellData.parsedPostData.processedPostComment,
-      )
+        val prevPost = _posts[index]
 
-      val (foundOccurrencesInSubject, newProcessedPostSubject) = postCommentApplier.markOrUnmarkSearchQuery(
-        chanTheme = chanTheme,
-        searchQuery = searchQuery,
-        minQueryLength = MIN_SEARCH_QUERY_LENGTH,
-        string = postCellData.parsedPostData.processedPostSubject
-      )
-
-      if (foundOccurrencesInComment || foundOccurrencesInSubject) {
-        _postsMatchedBySearchQuery += postCellData.postDescriptor
-      }
-
-      if (
-        prevPost.parsedPostData?.processedPostComment == newProcessedPostComment &&
-        prevPost.parsedPostData.processedPostSubject == newProcessedPostSubject
-      ) {
-        return@fastForEachIndexed
-      }
-
-      modifyQueryMap[postCellData.postDescriptor] = prevPost.copy(
-        parsedPostData = parsedPostData.copy(
-          processedPostComment = newProcessedPostComment,
-          processedPostSubject = newProcessedPostSubject,
+        val (foundOccurrencesInComment, newProcessedPostComment) = postCommentApplier.markOrUnmarkSearchQuery(
+          chanTheme = chanTheme,
+          searchQuery = searchQuery,
+          minQueryLength = MIN_SEARCH_QUERY_LENGTH,
+          string = postCellData.parsedPostData.processedPostComment,
         )
-      )
-    }
 
-    if (modifyQueryMap.isNotEmpty()) {
-      modifyQueryMap.entries.forEach { (postDescriptor, postCellData) ->
-        val postIndex = postIndexes[postDescriptor]
-          ?: return@forEach
+        val (foundOccurrencesInSubject, newProcessedPostSubject) = postCommentApplier.markOrUnmarkSearchQuery(
+          chanTheme = chanTheme,
+          searchQuery = searchQuery,
+          minQueryLength = MIN_SEARCH_QUERY_LENGTH,
+          string = postCellData.parsedPostData.processedPostSubject
+        )
 
-        _posts[postIndex] = postCellData
+        if (foundOccurrencesInComment || foundOccurrencesInSubject) {
+          _postsMatchedBySearchQuery += postCellData.postDescriptor
+        }
+
+        if (
+          prevPost.parsedPostData?.processedPostComment == newProcessedPostComment &&
+          prevPost.parsedPostData.processedPostSubject == newProcessedPostSubject
+        ) {
+          return@fastForEachIndexed
+        }
+
+        modifyQueryMap[postCellData.postDescriptor] = prevPost.copy(
+          parsedPostData = parsedPostData.copy(
+            processedPostComment = newProcessedPostComment,
+            processedPostSubject = newProcessedPostSubject,
+          )
+        )
+      }
+
+      if (modifyQueryMap.isNotEmpty()) {
+        modifyQueryMap.entries.forEach { (postDescriptor, postCellData) ->
+          val postIndex = postIndexes[postDescriptor]
+            ?: return@forEach
+
+          _posts[postIndex] = postCellData
+        }
       }
     }
 
@@ -149,26 +167,28 @@ class PostsState(
     }
 
     Snapshot.withMutableSnapshot {
-      val index = postIndexes[postCellData.postDescriptor]
-      if (index == null) {
-        val nextPostIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
-        postIndexes[postCellData.postDescriptor] = nextPostIndex
+      rwLock.write {
+        val index = postIndexes[postCellData.postDescriptor]
+        if (index == null) {
+          val nextPostIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
+          postIndexes[postCellData.postDescriptor] = nextPostIndex
 
-        // We assume that posts can only be inserted at the end of the post list
-        _posts += postCellData
-      } else {
-        _lastUpdatedOn = SystemClock.elapsedRealtime()
-        _posts[index] = postCellData
+          // We assume that posts can only be inserted at the end of the post list
+          _posts += postCellData
+        } else {
+          _lastUpdatedOn = SystemClock.elapsedRealtime()
+          _posts[index] = postCellData
+        }
+
+        if (androidHelpers.isDevFlavor()) {
+          checkPostsCorrectness(
+            checkFirstPostIsOriginal = checkFirstPostIsOriginal,
+            inputPostsCount = 1
+          )
+        }
+
+        updatePostListAnimationInfoMap(listOf(postCellData))
       }
-
-      if (androidHelpers.isDevFlavor()) {
-        checkPostsCorrectness(
-          checkFirstPostIsOriginal = checkFirstPostIsOriginal,
-          inputPostsCount = 1
-        )
-      }
-
-      updatePostListAnimationInfoMap(listOf(postCellData))
     }
   }
 
@@ -184,44 +204,48 @@ class PostsState(
     }
 
     Snapshot.withMutableSnapshot {
-      var initialIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
+      rwLock.write {
+        var initialIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
 
-      for (postCellData in postCellDataCollection) {
-        val postDescriptor = postCellData.postDescriptor
+        for (postCellData in postCellDataCollection) {
+          val postDescriptor = postCellData.postDescriptor
 
-        val descriptorsMatch = when (chanDescriptor) {
-          is CatalogDescriptor -> postDescriptor.catalogDescriptor == chanDescriptor
-          is ThreadDescriptor -> postDescriptor.threadDescriptor == chanDescriptor
+          val descriptorsMatch = when (chanDescriptor) {
+            is CatalogDescriptor -> postDescriptor.catalogDescriptor == chanDescriptor
+            is ThreadDescriptor -> postDescriptor.threadDescriptor == chanDescriptor
+          }
+
+          if (!descriptorsMatch) {
+            continue
+          }
+
+          val index = postIndexes[postDescriptor]
+          if (index == null) {
+            postIndexes[postDescriptor] = initialIndex++
+
+            // We assume that posts can only be inserted at the end of the post list
+            _posts += postCellData
+          } else {
+            _posts[index] = postCellData
+          }
         }
 
-        if (!descriptorsMatch) {
-          continue
+        if (androidHelpers.isDevFlavor()) {
+          checkPostsCorrectness(
+            checkFirstPostIsOriginal = checkFirstPostIsOriginal,
+            inputPostsCount = postCellDataCollection.size
+          )
         }
 
-        val index = postIndexes[postDescriptor]
-        if (index == null) {
-          postIndexes[postDescriptor] = initialIndex++
-
-          // We assume that posts can only be inserted at the end of the post list
-          _posts += postCellData
-        } else {
-          _posts[index] = postCellData
-        }
+        _lastUpdatedOn = SystemClock.elapsedRealtime()
+        updatePostListAnimationInfoMap(postCellDataCollection)
       }
-
-      if (androidHelpers.isDevFlavor()) {
-        checkPostsCorrectness(
-          checkFirstPostIsOriginal = checkFirstPostIsOriginal,
-          inputPostsCount = postCellDataCollection.size
-        )
-      }
-
-      _lastUpdatedOn = SystemClock.elapsedRealtime()
-      updatePostListAnimationInfoMap(postCellDataCollection)
     }
   }
 
   private fun checkPostsCorrectness(checkFirstPostIsOriginal: Boolean, inputPostsCount: Int) {
+    check(rwLock.isWriteLocked) { "The rwLock is expected to be locked here" }
+
     if (checkFirstPostIsOriginal) {
       val originalPost = _posts.firstOrNull()
       if (originalPost != null) {
@@ -264,6 +288,8 @@ class PostsState(
   }
 
   private fun updatePostListAnimationInfoMap(postDataList: Collection<PostCellData>) {
+    check(rwLock.isWriteLocked) { "The rwLock is expected to be locked here" }
+
     // Pre-insert first batch of posts into the previousPostDataInfoMap so that we don't play
     // animations for recently opened catalogs/threads. We are doing this right inside of the
     // composition because otherwise there is some kind of a delay before LaunchedEffect is executed

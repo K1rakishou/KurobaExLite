@@ -186,13 +186,16 @@ abstract class FloatingComposeScreen(
 
   @Composable
   open fun maxAvailableWidth(): Dp {
+    val density = LocalDensity.current
+    val minWidthForTablets = with(density) { remember { 500.dp.roundToPx() } }
+
     val isTablet = globalUiInfoManager.isTablet
     val maxParentWidth by globalUiInfoManager.totalScreenHeightState.collectAsState()
 
     return with(LocalDensity.current) {
       return@with remember(key1 = this, key2 = isTablet) {
         val maxWidth = if (isTablet) {
-          maxParentWidth - (maxParentWidth / 4)
+          (maxParentWidth / 2).coerceAtLeast(minWidthForTablets)
         } else {
           maxParentWidth
         }

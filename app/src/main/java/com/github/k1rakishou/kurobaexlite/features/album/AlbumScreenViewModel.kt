@@ -26,7 +26,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +36,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.logcat
+import java.util.*
 
 class AlbumScreenViewModel(
   private val appSettings: AppSettings,
@@ -164,13 +164,18 @@ class AlbumScreenViewModel(
   suspend fun loadAlbumAndListenForUpdates(chanDescriptor: ChanDescriptor) {
     logcat(TAG) { "loadAlbumAndListenForUpdates(${chanDescriptor})" }
 
+    _selectedImages.clear()
     _album.emit(null)
-    val album = loadAlbumInitial(chanDescriptor)
-    album.albumImages.forEach { albumImage -> _allImageKeys.add(albumImage.postImage.serverFileName) }
-    _album.emit(album)
-    updateToolbarTitleInfo(album)
 
-    logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${album.albumImages.size} album images" }
+    val album = loadAlbumInitial(chanDescriptor)
+
+    if (album.albumImages.isNotEmpty()) {
+      album.albumImages.forEach { albumImage -> _allImageKeys.add(albumImage.postImage.serverFileName) }
+      _album.emit(album)
+      updateToolbarTitleInfo(album)
+
+      logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${album.albumImages.size} album images" }
+    }
 
     chanCache.listenForPostUpdates(chanDescriptor)
       .collect { postLoadResult ->
@@ -178,8 +183,14 @@ class AlbumScreenViewModel(
           return@collect
         }
 
-        val currentAlbum = _album.value
-          ?: return@collect
+        var currentAlbum = _album.value
+        if (currentAlbum == null || currentAlbum.albumImages.isEmpty()) {
+          currentAlbum = loadAlbumInitial(chanDescriptor)
+          currentAlbum.albumImages.forEach { albumImage -> _allImageKeys.add(albumImage.postImage.serverFileName) }
+          _album.emit(currentAlbum)
+
+          logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${currentAlbum.albumImages.size} album images" }
+        }
 
         val newAlbumImages = mutableListOf<AlbumImage>()
 
@@ -202,20 +213,23 @@ class AlbumScreenViewModel(
           _allImageKeys.add(albumImage.postImage.serverFileName)
         }
 
+        val appendedImages = currentAlbum.appendNewAlbumImages(newAlbumImages)
+
         logcat(TAG) {
-          "loadAlbumAndListenForUpdates() Got ${newAlbumImages.size} new album images " +
+          "loadAlbumAndListenForUpdates() Got ${newAlbumImages.size} album images, appended ${appendedImages} album images " +
             "from ChanCache for ${chanDescriptor}"
         }
 
-        currentAlbum.appendNewAlbumImages(newAlbumImages)
         updateToolbarTitleInfo(currentAlbum)
 
-        _snackbarFlow.emit(
-          appResources.string(
-            R.string.album_screen_new_album_images_added,
-            newAlbumImages.size
+        if (appendedImages > 0) {
+          _snackbarFlow.emit(
+            appResources.string(
+              R.string.album_screen_new_album_images_added,
+              appendedImages
+            )
           )
-        )
+        }
       }
   }
 
@@ -318,9 +332,11 @@ class AlbumScreenViewModel(
       }
     }
 
-    fun appendNewAlbumImages(newAlbumImages: List<AlbumImage>) {
+    fun appendNewAlbumImages(newAlbumImages: List<AlbumImage>): Int {
+      var actuallyAppended = 0
+
       if (newAlbumImages.isEmpty()) {
-        return
+        return actuallyAppended
       }
 
       Snapshot.withMutableSnapshot {
@@ -334,8 +350,11 @@ class AlbumScreenViewModel(
           }
 
           _albumImages += newAlbumImage
+          ++actuallyAppended
         }
       }
+
+      return actuallyAppended
     }
 
     fun imageIndexByPostDescriptor(postDescriptor: PostDescriptor): Int? {

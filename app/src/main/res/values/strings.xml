@@ -137,7 +137,7 @@
     <string name="board_selection_screen_nothing_found_by_query">No boards were found by query \'%1$s\'</string>
 
     <string name="album_screen_toolbar_title">Album</string>
-    <string name="album_screen_toolbar_title_with_images">Album (%1$d image(s))</string>
+    <string name="album_screen_toolbar_title_with_images">Album with %1$d image(s)</string>
     <string name="album_screen_album_empty">Album is empty</string>
     <string name="album_screen_selected_n_images">Selected %1$d image(s)</string>
     <string name="album_screen_new_album_images_added">%1$d new image(s)</string>

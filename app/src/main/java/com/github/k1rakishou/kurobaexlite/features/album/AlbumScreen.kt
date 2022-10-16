@@ -53,7 +53,9 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
@@ -165,13 +167,14 @@ class AlbumScreen(
   @Composable
   override fun Toolbar(boxScope: BoxScope) {
     val coroutineScope = rememberCoroutineScope()
+    val currentChanDescriptor = getAndListenForChanDescriptor(chanDescriptor)
 
     with(boxScope) {
       ToolbarInternal(
         defaultToolbarState = defaultToolbarState,
         selectionToolbarState = selectionToolbarState,
         kurobaToolbarContainerState = kurobaToolbarContainerState,
-        chanDescriptor = chanDescriptor,
+        chanDescriptor = currentChanDescriptor,
         toolbarContainerKey = "${screenKey.key}_${keySuffix}",
         showOverflowMenu = {
           screenCoroutineScope.launch {
@@ -200,7 +203,6 @@ class AlbumScreen(
       )
     }
   }
-
   @Composable
   override fun HomeNavigationScreenContent() {
     val windowInsets = LocalWindowInsets.current
@@ -230,6 +232,8 @@ class AlbumScreen(
       return@HandleBackPresses popScreen()
     }
 
+    val currentChanDescriptor = getAndListenForChanDescriptor(chanDescriptor)
+
     GradientBackground(
       modifier = Modifier.fillMaxSize()
     ) {
@@ -237,7 +241,7 @@ class AlbumScreen(
         ContentInternal(
           paddingValues = paddingValues,
           screenKey = screenKey,
-          chanDescriptor = chanDescriptor,
+          chanDescriptor = currentChanDescriptor,
           defaultToolbarState = defaultToolbarState,
           selectionToolbarState = selectionToolbarState,
           onThumbnailClicked = { postImage ->
@@ -245,9 +249,9 @@ class AlbumScreen(
               componentActivity = componentActivity,
               navigationRouter = navigationRouter,
               args = {
-                val mediaViewerParams = when (val descriptor = chanDescriptor) {
-                  is CatalogDescriptor -> MediaViewerParams.Catalog(descriptor, postImage.fullImageAsString)
-                  is ThreadDescriptor -> MediaViewerParams.Thread(descriptor, postImage.fullImageAsString)
+                val mediaViewerParams = when (currentChanDescriptor) {
+                  is CatalogDescriptor -> MediaViewerParams.Catalog(currentChanDescriptor, postImage.fullImageAsString)
+                  is ThreadDescriptor -> MediaViewerParams.Thread(currentChanDescriptor, postImage.fullImageAsString)
                 }
 
                 putParcelable(MediaViewerScreen.mediaViewerParamsKey, mediaViewerParams)
@@ -275,6 +279,39 @@ class AlbumScreen(
       }
     }
   }
+
+  @Composable
+  private fun getAndListenForChanDescriptor(chanDescriptor: ChanDescriptor): ChanDescriptor {
+    var currentChanDescriptor by remember { mutableStateOf<ChanDescriptor>(chanDescriptor) }
+
+    val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
+    val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        when (chanDescriptor) {
+          is CatalogDescriptor -> {
+            catalogScreenViewModel.currentlyOpenedCatalogFlow.collect { catalogDescriptor ->
+              if (catalogDescriptor != null) {
+                currentChanDescriptor = catalogDescriptor
+              }
+            }
+          }
+          is ThreadDescriptor -> {
+            threadScreenViewModel.currentlyOpenedThreadFlow.collect { threadDescriptor ->
+              if (threadDescriptor != null) {
+                currentChanDescriptor = threadDescriptor
+              }
+            }
+          }
+        }
+      }
+    )
+
+    return currentChanDescriptor
+  }
+
 
   private suspend fun floatingMenuItems(): List<FloatingMenuItem> {
     val menuItems = mutableListOf<FloatingMenuItem>()
@@ -370,7 +407,7 @@ private fun BoxScope.ToolbarInternal(
   )
 
   LaunchedEffect(
-    key1 = Unit,
+    key1 = chanDescriptor,
     block = {
       selectionToolbarState.iconClickEvents.collect { icon ->
         icon as AlbumScreen.SelectionToolbarIcons

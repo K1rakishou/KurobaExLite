@@ -32,8 +32,7 @@ class ProgressScreen(
 
   @Composable
   override fun FloatingContent() {
-    val availableWidth = maxAvailableWidth()
-    val screenWidth = availableWidth - (availableWidth / 2)
+    val screenWidth = maxAvailableWidth()
 
     Column(
       modifier = Modifier

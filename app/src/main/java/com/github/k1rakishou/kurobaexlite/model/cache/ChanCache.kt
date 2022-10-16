@@ -11,7 +11,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +18,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.withContext
 import logcat.logcat
+import java.util.concurrent.ConcurrentHashMap
 
 class ChanCache(
   private val androidHelpers: AndroidHelpers
@@ -79,6 +79,7 @@ class ChanCache(
         newPosts = catalogThreads.toList(),
         updatedPosts = emptyList()
       )
+
       _catalogThreadUpdates.emit(postsLoadResult)
 
       return@withContext postsLoadResult
@@ -102,12 +103,12 @@ class ChanCache(
       val hasPosts = chanThread.hasPosts()
       val postsMergeResult = chanThread.insert(threadPostCells)
 
-      _threadPostUpdates.emit(postsMergeResult)
-
       // Only run evictOld() routine when inserting new threads into the cache
       if (!hasPosts) {
         evictOld(threads as ConcurrentHashMap<ChanDescriptor, IChanCache>, maxCachedThreads)
       }
+
+      _threadPostUpdates.emit(postsMergeResult)
 
       return@withContext postsMergeResult
     }
