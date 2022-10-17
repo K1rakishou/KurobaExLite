@@ -91,12 +91,12 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
-import kotlin.math.absoluteValue
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
+import kotlin.math.absoluteValue
 
 class PopupPostsScreen(
   screenArgs: Bundle? = null,
@@ -219,7 +219,7 @@ class PopupPostsScreen(
             state = swipeableState,
             anchors = anchors,
             orientation = Orientation.Horizontal,
-            thresholds = { _, _ -> FractionalThreshold(0.5f) }
+            thresholds = { _, _ -> FractionalThreshold(0.25f) }
           )
           .absoluteOffset { IntOffset(x = currentOffset.toInt(), y = 0) }
           .graphicsLayer { alpha = (1f - progress.absoluteValue) }
