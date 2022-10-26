@@ -231,7 +231,7 @@ class PopupPostsScreen(
 
   @Composable
   override fun DefaultFloatingScreenBackPressHandler() {
-    // Disable default back press handler, we have out custom.
+    // Disable default back press handler, we have a custom one.
   }
 
   @OptIn(ExperimentalMaterialApi::class)
