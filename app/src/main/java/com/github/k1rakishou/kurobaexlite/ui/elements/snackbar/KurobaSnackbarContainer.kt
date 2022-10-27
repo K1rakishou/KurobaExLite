@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -275,7 +276,7 @@ private class AnimationData(
   ) {
     prevJob?.cancel()
     prevJob = coroutineScope.launch {
-      delay(index * 10L)
+      delay(index * 25L)
 
       animatable.animateTo(
         targetValue = targetY,
@@ -287,7 +288,7 @@ private class AnimationData(
 }
 
 /**
- * Snackbars can be only shown on MainScreen, CatalogScreen and ThreadScreen.
+ * Snackbars can be only shown on MainScreen, CatalogScreen, ThreadScreen and AlbumScreen.
  * If the [screenKey] is neither of them then use MainScreen.SCREEN_KEY
  * Otherwise the snackbar won't be shown at all!
  * */
@@ -297,6 +298,10 @@ private fun safeScreenKey(screenKey: ScreenKey): ScreenKey {
   }
 
   if (screenKey == ThreadScreen.SCREEN_KEY) {
+    return screenKey
+  }
+
+  if (screenKey == AlbumScreen.SCREEN_KEY) {
     return screenKey
   }
 

@@ -53,10 +53,8 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
-import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -73,6 +71,8 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
@@ -473,6 +473,8 @@ private fun ContentInternal(
   val snackbarManager: SnackbarManager = koinRemember()
   val appResources: AppResources = koinRemember()
 
+  val kurobaSnackbarState = rememberKurobaSnackbarState()
+
   LaunchedEffect(
     key1 = Unit,
     block = {
@@ -481,15 +483,10 @@ private fun ContentInternal(
           return@collect
         }
 
-        val openedFromScreenKey = when (chanDescriptor) {
-          is CatalogDescriptor -> CatalogScreen.SCREEN_KEY
-          is ThreadDescriptor -> ThreadScreen.SCREEN_KEY
-        }
-
         // Hardcode for now, we only have 1 snackbar emitted from the albumScreenViewModel
         snackbarManager.toast(
           message = message,
-          screenKey = openedFromScreenKey,
+          screenKey = screenKey,
           toastId = AlbumScreen.NEW_ALBUM_IMAGES_ADDED_TOAST_ID
         )
       }
@@ -606,6 +603,13 @@ private fun ContentInternal(
         )
       }
     }
+  )
+
+  KurobaSnackbarContainer(
+    modifier = Modifier.fillMaxSize(),
+    screenKey = screenKey,
+    isTablet = globalUiInfoManager.isTablet,
+    kurobaSnackbarState = kurobaSnackbarState
   )
 }
 
