@@ -47,7 +47,7 @@ class ReplyNotificationDeleteIntentBroadcastReceiver : BroadcastReceiver() {
 
     serializedExecutor.post {
       try {
-        loadBookmarks.executeSuspend(restartWork = false)
+        loadBookmarks.executeSuspend()
 
         markBookmarksAsSeen(threadDescriptors)
       } finally {

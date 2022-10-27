@@ -22,7 +22,7 @@ class MainActivityViewModel(
     super.onViewModelReady()
 
     viewModelScope.launch {
-      loadBookmarks.execute(restartWork = true) { result ->
+      loadBookmarks.execute(shouldRestartWork = true) { result ->
         val exception = result.exceptionOrNull()
           ?: return@execute
 

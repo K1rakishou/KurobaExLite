@@ -19,11 +19,11 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookma
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
+import java.util.concurrent.TimeUnit
 
 class BookmarkBackgroundWatcherWorker(
   context: Context,
@@ -47,7 +47,7 @@ class BookmarkBackgroundWatcherWorker(
   private suspend fun doWorkInternal(): Result {
     logcat(TAG) { "doWork() start" }
 
-    val loadBookmarksResult = loadBookmarks.executeSuspend(restartWork = false)
+    val loadBookmarksResult = loadBookmarks.executeSuspend()
     if (loadBookmarksResult.isFailure) {
       val error = loadBookmarksResult.exceptionOrThrow()
       logcat(TAG) { "loadBookmarks.executeSuspend() error: ${error.asLogIfImportantOrErrorMessage()}" }

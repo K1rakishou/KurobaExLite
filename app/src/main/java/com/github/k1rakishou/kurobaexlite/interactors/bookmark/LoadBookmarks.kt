@@ -11,13 +11,13 @@ import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import logcat.logcat
+import java.util.concurrent.atomic.AtomicBoolean
 
 class LoadBookmarks(
   private val appContext: Context,
@@ -31,20 +31,15 @@ class LoadBookmarks(
 ) {
   private val bookmarksLoaded = AtomicBoolean(false)
 
-  suspend fun executeSuspend(restartWork: Boolean): Result<Boolean> {
+  suspend fun executeSuspend(): Result<Boolean> {
     return suspendCancellableCoroutine { cancellableContinuation ->
-      execute(restartWork = restartWork) { result ->
+      execute(shouldRestartWork = false) { result ->
         cancellableContinuation.resumeValueSafe(result)
       }
     }
   }
 
-  fun execute(restartWork: Boolean, onFinished: (Result<Boolean>) -> Unit) {
-    if (bookmarksLoaded.get()) {
-      onFinished(Result.success(false))
-      return
-    }
-
+  fun execute(shouldRestartWork: Boolean, onFinished: (Result<Boolean>) -> Unit) {
     appScope.launch(dispatcher) {
       if (!bookmarksLoaded.compareAndSet(false, true)) {
         onFinished(Result.success(false))
@@ -76,30 +71,35 @@ class LoadBookmarks(
           return@launch
         }
 
-        val activeBookmarksCount = bookmarksManager.activeBookmarksCount()
-        if (activeBookmarksCount > 0) {
-          if (restartWork) {
-            logcat(TAG) { "activeBookmarksCount is greater than zero (${activeBookmarksCount}) restarting the work" }
-
-            BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-              appContext = appContext,
-              flavorType = androidHelpers.getFlavorType(),
-              appSettings = appSettings,
-              isInForeground = applicationVisibilityManager.isAppInForeground(),
-              addInitialDelay = false
-            )
-          } else {
-            logcat(TAG) { "activeBookmarksCount is greater than zero but restartWork flag is false" }
-          }
-        } else {
-          logcat(TAG) { "No active bookmarks loaded, doing nothing" }
-        }
-
+        restartWorkIfNeeded(shouldRestartWork)
         onFinished(Result.success(true))
       } catch (error: Throwable) {
         onFinished(Result.failure(error))
       }
     }
+  }
+
+  private suspend fun restartWorkIfNeeded(shouldRestartWork: Boolean) {
+    val activeBookmarksCount = bookmarksManager.activeBookmarksCount()
+    if (activeBookmarksCount <= 0) {
+      logcat(TAG) { "No active bookmarks loaded, doing nothing" }
+      return
+    }
+
+    if (!shouldRestartWork) {
+      logcat(TAG) { "activeBookmarksCount is greater than zero but restartWork flag is false" }
+      return
+    }
+
+    logcat(TAG) { "activeBookmarksCount is greater than zero (${activeBookmarksCount}) restarting the work" }
+
+    BookmarkBackgroundWatcherWorker.restartBackgroundWork(
+      appContext = appContext,
+      flavorType = androidHelpers.getFlavorType(),
+      appSettings = appSettings,
+      isInForeground = applicationVisibilityManager.isAppInForeground(),
+      addInitialDelay = false
+    )
   }
 
   companion object {
