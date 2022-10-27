@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.SolidColor
@@ -101,7 +102,7 @@ fun ReplyLayoutContent(
   onFlagSelectorClicked: (ChanDescriptor) -> Unit
 ) {
   val iconSize = 40.dp
-  val replyButtonsWidth = 50.dp
+  val replyButtonsWidth = 58.dp
 
   val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
 
@@ -451,14 +452,15 @@ private fun ColumnScope.FlagSelector(
   val lastUsedFlagText = remember(key1 = lastUsedFlag) { "[${lastUsedFlag.key}] ${lastUsedFlag.name}" }
   val flagSelectorAlpha = if (replyLayoutEnabled) 1f else ContentAlpha.disabled
 
-  Spacer(modifier = Modifier.height(12.dp))
+  Spacer(modifier = Modifier.height(16.dp))
 
   KurobaComposeText(
+    modifier = Modifier.padding(start = 6.dp),
     color = chanTheme.textColorHint,
     text = stringResource(id = R.string.reply_flag_label_text)
   )
 
-  Spacer(modifier = Modifier.height(4.dp))
+  Spacer(modifier = Modifier.height(8.dp))
 
   Row(
     modifier = Modifier
@@ -718,7 +720,8 @@ private fun ReplyInputRightPart(
   val replySendProgress = replySendProgressMut
   val sendReplyState by replyLayoutState.sendReplyState
 
-  val padding = with(density) { 4.dp.toPx() }
+  val padding = with(density) { 8.dp.toPx() }
+  val cornerRadius = with(density) { remember { CornerRadius(8.dp.toPx(), 8.dp.toPx()) } }
 
   Column(
     modifier = Modifier
@@ -730,7 +733,7 @@ private fun ReplyInputRightPart(
         onDragStopped = { velocity -> onDragStopped(velocity) }
       )
       .drawBehind {
-        drawRect(
+        drawRoundRect(
           color = chanTheme.backColorSecondary,
           topLeft = Offset(x = padding, y = padding),
           size = Size(
@@ -738,10 +741,13 @@ private fun ReplyInputRightPart(
             height = this.size.height - (padding * 2)
           ),
           alpha = 0.4f,
+          cornerRadius = cornerRadius
         )
-    },
+      },
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
+    Spacer(modifier = Modifier.height(8.dp))
+
     SendReplyButton(
       sendReplyState = sendReplyState,
       iconSize = iconSize,
