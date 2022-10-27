@@ -60,20 +60,24 @@ abstract class PostScreenState(
   @CallSuper
   open fun insertOrUpdate(postCellData: PostCellData) {
     doWithDataState { postsState ->
-      postsState.insertOrUpdate(
-        postCellData = postCellData,
-        checkFirstPostIsOriginal = checkFirstPostIsOriginal
-      )
+      Snapshot.withMutableSnapshot {
+        postsState.insertOrUpdate(
+          postCellData = postCellData,
+          checkFirstPostIsOriginal = checkFirstPostIsOriginal
+        )
+      }
     }
   }
 
   @CallSuper
   open fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     doWithDataState { postsState ->
-      postsState.insertOrUpdateMany(
-        postCellDataCollection = postCellDataCollection,
-        checkFirstPostIsOriginal = checkFirstPostIsOriginal
-      )
+      Snapshot.withMutableSnapshot {
+        postsState.insertOrUpdateMany(
+          postCellDataCollection = postCellDataCollection,
+          checkFirstPostIsOriginal = checkFirstPostIsOriginal
+        )
+      }
     }
   }
 

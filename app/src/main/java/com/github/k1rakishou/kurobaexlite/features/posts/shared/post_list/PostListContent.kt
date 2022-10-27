@@ -664,7 +664,7 @@ private fun PostsListMode(
         dataContent = { postListAsyncData ->
           val abstractPostsState = postListAsyncData.data
           val previousPostDataInfoMap = abstractPostsState.postListAnimationInfoMap
-          val postCellDataList = abstractPostsState.posts
+          val postCellDataList by abstractPostsState.postsForUi
 
           items(
             count = postCellDataList.size,
@@ -833,7 +833,7 @@ private fun PostsGridMode(
         dataContent = { postListAsyncData ->
           val abstractPostsState = postListAsyncData.data
           val previousPostDataInfoMap = abstractPostsState.postListAnimationInfoMap
-          val postCellDataList = abstractPostsState.posts
+          val postCellDataList by abstractPostsState.postsForUi
 
           items(
             count = postCellDataList.size,
@@ -1061,8 +1061,7 @@ private fun LazyListScope.postListAsyncDataContent(
       }
     }
     is AsyncData.Data -> {
-      val posts = postListAsync.data.posts
-
+      val posts by postListAsync.data.postsForUi
       if (posts.isEmpty()) {
         item(key = "empty_indicator") {
           emptyContent(this)
@@ -1102,8 +1101,7 @@ private fun LazyGridScope.postGridAsyncDataContent(
       }
     }
     is AsyncData.Data -> {
-      val posts = postListAsync.data.posts
-
+      val posts by postListAsync.data.postsForUi
       if (posts.isEmpty()) {
         item(
           key = "empty_indicator",

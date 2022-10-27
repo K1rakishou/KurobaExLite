@@ -3,9 +3,9 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.state
 import android.os.SystemClock
 import androidx.annotation.GuardedBy
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.util.fastForEachIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
@@ -35,21 +35,26 @@ class PostsState(
   private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   private val postCommentApplier: PostCommentApplier by inject(PostCommentApplier::class.java)
 
+  private val rwLock = ReentrantReadWriteLock()
+
   @GuardedBy("rwLock")
   private var _lastUpdatedOn: Long = 0
+    set(value) = rwLock.write { field = value }
+
   @get:GuardedBy("rwLock")
   val lastUpdatedOn: Long
     get() = rwLock.read { _lastUpdatedOn }
-
-  private val rwLock = ReentrantReadWriteLock()
 
   @GuardedBy("rwLock")
   private val postIndexes = linkedMapWithCap<PostDescriptor, Int>(128)
 
   @GuardedBy("rwLock")
-  private val _posts = mutableStateListOf<PostCellData>()
-  val posts: List<PostCellData>
-    get() = _posts
+  private val _posts = mutableListWithCap<PostCellData>(128)
+
+  @GuardedBy("rwLock")
+  private val _postsForUi = mutableStateOf<List<PostCellData>>(emptyList())
+  val postsForUi: State<List<PostCellData>>
+    get() = _postsForUi
 
   @get:GuardedBy("rwLock")
   val postsCopy: List<PostCellData>
@@ -58,7 +63,7 @@ class PostsState(
   @GuardedBy("rwLock")
   private val _postsMatchedBySearchQuery = LinkedHashSet<PostDescriptor>()
   @get:GuardedBy("rwLock")
-  val postsMatchedBySearchQuery: Set<PostDescriptor>
+  val postsMatchedBySearchQueryCopy: Set<PostDescriptor>
     get() = rwLock.read { _postsMatchedBySearchQuery.toSet() }
 
   val postListAnimationInfoMap = mutableStateMapOf<PostDescriptor, PreviousPostDataInfo>()
@@ -91,6 +96,9 @@ class PostsState(
     return resultList
   }
 
+  /**
+   * Called with an opened mutable snapshot!
+   * */
   fun onSearchQueryUpdated(searchQuery: String?) {
     val chanTheme = themeEngine.chanTheme
     val modifyQueryMap = mutableMapOf<PostDescriptor, PostCellData>()
@@ -144,6 +152,8 @@ class PostsState(
 
           _posts[postIndex] = postCellData
         }
+
+        _postsForUi.value = _posts.toList()
       }
     }
 
@@ -151,6 +161,7 @@ class PostsState(
   }
 
   /**
+   * Called with an opened mutable snapshot!
    * Do not call directly! Use PostScreenState.insertOrUpdate() instead!
    * */
   fun insertOrUpdate(
@@ -166,33 +177,41 @@ class PostsState(
       return
     }
 
-    Snapshot.withMutableSnapshot {
-      rwLock.write {
-        val index = postIndexes[postCellData.postDescriptor]
-        if (index == null) {
-          val nextPostIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
-          postIndexes[postCellData.postDescriptor] = nextPostIndex
+    var postsAsStateNeedUpdate = false
 
-          // We assume that posts can only be inserted at the end of the post list
-          _posts += postCellData
-        } else {
-          _lastUpdatedOn = SystemClock.elapsedRealtime()
-          _posts[index] = postCellData
-        }
+    rwLock.write {
+      val index = postIndexes[postCellData.postDescriptor]
+      if (index == null) {
+        val nextPostIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
+        postIndexes[postCellData.postDescriptor] = nextPostIndex
 
-        if (androidHelpers.isDevFlavor()) {
-          checkPostsCorrectness(
-            checkFirstPostIsOriginal = checkFirstPostIsOriginal,
-            inputPostsCount = 1
-          )
-        }
+        postsAsStateNeedUpdate = true
+        // We assume that posts can only be inserted at the end of the post list
+        _posts += postCellData
+      } else {
+        _lastUpdatedOn = SystemClock.elapsedRealtime()
 
-        updatePostListAnimationInfoMap(listOf(postCellData))
+        postsAsStateNeedUpdate = _posts[index] != postCellData
+        _posts[index] = postCellData
       }
+
+      if (androidHelpers.isDevFlavor()) {
+        checkPostsCorrectness(
+          checkFirstPostIsOriginal = checkFirstPostIsOriginal,
+          inputPostsCount = 1
+        )
+      }
+
+      if (postsAsStateNeedUpdate) {
+        _postsForUi.value = _posts.toList()
+      }
+
+      updatePostListAnimationInfoMap(listOf(postCellData))
     }
   }
 
   /**
+   * Called with an opened mutable snapshot!
    * Do not call directly! Use PostScreenState.insertOrUpdateMany() instead!
    * */
   fun insertOrUpdateMany(
@@ -203,43 +222,50 @@ class PostsState(
       return
     }
 
-    Snapshot.withMutableSnapshot {
-      rwLock.write {
-        var initialIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
+    var postsAsStateNeedUpdate = false
 
-        for (postCellData in postCellDataCollection) {
-          val postDescriptor = postCellData.postDescriptor
+    rwLock.write {
+      var initialIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
 
-          val descriptorsMatch = when (chanDescriptor) {
-            is CatalogDescriptor -> postDescriptor.catalogDescriptor == chanDescriptor
-            is ThreadDescriptor -> postDescriptor.threadDescriptor == chanDescriptor
-          }
+      for (postCellData in postCellDataCollection) {
+        val postDescriptor = postCellData.postDescriptor
 
-          if (!descriptorsMatch) {
-            continue
-          }
-
-          val index = postIndexes[postDescriptor]
-          if (index == null) {
-            postIndexes[postDescriptor] = initialIndex++
-
-            // We assume that posts can only be inserted at the end of the post list
-            _posts += postCellData
-          } else {
-            _posts[index] = postCellData
-          }
+        val descriptorsMatch = when (chanDescriptor) {
+          is CatalogDescriptor -> postDescriptor.catalogDescriptor == chanDescriptor
+          is ThreadDescriptor -> postDescriptor.threadDescriptor == chanDescriptor
         }
 
-        if (androidHelpers.isDevFlavor()) {
-          checkPostsCorrectness(
-            checkFirstPostIsOriginal = checkFirstPostIsOriginal,
-            inputPostsCount = postCellDataCollection.size
-          )
+        if (!descriptorsMatch) {
+          continue
         }
 
-        _lastUpdatedOn = SystemClock.elapsedRealtime()
-        updatePostListAnimationInfoMap(postCellDataCollection)
+        val index = postIndexes[postDescriptor]
+        if (index == null) {
+          postIndexes[postDescriptor] = initialIndex++
+
+          postsAsStateNeedUpdate = true
+          // We assume that posts can only be inserted at the end of the post list
+          _posts += postCellData
+        } else {
+          postsAsStateNeedUpdate = _posts[index] != postCellData
+          _posts[index] = postCellData
+        }
       }
+
+      if (androidHelpers.isDevFlavor()) {
+        checkPostsCorrectness(
+          checkFirstPostIsOriginal = checkFirstPostIsOriginal,
+          inputPostsCount = postCellDataCollection.size
+        )
+      }
+
+      _lastUpdatedOn = SystemClock.elapsedRealtime()
+
+      if (postsAsStateNeedUpdate) {
+        _postsForUi.value = _posts.toList()
+      }
+
+      updatePostListAnimationInfoMap(postCellDataCollection)
     }
   }
 

@@ -183,7 +183,7 @@ fun <ToolbarType : KurobaChildToolbar> PostListSearchButtons(
           return@collect
         }
 
-        searchToolbar.onSearchUpdated(postsState.postsMatchedBySearchQuery)
+        searchToolbar.onSearchUpdated(postsState.postsMatchedBySearchQueryCopy)
       }
     }
   )
