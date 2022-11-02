@@ -12,6 +12,11 @@ data class ChanBoardUiData(
     get() = catalogDescriptor.boardCode
 
   fun matchesQuery(searchQuery: String): Boolean {
+    if (searchQuery.startsWith('/') || searchQuery.endsWith('/')) {
+      // User explicitly want to search only by the board code.
+      return "/${catalogDescriptor.boardCode}/".contains(searchQuery, ignoreCase = true)
+    }
+
     if (title.contains(searchQuery, ignoreCase = true)) {
       return true
     }

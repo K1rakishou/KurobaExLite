@@ -363,7 +363,7 @@ private fun BuildBoardsList(
         val sortedBoards = WeightedSorter.sort(
           input = filteredBoards,
           query = query,
-          textSelector = { chanBoardUiData -> chanBoardUiData.boardCode }
+          textSelector = { chanBoardUiData -> "/${chanBoardUiData.boardCode}/" }
         )
 
         filteredBoardsAsyncData = AsyncData.Data(sortedBoards)
@@ -374,12 +374,13 @@ private fun BuildBoardsList(
 
   LaunchedEffect(
     key1 = searchQuery,
+    key2 = filteredBoardsAsyncData,
     block = {
-      awaitFrame()
-
-      if (lazyListState.firstVisibleItemIndex <= 0) {
+      if (filteredBoardsAsyncData !is AsyncData.Data) {
         return@LaunchedEffect
       }
+
+      awaitFrame()
 
       lazyListState.scrollToItem(0)
     }
@@ -456,7 +457,8 @@ private fun BuildBoardsList(
           }
         }
       }
-    })
+    }
+  )
 }
 
 private fun LazyListScope.buildChanBoardsList(
@@ -532,7 +534,7 @@ private fun BuildChanBoardCell(
             val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
               chanTheme = chanTheme,
               searchQuery = searchQuery,
-              minQueryLength = 2,
+              minQueryLength = 1,
               string = titleFormatted
             )
 
@@ -562,7 +564,7 @@ private fun BuildChanBoardCell(
               val (_, subtitleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
                 chanTheme = chanTheme,
                 searchQuery = searchQuery,
-                minQueryLength = 2,
+                minQueryLength = 1,
                 string = subtitleFormatted
               )
 

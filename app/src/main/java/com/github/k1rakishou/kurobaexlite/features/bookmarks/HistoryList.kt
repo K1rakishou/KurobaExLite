@@ -339,7 +339,7 @@ private fun CatalogNavigationElement(
           val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
             chanTheme = chanTheme,
             searchQuery = searchQuery,
-            minQueryLength = 2,
+            minQueryLength = 1,
             string = titleFormatted
           )
 
@@ -416,7 +416,7 @@ private fun ThreadNavigationElement(
           val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
             chanTheme = chanTheme,
             searchQuery = searchQuery,
-            minQueryLength = 2,
+            minQueryLength = 1,
             string = titleFormatted
           )
 
