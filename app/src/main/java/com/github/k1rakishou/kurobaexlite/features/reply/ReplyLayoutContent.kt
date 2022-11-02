@@ -242,8 +242,7 @@ private fun ReplyInputLeftPart(
         ReplyTextField(
           focusRequesterProvider = { replyInputFocusRequest },
           replyLayoutState = replyLayoutState,
-          replyLayoutEnabled = replyLayoutEnabled,
-          onSendReplyClicked = onSendReplyClicked
+          replyLayoutEnabled = replyLayoutEnabled
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -540,8 +539,7 @@ private fun ColumnScope.OptionsTextField(
 private fun ColumnScope.ReplyTextField(
   focusRequesterProvider: () -> FocusRequester,
   replyLayoutState: ReplyLayoutState,
-  replyLayoutEnabled: Boolean,
-  onSendReplyClicked: () -> Unit,
+  replyLayoutEnabled: Boolean
 ) {
   val chanTheme = LocalChanTheme.current
   val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
@@ -659,10 +657,8 @@ private fun ColumnScope.ReplyTextField(
     textStyle = textStyle,
     visualTransformation = replyInputVisualTransformation,
     keyboardOptions = KeyboardOptions(
-      capitalization = KeyboardCapitalization.Sentences,
-      imeAction = ImeAction.Done
+      capitalization = KeyboardCapitalization.Sentences
     ),
-    keyboardActions = KeyboardActions(onDone = { onSendReplyClicked() }),
     label = { interactionSource ->
       KurobaLabelText(
         enabled = replyLayoutEnabled,
