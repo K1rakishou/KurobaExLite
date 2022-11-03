@@ -73,6 +73,7 @@
     <string name="reload">Reload</string>
     <string name="restore">Restore</string>
     <string name="reset">Reset</string>
+    <string name="remove">Remove</string>
     <string name="back">Back</string>
     <string name="close">Close</string>
     <string name="apply">Apply</string>

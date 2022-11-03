@@ -7,10 +7,10 @@ import android.util.Log
 import com.github.k1rakishou.kurobaexlite.helpers.di.DependencyGraph
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.ui.activity.CrashReportActivity
-import kotlin.system.exitProcess
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
 import logcat.LogPriority
@@ -18,6 +18,7 @@ import logcat.LogcatLogger
 import logcat.asLog
 import org.koin.core.context.GlobalContext.startKoin
 import org.koin.java.KoinJavaComponent.inject
+import kotlin.system.exitProcess
 
 class KurobaExLiteApplication : Application() {
   private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
@@ -59,7 +60,7 @@ class KurobaExLiteApplication : Application() {
   }
 
   private fun showCrashReportActivity(throwable: Throwable): Nothing {
-    val message = throwable.message
+    val message = throwable.errorMessageOrClassName(userReadable = true)
     val stacktrace = throwable.stackTraceToString()
 
     val bundle = Bundle()

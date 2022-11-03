@@ -428,6 +428,7 @@ object DependencyGraph {
       Chan4CaptchaViewModel(
         proxiedOkHttpClient = get(),
         siteManager = get(),
+        firewallBypassManager = get(),
         moshi = get(),
         loadChanCatalog = get(),
         chan4CaptchaSolverHelper = get()

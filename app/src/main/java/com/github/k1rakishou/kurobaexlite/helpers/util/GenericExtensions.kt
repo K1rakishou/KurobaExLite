@@ -226,10 +226,6 @@ inline fun <T> Collection<T>?.isNotNullNorEmpty(): Boolean {
 
 @JvmOverloads
 fun Throwable.errorMessageOrClassName(userReadable: Boolean = false): String {
-  if (!isExceptionImportant()) {
-    return this::class.java.name
-  }
-
   val actualMessage = if (cause?.message?.isNotNullNorBlank() == true) {
     cause!!.message
   } else {
@@ -240,7 +236,11 @@ fun Throwable.errorMessageOrClassName(userReadable: Boolean = false): String {
     return actualMessage
   }
 
-  val exceptionClassName = this::class.java.name
+  if (!isExceptionImportant()) {
+    return this::class.java.simpleName
+  }
+
+  val exceptionClassName = this::class.java.simpleName
 
   if (!actualMessage.isNullOrBlank()) {
     if (actualMessage.contains(exceptionClassName)) {

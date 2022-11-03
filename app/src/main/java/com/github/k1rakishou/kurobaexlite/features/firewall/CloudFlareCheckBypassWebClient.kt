@@ -3,8 +3,10 @@ package com.github.k1rakishou.kurobaexlite.features.firewall
 import android.webkit.CookieManager
 import android.webkit.WebView
 import com.github.k1rakishou.kurobaexlite.helpers.network.CloudFlareInterceptor
+import com.github.k1rakishou.kurobaexlite.helpers.util.domain
 import com.github.k1rakishou.kurobaexlite.model.BypassException
 import kotlinx.coroutines.CompletableDeferred
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class CloudFlareCheckBypassWebClient(
   private val originalRequestUrlHost: String,
@@ -15,6 +17,14 @@ class CloudFlareCheckBypassWebClient(
 
   override fun onPageFinished(view: WebView?, url: String?) {
     super.onPageFinished(view, url)
+
+    if (url.isNullOrEmpty()) {
+      return
+    }
+
+    val domainOrHost = url.toHttpUrlOrNull()
+      ?.let { httpUrl -> httpUrl.domain() ?: httpUrl.host }
+      ?: return
 
     val cookie = cookieManager.getCookie(originalRequestUrlHost)
     if (cookie.isNullOrEmpty() || !cookie.contains(CloudFlareInterceptor.CF_CLEARANCE)) {
@@ -38,7 +48,7 @@ class CloudFlareCheckBypassWebClient(
       return
     }
 
-    success(actualCookie)
+    success(domainOrHost, actualCookie)
   }
 
   override fun onReceivedError(

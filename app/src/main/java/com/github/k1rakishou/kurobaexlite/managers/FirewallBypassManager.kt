@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -30,10 +31,17 @@ class FirewallBypassManager(
   val showFirewallControllerEvents: SharedFlow<ShowFirewallControllerInfo>
     get() = _showFirewallControllerEvents.asSharedFlow()
 
+  private val _firewallBypassedEvents = MutableSharedFlow<FirewallBypassedInfo>(
+    extraBufferCapacity = Channel.UNLIMITED,
+  )
+  val firewallBypassedEvents: SharedFlow<FirewallBypassedInfo>
+    get() = _firewallBypassedEvents.asSharedFlow()
+
   fun onFirewallDetected(
     firewallType: FirewallType,
     siteKey: SiteKey,
-    urlToOpen: HttpUrl
+    urlToOpen: HttpUrl,
+    originalRequestUrl: HttpUrl
   ) {
     if (!applicationVisibilityManager.isAppInForeground()) {
       // No point to do anything here since there is most likely no activity currently alive
@@ -73,10 +81,11 @@ class FirewallBypassManager(
         firewallType = firewallType,
         siteKey = siteKey,
         urlToOpen = urlToOpen,
+        originalRequestUrl = originalRequestUrl,
         onFinished = completableDeferred
       )
 
-      _showFirewallControllerEvents.tryEmit(showFirewallControllerInfo)
+      _showFirewallControllerEvents.emit(showFirewallControllerInfo)
 
       completableDeferred.awaitSilently()
 
@@ -88,20 +97,43 @@ class FirewallBypassManager(
 
         firewallSiteInfo.lastCheckTime = System.currentTimeMillis()
       }
-
     }
   }
 
-  class FirewallSiteInfo(
+  fun onFirewallBypassed(
+    firewallType: FirewallType,
+    siteKey: SiteKey,
+    urlToOpen: HttpUrl,
+    originalRequestUrl: HttpUrl
+  ) {
+    val firewallBypassedInfo = FirewallBypassedInfo(
+      firewallType = firewallType,
+      siteKey = siteKey,
+      urlToOpen = urlToOpen,
+      originalRequestUrl = originalRequestUrl,
+    )
+
+    _firewallBypassedEvents.tryEmit(firewallBypassedInfo)
+  }
+
+  data class FirewallSiteInfo(
     var lastCheckTime: Long = 0L,
     var isCurrentlyShowing: Boolean = false
   )
 
-  class ShowFirewallControllerInfo(
+  data class ShowFirewallControllerInfo(
     val firewallType: FirewallType,
     val siteKey: SiteKey,
     val urlToOpen: HttpUrl,
+    val originalRequestUrl: HttpUrl,
     val onFinished: CompletableDeferred<Unit>
+  )
+
+  data class FirewallBypassedInfo(
+    val firewallType: FirewallType,
+    val siteKey: SiteKey,
+    val urlToOpen: HttpUrl,
+    val originalRequestUrl: HttpUrl
   )
 
   companion object {

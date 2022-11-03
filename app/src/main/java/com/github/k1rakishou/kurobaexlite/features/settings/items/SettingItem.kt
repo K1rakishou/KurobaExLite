@@ -33,7 +33,8 @@ abstract class SettingItem(
         ).collect { allEnabled ->
           dependenciesEnabledState.value = allEnabled
         }
-      })
+      }
+    )
   }
 
   fun matchesQuery(searchQuery: String): Boolean {

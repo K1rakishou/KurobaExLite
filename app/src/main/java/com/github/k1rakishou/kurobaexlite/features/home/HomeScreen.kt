@@ -17,7 +17,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -83,7 +82,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import logcat.LogPriority
 import logcat.logcat
@@ -99,14 +97,13 @@ class HomeScreen(
 ) : ComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val homeScreenPageConverter by lazy { HomeScreenPageConverter(componentActivity, navigationRouter) }
   private val siteManager: SiteManager by inject(SiteManager::class.java)
+  private val firewallBypassManager: FirewallBypassManager by inject(FirewallBypassManager::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
   @Suppress("UnnecessaryVariable")
   @Composable
   override fun Content() {
-    val coroutineScope = rememberCoroutineScope()
-
     ContentInternal(
       isDrawerDragGestureCurrentlyAllowed = { currentPage, isFromNestedScroll ->
         isDrawerDragGestureCurrentlyAllowed(
@@ -116,14 +113,13 @@ class HomeScreen(
       },
       navigationRouterProvider = { navigationRouter },
       homeScreenPageConverterProvider = { homeScreenPageConverter },
-      showSiteFirewallBypassController = { firewallType, urlToOpen, siteKey ->
-        coroutineScope.launch {
-          showSiteFirewallBypassController(
-            firewallType = firewallType,
-            urlToOpen = urlToOpen,
-            siteKey = siteKey
-          )
-        }
+      showSiteFirewallBypassController = { firewallType, urlToOpen, originalRequestUrl, siteKey ->
+        showSiteFirewallBypassController(
+          firewallType = firewallType,
+          urlToOpen = urlToOpen,
+          originalRequestUrl = originalRequestUrl,
+          siteKey = siteKey
+        )
       },
       handleBackPresses = { pagesWrapper ->
         val mainUiLayoutMode = LocalMainUiLayoutMode.current
@@ -168,9 +164,10 @@ class HomeScreen(
   private suspend fun showSiteFirewallBypassController(
     firewallType: FirewallType,
     urlToOpen: HttpUrl,
+    originalRequestUrl: HttpUrl,
     siteKey: SiteKey
   ) {
-    logcat(HomeScreen.TAG) { "Launching SiteFirewallBypassScreen" }
+    logcat(TAG) { "Launching SiteFirewallBypassScreen(${firewallType}, ${urlToOpen}, ${originalRequestUrl}, ${siteKey})" }
 
     val bypassResult = suspendCancellableCoroutine<BypassResult> { continuation ->
       val siteFirewallBypassScreen = ComposeScreen.createScreen<SiteFirewallBypassScreen>(
@@ -194,24 +191,34 @@ class HomeScreen(
       navigationRouter.presentScreen(siteFirewallBypassScreen)
     }
 
-    logcat(HomeScreen.TAG) { "SiteFirewallBypassScreen finished" }
-
-
     when (firewallType) {
       FirewallType.Cloudflare -> {
         if (bypassResult is BypassResult.Cookie && bypassResult.cookie.isNotEmpty()) {
-          logcat(HomeScreen.TAG) { "Got ${firewallType} cookies, cookieResult: ${bypassResult}" }
+          logcat(TAG) { "Got ${firewallType} cookies, cookieResult: ${bypassResult}" }
 
-          siteManager.bySiteKey(siteKey)?.siteSettings?.cloudFlareClearanceCookie
-            ?.write(bypassResult.cookie)
+          siteManager.bySiteKey(siteKey)
+            ?.siteSettings
+            ?.cloudFlareClearanceCookie
+            ?.put(bypassResult.domainOrHost, bypassResult.cookie)
         } else {
-          logcatError(HomeScreen.TAG) { "Failed to bypass ${firewallType}, bypassResult: ${bypassResult}" }
+          logcatError(TAG) { "Failed to bypass ${firewallType}, bypassResult: ${bypassResult}" }
         }
       }
       FirewallType.YandexSmartCaptcha -> {
         // No-op. We only handle Yandex's captcha in one place (ImageSearchController)
       }
     }
+
+    if (bypassResult is BypassResult.Cookie) {
+      firewallBypassManager.onFirewallBypassed(
+        firewallType = firewallType,
+        siteKey = siteKey,
+        urlToOpen = urlToOpen,
+        originalRequestUrl = originalRequestUrl
+      )
+    }
+
+    logcat(TAG) { "Finished SiteFirewallBypassScreen(${firewallType}, ${urlToOpen}, ${originalRequestUrl}, ${siteKey})" }
   }
 
   private fun isDrawerDragGestureCurrentlyAllowed(
@@ -274,7 +281,7 @@ private fun ContentInternal(
   isDrawerDragGestureCurrentlyAllowed: (AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
   navigationRouterProvider: () -> NavigationRouter,
   homeScreenPageConverterProvider: () -> HomeScreenPageConverter,
-  showSiteFirewallBypassController: (FirewallType, HttpUrl, SiteKey) -> Unit,
+  showSiteFirewallBypassController: suspend (FirewallType, HttpUrl, HttpUrl, SiteKey) -> Unit,
   handleBackPresses: @Composable (HomeScreenPageConverter.PagesWrapper) -> Unit
 ) {
   val context = LocalContext.current
@@ -734,7 +741,7 @@ private fun RowScope.HomeScreenMiniDrawer(
 @Composable
 private fun ListenForFirewallBypassManagerEvents(
   navigationRouterProvider: () -> NavigationRouter,
-  showSiteFirewallBypassController: (FirewallType, HttpUrl, SiteKey) -> Unit
+  showSiteFirewallBypassController: suspend (FirewallType, HttpUrl, HttpUrl, SiteKey) -> Unit
 ) {
   val firewallBypassManager: FirewallBypassManager = koinRemember()
 
@@ -752,13 +759,15 @@ private fun ListenForFirewallBypassManagerEvents(
 
         val firewallType = showFirewallControllerInfo.firewallType
         val urlToOpen = showFirewallControllerInfo.urlToOpen
+        val originalRequestUrl = showFirewallControllerInfo.originalRequestUrl
         val siteKey = showFirewallControllerInfo.siteKey
         val onFinished = showFirewallControllerInfo.onFinished
 
         try {
-          showSiteFirewallBypassController(firewallType, urlToOpen, siteKey)
+          showSiteFirewallBypassController(firewallType, urlToOpen, originalRequestUrl, siteKey)
         } finally {
           onFinished.complete(Unit)
+          logcat(HomeScreen.TAG) { "showFirewallControllerInfo.onFinished() invoked" }
         }
       }
     }

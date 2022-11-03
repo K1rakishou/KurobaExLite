@@ -36,17 +36,17 @@ class SiteFirewallBypassScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
-  override val screenKey: ScreenKey = SCREEN_KEY
-
   private val firewallType by requireArgumentLazy<FirewallType>(FIREWALL_TYPE)
   private val urlToOpen by requireArgumentLazy<String>(URL_TO_OPEN)
 
-  private val bypassResultCompletableDeferred = CompletableDeferred<BypassResult>()
   private val cookieManager by lazy { CookieManager.getInstance() }
   private val webClient by lazy { createWebClient() }
 
+  private val bypassResultCompletableDeferred = CompletableDeferred<BypassResult>()
   private var webView: WebView? = null
   private var resultNotified: Boolean = false
+
+  override val screenKey: ScreenKey = SCREEN_KEY
 
   private fun createWebClient(): BypassWebClient {
     check(!bypassResultCompletableDeferred.isCompleted) { "bypassResultCompletableDeferred already completed!" }
@@ -172,7 +172,7 @@ class SiteFirewallBypassScreen(
 
     when (cookieResult) {
       is BypassResult.Cookie -> {
-        logcat(TAG) { "waitAndHandleResult() Success: ${cookieResult.cookie}" }
+        logcat(TAG) { "waitAndHandleResult() Success: ${cookieResult.domainOrHost}-${cookieResult.cookie}" }
         snackbarManager.toast("Successfully passed firewall ${firewallType}")
       }
       is BypassResult.Error -> {
@@ -196,12 +196,14 @@ class SiteFirewallBypassScreen(
   }
 
   private fun notifyAboutResult(bypassResult: BypassResult) {
-    if (!resultNotified) {
-      resultNotified = true
-
-      ScreenCallbackStorage.invokeCallback(screenKey, ON_RESULT, bypassResult)
-      stopPresenting()
+    if (resultNotified) {
+      return
     }
+
+    resultNotified = true
+
+    ScreenCallbackStorage.invokeCallback(screenKey, ON_RESULT, bypassResult)
+    stopPresenting()
   }
 
   companion object {

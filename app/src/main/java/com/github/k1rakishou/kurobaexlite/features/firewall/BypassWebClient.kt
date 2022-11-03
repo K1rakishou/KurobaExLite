@@ -8,12 +8,12 @@ abstract class BypassWebClient(
   protected val bypassResultCompletableDeferred: CompletableDeferred<BypassResult>
 ) : WebViewClient() {
 
-  protected fun success(cookieValue: String) {
+  protected fun success(domainOrHost: String, cookieValue: String) {
     if (bypassResultCompletableDeferred.isCompleted) {
       return
     }
 
-    bypassResultCompletableDeferred.complete(BypassResult.Cookie(cookieValue))
+    bypassResultCompletableDeferred.complete(BypassResult.Cookie(domainOrHost, cookieValue))
   }
 
   protected fun fail(exception: BypassException) {
@@ -46,6 +46,6 @@ sealed class BypassResult {
     }
   }
 
-  data class Cookie(val cookie: String) : BypassResult()
+  data class Cookie(val domainOrHost: String, val cookie: String) : BypassResult()
   data class Error(val exception: BypassException) : BypassResult()
 }

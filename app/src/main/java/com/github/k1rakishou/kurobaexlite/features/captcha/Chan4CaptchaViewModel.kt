@@ -17,12 +17,16 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
+import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
+import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException
+import com.github.k1rakishou.kurobaexlite.model.FirewallType
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -37,6 +41,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.logcat
+import okhttp3.HttpUrl
 import okhttp3.Request
 import java.io.IOException
 import kotlin.math.abs
@@ -44,6 +49,7 @@ import kotlin.math.abs
 class Chan4CaptchaViewModel(
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val siteManager: SiteManager,
+  private val firewallBypassManager: FirewallBypassManager,
   private val moshi: Moshi,
   private val loadChanCatalog: LoadChanCatalog,
   private val chan4CaptchaSolverHelper: Chan4CaptchaSolverHelper
@@ -69,6 +75,44 @@ class Chan4CaptchaViewModel(
 
   override suspend fun onViewModelReady() {
     super.onViewModelReady()
+
+    viewModelScope.launch {
+      firewallBypassManager.firewallBypassedEvents.collect { info ->
+        if (info.firewallType != FirewallType.Cloudflare) {
+          return@collect
+        }
+
+        if (info.siteKey != Chan4.SITE_KEY) {
+          return@collect
+        }
+
+        val firewallDetectedException = ((captchaInfoToShow.value as? AsyncData.Error)?.error as? FirewallDetectedException)
+        if (firewallDetectedException == null) {
+          return@collect
+        }
+
+        if (info.originalRequestUrl != firewallDetectedException.requestUrl) {
+          return@collect
+        }
+
+        val chanDescriptor = chanDescriptorFromCaptchaUrl(firewallDetectedException.requestUrl)
+        if (chanDescriptor == null) {
+          logcat(TAG) {
+            "showFirewallControllerEvents($info) " +
+              "unknown url: ${firewallDetectedException.requestUrl}"
+          }
+
+          return@collect
+        }
+
+        logcat(TAG) { "showFirewallControllerEvents($info) force-reloading captcha for ${chanDescriptor}" }
+
+        requestCaptcha(
+          chanDescriptor = chanDescriptor,
+          forced = true
+        )
+      }
+    }
   }
 
   fun cleanup() {
@@ -347,6 +391,26 @@ class Chan4CaptchaViewModel(
         "https://sys.$host.org/captcha?board=${boardCode}&thread_id=${chanDescriptor.threadNo}"
       }
     }
+  }
+
+  private fun chanDescriptorFromCaptchaUrl(requestUrl: HttpUrl): ChanDescriptor? {
+    // https://sys.$host.org/captcha?board=${boardCode}&thread_id=${chanDescriptor.threadNo}
+
+    val boardCode = requestUrl.queryParameter("board") ?: return null
+    val threadNo = requestUrl.queryParameter("thread_id")?.toLongOrNull()
+
+    if (threadNo != null && threadNo > 0L) {
+      return ThreadDescriptor.create(
+        siteKey = Chan4.SITE_KEY,
+        boardCode = boardCode,
+        threadNo = threadNo
+      )
+    }
+
+    return CatalogDescriptor(
+      siteKey = Chan4.SITE_KEY,
+      boardCode = boardCode,
+    )
   }
 
   private fun getCachedCaptchaInfoOrNull(chanDescriptor: ChanDescriptor): CaptchaInfo? {

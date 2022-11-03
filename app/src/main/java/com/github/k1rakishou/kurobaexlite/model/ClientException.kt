@@ -43,4 +43,4 @@ class FirewallDetectedException(
   val requestUrl: HttpUrl
 ) : IOException("Url '$requestUrl' is blocked by ${firewallType} firewall!")
 
-class BypassException(message: String) : ClientException(message)
+class BypassException(message: String) : ClientException("BypassException: ${message}")

@@ -2,8 +2,10 @@ package com.github.k1rakishou.kurobaexlite.features.firewall
 
 import android.webkit.CookieManager
 import android.webkit.WebView
+import com.github.k1rakishou.kurobaexlite.helpers.util.domain
 import com.github.k1rakishou.kurobaexlite.model.BypassException
 import kotlinx.coroutines.CompletableDeferred
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class YandexSmartCaptchaCheckBypassWebClient(
   private val originalRequestUrlHost: String,
@@ -17,9 +19,13 @@ class YandexSmartCaptchaCheckBypassWebClient(
   override fun onPageFinished(view: WebView?, url: String?) {
     super.onPageFinished(view, url)
 
-    if (url == null) {
+    if (url.isNullOrEmpty()) {
       return
     }
+
+    val domainOrHost = url.toHttpUrlOrNull()
+      ?.let { httpUrl -> httpUrl.domain() ?: httpUrl.host }
+      ?: return
 
     val cookie = cookieManager.getCookie(originalRequestUrlHost)
 
@@ -28,7 +34,7 @@ class YandexSmartCaptchaCheckBypassWebClient(
     }
 
     if (captchaPageLoaded && url.contains("https://yandex.com/images/")) {
-      success(cookie)
+      success(domainOrHost, cookie)
       return
     }
 

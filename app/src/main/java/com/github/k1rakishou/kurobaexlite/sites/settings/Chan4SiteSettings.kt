@@ -7,9 +7,13 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.login.Chan4LoginScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.BooleanSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.LinkSettingItem
+import com.github.k1rakishou.kurobaexlite.features.settings.items.MapSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.StringSettingItem
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.KeyValue
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.MapSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.MapSettingEntry
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
 import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -29,7 +33,16 @@ class Chan4SiteSettings(
   val channel4CaptchaCookie by lazy { StringSetting("", "channel4_captcha_cookie", dataStore) }
   val passcodeCookie by lazy { StringSetting("", "passcode_cookie", dataStore) }
 
-  override val cloudFlareClearanceCookie: StringSetting by lazy { StringSetting("", "cloudflare_clearance_cookie", dataStore) }
+  override val cloudFlareClearanceCookie: MapSetting<String, String> by lazy {
+    MapSetting<String, String>(
+      moshi = moshi,
+      mapperFrom = { mapSettingEntry -> KeyValue(mapSettingEntry.key, mapSettingEntry.value) },
+      mapperTo = { keyValue -> MapSettingEntry(keyValue.key, keyValue.value) },
+      defaultValue = emptyMap(),
+      settingKey = "cloudflare_clearance_cookie",
+      dataStore = dataStore
+    )
+  }
 
   override suspend fun isLoggedIn(): Boolean {
     return passcodeCookie.read().isNotEmpty()
@@ -58,11 +71,15 @@ class Chan4SiteSettings(
         showDialogScreen = showDialogScreen,
         settingValueMapper = { token -> token.asFormattedToken() }
       ),
-      StringSettingItem(
+      MapSettingItem<String, String>(
         title = appContext.resources.getString(R.string.site_setting_cloudflare_clearance_cookie),
         delegate = cloudFlareClearanceCookie,
         showDialogScreen = showDialogScreen,
-        settingValueMapper = { token -> token.asFormattedToken() }
+        keyMapperFrom = { key -> key },
+        keyMapperTo = { key -> key },
+        valueMapperFrom = { value -> value },
+        valueMapperTo = { value -> value },
+        valueFormatter = { value -> value.asFormattedToken() }
       ),
       LinkSettingItem(
         key = "4chan_passcode_options",
