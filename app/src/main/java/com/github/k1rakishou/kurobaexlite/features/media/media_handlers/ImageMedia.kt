@@ -26,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import java.io.File
+import kotlin.math.absoluteValue
 
 @Composable
 fun DisplayFullImage(
@@ -137,19 +138,8 @@ fun DisplayFullImage(
   LaunchedEffect(
     key1 = Unit,
     block = {
-      val isDragGestureAllowed: (Offset, Offset) -> Boolean = func@ { currPosition, startPosition ->
-        val panInfo = stateUpdated.getPanInfo()
-        if (panInfo == null) {
-          return@func false
-        }
-
-        if (currPosition.y - startPosition.y > 0 && !panInfo.touchesTop()) {
-          return@func false
-        } else if (currPosition.y - startPosition.y < 0 && !panInfo.touchesBottom()) {
-          return@func false
-        }
-
-        return@func true
+      val isDragGestureAllowed: (Offset, Offset) -> Boolean = func@ { _, _ ->
+        return@func (stateUpdated.currentScale - stateUpdated.minScale).absoluteValue < 0.01f
       }
 
       setIsDragGestureAllowedFunc(isDragGestureAllowed)
