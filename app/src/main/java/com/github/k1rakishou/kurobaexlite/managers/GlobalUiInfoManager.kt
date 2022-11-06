@@ -79,8 +79,8 @@ class GlobalUiInfoManager(
   private val currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
   private val currentUiLayoutModeState = MutableStateFlow<MainUiLayoutMode>(MainUiLayoutMode.Phone)
 
-  private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<Pair<Int, Int>?>(Channel.RENDEZVOUS)
-  val notEnoughWidthForSplitLayoutFlow: SharedFlow<Pair<Int, Int>?>
+  private val _notEnoughWidthForSplitLayoutFlow = MutableSharedFlow<WindowWidthSizeClass?>(Channel.RENDEZVOUS)
+  val notEnoughWidthForSplitLayoutFlow: SharedFlow<WindowWidthSizeClass?>
     get() = _notEnoughWidthForSplitLayoutFlow.asSharedFlow()
 
   private var _totalScreenWidthState = MutableStateFlow(0)
@@ -572,15 +572,11 @@ class GlobalUiInfoManager(
       return MainUiLayoutMode.Phone
     }
 
-    val availableWidthForCatalog = totalScreenWidth * CATALOG_SCREEN_WEIGHT
-    val minCatalogSplitModelWidth = with(appResources.composeDensity) { minCatalogSplitModelWidthDp.roundToPx() }
-
     if (
       uiLayoutMode == MainUiLayoutMode.Split &&
-      availableWidthForCatalog < minCatalogSplitModelWidth
+      windowSizeClass.widthSizeClass == WindowWidthSizeClass.Compact
     ) {
-      val pair = Pair(availableWidthForCatalog.toInt(), minCatalogSplitModelWidth)
-      _notEnoughWidthForSplitLayoutFlow.emit(pair)
+      _notEnoughWidthForSplitLayoutFlow.emit(windowSizeClass.widthSizeClass)
       currentUiLayoutModeState.value = MainUiLayoutMode.Phone
       appSettings.layoutType.write(LayoutType.Phone)
       currentUiLayoutModeKnownDeferred.complete(Unit)
@@ -638,10 +634,8 @@ class GlobalUiInfoManager(
     private const val CURRENT_PAGE = "current_page"
     private const val IS_DRAWER_OPENED = "is_drawer_opened"
 
-    const val CATALOG_SCREEN_WEIGHT = .4f
-    const val THREAD_SCREEN_WEIGHT = .6f
-
-    private val minCatalogSplitModelWidthDp = 200.dp
+    const val CATALOG_SCREEN_WEIGHT = .5f
+    const val THREAD_SCREEN_WEIGHT = .5f
   }
 
 }

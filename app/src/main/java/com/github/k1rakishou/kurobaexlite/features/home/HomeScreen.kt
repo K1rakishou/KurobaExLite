@@ -339,18 +339,12 @@ private fun ContentInternal(
     block = {
       globalUiInfoManager.notEnoughWidthForSplitLayoutFlow
         .debounce(500.milliseconds)
-        .collect { info ->
-          if (info == null) {
+        .collect { widthSizeClass ->
+          if (widthSizeClass == null) {
             return@collect
           }
 
-          val (minCatalogSplitModelWidth, availableWidthForCatalog) = info
-
-          val errorMessage = context.resources.getString(
-            R.string.not_enough_with_for_split_layout_mode,
-            minCatalogSplitModelWidth,
-            availableWidthForCatalog
-          )
+          val errorMessage = context.resources.getString(R.string.cannot_use_split_layout_mode_on_regular_phones)
 
           snackbarManager.errorToast(
             message = errorMessage,
