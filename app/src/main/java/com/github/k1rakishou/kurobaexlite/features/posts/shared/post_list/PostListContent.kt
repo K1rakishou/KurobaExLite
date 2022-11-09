@@ -423,16 +423,14 @@ private fun processPostListScrollEvent(
 
   if (lazyStateWrapper.layoutInfo.visibleItemsInfo.isNotEmpty()) {
     val firstVisibleItemIndex = lazyStateWrapper.firstVisibleItemIndex
-    val firstVisibleItemScrollOffset = lazyStateWrapper.firstVisibleItemScrollOffset ?: 0
+    val firstVisibleItemScrollOffset = lazyStateWrapper.firstVisibleItemScrollOffset
 
-    if (firstVisibleItemIndex != null) {
-      postsScreenViewModel.rememberPosition(
-        chanDescriptor = chanDescriptor,
-        index = firstVisibleItemIndex,
-        offset = firstVisibleItemScrollOffset,
-        orientation = orientation
-      )
-    }
+    postsScreenViewModel.rememberPosition(
+      chanDescriptor = chanDescriptor,
+      index = firstVisibleItemIndex,
+      offset = firstVisibleItemScrollOffset,
+      orientation = orientation
+    )
   }
 }
 
