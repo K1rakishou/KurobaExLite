@@ -11,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 @Immutable
 data class ParsedPostData(
   val parsedPostParts: List<TextPart>,
+  val repliesTo: Set<PostDescriptor>,
   val parsedPostComment: String,
   val parsedPostSubject: String,
   val processedPostComment: AnnotatedString,
@@ -23,6 +24,7 @@ data class ParsedPostData(
 
   fun murmurhash(): Murmur3Hash {
     return MurmurHashUtils.murmurhash3_x64_128(parsedPostParts)
+      .combine(MurmurHashUtils.murmurhash3_x64_128(repliesTo))
       .combine(MurmurHashUtils.murmurhash3_x64_128(parsedPostComment))
       .combine(MurmurHashUtils.murmurhash3_x64_128(processedPostComment))
       .combine(MurmurHashUtils.murmurhash3_x64_128(parsedPostSubject))

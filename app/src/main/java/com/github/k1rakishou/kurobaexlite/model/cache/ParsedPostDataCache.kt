@@ -407,8 +407,10 @@ class ParsedPostDataCache(
         postDescriptor = postDescriptor
       )
 
-      if (parsedPostDataContext.isParsingThread) {
+      val repliesTo = if (parsedPostDataContext.isParsingThread) {
         processReplyChains(postDescriptor, textParts)
+      } else {
+        emptySet()
       }
 
       val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
@@ -424,8 +426,6 @@ class ParsedPostDataCache(
         .any { markedPost -> markedPost.markedPostType == MarkedPostType.MyPost }
 
       val isReplyToPostMarkedAsMine = kotlin.run {
-        val repliesTo = postReplyChainManager.getRepliesTo(postDescriptor)
-
         return@run markedPostManager.getManyMarkedPosts(repliesTo)
           .takeIf { map -> map.isNotEmpty() }
           ?.any { (_, markedPosts) ->
@@ -438,6 +438,7 @@ class ParsedPostDataCache(
 
       return ParsedPostData(
         parsedPostParts = textParts,
+        repliesTo = repliesTo,
         parsedPostComment = processedPostComment.text,
         processedPostComment = processedPostComment,
         parsedPostSubject = postSubjectParsed,
@@ -477,6 +478,7 @@ class ParsedPostDataCache(
 
       return ParsedPostData(
         parsedPostParts = emptyList(),
+        repliesTo = emptySet(),
         parsedPostComment = postComment,
         processedPostComment = postCommentAnnotated,
         parsedPostSubject = "",
@@ -515,7 +517,7 @@ class ParsedPostDataCache(
   private suspend fun processReplyChains(
     postDescriptor: PostDescriptor,
     textParts: List<TextPart>
-  ) {
+  ): Set<PostDescriptor> {
     val repliesTo = mutableSetOf<PostDescriptor>()
 
     for (textPart in textParts) {
@@ -542,6 +544,8 @@ class ParsedPostDataCache(
     if (repliesTo.isNotEmpty()) {
       postReplyChainManager.insert(postDescriptor, repliesTo)
     }
+
+    return repliesTo
   }
 
   fun parseAndProcessPostSubject(

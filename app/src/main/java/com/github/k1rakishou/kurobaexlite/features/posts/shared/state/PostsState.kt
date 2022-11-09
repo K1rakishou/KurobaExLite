@@ -247,7 +247,10 @@ class PostsState(
           // We assume that posts can only be inserted at the end of the post list
           _posts += postCellData
         } else {
-          postsAsStateNeedUpdate = _posts[index] != postCellData
+          if (!postsAsStateNeedUpdate && _posts[index] != postCellData) {
+            postsAsStateNeedUpdate = true
+          }
+
           _posts[index] = postCellData
         }
       }
