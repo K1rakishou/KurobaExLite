@@ -303,7 +303,8 @@ class FloatingMenuScreen(
         val isChecked = item.isChecked()
         isCurrentlyChecked = isChecked
         defaultChecked = isChecked
-      })
+      }
+    )
 
     Row(
       modifier = Modifier
@@ -503,6 +504,7 @@ class FloatingMenuScreen(
   }
 
   companion object {
+    const val ALBUM_OVERFLOW = "album_overflow_menu"
     const val CATALOG_OVERFLOW = "catalog_overflow_menu"
     const val POST_SEARCH_LONGTAP_MENU = "post_search_longtap_menu"
     const val POST_LONGTAP_MENU = "post_longtap_menu"

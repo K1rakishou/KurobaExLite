@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -11,6 +12,10 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,14 +34,15 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyGridStateWrapp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyItemInfoWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyLayoutInfoWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyStaggeredGridStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.scrollbar
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 val DEFAULT_SCROLLBAR_WIDTH = 10.dp
 val DEFAULT_SCROLLBAR_HEIGHT = 64.dp
@@ -199,6 +205,85 @@ fun LazyVerticalGridWithFastScroller(
         columns = columns,
         userScrollEnabled = userScrollEnabled,
         state = lazyGridStateWrapper.lazyGridState,
+        contentPadding = contentPadding,
+        content = content
+      )
+    }
+  }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun LazyVerticalStaggeredGridWithFastScroller(
+  lazyStaggeredGridContainerModifier: Modifier = Modifier,
+  lazyStaggeredGridModifier: Modifier = Modifier,
+  scrollbarWidth: Int = DefaultScrollbarWidth(),
+  scrollbarHeight: Int = DefaultScrollbarHeight(),
+  columns: StaggeredGridCells,
+  lazyStaggeredGridState: LazyStaggeredGridState,
+  contentPadding: PaddingValues,
+  fastScrollerMarks: FastScrollerMarksManager.FastScrollerMarks? = null,
+  userScrollEnabled: Boolean = true,
+  onFastScrollerDragStateChanged: ((Boolean) -> Unit)? = null,
+  content: LazyStaggeredGridScope.() -> Unit
+) {
+  val chanTheme = LocalChanTheme.current
+  val paddingTopPx = with(LocalDensity.current) {
+    remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
+  }
+  val paddingBottomPx = with(LocalDensity.current) {
+    remember(contentPadding) { contentPadding.calculateBottomPadding().toPx().toInt() }
+  }
+  val lazyStaggeredGridStateWrapper = remember { LazyStaggeredGridStateWrapper(lazyStaggeredGridState) }
+  val coroutineScope = rememberCoroutineScope()
+
+  var scrollbarManualDragProgress by remember { mutableStateOf<Float?>(null) }
+
+  BoxWithConstraints(modifier = lazyStaggeredGridContainerModifier) {
+    val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
+    val maxHeightPx = with(LocalDensity.current) { maxHeight.toPx().toInt() }
+
+    Box(
+      modifier = Modifier
+        .pointerInput(
+          contentPadding,
+          maxWidthPx,
+          maxHeightPx,
+          block = {
+            processFastScrollerInputs(
+              coroutineScope = coroutineScope,
+              lazyStateWrapper = lazyStaggeredGridStateWrapper,
+              width = maxWidthPx,
+              paddingTop = paddingTopPx,
+              paddingBottom = paddingBottomPx,
+              scrollbarWidth = scrollbarWidth,
+              onScrollbarDragStateUpdated = { dragProgress ->
+                scrollbarManualDragProgress = dragProgress
+                onFastScrollerDragStateChanged?.invoke(dragProgress != null)
+              }
+            )
+          }
+        )
+    ) {
+      LazyVerticalStaggeredGrid(
+        modifier = Modifier
+          .then(lazyStaggeredGridModifier)
+          .scrollbar(
+            lazyStateWrapper = lazyStaggeredGridStateWrapper,
+            scrollbarDimens = ScrollbarDimens.Vertical.Static(
+              width = scrollbarWidth,
+              height = scrollbarHeight
+            ),
+            scrollbarTrackColor = chanTheme.scrollbarTrackColor,
+            scrollbarThumbColorNormal = chanTheme.scrollbarThumbColorNormal,
+            scrollbarThumbColorDragged = chanTheme.scrollbarThumbColorDragged,
+            contentPadding = contentPadding,
+            fastScrollerMarks = fastScrollerMarks,
+            scrollbarManualDragProgress = scrollbarManualDragProgress
+          ),
+        columns = columns,
+        userScrollEnabled = userScrollEnabled,
+        state = lazyStaggeredGridStateWrapper.lazyStaggeredGridState,
         contentPadding = contentPadding,
         content = content
       )

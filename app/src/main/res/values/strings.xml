@@ -143,6 +143,7 @@
     <string name="album_screen_selected_n_images">Selected %1$d image(s)</string>
     <string name="album_screen_new_album_images_added">%1$d new image(s)</string>
     <string name="album_toolbar_album_grid_mode_column_count">Album grid mode column count</string>
+    <string name="album_toolbar_album_show_image_info">Show image info</string>
 
     <string name="remote_image_search_screen_title">Image search</string>
     <string name="remote_image_search_screen_current_instance">Current search instance</string>

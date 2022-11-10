@@ -52,7 +52,6 @@ fun PostImageThumbnail(
   BoxWithConstraints(
     modifier = Modifier
       .background(bgColor)
-      .then(modifier)
       .kurobaClickable(
         onLongClick = { onLongClick(postImage) },
         onClick = {
@@ -85,7 +84,7 @@ fun PostImageThumbnail(
     }
 
     SubcomposeAsyncImage(
-      modifier = Modifier.fillMaxSize(),
+      modifier = modifier,
       model = ImageRequest.Builder(context)
         .data(postImage.thumbnailAsUrl)
         .crossfade(true)
@@ -107,11 +106,11 @@ fun PostImageThumbnail(
           (state is AsyncImagePainter.State.Empty || state is AsyncImagePainter.State.Loading)
           && showShimmerEffectWhenLoading
         ) {
-          Shimmer()
+          Shimmer(modifier = Modifier.fillMaxSize())
         }
 
-        if (state !is AsyncImagePainter.State.Error) {
-          SubcomposeAsyncImageContent()
+        if (state is AsyncImagePainter.State.Success) {
+          SubcomposeAsyncImageContent(modifier = Modifier.fillMaxSize())
         }
 
         Box(

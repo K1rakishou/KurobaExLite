@@ -75,6 +75,7 @@ class AppSettings(
   val notifyAboutBetaUpdates by lazy { BooleanSetting(true, "notify_about_beta_updates", dataStore) }
   val catalogGridModeColumnCount by lazy { NumberSetting<Int>(0, "catalog_grid_mode_column_count", dataStore) }
   val albumColumnCount by lazy { NumberSetting<Int>(0, "album_column_count", dataStore) }
+  val albumShowImageInfo by lazy { BooleanSetting(true, "album_show_image_info", dataStore) }
 
   val userAgent by lazy {
     val userAgent = try {

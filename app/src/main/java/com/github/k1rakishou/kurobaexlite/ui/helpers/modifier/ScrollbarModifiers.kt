@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.ui.helpers.modifier
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,6 +11,8 @@ import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridItemInfo
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridItemInfo
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -82,7 +85,16 @@ interface LazyItemInfoWrapper {
       )
     }
 
-
+    @OptIn(ExperimentalFoundationApi::class)
+    fun fromLazyStaggeredGridItemInfo(lazyStaggeredGridItemInfo: LazyStaggeredGridItemInfo): LazyStaggeredGridItemInfoWrapper {
+      return LazyStaggeredGridItemInfoWrapper(
+        index = lazyStaggeredGridItemInfo.index,
+        key = lazyStaggeredGridItemInfo.key,
+        offsetY = lazyStaggeredGridItemInfo.offset.y,
+        offset = lazyStaggeredGridItemInfo.offset,
+        size = lazyStaggeredGridItemInfo.size,
+      )
+    }
   }
 
 }
@@ -100,6 +112,15 @@ class LazyListItemInfoWrapper(
 
 @Stable
 class LazyGridItemInfoWrapper(
+  override val index: Int,
+  override val key: Any,
+  override val offsetY: Int,
+  val offset: IntOffset,
+  val size: IntSize
+) : LazyItemInfoWrapper
+
+@Stable
+class LazyStaggeredGridItemInfoWrapper(
   override val index: Int,
   override val key: Any,
   override val offsetY: Int,
@@ -146,6 +167,38 @@ class LazyListLayoutInfoWrapper(
     get() = lazyListState.layoutInfo.beforeContentPadding
   override val afterContentPadding: Int
     get() = lazyListState.layoutInfo.afterContentPadding
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Stable
+class LazyStaggeredGridLayoutInfoWrapper(
+  val lazyStaggeredGridState: LazyStaggeredGridState
+) : LazyLayoutInfoWrapper<LazyStaggeredGridItemInfoWrapper> {
+
+  override val visibleItemsInfo: List<LazyStaggeredGridItemInfoWrapper>
+    get() {
+      return lazyStaggeredGridState.layoutInfo.visibleItemsInfo
+        .map { lazyGridItemInfo -> LazyItemInfoWrapper.fromLazyStaggeredGridItemInfo(lazyGridItemInfo) }
+    }
+
+  override val viewportStartOffset: Int
+    get() = lazyStaggeredGridState.layoutInfo.viewportStartOffset
+  override val viewportEndOffset: Int
+    get() = lazyStaggeredGridState.layoutInfo.viewportEndOffset
+  override val totalItemsCount: Int
+    get() = lazyStaggeredGridState.layoutInfo.totalItemsCount
+  override val viewportSize: IntSize
+    get() = lazyStaggeredGridState.layoutInfo.viewportSize
+  // TODO: LazyStaggeredGridState doesn't provide orientation field
+  override val orientation: Orientation
+    get() = Orientation.Vertical
+  // TODO: LazyStaggeredGridState doesn't provide reverseLayout field
+  override val reverseLayout: Boolean
+    get() = false
+  override val beforeContentPadding: Int
+    get() = lazyStaggeredGridState.layoutInfo.beforeContentPadding
+  override val afterContentPadding: Int
+    get() = lazyStaggeredGridState.layoutInfo.afterContentPadding
 }
 
 @Stable
@@ -246,6 +299,36 @@ class LazyGridStateWrapper(
 
 }
 
+
+@OptIn(ExperimentalFoundationApi::class)
+@Stable
+class LazyStaggeredGridStateWrapper(
+  val lazyStaggeredGridState: LazyStaggeredGridState
+) : LazyStateWrapper<LazyStaggeredGridItemInfoWrapper, LazyStaggeredGridLayoutInfoWrapper> {
+
+  override val isScrollInProgress: Boolean
+    get() = lazyStaggeredGridState.isScrollInProgress
+  override val firstVisibleItemIndex: Int
+    get() = lazyStaggeredGridState.firstVisibleItemIndex
+  override val firstVisibleItemScrollOffset: Int
+    get() = lazyStaggeredGridState.firstVisibleItemScrollOffset
+  override val visibleItemsCount: Int
+    get() = lazyStaggeredGridState.layoutInfo.visibleItemsInfo.size
+  override val fullyVisibleItemsCount: Int
+    get() = lazyStaggeredGridState.layoutInfo.visibleItemsInfo.count { lazyListItemInfo -> lazyListItemInfo.offset.y >= 0 }
+  override val totalItemsCount: Int
+    get() = lazyStaggeredGridState.layoutInfo.totalItemsCount
+  override val viewportHeight: Int
+    get() = lazyStaggeredGridState.layoutInfo.viewportEndOffset - lazyStaggeredGridState.layoutInfo.viewportStartOffset
+
+  override val layoutInfo: LazyStaggeredGridLayoutInfoWrapper = LazyStaggeredGridLayoutInfoWrapper(lazyStaggeredGridState)
+
+  override suspend fun scrollToItem(index: Int, scrollOffset: Int) {
+    lazyStaggeredGridState.scrollToItem(index, scrollOffset)
+  }
+
+}
+
 fun Modifier.scrollbar(
   state: LazyListState,
   scrollbarDimens: ScrollbarDimens,
@@ -315,11 +398,13 @@ fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo
   return composed(
     inspectorInfo = debugInspectorInfo {
       name = "scrollbar"
+      properties["lazyStateWrapper"] = lazyStateWrapper
+      properties["scrollbarDimens"] = scrollbarDimens
       properties["scrollbarTrackColor"] = scrollbarTrackColor
       properties["scrollbarThumbColorNormal"] = scrollbarThumbColorNormal
       properties["scrollbarThumbColorDragged"] = scrollbarThumbColorDragged
       properties["contentPadding"] = contentPadding
-      properties["scrollbarDimens"] = scrollbarDimens
+      properties["fastScrollerMarks"] = fastScrollerMarks
       properties["scrollbarManualDragProgress"] = scrollbarManualDragProgress
     },
     factory = {

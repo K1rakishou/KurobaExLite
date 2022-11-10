@@ -3,21 +3,23 @@ package com.github.k1rakishou.kurobaexlite.features.album
 import android.os.Bundle
 import android.os.Parcelable
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -83,7 +85,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalStaggeredGridWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -182,7 +184,7 @@ class AlbumScreen(
           screenCoroutineScope.launch {
             navigationRouter.presentScreen(
               FloatingMenuScreen(
-                floatingMenuKey = FloatingMenuScreen.CATALOG_OVERFLOW,
+                floatingMenuKey = FloatingMenuScreen.ALBUM_OVERFLOW,
                 componentActivity = componentActivity,
                 navigationRouter = navigationRouter,
                 menuItems = floatingMenuItems(),
@@ -194,6 +196,13 @@ class AlbumScreen(
                         .coerceIn(AppSettings.ALBUM_MIN_COLUMN_COUNT, AppSettings.ALBUM_MAX_COLUMN_COUNT)
 
                       appSettings.albumColumnCount.write(albumColumnCount)
+                      return@launch
+                    }
+
+                    if (menuItem.menuItemKey is ToolbarMenuItems) {
+                      when (menuItem.menuItemKey as ToolbarMenuItems) {
+                        ToolbarMenuItems.ShowImageInfo -> appSettings.albumShowImageInfo.toggle()
+                      }
                     }
                   }
                 }
@@ -319,6 +328,14 @@ class AlbumScreen(
     val menuItems = mutableListOf<FloatingMenuItem>()
 
     menuItems += kotlin.run {
+      return@run FloatingMenuItem.Check(
+        menuItemKey = ToolbarMenuItems.ShowImageInfo,
+        isChecked = { appSettings.albumShowImageInfo.read() },
+        text = FloatingMenuItem.MenuItemText.Id(R.string.album_toolbar_album_show_image_info)
+      )
+    }
+
+    menuItems += kotlin.run {
       val albumColumnCount = appSettings.albumColumnCount.read()
       val checkedMenuItemKey = AlbumGridModeColumnCountOption(albumColumnCount)
 
@@ -353,6 +370,10 @@ class AlbumScreen(
   data class AlbumGridModeColumnCountOption(val count: Int) : Parcelable
 
   interface ToolbarIcons
+
+  enum class ToolbarMenuItems {
+    ShowImageInfo
+  }
 
   enum class DefaultToolbarIcons : ToolbarIcons {
     Back,
@@ -456,6 +477,7 @@ private fun BoxScope.ToolbarInternal(
   )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ContentInternal(
   screenKey: ScreenKey,
@@ -523,13 +545,13 @@ private fun ContentInternal(
     return
   }
 
-  val lazyGridState = rememberLazyGridState()
+  val lazyStaggeredGridState = rememberLazyStaggeredGridState()
 
   LaunchedEffect(
     key1 = Unit,
     block = {
       delay(32)
-      lazyGridState.scrollToItem(album.scrollIndex)
+      lazyStaggeredGridState.scrollToItem(album.scrollIndex)
     }
   )
 
@@ -543,7 +565,7 @@ private fun ContentInternal(
 
         val indexToScroll = album.imageIndexByPostDescriptor(scrollInfo.postDescriptor)
         if (indexToScroll != null) {
-          lazyGridState.scrollToItem(index = indexToScroll)
+          lazyStaggeredGridState.scrollToItem(index = indexToScroll)
         }
       }
     }
@@ -573,19 +595,20 @@ private fun ContentInternal(
   )
 
   val albumGridModeColumnCount by globalUiInfoManager.albumGridModeColumnCount.collectAsState()
+  val albumShowImageInfo by globalUiInfoManager.albumShowImageInfo.collectAsState()
 
   val columns = remember(key1 = albumGridModeColumnCount) {
     if (albumGridModeColumnCount <= 0) {
-      GridCells.Adaptive(minSize = 140.dp)
+      StaggeredGridCells.Adaptive(minSize = 140.dp)
     } else {
-      GridCells.Fixed(count = albumGridModeColumnCount)
+      StaggeredGridCells.Fixed(count = albumGridModeColumnCount)
     }
   }
 
-  LazyVerticalGridWithFastScroller(
-    lazyGridContainerModifier = Modifier.fillMaxSize(),
+  LazyVerticalStaggeredGridWithFastScroller(
+    lazyStaggeredGridContainerModifier = Modifier.fillMaxSize(),
     columns = columns,
-    lazyGridState = lazyGridState,
+    lazyStaggeredGridState = lazyStaggeredGridState,
     contentPadding = paddingValues,
     content = {
       val albumImages = album.albumImages
@@ -596,6 +619,7 @@ private fun ContentInternal(
           content = {
             AlbumImageItem(
               isInSelectionMode = isInSelectionMode,
+              albumShowImageInfo = albumShowImageInfo,
               albumImage = albumImage,
               onThumbnailClicked = onThumbnailClicked,
             )
@@ -616,6 +640,7 @@ private fun ContentInternal(
 @Composable
 private fun AlbumImageItem(
   isInSelectionMode: Boolean,
+  albumShowImageInfo: Boolean,
   albumImage: AlbumScreenViewModel.AlbumImage,
   onThumbnailClicked: (IPostImage) -> Unit,
 ) {
@@ -625,21 +650,19 @@ private fun AlbumImageItem(
 
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
   val selected = albumScreenViewModel.isImageSelected(albumImage)
+  val ratio = remember(key1 = albumImage.postImage) { aspectRatioFromImageDimensions(albumImage.postImage) }
+
+  val imageItemScaleAnimation by animateFloatAsState(targetValue = if (selected) 0.85f else 1f)
 
   Box {
     PostImageThumbnail(
       modifier = Modifier
         .fillMaxWidth()
-        .height(160.dp)
+        .aspectRatio(ratio)
         .padding(1.dp)
         .graphicsLayer {
-          if (selected) {
-            scaleX = 0.85f
-            scaleY = 0.85f
-          } else {
-            scaleX = 1f
-            scaleY = 1f
-          }
+          scaleX = imageItemScaleAnimation
+          scaleY = imageItemScaleAnimation
         }
         .onGloballyPositioned { layoutCoordinates ->
           boundsInWindowMut = layoutCoordinates.boundsInWindow()
@@ -677,7 +700,7 @@ private fun AlbumImageItem(
       }
     )
 
-    if (albumImage.postSubject.isNotNullNorEmpty()) {
+    if (albumShowImageInfo && albumImage.postSubject.isNotNullNorEmpty()) {
       PostSubject(albumImage.postSubject)
     }
 
@@ -685,7 +708,9 @@ private fun AlbumImageItem(
       SelectionMark(selected)
     }
 
-    ImageInfo(albumImage)
+    if (albumShowImageInfo) {
+      ImageInfo(albumImage)
+    }
   }
 }
 
@@ -694,16 +719,20 @@ private fun BoxScope.SelectionMark(selected: Boolean) {
   val density = LocalDensity.current
   val topLeftOffset = with(density) { remember { IntOffset(8.dp.roundToPx(), 8.dp.roundToPx()) } }
 
-  if (selected) {
-    Image(
-      modifier = Modifier
-        .size(36.dp)
-        .offset { topLeftOffset }
-        .align(Alignment.TopStart),
-      painter = painterResource(id = R.drawable.ic_selection_checkmark_with_bg_24dp),
-      contentDescription = null
-    )
-  }
+  val checkmarkScaleAnimation by animateFloatAsState(targetValue = if (selected) 1f else 0f)
+
+  Image(
+    modifier = Modifier
+      .size(36.dp)
+      .offset { topLeftOffset }
+      .graphicsLayer {
+        scaleX = checkmarkScaleAnimation
+        scaleY = checkmarkScaleAnimation
+      }
+      .align(Alignment.TopStart),
+    painter = painterResource(id = R.drawable.ic_selection_checkmark_with_bg_24dp),
+    contentDescription = null
+  )
 
   Image(
     modifier = Modifier
@@ -777,4 +806,26 @@ private fun BoxScope.ImageInfo(albumImage: AlbumScreenViewModel.AlbumImage) {
       fontSize = 11.sp
     )
   }
+}
+
+private const val MAX_RATIO = 2f
+private const val MIN_RATIO = .4f
+
+private fun aspectRatioFromImageDimensions(postImage: IPostImage?): Float {
+  val imageWidth = postImage?.width ?: 0
+  val imageHeight = postImage?.height ?: 0
+  if (imageWidth <= 0 || imageHeight <= 0) {
+    return 1f
+  }
+
+  var ratio = imageWidth.toFloat() / imageHeight.toFloat()
+  if (ratio > MAX_RATIO) {
+    ratio = MAX_RATIO
+  }
+
+  if (ratio < MIN_RATIO) {
+    ratio = MIN_RATIO
+  }
+
+  return ratio
 }
