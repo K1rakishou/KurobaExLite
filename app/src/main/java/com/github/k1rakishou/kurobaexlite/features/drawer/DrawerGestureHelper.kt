@@ -19,9 +19,9 @@ import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.ui.helpers.gesture.awaitPointerSlopOrCancellationWithPass
-import kotlin.math.absoluteValue
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.isActive
+import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalComposeUiApi::class)
 suspend fun PointerInputScope.detectDrawerDragGestures(
@@ -83,7 +83,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           if (downEvent.position.x > (drawerWidth - drawerPhoneVisibleWindowWidthPx)) {
             return@awaitPointerEventScope null
           }
-        } else if (currentPagerPage() != 0) {
+        } else {
           onStopConsumingScrollEvents()
 
           if (downEvent.position.x > drawerLongtapGestureWidthZonePx) {
@@ -111,8 +111,6 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
             onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
           }
           onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
-        } else {
-          return@awaitPointerEventScope null
         }
 
         return@awaitPointerEventScope firstEvent
