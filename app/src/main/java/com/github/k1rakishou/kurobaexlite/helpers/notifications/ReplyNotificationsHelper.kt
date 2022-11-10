@@ -796,6 +796,10 @@ class ReplyNotificationsHelper(
       val startIndex = quoteMatcher.start(1)
       val endIndex = quoteMatcher.end(1)
 
+      if (startIndex >= endIndex || startIndex >= postCommentBuilder.length || endIndex >= postCommentBuilder.length) {
+        continue
+      }
+
       if (postNo == yourPostNo) {
         postCommentBuilder.replace(startIndex, endIndex, "(You)")
       } else {
