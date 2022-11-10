@@ -596,7 +596,6 @@ private fun HomeScreenContentActual(
               drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
               drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
-              currentPagerPage = { currentPageIndex },
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
               onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
               isGestureCurrentlyAllowed = {
