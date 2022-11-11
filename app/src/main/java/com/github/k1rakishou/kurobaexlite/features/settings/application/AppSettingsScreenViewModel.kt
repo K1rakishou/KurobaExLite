@@ -18,7 +18,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherBg
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherFg
-import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.RestartBookmarkBackgroundWatcher
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -44,6 +44,7 @@ class AppSettingsScreenViewModel(
   private val appResources: AppResources,
   private val snackbarManager: SnackbarManager,
   private val updateManager: UpdateManager,
+  private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher,
 ) : BaseViewModel() {
   private val _builtSettings = ConcurrentHashMap<SettingScreens, MutableStateFlow<SettingScreen?>>()
 
@@ -96,13 +97,7 @@ class AppSettingsScreenViewModel(
           showOptionsScreen = { items -> displayOptionsAndWaitForSelection(items) },
           settingNameMapper = { enum -> (enum as WatcherFg).text },
           onSettingUpdated = {
-            BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-              appContext = appContext,
-              flavorType = androidHelpers.getFlavorType(),
-              appSettings = appSettings,
-              isInForeground = true,
-              addInitialDelay = true
-            )
+            restartBookmarkBackgroundWatcher.restart(addInitialDelay = true)
           }
         )
 

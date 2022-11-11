@@ -52,7 +52,7 @@ class ThreadBookmark private constructor(
     )
   }
 
-  fun isActive(): Boolean = state.get(BOOKMARK_STATE_WATCHING)
+  fun watching(): Boolean = state.get(BOOKMARK_STATE_WATCHING)
   fun isStickyClosed(): Boolean = state.get(BOOKMARK_STATE_STICKY_NO_CAP) && state.get(BOOKMARK_STATE_THREAD_CLOSED)
   fun isThreadDeleted(): Boolean = state.get(BOOKMARK_STATE_THREAD_DELETED)
   fun isThreadArchived(): Boolean = state.get(BOOKMARK_STATE_THREAD_ARCHIVED)
@@ -126,16 +126,20 @@ class ThreadBookmark private constructor(
   fun toggleWatching() {
     if (state.get(BOOKMARK_STATE_WATCHING)) {
       state.clear(BOOKMARK_STATE_WATCHING)
+      state.clear(BOOKMARK_STATE_FIRST_FETCH)
       return
     }
 
-    if (state.get(BOOKMARK_STATE_THREAD_DELETED)
+    if (
+      state.get(BOOKMARK_STATE_THREAD_DELETED)
       || state.get(BOOKMARK_STATE_THREAD_ARCHIVED)
-      || isStickyClosed()) {
+      || isStickyClosed()
+    ) {
       return
     }
 
     state.set(BOOKMARK_STATE_WATCHING)
+    state.set(BOOKMARK_STATE_FIRST_FETCH)
   }
 
   fun setFilterWatchFlag() {
@@ -445,12 +449,17 @@ class ThreadBookmark private constructor(
     fun create(
       threadDescriptor: ThreadDescriptor,
       createdOn: DateTime,
+      startWatching: Boolean,
       title: String? = null,
       thumbnailUrl: HttpUrl? = null,
       initialFlags: BitSet? = null,
     ): ThreadBookmark {
       val bookmarkInitialState = initialFlags ?: BitSet()
-      bookmarkInitialState.set(BOOKMARK_STATE_WATCHING)
+
+      if (startWatching) {
+        bookmarkInitialState.set(BOOKMARK_STATE_WATCHING)
+      }
+
       bookmarkInitialState.set(BOOKMARK_STATE_FIRST_FETCH)
 
       return ThreadBookmark(

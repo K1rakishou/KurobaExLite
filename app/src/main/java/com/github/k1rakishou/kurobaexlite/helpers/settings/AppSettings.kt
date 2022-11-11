@@ -76,6 +76,7 @@ class AppSettings(
   val catalogGridModeColumnCount by lazy { NumberSetting<Int>(0, "catalog_grid_mode_column_count", dataStore) }
   val albumColumnCount by lazy { NumberSetting<Int>(0, "album_column_count", dataStore) }
   val albumShowImageInfo by lazy { BooleanSetting(true, "album_show_image_info", dataStore) }
+  val automaticallyStartWatchingBookmarks by lazy { BooleanSetting(true, "automatically_start_watching_bookmarks", dataStore) }
 
   val userAgent by lazy {
     val userAgent = try {

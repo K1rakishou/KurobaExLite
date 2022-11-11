@@ -6,7 +6,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeValueSafe
-import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
@@ -27,6 +26,7 @@ class LoadBookmarks(
   private val applicationVisibilityManager: ApplicationVisibilityManager,
   private val bookmarksManager: BookmarksManager,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase,
+  private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher,
   private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
   private val bookmarksLoaded = AtomicBoolean(false)
@@ -80,7 +80,7 @@ class LoadBookmarks(
   }
 
   private suspend fun restartWorkIfNeeded(shouldRestartWork: Boolean) {
-    val activeBookmarksCount = bookmarksManager.activeBookmarksCount()
+    val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
     if (activeBookmarksCount <= 0) {
       logcat(TAG) { "No active bookmarks loaded, doing nothing" }
       return
@@ -92,14 +92,7 @@ class LoadBookmarks(
     }
 
     logcat(TAG) { "activeBookmarksCount is greater than zero (${activeBookmarksCount}) restarting the work" }
-
-    BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-      appContext = appContext,
-      flavorType = androidHelpers.getFlavorType(),
-      appSettings = appSettings,
-      isInForeground = applicationVisibilityManager.isAppInForeground(),
-      addInitialDelay = false
-    )
+    restartBookmarkBackgroundWatcher.restart(addInitialDelay = false)
   }
 
   companion object {

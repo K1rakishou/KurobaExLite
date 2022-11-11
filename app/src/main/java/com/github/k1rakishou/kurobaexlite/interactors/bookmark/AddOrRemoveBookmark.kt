@@ -6,22 +6,21 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
-import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import java.util.concurrent.atomic.AtomicBoolean
 import logcat.logcat
 import okhttp3.HttpUrl
 import org.joda.time.DateTime
+import java.util.concurrent.atomic.AtomicBoolean
 
 class AddOrRemoveBookmark(
   private val appContext: Context,
   private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers,
   private val bookmarksManager: BookmarksManager,
-  private val applicationVisibilityManager: ApplicationVisibilityManager,
+  private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase
 ) {
 
@@ -48,6 +47,7 @@ class AddOrRemoveBookmark(
         val threadBookmark = ThreadBookmark.create(
           threadDescriptor = threadDescriptor,
           createdOn = DateTime.now(),
+          startWatching = appSettings.automaticallyStartWatchingBookmarks.read(),
           title = bookmarkTitle,
           thumbnailUrl = bookmarkThumbnail
         )
@@ -72,14 +72,7 @@ class AddOrRemoveBookmark(
 
     if (didCreateBookmark.get()) {
       logcat(TAG) { "Bookmark created. Restarting the work" }
-
-      BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-        appContext = appContext,
-        flavorType = androidHelpers.getFlavorType(),
-        appSettings = appSettings,
-        isInForeground = applicationVisibilityManager.isAppInForeground(),
-        addInitialDelay = false
-      )
+      restartBookmarkBackgroundWatcher.restart(addInitialDelay = false)
     } else {
       if (bookmarksManager.hasActiveBookmarks()) {
         logcat(TAG) { "Bookmark deleted. There are active bookmarks left, doing nothing" }
@@ -110,6 +103,7 @@ class AddOrRemoveBookmark(
       val threadBookmark = ThreadBookmark.create(
         threadDescriptor = threadDescriptor,
         createdOn = DateTime.now(),
+        startWatching = appSettings.automaticallyStartWatchingBookmarks.read(),
         title = bookmarkTitle,
         thumbnailUrl = bookmarkThumbnail
       )
@@ -132,14 +126,7 @@ class AddOrRemoveBookmark(
     }
 
     logcat(TAG) { "Bookmark created. Restarting the work" }
-
-    BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-      appContext = appContext,
-      flavorType = androidHelpers.getFlavorType(),
-      appSettings = appSettings,
-      isInForeground = applicationVisibilityManager.isAppInForeground(),
-      addInitialDelay = false
-    )
+    restartBookmarkBackgroundWatcher.restart(addInitialDelay = false)
 
     return true
   }

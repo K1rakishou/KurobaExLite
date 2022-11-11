@@ -30,6 +30,8 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowSizeClass
+import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowWidthSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -187,17 +189,19 @@ abstract class FloatingComposeScreen(
   @Composable
   open fun maxAvailableWidth(): Dp {
     val density = LocalDensity.current
+    val windowSizeClass = LocalWindowSizeClass.current
+
+    val minWidthForFoldables = with(density) { remember { 300.dp.roundToPx() } }
     val minWidthForTablets = with(density) { remember { 500.dp.roundToPx() } }
 
-    val isTablet = globalUiInfoManager.isTablet
-    val maxParentWidth by globalUiInfoManager.totalScreenHeightState.collectAsState()
+    val maxParentWidth by globalUiInfoManager.totalScreenWidthState.collectAsState()
 
     return with(LocalDensity.current) {
-      return@with remember(key1 = this, key2 = isTablet) {
-        val maxWidth = if (isTablet) {
-          (maxParentWidth / 2).coerceAtLeast(minWidthForTablets)
-        } else {
-          maxParentWidth
+      return@with remember(key1 = this, key2 = windowSizeClass) {
+        val maxWidth = when (windowSizeClass.widthSizeClass) {
+          WindowWidthSizeClass.Medium -> (maxParentWidth - (maxParentWidth / 4)).coerceAtLeast(minWidthForFoldables)
+          WindowWidthSizeClass.Expanded -> (maxParentWidth / 2).coerceAtLeast(minWidthForTablets)
+          else -> maxParentWidth
         }
 
         return@remember maxWidth.toDp()

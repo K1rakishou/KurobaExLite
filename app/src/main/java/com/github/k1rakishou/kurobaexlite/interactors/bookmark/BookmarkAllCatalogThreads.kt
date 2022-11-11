@@ -6,7 +6,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
@@ -15,7 +14,6 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookma
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +22,7 @@ import logcat.LogPriority
 import logcat.logcat
 import okhttp3.HttpUrl
 import org.joda.time.DateTime
+import java.util.concurrent.atomic.AtomicBoolean
 
 class BookmarkAllCatalogThreads(
   private val appContext: Context,
@@ -35,6 +34,7 @@ class BookmarkAllCatalogThreads(
   private val bookmarksManager: BookmarksManager,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase,
   private val parsedPostDataCache: ParsedPostDataCache,
+  private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher,
   private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
   private val working = AtomicBoolean(false)
@@ -108,6 +108,7 @@ class BookmarkAllCatalogThreads(
         val threadBookmark = ThreadBookmark.create(
           threadDescriptor = threadDescriptor,
           createdOn = DateTime.now(),
+          startWatching = appSettings.automaticallyStartWatchingBookmarks.read(),
           title = bookmarkTitle,
           thumbnailUrl = bookmarkThumbnail
         )
@@ -134,14 +135,7 @@ class BookmarkAllCatalogThreads(
 
     if (didCreateBookmark.get()) {
       logcat(TAG) { "Bookmark(s) created. Restarting the work" }
-
-      BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-        appContext = appContext,
-        flavorType = androidHelpers.getFlavorType(),
-        appSettings = appSettings,
-        isInForeground = applicationVisibilityManager.isAppInForeground(),
-        addInitialDelay = false
-      )
+      restartBookmarkBackgroundWatcher.restart(addInitialDelay = false)
     } else {
       logcat(TAG) { "No bookmarks were created. Doing nothing." }
     }

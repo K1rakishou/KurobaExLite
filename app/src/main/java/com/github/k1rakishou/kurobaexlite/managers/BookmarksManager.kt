@@ -48,8 +48,8 @@ class BookmarksManager {
     return mutex.withLock { threadBookmarks.contains(threadDescriptor) }
   }
 
-  suspend fun activeBookmarksCount(): Int {
-    return mutex.withLock { threadBookmarks.values.count { threadBookmark -> threadBookmark.isActive() } }
+  suspend fun watchingBookmarksCount(): Int {
+    return mutex.withLock { threadBookmarks.values.count { threadBookmark -> threadBookmark.watching() } }
   }
 
   suspend fun hasBookmarks(): Boolean {
@@ -60,7 +60,7 @@ class BookmarksManager {
 
   suspend fun hasActiveBookmarks(): Boolean {
     return mutex.withLock {
-      return@withLock threadBookmarks.any { (_, threadBookmark) -> threadBookmark.isActive() }
+      return@withLock threadBookmarks.any { (_, threadBookmark) -> threadBookmark.watching() }
     }
   }
 
@@ -83,7 +83,7 @@ class BookmarksManager {
   suspend fun getActiveBookmarkDescriptors(): List<ThreadDescriptor> {
     return mutex.withLock {
       threadBookmarks.values
-        .filter { threadBookmark -> threadBookmark.isActive() }
+        .filter { threadBookmark -> threadBookmark.watching() }
         .map { threadBookmark -> threadBookmark.threadDescriptor }
     }
   }

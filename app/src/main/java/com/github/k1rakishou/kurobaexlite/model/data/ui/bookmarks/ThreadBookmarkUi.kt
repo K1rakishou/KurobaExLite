@@ -170,7 +170,7 @@ class ThreadBookmarkStatsUi private constructor(
   fun isDeadOrNotWatching(): Boolean = isDead() || !watching.value
 
   fun updateFrom(threadBookmark: ThreadBookmark, threadPage: CatalogPagesRepository.ThreadPage?) {
-    _watching.value = threadBookmark.isActive()
+    _watching.value = threadBookmark.watching()
     _newPosts.value = threadBookmark.newPostsCount()
     _newQuotes.value = threadBookmark.newQuotesCount()
     _totalPosts.value = threadBookmark.totalPostsCount
@@ -236,7 +236,7 @@ class ThreadBookmarkStatsUi private constructor(
       totalPages: Int?
     ): ThreadBookmarkStatsUi {
       return ThreadBookmarkStatsUi(
-        watching = threadBookmark.isActive(),
+        watching = threadBookmark.watching(),
         newPosts = threadBookmark.newPostsCount(),
         newQuotes = threadBookmark.newQuotesCount(),
         totalPosts = threadBookmark.totalPostsCount,

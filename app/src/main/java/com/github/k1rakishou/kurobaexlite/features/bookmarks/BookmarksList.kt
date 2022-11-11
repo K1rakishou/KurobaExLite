@@ -100,7 +100,6 @@ fun BookmarksList(
   reorderableState: ReorderableState,
   showRevertBookmarkDeletion: (ThreadBookmark, Int) -> Unit
 ) {
-  val context = LocalContext.current
   val windowInsets = LocalWindowInsets.current
 
   val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
@@ -149,7 +148,7 @@ fun BookmarksList(
   PullToRefresh(
     pullToRefreshState = pullToRefreshState,
     topPadding = pullToRefreshToPadding,
-    onTriggered = { bookmarksScreenViewModel.forceRefreshBookmarks(context) }
+    onTriggered = { bookmarksScreenViewModel.forceRefreshBookmarks() }
   ) {
     LazyColumnWithFastScroller(
       lazyListContainerModifier = Modifier
@@ -215,6 +214,9 @@ fun BookmarksList(
                   globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
                   globalUiInfoManager.closeDrawer(withAnimation = true)
                 },
+                onBookmarkThumbnailClicked = { threadDescriptor ->
+                  bookmarksScreenViewModel.toggleBookmarkWatchState(threadDescriptor)
+                },
                 onBookmarkDeleted = { clickedThreadBookmarkUi ->
                   bookmarksScreenViewModel.deleteBookmark(
                     threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
@@ -240,6 +242,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
   threadBookmarkUi: ThreadBookmarkUi,
   reorderableState: ReorderableState,
   onBookmarkClicked: (ThreadBookmarkUi) -> Unit,
+  onBookmarkThumbnailClicked: (ThreadDescriptor) -> Unit,
   onBookmarkDeleted: (ThreadBookmarkUi) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -328,7 +331,10 @@ private fun LazyItemScope.ThreadBookmarkItem(
 
     Spacer(modifier = Modifier.width(4.dp))
 
+    val threadDescriptor = threadBookmarkUi.threadDescriptor
     val threadBookmarkStatsUi = threadBookmarkUi.threadBookmarkStatsUi
+
+    val watching by threadBookmarkStatsUi.watching
     val isArchived by threadBookmarkStatsUi.isArchived
     val isDeleted by threadBookmarkStatsUi.isDeleted
     val isDead = isArchived || isDeleted
@@ -344,8 +350,11 @@ private fun LazyItemScope.ThreadBookmarkItem(
         modifier = Modifier
           .size(thumbnailSize)
           .graphicsLayer { alpha = if (isDead) 0.5f else 1f },
+        threadDescriptor = threadDescriptor,
         iconUrl = thumbnailUrl,
-        isDead = isDead
+        watching = watching,
+        isDead = isDead,
+        onBookmarkThumbnailClicked = onBookmarkThumbnailClicked
       )
 
       Spacer(modifier = Modifier.width(8.dp))
@@ -362,7 +371,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
       modifier = Modifier.weight(1f)
     ) {
       if (title != null) {
-        val textFormatted = remember(key1 = searchQuery, key2 = chanTheme, key3 = isDead) {
+        val textFormatted = remember(searchQuery, chanTheme, isDead, watching) {
           val textColor = if (isDead) {
             chanTheme.textColorHint
           } else {
@@ -472,6 +481,7 @@ private fun ThreadBookmarkAdditionalInfo(
     targetValueByState = { state -> state.totalPosts.value }
   )
 
+  val watching by threadBookmarkStatsUi.watching
   val isFirstFetch by threadBookmarkStatsUi.isFirstFetch
   val totalPages by threadBookmarkStatsUi.totalPages
   val currentPage by threadBookmarkStatsUi.currentPage
@@ -486,6 +496,7 @@ private fun ThreadBookmarkAdditionalInfo(
     newPostsAnimated,
     newQuotesAnimated,
     totalPostsAnimated,
+    watching,
     isFirstFetch,
     totalPages,
     currentPage,
@@ -501,6 +512,7 @@ private fun ThreadBookmarkAdditionalInfo(
         newPostsAnimated = newPostsAnimated,
         newQuotesAnimated = newQuotesAnimated,
         totalPostsAnimated = totalPostsAnimated,
+        watching = watching,
         isFirstFetch = isFirstFetch,
         totalPages = totalPages,
         currentPage = currentPage,
@@ -548,8 +560,11 @@ private fun ThreadBookmarkAdditionalInfo(
 @Composable
 private fun BookmarkThumbnail(
   modifier: Modifier = Modifier,
+  threadDescriptor: ThreadDescriptor,
   iconUrl: String,
-  isDead: Boolean
+  watching: Boolean,
+  isDead: Boolean,
+  onBookmarkThumbnailClicked: (ThreadDescriptor) -> Unit
 ) {
   val context = LocalContext.current
 
@@ -568,7 +583,7 @@ private fun BookmarkThumbnail(
       }
     }
 
-    val transformations = remember(key1 = isDead) {
+    val transformations = remember(key1 = isDead, key2 = watching) {
       if (isDead) {
         listOf(BookmarksScreen.BookmarkAnnotatedContent.circleCropTransformation, BookmarksScreen.BookmarkAnnotatedContent.grayscaleTransformation)
       } else {
@@ -576,7 +591,7 @@ private fun BookmarkThumbnail(
       }
     }
 
-    val imageRequest = remember(key1 = isDead, key2 = iconUrl) {
+    val imageRequest = remember(key1 = isDead, key2 = watching, key3 = iconUrl) {
       ImageRequest.Builder(context)
         .data(iconUrl)
         .crossfade(true)
@@ -586,7 +601,9 @@ private fun BookmarkThumbnail(
     }
 
     SubcomposeAsyncImage(
-      modifier = Modifier.fillMaxSize(),
+      modifier = Modifier
+        .fillMaxSize()
+        .kurobaClickable(bounded = false, onClick = { onBookmarkThumbnailClicked(threadDescriptor) }),
       model = imageRequest,
       contentScale = ContentScale.Crop,
       contentDescription = null,
@@ -631,6 +648,7 @@ private fun convertBookmarkStateToText(
   val isArchived = threadBookmarkStatsCombined.isArchived
   val isError = threadBookmarkStatsCombined.isError
   val isDead = threadBookmarkStatsCombined.isDead
+  val watching = threadBookmarkStatsCombined.watching
   val isFirstFetch = threadBookmarkStatsCombined.isFirstFetch
 
   val defaultTextColor = if (isDead) {
@@ -672,7 +690,7 @@ private fun convertBookmarkStateToText(
           append(" (")
           append(
             buildAnnotatedString {
-              if (!isDead && newQuotesAnimated > 0) {
+              if (!isDead) {
                 pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColor))
               } else {
                 pushStyle(SpanStyle(color = defaultTextColor))
@@ -737,6 +755,14 @@ private fun convertBookmarkStateToText(
           append("IL")
         }
       )
+    }
+
+    if (!watching && !isDead) {
+      if (length > 0) {
+        append(AppConstants.TEXT_SEPARATOR)
+      }
+
+      withStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor)) { append("[Not watching]") }
     }
 
     if (isDeleted) {

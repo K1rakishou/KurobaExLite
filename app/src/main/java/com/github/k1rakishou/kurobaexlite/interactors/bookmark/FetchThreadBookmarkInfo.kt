@@ -21,13 +21,13 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookma
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmarkReply
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
 import kotlinx.coroutines.Dispatchers
 import logcat.LogPriority
 import logcat.logcat
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.joda.time.DateTime
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 class FetchThreadBookmarkInfo(
   private val siteManager: SiteManager,
@@ -115,7 +115,7 @@ class FetchThreadBookmarkInfo(
     }
 
     val duration = measureTime { processResultsInternal(fetchResults) }
-    val activeBookmarksCount = bookmarksManager.activeBookmarksCount()
+    val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
     logcat(TAG) { "processResultsInternal() success, activeBookmarksCount: $activeBookmarksCount, took: ${duration}" }
 
     // Do not show notifications for the thread we are currently watching

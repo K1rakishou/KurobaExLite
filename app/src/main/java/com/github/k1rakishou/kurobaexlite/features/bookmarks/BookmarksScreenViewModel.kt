@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.features.bookmarks
 
-import android.content.Context
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -11,13 +10,13 @@ import androidx.compose.ui.util.fastForEach
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.move
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.DeleteBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.RestartBookmarkBackgroundWatcher
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ToggleBookmarkWatchState
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkUi
@@ -31,12 +30,13 @@ import logcat.LogPriority
 import logcat.logcat
 
 class BookmarksScreenViewModel(
-  private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers,
   private val bookmarksManager: BookmarksManager,
   private val catalogPagesRepository: CatalogPagesRepository,
   private val reorderBookmarks: ReorderBookmarks,
   private val deleteBookmarks: DeleteBookmarks,
+  private val toggleBookmarkWatchState: ToggleBookmarkWatchState,
+  private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher,
 ) : BaseViewModel() {
 
   private val _bookmarksToMark = mutableStateMapOf<ThreadDescriptor, Unit>()
@@ -85,7 +85,7 @@ class BookmarksScreenViewModel(
     }
   }
 
-  suspend fun countDeadBookmarks(): Int {
+  fun countDeadBookmarks(): Int {
     return bookmarksList.count { threadBookmarkUi -> threadBookmarkUi.threadBookmarkStatsUi.isDead() }
   }
 
@@ -112,6 +112,12 @@ class BookmarksScreenViewModel(
     }
   }
 
+  fun toggleBookmarkWatchState(threadDescriptor: ThreadDescriptor) {
+    viewModelScope.launch {
+      toggleBookmarkWatchState.execute(threadDescriptor)
+    }
+  }
+
   fun onMove(from: Int, to: Int) {
     Snapshot.withMutableSnapshot { _bookmarksList.move(from, to) }
   }
@@ -135,18 +141,8 @@ class BookmarksScreenViewModel(
     }
   }
 
-  fun forceRefreshBookmarks(context: Context) {
-    val appContext = context.applicationContext
-
-    viewModelScope.launch {
-      BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-        appContext = appContext,
-        flavorType = androidHelpers.getFlavorType(),
-        appSettings = appSettings,
-        isInForeground = true,
-        addInitialDelay = false
-      )
-    }
+  fun forceRefreshBookmarks() {
+    restartBookmarkBackgroundWatcher.restart(addInitialDelay = false)
   }
 
   fun markBookmarks(threadDescriptors: List<ThreadDescriptor>) {

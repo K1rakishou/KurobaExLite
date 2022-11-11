@@ -98,10 +98,6 @@ class FloatingMenuScreen(
       return
     }
 
-    val availableWidth = with(LocalDensity.current) {
-      (maxAvailableWidthPx() / 1.35f).toDp()
-    }
-
     HandleBackPresses {
       if (listOfMenuItems.isNotEmpty()) {
         listOfMenuItems.removeLast()
@@ -118,7 +114,7 @@ class FloatingMenuScreen(
 
     LazyColumn(
       modifier = Modifier
-        .width(availableWidth)
+        .fillMaxWidth()
         .scrollbar(
           state = lazyListState,
           scrollbarDimens = ScrollbarDimens.Vertical.Static(

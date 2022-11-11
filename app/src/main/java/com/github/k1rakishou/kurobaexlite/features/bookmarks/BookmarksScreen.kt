@@ -272,6 +272,7 @@ class BookmarksScreen(
     val newPostsAnimated: Int,
     val newQuotesAnimated: Int,
     val totalPostsAnimated: Int,
+    val watching: Boolean,
     val isFirstFetch: Boolean,
     val totalPages: Int,
     val currentPage: Int,

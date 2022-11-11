@@ -59,6 +59,8 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookma
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.PersistBookmarks
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ReorderBookmarks
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.RestartBookmarkBackgroundWatcher
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.ToggleBookmarkWatchState
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdateBookmarkInfoUponThreadOpen
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdatePostSeenForBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.CatalogGlobalSearch
@@ -437,12 +439,13 @@ object DependencyGraph {
 
     viewModel {
       BookmarksScreenViewModel(
-        appSettings = get(),
         androidHelpers = get(),
         bookmarksManager = get(),
         catalogPagesRepository = get(),
         reorderBookmarks = get(),
         deleteBookmarks = get(),
+        toggleBookmarkWatchState = get(),
+        restartBookmarkBackgroundWatcher = get()
       )
     }
 
@@ -459,6 +462,7 @@ object DependencyGraph {
         appResources = get(),
         snackbarManager = get(),
         updateManager = get(),
+        restartBookmarkBackgroundWatcher = get()
       )
     }
 
@@ -549,8 +553,8 @@ object DependencyGraph {
         androidHelpers = get(),
         appSettings = get(),
         bookmarksManager = get(),
-        applicationVisibilityManager = get(),
-        kurobaExLiteDatabase = get()
+        kurobaExLiteDatabase = get(),
+        restartBookmarkBackgroundWatcher = get()
       )
     }
     single {
@@ -561,7 +565,8 @@ object DependencyGraph {
         appSettings = get(),
         applicationVisibilityManager = get(),
         bookmarksManager = get(),
-        kurobaExLiteDatabase = get()
+        kurobaExLiteDatabase = get(),
+        restartBookmarkBackgroundWatcher = get()
       )
     }
     single {
@@ -580,6 +585,22 @@ object DependencyGraph {
         appScope = get(),
         bookmarksManager = get(),
         kurobaExLiteDatabase = get()
+      )
+    }
+    single {
+      ToggleBookmarkWatchState(
+        kurobaExLiteDatabase = get(),
+        bookmarksManager = get(),
+        restartBookmarkBackgroundWatcher = get()
+      )
+    }
+    single {
+      RestartBookmarkBackgroundWatcher(
+        appContext = get(),
+        appScope = get(),
+        androidHelpers = get(),
+        appSettings = get(),
+        applicationVisibilityManager = get(),
       )
     }
     single {
@@ -633,6 +654,7 @@ object DependencyGraph {
         bookmarksManager = get(),
         kurobaExLiteDatabase = get(),
         parsedPostDataCache = get(),
+        restartBookmarkBackgroundWatcher = get()
       )
     }
 

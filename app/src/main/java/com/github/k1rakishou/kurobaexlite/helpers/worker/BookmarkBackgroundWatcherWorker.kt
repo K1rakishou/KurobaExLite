@@ -71,7 +71,7 @@ class BookmarkBackgroundWatcherWorker(
       }
       .onSuccess { logcat(TAG) { "fetchThreadBookmarkInfo() success" } }
 
-    val activeBookmarksCount = bookmarksManager.activeBookmarksCount()
+    val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
     if (activeBookmarksCount > 0) {
       logcat(TAG) { "activeBookmarksCount: ${activeBookmarksCount} restarting the work" }
 
