@@ -33,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosition
+import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPositionEvent
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -94,8 +95,8 @@ abstract class PostScreenViewModel(
   val postsFullyParsedOnceFlow: StateFlow<Boolean>
     get() = _postsFullyParsedOnceFlow.asStateFlow()
 
-  private val _scrollRestorationEventFlow = MutableSharedFlow<LazyColumnRememberedPosition>(extraBufferCapacity = Channel.UNLIMITED)
-  val scrollRestorationEventFlow: SharedFlow<LazyColumnRememberedPosition>
+  private val _scrollRestorationEventFlow = MutableSharedFlow<LazyColumnRememberedPositionEvent>(extraBufferCapacity = Channel.UNLIMITED)
+  val scrollRestorationEventFlow: SharedFlow<LazyColumnRememberedPositionEvent>
     get() = _scrollRestorationEventFlow.asSharedFlow()
 
   private val _postListScrollEventFlow = MutableSharedFlow<ToolbarScrollEvent>(extraBufferCapacity = Channel.UNLIMITED)
@@ -809,7 +810,7 @@ abstract class PostScreenViewModel(
 
       if (index >= 0) {
         globalUiInfoManager.orientations.forEach { orientation ->
-          val newLastRememberedPosition = LazyColumnRememberedPosition(
+          val newLastRememberedPosition = LazyColumnRememberedPositionEvent(
             orientation = orientation,
             index = index,
             offset = 0
@@ -822,7 +823,7 @@ abstract class PostScreenViewModel(
       return
     }
 
-    val lastRememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]
+    val lastRememberedPosition = lazyColumnRememberedPositionCache[chanDescriptor]?.toLazyColumnRememberedPositionEvent()
     if (lastRememberedPosition != null) {
       logcat(tag = TAG) {
         "restoreScrollPosition($chanDescriptor, $scrollToPost) " +
@@ -848,7 +849,7 @@ abstract class PostScreenViewModel(
 
       if (index >= 0) {
         globalUiInfoManager.orientations.forEach { orientation ->
-          val newLastRememberedPosition = LazyColumnRememberedPosition(
+          val newLastRememberedPosition = LazyColumnRememberedPositionEvent(
             orientation = orientation,
             index = index,
             offset = 0

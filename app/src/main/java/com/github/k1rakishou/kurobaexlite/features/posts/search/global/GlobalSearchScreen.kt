@@ -30,7 +30,9 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostBlinkAnimationState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCell
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.rememberPostBlinkAnimationState
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
@@ -195,6 +197,8 @@ private fun GlobalSearchList(
     return
   }
 
+  val postBlinkAnimationState = rememberPostBlinkAnimationState()
+
   val postsAsync by globalSearchScreenViewModel.postsAsyncState
   val endReached by globalSearchScreenViewModel.endReachedState
   val currentPage by globalSearchScreenViewModel.currentPageState
@@ -241,6 +245,7 @@ private fun GlobalSearchList(
             screenKey = screenKey,
             catalogDescriptor = catalogDescriptor,
             postCellData = postCellData,
+            postBlinkAnimationState = postBlinkAnimationState,
             postSearchLongtapContentMenuProvider = postSearchLongtapContentMenuProvider
           )
         }
@@ -273,6 +278,7 @@ private fun PostSearchCell(
   screenKey: ScreenKey,
   catalogDescriptor: CatalogDescriptor,
   postCellData: PostCellData,
+  postBlinkAnimationState: PostBlinkAnimationState,
   postSearchLongtapContentMenuProvider: () -> PostSearchLongtapContentMenu
 ) {
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
@@ -305,6 +311,7 @@ private fun PostSearchCell(
       postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
       postCellData = postCellData,
       cellsPadding = remember { PaddingValues(horizontal = 8.dp) },
+      postBlinkAnimationState = postBlinkAnimationState,
       onTextSelectionModeChanged = {
         // no-op
       },

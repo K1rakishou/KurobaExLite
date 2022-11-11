@@ -46,10 +46,12 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostBlinkAnimationState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCell
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCellContainerAnimated
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.canAnimateInsertion
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.canAnimateUpdate
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.rememberPostBlinkAnimationState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
@@ -140,6 +142,7 @@ internal fun PostListContent(
     PostViewMode.Grid -> lazyGridStateWrapper
   }
   val lazyStateWrapperUpdated by rememberUpdatedState(newValue = lazyStateWrapper)
+  val postBlinkAnimationState = rememberPostBlinkAnimationState()
 
   var prevPostViewMode by remember { mutableStateOf<PostViewMode?>(null) }
 
@@ -226,6 +229,10 @@ internal fun PostListContent(
           )
 
           processPostListScrollEventFunc()
+
+          if (toolbarScrollEvent is PostScreenViewModel.ToolbarScrollEvent.ScrollToItem) {
+            postBlinkAnimationState.startBlinking(toolbarScrollEvent.postDescriptor)
+          }
         }
       })
 
@@ -266,6 +273,7 @@ internal fun PostListContent(
     modifier = modifier,
     chanDescriptor = chanDescriptor,
     lazyStateWrapper = lazyStateWrapperUpdated as GenericLazyStateWrapper,
+    postBlinkAnimationState = postBlinkAnimationState,
     postListOptions = postListOptions,
     postListAsync = postListAsync,
     postsScreenViewModelProvider = postsScreenViewModelProvider,
@@ -439,6 +447,7 @@ private fun PostListInternal(
   modifier: Modifier,
   chanDescriptor: ChanDescriptor,
   lazyStateWrapper: GenericLazyStateWrapper,
+  postBlinkAnimationState: PostBlinkAnimationState,
   postListOptions: PostListOptions,
   postListAsync: AsyncData<PostsState>,
   postsScreenViewModelProvider: () -> PostScreenViewModel,
@@ -536,6 +545,7 @@ private fun PostListInternal(
             postListOptions = postListOptions,
             postListAsync = postListAsync,
             lazyListStateWrapper = lazyStateWrapper as LazyListStateWrapper,
+            postBlinkAnimationState = postBlinkAnimationState,
             lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
             onCopySelectedText = onCopySelectedText,
             onQuoteSelectedText = onQuoteSelectedText,
@@ -569,6 +579,7 @@ private fun PostListInternal(
             postListOptions = postListOptions,
             postListAsync = postListAsync,
             lazyGridStateWrapper = lazyStateWrapper as LazyGridStateWrapper,
+            postBlinkAnimationState = postBlinkAnimationState,
             lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
             onCopySelectedText = onCopySelectedText,
             onQuoteSelectedText = onQuoteSelectedText,
@@ -607,6 +618,7 @@ private fun PostsListMode(
   postListOptions: PostListOptions,
   postListAsync: AsyncData<PostsState>,
   lazyListStateWrapper: LazyListStateWrapper,
+  postBlinkAnimationState: PostBlinkAnimationState,
   lastViewedPostDescriptorForIndicator: PostDescriptor?,
   onCopySelectedText: (String) -> Unit,
   onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
@@ -712,6 +724,7 @@ private fun PostsListMode(
                 isInPopup = isInPopup,
                 postCellData = postCellData,
                 postListOptions = postListOptions,
+                postBlinkAnimationState = postBlinkAnimationState,
                 index = index,
                 totalCount = postCellDataList.size,
                 animateInsertion = animateInsertion,
@@ -764,6 +777,7 @@ private fun PostsGridMode(
   postListOptions: PostListOptions,
   postListAsync: AsyncData<PostsState>,
   lazyGridStateWrapper: LazyGridStateWrapper,
+  postBlinkAnimationState: PostBlinkAnimationState,
   lastViewedPostDescriptorForIndicator: PostDescriptor?,
   onCopySelectedText: (String) -> Unit,
   onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
@@ -881,6 +895,7 @@ private fun PostsGridMode(
                 isInPopup = isInPopup,
                 postCellData = postCellData,
                 postListOptions = postListOptions,
+                postBlinkAnimationState = postBlinkAnimationState,
                 index = index,
                 totalCount = postCellDataList.size,
                 animateInsertion = animateInsertion,
@@ -1124,6 +1139,7 @@ private fun PostCellContainer(
   isInPopup: Boolean,
   postCellData: PostCellData,
   postListOptions: PostListOptions,
+  postBlinkAnimationState: PostBlinkAnimationState,
   index: Int,
   totalCount: Int,
   animateInsertion: Boolean,
@@ -1178,6 +1194,7 @@ private fun PostCellContainer(
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         postCellData = postCellData,
         cellsPadding = cellsPadding,
+        postBlinkAnimationState = postBlinkAnimationState,
         onTextSelectionModeChanged = { inSelectionMode -> isInSelectionMode = inSelectionMode },
         onPostBind = onPostBind,
         onPostUnbind = onPostUnbind,

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
+import androidx.compose.animation.Animatable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -62,6 +63,7 @@ fun PostCellGridMode(
   currentlyOpenedThread: ThreadDescriptor?,
   postCellData: PostCellData,
   cellsPadding: PaddingValues,
+  postBlinkAnimationState: PostBlinkAnimationState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   textSelectionEnabled: Boolean,
@@ -84,17 +86,29 @@ fun PostCellGridMode(
   val endPadding = remember(key1 = cellsPadding) { cellsPadding.calculateEndPadding(LayoutDirection.Ltr) }
   val bottomPadding = remember(key1 = cellsPadding) { cellsPadding.calculateBottomPadding().coerceAtLeast(4.dp) }
 
+  val highlightColorWithAlpha = remember(key1 = chanTheme.highlighterColor) { chanTheme.highlighterColor.copy(alpha = 0.3f) }
+
   val postCellBackgroundColor = remember(
     key1 = isCatalogMode,
     key2 = currentlyOpenedThread,
     key3 = postCellData.postDescriptor
   ) {
     if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
-      chanTheme.highlighterColor.copy(alpha = 0.3f)
+      highlightColorWithAlpha
     } else {
       chanTheme.backColorSecondary
     }
   }
+
+  val postCellBackgroundColorAnimatable = remember { Animatable(initialValue = postCellBackgroundColor) }
+
+  BlinkAnimation(
+    postCellDefaultBgColor = postCellBackgroundColor,
+    postCellBlinkBgColor = highlightColorWithAlpha,
+    postDescriptor = postCellData.postDescriptor,
+    postBlinkAnimationState = postBlinkAnimationState,
+    postCellBackgroundColorAnimatable = postCellBackgroundColorAnimatable
+  )
 
   val ratio = when {
     catalogGridModeColumnCount <= 1 -> 9f / 12f
@@ -104,7 +118,7 @@ fun PostCellGridMode(
 
   KurobaComposeCard(
     modifier = Modifier.padding(4.dp),
-    backgroundColor = postCellBackgroundColor
+    backgroundColor = postCellBackgroundColorAnimatable.value
   ) {
     Column(
       modifier = Modifier

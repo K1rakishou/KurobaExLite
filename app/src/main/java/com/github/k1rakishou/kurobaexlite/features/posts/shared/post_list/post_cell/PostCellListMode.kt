@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
+import androidx.compose.animation.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -84,6 +85,7 @@ fun PostCellListMode(
   currentlyOpenedThread: ThreadDescriptor?,
   postCellData: PostCellData,
   cellsPadding: PaddingValues,
+  postBlinkAnimationState: PostBlinkAnimationState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
@@ -111,22 +113,34 @@ fun PostCellListMode(
     )
   }
 
+  val highlightColorWithAlpha = remember(key1 = chanTheme.highlighterColor) { chanTheme.highlighterColor.copy(alpha = 0.3f) }
+
   val postCellBackgroundColor = remember(
     key1 = isCatalogMode,
     key2 = currentlyOpenedThread,
     key3 = postCellData.postDescriptor
   ) {
     if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
-      chanTheme.highlighterColor.copy(alpha = 0.3f)
+      highlightColorWithAlpha
     } else {
       Color.Unspecified
     }
   }
 
+  val postCellBackgroundColorAnimatable = remember { Animatable(initialValue = postCellBackgroundColor) }
+
+  BlinkAnimation(
+    postCellDefaultBgColor = postCellBackgroundColor,
+    postCellBlinkBgColor = highlightColorWithAlpha,
+    postDescriptor = postCellData.postDescriptor,
+    postBlinkAnimationState = postBlinkAnimationState,
+    postCellBackgroundColorAnimatable = postCellBackgroundColorAnimatable
+  )
+
   Row(
     modifier = Modifier
       .wrapContentHeight()
-      .drawBehind { drawRect(postCellBackgroundColor) }
+      .drawBehind { drawRect(postCellBackgroundColorAnimatable.value) }
       .padding(resultPaddings)
   ) {
     var columnHeightMut by remember { mutableStateOf<Int?>(null) }
