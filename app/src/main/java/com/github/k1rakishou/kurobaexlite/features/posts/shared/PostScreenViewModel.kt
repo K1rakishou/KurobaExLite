@@ -790,7 +790,7 @@ abstract class PostScreenViewModel(
 
   }
 
-  private suspend fun restoreScrollPosition(
+  protected suspend fun restoreScrollPosition(
     chanDescriptor: ChanDescriptor,
     scrollToPost: PostDescriptor?
   ) {

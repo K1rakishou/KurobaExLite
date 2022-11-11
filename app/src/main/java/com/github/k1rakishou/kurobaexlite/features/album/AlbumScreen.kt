@@ -11,15 +11,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -85,7 +85,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalStaggeredGridWithFastScroller
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -545,13 +545,13 @@ private fun ContentInternal(
     return
   }
 
-  val lazyStaggeredGridState = rememberLazyStaggeredGridState()
+  val lazyGridState = rememberLazyGridState()
 
   LaunchedEffect(
     key1 = Unit,
     block = {
       delay(32)
-      lazyStaggeredGridState.scrollToItem(album.scrollIndex)
+      lazyGridState.scrollToItem(album.scrollIndex)
     }
   )
 
@@ -565,7 +565,7 @@ private fun ContentInternal(
 
         val indexToScroll = album.imageIndexByPostDescriptor(scrollInfo.postDescriptor)
         if (indexToScroll != null) {
-          lazyStaggeredGridState.scrollToItem(index = indexToScroll)
+          lazyGridState.scrollToItem(index = indexToScroll)
         }
       }
     }
@@ -599,16 +599,16 @@ private fun ContentInternal(
 
   val columns = remember(key1 = albumGridModeColumnCount) {
     if (albumGridModeColumnCount <= 0) {
-      StaggeredGridCells.Adaptive(minSize = 140.dp)
+      GridCells.Adaptive(minSize = 140.dp)
     } else {
-      StaggeredGridCells.Fixed(count = albumGridModeColumnCount)
+      GridCells.Fixed(count = albumGridModeColumnCount)
     }
   }
 
-  LazyVerticalStaggeredGridWithFastScroller(
-    lazyStaggeredGridContainerModifier = Modifier.fillMaxSize(),
+  LazyVerticalGridWithFastScroller(
+    lazyGridContainerModifier = Modifier.fillMaxSize(),
     columns = columns,
-    lazyStaggeredGridState = lazyStaggeredGridState,
+    lazyGridState = lazyGridState,
     contentPadding = paddingValues,
     content = {
       val albumImages = album.albumImages
@@ -650,7 +650,8 @@ private fun AlbumImageItem(
 
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
   val selected = albumScreenViewModel.isImageSelected(albumImage)
-  val ratio = remember(key1 = albumImage.postImage) { aspectRatioFromImageDimensions(albumImage.postImage) }
+  // TODO: uncomment once LazyStaggeredGrid doesn't crash anymore upon scroll position correction
+//  val ratio = remember(key1 = albumImage.postImage) { aspectRatioFromImageDimensions(albumImage.postImage) }
 
   val imageItemScaleAnimation by animateFloatAsState(targetValue = if (selected) 0.85f else 1f)
 
@@ -658,7 +659,8 @@ private fun AlbumImageItem(
     PostImageThumbnail(
       modifier = Modifier
         .fillMaxWidth()
-        .aspectRatio(ratio)
+        .height(160.dp)
+//        .aspectRatio(ratio)
         .padding(1.dp)
         .graphicsLayer {
           scaleX = imageItemScaleAnimation

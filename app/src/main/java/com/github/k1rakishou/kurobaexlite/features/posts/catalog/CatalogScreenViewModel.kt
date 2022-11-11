@@ -128,6 +128,10 @@ class CatalogScreenViewModel(
     val reloadingTheSameCatalog = chanThreadManager.currentlyOpenedCatalog == catalogDescriptor
 
     if (alreadyShowingPosts && reloadingTheSameCatalog && !loadOptions.forced) {
+      if (catalogDescriptor != null && loadOptions.scrollToPost != null) {
+        restoreScrollPosition(catalogDescriptor, loadOptions.scrollToPost)
+      }
+
       onReloadFinished?.invoke()
       return
     }

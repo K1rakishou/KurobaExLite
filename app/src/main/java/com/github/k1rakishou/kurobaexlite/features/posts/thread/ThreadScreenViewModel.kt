@@ -34,7 +34,11 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import logcat.logcat
 
 class ThreadScreenViewModel(
@@ -269,6 +273,10 @@ class ThreadScreenViewModel(
     val reloadingTheSameThread = chanThreadManager.currentlyOpenedThread == threadDescriptor
 
     if (alreadyShowingPosts && reloadingTheSameThread && !loadOptions.forced) {
+      if (threadDescriptor != null && loadOptions.scrollToPost != null) {
+        restoreScrollPosition(threadDescriptor, loadOptions.scrollToPost)
+      }
+
       onReloadFinished?.invoke()
       return
     }
