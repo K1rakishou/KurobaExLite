@@ -386,7 +386,7 @@ private fun BoxScope.MiniDrawerBookmarkInfo(additionalBookmarkInfo: AdditionalBo
         val defaultTextColor = if (isDead) {
           chanTheme.textColorHint
         } else {
-          chanTheme.textColorSecondary
+          chanTheme.textColorPrimary
         }
 
         pushStyle(SpanStyle(color = defaultTextColor))
