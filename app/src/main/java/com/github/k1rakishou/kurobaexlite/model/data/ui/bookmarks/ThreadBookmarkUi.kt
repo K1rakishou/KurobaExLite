@@ -113,6 +113,7 @@ class ThreadBookmarkStatsUi private constructor(
   isBumpLimit: Boolean = false,
   isImageLimit: Boolean = false,
   isFirstFetch: Boolean = false,
+  isClosed: Boolean = false,
   isDeleted: Boolean = false,
   isArchived: Boolean = false,
   isError: Boolean = false
@@ -147,6 +148,9 @@ class ThreadBookmarkStatsUi private constructor(
   private val _isDeleted = mutableStateOf(isDeleted)
   val isDeleted: State<Boolean>
     get() = _isDeleted
+  private val _isClosed = mutableStateOf(isClosed)
+  val isClosed: State<Boolean>
+    get() = _isClosed
   private val _isArchived = mutableStateOf(isArchived)
   val isArchived: State<Boolean>
     get() = _isArchived
@@ -177,6 +181,7 @@ class ThreadBookmarkStatsUi private constructor(
     _isBumpLimit.value = threadBookmark.isBumpLimit()
     _isImageLimit.value = threadBookmark.isImageLimit()
     _isFirstFetch.value = threadBookmark.isFirstFetch()
+    _isClosed.value = threadBookmark.isThreadClosed()
     _isDeleted.value = threadBookmark.isThreadDeleted()
     _isArchived.value = threadBookmark.isThreadArchived()
     _isError.value = threadBookmark.isError()

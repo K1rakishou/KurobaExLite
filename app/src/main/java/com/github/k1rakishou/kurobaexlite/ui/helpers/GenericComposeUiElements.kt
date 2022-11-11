@@ -111,6 +111,9 @@ import java.util.*
 private val DefaultFillMaxSizeModifier: Modifier = Modifier.fillMaxSize()
 private val DefaultNoopClickCallback = { }
 
+private const val DarkRippleColor = 0x40000000
+private const val LightRippleColor = 0x40ffffff
+
 @Composable
 fun KurobaComposeLoadingIndicator(
   modifier: Modifier = DefaultFillMaxSizeModifier,
@@ -637,9 +640,9 @@ fun Modifier.kurobaClickable(
     val indication = if (hasClickIndication) {
       val color = remember(key1 = chanTheme) {
         if (chanTheme.isLightTheme) {
-          Color(0x40000000)
+          Color(DarkRippleColor)
         } else {
-          Color(0x40ffffff)
+          Color(LightRippleColor)
         }
       }
 
@@ -686,7 +689,8 @@ fun KurobaComposeClickableIcon(
   enabled: Boolean = true,
   colorBehindIcon: Color? = null,
   iconColor: Color? = null,
-  onClick: () -> Unit
+  onClick: () -> Unit,
+  onLongClick: (() -> Unit)? = null
 ) {
   val chanTheme = LocalChanTheme.current
   val alpha = if (enabled) DefaultAlpha else ContentAlpha.disabled
@@ -710,7 +714,8 @@ fun KurobaComposeClickableIcon(
   val clickModifier = if (enabled) {
     Modifier.kurobaClickable(
       bounded = false,
-      onClick = { onClick() }
+      onClick = onClick,
+      onLongClick = onLongClick
     )
   } else {
     Modifier
@@ -904,9 +909,9 @@ fun KurobaComposeCheckbox(
 
   val color = remember(key1 = chanTheme) {
     if (chanTheme.isLightTheme) {
-      Color(0x40000000)
+      Color(DarkRippleColor)
     } else {
-      Color(0x40ffffff)
+      Color(LightRippleColor)
     }
   }
 
@@ -960,9 +965,9 @@ fun KurobaComposeRadioButton(
 
   val color = remember(key1 = chanTheme) {
     if (chanTheme.isLightTheme) {
-      Color(0x40000000)
+      Color(DarkRippleColor)
     } else {
-      Color(0x40ffffff)
+      Color(LightRippleColor)
     }
   }
 

@@ -39,7 +39,7 @@ class ThreadScreenDefaultToolbar(
   private val threadScreenViewModel: ThreadScreenViewModel,
   private val onBackPressed: suspend () -> Unit,
   private val showLocalSearchToolbar: () -> Unit,
-  private val toggleBookmarkState: () -> Unit,
+  private val toggleBookmarkState: suspend (Boolean) -> Unit,
   private val openThreadAlbum: () -> Unit,
   private val showOverflowMenu: () -> Unit,
 ) : PostsScreenDefaultToolbar<ThreadScreenDefaultToolbar.State>() {
@@ -60,7 +60,7 @@ class ThreadScreenDefaultToolbar(
       key1 = screenContentLoaded,
       block = {
         state.rightIcons.forEach { toolbarIcon ->
-          if (toolbarIcon.key == State.Icons.Overflow) {
+          if (toolbarIcon.key == State.Icon.Overflow) {
             return@forEach
           }
 
@@ -78,21 +78,21 @@ class ThreadScreenDefaultToolbar(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        state.iconClickEvents.collect { icon ->
+        state.iconClickEvents.collect { (icon, longClicked) ->
           when (icon) {
-            State.Icons.Back -> {
+            State.Icon.Back -> {
               onBackPressed()
             }
-            State.Icons.Search -> {
+            State.Icon.Search -> {
               showLocalSearchToolbar()
             }
-            State.Icons.Bookmark -> {
-              toggleBookmarkState()
+            State.Icon.Bookmark -> {
+              toggleBookmarkState(longClicked)
             }
-            State.Icons.Album -> {
+            State.Icon.Album -> {
               openThreadAlbum()
             }
-            State.Icons.Overflow -> {
+            State.Icon.Overflow -> {
               showOverflowMenu()
             }
           }
@@ -103,7 +103,10 @@ class ThreadScreenDefaultToolbar(
     KurobaToolbarLayout(
       leftPart = {
         if (currentUiLayoutMode == MainUiLayoutMode.Phone) {
-          state.leftIcon.Content(onClick = { key -> state.onIconClicked(key) })
+          state.leftIcon.Content(
+            onClick = { key -> state.onIconClicked(key) },
+            onLongClick = { key -> state.onIconLongClicked(key) }
+          )
         }
       },
       middlePart = {
@@ -143,7 +146,10 @@ class ThreadScreenDefaultToolbar(
       },
       rightPart = {
         state.rightIcons.fastForEach { toolbarIcon ->
-          toolbarIcon.Content(onClick = { key -> state.onIconClicked(key) })
+          toolbarIcon.Content(
+            onClick = { key -> state.onIconClicked(key) },
+            onLongClick = { key -> state.onIconLongClicked(key) }
+          )
         }
       }
     )
@@ -155,34 +161,34 @@ class ThreadScreenDefaultToolbar(
   ) : PostsScreenDefaultToolbar.PostsScreenToolbarState() {
 
     val leftIcon = KurobaToolbarIcon(
-      key = Icons.Back,
+      key = Icon.Back,
       drawableId = R.drawable.ic_baseline_arrow_back_24
     )
 
     val rightIcons = listOf(
       KurobaToolbarIcon(
-        key = Icons.Search,
+        key = Icon.Search,
         drawableId = R.drawable.ic_baseline_search_24,
         enabled = false
       ),
       KurobaToolbarIcon(
-        key = Icons.Bookmark,
+        key = Icon.Bookmark,
         drawableId = R.drawable.ic_baseline_bookmark_border_24,
         enabled = false
       ),
       KurobaToolbarIcon(
-        key = Icons.Album,
+        key = Icon.Album,
         drawableId = R.drawable.ic_baseline_image_24,
         enabled = false
       ),
       KurobaToolbarIcon(
-        key = Icons.Overflow,
+        key = Icon.Overflow,
         drawableId = R.drawable.ic_baseline_more_vert_24
       ),
     )
 
-    private val _iconClickEvents = MutableSharedFlow<Icons>(extraBufferCapacity = Channel.UNLIMITED)
-    val iconClickEvents: SharedFlow<Icons>
+    private val _iconClickEvents = MutableSharedFlow<IconClickEvent>(extraBufferCapacity = Channel.UNLIMITED)
+    val iconClickEvents: SharedFlow<IconClickEvent>
       get() = _iconClickEvents.asSharedFlow()
 
     override fun saveState(): Bundle {
@@ -197,15 +203,24 @@ class ThreadScreenDefaultToolbar(
       bundle?.getString(SUBTITLE_KEY)?.let { subtitle -> toolbarSubtitleState.value = subtitle }
     }
 
-    fun bookmarkIcon(): KurobaToolbarIcon<Icons> {
-      return rightIcons.first { icon -> icon.key == Icons.Bookmark }
+    fun bookmarkIcon(): KurobaToolbarIcon<Icon> {
+      return rightIcons.first { icon -> icon.key == Icon.Bookmark }
     }
 
-    fun onIconClicked(icons: Icons) {
-      _iconClickEvents.tryEmit(icons)
+    fun onIconClicked(icon: Icon) {
+      _iconClickEvents.tryEmit(IconClickEvent(icon, false))
     }
 
-    enum class Icons {
+    fun onIconLongClicked(icon: Icon) {
+      _iconClickEvents.tryEmit(IconClickEvent(icon, true))
+    }
+
+    data class IconClickEvent(
+      val icon: Icon,
+      val longClicked: Boolean
+    )
+
+    enum class Icon {
       Back,
       Search,
       Bookmark,

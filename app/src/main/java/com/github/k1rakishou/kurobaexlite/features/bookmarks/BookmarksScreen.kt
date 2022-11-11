@@ -269,6 +269,7 @@ class BookmarksScreen(
   }
 
   data class ThreadBookmarkStatsCombined(
+    val bookmarkedThreadHasPosts: Boolean,
     val newPostsAnimated: Int,
     val newQuotesAnimated: Int,
     val totalPostsAnimated: Int,
@@ -280,6 +281,7 @@ class BookmarksScreen(
     val isImageLimit: Boolean,
     val isArchived: Boolean,
     val isDeleted: Boolean,
+    val isClosed: Boolean,
     val isError: Boolean,
     val isDead: Boolean
   )
@@ -299,7 +301,8 @@ class BookmarksScreen(
   enum class BookmarkAnnotatedContent(val id: String) {
     ThreadDeleted("id_thread_deleted"),
     ThreadArchived("id_thread_archived"),
-    ThreadError("id_thread_error");
+    ThreadError("id_thread_error"),
+    ThreadClosed("id_thread_closed");
 
     companion object {
       internal val circleCropTransformation = CircleCropTransformation()
@@ -319,6 +322,7 @@ class BookmarksScreen(
             ThreadDeleted -> R.drawable.trash_icon
             ThreadArchived -> R.drawable.archived_icon
             ThreadError -> R.drawable.error_icon
+            ThreadClosed -> R.drawable.closed_icon
           }
         }
 

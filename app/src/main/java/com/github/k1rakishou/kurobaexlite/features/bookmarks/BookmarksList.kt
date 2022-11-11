@@ -10,6 +10,7 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -370,48 +371,17 @@ private fun LazyItemScope.ThreadBookmarkItem(
     Column(
       modifier = Modifier.weight(1f)
     ) {
-      if (title != null) {
-        val textFormatted = remember(searchQuery, chanTheme, isDead, watching) {
-          val textColor = if (isDead) {
-            chanTheme.textColorHint
-          } else {
-            chanTheme.textColorPrimary
-          }
-
-          return@remember buildAnnotatedString {
-            val titleFormatted = buildAnnotatedString { withStyle(SpanStyle(color = textColor)) { append(title) } }
-
-            if (searchQuery.isNotEmpty()) {
-              val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
-                chanTheme = chanTheme,
-                searchQuery = searchQuery,
-                minQueryLength = 1,
-                string = titleFormatted
-              )
-
-              append(titleFormattedWithSearchQuery)
-            } else {
-              append(titleFormatted)
-            }
-          }
-        }
-
-        KurobaComposeText(
-          modifier = Modifier
-            .fillMaxWidth()
-            .weight(0.5f),
-          text = textFormatted,
-          fontSize = 15.sp,
-          maxLines = 1,
-          overflow = TextOverflow.Ellipsis
-        )
-      } else {
-        Shimmer(
-          modifier = Modifier
-            .fillMaxWidth()
-            .weight(0.5f)
-        )
-      }
+      ThreadBookmarkTitleInfo(
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(0.5f),
+        title = title,
+        searchQuery = searchQuery,
+        chanTheme = chanTheme,
+        isDead = isDead,
+        watching = watching,
+        postCommentApplier = postCommentApplier
+      )
 
       ThreadBookmarkAdditionalInfo(
         modifier = Modifier
@@ -437,6 +407,55 @@ private fun LazyItemScope.ThreadBookmarkItem(
   }
 }
 
+@Composable
+private fun ColumnScope.ThreadBookmarkTitleInfo(
+  modifier: Modifier = Modifier,
+  title: String?,
+  searchQuery: String,
+  chanTheme: ChanTheme,
+  isDead: Boolean,
+  watching: Boolean,
+  postCommentApplier: PostCommentApplier
+) {
+  if (title != null) {
+    val textFormatted = remember(searchQuery, chanTheme, isDead, watching) {
+      val textColor = if (isDead) {
+        chanTheme.textColorHint
+      } else {
+        chanTheme.textColorPrimary
+      }
+
+      return@remember buildAnnotatedString {
+        val titleFormatted = buildAnnotatedString { withStyle(SpanStyle(color = textColor)) { append(title) } }
+
+        if (searchQuery.isNotEmpty()) {
+          val (_, titleFormattedWithSearchQuery) = postCommentApplier.markOrUnmarkSearchQuery(
+            chanTheme = chanTheme,
+            searchQuery = searchQuery,
+            minQueryLength = 1,
+            string = titleFormatted
+          )
+
+          append(titleFormattedWithSearchQuery)
+        } else {
+          append(titleFormatted)
+        }
+      }
+    }
+
+    KurobaComposeText(
+      modifier = modifier,
+      text = textFormatted,
+      fontSize = 15.sp,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
+  } else {
+    Shimmer(
+      modifier = modifier
+    )
+  }
+}
 
 
 @Composable
@@ -450,7 +469,7 @@ private fun listenForDrawerVisibilityEvents(): State<Boolean> {
 }
 
 @Composable
-private fun ThreadBookmarkAdditionalInfo(
+private fun ColumnScope.ThreadBookmarkAdditionalInfo(
   modifier: Modifier,
   threadDescriptor: ThreadDescriptor,
   threadBookmarkStatsUi: ThreadBookmarkStatsUi,
@@ -481,6 +500,7 @@ private fun ThreadBookmarkAdditionalInfo(
     targetValueByState = { state -> state.totalPosts.value }
   )
 
+  val totalPosts by threadBookmarkStatsUi.totalPosts
   val watching by threadBookmarkStatsUi.watching
   val isFirstFetch by threadBookmarkStatsUi.isFirstFetch
   val totalPages by threadBookmarkStatsUi.totalPages
@@ -489,6 +509,7 @@ private fun ThreadBookmarkAdditionalInfo(
   val isImageLimit by threadBookmarkStatsUi.isImageLimit
   val isArchived by threadBookmarkStatsUi.isArchived
   val isDeleted by threadBookmarkStatsUi.isDeleted
+  val isClosed by threadBookmarkStatsUi.isClosed
   val isError by threadBookmarkStatsUi.isError
   val isDead = isArchived || isDeleted
 
@@ -496,6 +517,7 @@ private fun ThreadBookmarkAdditionalInfo(
     newPostsAnimated,
     newQuotesAnimated,
     totalPostsAnimated,
+    totalPosts,
     watching,
     isFirstFetch,
     totalPages,
@@ -503,12 +525,14 @@ private fun ThreadBookmarkAdditionalInfo(
     isBumpLimit,
     isImageLimit,
     isArchived,
+    isClosed,
     isDeleted,
     isError,
     isDead,
   ) {
     derivedStateOf {
       BookmarksScreen.ThreadBookmarkStatsCombined(
+        bookmarkedThreadHasPosts = totalPosts > 0,
         newPostsAnimated = newPostsAnimated,
         newQuotesAnimated = newQuotesAnimated,
         totalPostsAnimated = totalPostsAnimated,
@@ -520,6 +544,7 @@ private fun ThreadBookmarkAdditionalInfo(
         isImageLimit = isImageLimit,
         isArchived = isArchived,
         isDeleted = isDeleted,
+        isClosed = isClosed,
         isError = isError,
         isDead = isDead
       )
@@ -568,7 +593,14 @@ private fun BookmarkThumbnail(
 ) {
   val context = LocalContext.current
 
-  BoxWithConstraints(modifier = modifier) {
+  BoxWithConstraints(
+    modifier = modifier.then(
+      Modifier.kurobaClickable(
+        bounded = false,
+        onClick = { onBookmarkThumbnailClicked(threadDescriptor) }
+      )
+    )
+  ) {
     val density = LocalDensity.current
     val desiredSizePx = with(density) { remember { 24.dp.roundToPx() } }
 
@@ -585,7 +617,10 @@ private fun BookmarkThumbnail(
 
     val transformations = remember(key1 = isDead, key2 = watching) {
       if (isDead) {
-        listOf(BookmarksScreen.BookmarkAnnotatedContent.circleCropTransformation, BookmarksScreen.BookmarkAnnotatedContent.grayscaleTransformation)
+        listOf(
+          BookmarksScreen.BookmarkAnnotatedContent.circleCropTransformation,
+          BookmarksScreen.BookmarkAnnotatedContent.grayscaleTransformation
+        )
       } else {
         listOf(BookmarksScreen.BookmarkAnnotatedContent.circleCropTransformation)
       }
@@ -601,9 +636,7 @@ private fun BookmarkThumbnail(
     }
 
     SubcomposeAsyncImage(
-      modifier = Modifier
-        .fillMaxSize()
-        .kurobaClickable(bounded = false, onClick = { onBookmarkThumbnailClicked(threadDescriptor) }),
+      modifier = Modifier.fillMaxSize(),
       model = imageRequest,
       contentScale = ContentScale.Crop,
       contentDescription = null,
@@ -637,6 +670,7 @@ private fun convertBookmarkStateToText(
   threadDescriptor: ThreadDescriptor,
   threadBookmarkStatsCombined: BookmarksScreen.ThreadBookmarkStatsCombined
 ): AnnotatedString {
+  val bookmarkedThreadHasPosts = threadBookmarkStatsCombined.bookmarkedThreadHasPosts
   val newPostsAnimated = threadBookmarkStatsCombined.newPostsAnimated
   val totalPostsAnimated = threadBookmarkStatsCombined.totalPostsAnimated
   val newQuotesAnimated = threadBookmarkStatsCombined.newQuotesAnimated
@@ -646,6 +680,7 @@ private fun convertBookmarkStateToText(
   val isImageLimit = threadBookmarkStatsCombined.isImageLimit
   val isDeleted = threadBookmarkStatsCombined.isDeleted
   val isArchived = threadBookmarkStatsCombined.isArchived
+  val isClosed = threadBookmarkStatsCombined.isClosed
   val isError = threadBookmarkStatsCombined.isError
   val isDead = threadBookmarkStatsCombined.isDead
   val watching = threadBookmarkStatsCombined.watching
@@ -663,46 +698,50 @@ private fun convertBookmarkStateToText(
     append("/")
     append(threadDescriptor.catalogDescriptor.boardCode)
     append("/")
-    append(AppConstants.TEXT_SEPARATOR)
 
     if (isFirstFetch) {
+      append(AppConstants.TEXT_SEPARATOR)
       append(context.getString(R.string.bookmark_loading_state))
       return@buildAnnotatedString
     }
 
-    append(
-      buildAnnotatedString {
-        append(
-          buildAnnotatedString {
-            if (!isDead && newPostsAnimated > 0) {
-              pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor))
-            } else {
-              pushStyle(SpanStyle(color = defaultTextColor))
-            }
+    if (bookmarkedThreadHasPosts) {
+      append(AppConstants.TEXT_SEPARATOR)
 
-            append(newPostsAnimated.toString())
-            append("/")
-            append(totalPostsAnimated.toString())
-          }
-        )
-
-        if (newQuotesAnimated > 0) {
-          append(" (")
+      append(
+        buildAnnotatedString {
           append(
             buildAnnotatedString {
-              if (!isDead) {
-                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColor))
+              if (!isDead && newPostsAnimated > 0) {
+                pushStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor))
               } else {
                 pushStyle(SpanStyle(color = defaultTextColor))
               }
 
-              append(newQuotesAnimated.toString())
+              append(newPostsAnimated.toString())
+              append("/")
+              append(totalPostsAnimated.toString())
             }
           )
-          append(")")
+
+          if (newQuotesAnimated > 0) {
+            append(" (")
+            append(
+              buildAnnotatedString {
+                if (!isDead) {
+                  pushStyle(SpanStyle(color = chanTheme.bookmarkCounterHasRepliesColor))
+                } else {
+                  pushStyle(SpanStyle(color = defaultTextColor))
+                }
+
+                append(newQuotesAnimated.toString())
+              }
+            )
+            append(")")
+          }
         }
-      }
-    )
+      )
+    }
 
     if (totalPages > 0) {
       if (length > 0) {
@@ -777,6 +816,12 @@ private fun convertBookmarkStateToText(
       }
 
       appendInlineContent(BookmarksScreen.BookmarkAnnotatedContent.ThreadArchived.id)
+    } else if (isClosed) {
+      if (length > 0) {
+        append(" ")
+      }
+
+      appendInlineContent(BookmarksScreen.BookmarkAnnotatedContent.ThreadClosed.id)
     }
 
     if (isError) {

@@ -29,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.features.main.LocalMainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
+import com.github.k1rakishou.kurobaexlite.features.posts.bookmark.NewBookmarkOptionsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
@@ -55,10 +56,10 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
+import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -84,8 +85,8 @@ class ThreadScreen(
 ) : PostsScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
   private val threadScreenViewModel: ThreadScreenViewModel by componentActivity.viewModel()
   private val replyLayoutViewModel: ReplyLayoutViewModel by componentActivity.viewModel()
-  private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
   private val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage by inject(ClickedThumbnailBoundsStorage::class.java)
+  private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
 
   private val threadScreenToolbarActionHandler by lazy {
     ThreadScreenToolbarActionHandler()
@@ -106,7 +107,37 @@ class ThreadScreen(
     ThreadScreenDefaultToolbar(
       threadScreenViewModel = threadScreenViewModel,
       onBackPressed = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY, true) },
-      toggleBookmarkState = { threadScreenViewModel.bookmarkOrUnbookmarkThread() },
+      toggleBookmarkState = { longClicked ->
+        val bookmarkDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@ThreadScreenDefaultToolbar
+
+        if (bookmarksManager.contains(bookmarkDescriptor)) {
+          threadScreenViewModel.bookmarkOrUnbookmarkThread()
+          return@ThreadScreenDefaultToolbar
+        }
+
+        if (longClicked) {
+          dialogSettings.doNotShowNewBookmarkDialogOptions.write(false)
+        }
+
+        if (dialogSettings.doNotShowNewBookmarkDialogOptions.read()) {
+          threadScreenViewModel.bookmarkOrUnbookmarkThread()
+          return@ThreadScreenDefaultToolbar
+        }
+
+        val newBookmarkOptionsScreen = ComposeScreen.createScreen<NewBookmarkOptionsScreen>(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          callbacks = {
+            callback(
+              callbackKey = NewBookmarkOptionsScreen.ON_FINISHED,
+              func = { threadScreenViewModel.bookmarkOrUnbookmarkThread()  }
+            )
+          }
+        )
+
+        navigationRouter.presentScreen(newBookmarkOptionsScreen)
+      },
       openThreadAlbum = {
         val threadDescriptor = threadScreenViewModel.threadDescriptor
           ?: return@ThreadScreenDefaultToolbar

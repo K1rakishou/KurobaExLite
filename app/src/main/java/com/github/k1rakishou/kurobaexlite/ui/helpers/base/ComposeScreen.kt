@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.DialogSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -24,14 +25,14 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaSavedStateViewModelFa
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenSavedStateViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
-import kotlin.properties.PropertyDelegateProvider
-import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KClass
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.flow.StateFlow
 import logcat.LogPriority
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
+import kotlin.properties.PropertyDelegateProvider
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.milliseconds
 
 abstract class ComposeScreen protected constructor(
   val screenArgs: Bundle? = null,
@@ -41,6 +42,7 @@ abstract class ComposeScreen protected constructor(
   protected val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
+  protected val dialogSettings: DialogSettings by inject(DialogSettings::class.java)
   protected val appConstants: AppConstants by inject(AppConstants::class.java)
   protected val appResources: AppResources by inject(AppResources::class.java)
   protected val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)

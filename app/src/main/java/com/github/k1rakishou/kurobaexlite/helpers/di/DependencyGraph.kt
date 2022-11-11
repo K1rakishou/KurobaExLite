@@ -48,6 +48,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.settings.DialogSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.RemoteImageSearchSettings
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
@@ -154,6 +155,7 @@ object DependencyGraph {
   private fun Module.misc() {
     single { AppSettings(fileName = "app_settings", appContext = get(), moshi = get()) }
     single { RemoteImageSearchSettings(fileName = "remote_image_search_settings", appContext = get(), moshi = get()) }
+    single { DialogSettings(fileName = "dialog_settings", appContext = get(), moshi = get()) }
 
     single { KurobaExLiteDatabase.buildDatabase(application = get()) }
 

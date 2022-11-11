@@ -354,5 +354,7 @@
     <string name="report_issue_screen_logs_are_empty_error">\"Attach logs\" option is checked, but logs are empty!</string>
     <string name="report_issue_report_sent_message">Sent \;)</string>
 
+    <string name="new_bookmark_options_screen_start_watching_thread">Start watching thread</string>
+    <string name="new_bookmark_options_screen_do_not_show_this_dialog">Do not show this dialog anymore (Longtap the bookmark icon to show it again)</string>
 
 </resources>

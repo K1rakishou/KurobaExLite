@@ -54,6 +54,7 @@ class ThreadBookmark private constructor(
 
   fun watching(): Boolean = state.get(BOOKMARK_STATE_WATCHING)
   fun isStickyClosed(): Boolean = state.get(BOOKMARK_STATE_STICKY_NO_CAP) && state.get(BOOKMARK_STATE_THREAD_CLOSED)
+  fun isThreadClosed(): Boolean = state.get(BOOKMARK_STATE_THREAD_CLOSED)
   fun isThreadDeleted(): Boolean = state.get(BOOKMARK_STATE_THREAD_DELETED)
   fun isThreadArchived(): Boolean = state.get(BOOKMARK_STATE_THREAD_ARCHIVED)
   fun isBumpLimit(): Boolean = state.get(BOOKMARK_STATE_THREAD_BUMP_LIMIT)
@@ -458,9 +459,8 @@ class ThreadBookmark private constructor(
 
       if (startWatching) {
         bookmarkInitialState.set(BOOKMARK_STATE_WATCHING)
+        bookmarkInitialState.set(BOOKMARK_STATE_FIRST_FETCH)
       }
-
-      bookmarkInitialState.set(BOOKMARK_STATE_FIRST_FETCH)
 
       return ThreadBookmark(
         threadDescriptor = threadDescriptor,

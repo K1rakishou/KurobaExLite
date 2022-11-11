@@ -20,7 +20,10 @@ class KurobaToolbarIcon<T : Any>(
   val enabled = mutableStateOf(enabled)
 
   @Composable
-  fun Content(onClick: (T) -> Unit) {
+  fun Content(
+    onClick: (T) -> Unit,
+    onLongClick: ((T) -> Unit)? = null
+  ) {
     val iconVisible by visible
     if (!iconVisible) {
       return
@@ -29,13 +32,20 @@ class KurobaToolbarIcon<T : Any>(
     val iconDrawableId by drawableId
     val enabled by enabled
 
+    val onLongClickFunc: (() -> Unit)? = if (onLongClick == null) {
+      null
+    } else {
+      { onLongClick(key) }
+    }
+
     KurobaComposeClickableIcon(
       modifier = Modifier
         .size(KurobaChildToolbar.toolbarIconSize)
         .padding(KurobaChildToolbar.toolbarIconPadding),
       drawableId = iconDrawableId,
       enabled = enabled,
-      onClick = { onClick(key) }
+      onClick = { onClick(key) },
+      onLongClick = onLongClickFunc
     )
   }
 }
