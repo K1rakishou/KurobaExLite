@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.createClickableTextColorMap
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectClickedAnnotations
+import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurable
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -128,14 +129,16 @@ fun PostCellGridMode(
     ) {
       PostCellGridModeLayout(
         title = {
-          PostCellTitle(
-            startPadding = startPadding,
-            endPadding = endPadding,
-            chanDescriptor = chanDescriptor,
-            postCellData = postCellData,
-            postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-            onPostImageClicked = onPostImageClicked
-          )
+          Column {
+            PostCellTitle(
+              startPadding = startPadding,
+              endPadding = endPadding,
+              chanDescriptor = chanDescriptor,
+              postCellData = postCellData,
+              postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+              onPostImageClicked = onPostImageClicked
+            )
+          }
         },
         comment = {
           PostCellComment(
@@ -182,30 +185,26 @@ private fun PostCellGridModeLayout(
           "height depends on the parent's height, it will be infinite in case of parent having infinite height."
       }
 
-      // First measure the title and footer and leave the rest of the available vertical space
-      // to the comment
-      val titlePlaceables = measurables[0].map { measurable -> measurable.measure(constraints) }
       val footerPlaceables = measurables[2].map { measurable -> measurable.measure(constraints) }
+      val footerTotalHeight = footerPlaceables.sumOf { it.measuredHeight }
 
-      val availableHeightForComment = constraints.maxHeight -
-        (titlePlaceables.sumOf { it.measuredHeight }) -
-        (footerPlaceables.sumOf { it.measuredHeight })
+      val titlePlaceable = measurables[0].ensureSingleMeasurable()
+        .measure(constraints.copy(maxHeight = constraints.maxHeight - footerTotalHeight))
+      val titleTotalHeight = titlePlaceable.measuredHeight
 
-      // Crashes on rotation
-      if (availableHeightForComment <= constraints.minHeight) {
-        return@Layout layout(constraints.maxWidth, constraints.maxHeight) {}
+      val availableHeightForComment = constraints.maxHeight - titleTotalHeight - footerTotalHeight
+      val commentPlaceables = if (availableHeightForComment > 0) {
+        measurables[1]
+          .map { measurable -> measurable.measure(constraints.copy(maxHeight = availableHeightForComment)) }
+      } else {
+        emptyList()
       }
-
-      val commentPlaceables = measurables[1]
-        .map { measurable -> measurable.measure(constraints.copy(maxHeight = availableHeightForComment)) }
 
       return@Layout layout(constraints.maxWidth, constraints.maxHeight) {
         var currentY = 0
 
-        titlePlaceables.forEach { placeable ->
-          placeable.place(0, currentY)
-          currentY += placeable.measuredHeight
-        }
+        titlePlaceable.place(0, currentY)
+        currentY += titlePlaceable.measuredHeight
 
         commentPlaceables.forEach { placeable ->
           placeable.place(0, currentY)
@@ -338,12 +337,15 @@ private fun PostCellTitle(
         .fillMaxWidth()
         .padding(start = startPadding, end = endPadding),
       text = postSubject,
+      maxLines = 2,
       fontSize = postCellSubjectTextSizeSp,
       inlineContent = inlinedContentForPostCell(
         postCellData = postCellData,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
       )
     )
+
+    Spacer(modifier = Modifier.height(4.dp))
   } else if (postSubject == null) {
     Shimmer(
       modifier = Modifier
@@ -351,8 +353,6 @@ private fun PostCellTitle(
         .padding(start = startPadding, end = endPadding)
     )
   }
-
-  Spacer(modifier = Modifier.height(4.dp))
 }
 
 @Composable
