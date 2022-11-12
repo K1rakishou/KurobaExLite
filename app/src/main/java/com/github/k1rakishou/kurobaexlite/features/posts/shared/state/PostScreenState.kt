@@ -27,7 +27,7 @@ abstract class PostScreenState(
   val currentSearchQuery: String?
     get() = searchQueryFlow.value
 
-  val lastViewedPostForScrollRestoration = MutableStateFlow<PostDescriptor?>(null)
+  val lastViewedPostForScrollRestoration = MutableStateFlow<LastViewedPostForScrollRestoration?>(null)
   val lastViewedPostForIndicator = MutableStateFlow<PostDescriptor?>(null)
   val lastLoadErrorState = MutableStateFlow<Throwable?>(null)
 
@@ -129,4 +129,9 @@ data class PreviousPostDataInfo(
   val hash: Murmur3Hash,
   val time: Long,
   val alreadyAnimatedInsertion: Boolean = false
+)
+
+data class LastViewedPostForScrollRestoration(
+  val postDescriptor: PostDescriptor,
+  val blink: Boolean
 )

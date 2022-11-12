@@ -1,5 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.model.data.ui
 
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+
 data class LazyColumnRememberedPosition(
   var orientation: Int,
   var index: Int = 0,
@@ -19,5 +21,6 @@ data class LazyColumnRememberedPosition(
 data class LazyColumnRememberedPositionEvent(
   val orientation: Int,
   val index: Int = 0,
-  val offset: Int = 0
+  val offset: Int = 0,
+  val blinkPostDescriptor: PostDescriptor? = null
 )

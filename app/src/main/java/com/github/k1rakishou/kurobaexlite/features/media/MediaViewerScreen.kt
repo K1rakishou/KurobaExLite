@@ -801,8 +801,12 @@ private fun MediaViewerBottomSheet(
       },
       onGoToPostClicked = { postCellData ->
         when (postCellData.chanDescriptor) {
-          is CatalogDescriptor -> catalogScreenViewModel.scrollToPost(postCellData.postDescriptor)
-          is ThreadDescriptor -> threadScreenViewModel.scrollToPost(postCellData.postDescriptor)
+          is CatalogDescriptor -> {
+            catalogScreenViewModel.scrollToPost(postDescriptor = postCellData.postDescriptor, blink = true)
+          }
+          is ThreadDescriptor -> {
+            threadScreenViewModel.scrollToPost(postDescriptor = postCellData.postDescriptor, blink = true)
+          }
         }
 
         onOpeningCatalogOrThread()

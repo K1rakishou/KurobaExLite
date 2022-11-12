@@ -6,6 +6,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.LastViewedPostForScrollRestoration
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
@@ -293,9 +294,12 @@ class ThreadScreenViewModel(
     globalUiInfoManager.onLoadingErrorUpdatedOrRemoved(screenKey, false)
 
     if (threadDescriptor != null && loadOptions.showLoadingIndicator) {
-      val lastViewedPostDescriptor = loadChanThreadView.execute(threadDescriptor)?.lastViewedPDForScroll
+      val lastViewedPostForScrollRestoration = loadChanThreadView.execute(threadDescriptor)
+        ?.lastViewedPDForScroll
+        ?.let { postDescriptor -> LastViewedPostForScrollRestoration(postDescriptor = postDescriptor, blink = false) }
+
       resetPosition(threadDescriptor)
-      threadScreenState.lastViewedPostForScrollRestoration.value = lastViewedPostDescriptor
+      threadScreenState.lastViewedPostForScrollRestoration.value = lastViewedPostForScrollRestoration
     }
 
     if (loadOptions.deleteCached && threadDescriptor != null) {
@@ -352,12 +356,17 @@ class ThreadScreenViewModel(
     val postViewMode = PostViewMode.List
 
     val startParsePost = if (loadOptions.scrollToPost != null) {
+      val lastViewedPostForScrollRestoration = LastViewedPostForScrollRestoration(
+        postDescriptor = loadOptions.scrollToPost,
+        blink = true
+      )
+
       // Set the lastViewedPostForScrollRestoration to scrollToPost so that we can actually start from
       // there
-      threadScreenState.lastViewedPostForScrollRestoration.value = loadOptions.scrollToPost
+      threadScreenState.lastViewedPostForScrollRestoration.value = lastViewedPostForScrollRestoration
       loadOptions.scrollToPost
     } else {
-      threadScreenState.lastViewedPostForScrollRestoration.value
+      threadScreenState.lastViewedPostForScrollRestoration.value?.postDescriptor
     }
 
     if (cachedThreadPostsState != null && cachedThreadPostsState.chanDescriptor == chanDescriptor) {

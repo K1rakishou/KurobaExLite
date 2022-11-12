@@ -197,6 +197,10 @@ internal fun PostListContent(
           )
 
           processPostListScrollEventFunc()
+
+          if (lastRememberedPosition.blinkPostDescriptor != null) {
+            postBlinkAnimationState.startBlinking(lastRememberedPosition.blinkPostDescriptor)
+          }
         }
       })
 
@@ -230,7 +234,7 @@ internal fun PostListContent(
 
           processPostListScrollEventFunc()
 
-          if (toolbarScrollEvent is PostScreenViewModel.ToolbarScrollEvent.ScrollToItem) {
+          if (toolbarScrollEvent is PostScreenViewModel.ToolbarScrollEvent.ScrollToItem && toolbarScrollEvent.blink) {
             postBlinkAnimationState.startBlinking(toolbarScrollEvent.postDescriptor)
           }
         }

@@ -599,7 +599,7 @@ private fun PopupPostsScreenContent(
           threadScreenViewModel.loadThread(postCellData.postDescriptor.threadDescriptor)
           globalUiInfoManager.updateCurrentPage(ThreadScreen.SCREEN_KEY)
         } else {
-          threadScreenViewModel.scrollToPost(postCellData.postDescriptor)
+          threadScreenViewModel.scrollToPost(postDescriptor = postCellData.postDescriptor, blink = true)
         }
 
         stopPresenting()

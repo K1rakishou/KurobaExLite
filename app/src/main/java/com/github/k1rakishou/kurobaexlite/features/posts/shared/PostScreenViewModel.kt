@@ -690,9 +690,9 @@ abstract class PostScreenViewModel(
     }
   }
 
-  fun scrollToPost(postDescriptor: PostDescriptor) {
+  fun scrollToPost(postDescriptor: PostDescriptor, blink: Boolean = false) {
     viewModelScope.launch {
-      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollToItem(postDescriptor))
+      _postListScrollEventFlow.emit(ToolbarScrollEvent.ScrollToItem(postDescriptor, blink))
     }
   }
 
@@ -809,11 +809,14 @@ abstract class PostScreenViewModel(
       }
 
       if (index >= 0) {
+        val blinkPostDescriptor = posts.getOrNull(index)?.postDescriptor
+
         globalUiInfoManager.orientations.forEach { orientation ->
           val newLastRememberedPosition = LazyColumnRememberedPositionEvent(
             orientation = orientation,
             index = index,
-            offset = 0
+            offset = 0,
+            blinkPostDescriptor = blinkPostDescriptor
           )
 
           _scrollRestorationEventFlow.emit(newLastRememberedPosition)
@@ -835,15 +838,15 @@ abstract class PostScreenViewModel(
     }
 
     val posts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)?.data?.postsCopy
-    val lastViewedPostDescriptor = postScreenState.lastViewedPostForScrollRestoration.value
+    val lastViewedPostForScrollRestoration = postScreenState.lastViewedPostForScrollRestoration.value
 
-    if (posts != null && lastViewedPostDescriptor != null) {
+    if (posts != null && lastViewedPostForScrollRestoration != null) {
       val index = posts
-        .indexOfLast { postCellData -> postCellData.postDescriptor == lastViewedPostDescriptor }
+        .indexOfLast { postCellData -> postCellData.postDescriptor == lastViewedPostForScrollRestoration.postDescriptor }
 
       logcat(tag = TAG) {
         "restoreScrollPosition($chanDescriptor, $scrollToPost) " +
-          "lastViewedPostDescriptor: ${lastViewedPostDescriptor}, " +
+          "lastViewedPostForScrollRestoration: ${lastViewedPostForScrollRestoration}, " +
           "postsCount: ${posts.size}, index: $index"
       }
 
@@ -852,7 +855,9 @@ abstract class PostScreenViewModel(
           val newLastRememberedPosition = LazyColumnRememberedPositionEvent(
             orientation = orientation,
             index = index,
-            offset = 0
+            offset = 0,
+            blinkPostDescriptor = lastViewedPostForScrollRestoration.postDescriptor
+              .takeIf { lastViewedPostForScrollRestoration.blink }
           )
 
           _scrollRestorationEventFlow.emit(newLastRememberedPosition)
@@ -883,7 +888,11 @@ abstract class PostScreenViewModel(
   sealed class ToolbarScrollEvent {
     object ScrollTop : ToolbarScrollEvent()
     object ScrollBottom : ToolbarScrollEvent()
-    data class ScrollToItem(val postDescriptor: PostDescriptor) : ToolbarScrollEvent()
+
+    data class ScrollToItem(
+      val postDescriptor: PostDescriptor,
+      val blink: Boolean
+    ) : ToolbarScrollEvent()
   }
 
   companion object {
