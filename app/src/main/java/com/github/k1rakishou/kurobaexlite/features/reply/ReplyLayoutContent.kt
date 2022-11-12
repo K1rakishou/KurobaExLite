@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -63,12 +64,14 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastSumBy
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurable
 import com.github.k1rakishou.kurobaexlite.helpers.util.freeFocusSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -78,6 +81,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -88,6 +92,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaLabelText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.verticalScrollbar
+import java.util.regex.Pattern
+
+private val InlineQuoteRegex by lazy { Pattern.compile("^(>.*)", Pattern.MULTILINE) }
+private val QuoteRegex by lazy { Pattern.compile("(>>\\d+)") }
 
 @Composable
 fun ReplyLayoutContent(
@@ -136,7 +144,6 @@ fun ReplyLayoutContent(
     ) {
       ReplyInputLeftPart(
         replyLayoutState = replyLayoutState,
-        onSendReplyClicked = onSendReplyClicked,
         onAttachedMediaClicked = onAttachedMediaClicked,
         onRemoveAttachedMediaClicked = onRemoveAttachedMediaClicked,
         onFlagSelectorClicked = onFlagSelectorClicked
@@ -164,7 +171,6 @@ fun ReplyLayoutContent(
 @Composable
 private fun ReplyInputLeftPart(
   replyLayoutState: ReplyLayoutState,
-  onSendReplyClicked: () -> Unit,
   onAttachedMediaClicked: (AttachedMedia) -> Unit,
   onRemoveAttachedMediaClicked: (AttachedMedia) -> Unit,
   onFlagSelectorClicked: (ChanDescriptor) -> Unit
@@ -550,21 +556,16 @@ private fun ColumnScope.ReplyTextField(
   val replyLayoutVisibility by replyLayoutState.replyLayoutVisibilityState
   val maxCommentLength by replyLayoutState.maxCommentLength
 
-  val replyInputVisualTransformation = remember(key1 = chanTheme, key2 = replyLayoutEnabled) {
+  val disabledAlpha = ContentAlpha.disabled
+
+  val replyInputVisualTransformation = remember(key1 = chanTheme, key2 = replyLayoutEnabled, key3 = disabledAlpha) {
     VisualTransformation { text ->
-      val spannedText = buildAnnotatedString {
-        append(text)
-
-        if (text.text.isNotEmpty()) {
-          val textColor = if (replyLayoutEnabled) chanTheme.textColorPrimary else chanTheme.textColorHint
-
-          addStyle(
-            style = SpanStyle(color = textColor),
-            start = 0,
-            end = text.length
-          )
-        }
-      }
+      val spannedText = colorizeReplyInputText(
+        disabledAlpha = disabledAlpha,
+        text = text,
+        replyLayoutEnabled = replyLayoutEnabled,
+        chanTheme = chanTheme
+      )
 
       return@VisualTransformation TransformedText(spannedText, OffsetMapping.Identity)
     }
@@ -669,6 +670,76 @@ private fun ColumnScope.ReplyTextField(
     },
     onValueChange = { newTextFieldValue -> replyLayoutState.onReplyTextChanged(newTextFieldValue) }
   )
+}
+
+private fun colorizeReplyInputText(
+  disabledAlpha: Float,
+  text: AnnotatedString,
+  replyLayoutEnabled: Boolean,
+  chanTheme: ChanTheme
+): AnnotatedString {
+  return buildAnnotatedString {
+    append(text)
+
+    val textAlpha = if (replyLayoutEnabled) 1f else disabledAlpha
+
+    val textColor = chanTheme.textColorPrimary.copy(alpha = textAlpha)
+    val postInlineQuoteColor = chanTheme.postInlineQuoteColor.copy(alpha = textAlpha)
+    val quoteColor = chanTheme.postQuoteColor.copy(alpha = textAlpha)
+    val postLinkColor = chanTheme.postLinkColor.copy(alpha = textAlpha)
+
+    addStyle(
+      style = SpanStyle(color = textColor),
+      start = 0,
+      end = text.length
+    )
+
+    val inlineQuoteMatcher = InlineQuoteRegex.matcher(text)
+    while (inlineQuoteMatcher.find()) {
+      val start = inlineQuoteMatcher.start(1)
+      val end = inlineQuoteMatcher.end(1)
+
+      if (start >= end) {
+        continue
+      }
+
+      addStyle(
+        style = SpanStyle(color = postInlineQuoteColor),
+        start = start,
+        end = end
+      )
+    }
+
+    val quoteMatcher = QuoteRegex.matcher(text)
+    while (quoteMatcher.find()) {
+      val start = quoteMatcher.start(1)
+      val end = quoteMatcher.end(1)
+
+      if (start >= end) {
+        continue
+      }
+
+      addStyle(
+        style = SpanStyle(
+          color = quoteColor,
+          textDecoration = TextDecoration.Underline
+        ),
+        start = start,
+        end = end
+      )
+    }
+
+    AbstractSitePostParser.LINK_EXTRACTOR.extractLinks(text).forEach { linkSpan ->
+      addStyle(
+        style = SpanStyle(
+          color = postLinkColor,
+          textDecoration = TextDecoration.Underline
+        ),
+        start = linkSpan.beginIndex,
+        end = linkSpan.endIndex
+      )
+    }
+  }
 }
 
 @Composable

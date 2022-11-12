@@ -3,15 +3,11 @@ package com.github.k1rakishou.kurobaexlite.helpers.parser
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import java.util.EnumSet
 import org.nibor.autolink.LinkExtractor
 import org.nibor.autolink.LinkType
+import java.util.*
 
 abstract class AbstractSitePostParser {
-  protected val LINK_EXTRACTOR = LinkExtractor.builder()
-    .linkTypes(EnumSet.of(LinkType.URL))
-    .build()
-
   abstract fun parseHtmlNode(
     htmlTag: HtmlTag,
     childTextParts: MutableList<TextPartMut>,
@@ -41,6 +37,12 @@ abstract class AbstractSitePostParser {
       text = totalText.toString(),
       spans = totalSpans
     )
+  }
+
+  companion object {
+    val LINK_EXTRACTOR = LinkExtractor.builder()
+      .linkTypes(EnumSet.of(LinkType.URL))
+      .build()
   }
 
 }
