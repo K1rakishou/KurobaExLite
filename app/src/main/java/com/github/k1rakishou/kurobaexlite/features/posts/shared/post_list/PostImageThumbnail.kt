@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,7 +25,9 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
@@ -32,6 +35,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import kotlinx.coroutines.flow.takeWhile
 
 @Composable
 fun PostImageThumbnail(
@@ -46,8 +50,25 @@ fun PostImageThumbnail(
 ) {
   val context = LocalContext.current
 
+  val revealedSpoilerImages = koinRemember<RevealedSpoilerImages>()
+
   var loadErrorMut by remember { mutableStateOf<Throwable?>(null) }
   val loadError = loadErrorMut
+
+  var revealSpoiler by remember { mutableStateOf(revealedSpoilerImages.isSpoilerImageRevealed(postImage.fullImageAsUrl)) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      revealedSpoilerImages.spoilerImageRevealedEvents
+        .takeWhile { !revealSpoiler }
+        .collect { imageFullUrl ->
+          if (imageFullUrl == postImage.fullImageAsUrl) {
+            revealSpoiler = true
+          }
+        }
+    }
+  )
 
   BoxWithConstraints(
     modifier = Modifier
@@ -83,10 +104,21 @@ fun PostImageThumbnail(
       }
     }
 
+    val thumbnailUrl = remember(key1 = revealSpoiler) {
+      if (!revealSpoiler && postImage.thumbnailSpoiler != null) {
+        val spoilerUrl = postImage.thumbnailSpoiler!!.spoilerThumbnailUrl(postImage.ownerPostDescriptor.catalogDescriptor)
+        if (spoilerUrl != null) {
+          return@remember spoilerUrl
+        }
+      }
+
+      return@remember postImage.thumbnailAsUrl
+    }
+
     SubcomposeAsyncImage(
       modifier = modifier,
       model = ImageRequest.Builder(context)
-        .data(postImage.thumbnailAsUrl)
+        .data(thumbnailUrl)
         .crossfade(true)
         .size(Size.ORIGINAL)
         .build(),

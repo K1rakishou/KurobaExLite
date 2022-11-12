@@ -30,6 +30,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
+import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
@@ -41,7 +42,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
@@ -56,6 +56,7 @@ import okhttp3.HttpUrl
 import okhttp3.Request
 import okhttp3.internal.closeQuietly
 import okio.sink
+import java.io.File
 
 
 class MediaViewerScreenViewModel(
@@ -70,7 +71,8 @@ class MediaViewerScreenViewModel(
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub,
   private val imageLoader: ImageLoader,
   private val mediaSaver: MediaSaver,
-  private val postReplyChainManager: PostReplyChainManager
+  private val postReplyChainManager: PostReplyChainManager,
+  private val revealedSpoilerImages: RevealedSpoilerImages,
 ) : BaseViewModel() {
 
   val mpvInitialized: Boolean
@@ -235,16 +237,19 @@ class MediaViewerScreenViewModel(
         }
       }
 
-      if (loadImageResult.isSuccess) {
-        val resultFile = loadImageResult.getOrThrow()
-        logcat(TAG, LogPriority.VERBOSE) { "loadFullImageAndGetFile() Successfully loaded \'$fullImageUrl\'" }
-        send(ImageLoadState.Ready(postImageData, resultFile))
-      } else {
+      if (!loadImageResult.isSuccess) {
         val error = loadImageResult.exceptionOrNull()!!
         logcatError(TAG) { "loadFullImageAndGetFile() Failed to load \'$fullImageUrl\', error=${error.asLog()}" }
 
         send(ImageLoadState.Error(postImageData, error))
+        return@channelFlow
       }
+
+      val resultFile = loadImageResult.getOrThrow()
+      logcat(TAG, LogPriority.VERBOSE) { "loadFullImageAndGetFile() Successfully loaded \'$fullImageUrl\'" }
+      send(ImageLoadState.Ready(postImageData, resultFile))
+
+      revealedSpoilerImages.onFullImageOpened(postImageData)
     }
   }
 

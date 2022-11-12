@@ -92,6 +92,7 @@ import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.ReportManager
+import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
@@ -321,6 +322,10 @@ object DependencyGraph {
         moshi = get(),
       )
     }
+
+    single {
+      RevealedSpoilerImages()
+    }
   }
 
   private fun Module.viewModels() {
@@ -399,7 +404,8 @@ object DependencyGraph {
         installMpvNativeLibrariesFromGithub = get(),
         imageLoader = get(),
         mediaSaver = get(),
-        postReplyChainManager = get()
+        postReplyChainManager = get(),
+        revealedSpoilerImages = get()
       )
     }
 

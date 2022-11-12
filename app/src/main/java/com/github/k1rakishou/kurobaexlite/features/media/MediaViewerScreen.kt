@@ -131,9 +131,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScr
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberKurobaBottomSheetState
-import java.io.IOException
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.absoluteValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -146,6 +143,9 @@ import logcat.LogPriority
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
+import java.io.IOException
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.absoluteValue
 
 class MediaViewerScreen(
   screenArgs: Bundle? = null,
@@ -1258,7 +1258,7 @@ private fun MediaViewerPagerContainer(
   val currentPageIndexForInitialScroll = currentPageIndexForInitialScrollMut
   val mediaList = mediaListMut
 
-  if (currentPageIndexForInitialScroll == null || mediaList.isEmpty()) {
+  if (currentPageIndexForInitialScroll == null) {
     return
   }
 

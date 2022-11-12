@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.ui.post
 
 import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.ThumbnailSpoiler
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -16,6 +17,7 @@ data class PostCellImageData(
   override val width: Int,
   override val height: Int,
   override val fileSize: Int,
+  override val thumbnailSpoiler: ThumbnailSpoiler?,
   override val ownerPostDescriptor: PostDescriptor
 ) : IPostImage {
 
@@ -38,6 +40,7 @@ data class PostCellImageData(
         width = postImageData.width,
         height = postImageData.height,
         fileSize = postImageData.fileSize,
+        thumbnailSpoiler = postImageData.thumbnailSpoiler,
         ownerPostDescriptor = postImageData.ownerPostDescriptor,
       )
     }

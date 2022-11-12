@@ -15,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
+import com.github.k1rakishou.kurobaexlite.model.data.ThumbnailSpoiler
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
@@ -612,6 +613,7 @@ class Chan4DataSource(
       width = sharedDataJson.w!!,
       height = sharedDataJson.h!!,
       fileSize = sharedDataJson.fsize!!,
+      thumbnailSpoiler = sharedDataJson.spoiler?.let { spoilerId -> ThumbnailSpoiler.Chan4(spoilerId) },
       ownerPostDescriptor = postDescriptor
     )
 

@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 
 import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.ThumbnailSpoiler
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import okhttp3.HttpUrl
 
@@ -15,6 +16,7 @@ data class PostImageData(
   override val width: Int,
   override val height: Int,
   override val fileSize: Int,
+  override val thumbnailSpoiler: ThumbnailSpoiler?,
   override val ownerPostDescriptor: PostDescriptor
 ) : IPostImage {
   override val thumbnailAsUrl: HttpUrl = thumbnailUrl

@@ -3,9 +3,11 @@ package com.github.k1rakishou.kurobaexlite.model.data
 import android.webkit.MimeTypeMap
 import androidx.compose.runtime.Immutable
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import java.util.Locale
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
+import java.util.*
 
 @Immutable
 interface IPostImage {
@@ -15,6 +17,8 @@ interface IPostImage {
   val width: Int
   val height: Int
   val fileSize: Int
+  val thumbnailSpoiler: ThumbnailSpoiler?
+
   val ownerPostDescriptor: PostDescriptor
 
   val thumbnailAsUrl: HttpUrl
@@ -22,6 +26,18 @@ interface IPostImage {
 
   val thumbnailAsString: String
   val fullImageAsString: String
+}
+
+@Immutable
+sealed interface ThumbnailSpoiler {
+  fun spoilerThumbnailUrl(chanDescriptor: ChanDescriptor): HttpUrl?
+
+  data class Chan4(val spoilerId: Int) : ThumbnailSpoiler {
+    override fun spoilerThumbnailUrl(chanDescriptor: ChanDescriptor): HttpUrl {
+      return "https://s.4cdn.org/image/spoiler-${chanDescriptor.boardCode}${spoilerId}.png".toHttpUrl()
+    }
+  }
+
 }
 
 fun IPostImage.originalFileNameForPostCell(maxLength: Int = 80): String {

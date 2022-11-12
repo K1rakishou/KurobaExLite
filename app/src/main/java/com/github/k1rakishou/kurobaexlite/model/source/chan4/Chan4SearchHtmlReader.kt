@@ -13,13 +13,13 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.PostImageData
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import java.io.InputStream
-import java.nio.charset.StandardCharsets
-import java.util.regex.Pattern
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.TextNode
+import java.io.InputStream
+import java.nio.charset.StandardCharsets
+import java.util.regex.Pattern
 
 class Chan4SearchHtmlReader(
   val catalogDescriptor: CatalogDescriptor,
@@ -196,6 +196,7 @@ class Chan4SearchHtmlReader(
       width = width,
       height = height,
       fileSize = actualFileSize,
+      thumbnailSpoiler = null,
       ownerPostDescriptor = postDescriptor
     )
   }

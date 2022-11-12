@@ -24,6 +24,7 @@ abstract class SharedDataJson {
   abstract val w: Int?
   abstract val h: Int?
   abstract val fsize: Int?
+  abstract val spoiler: Int?
 
   abstract val sticky: Int?
   abstract val stickyCap: Int?
@@ -104,7 +105,8 @@ data class ThreadPostDataJson(
   override val tim: Long?,
   override val w: Int?,
   override val h: Int?,
-  override val fsize: Int?
+  override val fsize: Int?,
+  override val spoiler: Int?
 ) : SharedDataJson()
 
 @JsonClass(generateAdapter = true)
@@ -139,7 +141,8 @@ data class CatalogThreadDataJson(
   override val tim: Long?,
   override val w: Int?,
   override val h: Int?,
-  override val fsize: Int?
+  override val fsize: Int?,
+  override val spoiler: Int?
 ) : SharedDataJson()
 
 @JsonClass(generateAdapter = true)
