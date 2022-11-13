@@ -2,6 +2,9 @@ package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import android.os.SystemClock
 import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
@@ -18,16 +21,20 @@ import androidx.compose.ui.util.fastAll
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
+import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.ui.helpers.gesture.awaitPointerSlopOrCancellationWithPass
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalComposeUiApi::class)
 suspend fun PointerInputScope.detectDrawerDragGestures(
   drawerLongtapGestureWidthZonePx: Float,
-  drawerPhoneVisibleWindowWidthPx: Float,
   drawerWidth: Float,
+  mainUiLayoutMode: MainUiLayoutMode,
   isDrawerOpened: () -> Boolean,
   onStopConsumingScrollEvents: () -> Unit,
   isGestureCurrentlyAllowed: () -> Boolean,
@@ -82,7 +89,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           if (downEvent.position.x > drawerWidth) {
             return@awaitPointerEventScope null
           }
-        } else {
+        } else if (mainUiLayoutMode != MainUiLayoutMode.Split) {
           onStopConsumingScrollEvents()
 
           if (downEvent.position.x > drawerLongtapGestureWidthZonePx) {
@@ -94,6 +101,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           }
 
           val longPress = kurobaAwaitLongPressOrCancellation(
+            timeout = viewConfiguration.longPressTimeoutMillis / 2,
             initialDown = downEvent,
             isActive = { isActive }
           )
@@ -154,13 +162,32 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   }
 }
 
+@Composable
+fun rememberDrawerDragGestureDetectorState(): DrawerDragGestureDetectorState {
+  return remember { DrawerDragGestureDetectorState() }
+}
+
+@Stable
+class DrawerDragGestureDetectorState {
+
+  private val _consumeAllScrollEventsState = MutableStateFlow<Boolean>(false)
+  val consumeAllScrollEventsState: StateFlow<Boolean>
+    get() = _consumeAllScrollEventsState.asStateFlow()
+
+  fun consumeAllScrollEvents(stop: Boolean) {
+    _consumeAllScrollEventsState.tryEmit(stop)
+  }
+
+}
+
 private suspend fun AwaitPointerEventScope.kurobaAwaitLongPressOrCancellation(
+  timeout: Long? = null,
   initialDown: PointerInputChange,
   isActive: () -> Boolean
 ): PointerInputChange? {
   var longPress: PointerInputChange? = null
   var currentDown = initialDown
-  val longPressTimeout = viewConfiguration.longPressTimeoutMillis
+  val longPressTimeout = timeout ?: viewConfiguration.longPressTimeoutMillis
 
   try {
     // wait for first tap up or long press

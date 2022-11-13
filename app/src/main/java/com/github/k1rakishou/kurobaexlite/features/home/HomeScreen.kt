@@ -33,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenDrawerLayout
 import com.github.k1rakishou.kurobaexlite.features.drawer.HomeScreenMiniDrawerLayout
 import com.github.k1rakishou.kurobaexlite.features.drawer.detectDrawerDragGestures
+import com.github.k1rakishou.kurobaexlite.features.drawer.rememberDrawerDragGestureDetectorState
 import com.github.k1rakishou.kurobaexlite.features.firewall.BypassResult
 import com.github.k1rakishou.kurobaexlite.features.firewall.SiteFirewallBypassScreen
 import com.github.k1rakishou.kurobaexlite.features.home.pages.AbstractPage
@@ -78,6 +79,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolb
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDragGestureZone
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.rememberDrawerLongtapDragGestureZoneState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -542,8 +544,9 @@ private fun HomeScreenContentActual(
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   var drawerWidth by remember { mutableStateOf(0) }
-  var consumeAllScrollEvents by remember { mutableStateOf(false) }
-  var longtapDragGestureDetected by remember { mutableStateOf(false) }
+
+  val drawerDragGestureDetectorState = rememberDrawerDragGestureDetectorState()
+  val drawerLongtapDragGestureZoneState = rememberDrawerLongtapDragGestureZoneState()
 
   val currentPageMut = remember(key1 = currentPageIndex, key2 = pagesWrapper) {
     pagesWrapper.pageByIndex(currentPageIndex)
@@ -567,7 +570,7 @@ private fun HomeScreenContentActual(
     HomePagerNestedScrollConnection(
       currentPagerPage = { currentPageIndexUpdated },
       isGestureCurrentlyAllowed = { isDrawerDragGestureCurrentlyAllowed(currentPageUpdated, true) },
-      shouldConsumeAllScrollEvents = { consumeAllScrollEvents },
+      shouldConsumeAllScrollEvents = { drawerDragGestureDetectorState.consumeAllScrollEventsState.value },
       onDragging = { dragging, time, progress -> globalUiInfoManager.dragDrawer(dragging, time, progress) },
       onFling = { velocity -> globalUiInfoManager.flingDrawer(velocity) }
     )
@@ -591,13 +594,14 @@ private fun HomeScreenContentActual(
           drawerLongtapGestureWidthZonePx,
           drawerPhoneVisibleWindowWidth,
           drawerWidth,
+          mainUiLayoutMode,
           block = {
             detectDrawerDragGestures(
               drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
-              drawerPhoneVisibleWindowWidthPx = drawerPhoneVisibleWindowWidth.toFloat(),
               drawerWidth = drawerWidth.toFloat(),
+              mainUiLayoutMode = mainUiLayoutMode,
               isDrawerOpened = { globalUiInfoManager.isDrawerFullyOpened() },
-              onStopConsumingScrollEvents = { consumeAllScrollEvents = false },
+              onStopConsumingScrollEvents = { drawerDragGestureDetectorState.consumeAllScrollEvents(false) },
               isGestureCurrentlyAllowed = {
                 isDrawerDragGestureCurrentlyAllowed(
                   currentPageUpdated,
@@ -606,7 +610,7 @@ private fun HomeScreenContentActual(
               },
               onLongtapDragGestureDetected = {
                 view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                longtapDragGestureDetected = true
+                drawerLongtapDragGestureZoneState.onGestureStateChanged(true)
               },
               onDraggingDrawer = { dragging, time, progress ->
                 globalUiInfoManager.dragDrawer(dragging, time, progress)
@@ -617,8 +621,7 @@ private fun HomeScreenContentActual(
         .nestedScroll(nestedScrollConnection)
         .drawDragLongtapDragGestureZone(
           drawerLongtapGestureWidthZonePx = drawerLongtapGestureWidthZonePx,
-          longtapDragGestureDetected = longtapDragGestureDetected,
-          resetFlag = { longtapDragGestureDetected = false }
+          drawerLongtapDragGestureZoneState = drawerLongtapDragGestureZoneState
         )
     ) {
       HorizontalPager(
