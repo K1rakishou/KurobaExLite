@@ -40,6 +40,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.freeFocusSafe
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -217,37 +218,43 @@ class PostsScreenLocalSearchToolbar(
             "${current} / ${foundEntries.size}"
           }
 
-          KurobaComposeText(
+          KurobaComposeCard(
             modifier = Modifier
-              .wrapContentSize()
-              .padding(horizontal = 12.dp)
               .kurobaClickable(
                 enabled = foundEntries.isNotEmpty(),
-                bounded = false,
                 onClick = {
                   if (foundEntries.isNotEmpty()) {
                     localSoftwareKeyboardController?.hide()
                     showFoundPostsInPopup(foundEntries)
                   }
                 }
-              ),
-            text = totalFoundText,
-          )
+              )
+          ) {
+            KurobaComposeText(
+              modifier = Modifier
+                .wrapContentSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+              text = totalFoundText,
+            )
+          }
         }
 
         if (screenKey == CatalogScreen.SCREEN_KEY) {
           Spacer(modifier = Modifier.width(8.dp))
 
-          KurobaComposeText(
+          KurobaComposeCard(
             modifier = Modifier
-              .wrapContentSize()
-              .padding(horizontal = 12.dp)
               .kurobaClickable(
-                bounded = false,
                 onClick = { onGlobalSearchIconClicked(searchQuery.text) }
-              ),
-            text = stringResource(id = R.string.posts_screen_search_toolbar_global_search),
-          )
+              )
+          ) {
+            KurobaComposeText(
+              modifier = Modifier
+                .wrapContentSize()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+              text = stringResource(id = R.string.posts_screen_search_toolbar_global_search),
+            )
+          }
         }
       }
     }
