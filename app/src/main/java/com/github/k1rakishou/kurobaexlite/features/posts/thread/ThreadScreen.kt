@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
@@ -421,10 +422,12 @@ private fun BoxScope.ThreadPostListScreen(
   val context = LocalContext.current
   val orientation = LocalConfiguration.current.orientation
   val mainUiLayoutMode = LocalMainUiLayoutMode.current
+  val view = LocalView.current
 
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
   var replyLayoutContainerHeight by remember { mutableStateOf(0.dp) }
+  val viewProvider by rememberUpdatedState(newValue = { view })
 
   val kurobaSnackbarState = rememberKurobaSnackbarState()
   val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
@@ -471,6 +474,7 @@ private fun BoxScope.ThreadPostListScreen(
       postLongtapContentMenuProvider().showMenu(
         postListOptions = postListOptions,
         postCellData = postCellData,
+        viewProvider = viewProvider,
         reparsePostsFunc = { postDescriptors ->
           val threadDescriptor = threadScreenViewModel.threadDescriptor
           if (threadDescriptor == null) {

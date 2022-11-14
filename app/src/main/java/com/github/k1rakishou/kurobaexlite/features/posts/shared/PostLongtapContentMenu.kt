@@ -1,5 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared
 
+import android.view.HapticFeedbackConstants
+import android.view.View
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
@@ -33,6 +35,7 @@ class PostLongtapContentMenu(
   fun showMenu(
     postListOptions: PostListOptions,
     postCellData: PostCellData,
+    viewProvider: () -> View,
     reparsePostsFunc: (Collection<PostDescriptor>) -> Unit
   ) {
     screenCoroutineScope.launch {
@@ -69,6 +72,8 @@ class PostLongtapContentMenu(
       if (floatingMenuItems.isEmpty()) {
         return@launch
       }
+
+      viewProvider().performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
 
       val selectedMenuItem = suspendCancellableCoroutine<FloatingMenuItem?> { cancellableContinuation ->
         var selectedMenuItem: FloatingMenuItem? = null

@@ -19,6 +19,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
@@ -511,6 +512,7 @@ private fun BoxScope.CatalogPostListScreen(
   val windowInsets = LocalWindowInsets.current
   val orientation = LocalConfiguration.current.orientation
   val mainUiLayoutMode = LocalMainUiLayoutMode.current
+  val view = LocalView.current
 
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
   val fabSize = dimensionResource(id = R.dimen.fab_size)
@@ -522,6 +524,7 @@ private fun BoxScope.CatalogPostListScreen(
   val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
   val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
   val catalogPostViewMode by globalUiInfoManager.catalogPostViewMode.collectAsState()
+  val viewProvider by rememberUpdatedState(newValue = { view })
 
   val postListOptions by remember(
     windowInsets,
@@ -575,6 +578,7 @@ private fun BoxScope.CatalogPostListScreen(
       postLongtapContentMenuProvider().showMenu(
         postListOptions = postListOptions,
         postCellData = postCellData,
+        viewProvider = viewProvider,
         reparsePostsFunc = { postDescriptors ->
           val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
           if (catalogDescriptor == null) {
