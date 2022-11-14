@@ -89,8 +89,12 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           if (downEvent.position.x > drawerWidth) {
             return@awaitPointerEventScope null
           }
-        } else if (mainUiLayoutMode != MainUiLayoutMode.Split) {
+        } else {
           onStopConsumingScrollEvents()
+
+          if (mainUiLayoutMode == MainUiLayoutMode.Split) {
+            return@awaitPointerEventScope null
+          }
 
           if (downEvent.position.x > drawerLongtapGestureWidthZonePx) {
             return@awaitPointerEventScope null
