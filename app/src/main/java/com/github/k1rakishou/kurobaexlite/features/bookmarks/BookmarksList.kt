@@ -801,7 +801,7 @@ private fun convertBookmarkStateToText(
         append(AppConstants.TEXT_SEPARATOR)
       }
 
-      withStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor)) { append("[Not watching]") }
+      withStyle(SpanStyle(color = chanTheme.bookmarkCounterNormalColor)) { append("[NW]") }
     }
 
     if (isDeleted) {
