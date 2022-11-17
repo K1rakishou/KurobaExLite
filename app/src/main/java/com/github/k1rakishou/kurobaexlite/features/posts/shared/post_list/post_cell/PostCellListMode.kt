@@ -62,7 +62,6 @@ import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
-import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -303,7 +302,7 @@ private fun PostCellTitle(
   ) {
     if (postCellData.images.isNotNullNorEmpty()) {
       PostCellThumbnail(
-        images = postCellData.images,
+        postCellData = postCellData,
         onPostImageClicked = onPostImageClicked,
         chanDescriptor = chanDescriptor
       )
@@ -349,14 +348,13 @@ private fun RowScope.PostCellSubject(
 
         delay(delay)
 
-        val newPostSubject =
-          suspendCancellableCoroutine<AnnotatedString?> { cancellableContinuation ->
-            reparsePostSubject(postCellData) { parsedPostSubject ->
-              cancellableContinuation.resumeSafe(
-                parsedPostSubject
-              )
-            }
+        val newPostSubject = suspendCancellableCoroutine<AnnotatedString?> { cancellableContinuation ->
+          reparsePostSubject(postCellData) { parsedPostSubject ->
+            cancellableContinuation.resumeSafe(
+              parsedPostSubject
+            )
           }
+        }
 
         if (newPostSubject == null) {
           return@LaunchedEffect
@@ -379,11 +377,11 @@ private fun RowScope.PostCellSubject(
 
 @Composable
 private fun PostCellThumbnail(
-  images: List<PostCellImageData>,
+  postCellData: PostCellData,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
-  val postImage = images.first()
+  val postImage = postCellData.images!!.first()
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
 
   Box(

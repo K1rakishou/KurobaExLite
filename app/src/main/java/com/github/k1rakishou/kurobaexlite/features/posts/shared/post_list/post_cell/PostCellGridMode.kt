@@ -46,7 +46,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
-import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -323,7 +322,7 @@ private fun PostCellTitle(
 
   if (postCellData.images.isNotNullNorEmpty()) {
     PostCellThumbnail(
-      images = postCellData.images,
+      postCellData = postCellData,
       onPostImageClicked = onPostImageClicked,
       chanDescriptor = chanDescriptor
     )
@@ -357,11 +356,11 @@ private fun PostCellTitle(
 
 @Composable
 private fun PostCellThumbnail(
-  images: List<PostCellImageData>,
+  postCellData: PostCellData,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
-  val postImage = images.first()
+  val postImage = postCellData.images!!.first()
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
 
   Box(

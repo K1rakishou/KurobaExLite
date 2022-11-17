@@ -138,14 +138,17 @@ fun HomeScreenToolbarContainer(
     }
   )
 
+  val passClicks by remember { derivedStateOf { toolbarContainerAlpha < 0.99f } }
+  val consumeClicks by remember { derivedStateOf { toolbarContainerAlpha > 0.99f } }
+
   Column(
     modifier = Modifier
       .fillMaxWidth()
       .height(toolbarTotalHeight)
       .graphicsLayer { alpha = toolbarContainerAlpha }
       .drawBehind { drawRect(chanTheme.backColor) }
-      .passClicksThrough(passClicks = toolbarContainerAlpha < 0.99f)
-      .consumeClicks(enabled = toolbarContainerAlpha > 0.99f)
+      .passClicksThrough(passClicks = passClicks)
+      .consumeClicks(enabled = consumeClicks)
   ) {
     Spacer(modifier = Modifier.height(insets.top))
 
@@ -239,6 +242,8 @@ private fun BuildChildToolbar(
   toolbarContent: @Composable () -> Unit
 ) {
   key(screenKey) {
+    val consumeClicks by remember { derivedStateOf { transitionIsProgress && toolbarContainerAlpha > 0.99f } }
+
     Box(
       modifier = Modifier
         .zIndex(zOrder.toFloat())
@@ -246,7 +251,7 @@ private fun BuildChildToolbar(
           alpha = targetToolbarAlpha
           translationY = targetToolbarTranslation
         }
-        .consumeClicks(enabled = transitionIsProgress && toolbarContainerAlpha > 0.99f)
+        .consumeClicks(enabled = consumeClicks)
     ) {
       toolbarContent()
     }

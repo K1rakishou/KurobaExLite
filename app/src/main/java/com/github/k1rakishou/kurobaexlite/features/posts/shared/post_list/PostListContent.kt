@@ -719,6 +719,15 @@ private fun PostsListMode(
                 )
               }
 
+              val reparsePostSubjectRemembered = remember(key1 = postCellData) {
+                { postCellData: PostCellData, onPostSubjectParsed: (AnnotatedString?) -> Unit ->
+                  postsScreenViewModel.reparsePostSubject(
+                    postCellData = postCellData,
+                    onPostSubjectParsed = onPostSubjectParsed
+                  )
+                }
+              }
+
               PostCellContainer(
                 cellsPadding = cellsPadding,
                 isCatalogMode = isCatalogMode,
@@ -745,12 +754,7 @@ private fun PostsListMode(
                 onPostRepliesClicked = onPostRepliesClicked,
                 onPostImageClicked = onPostImageClicked,
                 onGoToPostClicked = onGoToPostClicked,
-                reparsePostSubject = { postCellData, onPostSubjectParsed ->
-                  postsScreenViewModel.reparsePostSubject(
-                    postCellData = postCellData,
-                    onPostSubjectParsed = onPostSubjectParsed
-                  )
-                }
+                reparsePostSubject = reparsePostSubjectRemembered
               )
 
               SideEffect { rememberedHashForUpdateAnimation = postCellData.postServerDataHashForListAnimations }

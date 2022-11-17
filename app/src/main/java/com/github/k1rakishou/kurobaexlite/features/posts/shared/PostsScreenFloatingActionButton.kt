@@ -94,12 +94,13 @@ fun BoxScope.PostsScreenFloatingActionButton(
 
   val horizOffset = dimensionResource(id = R.dimen.post_list_fab_end_offset)
   val vertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
+  val passClicks by remember { derivedStateOf { toolbarAlpha < 0.99f } }
 
   KurobaFloatingActionButton(
     modifier = Modifier
       .align(Alignment.BottomEnd)
       .graphicsLayer { this.alpha = toolbarAlpha }
-      .passClicksThrough(passClicks = toolbarAlpha < 0.99f),
+      .passClicksThrough(passClicks = passClicks),
     iconDrawableId = R.drawable.ic_baseline_create_24,
     horizOffset = -(horizOffset),
     vertOffset = -(insets.bottom + vertOffset),
