@@ -105,6 +105,8 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.util.detectTapGesturesWithFilter
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawIndicatorLine
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.delay
 import java.util.*
 
@@ -310,8 +312,8 @@ fun KurobaComposeText(
 
 @Composable
 fun KurobaComposeClickableText(
-  text: AnnotatedString,
   modifier: Modifier = Modifier,
+  text: AnnotatedString,
   color: Color? = null,
   fontSize: TextUnit = TextUnit.Unspecified,
   fontWeight: FontWeight? = null,
@@ -321,8 +323,8 @@ fun KurobaComposeClickableText(
   enabled: Boolean = true,
   isTextClickable: Boolean = true,
   textAlign: TextAlign? = null,
-  inlineContent: Map<String, InlineTextContent> = mapOf(),
-  annotationBgColors: Map<String, Color> = mapOf(),
+  inlineContent: ImmutableMap<String, InlineTextContent> = persistentMapOf(),
+  annotationBgColors: ImmutableMap<String, Color> = persistentMapOf(),
   detectClickedAnnotations: (Offset, TextLayoutResult?, AnnotatedString) -> AnnotatedString.Range<String>?,
   onTextAnnotationClicked: (AnnotatedString, Int) -> Unit,
   onTextAnnotationLongClicked: (AnnotatedString, Int) -> Unit,

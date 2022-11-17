@@ -18,6 +18,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.persistentMapOf
 
 internal suspend fun PointerInputScope.detectTouches(onCurrentlyTouching: (Boolean) -> Unit) {
   forEachGesture {
@@ -132,7 +134,7 @@ internal fun processClickedAnnotation(
   }
 }
 
-internal fun createClickableTextColorMap(chanTheme: ChanTheme): Map<String, Color> {
+internal fun createClickableTextColorMap(chanTheme: ChanTheme): ImmutableMap<String, Color> {
   val postLinkColor = run {
     val resultColor = if (ThemeEngine.isDarkColor(chanTheme.postLinkColor)) {
       ThemeEngine.manipulateColor(chanTheme.postLinkColor, 1.2f)
@@ -143,7 +145,7 @@ internal fun createClickableTextColorMap(chanTheme: ChanTheme): Map<String, Colo
     return@run resultColor.copy(alpha = .4f)
   }
 
-  return mapOf(
+  return persistentMapOf(
     PostCommentApplier.ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG to postLinkColor,
     PostCommentApplier.ANNOTATION_POST_LINKABLE to postLinkColor,
   )

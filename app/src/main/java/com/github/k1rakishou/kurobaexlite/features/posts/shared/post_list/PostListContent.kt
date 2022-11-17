@@ -1167,11 +1167,6 @@ private fun PostCellContainer(
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
-
-  val postCellCommentTextSizeSp = remember(postListOptions) { postListOptions.postCellCommentTextSizeSp }
-  val postCellSubjectTextSizeSp = remember(postListOptions) { postListOptions.postCellSubjectTextSizeSp }
-  val detectLinkableClicks = remember(postListOptions) { postListOptions.detectLinkableClicks }
-
   var isInSelectionMode by remember { mutableStateOf(false) }
 
   PostCellContainerAnimated(
@@ -1197,9 +1192,9 @@ private fun PostCellContainer(
         textSelectionEnabled = textSelectionEnabled,
         chanDescriptor = chanDescriptor,
         currentlyOpenedThread = currentlyOpenedThread,
-        detectLinkableClicks = detectLinkableClicks,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+        detectLinkableClicks = postListOptions.detectLinkableClicks,
+        postCellCommentTextSizeSp = postListOptions.postCellCommentTextSizeSp,
+        postCellSubjectTextSizeSp = postListOptions.postCellSubjectTextSizeSp,
         postCellData = postCellData,
         cellsPadding = cellsPadding,
         postBlinkAnimationState = postBlinkAnimationState,

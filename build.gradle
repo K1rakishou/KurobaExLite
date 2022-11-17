@@ -33,7 +33,7 @@ buildscript {
 subprojects {
     tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
         kotlinOptions {
-//            if (project.findProperty("kuroba_ex_lite.enableComposeCompilerReports") == "true") {
+            if (project.findProperty("kuroba_ex_lite.enableComposeCompilerReports") == "true") {
                 freeCompilerArgs += [
                         "-P",
                         "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=" +
@@ -44,7 +44,7 @@ subprojects {
                         "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=" +
                                 project.buildDir.absolutePath + "/compose_metrics"
                 ]
-//            }
+            }
         }
     }
 }
