@@ -80,6 +80,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyGridStateWrapp
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.detectListScrollEvents
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
+import kotlinx.coroutines.delay
 
 
 private const val postCellKeyPrefix = "post_cell"
@@ -346,6 +347,9 @@ internal fun PostListContent(
         if (!hasVisibleItems) {
           return@LaunchedEffect
         }
+
+        // Wait for a bit for the UI stuff to load fully
+        delay(100)
 
         processPostListScrollEventFunc()
       }

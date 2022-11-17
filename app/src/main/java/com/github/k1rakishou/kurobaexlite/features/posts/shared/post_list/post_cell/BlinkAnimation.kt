@@ -17,8 +17,10 @@ fun BlinkAnimation(
   postCellBlinkBgColor: Color,
   postDescriptor: PostDescriptor,
   postBlinkAnimationState: PostBlinkAnimationState,
-  postCellBackgroundColorAnimatable: Animatable<Color, AnimationVector4D>
+  postCellBackgroundColorAnimatableProvider: () -> Animatable<Color, AnimationVector4D>
 ) {
+  val postCellBackgroundColorAnimatable = postCellBackgroundColorAnimatableProvider()
+
   LaunchedEffect(
     key1 = Unit,
     block = {

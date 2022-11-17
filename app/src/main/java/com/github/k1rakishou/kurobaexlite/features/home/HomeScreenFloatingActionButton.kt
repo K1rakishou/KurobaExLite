@@ -118,7 +118,7 @@ fun BoxScope.HomeScreenFloatingActionButton(
     label = "fab transition"
   )
 
-  val toolbarAlpha by transition.animateFloat(
+  val toolbarAlphaState = transition.animateFloat(
     label = "fab alpha animation",
     transitionSpec = {
       if (targetState.isDraggingFastScroller || targetState.touchingTopOrBottomOfList) {
@@ -144,14 +144,14 @@ fun BoxScope.HomeScreenFloatingActionButton(
     }
   )
 
-  val passClicks by remember { derivedStateOf { toolbarAlpha < 0.99f } }
+  val passClicks by remember { derivedStateOf { toolbarAlphaState.value < 0.99f } }
   val horizOffset = dimensionResource(id = R.dimen.post_list_fab_end_offset)
   val vertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
 
   KurobaFloatingActionButton(
     modifier = Modifier
       .align(Alignment.BottomEnd)
-      .graphicsLayer { this.alpha = toolbarAlpha }
+      .graphicsLayer { this.alpha = toolbarAlphaState.value }
       .passClicksThrough(passClicks = passClicks),
     iconDrawableId = R.drawable.ic_baseline_create_24,
     horizOffset = -(horizOffset),

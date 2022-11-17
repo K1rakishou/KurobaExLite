@@ -557,8 +557,7 @@ class ThreadScreenViewModel(
         postListTouchingBottom = postListTouchingBottom
       )
 
-      threadScreenState.lastViewedPostForIndicator.value =
-        updatedChanThreadView?.lastViewedPDForIndicator
+      threadScreenState.lastViewedPostForIndicator.value = updatedChanThreadView?.lastViewedPDForIndicator
     }
   }
 

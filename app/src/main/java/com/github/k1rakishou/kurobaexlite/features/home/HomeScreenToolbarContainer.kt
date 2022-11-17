@@ -116,7 +116,7 @@ fun HomeScreenToolbarContainer(
     label = "toolbar transition"
   )
 
-  val toolbarContainerAlpha by transition.animateFloat(
+  val toolbarContainerAlphaState = transition.animateFloat(
     label = "toolbar container alpha animation",
     transitionSpec = {
       if (targetState.isDraggingFastScroller || targetState.touchingTopOrBottomOfList) {
@@ -138,14 +138,14 @@ fun HomeScreenToolbarContainer(
     }
   )
 
-  val passClicks by remember { derivedStateOf { toolbarContainerAlpha < 0.99f } }
-  val consumeClicks by remember { derivedStateOf { toolbarContainerAlpha > 0.99f } }
+  val passClicks by remember { derivedStateOf { toolbarContainerAlphaState.value < 0.99f } }
+  val consumeClicks by remember { derivedStateOf { toolbarContainerAlphaState.value > 0.99f } }
 
   Column(
     modifier = Modifier
       .fillMaxWidth()
       .height(toolbarTotalHeight)
-      .graphicsLayer { alpha = toolbarContainerAlpha }
+      .graphicsLayer { alpha = toolbarContainerAlphaState.value }
       .drawBehind { drawRect(chanTheme.backColor) }
       .passClicksThrough(passClicks = passClicks)
       .consumeClicks(enabled = consumeClicks)
@@ -177,6 +177,8 @@ fun HomeScreenToolbarContainer(
           movableContentOf { currentPage.Toolbar(this) }
         }
 
+        val childConsumeClicks by remember { derivedStateOf { transitionIsProgress && toolbarContainerAlphaState.value > 0.99f } }
+
         when (pageIndex) {
           currentPageIndex -> {
             val currentToolbarAlpha = lerpFloat(1f, 0f, Math.abs(animationProgress))
@@ -189,10 +191,9 @@ fun HomeScreenToolbarContainer(
             BuildChildToolbar(
               screenKey = currentScreen.screenKey,
               zOrder = zOrder,
-              toolbarContainerAlpha = toolbarContainerAlpha,
+              consumeClicks = childConsumeClicks,
               targetToolbarAlpha = currentToolbarAlpha,
               targetToolbarTranslation = currentToolbarTranslation,
-              transitionIsProgress = transitionIsProgress,
               toolbarContent = { screenToolbarMovable() }
             )
           }
@@ -207,10 +208,9 @@ fun HomeScreenToolbarContainer(
             BuildChildToolbar(
               screenKey = currentScreen.screenKey,
               zOrder = zOrder,
-              toolbarContainerAlpha = toolbarContainerAlpha,
+              consumeClicks = childConsumeClicks,
               targetToolbarAlpha = targetToolbarAlpha,
               targetToolbarTranslation = targetToolbarTranslation,
-              transitionIsProgress = transitionIsProgress,
               toolbarContent = { screenToolbarMovable() }
             )
           }
@@ -218,10 +218,9 @@ fun HomeScreenToolbarContainer(
             BuildChildToolbar(
               screenKey = currentScreen.screenKey,
               zOrder = zOrder,
-              toolbarContainerAlpha = toolbarContainerAlpha,
+              consumeClicks = childConsumeClicks,
               targetToolbarAlpha = 0f,
               targetToolbarTranslation = 0f,
-              transitionIsProgress = transitionIsProgress,
               toolbarContent = { screenToolbarMovable() }
             )
           }
@@ -235,15 +234,12 @@ fun HomeScreenToolbarContainer(
 private fun BuildChildToolbar(
   screenKey: ScreenKey,
   zOrder: Int,
-  toolbarContainerAlpha: Float,
+  consumeClicks: Boolean,
   targetToolbarAlpha: Float,
   targetToolbarTranslation: Float,
-  transitionIsProgress: Boolean,
   toolbarContent: @Composable () -> Unit
 ) {
   key(screenKey) {
-    val consumeClicks by remember { derivedStateOf { transitionIsProgress && toolbarContainerAlpha > 0.99f } }
-
     Box(
       modifier = Modifier
         .zIndex(zOrder.toFloat())
