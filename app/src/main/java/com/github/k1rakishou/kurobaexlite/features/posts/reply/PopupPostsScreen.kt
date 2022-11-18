@@ -62,6 +62,7 @@ import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerParams
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.buttonsHeight
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.buttonsLayoutId
@@ -619,6 +620,14 @@ private fun PopupPostsScreenContent(
             postFollowStack = postFollowStack
           )
         }
+
+        val parentScreenKey = if (postListOptions.isCatalogMode) {
+          CatalogScreen.SCREEN_KEY
+        } else {
+          ThreadScreen.SCREEN_KEY
+        }
+
+        globalUiInfoManager.getOrCreateHideableUiVisibilityInfo(parentScreenKey).update(contentListScrollState = 1f)
 
         stopPresenting()
       },
