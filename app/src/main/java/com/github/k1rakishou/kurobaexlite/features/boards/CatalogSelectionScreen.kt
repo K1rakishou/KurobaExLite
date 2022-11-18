@@ -85,7 +85,6 @@ class CatalogSelectionScreen(
   navigationRouter: NavigationRouter
 ) : HomeNavigationScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
   private val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel by componentActivity.viewModel()
-  private val catalogScreenViewModel: CatalogScreenViewModel by componentActivity.viewModel()
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false

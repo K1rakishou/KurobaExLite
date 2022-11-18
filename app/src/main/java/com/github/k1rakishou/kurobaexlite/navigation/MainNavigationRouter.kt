@@ -1,5 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
+import androidx.activity.ComponentActivity
+import androidx.annotation.CallSuper
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateListOf
@@ -19,6 +21,20 @@ class MainNavigationRouter : NavigationRouter(
     get() = _floatingScreensStack
 
   protected val backPressHandlers = mutableListOf<OnBackPressHandler>()
+
+  @CallSuper
+  override fun onAttachActivity(activity: ComponentActivity) {
+    super.onAttachActivity(activity)
+
+    _floatingScreensStack.forEach { screen -> screen.onAttachActivity(activity) }
+  }
+
+  @CallSuper
+  override fun onDetachActivity() {
+    super.onDetachActivity()
+
+    _floatingScreensStack.forEach { screen -> screen.onDetachActivity() }
+  }
 
   @Composable
   fun HandleBackPresses(onBackPressHandler: OnBackPressHandler) {
@@ -55,6 +71,8 @@ class MainNavigationRouter : NavigationRouter(
 
   override fun onLifecycleDestroy() {
     super.onLifecycleDestroy()
+
+    backPressHandlers.clear()
 
     _floatingScreensStack.forEach { screen ->
       screen.dispatchScreenLifecycleEvent(ComposeScreen.ScreenLifecycle.Disposing, true)

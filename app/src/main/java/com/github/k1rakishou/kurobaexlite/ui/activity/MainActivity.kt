@@ -26,10 +26,10 @@ import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
-import kotlin.time.Duration.Companion.seconds
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
+import kotlin.time.Duration.Companion.seconds
 
 class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
   private val mainActivityViewModel: MainActivityViewModel by viewModel()
@@ -73,7 +73,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     appRestarter.attachActivity(this)
 
     clickedThumbnailBoundsStorage.clear()
-    mainActivityViewModel.rootNavigationRouter.onLifecycleCreate()
+
+    mainActivityViewModel.onAttachActivity(this)
+    mainActivityViewModel.onLifecycleCreate()
 
     setContent {
       ProvideAllTheStuff(
@@ -106,7 +108,9 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     localFilePicker.detachActivity()
     mainActivityIntentHandler.onDestroy()
     appRestarter.detachActivity()
-    mainActivityViewModel.rootNavigationRouter.onLifecycleDestroy()
+
+    mainActivityViewModel.onLifecycleDestroy()
+    mainActivityViewModel.onDetachActivity()
 
     super.onDestroy()
   }
@@ -128,7 +132,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
 
   override fun onBackPressed() {
     backPressExecutor.post {
-      if (mainActivityViewModel.rootNavigationRouter.onBackBackPressed()) {
+      if (mainActivityViewModel.onBackBackPressed()) {
         return@post
       }
 

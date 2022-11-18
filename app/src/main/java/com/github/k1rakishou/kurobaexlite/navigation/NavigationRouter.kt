@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.navigation
 
+import androidx.activity.ComponentActivity
 import androidx.annotation.CallSuper
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
@@ -27,6 +28,18 @@ open class NavigationRouter(
 
   protected val childRouters = linkedMapOf<ScreenKey, NavigationRouter>()
   protected val removingScreens = mutableSetOf<ScreenKey>()
+
+  @CallSuper
+  open fun onAttachActivity(activity: ComponentActivity) {
+    _navigationScreensStack.forEach { screen -> screen.onAttachActivity(activity) }
+    childRouters.entries.forEach { (_, router) -> router.onAttachActivity(activity) }
+  }
+
+  @CallSuper
+  open fun onDetachActivity() {
+    _navigationScreensStack.forEach { screen -> screen.onDetachActivity() }
+    childRouters.entries.forEach { (_, router) -> router.onDetachActivity() }
+  }
 
   fun navigationScreensStackExcept(composeScreen: ComposeScreen): List<ComposeScreen> {
     return navigationScreensStack.filter { screen -> screen.screenKey != composeScreen.screenKey }

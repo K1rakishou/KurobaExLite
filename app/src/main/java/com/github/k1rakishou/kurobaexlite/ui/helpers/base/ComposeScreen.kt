@@ -36,7 +36,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 abstract class ComposeScreen protected constructor(
   val screenArgs: Bundle? = null,
-  val componentActivity: ComponentActivity,
+  componentActivity: ComponentActivity,
   val navigationRouter: NavigationRouter
 ) {
   protected val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
@@ -47,6 +47,10 @@ abstract class ComposeScreen protected constructor(
   protected val appResources: AppResources by inject(AppResources::class.java)
   protected val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
+
+  private var _componentActivity: ComponentActivity? = componentActivity
+  val componentActivity: ComponentActivity
+    get() = requireNotNull(_componentActivity) { "_componentActivity was accessed while during configuration change!" }
 
   private val savedStateViewModel by lazy {
     val key = "${screenKey.key}_SavedStateViewModel"
@@ -85,6 +89,14 @@ abstract class ComposeScreen protected constructor(
 
   open val popAnimation: NavigationRouter.ScreenAnimation
     get() = NavigationRouter.ScreenAnimation.Pop(screenKey)
+
+  fun onAttachActivity(activity: ComponentActivity) {
+    _componentActivity = activity
+  }
+
+  fun onDetachActivity() {
+    _componentActivity = null
+  }
 
   fun onNewArguments(newArgs: Bundle?) {
     savedStateViewModel.onNewArguments(newArgs)
@@ -233,6 +245,8 @@ abstract class ComposeScreen protected constructor(
   protected open fun onDisposed(screenDisposeEvent: ScreenDisposeEvent) {
     _screenLifecycle = ScreenLifecycle.Disposed
     logcat(TAG, LogPriority.VERBOSE) { "onDisposed(${screenKey.key}, ${screenDisposeEvent})" }
+
+    backPressHandlers.clear()
 
     // When screen is being removed from the nav stack (normally) we need to clear it's SavedStateHandle
     // to clear all cached data so that we don't get the same data on the next screen creation

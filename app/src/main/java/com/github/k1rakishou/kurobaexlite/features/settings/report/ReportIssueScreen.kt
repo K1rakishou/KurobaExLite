@@ -394,7 +394,10 @@ class ReportIssueScreen(
       null
     }
 
-    val progressScreen = ComposeScreen.createScreen<ProgressScreen>(componentActivity, navigationRouter)
+    val progressScreen = ComposeScreen.createScreen<ProgressScreen>(
+      componentActivity = componentActivity,
+      navigationRouter = navigationRouter
+    )
     navigationRouter.presentScreen(progressScreen)
 
     reportManager.sendComment(
@@ -448,7 +451,10 @@ class ReportIssueScreen(
       return
     }
 
-    val progressScreen = ComposeScreen.createScreen<ProgressScreen>(componentActivity, navigationRouter)
+    val progressScreen = ComposeScreen.createScreen<ProgressScreen>(
+      componentActivity = componentActivity,
+      navigationRouter = navigationRouter
+    )
     navigationRouter.presentScreen(progressScreen)
 
     reportManager.sendReport(

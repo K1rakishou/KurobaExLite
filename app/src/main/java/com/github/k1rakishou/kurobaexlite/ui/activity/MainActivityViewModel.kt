@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.activity
 
+import androidx.activity.ComponentActivity
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
@@ -36,4 +37,25 @@ class MainActivityViewModel(
       }
     }
   }
+
+  fun onAttachActivity(activity: ComponentActivity) {
+    rootNavigationRouter.onAttachActivity(activity)
+  }
+
+  fun onLifecycleCreate() {
+    rootNavigationRouter.onLifecycleCreate()
+  }
+
+  suspend fun onBackBackPressed(): Boolean {
+    return rootNavigationRouter.onBackBackPressed()
+  }
+
+  fun onLifecycleDestroy() {
+    rootNavigationRouter.onLifecycleDestroy()
+  }
+
+  fun onDetachActivity() {
+    rootNavigationRouter.onDetachActivity()
+  }
+
 }
