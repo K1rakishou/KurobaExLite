@@ -5,6 +5,7 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.LastViewedPostForScrollRestoration
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
@@ -38,6 +39,10 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import logcat.logcat
@@ -46,7 +51,7 @@ class ThreadScreenViewModel(
   savedStateHandle: SavedStateHandle,
   private val loadChanThreadView: LoadChanThreadView,
   private val updateChanThreadView: UpdateChanThreadView,
-  private val crossThreadFollowHistory: CrossThreadFollowHistory,
+  private val postFollowStack: PostFollowStack,
   private val lastVisitedEndpointManager: LastVisitedEndpointManager,
   private val loadNavigationHistory: LoadNavigationHistory,
   private val addOrRemoveBookmark: AddOrRemoveBookmark,
@@ -69,6 +74,13 @@ class ThreadScreenViewModel(
   private var loadThreadJob: Job? = null
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
   private val bookmarkThreadExecutor = RendezvousCoroutineExecutor(viewModelScope)
+
+  private val _displayPostsPopupScreenFlow = MutableSharedFlow<PopupPostsScreen.PopupPostViewMode>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_OLDEST
+  )
+  val displayPostsPopupScreenFlow: SharedFlow<PopupPostsScreen.PopupPostViewMode>
+    get() = _displayPostsPopupScreenFlow.asSharedFlow()
 
   override val postScreenState: PostScreenState = threadScreenState
 
@@ -595,11 +607,47 @@ class ThreadScreenViewModel(
     )
   }
 
-  fun onBackPressed(): Boolean {
-    val topThreadDescriptor = crossThreadFollowHistory.pop()
+  suspend fun onBackPressed(): Boolean {
+    val topFollowEntry = postFollowStack.pop()
       ?: return false
 
-    loadThread(topThreadDescriptor)
+    when (topFollowEntry) {
+      is PostFollowStack.Entry.Post -> {
+        val popupInfo = topFollowEntry.popupInfo
+        if (popupInfo != null) {
+          val descriptor = chanDescriptor
+            ?: return true
+
+          val popupPostViewMode = when (popupInfo.type) {
+            PostFollowStack.Entry.PopupInfo.Type.RepliesFrom -> {
+              PopupPostsScreen.PopupPostViewMode.RepliesFrom(
+                chanDescriptor = descriptor,
+                postDescriptor = topFollowEntry.postDescriptor
+              )
+            }
+            PostFollowStack.Entry.PopupInfo.Type.ReplyTo -> {
+              PopupPostsScreen.PopupPostViewMode.ReplyTo(
+                chanDescriptor = descriptor,
+                postDescriptor = topFollowEntry.postDescriptor
+              )
+            }
+          }
+
+          _displayPostsPopupScreenFlow.emit(popupPostViewMode)
+        } else {
+          val loadOptions = LoadOptions(scrollToPost = topFollowEntry.postDescriptor)
+
+          loadThread(
+            threadDescriptor = topFollowEntry.postDescriptor.threadDescriptor,
+            loadOptions = loadOptions
+          )
+        }
+      }
+      is PostFollowStack.Entry.Thread -> {
+        loadThread(topFollowEntry.threadDescriptor)
+      }
+    }
+
     return true
   }
 

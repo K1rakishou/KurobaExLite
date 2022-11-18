@@ -1014,6 +1014,7 @@ fun KurobaComposeRadioButton(
 fun KurobaFloatingActionButton(
   modifier: Modifier = Modifier,
   @DrawableRes iconDrawableId: Int,
+  backgroundColor: Color? = null,
   horizOffset: Dp? = null,
   vertOffset: Dp? = null,
   fabSize: Dp? = null,
@@ -1028,17 +1029,23 @@ fun KurobaFloatingActionButton(
     Modifier
   }
 
+  val bgColor = backgroundColor ?: chanTheme.accentColor
+  val contentColor = remember(key1 = bgColor) { ThemeEngine.resolveFabContentColor(bgColor) }
+
   FloatingActionButton(
     modifier = modifier.then(
       Modifier
         .size(actualFabSize)
         .then(offsetModifier)
     ),
-    backgroundColor = chanTheme.accentColor,
-    contentColor = Color.White,
+    backgroundColor = bgColor,
+    contentColor = contentColor,
     onClick = onClick
   ) {
-    KurobaComposeIcon(drawableId = iconDrawableId)
+    KurobaComposeIcon(
+      drawableId = iconDrawableId,
+      iconColor = contentColor
+    )
   }
 }
 

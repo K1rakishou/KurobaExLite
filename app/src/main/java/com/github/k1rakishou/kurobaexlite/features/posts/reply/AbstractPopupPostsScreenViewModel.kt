@@ -33,7 +33,9 @@ class MediaViewerPopupPostsScreenViewModel(
 
 abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreenViewModel(savedStateHandle) {
   private val threadScreenState = PopupPostsScreenState()
-  private val postDataStateMap = mutableMapOf<ScreenKey, PostDataState>()
+  private val _postDataStateMap = mutableMapOf<ScreenKey, PostDataState>()
+  val postDataStateMap: Map<ScreenKey, PostDataState>
+    get() = _postDataStateMap
 
   override val postScreenState: PostScreenState = threadScreenState
 
@@ -46,7 +48,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
   }
 
   private fun getOrCreatePostDataStateForScreen(screenKey: ScreenKey, chanDescriptor: ChanDescriptor): PostDataState {
-    return postDataStateMap.getOrPut(
+    return _postDataStateMap.getOrPut(
       key = screenKey,
       defaultValue = { PostDataState(chanDescriptor) }
     )
@@ -131,7 +133,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
   }
 
   suspend fun popReplyChain(screenKey: ScreenKey): Boolean {
-    val postDataState = postDataStateMap.get(screenKey)
+    val postDataState = _postDataStateMap.get(screenKey)
       ?: return false
 
     postDataState.postReplyChainStack.removeLastOrNull()
@@ -148,8 +150,8 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
   }
 
   fun clearPostReplyChainStack(screenKey: ScreenKey) {
-    val postDataState = postDataStateMap.remove(screenKey)
-    if (postDataStateMap.isEmpty()) {
+    val postDataState = _postDataStateMap.remove(screenKey)
+    if (_postDataStateMap.isEmpty()) {
       postScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
     }
 

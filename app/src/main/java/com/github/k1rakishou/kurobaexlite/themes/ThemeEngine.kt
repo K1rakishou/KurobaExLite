@@ -60,6 +60,22 @@ class ThemeEngine {
       }
     }
 
+    fun resolveDrawableTintColor(color: ComposeColor): ComposeColor {
+      return if (isDarkColor(color)) {
+        LIGHT_DRAWABLE_TINT_COMPOSE
+      } else {
+        DARK_DRAWABLE_TINT_COMPOSE
+      }
+    }
+
+    fun resolveFabContentColor(color: ComposeColor): ComposeColor {
+      return if (isDarkColor(color)) {
+        ComposeColor.White
+      } else {
+        ComposeColor.Black
+      }
+    }
+
     /**
      * Makes color brighter if factor > 1.0f or darker if factor < 1.0f
      */

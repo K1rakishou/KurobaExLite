@@ -13,6 +13,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -39,7 +40,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchButtons
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFabContainer
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.ProcessCaptchaRequestEvents
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
@@ -76,6 +77,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -284,6 +286,21 @@ class ThreadScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        threadScreenViewModel.displayPostsPopupScreenFlow.collectLatest { popupPostViewMode ->
+          val popupPostsScreen = ComposeScreen.createScreen<PopupPostsScreen>(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            args = { putParcelable(PopupPostsScreen.REPLY_VIEW_MODE, popupPostViewMode) }
+          )
+
+          navigationRouter.presentScreen(popupPostsScreen)
+        }
+      }
+    )
+
     HandleBackPresses {
       for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
         if (composeScreen.onBackPressed()) {
@@ -417,6 +434,7 @@ private fun BoxScope.ThreadPostListScreen(
   val snackbarManager = koinRemember<SnackbarManager>()
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val androidHelpers = koinRemember<AndroidHelpers>()
+  val postFollowStack = koinRemember<PostFollowStack>()
 
   val windowInsets = LocalWindowInsets.current
   val context = LocalContext.current
@@ -430,6 +448,8 @@ private fun BoxScope.ThreadPostListScreen(
   val viewProvider by rememberUpdatedState(newValue = { view })
 
   val kurobaSnackbarState = rememberKurobaSnackbarState()
+  val coroutineScope = rememberCoroutineScope()
+
   val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
   val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
   val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
@@ -535,6 +555,7 @@ private fun BoxScope.ThreadPostListScreen(
     onGoToPostClicked = null,
     onPostListScrolled = { delta ->
       globalUiInfoManager.onContentListScrolling(screenKey, delta)
+      postFollowStack.onPostListScrolled(delta)
     },
     onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
       globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
@@ -551,14 +572,19 @@ private fun BoxScope.ThreadPostListScreen(
     val lastLoadError by threadScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
     val lastLoadedEndedWithError by remember { derivedStateOf { lastLoadError != null } }
 
-    PostsScreenFloatingActionButton(
+    PostsScreenFabContainer(
       screenKey = screenKey,
       screenContentLoaded = screenContentLoaded,
       lastLoadedEndedWithError = lastLoadedEndedWithError,
       mainUiLayoutMode = mainUiLayoutMode,
-      onFabClicked = { clickedFabScreenKey ->
+      onGoBackFabClicked = {
+        coroutineScope.launch {
+          threadScreenViewModel.onBackPressed()
+        }
+      },
+      onReplyFabClicked = { clickedFabScreenKey ->
         if (screenKey != clickedFabScreenKey) {
-          return@PostsScreenFloatingActionButton
+          return@PostsScreenFabContainer
         }
 
         replyLayoutStateProvider().openReplyLayout()

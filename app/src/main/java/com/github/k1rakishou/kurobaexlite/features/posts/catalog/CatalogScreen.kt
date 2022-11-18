@@ -39,7 +39,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchBu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFloatingActionButton
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFabContainer
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.ProcessCaptchaRequestEvents
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
@@ -646,14 +646,17 @@ private fun BoxScope.CatalogPostListScreen(
     val lastLoadError by catalogScreenViewModel.postScreenState.lastLoadErrorState.collectAsState()
     val lastLoadedEndedWithError by remember { derivedStateOf { lastLoadError != null } }
 
-    PostsScreenFloatingActionButton(
+    PostsScreenFabContainer(
       screenKey = screenKey,
       screenContentLoaded = screenContentLoaded,
       lastLoadedEndedWithError = lastLoadedEndedWithError,
       mainUiLayoutMode = mainUiLayoutMode,
-      onFabClicked = { clickedFabScreenKey ->
+      onGoBackFabClicked = {
+        // no-op
+      },
+      onReplyFabClicked = { clickedFabScreenKey ->
         if (screenKey != clickedFabScreenKey) {
-          return@PostsScreenFloatingActionButton
+          return@PostsScreenFabContainer
         }
 
         replyLayoutStateProvider().openReplyLayout()
