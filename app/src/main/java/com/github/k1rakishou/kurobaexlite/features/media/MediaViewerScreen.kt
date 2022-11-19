@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
@@ -128,6 +129,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.GenericLazyStateWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.passClicksThrough
 import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberKurobaBottomSheetState
@@ -729,8 +732,12 @@ private fun MediaViewerBottomSheet(
     }
   }
 
+  val _lazyListState = rememberLazyListState()
+  val lazyListStateWrapper = remember(key1 = _lazyListState) { LazyListStateWrapper(_lazyListState) }
+
   Column(modifier = Modifier.fillMaxSize()) {
     PostListContent(
+      lazyStateWrapper = lazyListStateWrapper as GenericLazyStateWrapper,
       postListOptions = postListOptions,
       postsScreenViewModelProvider = { popupPostsScreenViewModel },
       onPostCellClicked = { postCellData -> /*no-op*/ },

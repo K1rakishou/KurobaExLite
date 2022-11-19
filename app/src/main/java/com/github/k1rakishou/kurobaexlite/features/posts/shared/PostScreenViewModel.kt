@@ -96,7 +96,7 @@ abstract class PostScreenViewModel(
     get() = _postsFullyParsedOnceFlow.asStateFlow()
 
   private val _scrollRestorationEventFlow = MutableSharedFlow<LazyColumnRememberedPositionEvent>(extraBufferCapacity = Channel.UNLIMITED)
-  val scrollRestorationEventFlow: SharedFlow<LazyColumnRememberedPositionEvent>
+  open val scrollRestorationEventFlow: SharedFlow<LazyColumnRememberedPositionEvent>
     get() = _scrollRestorationEventFlow.asSharedFlow()
 
   private val _postListScrollEventFlow = MutableSharedFlow<ToolbarScrollEvent>(extraBufferCapacity = Channel.UNLIMITED)

@@ -13,6 +13,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.flatMapNotNull
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
+import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosition
+import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPositionEvent
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -21,6 +23,10 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
 
 class DefaultPopupPostsScreenViewModel(
@@ -36,6 +42,10 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
   private val _postDataStateMap = mutableMapOf<ScreenKey, PostDataState>()
   val postDataStateMap: Map<ScreenKey, PostDataState>
     get() = _postDataStateMap
+
+  private val _scrollRestorationEventFlow = MutableSharedFlow<LazyColumnRememberedPositionEvent>(extraBufferCapacity = Channel.UNLIMITED)
+  override val scrollRestorationEventFlow: SharedFlow<LazyColumnRememberedPositionEvent>
+    get() = _scrollRestorationEventFlow.asSharedFlow()
 
   override val postScreenState: PostScreenState = threadScreenState
 
@@ -103,10 +113,19 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
   suspend fun loadRepliesForMode(
     screenKey: ScreenKey,
     popupPostViewMode: PopupPostsScreen.PopupPostViewMode,
+    rememberedPosition: LazyColumnRememberedPosition? = null,
     isPushing: Boolean = true
   ): Boolean {
     val chanDescriptor = popupPostViewMode.chanDescriptor
     val postDataState = getOrCreatePostDataStateForScreen(screenKey, chanDescriptor)
+
+    val currentPostDescriptor = postDataState.postReplyChainStack.lastOrNull()?.let { popupPostViewMode ->
+      when (popupPostViewMode) {
+        is PopupPostsScreen.PopupPostViewMode.PostList -> null
+        is PopupPostsScreen.PopupPostViewMode.RepliesFrom -> popupPostViewMode.postDescriptor
+        is PopupPostsScreen.PopupPostViewMode.ReplyTo -> popupPostViewMode.postDescriptor
+      }
+    }
 
     if (isPushing) {
       val indexOfExisting = postDataState.postReplyChainStack.indexOfFirst { it == popupPostViewMode }
@@ -119,7 +138,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       }
     }
 
-    return when (popupPostViewMode) {
+    val result = when (popupPostViewMode) {
       is PopupPostsScreen.PopupPostViewMode.ReplyTo -> {
         loadReplyTo(screenKey, chanDescriptor, popupPostViewMode)
       }
@@ -130,6 +149,12 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
         loadPostList(screenKey, chanDescriptor, popupPostViewMode)
       }
     }
+
+    if (rememberedPosition != null && currentPostDescriptor != null) {
+      postDataState.scrollPositions[currentPostDescriptor] = rememberedPosition
+    }
+
+    return result
   }
 
   suspend fun popReplyChain(screenKey: ScreenKey): Boolean {
@@ -142,9 +167,24 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     val prevMode = postDataState.postReplyChainStack.lastOrNull()
       ?: return false
 
+    val rememberedPosition = when (prevMode) {
+      is PopupPostsScreen.PopupPostViewMode.PostList -> null
+      is PopupPostsScreen.PopupPostViewMode.RepliesFrom -> {
+        postDataState.scrollPositions.remove(prevMode.postDescriptor)
+      }
+      is PopupPostsScreen.PopupPostViewMode.ReplyTo -> {
+        postDataState.scrollPositions.remove(prevMode.postDescriptor)
+      }
+    }
+
+    if (rememberedPosition != null) {
+      _scrollRestorationEventFlow.emit(rememberedPosition.toLazyColumnRememberedPositionEvent())
+    }
+
     return loadRepliesForMode(
       screenKey = screenKey,
       popupPostViewMode = prevMode,
+      rememberedPosition = rememberedPosition,
       isPushing = false
     )
   }
@@ -160,6 +200,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     }
 
     postDataState.postReplyChainStack.clear()
+    postDataState.scrollPositions.clear()
     postDataState.parsedReplyToCache.evictAll()
     postDataState.parsedReplyFromCache.evictAll()
     postDataState.parsedPostsCache.clear()
@@ -359,6 +400,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     val chanDescriptor: ChanDescriptor
   ) {
     val postReplyChainStack = mutableListOf<PopupPostsScreen.PopupPostViewMode>()
+    val scrollPositions = mutableMapOf<PostDescriptor, LazyColumnRememberedPosition>()
     val parsedReplyToCache = LruCache<PostDescriptor, List<PostCellData>>(32)
     val parsedReplyFromCache = LruCache<PostDescriptor, List<PostCellData>>(32)
     val parsedPostsCache = mutableMapOf<PostDescriptor, PostCellData>()

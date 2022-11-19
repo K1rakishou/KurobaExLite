@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.SwipeableDefaults
@@ -85,6 +86,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
+import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosition
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -96,6 +98,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.GenericLazyStateWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
@@ -500,6 +507,7 @@ private fun PopupPostsScreenContent(
   val chanTheme = LocalChanTheme.current
   val context = LocalContext.current
   val view = LocalView.current
+  val orientation by rememberUpdatedState(newValue = LocalConfiguration.current.orientation)
   val coroutineScope = rememberCoroutineScope()
 
   val popupPostsScreenViewModel: DefaultPopupPostsScreenViewModel = koinRememberViewModel()
@@ -512,12 +520,35 @@ private fun PopupPostsScreenContent(
 
   val viewProvider by rememberUpdatedState(newValue = { view })
 
+  val _lazyListState = rememberLazyListState()
+  val lazyListStateWrapper = remember(key1 = _lazyListState) { LazyListStateWrapper(_lazyListState) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      popupPostsScreenViewModel.scrollRestorationEventFlow.collectLatest { rememberedScrollPosition ->
+        if (orientation == rememberedScrollPosition.orientation) {
+          try {
+            delay(100)
+
+            lazyListStateWrapper.scrollToItem(
+              index = rememberedScrollPosition.index,
+              scrollOffset = rememberedScrollPosition.offset
+            )
+          } catch (ignored: CancellationException) {
+          }
+        }
+      }
+    }
+  )
+
   Box(
     modifier = Modifier
       .layoutId(postListLayoutId)
       .animateContentSize()
   ) {
     PostListContent(
+      lazyStateWrapper = lazyListStateWrapper as GenericLazyStateWrapper,
       postListOptions = postListOptions,
       postsScreenViewModelProvider = { popupPostsScreenViewModel },
       onPostCellClicked = { postCellData -> /*no-op*/ },
@@ -560,9 +591,16 @@ private fun PopupPostsScreenContent(
           },
           showRepliesForPostFunc = { postViewMode ->
             coroutineScope.launch {
+              val rememberedPosition = LazyColumnRememberedPosition(
+                orientation = orientation,
+                index = lazyListStateWrapper.firstVisibleItemIndex,
+                offset = lazyListStateWrapper.firstVisibleItemScrollOffset
+              )
+
               popupPostsScreenViewModel.loadRepliesForMode(
                 screenKey = screenKey,
-                popupPostViewMode = postViewMode
+                popupPostViewMode = postViewMode,
+                rememberedPosition = rememberedPosition
               )
             }
           }
@@ -581,12 +619,19 @@ private fun PopupPostsScreenContent(
         }
 
         coroutineScope.launch {
+          val rememberedPosition = LazyColumnRememberedPosition(
+            orientation = orientation,
+            index = lazyListStateWrapper.firstVisibleItemIndex,
+            offset = lazyListStateWrapper.firstVisibleItemScrollOffset
+          )
+
           popupPostsScreenViewModel.loadRepliesForMode(
             screenKey = screenKey,
             popupPostViewMode = PopupPostsScreen.PopupPostViewMode.RepliesFrom(
               chanDescriptor = chanDescriptor,
               postDescriptor = postDescriptor
-            )
+            ),
+            rememberedPosition = rememberedPosition
           )
         }
       },

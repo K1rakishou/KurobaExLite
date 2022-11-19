@@ -18,8 +18,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridItemScope
 import androidx.compose.foundation.lazy.grid.LazyGridScope
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -88,6 +86,7 @@ private const val postCellKeyPrefix = "post_cell"
 @Composable
 internal fun PostListContent(
   modifier: Modifier = Modifier,
+  lazyStateWrapper: GenericLazyStateWrapper,
   postListOptions: PostListOptions,
   postsScreenViewModelProvider: () -> PostScreenViewModel,
   onPostCellClicked: (PostCellData) -> Unit,
@@ -132,54 +131,14 @@ internal fun PostListContent(
   val postListAsync = postListAsyncMut
   val postListAsyncUpdated by rememberUpdatedState(newValue = postListAsync)
 
-  val _lazyListState = rememberLazyListState()
-  val lazyListStateWrapper = remember(key1 = _lazyListState) { LazyListStateWrapper(_lazyListState) }
-
-  val _lazyGridState = rememberLazyGridState()
-  val lazyGridStateWrapper = remember(key1 = _lazyGridState) { LazyGridStateWrapper(_lazyGridState) }
-
-  val lazyStateWrapper = when (postListOptions.postViewMode) {
-    PostViewMode.List -> lazyListStateWrapper
-    PostViewMode.Grid -> lazyGridStateWrapper
-  }
   val lazyStateWrapperUpdated by rememberUpdatedState(newValue = lazyStateWrapper)
   val postBlinkAnimationState = rememberPostBlinkAnimationState()
-
-  var prevPostViewMode by remember { mutableStateOf<PostViewMode?>(null) }
-
-  // When switching from list to grid layout mode in the catalog we need to synchronized the current
-  // scroll position between them
-  LaunchedEffect(
-    key1 = postListOptions.postViewMode,
-    block = {
-      try {
-        if (prevPostViewMode == null) {
-          return@LaunchedEffect
-        }
-
-        if (prevPostViewMode == postListOptions.postViewMode) {
-          return@LaunchedEffect
-        }
-
-        when (postListOptions.postViewMode) {
-          PostViewMode.List -> {
-            _lazyListState.scrollToItem(_lazyGridState.firstVisibleItemIndex)
-          }
-          PostViewMode.Grid -> {
-            _lazyGridState.scrollToItem(_lazyListState.firstVisibleItemIndex)
-          }
-        }
-      } finally {
-        prevPostViewMode = postListOptions.postViewMode
-      }
-    }
-  )
 
   fun processPostListScrollEventFunc() {
     processPostListScrollEvent(
       postsScreenViewModel = postsScreenViewModel,
       postListAsync = postListAsyncUpdated,
-      lazyStateWrapper = lazyStateWrapperUpdated as GenericLazyStateWrapper,
+      lazyStateWrapper = lazyStateWrapperUpdated,
       chanDescriptor = chanDescriptor,
       orientation = postListOptions.orientation,
       isInPopup = postListOptions.isInPopup,

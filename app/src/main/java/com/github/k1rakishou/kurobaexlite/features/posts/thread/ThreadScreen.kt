@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -75,6 +76,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.GenericLazyStateWrapper
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -483,8 +486,12 @@ private fun BoxScope.ThreadPostListScreen(
     }
   }
 
+  val _lazyListState = rememberLazyListState()
+  val lazyListStateWrapper = remember(key1 = _lazyListState) { LazyListStateWrapper(_lazyListState) }
+
   PostListContent(
     modifier = Modifier.fillMaxSize(),
+    lazyStateWrapper = lazyListStateWrapper as GenericLazyStateWrapper,
     postListOptions = postListOptions,
     postsScreenViewModelProvider = { threadScreenViewModel },
     onPostCellClicked = { postCellData ->
