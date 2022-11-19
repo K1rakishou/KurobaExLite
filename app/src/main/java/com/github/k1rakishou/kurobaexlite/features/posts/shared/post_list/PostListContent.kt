@@ -286,22 +286,26 @@ internal fun PostListContent(
     onPostCellLongClicked = onPostCellLongClicked,
     onPostCellCommentClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
       processClickedAnnotation(
-        postsScreenViewModel = postsScreenViewModel,
         postCellData = postCellData,
         postComment = postComment,
         characterOffset = offset,
         longClicked = false,
+        reparsePost = { postCellData, parsedPostDataContext ->
+          postsScreenViewModel.reparsePost(postCellData, parsedPostDataContext)
+        },
         onLinkableClicked = onLinkableClicked,
         onLinkableLongClicked = onLinkableLongClicked
       )
     },
     onPostCellCommentLongClicked = { postCellData: PostCellData, postComment: AnnotatedString, offset: Int ->
       processClickedAnnotation(
-        postsScreenViewModel = postsScreenViewModel,
         postCellData = postCellData,
         postComment = postComment,
         characterOffset = offset,
         longClicked = true,
+        reparsePost = { postCellData, parsedPostDataContext ->
+          postsScreenViewModel.reparsePost(postCellData, parsedPostDataContext)
+        },
         onLinkableClicked = onLinkableClicked,
         onLinkableLongClicked = onLinkableLongClicked
       )

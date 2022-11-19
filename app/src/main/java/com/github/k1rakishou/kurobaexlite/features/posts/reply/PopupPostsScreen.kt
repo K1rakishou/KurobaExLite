@@ -627,7 +627,8 @@ private fun PopupPostsScreenContent(
           ThreadScreen.SCREEN_KEY
         }
 
-        globalUiInfoManager.getOrCreateHideableUiVisibilityInfo(parentScreenKey).update(contentListScrollState = 1f)
+        globalUiInfoManager.getOrCreateHideableUiVisibilityInfo(parentScreenKey)
+          .update(contentListScrollState = 1f)
 
         stopPresenting()
       },

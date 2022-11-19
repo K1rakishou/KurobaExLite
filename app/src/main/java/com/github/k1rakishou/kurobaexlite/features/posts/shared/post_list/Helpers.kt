@@ -10,10 +10,10 @@ import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.util.fastAll
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.helpers.util.extractLinkableAnnotationItem
+import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
@@ -50,11 +50,11 @@ internal suspend fun PointerInputScope.detectTouches(onCurrentlyTouching: (Boole
 }
 
 internal fun processClickedAnnotation(
-  postsScreenViewModel: PostScreenViewModel,
   postCellData: PostCellData,
   postComment: AnnotatedString,
   characterOffset: Int,
   longClicked: Boolean,
+  reparsePost: (PostCellData, ParsedPostDataContext) -> Unit,
   onLinkableClicked: (PostCellData, TextPartSpan.Linkable) -> Unit,
   onLinkableLongClicked: (PostCellData, TextPartSpan.Linkable) -> Unit,
 ) {
@@ -73,9 +73,9 @@ internal fun processClickedAnnotation(
         }
 
         if (!parsedPostDataContext.revealFullPostComment) {
-          postsScreenViewModel.reparsePost(
-            postCellData = postCellData,
-            parsedPostDataContext = parsedPostDataContext.copy(revealFullPostComment = true)
+          reparsePost(
+            postCellData,
+            parsedPostDataContext.copy(revealFullPostComment = true)
           )
         }
 
@@ -122,9 +122,9 @@ internal fun processClickedAnnotation(
           textSpoilerOpenedPositionSet.add(spoilerPosition)
         }
 
-        postsScreenViewModel.reparsePost(
-          postCellData = postCellData,
-          parsedPostDataContext = parsedPostDataContext
+        reparsePost(
+          postCellData,
+          parsedPostDataContext
             .copy(textSpoilerOpenedPositionSet = textSpoilerOpenedPositionSet)
         )
 
