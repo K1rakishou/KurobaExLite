@@ -5,6 +5,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.DvachPostParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
@@ -121,15 +122,62 @@ class Dvach(
   }
 
   override fun resolveDescriptorFromUrl(url: HttpUrl): ResolvedDescriptor? {
-    // TODO: Dvach support
-    return null
+    val parts = url.pathSegments.filter { segment -> segment.isNotBlank() }
+    if (parts.isEmpty()) {
+      logcatError { "Failed to parse \'$url\' (no pathSegments)" }
+      return null
+    }
+
+    val boardCode = parts[0]
+
+    if (parts.size < 3) {
+      // Board mode
+      return ResolvedDescriptor.CatalogOrThread(CatalogDescriptor(siteKey, boardCode))
+    }
+
+    // Thread mode
+    val threadNo: Long? = parts[2].takeWhile { ch -> ch != '.' }.toLongOrNull()
+    var postId: Long? = null
+    val fragment = url.fragment
+
+    if (fragment != null) {
+      postId = fragment.toLongOrNull()
+    }
+
+    if (threadNo == null || threadNo <= 0L) {
+      logcatError { "Failed to parse \'$url\' (threadNo is bad)" }
+      return null
+    }
+
+    val threadDescriptor = ThreadDescriptor.create(
+      siteKey = siteKey,
+      boardCode = boardCode,
+      threadNo = threadNo
+    )
+
+    if (postId == null || postId <= 0L) {
+      return ResolvedDescriptor.CatalogOrThread(threadDescriptor)
+    }
+
+    val postDescriptor = PostDescriptor(threadDescriptor, postId)
+    return ResolvedDescriptor.Post(postDescriptor)
   }
 
   override fun requestModifier(): RequestModifier<Site> = chan4RequestModifier as RequestModifier<Site>
 
   override fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String? {
-    // TODO: Dvach support
-    return null
+    return buildString {
+      append("https://${getCurrentDomain()}/")
+      append(threadDescriptor.boardCode)
+      append("/res/")
+      append(threadDescriptor.threadNo)
+      append(".html")
+
+      if (postNo != null && postNo > 0) {
+        append("#")
+        append(postNo)
+      }
+    }
   }
 
   override fun iconUrl(iconId: String, params: Map<String, String>): String? {

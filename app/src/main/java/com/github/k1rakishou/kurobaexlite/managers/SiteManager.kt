@@ -45,10 +45,25 @@ class SiteManager(
   }
 
   override fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor? {
-    val httpUrl = rawIdentifier.toHttpUrlOrNull()
+    var actualIdentifier = rawIdentifier
+
+    val methodSeparator = "://"
+    val indexOfMethodSeparator = actualIdentifier.indexOf(methodSeparator)
+
+    if (indexOfMethodSeparator >= 0) {
+      actualIdentifier = actualIdentifier.substring(indexOfMethodSeparator + methodSeparator.length)
+    }
+
+    actualIdentifier = "https://${actualIdentifier}"
+
+    val httpUrl = actualIdentifier.toHttpUrlOrNull()
       ?: return null
 
     for ((_, site) in sites) {
+      if (!site.matchesUrl(httpUrl)) {
+        continue
+      }
+
       val resolvedDescriptor = site.resolveDescriptorFromUrl(httpUrl)
       if (resolvedDescriptor != null) {
         return resolvedDescriptor
