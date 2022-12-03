@@ -63,9 +63,9 @@ interface IPostData {
   ): IPostData
 }
 
-data class PostDataSticky(val capacity: Int?) {
+data class PostDataSticky(val maxCapacity: Int?) {
   fun toPostCellDataSticky(): PostCellData.Sticky {
-    return PostCellData.Sticky(capacity = capacity)
+    return PostCellData.Sticky(maxCapacity = maxCapacity)
   }
 }
 

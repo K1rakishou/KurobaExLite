@@ -12,7 +12,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithHtmlRea
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.model.ClientException
+import com.github.k1rakishou.kurobaexlite.model.ChanDataSourceException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.ThumbnailSpoiler
@@ -32,12 +32,12 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardsDataJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageDataJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.CatalogPageJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.SharedDataJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadBookmarkInfoJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.ThreadDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4BoardsDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4CatalogPageDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4CatalogPageJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4SharedDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4ThreadBookmarkInfoJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4ThreadDataJson
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
@@ -60,7 +60,6 @@ import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
 import okhttp3.FormBody
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import java.net.HttpCookie
 
@@ -78,14 +77,162 @@ class Chan4DataSource(
   ILoginDataSource<Chan4LoginDetails, Chan4LoginResult>,
   ILogoutDataSource<Unit, Unit> {
 
+  override suspend fun loadBoards(input: SiteKey): Result<CatalogsData> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(input)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val boardsInfo = site.boardsInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support boards list")
+
+        val boardsUrl = boardsInfo.boardsUrl()
+        logcat(TAG, LogPriority.VERBOSE) { "loadBoards() url='$boardsUrl'" }
+
+        val request = Request.Builder()
+          .url(boardsUrl)
+          .get()
+          .build()
+
+        val boardsDataJsonAdapter = moshi.adapter<Chan4BoardsDataJson>(Chan4BoardsDataJson::class.java)
+        val boardsDataJsonAdapterResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
+          request,
+          boardsDataJsonAdapter
+        )
+
+        val boardsDataJson = boardsDataJsonAdapterResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert boards json into BoardDataJson object")
+
+        val chanBoards = boardsDataJson.boards.mapNotNull { boardDataJson ->
+          val boardCode = boardDataJson.boardCode ?: return@mapNotNull null
+          val boardTitle = boardDataJson.boardTitle
+          val boardDescription = boardDataJson.boardDescription?.let { HtmlUnescape.unescape(it) }
+
+          val allFlags = mutableListWithCap<BoardFlag>(64)
+
+          val loadedFlags = boardDataJson.boardFlags
+            ?.list
+            ?.map { boardFlagJson -> BoardFlag(boardFlagJson.key, boardFlagJson.name) }
+
+          if (loadedFlags.isNotNullNorEmpty()) {
+            allFlags += BoardFlag("0", "Default")
+            allFlags.addAll(loadedFlags)
+          }
+
+          return@mapNotNull ChanCatalog(
+            catalogDescriptor = CatalogDescriptor(input, boardCode),
+            boardTitle = boardTitle,
+            boardDescription = boardDescription,
+            workSafe = boardDataJson.workSafe == 1,
+            maxAttachFilesPerPost = 1,
+            flags = allFlags
+          )
+        }
+
+        return@Try CatalogsData(chanBoards)
+      }
+    }
+  }
+
+  override suspend fun loadCatalog(input: CatalogDescriptor): Result<CatalogData> {
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val siteKey = input.siteKey
+        val boardCode = input.boardCode
+
+        val site = siteManager.bySiteKey(siteKey)
+          ?: throw ChanDataSourceException("Unsupported site: ${siteKey}")
+
+        val catalogInfo = site.catalogInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support catalog")
+        val postImageInfo = site.postImageInfo()
+
+        val catalogUrl = catalogInfo.catalogUrl(boardCode)
+        logcat(TAG, LogPriority.VERBOSE) { "loadCatalog() url='$catalogUrl'" }
+
+        val request = Request.Builder()
+          .url(catalogUrl)
+          .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifyCatalogOrThreadGetRequest(
+              chanDescriptor = input,
+              requestBuilder = requestBuilder
+            )
+          }
+          .build()
+
+        val catalogPagesDataJsonAdapter = moshi.adapter<List<Chan4CatalogPageDataJson>>(
+          Types.newParameterizedType(List::class.java, Chan4CatalogPageDataJson::class.java),
+        )
+
+        val catalogPagesDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
+          request,
+          catalogPagesDataJsonAdapter
+        )
+
+        val catalogPagesDataJson = catalogPagesDataJsonResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert catalog json into CatalogDataJson object")
+
+        val totalCount = catalogPagesDataJson.sumOf { catalogPageData -> catalogPageData.threads.size }
+        val postDataList = mutableListWithCap<IPostData>(initialCapacity = totalCount)
+
+        catalogPagesDataJson.forEachIndexed { page, catalogPage ->
+          postDataList += catalogPage.threads.mapIndexed { index, catalogThread ->
+            val postDescriptor = PostDescriptor.create(
+              siteKey = site.siteKey,
+              boardCode = boardCode,
+              threadNo = catalogThread.no,
+              postNo = catalogThread.no
+            )
+
+            return@mapIndexed OriginalPostData(
+              originalPostOrder = page * index,
+              postDescriptor = postDescriptor,
+              postSubjectUnparsed = catalogThread.sub ?: "",
+              postCommentUnparsed = catalogThread.com ?: "",
+              name = catalogThread.name,
+              tripcode = catalogThread.trip,
+              posterId = catalogThread.id,
+              countryFlag = catalogThread.countryFlag(),
+              boardFlag = catalogThread.boardFlag(),
+              timeMs = catalogThread.time?.times(1000L),
+              images = parsePostImages(
+                postDescriptor = postDescriptor,
+                postImageInfo = postImageInfo,
+                sharedDataJson = catalogThread,
+                boardCode = boardCode
+              ),
+              threadRepliesTotal = catalogThread.replies,
+              threadImagesTotal = catalogThread.images,
+              threadPostersTotal = catalogThread.posters,
+              lastModified = catalogThread.lastModified,
+              archived = catalogThread.archived == 1,
+              closed = catalogThread.closed == 1,
+              deleted = false,
+              sticky = catalogThread.sticky(),
+              bumpLimit = catalogThread.bumpLimit?.let { bumpLimit -> bumpLimit == 1 },
+              imageLimit = catalogThread.imageLimit?.let { imageLimit -> imageLimit == 1 },
+            )
+          }
+        }
+
+        return@Try CatalogData(
+          catalogDescriptor = input,
+          catalogThreads = postDataList
+        )
+      }
+    }
+  }
+
   override suspend fun loadThread(
-    threadDescriptor: ThreadDescriptor,
+    input: ThreadDescriptor,
+    lastCachedThreadPost: PostDescriptor?
   ): Result<ThreadData> {
     return withContext(Dispatchers.IO) {
       return@withContext Result.Try {
-        val siteKey = threadDescriptor.catalogDescriptor.siteKey
-        val boardCode = threadDescriptor.catalogDescriptor.boardCode
-        val threadNo = threadDescriptor.threadNo
+        val siteKey = input.catalogDescriptor.siteKey
+        val boardCode = input.catalogDescriptor.boardCode
+        val threadNo = input.threadNo
 
         val site = siteManager.bySiteKey(siteKey)
           ?: throw ChanDataSourceException("Unsupported site: ${siteKey}")
@@ -94,15 +241,21 @@ class Chan4DataSource(
           ?: throw ChanDataSourceException("Site ${site.readableName} does not support threads")
         val postImageInfo = site.postImageInfo()
 
-        val threadUrl = threadInfo.threadUrl(boardCode, threadNo)
+        val threadUrl = threadInfo.fullThreadUrl(boardCode, threadNo)
         logcat(TAG, LogPriority.VERBOSE) { "loadThread() url='$threadUrl'" }
 
         val request = Request.Builder()
           .url(threadUrl)
           .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifyCatalogOrThreadGetRequest(
+              chanDescriptor = input,
+              requestBuilder = requestBuilder
+            )
+          }
           .build()
 
-        val threadDataJsonJsonAdapter = moshi.adapter<ThreadDataJson>(ThreadDataJson::class.java)
+        val threadDataJsonJsonAdapter = moshi.adapter<Chan4ThreadDataJson>(Chan4ThreadDataJson::class.java)
 
         val threadDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
           request,
@@ -181,150 +334,9 @@ class Chan4DataSource(
         }
 
         return@Try ThreadData(
-          threadDescriptor = threadDescriptor,
+          threadDescriptor = input,
           threadPosts = postDataList
         )
-      }
-    }
-  }
-
-  override suspend fun loadCatalog(catalogDescriptor: CatalogDescriptor): Result<CatalogData> {
-    return withContext(Dispatchers.IO) {
-      return@withContext Result.Try {
-        val siteKey = catalogDescriptor.siteKey
-        val boardCode = catalogDescriptor.boardCode
-
-        val site = siteManager.bySiteKey(siteKey)
-          ?: throw ChanDataSourceException("Unsupported site: ${siteKey}")
-
-        val catalogInfo = site.catalogInfo()
-          ?: throw ChanDataSourceException("Site ${site.readableName} does not support catalog")
-        val postImageInfo = site.postImageInfo()
-
-        val catalogUrl = catalogInfo.catalogUrl(boardCode)
-        logcat(TAG, LogPriority.VERBOSE) { "loadCatalog() url='$catalogUrl'" }
-
-        val request = Request.Builder()
-          .url(catalogUrl)
-          .get()
-          .build()
-
-        val catalogPagesDataJsonAdapter = moshi.adapter<List<CatalogPageDataJson>>(
-          Types.newParameterizedType(List::class.java, CatalogPageDataJson::class.java),
-        )
-
-        val catalogPagesDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
-          request,
-          catalogPagesDataJsonAdapter
-        )
-
-        val catalogPagesDataJson = catalogPagesDataJsonResult.unwrap()
-          ?: throw ChanDataSourceException("Failed to convert catalog json into CatalogDataJson object")
-
-        val totalCount = catalogPagesDataJson.sumOf { catalogPageData -> catalogPageData.threads.size }
-        val postDataList = mutableListWithCap<IPostData>(initialCapacity = totalCount)
-
-        catalogPagesDataJson.forEachIndexed { page, catalogPage ->
-          postDataList += catalogPage.threads.mapIndexed { index, catalogThread ->
-            val postDescriptor = PostDescriptor.create(
-              siteKey = site.siteKey,
-              boardCode = boardCode,
-              threadNo = catalogThread.no,
-              postNo = catalogThread.no
-            )
-
-            return@mapIndexed OriginalPostData(
-              originalPostOrder = page * index,
-              postDescriptor = postDescriptor,
-              postSubjectUnparsed = catalogThread.sub ?: "",
-              postCommentUnparsed = catalogThread.com ?: "",
-              name = catalogThread.name,
-              tripcode = catalogThread.trip,
-              posterId = catalogThread.id,
-              countryFlag = catalogThread.countryFlag(),
-              boardFlag = catalogThread.boardFlag(),
-              timeMs = catalogThread.time?.times(1000L),
-              images = parsePostImages(
-                postDescriptor = postDescriptor,
-                postImageInfo = postImageInfo,
-                sharedDataJson = catalogThread,
-                boardCode = boardCode
-              ),
-              threadRepliesTotal = catalogThread.replies,
-              threadImagesTotal = catalogThread.images,
-              threadPostersTotal = catalogThread.posters,
-              lastModified = catalogThread.lastModified,
-              archived = catalogThread.archived == 1,
-              closed = catalogThread.closed == 1,
-              deleted = false,
-              sticky = catalogThread.sticky(),
-              bumpLimit = catalogThread.bumpLimit?.let { bumpLimit -> bumpLimit == 1 },
-              imageLimit = catalogThread.imageLimit?.let { imageLimit -> imageLimit == 1 },
-            )
-          }
-        }
-
-        return@Try CatalogData(
-          catalogDescriptor = catalogDescriptor,
-          catalogThreads = postDataList
-        )
-      }
-    }
-  }
-
-  override suspend fun loadBoards(input: SiteKey): Result<CatalogsData> {
-    return withContext(Dispatchers.IO) {
-      return@withContext Result.Try {
-        val site = siteManager.bySiteKey(input)
-          ?: throw ChanDataSourceException("Unsupported site: ${input}")
-
-        val boardsInfo = site.boardsInfo()
-          ?: throw ChanDataSourceException("Site ${site.readableName} does not support boards list")
-
-        val boardsUrl = boardsInfo.boardsUrl()
-        logcat(TAG, LogPriority.VERBOSE) { "loadBoards() url='$boardsUrl'" }
-
-        val request = Request.Builder()
-          .url(boardsUrl)
-          .get()
-          .build()
-
-        val boardsDataJsonAdapter = moshi.adapter<BoardsDataJson>(BoardsDataJson::class.java)
-        val boardsDataJsonAdapterResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
-          request,
-          boardsDataJsonAdapter
-        )
-
-        val boardsDataJson = boardsDataJsonAdapterResult.unwrap()
-          ?: throw ChanDataSourceException("Failed to convert boards json into BoardDataJson object")
-
-        val chanBoards = boardsDataJson.boards.mapNotNull { boardDataJson ->
-          val boardCode = boardDataJson.boardCode ?: return@mapNotNull null
-          val boardTitle = boardDataJson.boardTitle
-          val boardDescription = boardDataJson.boardDescription?.let { HtmlUnescape.unescape(it) }
-
-          val allFlags = mutableListWithCap<BoardFlag>(64)
-
-          val loadedFlags = boardDataJson.boardFlags
-            ?.list
-            ?.map { boardFlagJson -> BoardFlag(boardFlagJson.key, boardFlagJson.name) }
-
-          if (loadedFlags.isNotNullNorEmpty()) {
-            allFlags += BoardFlag("0", "Default")
-            allFlags.addAll(loadedFlags)
-          }
-
-          return@mapNotNull ChanCatalog(
-            catalogDescriptor = CatalogDescriptor(input, boardCode),
-            boardTitle = boardTitle,
-            boardDescription = boardDescription,
-            workSafe = boardDataJson.workSafe == 1,
-            maxAttachFilesPerPost = 1,
-            flags = allFlags
-          )
-        }
-
-        return@Try CatalogsData(chanBoards)
       }
     }
   }
@@ -349,14 +361,13 @@ class Chan4DataSource(
           .get()
           .also { requestBuilder ->
             site.requestModifier().modifyCatalogOrThreadGetRequest(
-              site = site,
               chanDescriptor = input,
               requestBuilder = requestBuilder
             )
           }
           .build()
 
-        val threadBookmarkInfoJsonAdapter = moshi.adapter<ThreadBookmarkInfoJson>(ThreadBookmarkInfoJson::class.java)
+        val threadBookmarkInfoJsonAdapter = moshi.adapter<Chan4ThreadBookmarkInfoJson>(Chan4ThreadBookmarkInfoJson::class.java)
         val threadBookmarkInfoJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
           request,
           threadBookmarkInfoJsonAdapter
@@ -391,9 +402,21 @@ class Chan4DataSource(
           }
         }
 
+        val originalPostTim = (threadBookmarkInfoPostObjects.firstOrNull() as? ThreadBookmarkInfoPostObject.OriginalPost)?.tim
+
+        val bookmarkThumbnailUrl = if (originalPostTim != null) {
+          site.postImageInfo()?.let { postImageInfo ->
+            val params = (postImageInfo as Chan4.PostImageInfo).wrapParameters(input.boardCode, originalPostTim, "jpg")
+            postImageInfo.thumbnailUrl(params)
+          }
+        } else {
+          null
+        }
+
         return@Try ThreadBookmarkData(
           threadDescriptor = input,
-          postObjects = threadBookmarkInfoPostObjects
+          postObjects = threadBookmarkInfoPostObjects,
+          bookmarkThumbnailUrl = bookmarkThumbnailUrl
         )
       }
     }
@@ -416,8 +439,8 @@ class Chan4DataSource(
           .get()
           .build()
 
-        val catalogPageJsonListType = Types.newParameterizedType(List::class.java, CatalogPageJson::class.java)
-        val catalogPageJsonListAdapter = moshi.adapter<List<CatalogPageJson>>(catalogPageJsonListType)
+        val catalogPageJsonListType = Types.newParameterizedType(List::class.java, Chan4CatalogPageJson::class.java)
+        val catalogPageJsonListAdapter = moshi.adapter<List<Chan4CatalogPageJson>>(catalogPageJsonListType)
 
         val catalogPageJsonListResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
           request,
@@ -543,6 +566,7 @@ class Chan4DataSource(
             return@use Chan4LoginResult(passId)
           }
 
+          // TODO: strings
           val message = if (result.contains("Your Token must be exactly 10 characters")) {
             "Incorrect token"
           } else if (result.contains("You have left one or more fields blank")) {
@@ -574,10 +598,14 @@ class Chan4DataSource(
   private fun parsePostImages(
     postDescriptor: PostDescriptor,
     postImageInfo: Site.PostImageInfo?,
-    sharedDataJson: SharedDataJson,
+    sharedDataJson: Chan4SharedDataJson,
     boardCode: String
   ): List<PostImageData> {
     if (postImageInfo == null || !sharedDataJson.hasImage()) {
+      return emptyList()
+    }
+
+    if (postImageInfo !is Chan4.PostImageInfo) {
       return emptyList()
     }
 
@@ -586,18 +614,12 @@ class Chan4DataSource(
       ?: "jpg"
 
     val thumbnailUrl = postImageInfo.thumbnailUrl(
-      boardCode = boardCode,
-      tim = sharedDataJson.tim!!,
-      extension = "jpg"
-    ).toHttpUrlOrNull()
-      ?: return emptyList()
+      postImageInfo.wrapParameters(boardCode, sharedDataJson.tim!!, "jpg")
+    ) ?: return emptyList()
 
     val fullUrl = postImageInfo.fullUrl(
-      boardCode = boardCode,
-      tim = sharedDataJson.tim!!,
-      extension = extension
-    ).toHttpUrlOrNull()
-      ?: return emptyList()
+      postImageInfo.wrapParameters(boardCode, sharedDataJson.tim!!, extension)
+    ) ?: return emptyList()
 
     val serverFileName = sharedDataJson.tim.toString()
     val originalFileName = sharedDataJson.filename
@@ -612,15 +634,13 @@ class Chan4DataSource(
       ext = extension,
       width = sharedDataJson.w!!,
       height = sharedDataJson.h!!,
-      fileSize = sharedDataJson.fsize!!,
+      fileSize = sharedDataJson.fsize!!.toLong(),
       thumbnailSpoiler = sharedDataJson.spoiler?.let { spoilerId -> ThumbnailSpoiler.Chan4(spoilerId) },
       ownerPostDescriptor = postDescriptor
     )
 
     return listOf(postImageData)
   }
-
-  class ChanDataSourceException(message: String) : ClientException(message)
 
   companion object {
     private const val TAG = "Chan4DataSource"

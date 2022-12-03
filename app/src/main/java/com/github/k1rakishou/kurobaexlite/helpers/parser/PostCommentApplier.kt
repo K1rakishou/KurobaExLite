@@ -186,7 +186,8 @@ class PostCommentApplier {
             is TextPartSpan.Linkable.Quote,
             is TextPartSpan.Linkable.Search,
             is TextPartSpan.PartialSpan,
-            TextPartSpan.Spoiler -> {
+            is TextPartSpan.Underline,
+            is TextPartSpan.Spoiler -> {
               error("${span.linkSpan::class.java.simpleName} is not supported as a partial span")
             }
           }
@@ -225,6 +226,9 @@ class PostCommentApplier {
           }
 
           annotationTag = ANNOTATION_POST_SPOILER_TEXT
+        }
+        is TextPartSpan.Underline -> {
+          underline = true
         }
         is TextPartSpan.Linkable -> {
           when (span) {

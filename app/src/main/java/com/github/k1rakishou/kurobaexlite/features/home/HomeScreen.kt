@@ -46,6 +46,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
@@ -71,6 +72,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentIt
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.WindowSizeClass
@@ -79,6 +81,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreenWithToolbar
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.drawDragLongtapDragGestureZone
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.rememberDrawerLongtapDragGestureZoneState
 import kotlinx.coroutines.CancellationException
@@ -289,9 +292,11 @@ private fun ContentInternal(
   handleBackPresses: @Composable (HomeScreenPageConverter.PagesWrapper) -> Unit
 ) {
   val context = LocalContext.current
+  val componentActivity = LocalComponentActivity.current
 
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val snackbarManager: SnackbarManager = koinRemember()
+  val replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel()
 
   ShowAndProcessSnackbars()
 
@@ -326,6 +331,28 @@ private fun ContentInternal(
 
     return
   }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      replyLayoutViewModel.errorDialogMessageFlow.collect { errorDialogMessage ->
+        suspendCancellableCoroutine<Unit> { continuation ->
+          val dialogScreen = DialogScreen(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouterProvider(),
+            params = DialogScreen.Params(
+              title = DialogScreen.Text.String(errorDialogMessage.title),
+              description = DialogScreen.Text.String(errorDialogMessage.message ),
+              positiveButton = DialogScreen.okButton()
+            ),
+            onDismissed = { continuation.resumeSafe(Unit) }
+          )
+
+          navigationRouterProvider().presentScreen(dialogScreen)
+        }
+      }
+    }
+  )
 
   // rememberSaveable currently does not recreate objects when it's keys change, instead it uses
   // the restored object from the saver. This causes crashes when going from portrait to landscape

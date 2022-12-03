@@ -6,7 +6,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import kotlinx.coroutines.flow.combine
+import org.koin.java.KoinJavaComponent.inject
 
 abstract class SettingItem(
   val key: String,
@@ -14,6 +16,8 @@ abstract class SettingItem(
   val subtitle: AnnotatedString?,
   val dependencies: List<BooleanSetting>
 ) {
+  protected val snackbarManager by inject<SnackbarManager>(SnackbarManager::class.java)
+
   protected val dependenciesEnabledState = mutableStateOf(false)
 
   @CallSuper

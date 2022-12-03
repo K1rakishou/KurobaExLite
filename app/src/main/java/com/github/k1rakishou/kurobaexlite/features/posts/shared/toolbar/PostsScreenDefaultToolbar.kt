@@ -44,6 +44,7 @@ abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScr
           if (isCatalogMode && state is CatalogScreenDefaultToolbar.State) {
             state.showClickableMenuIcon.value = postListAsync is AsyncData.Uninitialized
               || postListAsync is AsyncData.Data
+              || postListAsync is AsyncData.Error
           }
         }
 
@@ -58,21 +59,21 @@ abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScr
               null
             }
 
-            state.contentFullyLoaded.value = false
+            state.displayMainContent.value = false
           }
           AsyncData.Loading -> {
             val state = defaultToolbarState()
               ?: return@LaunchedEffect
 
             state.toolbarTitleState.value = context.resources.getString(R.string.toolbar_loading_title)
-            state.contentFullyLoaded.value = false
+            state.displayMainContent.value = false
           }
           is AsyncData.Error -> {
             val state = defaultToolbarState()
               ?: return@LaunchedEffect
 
             state.toolbarTitleState.value = context.resources.getString(R.string.toolbar_loading_error)
-            state.contentFullyLoaded.value = false
+            state.displayMainContent.value = false
           }
           is AsyncData.Data -> {
             when (val chanDescriptor = postListAsync.data.chanDescriptor) {
@@ -90,7 +91,7 @@ abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScr
 
                 state.toolbarTitleState.value = "/${chanDescriptor.boardCode}/"
                 state.toolbarSubtitleState.value = boardTitle
-                state.contentFullyLoaded.value = true
+                state.displayMainContent.value = true
               }
               is ThreadDescriptor -> {
                 snapshotFlow { (postScreenState as ThreadScreenPostsState).originalPostState.value }
@@ -110,7 +111,7 @@ abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScr
                           ?: return@doWithPostDataOnceItsLoaded
 
                         state.toolbarTitleState.value = title
-                        state.contentFullyLoaded.value = true
+                        state.displayMainContent.value = true
                       }
                     )
                   }
@@ -124,7 +125,7 @@ abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScr
   abstract class PostsScreenToolbarState : KurobaChildToolbar.ToolbarState {
     val toolbarTitleState = mutableStateOf<String?>(null)
     val toolbarSubtitleState = mutableStateOf<String?>(null)
-    val contentFullyLoaded = mutableStateOf(false)
+    val displayMainContent = mutableStateOf(false)
   }
 
 }

@@ -288,9 +288,9 @@ class Chan4CaptchaViewModel(
       .url(urlRaw)
       .get()
 
-    siteManager.bySiteKey(chanDescriptor.siteKey)?.let { chan4 ->
-      chan4.requestModifier().modifyCaptchaGetRequest(chan4, requestBuilder)
-    }
+    siteManager.bySiteKey(chanDescriptor.siteKey)
+      ?.requestModifier()
+      ?.modifyCaptchaGetRequest(requestBuilder)
 
     val request = requestBuilder.build()
     val captchaInfoRawAdapter = moshi.adapter(CaptchaInfoRaw::class.java)

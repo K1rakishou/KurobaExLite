@@ -4,36 +4,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 object HtmlUnescape {
 
-  private val replacementMap = ConcurrentHashMap<Char, List<ReplacementInfo>>()
+  private val replacementRules = ConcurrentHashMap<Char, MutableList<ReplacementRule>>()
 
   init {
-    replacementMap['g'] = listOf(
-      ReplacementInfo(
-        fullEscapedValue = "&gt;",
-        replacement = ">"
-      )
-    )
-
-    replacementMap['l'] = listOf(
-      ReplacementInfo(
-        fullEscapedValue = "&lt;",
-        replacement = "<"
-      )
-    )
-
-    replacementMap['q'] = listOf(
-      ReplacementInfo(
-        fullEscapedValue = "&quot;",
-        replacement = "\""
-      )
-    )
-
-    replacementMap['a'] = listOf(
-      ReplacementInfo(
-        fullEscapedValue = "&amp;",
-        replacement = "&"
-      )
-    )
+    addReplacementRule('l', "&lt;", "<")
+    addReplacementRule('g', "&gt;", ">")
+    addReplacementRule('n', "&nbsp;", " ")
+    addReplacementRule('q', "&quot;", "\"")
+    addReplacementRule('a', "&amp;", "&")
   }
 
   fun unescape(input: String): String {
@@ -83,8 +61,8 @@ object HtmlUnescape {
       '#' -> {
         return unescapeAsciiCharacter(input, offset, stringBuilder)
       }
-      'g', 'l', 'q', 'a' -> {
-        val replacementInfoList = replacementMap[secondChar]
+      else -> {
+        val replacementInfoList = replacementRules[secondChar]
         if (replacementInfoList == null || replacementInfoList.isEmpty()) {
           return 0
         }
@@ -100,8 +78,6 @@ object HtmlUnescape {
         return 0
       }
     }
-
-    return 0
   }
 
   private fun unescapeAsciiCharacter(
@@ -134,10 +110,6 @@ object HtmlUnescape {
       return 0
     }
 
-    if (asciiEncoded.length != 3) {
-      return 0
-    }
-
     val asciiChar = asciiEncoded.toString().toIntOrNull()?.toChar()
       ?: return 0
 
@@ -163,9 +135,21 @@ object HtmlUnescape {
     return true
   }
 
-  class ReplacementInfo(
+  class ReplacementRule(
     val fullEscapedValue: String,
     val replacement: String
   )
+
+  private fun addReplacementRule(key: Char, value: String, replacement: String) {
+    val replacementList = replacementRules.getOrPut(
+      key = key,
+      defaultValue = { mutableListOf() }
+    )
+
+    replacementList += ReplacementRule(
+      fullEscapedValue = value,
+      replacement = replacement
+    )
+  }
 
 }

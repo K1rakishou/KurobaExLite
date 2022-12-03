@@ -68,7 +68,7 @@ class Chan4ReplyInfo(
         requestBuilder.url(replyUrl)
         requestBuilder.addHeader("Referer", replyUrl)
         requestBuilder.post(multipartBody)
-        site.requestModifier().modifyReplyRequest(site, requestBuilder)
+        site.requestModifier().modifyReplyRequest(requestBuilder)
 
         val request = requestBuilder.build()
 
@@ -112,8 +112,9 @@ class Chan4ReplyInfo(
         )
       }
 
-      if (isBanned(errorMessage)) {
-        return ReplyResponse.Banned(errorMessage)
+      val notAllowedToPostReason = tryExtractNotAllowedToPostReason(errorMessage)
+      if (notAllowedToPostReason != null) {
+        return notAllowedToPostReason
       }
 
       if (chanDescriptor is ThreadDescriptor) {
@@ -334,23 +335,33 @@ class Chan4ReplyInfo(
     return ((minutes * 60) + seconds) * 1000L
   }
 
-  private fun isBanned(errorMessage: String?): Boolean {
+  private fun tryExtractNotAllowedToPostReason(errorMessage: String?): ReplyResponse.NotAllowedToPost? {
     if (errorMessage == null) {
-      return false
+      return null
     }
 
     val isBannedFound = errorMessage.contains(PROBABLY_BANNED_TEXT)
     if (isBannedFound) {
-      return true
+      return ReplyResponse.NotAllowedToPost(errorMessage)
     }
 
-    return errorMessage.contains(PROBABLY_IP_RANGE_BLOCKED)
+    val isWarnedFound = errorMessage.contains(PROBABLY_WARNED_TEXT)
+    if (isWarnedFound) {
+      return ReplyResponse.NotAllowedToPost(errorMessage)
+    }
+
+    if (errorMessage.contains(PROBABLY_IP_RANGE_BLOCKED)) {
+      return ReplyResponse.NotAllowedToPost(errorMessage)
+    }
+
+    return null
   }
 
   companion object {
     private const val TAG = "Chan4ReplyInfo"
 
     private const val PROBABLY_BANNED_TEXT = "banned"
+    private const val PROBABLY_WARNED_TEXT = "warned"
     private const val PROBABLY_IP_RANGE_BLOCKED = "Posting from your IP range has been blocked due to abuse"
     private const val FORGOT_TO_SOLVE_CAPTCHA = "Error: You forgot to solve the CAPTCHA"
     private const val MISTYPED_CAPTCHA = "Error: You seem to have mistyped the CAPTCHA"

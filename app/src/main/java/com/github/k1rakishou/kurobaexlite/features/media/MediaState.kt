@@ -34,6 +34,7 @@ sealed class MediaState {
     val timePositionState = mutableStateOf<Long?>(null)
     val demuxerCacheDurationState = mutableStateOf<Long?>(null)
     val durationState = mutableStateOf<Long?>(null)
+    val playbackError = mutableStateOf<String?>(null)
 
     val muteEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
     val playPauseEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)

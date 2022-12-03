@@ -23,7 +23,8 @@ sealed class TextPartSpan {
       is Linkable.Quote,
       is Linkable.Search,
       is Linkable.Url,
-      is PartialSpan -> PRIORITY_TEXT
+      is PartialSpan,
+      is Underline -> PRIORITY_TEXT
       is FgColor,
       is FgColorId -> PRIORITY_FOREGROUND
       Spoiler -> PRIORITY_SPOILER
@@ -47,6 +48,8 @@ sealed class TextPartSpan {
   class FgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
   @Immutable
   object Spoiler : TextPartSpan()
+  @Immutable
+  object Underline : TextPartSpan()
 
   @Immutable
   sealed class Linkable : TextPartSpan() {

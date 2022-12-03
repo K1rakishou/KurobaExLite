@@ -64,13 +64,18 @@ interface Site {
   }
 
   interface ThreadInfo  {
-    fun threadUrl(boardCode: String, threadNo: Long): String
+    // Some image boards support incremental thread updates, like you give the endpoint the last postNo that you have and
+    // it returns 0 or more posts after that post.
+    fun fullThreadUrl(boardCode: String, threadNo: Long): String
+
+    // Full thread update endpoint
+    fun partialThreadUrl(boardCode: String, threadNo: Long, afterPost: PostDescriptor): String
     fun threadDataSource(): IThreadDataSource<ThreadDescriptor, ThreadData>
   }
 
   interface PostImageInfo {
-    fun thumbnailUrl(boardCode: String, tim: Long, extension: String): String
-    fun fullUrl(boardCode: String, tim: Long, extension: String): String
+    fun thumbnailUrl(params: Map<String, String>): HttpUrl?
+    fun fullUrl(params: Map<String, String>): HttpUrl?
   }
 
   interface BoardsInfo {
@@ -125,7 +130,7 @@ sealed class ReplyResponse {
     val errorMessage: String
   ) : ReplyResponse()
 
-  data class Banned(val banMessage: String) : ReplyResponse()
+  data class NotAllowedToPost(val errorMessage: String) : ReplyResponse()
 
   data class RateLimited(val timeToWaitMs: Long) : ReplyResponse()
 

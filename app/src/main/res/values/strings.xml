@@ -132,6 +132,7 @@
 
     <string name="site_settings_screen_toolbar_title">%1$s site settings</string>
     <string name="site_settings_site_not_supported">Site \'%1$s\' is not supported</string>
+    <string name="site_settings_site_has_no_settings">Site \'%1$s\' has no settings</string>
 
     <string name="board_selection_screen_toolbar_title">Boards list</string>
     <string name="board_selection_screen_no_boards_loaded">No boards loaded</string>
@@ -199,13 +200,7 @@
     <string name="media_viewer_mpv_hw_decoding">HW</string>
     <string name="media_viewer_mpv_sw_decoding">SW</string>
     <string name="media_viewer_close_label_text">Close viewer</string>
-    <string name="media_viewer_muted">Muted</string>
-    <string name="media_viewer_unmuted">Unmuted</string>
-    <string name="media_viewer_paused">Paused</string>
-    <string name="media_viewer_unpaused">Unpaused</string>
     <string name="media_viewer_hwsw_decoding_toggle_failed">Failed to toggle software/hardware decoding</string>
-    <string name="media_viewer_switched_to_hw_decoding">Switched to hardware decoding</string>
-    <string name="media_viewer_switched_to_sw_decoding">Switched to software decoding</string>
     <string name="media_viewer_no_images_to_show">No images to show</string>
     <string name="media_viewer_new_images_added">%1$d new image(s)</string>
     <string name="media_viewer_media_not_supported">Media \'%1$s\' is not supported</string>
@@ -252,7 +247,8 @@
     <string name="reply_view_model_you_forgot_captcha_error">You forgot to solve the CAPTCHA</string>
     <string name="reply_view_model_you_mistyped_captcha_error">You seem to have mistyped the CAPTCHA</string>
     <string name="reply_view_model_generic_authentication_error">Authentication required</string>
-    <string name="reply_view_model_you_are_banned_error">You are banned. Ban message: \'%1$s\'</string>
+    <string name="reply_view_model_cannot_post_title">Cannot post</string>
+    <string name="reply_view_model_cannot_post_message">Server returned error message: \'%1$s\'</string>
     <string name="reply_view_model_unknown_posting_error">Unknown posting error: \'%1$s\'</string>
     <string name="reply_view_model_posting_rate_limit_error">You have to wait \'%1$s\' seconds before you can post again</string>
     <string name="reply_view_model_reply_sent_successfully">Reply sent successfully</string>
@@ -320,6 +316,9 @@
     <string name="chan4_setting_passcode_token">Token</string>
     <string name="chan4_setting_passcode_pin">PIN</string>
     <string name="chan4_setting_passcode_cookie">Passcode cookie</string>
+
+    <string name="dvach_setting_site_domain">Site domain</string>
+    <string name="dvach_setting_passcode_cookie">Passcode cookie</string>
 
     <string name="crash_report_activity_title">The application has crashed!</string>
     <string name="crash_report_activity_crash_message_section">Crash message</string>

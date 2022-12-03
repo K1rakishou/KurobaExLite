@@ -64,7 +64,10 @@ class ChanThreadManager(
       ?.threadDataSource()
       ?: return Result.failure(ThreadNotSupported(threadDescriptor.siteKey))
 
-    return threadDataSource.loadThread(threadDescriptor)
+    val lastCachedThreadPost = chanCache.getLastLoadedPostForIncrementalUpdate(threadDescriptor)
+      ?.postDescriptor
+
+    return threadDataSource.loadThread(threadDescriptor, lastCachedThreadPost)
       .map { threadData -> chanCache.insertThreadPosts(threadDescriptor, threadData.threadPosts) }
   }
 

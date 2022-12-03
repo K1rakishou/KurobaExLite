@@ -33,4 +33,7 @@ abstract class SiteSettings(
     navigationRouter: NavigationRouter,
     showDialogScreen: suspend (DialogScreen.Params) -> Unit
   ): List<SettingItem>
+
+  class SettingFormatException(message: String) : java.lang.Exception(message)
+
 }

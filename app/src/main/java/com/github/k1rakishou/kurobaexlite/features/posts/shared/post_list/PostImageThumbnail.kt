@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
@@ -51,6 +53,7 @@ fun PostImageThumbnail(
   val context = LocalContext.current
 
   val revealedSpoilerImages = koinRemember<RevealedSpoilerImages>()
+  val siteManager = koinRemember<SiteManager>()
 
   var loadErrorMut by remember { mutableStateOf<Throwable?>(null) }
   val loadError = loadErrorMut
@@ -115,61 +118,78 @@ fun PostImageThumbnail(
       return@remember postImage.thumbnailAsUrl
     }
 
-    SubcomposeAsyncImage(
-      modifier = modifier,
-      model = ImageRequest.Builder(context)
-        .data(thumbnailUrl)
-        .crossfade(true)
-        .size(Size.ORIGINAL)
-        .build(),
-      contentDescription = null,
-      contentScale = contentScale,
-      onState = { state ->
-        loadErrorMut = if (state is AsyncImagePainter.State.Error) {
-          state.result.throwable
-        } else {
-          null
-        }
-      },
-      content = {
-        val state = painter.state
-
-        if (
-          (state is AsyncImagePainter.State.Empty || state is AsyncImagePainter.State.Loading)
-          && showShimmerEffectWhenLoading
-        ) {
-          Shimmer(modifier = Modifier.fillMaxSize())
-        }
-
-        if (state is AsyncImagePainter.State.Success) {
-          SubcomposeAsyncImageContent(modifier = Modifier.fillMaxSize())
-        }
-
-        Box(
-          modifier = Modifier.fillMaxSize(),
-          contentAlignment = Alignment.Center
-        ) {
-          if (state is AsyncImagePainter.State.Error) {
-            logcatError {
-              "PostCellTitle() url=${postImage.thumbnailAsUrl}, " +
-                "postDescriptor=${postImage.ownerPostDescriptor}, " +
-                "error=${state.result.throwable.errorMessageOrClassName()}"
-            }
-
-            KurobaComposeIcon(
-              modifier = Modifier.size(iconWidthDp, iconHeightDp),
-              drawableId = R.drawable.ic_baseline_warning_24
-            )
-          } else {
-            if (postImage.imageType() == ImageType.Video) {
-              KurobaComposeIcon(
-                modifier = Modifier.size(iconWidthDp, iconHeightDp),
-                drawableId = R.drawable.ic_play_circle_outline_white_24dp
-              )
-            }
+    val imageRequest by produceState<ImageRequest?>(
+      initialValue = null,
+      key1 = thumbnailUrl,
+      producer = {
+        value = ImageRequest.Builder(context)
+          .data(thumbnailUrl)
+          .crossfade(true)
+          .size(Size.ORIGINAL)
+          .also { imageRequestBuilder ->
+            siteManager.bySiteKey(postImage.ownerPostDescriptor.siteKey)
+              ?.requestModifier()
+              ?.modifyCoilImageRequest(thumbnailUrl, imageRequestBuilder)
           }
-        }
+          .build()
       }
     )
+
+    Box(modifier = modifier) {
+      if (imageRequest != null) {
+        SubcomposeAsyncImage(
+          modifier = Modifier.fillMaxSize(),
+          model = imageRequest,
+          contentDescription = null,
+          contentScale = contentScale,
+          onState = { state ->
+            loadErrorMut = if (state is AsyncImagePainter.State.Error) {
+              state.result.throwable
+            } else {
+              null
+            }
+          },
+          content = {
+            val state = painter.state
+
+            if (
+              (state is AsyncImagePainter.State.Empty || state is AsyncImagePainter.State.Loading)
+              && showShimmerEffectWhenLoading
+            ) {
+              Shimmer(modifier = Modifier.fillMaxSize())
+            }
+
+            if (state is AsyncImagePainter.State.Success) {
+              SubcomposeAsyncImageContent(modifier = Modifier.fillMaxSize())
+            }
+
+            Box(
+              modifier = Modifier.fillMaxSize(),
+              contentAlignment = Alignment.Center
+            ) {
+              if (state is AsyncImagePainter.State.Error) {
+                logcatError {
+                  "PostCellTitle() url=${postImage.thumbnailAsUrl}, " +
+                    "postDescriptor=${postImage.ownerPostDescriptor}, " +
+                    "error=${state.result.throwable.errorMessageOrClassName()}"
+                }
+
+                KurobaComposeIcon(
+                  modifier = Modifier.size(iconWidthDp, iconHeightDp),
+                  drawableId = R.drawable.ic_baseline_warning_24
+                )
+              } else {
+                if (postImage.imageType() == ImageType.Video) {
+                  KurobaComposeIcon(
+                    modifier = Modifier.size(iconWidthDp, iconHeightDp),
+                    drawableId = R.drawable.ic_play_circle_outline_white_24dp
+                  )
+                }
+              }
+            }
+          }
+        )
+      }
+    }
   }
 }

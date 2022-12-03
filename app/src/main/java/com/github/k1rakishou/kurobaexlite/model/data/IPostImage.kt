@@ -16,7 +16,7 @@ interface IPostImage {
   val ext: String
   val width: Int
   val height: Int
-  val fileSize: Int
+  val fileSize: Long
   val thumbnailSpoiler: ThumbnailSpoiler?
 
   val ownerPostDescriptor: PostDescriptor

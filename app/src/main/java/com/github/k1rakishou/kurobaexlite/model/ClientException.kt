@@ -9,6 +9,8 @@ abstract class ClientException : Exception {
   constructor(message: String, cause: Throwable) : super(message, cause)
 }
 
+class ChanDataSourceException(message: String) : ClientException(message)
+
 class BadStatusResponseException(val status: Int) : ClientException("Bad response status: ${status}") {
 
   fun isAuthError(): Boolean {

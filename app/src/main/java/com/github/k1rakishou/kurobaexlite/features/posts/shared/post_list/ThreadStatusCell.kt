@@ -164,7 +164,7 @@ internal fun ThreadStatusCell(
               append(", ")
             }
 
-            val capacity = threadStatusCellDataUpdated.sticky.capacity
+            val capacity = threadStatusCellDataUpdated.sticky.maxCapacity
             if (capacity != null && capacity > 0) {
               append(context.getString(R.string.thread_status_pinned_with_cap, capacity))
             } else {

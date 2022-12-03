@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.foundation.interaction.InteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -175,22 +174,8 @@ class DialogScreen(
       Spacer(modifier = Modifier.height(8.dp))
 
       Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.End
+        modifier = Modifier.fillMaxWidth()
       ) {
-        if (params.negativeButton != null) {
-          KurobaComposeTextBarButton(
-            modifier = Modifier.wrapContentSize(),
-            onClick = {
-              params.negativeButton.onClick?.invoke()
-              stopPresenting()
-            },
-            text = stringResource(id = params.negativeButton.buttonText)
-          )
-
-          Spacer(modifier = Modifier.height(8.dp))
-        }
-
         if (params.neutralButton != null) {
           KurobaComposeTextBarButton(
             modifier = Modifier.wrapContentSize(),
@@ -199,6 +184,21 @@ class DialogScreen(
               stopPresenting()
             },
             text = stringResource(id = params.neutralButton.buttonText)
+          )
+
+          Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        if (params.negativeButton != null) {
+          KurobaComposeTextBarButton(
+            modifier = Modifier.wrapContentSize(),
+            onClick = {
+              params.negativeButton.onClick?.invoke()
+              stopPresenting()
+            },
+            text = stringResource(id = params.negativeButton.buttonText)
           )
 
           Spacer(modifier = Modifier.height(8.dp))

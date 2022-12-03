@@ -117,7 +117,7 @@ class CatalogScreenDefaultToolbar(
         val toolbarSubtitle by state.toolbarSubtitleState
         val siteIconUrl by state.siteIconUrl
         val showClickableMenuIcon by state.showClickableMenuIcon
-        val contentFullyLoaded by state.contentFullyLoaded
+        val displayMainContent by state.displayMainContent
 
         if (toolbarTitle != null) {
           Row(
@@ -127,7 +127,7 @@ class CatalogScreenDefaultToolbar(
               .kurobaClickable(onClick = { state.onSelectCatalogClicked() }),
             verticalAlignment = Alignment.CenterVertically
           ) {
-            if (contentFullyLoaded) {
+            if (displayMainContent) {
               Spacer(modifier = Modifier.width(8.dp))
 
               Column(modifier = Modifier.weight(1f)) {

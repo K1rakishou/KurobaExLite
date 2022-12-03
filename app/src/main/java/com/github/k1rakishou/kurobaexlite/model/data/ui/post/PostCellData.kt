@@ -67,7 +67,7 @@ data class PostCellData(
   }
 
   @Immutable
-  data class Sticky(val capacity: Int?)
+  data class Sticky(val maxCapacity: Int?)
 
   companion object {
     fun fromPostData(

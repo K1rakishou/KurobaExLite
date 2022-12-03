@@ -98,7 +98,7 @@ data class ThreadDescriptor(
 ) : ChanDescriptor() {
 
   init {
-    check(threadNo >= 0L) { "Bad threadNo: ${threadNo}" }
+    check(threadNo > 0L) { "Bad threadNo: ${threadNo}" }
   }
 
   override val siteKey: SiteKey
@@ -196,7 +196,7 @@ data class PostDescriptor(
 ) : Parcelable, Comparable<PostDescriptor> {
 
   init {
-    check(postNo >= 0L) { "Bad postNo: ${postNo}" }
+    check(postNo > 0L) { "Bad postNo: ${postNo}" }
     check(postSubNo >= 0L) { "Bad postSubNo: ${postSubNo}" }
   }
 
@@ -301,6 +301,9 @@ data class PostDescriptor(
       postNo: Long,
       postSubNo: Long = 0L
     ): PostDescriptor {
+      check(threadNo > 0L) { "Bad threadNo: ${threadNo}" }
+      check(postNo > 0L) { "Bad postNo: ${postNo}" }
+
       return PostDescriptor(
         threadDescriptor = ThreadDescriptor(
           catalogDescriptor = CatalogDescriptor(

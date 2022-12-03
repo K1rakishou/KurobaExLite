@@ -102,7 +102,7 @@ class SettingGroupBuilder(
       enabled = enabled,
       delegate = delegate,
       showDialogScreen = showDialogScreen,
-      settingValueMapper = settingNameMapper,
+      settingDisplayFormatter = settingNameMapper,
       onSettingUpdated = onSettingUpdated
     )
 

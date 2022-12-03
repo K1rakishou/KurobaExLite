@@ -2,10 +2,12 @@ package com.github.k1rakishou.kurobaexlite.model.data.local
 
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import okhttp3.HttpUrl
 
 class ThreadBookmarkData(
   val threadDescriptor: ThreadDescriptor,
-  val postObjects: List<ThreadBookmarkInfoPostObject>
+  val postObjects: List<ThreadBookmarkInfoPostObject>,
+  val bookmarkThumbnailUrl: HttpUrl?
 ) {
 
   fun getPostsCountWithoutOP(): Int {
@@ -46,13 +48,6 @@ class ThreadBookmarkData(
       ?: return null
 
     return originalPost.comment
-  }
-
-  fun originalPostTim(): Long? {
-    val originalPost = postObjects.firstOrNull() as? ThreadBookmarkInfoPostObject.OriginalPost
-      ?: return null
-
-    return originalPost.tim
   }
 
 }

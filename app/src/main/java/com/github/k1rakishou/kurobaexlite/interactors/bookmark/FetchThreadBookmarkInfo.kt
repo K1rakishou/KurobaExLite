@@ -24,7 +24,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.Dispatchers
 import logcat.LogPriority
 import logcat.logcat
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.joda.time.DateTime
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
@@ -308,20 +307,8 @@ class FetchThreadBookmarkInfo(
     }
 
     // Update bookmark thumbnail if it's not set
-    if (threadBookmark.thumbnailUrl == null) {
-      val tim = threadBookmarkData.originalPostTim()
-      if (tim != null) {
-        val site = siteManager.bySiteKey(threadDescriptor.siteKey)
-        if (site != null) {
-          val updatedThumbnailUrl = site.postImageInfo()
-            ?.thumbnailUrl(threadDescriptor.boardCode, tim, "jpg")
-            ?.toHttpUrlOrNull()
-
-          if (updatedThumbnailUrl != null) {
-            threadBookmark.thumbnailUrl = updatedThumbnailUrl
-          }
-        }
-      }
+    if (threadBookmark.thumbnailUrl == null && threadBookmarkData.bookmarkThumbnailUrl != null) {
+      threadBookmark.thumbnailUrl = threadBookmarkData.bookmarkThumbnailUrl
     }
 
     threadBookmark.clearFirstFetchFlag()

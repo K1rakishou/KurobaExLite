@@ -94,15 +94,17 @@ import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.ReportManager
 import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.managers.SiteProvider
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.BoardFlagsJsonAdapter
+import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4BoardFlagsJsonAdapter
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.GlobalSearchRepository
 import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.model.source.dvach.DvachDataSource
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityIntentHandler
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
@@ -129,10 +131,10 @@ object DependencyGraph {
     modules += module(createdAtStart = createAtStart) {
       system(application, appCoroutineScope)
       misc()
+      model()
       kurobaDiskLruCache()
       coilMediaDiskCache()
       coilImageLoader()
-      repositories()
       interactors()
       managers()
       viewModels()
@@ -154,6 +156,7 @@ object DependencyGraph {
   }
 
   private fun Module.misc() {
+    single { SiteProvider(appContext = get(), appScope = get()) }
     single { AppSettings(fileName = "app_settings", appContext = get(), moshi = get()) }
     single { RemoteImageSearchSettings(fileName = "remote_image_search_settings", appContext = get(), moshi = get()) }
     single { DialogSettings(fileName = "dialog_settings", appContext = get(), moshi = get()) }
@@ -173,8 +176,6 @@ object DependencyGraph {
     single { PostCommentApplier() }
     single { FullScreenHelpers(get()) }
     single { AndroidHelpers(application = get(), snackbarManager = get()) }
-    single { ChanCache(androidHelpers = get()) }
-    single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
     single { PostBindProcessor(get()) }
     single { ThemeEngine() }
     single { MediaViewerPostListScroller() }
@@ -251,12 +252,12 @@ object DependencyGraph {
 
   private fun createMoshi(): Moshi {
     return Moshi.Builder()
-      .add(BoardFlagsJsonAdapter())
+      .add(Chan4BoardFlagsJsonAdapter())
       .build()
   }
 
   private fun Module.managers() {
-    single { SiteManager(appContext = get()) }
+    single { SiteManager(siteProvider = get()) }
     single<ISiteManager> { get<SiteManager>() }
     single { ApplicationVisibilityManager() }
     single { CatalogManager() }
@@ -399,6 +400,7 @@ object DependencyGraph {
         appSettings = get(),
         appResources = get(),
         chanCache = get(),
+        siteManager = get(),
         proxiedOkHttpClient = get(),
         kurobaLruDiskCache = get(),
         installMpvNativeLibrariesFromGithub = get(),
@@ -484,16 +486,6 @@ object DependencyGraph {
     viewModel {
       Chan4LoginScreenViewModel(siteManager = get())
     }
-  }
-
-  private fun Module.repositories() {
-    single {
-      CatalogPagesRepository(
-        appScope = get(),
-        siteManager = get(),
-      )
-    }
-    single { GlobalSearchRepository(siteManager = get()) }
   }
 
   private fun Module.interactors() {
@@ -693,6 +685,21 @@ object DependencyGraph {
 
       return@single diskCache
     }
+  }
+
+  private fun Module.model() {
+    single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
+    single { DvachDataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
+
+    single { ChanCache(androidHelpers = get()) }
+
+    single {
+      CatalogPagesRepository(
+        appScope = get(),
+        siteManager = get(),
+      )
+    }
+    single { GlobalSearchRepository(siteManager = get()) }
   }
 
   private fun Module.kurobaDiskLruCache() {

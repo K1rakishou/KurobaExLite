@@ -88,7 +88,20 @@ fun ReplyLayoutContainer(
     key1 = chanDescriptor,
     block = {
       replyLayoutState.replyErrorMessageFlow.collect { errorMessage ->
-        replyLayoutViewModel.showErrorToast(chanDescriptor, errorMessage)
+        when (errorMessage) {
+          is ReplyErrorMessage.Dialog -> {
+            replyLayoutViewModel.showErrorDialog(
+              title = errorMessage.title,
+              errorMessage = errorMessage.message
+            )
+          }
+          is ReplyErrorMessage.Toast -> {
+            replyLayoutViewModel.showErrorToast(
+              chanDescriptor = chanDescriptor,
+              errorMessage = errorMessage.message
+            )
+          }
+        }
       }
     }
   )

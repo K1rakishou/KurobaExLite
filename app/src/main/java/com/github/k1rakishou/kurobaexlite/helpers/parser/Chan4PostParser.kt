@@ -8,76 +8,76 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import java.nio.charset.StandardCharsets
 
-class Chan4PostParser : AbstractSitePostParser() {
+open class Chan4PostParser : AbstractSitePostParser() {
 
-  override fun parseHtmlNode(
+  override fun parseNewLineTag(childTextParts: MutableList<TextPartMut>) {
+    childTextParts += TextPartMut(text = "\n")
+  }
+
+  override fun parseParagraphTag(childTextParts: MutableList<TextPartMut>) {
+
+  }
+
+  override fun parseStrikethroughTag(childTextParts: MutableList<TextPartMut>) {
+    for (childTextPart in childTextParts) {
+      childTextPart.spans.add(TextPartSpan.Spoiler)
+    }
+  }
+
+  override fun parseSpanTag(
     htmlTag: HtmlTag,
     childTextParts: MutableList<TextPartMut>,
     postDescriptor: PostDescriptor
   ) {
-    when (htmlTag.tagName) {
-      "br" -> {
-        childTextParts += TextPartMut(text = "\n")
+    if (htmlTag.hasClass("quote")) {
+      for (childTextPart in childTextParts) {
+        childTextPart.spans.add(TextPartSpan.FgColorId(ChanThemeColorId.PostInlineQuote))
       }
-      "s" -> {
-        for (childTextPart in childTextParts) {
-          childTextPart.spans.add(TextPartSpan.Spoiler)
-        }
-      }
-      "span",
-      "a" -> {
-        if (htmlTag.hasClass("quote")) {
-          for (childTextPart in childTextParts) {
-            childTextPart.spans.add(TextPartSpan.FgColorId(ChanThemeColorId.PostInlineQuote))
-          }
 
-          return
-        }
-
-        val className = htmlTag.classAttrOrNull()
-          ?: return
-
-        val childTextPart = if (childTextParts.size == 1) {
-          childTextParts.first()
-        } else {
-          val mergedTextPart = mergeChildTextPartsIntoOne(childTextParts)
-
-          childTextParts.clear()
-          childTextParts.add(mergedTextPart)
-
-          mergedTextPart
-        }
-
-        val isDeadLink = htmlTag.tagName == "span" && htmlTag.hasClass("deadlink")
-
-        val href = if (isDeadLink) {
-          childTextPart.text
-        } else {
-          htmlTag.attrUnescapedOrNull("href")
-        }
-
-        if (href.isNullOrEmpty()) {
-          return
-        }
-
-        val linkable = parseLinkable(className, href, postDescriptor)
-        if (linkable == null) {
-          logcatError { "Failed to parse linkable. className='$className', href='$href'" }
-          return
-        }
-
-        childTextPart.spans += linkable
-      }
-      "wbr" -> {
-        error("<wbr> tags should all be removed during the HTML parsing stage. This is most likely a HTML parser bug.")
-      }
-      else -> {
-        logcatError {
-          "Unsupported tag with name '${htmlTag.tagName}' found. " +
-            "(postDescriptor=$postDescriptor, htmlTag=$htmlTag)"
-        }
-      }
+      return
     }
+
+    parseLinkTag(htmlTag, childTextParts, postDescriptor)
+  }
+
+  override fun parseLinkTag(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>,
+    postDescriptor: PostDescriptor
+  ) {
+    val className = htmlTag.classAttrOrNull()
+      ?: return
+
+    val childTextPart = if (childTextParts.size == 1) {
+      childTextParts.first()
+    } else {
+      val mergedTextPart = mergeChildTextPartsIntoOne(childTextParts)
+
+      childTextParts.clear()
+      childTextParts.add(mergedTextPart)
+
+      mergedTextPart
+    }
+
+    val isDeadLink = htmlTag.tagName == "span" && htmlTag.hasClass("deadlink")
+
+    val href = if (isDeadLink) {
+      childTextPart.text
+    } else {
+      htmlTag.attrUnescapedOrNull("href")
+    }
+
+    if (href.isNullOrEmpty()) {
+      return
+    }
+
+    val linkable = parseLinkable(className, href, postDescriptor)
+    if (linkable == null) {
+      logcatError { "Failed to parse linkable. className='$className', href='$href'" }
+      return
+    }
+
+    childTextPart.spans += linkable
   }
 
   @VisibleForTesting
@@ -88,6 +88,9 @@ class Chan4PostParser : AbstractSitePostParser() {
   ): TextPartSpan.Linkable? {
     val isDeadLink = className.equals(other = "deadlink", ignoreCase = true)
     val isQuoteLink = className.equals(other = "quotelink", ignoreCase = true)
+
+    // TODO: check that this quote points to a real post that exists and if the post it points to does not exist then
+    //  mark then quote a 'dead'
 
     if (!isDeadLink && !isQuoteLink) {
       return null
@@ -273,6 +276,10 @@ class Chan4PostParser : AbstractSitePostParser() {
     }
 
     return resultHref.removePrefix("/")
+  }
+
+  companion object {
+    private const val TAG = "Chan4PostParser"
   }
 
 }

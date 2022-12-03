@@ -37,25 +37,23 @@ import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.site.SiteSettingsScreen
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.sort.WeightedSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
+import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleSearchToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarState
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -78,6 +76,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.java.KoinJavaComponent.inject
 
 class CatalogSelectionScreen(
   screenArgs: Bundle? = null,
@@ -85,34 +84,20 @@ class CatalogSelectionScreen(
   navigationRouter: NavigationRouter
 ) : HomeNavigationScreen<KurobaChildToolbar>(screenArgs, componentActivity, navigationRouter) {
   private val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel by componentActivity.viewModel()
+  private val siteManager by inject<SiteManager>(SiteManager::class.java)
 
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
-
-  private val catalogDescriptor: CatalogDescriptor? by argumentOrNullLazy(CATALOG_DESCRIPTOR_ARG)
-
-  private val siteKey: SiteKey
-    get() = catalogDescriptor?.siteKey ?: Chan4.SITE_KEY
 
   private val defaultToolbarKey = "${screenKey.key}_default"
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
   private val searchToolbarKey = "${screenKey.key}_search"
 
-  private val defaultToolbarState by lazy {
-    SimpleToolbarStateBuilder.Builder<ToolbarIcons>(componentActivity)
-      .titleId(R.string.board_selection_screen_toolbar_title)
-      .leftIcon(KurobaToolbarIcon(key = ToolbarIcons.Back, drawableId = R.drawable.ic_baseline_arrow_back_24))
-      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Search, drawableId = R.drawable.ic_baseline_search_24))
-      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Refresh, drawableId = R.drawable.ic_baseline_refresh_24))
-      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.SiteOptions, drawableId = R.drawable.ic_baseline_settings_24))
-      .addRightIcon(KurobaToolbarIcon(key = ToolbarIcons.Overflow, drawableId = R.drawable.ic_baseline_more_vert_24))
-      .build(defaultToolbarStateKey)
-  }
-
-  override val defaultToolbar: KurobaChildToolbar by lazy {
-    SimpleToolbar(
-      toolbarKey = defaultToolbarKey,
-      simpleToolbarState = defaultToolbarState
+  override val defaultToolbar by lazy {
+    CatalogSelectionScreenToolbar(
+      appResources = appResources,
+      defaultToolbarKey = defaultToolbarKey,
+      defaultToolbarStateKey = defaultToolbarStateKey
     )
   }
 
@@ -134,7 +119,7 @@ class CatalogSelectionScreen(
     val coroutineScope = rememberCoroutineScope()
 
     ToolbarInternal(
-      defaultToolbarState = defaultToolbarState,
+      defaultToolbarState = defaultToolbar.toolbarState as CatalogSelectionScreenToolbar.State,
       kurobaToolbarContainerState = kurobaToolbarContainerState,
       screenKey = screenKey,
       switchToSearchToolbar = {
@@ -143,19 +128,23 @@ class CatalogSelectionScreen(
       refreshSiteBoardInfo = {
         coroutineScope.launch {
           catalogSelectionScreenViewModel.getOrLoadBoardsForSite(
-            siteKey = siteKey,
+            siteKey = getCurrentSiteKey(),
             forceReload = true
           )
         }
       },
       showSiteSettingsScreen = {
-        val siteSettingsScreen = ComposeScreen.createScreen<SiteSettingsScreen>(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouter,
-          args = { putParcelable(SiteSettingsScreen.SITE_KEY_ARG, siteKey) }
-        )
+        coroutineScope.launch {
+          val currentSiteKey = getCurrentSiteKey()
 
-        navigationRouter.pushScreen(siteSettingsScreen)
+          val siteSettingsScreen = ComposeScreen.createScreen<SiteSettingsScreen>(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            args = { putParcelable(SiteSettingsScreen.SITE_KEY_ARG, currentSiteKey) }
+          )
+
+          navigationRouter.pushScreen(siteSettingsScreen)
+        }
       },
       onBackPressed = { coroutineScope.launch { onBackPressed() } }
     )
@@ -165,6 +154,8 @@ class CatalogSelectionScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
+    val coroutineScope = rememberCoroutineScope()
+
     HandleBackPresses {
       if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
@@ -178,6 +169,35 @@ class CatalogSelectionScreen(
       block = {
         snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
         snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        catalogSelectionScreenToolbarState().siteSelectorClickEventFlow.collect {
+          val currentSiteKey = getCurrentSiteKey()
+
+          val siteSelectionScreen = ComposeScreen.createScreen<SiteSelectionScreen>(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            args = {
+              putParcelable(SiteSelectionScreen.siteKeyParamKey, currentSiteKey)
+            },
+            callbacks = {
+              callback<SiteKey>(
+                callbackKey = SiteSelectionScreen.onSiteSelectedCallbackKey,
+                func = { selectedSiteKey ->
+                  coroutineScope.launch {
+                    appSettings.catalogSelectionScreenLastUsedSite.write(selectedSiteKey.key)
+                  }
+                }
+              )
+            }
+          )
+
+          navigationRouter.presentScreen(siteSelectionScreen)
+        }
       }
     )
 
@@ -200,14 +220,21 @@ class CatalogSelectionScreen(
     ) {
       KurobaComposeFadeIn {
         ContentInternal(
-          catalogDescriptor = catalogDescriptor,
           paddingValues = paddingValues,
           pullToRefreshState = pullToRefreshState,
-          siteKeyProvider = { siteKey },
           popScreen = { popScreen() }
         )
       }
     }
+  }
+
+  private fun catalogSelectionScreenToolbarState(): CatalogSelectionScreenToolbar.State {
+    return defaultToolbar.toolbarState as CatalogSelectionScreenToolbar.State
+  }
+
+  private suspend fun getCurrentSiteKey(): SiteKey {
+    val lastUsedSiteKey = appSettings.catalogSelectionScreenLastUsedSite.read()
+    return siteManager.bySiteKeyOrDefault(SiteKey(lastUsedSiteKey)).siteKey
   }
 
   enum class ToolbarIcons {
@@ -219,15 +246,13 @@ class CatalogSelectionScreen(
   }
 
   companion object {
-    const val CATALOG_DESCRIPTOR_ARG = "catalog_descriptor"
-
     val SCREEN_KEY = ScreenKey("CatalogSelectionScreen")
   }
 }
 
 @Composable
 private fun ToolbarInternal(
-  defaultToolbarState: SimpleToolbarState<CatalogSelectionScreen.ToolbarIcons>,
+  defaultToolbarState: CatalogSelectionScreenToolbar.State,
   kurobaToolbarContainerState: KurobaToolbarContainerState<KurobaChildToolbar>,
   screenKey: ScreenKey,
   showSiteSettingsScreen: () -> Unit,
@@ -269,25 +294,44 @@ private fun ToolbarInternal(
 
 @Composable
 private fun ContentInternal(
-  catalogDescriptor: CatalogDescriptor?,
   paddingValues: PaddingValues,
   pullToRefreshState: PullToRefreshState,
-  siteKeyProvider: () -> SiteKey,
   popScreen: () -> Unit
 ) {
   val coroutineScope = rememberCoroutineScope()
 
   val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
   val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel = koinRememberViewModel()
+  val appSettings: AppSettings = koinRemember()
+  val siteManager: SiteManager = koinRemember()
 
   val searchQuery by catalogSelectionScreenViewModel.searchQueryState
   val loadedBoardsForSite by catalogSelectionScreenViewModel.loadedBoardsForSite
 
+  var currentSiteKeyMut by remember { mutableStateOf<SiteKey?>(null) }
+  val currentSiteKey = currentSiteKeyMut
+
   LaunchedEffect(
     key1 = Unit,
     block = {
+      val lastUsedSiteKey = appSettings.catalogSelectionScreenLastUsedSite.read()
+      currentSiteKeyMut = siteManager.bySiteKeyOrDefault(SiteKey(lastUsedSiteKey)).siteKey
+
+      appSettings.catalogSelectionScreenLastUsedSite.listen().collect { updatedSiteKeyRaw ->
+        currentSiteKeyMut = siteManager.bySiteKeyOrDefault(SiteKey(updatedSiteKeyRaw)).siteKey
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = currentSiteKey,
+    block = {
+      if (currentSiteKey == null) {
+        return@LaunchedEffect
+      }
+
       catalogSelectionScreenViewModel.getOrLoadBoardsForSite(
-        siteKey = siteKeyProvider(),
+        siteKey = currentSiteKey,
         forceReload = false
       )
     }
@@ -299,9 +343,13 @@ private fun ContentInternal(
     pullToRefreshState = pullToRefreshState,
     topPadding = pullToRefreshToPadding,
     onTriggered = {
+      if (currentSiteKey == null) {
+        return@PullToRefresh
+      }
+
       coroutineScope.launch {
         catalogSelectionScreenViewModel.getOrLoadBoardsForSite(
-          siteKey = siteKeyProvider(),
+          siteKey = currentSiteKey,
           forceReload = true,
           hidePullToRefreshIndicator = { pullToRefreshState.stopRefreshing() }
         )
@@ -309,7 +357,6 @@ private fun ContentInternal(
     }
   ) {
     BuildBoardsList(
-      catalogDescriptor = catalogDescriptor,
       searchQuery = searchQuery,
       loadedBoardsForSite = loadedBoardsForSite,
       paddingValues = paddingValues,
@@ -325,13 +372,13 @@ private fun ContentInternal(
 
 @Composable
 private fun BuildBoardsList(
-  catalogDescriptor: CatalogDescriptor?,
   searchQuery: String?,
   loadedBoardsForSite: AsyncData<List<ChanBoardUiData>>,
   paddingValues: PaddingValues,
   onBoardClicked: (CatalogDescriptor) -> Unit
 ) {
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+  val chanThreadManaber: ChanThreadManager = koinRemember()
 
   val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
   val subtitleTextSize by globalUiInfoManager.textSubTitleSizeSp.collectAsState()
@@ -340,7 +387,9 @@ private fun BuildBoardsList(
 
   val loadedBoardsForSiteUpdated by rememberUpdatedState(newValue = loadedBoardsForSite)
   val searchQueryUpdated by rememberUpdatedState(newValue = searchQuery)
+
   var filteredBoardsAsyncData by remember { mutableStateOf(loadedBoardsForSite) }
+  val currentlyViewedCatalogDescriptor by chanThreadManaber.currentlyOpenedCatalogFlow.collectAsState()
 
   LaunchedEffect(
     key1 = Unit,
@@ -444,7 +493,7 @@ private fun BuildBoardsList(
             }
           } else {
             buildChanBoardsList(
-              catalogDescriptor = catalogDescriptor,
+              currentlyViewedCatalogDescriptor = currentlyViewedCatalogDescriptor,
               searchQuery = searchQuery,
               titleTextSize = titleTextSize,
               subtitleTextSize = subtitleTextSize,
@@ -461,7 +510,7 @@ private fun BuildBoardsList(
 }
 
 private fun LazyListScope.buildChanBoardsList(
-  catalogDescriptor: CatalogDescriptor?,
+  currentlyViewedCatalogDescriptor: CatalogDescriptor?,
   searchQuery: String?,
   titleTextSize: TextUnit,
   subtitleTextSize: TextUnit,
@@ -477,7 +526,7 @@ private fun LazyListScope.buildChanBoardsList(
       val chanBoard = chanBoardUiDataList[index]
 
       BuildChanBoardCell(
-        catalogDescriptor = catalogDescriptor,
+        currentlyViewedCatalogDescriptor = currentlyViewedCatalogDescriptor,
         searchQuery = searchQuery,
         titleTextSize = titleTextSize,
         subtitleTextSize = subtitleTextSize,
@@ -492,7 +541,7 @@ private fun LazyListScope.buildChanBoardsList(
 
 @Composable
 private fun BuildChanBoardCell(
-  catalogDescriptor: CatalogDescriptor?,
+  currentlyViewedCatalogDescriptor: CatalogDescriptor?,
   searchQuery: String?,
   titleTextSize: TextUnit,
   subtitleTextSize: TextUnit,
@@ -508,7 +557,7 @@ private fun BuildChanBoardCell(
     chanTheme.highlighterColor.copy(alpha = 0.3f)
   }
 
-  val backgroundColorModifier = if (chanBoardUiData.catalogDescriptor == catalogDescriptor) {
+  val backgroundColorModifier = if (chanBoardUiData.catalogDescriptor == currentlyViewedCatalogDescriptor) {
     Modifier.background(bgColorWithAlpha)
   } else {
     Modifier

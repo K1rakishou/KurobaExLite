@@ -176,6 +176,10 @@ class ChanCache(
     return threads[threadDescriptor]?.getLastPost()
   }
 
+  suspend fun getLastLoadedPostForIncrementalUpdate(threadDescriptor: ThreadDescriptor): IPostData? {
+    return threads[threadDescriptor]?.getLastLoadedPostForIncrementalUpdate()
+  }
+
   suspend fun getNewPostsCount(postDescriptor: PostDescriptor): Int {
     return threads[postDescriptor.threadDescriptor]?.getNewPostsCount(postDescriptor) ?: 0
   }

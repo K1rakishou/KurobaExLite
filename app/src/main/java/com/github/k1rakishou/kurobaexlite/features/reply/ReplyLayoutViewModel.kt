@@ -42,6 +42,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -75,6 +76,13 @@ class ReplyLayoutViewModel(
   private val _lastUsedBoardFlagMap = mutableStateMapOf<CatalogDescriptor, BoardFlag>()
   val lastUsedBoardFlagMap: Map<CatalogDescriptor, BoardFlag>
     get() = _lastUsedBoardFlagMap
+
+  private val _errorDialogMessageFlow = MutableSharedFlow<ErrorDialogMessage>(
+    extraBufferCapacity = 1,
+    onBufferOverflow = BufferOverflow.DROP_LATEST
+  )
+  val errorDialogMessageFlow: SharedFlow<ErrorDialogMessage>
+    get() = _errorDialogMessageFlow.asSharedFlow()
 
   override suspend fun onViewModelReady() {
     super.onViewModelReady()
@@ -125,6 +133,10 @@ class ReplyLayoutViewModel(
       message = errorMessage,
       screenKey = screenKey
     )
+  }
+
+  fun showErrorDialog(title: String, errorMessage: String) {
+    _errorDialogMessageFlow.tryEmit(ErrorDialogMessage(title, errorMessage))
   }
 
   fun showToast(chanDescriptor: ChanDescriptor, message: String, toastId: String? = null) {
@@ -550,9 +562,11 @@ class ReplyLayoutViewModel(
 
           replyLayoutState.onReplySendFinishedUnsuccesfully()
         }
-        is ReplyResponse.Banned -> {
-          val message = appResources.string(R.string.reply_view_model_you_are_banned_error, replyResponse.banMessage)
-          replyLayoutState.replyShowErrorToast(message)
+        is ReplyResponse.NotAllowedToPost -> {
+          val title = appResources.string(R.string.reply_view_model_cannot_post_title)
+          val message = appResources.string(R.string.reply_view_model_cannot_post_message, replyResponse.errorMessage)
+
+          replyLayoutState.replyShowErrorDialog(title, message)
           replyLayoutState.onReplySendFinishedUnsuccesfully()
         }
         is ReplyResponse.Error -> {
@@ -586,6 +600,11 @@ class ReplyLayoutViewModel(
       }
     }
   }
+
+  data class ErrorDialogMessage(
+    val title: String,
+    val message: String
+  )
 
   data class PickFileResult(
     val chanDescriptor: ChanDescriptor,

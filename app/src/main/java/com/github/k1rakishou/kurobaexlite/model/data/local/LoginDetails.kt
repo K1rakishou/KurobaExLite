@@ -12,3 +12,11 @@ data class Chan4LoginDetails(
 data class Chan4LoginResult(
   val passcodeCookie: String
 ) : LoginResult
+
+data class DvachLoginDetails(
+  val passcode: String
+)
+
+data class DvachLoginResult(
+  val passcodeCookie: String
+) : LoginResult

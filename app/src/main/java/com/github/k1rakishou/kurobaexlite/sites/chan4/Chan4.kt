@@ -41,22 +41,21 @@ import com.github.k1rakishou.kurobaexlite.sites.SiteCaptcha
 import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
 import com.github.k1rakishou.kurobaexlite.sites.settings.SiteSettings
 import com.squareup.moshi.Moshi
-import java.util.Locale
 import logcat.logcat
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
-import org.koin.java.KoinJavaComponent.inject
+import java.util.*
 
 class Chan4(
-  private val appContext: Context
+  private val appContext: Context,
+  private val chan4DataSource: Chan4DataSource,
+  private val appSettings: AppSettings,
+  private val moshi: Moshi,
+  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val loadChanCatalog: LoadChanCatalog,
 ) : Site {
-  private val chan4DataSource by inject<Chan4DataSource>(Chan4DataSource::class.java)
-  private val appSettings by inject<AppSettings>(AppSettings::class.java)
-  private val moshi by inject<Moshi>(Moshi::class.java)
-  private val proxiedOkHttpClient by inject<ProxiedOkHttpClient>(ProxiedOkHttpClient::class.java)
-  private val loadChanCatalog by inject<LoadChanCatalog>(LoadChanCatalog::class.java)
-
   private val chan4CatalogInfo by lazy { CatalogInfo(chan4DataSource) }
   private val chan4ThreadInfo by lazy { ThreadInfo(chan4DataSource) }
   private val chan4BoardsInfo by lazy { BoardsInfo(chan4DataSource) }
@@ -247,8 +246,12 @@ class Chan4(
 
   class ThreadInfo(private val chan4DataSource: Chan4DataSource) : Site.ThreadInfo {
 
-    override fun threadUrl(boardCode: String, threadNo: Long): String {
+    override fun fullThreadUrl(boardCode: String, threadNo: Long): String {
       return "https://a.4cdn.org/${boardCode}/thread/${threadNo}.json"
+    }
+
+    override fun partialThreadUrl(boardCode: String, threadNo: Long, afterPost: PostDescriptor): String {
+      return fullThreadUrl(boardCode, threadNo)
     }
 
     override fun threadDataSource(): IThreadDataSource<ThreadDescriptor, ThreadData> {
@@ -269,13 +272,31 @@ class Chan4(
   }
 
   class PostImageInfo : Site.PostImageInfo {
-    override fun thumbnailUrl(boardCode: String, tim: Long, extension: String): String {
-      return "https://i.4cdn.org/${boardCode}/${tim}s.${extension}"
+
+    fun wrapParameters(boardCode: String, tim: Long, extension: String): Map<String, String> {
+      return mapOf(
+        "boardCode" to boardCode,
+        "tim" to tim.toString(),
+        "extension" to extension
+      )
     }
 
-    override fun fullUrl(boardCode: String, tim: Long, extension: String): String {
-      return "https://i.4cdn.org/${boardCode}/${tim}.${extension}"
+    override fun thumbnailUrl(params: Map<String, String>): HttpUrl? {
+      val boardCode = params["boardCode"] ?: return null
+      val tim = params["tim"] ?: return null
+      val extension = params["extension"] ?: return null
+
+      return "https://i.4cdn.org/${boardCode}/${tim}s.${extension}".toHttpUrlOrNull()
     }
+
+    override fun fullUrl(params: Map<String, String>): HttpUrl? {
+      val boardCode = params["boardCode"] ?: return null
+      val tim = params["tim"] ?: return null
+      val extension = params["extension"] ?: return null
+
+      return "https://i.4cdn.org/${boardCode}/${tim}.${extension}".toHttpUrlOrNull()
+    }
+
   }
 
   class BookmarkInfo(private val chan4DataSource: Chan4DataSource) : Site.BookmarkInfo {
@@ -350,8 +371,8 @@ class Chan4(
 
   class Chan4RequestModifier(site: Chan4, appSettings: AppSettings) : RequestModifier<Chan4>(site, appSettings) {
 
-    override suspend fun modifyReplyRequest(site: Chan4, requestBuilder: Request.Builder) {
-      super.modifyReplyRequest(site, requestBuilder)
+    override suspend fun modifyReplyRequest(requestBuilder: Request.Builder) {
+      super.modifyReplyRequest(requestBuilder)
 
       val passcodeCookie = (site.siteSettings as Chan4SiteSettings).passcodeCookie.read()
       if (passcodeCookie.isNotEmpty()) {
@@ -361,8 +382,8 @@ class Chan4(
       addChan4CookieHeader(site, requestBuilder)
     }
 
-    override suspend fun modifyCaptchaGetRequest(site: Chan4, requestBuilder: Request.Builder) {
-      super.modifyCaptchaGetRequest(site, requestBuilder)
+    override suspend fun modifyCaptchaGetRequest(requestBuilder: Request.Builder) {
+      super.modifyCaptchaGetRequest(requestBuilder)
 
       addChan4CookieHeader(site, requestBuilder)
     }

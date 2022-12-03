@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
+import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -32,7 +33,8 @@ class StringSettingItem(
   val delegate: StringSetting,
   val enabled: Boolean = true,
   val showDialogScreen: suspend (DialogScreen.Params) -> Unit,
-  val settingValueMapper: (String) -> String = { it },
+  val valueValidator: (String) -> Result<String> = { Result.success(it) },
+  val settingDisplayFormatter: (String) -> String = { it },
   val onSettingUpdated: (suspend () -> Unit)? = null
 ) : SettingItem(delegate.settingKey, title, subtitle, dependencies) {
 
@@ -74,7 +76,13 @@ class StringSettingItem(
                     val input = inputs.firstOrNull() ?: return@PositiveDialogButton
 
                     coroutineScope.launch {
-                      delegate.write(input)
+                      val formattedSetting = valueValidator(input)
+                      if (formattedSetting.isFailure) {
+                        snackbarManager.errorToast("Validation failed: ${formattedSetting.exceptionOrThrow().message ?: "No error message"}")
+                        return@launch
+                      }
+
+                      delegate.write(formattedSetting.getOrThrow())
                     }
                   }
                 )
@@ -117,7 +125,7 @@ class StringSettingItem(
             .wrapContentHeight(),
           fontSize = 14.sp,
           color = chanTheme.textColorSecondary,
-          text = settingValueMapper(value)
+          text = settingDisplayFormatter(value)
         )
       }
     }

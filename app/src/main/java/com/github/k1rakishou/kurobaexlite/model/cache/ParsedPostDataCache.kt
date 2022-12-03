@@ -24,7 +24,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
-import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
@@ -565,7 +564,6 @@ class ParsedPostDataCache(
     sticky: PostCellData.Sticky?,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
-    val hasImages = postImages?.isNotNullNorEmpty() ?: false
     val compactMode = parsedPostDataContext.postViewMode != PostViewMode.List
 
     return buildAnnotatedString(capacity = postSubjectParsed.length) {
@@ -634,7 +632,8 @@ class ParsedPostDataCache(
           )
         }
 
-        if (hasImages) {
+        val imagesCount = postImages?.size ?: 0
+        if (imagesCount == 1) {
           append("\n")
           appendImagesInfo(
             chanTheme = chanTheme,
@@ -697,7 +696,7 @@ class ParsedPostDataCache(
 
           appendInlineContent(id = PostCellIcon.Sticky.id)
 
-          if (sticky.capacity != null) {
+          if (sticky.maxCapacity != null) {
             append("  ")
             appendInlineContent(id = PostCellIcon.RollingSticky.id)
           }

@@ -26,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -46,6 +47,8 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
+import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -54,6 +57,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
 import org.joda.time.Period
@@ -86,7 +90,11 @@ fun DisplayVideo(
   toggleMuteByDefaultState: () -> Unit
 ) {
   if (pagerState.currentPage != pageIndex || videoMediaState == null) {
-    LaunchedEffect(key1 = Unit, block = { onPlayerUnloaded() })
+    LaunchedEffect(
+      key1 = Unit,
+      block = { onPlayerUnloaded() }
+    )
+
     return
   }
 
@@ -110,6 +118,23 @@ fun DisplayVideo(
       context = context,
       mpvSettings = mpvSettingsProvider(),
       installMpvLibsFromGithubButtonClicked = installMpvLibsFromGithubButtonClicked
+    )
+
+    return
+  }
+
+  val playbackErrorMut by videoMediaState.playbackError
+  val playbackError = playbackErrorMut
+
+  if (playbackError.isNotNullNorBlank()) {
+    LaunchedEffect(
+      key1 = Unit,
+      block = { onPlayerUnloaded() }
+    )
+
+    DisplayVideoPlaybackError(
+      playbackError = playbackError,
+      onVideoTapped = onVideoTapped
     )
 
     return
@@ -143,20 +168,6 @@ fun DisplayVideo(
           toggleMuteByDefaultState()
           mpvView.muteUnmute(!videoMediaState.isMutedState.value)
 
-          if (mpvView.isMuted) {
-            snackbarManager.toast(
-              screenKey = MainScreen.SCREEN_KEY,
-              toastId = MPV_OPTION_CHANGE_TOAST,
-              message = context.resources.getString(R.string.media_viewer_muted)
-            )
-          } else {
-            snackbarManager.toast(
-              screenKey = MainScreen.SCREEN_KEY,
-              toastId = MPV_OPTION_CHANGE_TOAST,
-              message = context.resources.getString(R.string.media_viewer_unmuted)
-            )
-          }
-
           val isMuted = mpvView.isMuted
           videoMediaState.isMutedState.value = isMuted
           videoMediaStateSaveable.wasMuted = isMuted
@@ -169,23 +180,7 @@ fun DisplayVideo(
     key1 = videoMediaState,
     block = {
       videoMediaState.playPauseEventFlow.collect {
-        mpvViewMut?.let { mpvView ->
-          mpvView.cyclePause()
-
-          if (mpvView.paused == true) {
-            snackbarManager.toast(
-              screenKey = MainScreen.SCREEN_KEY,
-              toastId = MPV_OPTION_CHANGE_TOAST,
-              message = context.resources.getString(R.string.media_viewer_paused)
-            )
-          } else {
-            snackbarManager.toast(
-              screenKey = MainScreen.SCREEN_KEY,
-              toastId = MPV_OPTION_CHANGE_TOAST,
-              message = context.resources.getString(R.string.media_viewer_unpaused)
-            )
-          }
-        }
+        mpvViewMut?.cyclePause()
       }
     }
   )
@@ -206,21 +201,6 @@ fun DisplayVideo(
               message = context.resources.getString(R.string.media_viewer_hwsw_decoding_toggle_failed)
             )
           } else {
-            if (hwDecActive) {
-              snackbarManager.toast(
-                screenKey = MainScreen.SCREEN_KEY,
-                toastId = MPV_OPTION_CHANGE_TOAST,
-                message = context.resources.getString(R.string.media_viewer_switched_to_hw_decoding)
-              )
-            } else {
-              snackbarManager.toast(
-                screenKey = MainScreen.SCREEN_KEY,
-                toastId = MPV_OPTION_CHANGE_TOAST,
-                message = context.resources.getString(R.string.media_viewer_switched_to_sw_decoding)
-              )
-            }
-
-
             videoMediaStateSaveable.wasHardwareDecodingEnabled = hwDecActive
             videoMediaState.hardwareDecodingEnabledState.value = hwDecActive
           }
@@ -253,7 +233,7 @@ fun DisplayVideo(
     mpvViewMut = mpvViewMut
   )
 
-  val logObserver = rememberLogObserver(snackbarManager)
+  val logObserver = rememberLogObserver(videoMediaState)
 
   Box(
     modifier = Modifier.fillMaxSize()
@@ -375,27 +355,49 @@ private fun SeekToHint(
 
 @Composable
 private fun rememberLogObserver(
-  snackbarManager: SnackbarManager
+  videoMediaState: MediaState.Video
 ): MPVLib.LogObserver {
+  val coroutineScope = rememberCoroutineScope()
+  val debouncingCoroutineExecutor = remember(key1 = coroutineScope) {
+    DebouncingCoroutineExecutor(coroutineScope)
+  }
+  val errorMessages = remember { mutableListOf<String>() }
+
+  fun showErrorSnackbar(errorMessage: String) {
+    // Don't care about this error, videos still play just fine
+    if (errorMessage.contains("ffmpeg tls:", ignoreCase = true)) {
+      return
+    }
+
+    errorMessages += errorMessage
+
+    debouncingCoroutineExecutor.post(1000) {
+      val fullErrorMessage = errorMessages.joinToString(separator = "\n")
+      errorMessages.clear()
+
+      videoMediaState.playbackError.value = fullErrorMessage
+    }
+  }
+
   return remember {
     MPVLib.LogObserver { prefix, level, text ->
       when (level) {
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_FATAL -> {
           logcatError(MPV_TAG) { "[FATAL] ${prefix} ${text}" }
-          snackbarManager.toast(
-            screenKey = MainScreen.SCREEN_KEY,
-            message = "Mpv fatal error. ${prefix} ${text}"
-          )
+          showErrorSnackbar(errorMessage = "[FATAL] ${prefix} ${text}")
         }
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_ERROR -> {
           logcatError(MPV_TAG) { "[ERROR] ${prefix} ${text}" }
+          showErrorSnackbar(errorMessage = "[ERROR] ${prefix} ${text}")
         }
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_INFO -> {
-          logcat(MPV_TAG) { "[Info] ${prefix} ${text}" }
+          logcat(MPV_TAG) { "[INFO] ${prefix} ${text}" }
         }
-        MPVLib.mpvLogLevel.MPV_LOG_LEVEL_DEBUG,
+        MPVLib.mpvLogLevel.MPV_LOG_LEVEL_DEBUG -> {
+          logcat(MPV_TAG, LogPriority.VERBOSE) { "[DEBUG] ${prefix} ${text}" }
+        }
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_WARN -> {
-          // no-op
+          logcat(MPV_TAG, LogPriority.WARN) { "[WARNING] ${prefix} ${text}" }
         }
       }
     }
@@ -521,6 +523,7 @@ private fun rememberEventObserver(
 
             videoStartedPlaying = true
             videoMediaState.hasAudioState.value = mpvViewMutUpdated?.audioCodec != null
+            videoMediaState.playbackError.value = null
 
             mpvViewMutUpdated?.let { mpvView ->
               if (doAfterPlayerInitialized != null) {
@@ -585,6 +588,37 @@ private fun rememberEventObserver(
         videoMediaState.slideOffsetState.value = (timePosition.toFloat() / duration.toFloat())
           .coerceIn(0f, 1f)
       }
+    }
+  }
+}
+
+@Composable
+private fun DisplayVideoPlaybackError(
+  playbackError: String,
+  onVideoTapped: () -> Unit,
+) {
+  val bgColor = remember { Color.Black.copy(alpha = 0.6f) }
+
+  Box(
+    modifier = Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+  ) {
+    Box(
+      modifier = Modifier
+        .widthIn(max = 360.dp)
+        .background(bgColor)
+        .padding(8.dp)
+        .kurobaClickable(hasClickIndication = false, onClick = { onVideoTapped() }),
+      contentAlignment = Alignment.Center,
+    ) {
+      Text(
+        modifier = Modifier
+          .fillMaxWidth()
+          .wrapContentHeight(),
+        text = playbackError,
+        color = Color.White,
+        fontSize = 14.sp
+      )
     }
   }
 }

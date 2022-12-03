@@ -173,7 +173,7 @@ class Chan4SearchHtmlReader(
       return null
     }
 
-    val fileSize = matcher.groupOrNull(1)?.toFloatOrNull()?.toInt() ?: 0
+    val fileSize = matcher.groupOrNull(1)?.toFloatOrNull()?.toLong() ?: 0
     val sizeType = matcher.groupOrNull(2) ?: "KB"
     val width = matcher.groupOrNull(3)?.toIntOrNull() ?: 0
     val height = matcher.groupOrNull(4)?.toIntOrNull() ?: 0

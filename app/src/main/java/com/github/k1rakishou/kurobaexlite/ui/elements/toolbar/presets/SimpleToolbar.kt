@@ -142,12 +142,12 @@ class SimpleToolbarStateBuilder<T : Any> private constructor(
 }
 
 @Stable
-class SimpleToolbarState<T : Any>(
+open class SimpleToolbarState<ToolbarIcon : Any>(
   override val saveableComponentKey: String,
   title: String?,
   subtitle: String?,
-  _leftIcon: KurobaToolbarIcon<T>,
-  _rightIcons: List<KurobaToolbarIcon<T>>
+  _leftIcon: KurobaToolbarIcon<ToolbarIcon>,
+  _rightIcons: List<KurobaToolbarIcon<ToolbarIcon>>
 ) : KurobaChildToolbar.ToolbarState {
   val toolbarTitleState = mutableStateOf<String?>(title)
   val toolbarSubtitleState = mutableStateOf<String?>(subtitle)
@@ -155,8 +155,8 @@ class SimpleToolbarState<T : Any>(
   val leftIcon = _leftIcon
   val rightIcons = _rightIcons
 
-  private val _iconClickEvents = MutableSharedFlow<T>(extraBufferCapacity = Channel.UNLIMITED)
-  val iconClickEvents: SharedFlow<T>
+  private val _iconClickEvents = MutableSharedFlow<ToolbarIcon>(extraBufferCapacity = Channel.UNLIMITED)
+  val iconClickEvents: SharedFlow<ToolbarIcon>
     get() = _iconClickEvents.asSharedFlow()
 
   override fun saveState(): Bundle {
@@ -171,7 +171,7 @@ class SimpleToolbarState<T : Any>(
     bundle?.getString(SUBTITLE_KEY)?.let { subtitle -> toolbarSubtitleState.value = subtitle }
   }
 
-  fun findIconByKey(key: T) : KurobaToolbarIcon<T>? {
+  fun findIconByKey(key: ToolbarIcon) : KurobaToolbarIcon<ToolbarIcon>? {
     if (leftIcon.key == key) {
       return leftIcon
     }
@@ -179,7 +179,7 @@ class SimpleToolbarState<T : Any>(
     return rightIcons.firstOrNull { icon -> icon.key == key }
   }
 
-  fun onIconClicked(iconKey: T) {
+  fun onIconClicked(iconKey: ToolbarIcon) {
     _iconClickEvents.tryEmit(iconKey)
   }
 

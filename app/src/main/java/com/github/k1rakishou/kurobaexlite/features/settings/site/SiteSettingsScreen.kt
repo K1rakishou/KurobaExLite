@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
@@ -31,6 +32,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleTool
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -152,10 +154,6 @@ class SiteSettingsScreen(
       }
     )
 
-    if (siteSettingItems.isEmpty()) {
-      return
-    }
-
     val windowInsets = LocalWindowInsets.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val paddingValues = remember(key1 = windowInsets) {
@@ -173,30 +171,34 @@ class SiteSettingsScreen(
         .consumeClicks()
     ) {
       KurobaComposeFadeIn {
-        LazyColumnWithFastScroller(
-          lazyListContainerModifier = Modifier.fillMaxSize(),
-          contentPadding = paddingValues,
-          lazyListState = lazyListState,
-          content = {
-            items(
-              count = siteSettingItems.size,
-              key = { index -> siteSettingItems[index].key },
-              contentType = { index -> siteSettingItems[index].javaClass.name },
-              itemContent = { index ->
-                val siteSettingItem = siteSettingItems[index]
-                siteSettingItem.Content()
+        if (siteSettingItems.isEmpty()) {
+          KurobaComposeError(errorMessage = stringResource(id = R.string.site_settings_site_has_no_settings))
+        } else {
+          LazyColumnWithFastScroller(
+            lazyListContainerModifier = Modifier.fillMaxSize(),
+            contentPadding = paddingValues,
+            lazyListState = lazyListState,
+            content = {
+              items(
+                count = siteSettingItems.size,
+                key = { index -> siteSettingItems[index].key },
+                contentType = { index -> siteSettingItems[index].javaClass.name },
+                itemContent = { index ->
+                  val siteSettingItem = siteSettingItems[index]
+                  siteSettingItem.Content()
 
-                if (index < siteSettingItems.lastIndex) {
-                  KurobaComposeDivider(
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .padding(horizontal = 4.dp)
-                  )
+                  if (index < siteSettingItems.lastIndex) {
+                    KurobaComposeDivider(
+                      modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp)
+                    )
+                  }
                 }
-              }
-            )
-          }
-        )
+              )
+            }
+          )
+        }
       }
     }
   }

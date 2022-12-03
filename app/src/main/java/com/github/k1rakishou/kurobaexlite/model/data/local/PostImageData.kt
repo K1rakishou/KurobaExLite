@@ -15,7 +15,7 @@ data class PostImageData(
   override val ext: String,
   override val width: Int,
   override val height: Int,
-  override val fileSize: Int,
+  override val fileSize: Long,
   override val thumbnailSpoiler: ThumbnailSpoiler?,
   override val ownerPostDescriptor: PostDescriptor
 ) : IPostImage {

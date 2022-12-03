@@ -140,11 +140,11 @@ class ReplyLayoutState(
   val replySendProgressState: State<Float?>
     get() = _replySendProgressState
 
-  private val _replyErrorMessageFlow = MutableSharedFlow<String>(
+  private val _replyErrorMessageFlow = MutableSharedFlow<ReplyErrorMessage>(
     extraBufferCapacity = 1,
     onBufferOverflow = BufferOverflow.DROP_LATEST
   )
-  val replyErrorMessageFlow: SharedFlow<String>
+  val replyErrorMessageFlow: SharedFlow<ReplyErrorMessage>
     get() = _replyErrorMessageFlow.asSharedFlow()
 
   private val _replyMessageFlow = MutableSharedFlow<ToastMessage>(
@@ -242,7 +242,11 @@ class ReplyLayoutState(
   }
 
   fun replyShowErrorToast(errorMessage: String) {
-    _replyErrorMessageFlow.tryEmit(errorMessage)
+    _replyErrorMessageFlow.tryEmit(ReplyErrorMessage.Toast(errorMessage))
+  }
+
+  fun replyShowErrorDialog(title: String, errorMessage: String) {
+    _replyErrorMessageFlow.tryEmit(ReplyErrorMessage.Dialog(title, errorMessage))
   }
 
   fun replyShowInfoToast(message: String, toastId: String? = null) {
@@ -543,6 +547,19 @@ sealed class SendReplyState {
   object Started : SendReplyState()
   object ReplySent : SendReplyState()
   object Finished : SendReplyState()
+}
+
+sealed interface ReplyErrorMessage {
+  val message: String
+
+  data class Toast(
+    override val message: String
+  ) : ReplyErrorMessage
+
+  data class Dialog(
+    val title: String,
+    override val message: String
+  ) : ReplyErrorMessage
 }
 
 @Immutable

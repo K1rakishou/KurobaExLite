@@ -24,6 +24,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,9 +44,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
@@ -53,6 +57,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.createClickableTextColorMap
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectClickedAnnotations
+import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
@@ -62,11 +67,13 @@ import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
+import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellImageData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
@@ -76,7 +83,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.*
 
+private val ThumbnailSize = 70.dp
 
 @Composable
 fun PostCellListMode(
@@ -151,13 +160,25 @@ fun PostCellListMode(
         .weight(1f)
         .onSizeChanged { size -> columnHeightMut = size.height }
     ) {
-      PostCellTitle(
-        chanDescriptor = chanDescriptor,
-        postCellData = postCellData,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-        onPostImageClicked = onPostImageClicked,
-        reparsePostSubject = reparsePostSubject
-      )
+      val imagesCount = postCellData.images?.size ?: 0
+
+      if (imagesCount <= 1) {
+        PostCellTitleZeroOrOneThumbnails(
+          chanDescriptor = chanDescriptor,
+          postCellData = postCellData,
+          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+          onPostImageClicked = onPostImageClicked,
+          reparsePostSubject = reparsePostSubject
+        )
+      } else {
+        PostCellTitleTwoOrMoreThumbnails(
+          chanDescriptor = chanDescriptor,
+          postCellData = postCellData,
+          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+          onPostImageClicked = onPostImageClicked,
+          reparsePostSubject = reparsePostSubject
+        )
+      }
 
       Spacer(modifier = Modifier.height(4.dp))
 
@@ -286,7 +307,7 @@ private fun RowScope.PostCellMarks(columnHeight: Int, postCellData: PostCellData
 }
 
 @Composable
-private fun PostCellTitle(
+private fun PostCellTitleZeroOrOneThumbnails(
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
   postCellSubjectTextSizeSp: TextUnit,
@@ -302,8 +323,11 @@ private fun PostCellTitle(
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (postCellData.images.isNotNullNorEmpty()) {
+      val postImage = postCellData.images.first()
+
       PostCellThumbnail(
-        postCellData = postCellData,
+        thumbnailSize = ThumbnailSize,
+        postImage = postImage,
         onPostImageClicked = onPostImageClicked,
         chanDescriptor = chanDescriptor
       )
@@ -324,6 +348,86 @@ private fun PostCellTitle(
         reparsePostSubject = reparsePostSubject,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
       )
+    }
+  }
+}
+
+@Composable
+private fun PostCellTitleTwoOrMoreThumbnails(
+  chanDescriptor: ChanDescriptor,
+  postCellData: PostCellData,
+  postCellSubjectTextSizeSp: TextUnit,
+  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
+) {
+  val chanTheme = LocalChanTheme.current
+  val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
+
+  Column(
+    modifier = Modifier
+      .wrapContentHeight()
+      .fillMaxWidth(),
+  ) {
+    if (postSubject == null) {
+      Shimmer(
+        modifier = Modifier
+          .weight(1f)
+          .height(42.dp)
+      )
+    } else {
+      Row {
+        PostCellSubject(
+          postSubject = postSubject,
+          postCellData = postCellData,
+          reparsePostSubject = reparsePostSubject,
+          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
+        )
+      }
+    }
+
+    Spacer(modifier = Modifier.height(4.dp))
+
+    FlowRow(
+      modifier = Modifier
+        .wrapContentHeight()
+        .fillMaxWidth(),
+      mainAxisSpacing = 16.dp,
+      crossAxisSpacing = 8.dp
+    ) {
+      for (postImage in postCellData.images!!) {
+        key(postImage.fullImageUrl) {
+          Column {
+            PostCellThumbnail(
+              thumbnailSize = ThumbnailSize,
+              postImage = postImage,
+              onPostImageClicked = onPostImageClicked,
+              chanDescriptor = chanDescriptor
+            )
+
+            val postImageInfo = remember(key1 = postImage) {
+              buildString {
+                append(postImage.ext.uppercase(Locale.ENGLISH))
+                appendLine()
+                append(postImage.width.toString())
+                append("x")
+                append(postImage.height.toString())
+                appendLine()
+                append(postImage.fileSize.asReadableFileSize())
+              }
+            }
+
+            Text(
+              modifier = Modifier
+                .width(ThumbnailSize)
+                .wrapContentHeight(),
+              text = postImageInfo,
+              color = chanTheme.postDetailsColor,
+              textAlign = TextAlign.Center,
+              fontSize = 12.sp
+            )
+          }
+        }
+      }
     }
   }
 }
@@ -378,11 +482,11 @@ private fun RowScope.PostCellSubject(
 
 @Composable
 private fun PostCellThumbnail(
-  postCellData: PostCellData,
+  thumbnailSize: Dp,
+  postImage: PostCellImageData,
   onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
-  val postImage = postCellData.images!!.first()
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
 
   Box(
@@ -393,13 +497,13 @@ private fun PostCellThumbnail(
       }
   ) {
     PostImageThumbnail(
-      modifier = Modifier.size(70.dp),
+      modifier = Modifier.size(thumbnailSize),
       postImage = postImage,
-      onClickWithError = { clickedImageResult ->
+      onClick = { clickedImage ->
         val boundsInWindow = boundsInWindowMut
           ?: return@PostImageThumbnail
 
-        onPostImageClicked(chanDescriptor, clickedImageResult, boundsInWindow)
+        onPostImageClicked(chanDescriptor, Result.success(clickedImage), boundsInWindow)
       }
     )
   }

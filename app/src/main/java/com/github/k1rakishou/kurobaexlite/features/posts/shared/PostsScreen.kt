@@ -144,6 +144,10 @@ fun ProcessCaptchaRequestEvents(
               }
             )
           }
+          SiteCaptcha.DvachCaptcha -> {
+            // TODO: Dvach support
+            TODO()
+          }
         }
 
         navigationRouter.presentScreen(captchaScreen)

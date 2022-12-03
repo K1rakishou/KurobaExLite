@@ -31,6 +31,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
@@ -66,6 +67,7 @@ class MediaViewerScreenViewModel(
   private val appSettings: AppSettings,
   private val appResources: AppResources,
   private val chanCache: ChanCache,
+  private val siteManager: SiteManager,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val kurobaLruDiskCache: KurobaLruDiskCache,
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub,
@@ -271,6 +273,11 @@ class MediaViewerScreenViewModel(
     val request = Request.Builder()
       .url(fullImageUrl)
       .get()
+      .also { requestBuilder ->
+        siteManager.bySiteKey(postImageData.ownerPostDescriptor.siteKey)
+          ?.requestModifier()
+          ?.modifyGetMediaRequest(requestBuilder)
+      }
       .build()
 
     val response = proxiedOkHttpClient.okHttpClient()

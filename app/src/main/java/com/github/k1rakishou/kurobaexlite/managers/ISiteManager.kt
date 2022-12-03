@@ -7,6 +7,7 @@ import okhttp3.HttpUrl
 
 interface ISiteManager {
   fun bySiteKey(siteKey: SiteKey): Site?
+  fun bySiteKeyOrDefault(siteKey: SiteKey): Site
   fun byUrl(httpUrl: HttpUrl): Site?
   fun supportsSite(siteKey: SiteKey): Boolean
 

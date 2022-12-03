@@ -135,6 +135,18 @@ class ChanThreadCache(
     return mutex.withLockNonCancellable { posts.lastOrNull() }
   }
 
+  suspend fun getLastLoadedPostForIncrementalUpdate(): IPostData? {
+    return mutex.withLockNonCancellable {
+      // Threads must have more than one post since the very first post is always the OP and we load that post from the
+      // catalog thread list which doesn't mean we have visited that thread yet
+      if (posts.size <= 1) {
+        return@withLockNonCancellable null
+      }
+
+      return@withLockNonCancellable posts.lastOrNull()
+    }
+  }
+
   suspend fun getNewPostsCount(postDescriptor: PostDescriptor): Int {
     return mutex.withLockNonCancellable {
       posts.count { chanPost -> chanPost.postDescriptor > postDescriptor }

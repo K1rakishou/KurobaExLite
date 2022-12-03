@@ -1,23 +1,79 @@
 package com.github.k1rakishou.kurobaexlite.model.data.remote.chan4
 
+import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.model.data.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.CountryFlag
 import com.github.k1rakishou.kurobaexlite.model.data.PostDataSticky
+import com.squareup.moshi.FromJson
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import com.squareup.moshi.JsonReader
+import com.squareup.moshi.ToJson
 
 @JsonClass(generateAdapter = true)
-data class CatalogPageDataJson(
+data class Chan4BoardsDataJson(
+  @Json(name = "boards") val boards: List<Chan4BoardDataJson>
+)
+
+@JsonClass(generateAdapter = true)
+data class Chan4BoardDataJson(
+  @Json(name = "board") val boardCode: String?,
+  @Json(name = "title") val boardTitle: String?,
+  @Json(name = "meta_description") val boardDescription: String?,
+  @Json(name = "ws_board") val workSafe: Int?,
+  @Json(name = "board_flags") val boardFlags: Chan4BoardFlagsJson?
+)
+
+@JsonClass(generateAdapter = false)
+data class Chan4BoardFlagsJson(
+  val list: List<Chan4BoardFlagJson>
+)
+
+@JsonClass(generateAdapter = false)
+data class Chan4BoardFlagJson(
+  val key: String,
+  val name: String
+)
+
+class Chan4BoardFlagsJsonAdapter {
+
+  @FromJson
+  fun fromJson(jsonReader: JsonReader): Chan4BoardFlagsJson {
+    val resultList = mutableListOf<Chan4BoardFlagJson>()
+
+    jsonReader.beginObject()
+
+    while (jsonReader.hasNext()) {
+      val key = jsonReader.nextName()
+      val name = jsonReader.nextString()
+
+      resultList += Chan4BoardFlagJson(key, name)
+    }
+
+    jsonReader.endObject()
+
+    return Chan4BoardFlagsJson(resultList)
+  }
+
+  @ToJson
+  fun toJson(boardFlagsJson: Chan4BoardFlagsJson): String {
+    unreachable("Not used")
+  }
+
+}
+
+@JsonClass(generateAdapter = true)
+data class Chan4CatalogPageDataJson(
   @Json(name = "page") val page: Int,
-  @Json(name = "threads") val threads: List<CatalogThreadDataJson>
+  @Json(name = "threads") val threads: List<Chan4CatalogThreadDataJson>
 )
 
 @JsonClass(generateAdapter = true)
-data class ThreadDataJson(
-  val posts: List<ThreadPostDataJson>
+data class Chan4ThreadDataJson(
+  val posts: List<Chan4ThreadPostDataJson>
 )
 
-abstract class SharedDataJson {
+abstract class Chan4SharedDataJson {
   abstract val filename: String?
   abstract val ext: String?
   abstract val tim: Long?
@@ -39,7 +95,7 @@ abstract class SharedDataJson {
       return null
     }
 
-    return PostDataSticky(capacity = stickyCap)
+    return PostDataSticky(maxCapacity = stickyCap)
   }
 
   fun countryFlag(): CountryFlag? {
@@ -74,7 +130,7 @@ abstract class SharedDataJson {
 }
 
 @JsonClass(generateAdapter = true)
-data class ThreadPostDataJson(
+data class Chan4ThreadPostDataJson(
   val no: Long,
   val com: String?,
   val sub: String?,
@@ -107,10 +163,10 @@ data class ThreadPostDataJson(
   override val h: Int?,
   override val fsize: Int?,
   override val spoiler: Int?
-) : SharedDataJson()
+) : Chan4SharedDataJson()
 
 @JsonClass(generateAdapter = true)
-data class CatalogThreadDataJson(
+data class Chan4CatalogThreadDataJson(
   val no: Long,
   val sub: String?,
   val com: String?,
@@ -143,15 +199,15 @@ data class CatalogThreadDataJson(
   override val h: Int?,
   override val fsize: Int?,
   override val spoiler: Int?
-) : SharedDataJson()
+) : Chan4SharedDataJson()
 
 @JsonClass(generateAdapter = true)
-data class ThreadBookmarkInfoJson(
-  @Json(name = "posts") val postInfoForBookmarkList: List<PostInfoForBookmarkJson>
+data class Chan4ThreadBookmarkInfoJson(
+  @Json(name = "posts") val postInfoForBookmarkList: List<Chan4PostInfoForBookmarkJson>
 )
 
 @JsonClass(generateAdapter = true)
-data class PostInfoForBookmarkJson(
+data class Chan4PostInfoForBookmarkJson(
   @Json(name = "no") val postNo: Long,
   @Json(name = "archived") val archived: Int?,
   @Json(name = "closed") val closed: Int?,
@@ -182,12 +238,12 @@ data class PostInfoForBookmarkJson(
 }
 
 @JsonClass(generateAdapter = true)
-data class CatalogPageJson(
+data class Chan4CatalogPageJson(
   val page: Int,
-  val threads: List<CatalogPageThreadJson>
+  val threads: List<Chan4CatalogPageThreadJson>
 )
 
 @JsonClass(generateAdapter = true)
-data class CatalogPageThreadJson(
+data class Chan4CatalogPageThreadJson(
   @Json(name = "no") val postNo: Long,
 )
