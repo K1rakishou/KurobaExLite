@@ -1,9 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.model.data.remote.chan4
 
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
-import com.github.k1rakishou.kurobaexlite.model.data.BoardFlag
-import com.github.k1rakishou.kurobaexlite.model.data.CountryFlag
 import com.github.k1rakishou.kurobaexlite.model.data.PostDataSticky
+import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
@@ -98,23 +97,23 @@ abstract class Chan4SharedDataJson {
     return PostDataSticky(maxCapacity = stickyCap)
   }
 
-  fun countryFlag(): CountryFlag? {
+  fun countryFlag(): PostIcon.CountryFlag? {
     if (country.isNullOrEmpty()) {
       return null
     }
 
-    return CountryFlag(
+    return PostIcon.CountryFlag(
       flagId = country!!,
       flagName = countryName
     )
   }
 
-  fun boardFlag(): BoardFlag? {
+  fun boardFlag(): PostIcon.BoardFlag? {
     if (boardFlag.isNullOrEmpty()) {
       return null
     }
 
-    return BoardFlag(
+    return PostIcon.BoardFlag(
       flagId = boardFlag!!,
       flagName = boardFlagName
     )

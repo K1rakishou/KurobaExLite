@@ -181,8 +181,27 @@ class Dvach(
   }
 
   override fun iconUrl(iconId: String, params: Map<String, String>): String? {
-    // TODO: Dvach support
-    return null
+    when (iconId) {
+      "country" -> {
+        val countryCode = params["country_code"]?.removePrefix("/")
+        if (countryCode.isNullOrBlank()) {
+          return null
+        }
+
+        return "https://${getCurrentDomain()}/${countryCode}"
+      }
+      "board_flag" -> {
+        val boardFlagCode = params["board_flag_code"]?.removePrefix("/")
+        if (boardFlagCode.isNullOrBlank()) {
+          return null
+        }
+
+        return "https://${getCurrentDomain()}/${boardFlagCode}"
+      }
+      else -> {
+        return null
+      }
+    }
   }
 
   override fun commentFormattingButtons(catalogDescriptor: CatalogDescriptor): List<FormattingButton> {

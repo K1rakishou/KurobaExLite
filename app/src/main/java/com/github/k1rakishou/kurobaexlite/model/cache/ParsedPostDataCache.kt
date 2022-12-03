@@ -29,8 +29,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
-import com.github.k1rakishou.kurobaexlite.model.data.BoardFlag
-import com.github.k1rakishou.kurobaexlite.model.data.CountryFlag
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
@@ -709,7 +707,7 @@ class ParsedPostDataCache(
             }
 
             when (flag) {
-              is CountryFlag -> {
+              is PostIcon.CountryFlag -> {
                 appendInlineContent(id = PostCellIcon.CountryFlag.id)
 
                 if (flag.flagName.isNotNullNorBlank()) {
@@ -725,7 +723,7 @@ class ParsedPostDataCache(
                   }
                 }
               }
-              is BoardFlag -> {
+              is PostIcon.BoardFlag -> {
                 appendInlineContent(id = PostCellIcon.BoardFlag.id)
 
                 if (flag.flagName.isNotNullNorBlank()) {

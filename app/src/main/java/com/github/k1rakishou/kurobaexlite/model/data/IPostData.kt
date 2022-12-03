@@ -70,16 +70,16 @@ data class PostDataSticky(val maxCapacity: Int?) {
 }
 
 @Immutable
-interface PostIcon
+sealed interface PostIcon {
+  @Immutable
+  data class CountryFlag(
+    val flagId: String,
+    val flagName: String?
+  ) : PostIcon
 
-@Immutable
-data class CountryFlag(
-  val flagId: String,
-  val flagName: String?
-) : PostIcon
-
-@Immutable
-data class BoardFlag(
-  val flagId: String,
-  val flagName: String?
-) : PostIcon
+  @Immutable
+  data class BoardFlag(
+    val flagId: String,
+    val flagName: String?
+  ) : PostIcon
+}

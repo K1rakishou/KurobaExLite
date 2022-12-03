@@ -54,7 +54,9 @@ data class DvachThreadInternal(
 @JsonClass(generateAdapter = true)
 data class DvachBoardInfo(
   @Json(name = "bump_limit")
-  val bumpLimit: Int?
+  val bumpLimit: Int?,
+  @Json(name = "default_name")
+  val defaultName: String?
 )
 
 @JsonClass(generateAdapter = true)

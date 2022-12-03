@@ -3,8 +3,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.model.data.BoardFlag
-import com.github.k1rakishou.kurobaexlite.model.data.CountryFlag
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 
@@ -17,8 +15,8 @@ class PostCellIconViewModel(
       ?: return null
 
     val iconId = when (postIcon) {
-      is CountryFlag -> "country"
-      is BoardFlag -> "board_flag"
+      is PostIcon.CountryFlag -> "country"
+      is PostIcon.BoardFlag -> "board_flag"
       else -> {
         logcatError(TAG) { "postIcon not supported: ${postIcon::class.java.simpleName}" }
         return null
@@ -26,10 +24,10 @@ class PostCellIconViewModel(
     }
 
     val params: Map<String, String> = when (postIcon) {
-      is CountryFlag -> {
+      is PostIcon.CountryFlag -> {
         mapOf("country_code" to postIcon.flagId)
       }
-      is BoardFlag -> {
+      is PostIcon.BoardFlag -> {
         mapOf(
           "board_flag_code" to postIcon.flagId,
           "board_code" to postDescriptor.boardCode,

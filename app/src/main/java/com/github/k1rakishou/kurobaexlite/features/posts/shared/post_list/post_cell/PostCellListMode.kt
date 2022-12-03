@@ -26,6 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -60,9 +61,11 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detect
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
@@ -83,6 +86,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import java.util.*
 
 private val ThumbnailSize = 70.dp
@@ -586,8 +591,10 @@ private fun PostCellIcon(
 ) {
   val context = LocalContext.current
   val postCellIconViewModel = koinRememberViewModel<PostCellIconViewModel>()
+  val siteManager = koinRemember<SiteManager>()
 
-  var iconUrl by remember { mutableStateOf<String?>(null) }
+  var iconUrlMut by remember { mutableStateOf<HttpUrl?>(null) }
+  val iconUrl = iconUrlMut
 
   LaunchedEffect(
     key1 = Unit,
@@ -606,10 +613,10 @@ private fun PostCellIcon(
         }
       }
 
-      iconUrl = postCellIconViewModel.formatIconUrl(
+      iconUrlMut = postCellIconViewModel.formatIconUrl(
         postDescriptor = postDescriptor,
         postIcon = flag
-      )
+      )?.toHttpUrlOrNull()
     }
   )
 
@@ -617,13 +624,26 @@ private fun PostCellIcon(
     return
   }
 
+  val imageRequest by produceState<ImageRequest?>(
+    initialValue = null,
+    key1 = iconUrl,
+    producer = {
+      value = ImageRequest.Builder(context)
+        .data(iconUrl)
+        .crossfade(true)
+        .size(Size.ORIGINAL)
+        .also { imageRequestBuilder ->
+          siteManager.bySiteKey(postDescriptor.siteKey)
+            ?.requestModifier()
+            ?.modifyCoilImageRequest(iconUrl, imageRequestBuilder)
+        }
+        .build()
+    }
+  )
+
   AsyncImage(
     modifier = Modifier.fillMaxSize(),
-    model = ImageRequest.Builder(context)
-      .data(iconUrl)
-      .crossfade(true)
-      .size(Size.ORIGINAL)
-      .build(),
+    model = imageRequest,
     contentDescription = "poster flag"
   )
 }

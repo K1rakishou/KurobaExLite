@@ -11,6 +11,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ChanDataSourceException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.PostDataSticky
+import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
@@ -46,6 +47,7 @@ import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
 import okhttp3.Request
+import org.jsoup.Jsoup
 import kotlin.math.ceil
 
 class DvachDataSource(
@@ -159,6 +161,7 @@ class DvachDataSource(
         val catalogThreads = dvachCatalog.threads ?: emptyList()
         val totalCount = catalogThreads.size
         val postDataList = mutableListWithCap<IPostData>(initialCapacity = totalCount)
+        val defaultName = dvachCatalog.board?.defaultName ?: DEFAULT_NAME
 
         catalogThreads.forEachIndexed { order, catalogThread ->
           val postDescriptor = PostDescriptor.create(
@@ -192,16 +195,19 @@ class DvachDataSource(
             }
             ?: emptyList()
 
+          val parsedFlags = parseFlags(catalogThread.icon)
+          val parsedName = parseName(defaultName, catalogThread.name)
+
           postDataList += OriginalPostData(
             originalPostOrder = order,
             postDescriptor = postDescriptor,
             postSubjectUnparsed = catalogThread.subject ?: "",
             postCommentUnparsed = catalogThread.comment ?: "",
-            name = catalogThread.name,
+            name = parsedName.name,
             tripcode = catalogThread.trip,
-            posterId = null,
-            countryFlag = null,
-            boardFlag = null,
+            posterId = parsedName.posterId,
+            countryFlag = parsedFlags.countryFlag,
+            boardFlag = parsedFlags.boardFlag,
             timeMs = catalogThread.timestamp.times(1000L),
             images = images,
             threadRepliesTotal = catalogThread.postsCount,
@@ -276,6 +282,7 @@ class DvachDataSource(
           throw ChanDataSourceException("Failed to load thread. Server returned error: \'${dvachThread.error.message()}\'")
         }
 
+        val defaultName = dvachThread.board?.defaultName ?: DEFAULT_NAME
         val threadPosts = dvachThread.threads?.getOrNull(0)?.posts ?: emptyList()
         val totalCount = threadPosts.size
         val postDataList = mutableListWithCap<IPostData>(initialCapacity = totalCount)
@@ -320,17 +327,20 @@ class DvachDataSource(
             }
             ?: emptyList()
 
+          val parsedFlags = parseFlags(threadPost.icon)
+          val parsedName = parseName(defaultName, threadPost.name)
+
           postDataList += if (threadNo == postNo) {
             OriginalPostData(
               originalPostOrder = order,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.subject ?: "",
               postCommentUnparsed = threadPost.comment ?: "",
-              name = threadPost.name,
+              name = parsedName.name,
               tripcode = threadPost.trip,
-              posterId = null,
-              countryFlag = null,
-              boardFlag = null,
+              posterId = parsedName.posterId,
+              countryFlag = parsedFlags.countryFlag,
+              boardFlag = parsedFlags.boardFlag,
               timeMs = threadPost.timestamp.times(1000L),
               images = images,
               threadRepliesTotal = threadPost.postsCount,
@@ -350,11 +360,11 @@ class DvachDataSource(
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.subject ?: "",
               postCommentUnparsed = threadPost.comment ?: "",
-              name = threadPost.name,
+              name = parsedName.name,
               tripcode = threadPost.trip,
-              posterId = null,
-              countryFlag = null,
-              boardFlag = null,
+              posterId = parsedName.posterId,
+              countryFlag = parsedFlags.countryFlag,
+              boardFlag = parsedFlags.boardFlag,
               timeMs = threadPost.timestamp.times(1000L),
               images = images,
               threadRepliesTotal = null,
@@ -457,8 +467,66 @@ class DvachDataSource(
     return Result.failure(NotImplementedError())
   }
 
+  private fun parseName(defaultName: String, name: String): ParsedName {
+    val result = HtmlUnescape.unescape(name).trim()
+    val posterIdMarker = " ID: "
+
+    if (!result.contains(posterIdMarker)) {
+      return ParsedName(name = result, posterId = null)
+    }
+
+    val split = result.split(posterIdMarker).map { it.trim() }
+
+    val posterName = split.getOrNull(0) ?: defaultName
+    val posterIdHtml = split.getOrNull(1) ?: ""
+    val posterId = Jsoup.parseBodyFragment(posterIdHtml).text().trim()
+
+    return ParsedName(name = posterName, posterId = posterId)
+  }
+
+  private fun parseFlags(iconRaw: String?): ParsedFlags {
+    if (iconRaw == null) {
+      return ParsedFlags()
+    }
+
+    val html = Jsoup.parseBodyFragment(iconRaw)
+
+    val icons = html.select("img")
+
+    var boardFlag: PostIcon.BoardFlag? = null
+    var countryFlag: PostIcon.CountryFlag? = null
+
+    for (icon in icons) {
+      val iconSrc = icon.attr("src")
+
+      if (iconSrc.contains("/static/icons/logos")) {
+        val title = icon.attr("title").takeIf { it.isNotBlank() }
+        boardFlag = PostIcon.BoardFlag(flagId = iconSrc, flagName = title)
+      } else {
+        countryFlag = PostIcon.CountryFlag(flagId = iconSrc, flagName = null)
+      }
+    }
+
+    return ParsedFlags(
+      boardFlag = boardFlag,
+      countryFlag = countryFlag
+    )
+  }
+
+  data class ParsedName(
+    val name: String,
+    val posterId: String?
+  )
+
+  data class ParsedFlags(
+    val boardFlag: PostIcon.BoardFlag? = null,
+    val countryFlag: PostIcon.CountryFlag? = null
+  )
+
   companion object {
     private const val TAG = "DvachDataSource"
+
+    private const val DEFAULT_NAME = "Аноним"
   }
 
 }
