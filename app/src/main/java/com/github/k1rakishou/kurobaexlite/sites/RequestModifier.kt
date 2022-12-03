@@ -38,6 +38,34 @@ open class RequestModifier<T : Site>(
   }
 
   @CallSuper
+  open suspend fun modifyGetCatalogPagesRequest(requestBuilder: Request.Builder) {
+    addCloudflareClearanceCookie(requestBuilder)
+    requestBuilder.addHeader(userAgentHeaderKey, appSettings.userAgent.read())
+    requestBuilder.addHeader(acceptEncodingHeaderKey, gzipHeaderValue)
+  }
+
+  @CallSuper
+  open suspend fun modifySearchRequest(requestBuilder: Request.Builder) {
+    addCloudflareClearanceCookie(requestBuilder)
+    requestBuilder.addHeader(userAgentHeaderKey, appSettings.userAgent.read())
+    requestBuilder.addHeader(acceptEncodingHeaderKey, gzipHeaderValue)
+  }
+
+  @CallSuper
+  open suspend fun modifyLoginRequest(requestBuilder: Request.Builder) {
+    addCloudflareClearanceCookie(requestBuilder)
+    requestBuilder.addHeader(userAgentHeaderKey, appSettings.userAgent.read())
+    requestBuilder.addHeader(acceptEncodingHeaderKey, gzipHeaderValue)
+  }
+
+  @CallSuper
+  open suspend fun modifyGetBoardsRequest(requestBuilder: Request.Builder) {
+    addCloudflareClearanceCookie(requestBuilder)
+    requestBuilder.addHeader(userAgentHeaderKey, appSettings.userAgent.read())
+    requestBuilder.addHeader(acceptEncodingHeaderKey, gzipHeaderValue)
+  }
+
+  @CallSuper
   open suspend fun modifyCatalogOrThreadGetRequest(
     chanDescriptor: ChanDescriptor,
     requestBuilder: Request.Builder

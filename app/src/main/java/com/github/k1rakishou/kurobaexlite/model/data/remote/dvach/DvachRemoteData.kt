@@ -182,6 +182,34 @@ data class DvachFile(
 }
 
 @JsonClass(generateAdapter = true)
+data class DvachCatalogPageJson(
+  val board: DvachCatalogPageBoardInfoJson?,
+  val threads: List<DvachCatalogPageThreadJson>
+) {
+
+  fun isValid(): Boolean {
+    return board != null && board.isValid()
+  }
+
+}
+
+@JsonClass(generateAdapter = true)
+data class DvachCatalogPageBoardInfoJson(
+  @Json(name = "threads_per_page") val threadsPerPage: Int?,
+) {
+
+  fun isValid(): Boolean {
+    return threadsPerPage != null && threadsPerPage > 0
+  }
+
+}
+
+@JsonClass(generateAdapter = true)
+data class DvachCatalogPageThreadJson(
+  @Json(name = "num") val postNo: Long,
+)
+
+@JsonClass(generateAdapter = true)
 data class DvachError(
   @Json(name = "code")
   val errorCode: Int

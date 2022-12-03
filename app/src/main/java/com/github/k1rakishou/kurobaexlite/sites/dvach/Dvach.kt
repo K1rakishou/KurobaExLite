@@ -6,6 +6,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.DvachPostParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
+import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -14,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.dvach.DvachDataSource
 import com.github.k1rakishou.kurobaexlite.sites.FormattingButton
@@ -61,6 +63,7 @@ class Dvach(
   private val catalogInfo by lazy { CatalogInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { getCurrentDomain() }) }
   private val threadInfo by lazy { ThreadInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { getCurrentDomain() }) }
   private val postImageInfo by lazy { PostImageInfo(getCurrentDomain = { getCurrentDomain() }) }
+  private val catalogPagesInfo by lazy { CatalogPagesInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { getCurrentDomain() }) }
 
   @Volatile
   private var currentDomain = defaultDomain
@@ -80,6 +83,7 @@ class Dvach(
   override fun threadInfo(): Site.ThreadInfo = threadInfo
   override fun boardsInfo(): Site.BoardsInfo = dvachBoardsInfo
   override fun postImageInfo(): Site.PostImageInfo = postImageInfo
+  override fun catalogPagesInfo(): Site.CatalogPagesInfo = catalogPagesInfo
 
   override fun replyInfo(): Site.ReplyInfo? {
     // TODO: Dvach support
@@ -87,11 +91,6 @@ class Dvach(
   }
 
   override fun bookmarkInfo(): Site.BookmarkInfo? {
-    // TODO: Dvach support
-    return null
-  }
-
-  override fun catalogPagesInfo(): Site.CatalogPagesInfo? {
     // TODO: Dvach support
     return null
   }
@@ -213,6 +212,19 @@ class Dvach(
       val path = params["path"]?.removePrefix("/") ?: return null
 
       return "https://${getCurrentDomain()}/${path}".toHttpUrlOrNull()
+    }
+  }
+
+  class CatalogPagesInfo(
+    private val dvachDataSource: DvachDataSource,
+    private val getCurrentDomain: () -> String
+  ): Site.CatalogPagesInfo {
+    override fun catalogPagesUrl(boardCode: String): String {
+      return "https://${getCurrentDomain()}/${boardCode}/catalog.json"
+    }
+
+    override fun catalogPagesDataSource(): ICatalogPagesDataSource<CatalogDescriptor, CatalogPagesData?> {
+      return dvachDataSource
     }
   }
 

@@ -55,12 +55,8 @@ class ChanCache(
   suspend fun insertCatalogThreads(
     catalogDescriptor: CatalogDescriptor,
     catalogThreads: Collection<IPostData>
-  ): PostsLoadResult? {
+  ): PostsLoadResult {
     return withContext(Dispatchers.IO) {
-      if (catalogThreads.isEmpty()) {
-        return@withContext null
-      }
-
       val chanCatalog = catalogs.getOrPut(
         key = catalogDescriptor,
         defaultValue = { ChanCatalogCache(catalogDescriptor) }
@@ -89,12 +85,8 @@ class ChanCache(
   suspend fun insertThreadPosts(
     threadDescriptor: ThreadDescriptor,
     threadPostCells: Collection<IPostData>
-  ): PostsLoadResult? {
+  ): PostsLoadResult {
     return withContext(Dispatchers.IO) {
-      if (threadPostCells.isEmpty()) {
-        return@withContext null
-      }
-
       val chanThread = threads.getOrPut(
         key = threadDescriptor,
         defaultValue = { ChanThreadCache(threadDescriptor) }

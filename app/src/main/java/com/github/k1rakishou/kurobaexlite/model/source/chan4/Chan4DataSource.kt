@@ -92,6 +92,11 @@ class Chan4DataSource(
         val request = Request.Builder()
           .url(boardsUrl)
           .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifyGetBoardsRequest(
+              requestBuilder = requestBuilder
+            )
+          }
           .build()
 
         val boardsDataJsonAdapter = moshi.adapter<Chan4BoardsDataJson>(Chan4BoardsDataJson::class.java)
@@ -437,6 +442,11 @@ class Chan4DataSource(
         val request = Request.Builder()
           .url(catalogPagesUrl)
           .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifyGetCatalogPagesRequest(
+              requestBuilder = requestBuilder
+            )
+          }
           .build()
 
         val catalogPageJsonListType = Types.newParameterizedType(List::class.java, Chan4CatalogPageJson::class.java)
@@ -500,6 +510,11 @@ class Chan4DataSource(
         val request = Request.Builder()
           .url(globalSearchUrl)
           .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifySearchRequest(
+              requestBuilder = requestBuilder
+            )
+          }
           .build()
 
         val htmlReader = Chan4SearchHtmlReader(
@@ -516,12 +531,12 @@ class Chan4DataSource(
   override suspend fun login(input: Chan4LoginDetails): Result<Chan4LoginResult> {
     return withContext(Dispatchers.IO) {
       return@withContext Result.Try {
-        val chan4 = siteManager.bySiteKey(Chan4.SITE_KEY)
+        val site = siteManager.bySiteKey(Chan4.SITE_KEY)
           ?: throw ChanDataSourceException("Unsupported site: ${input}")
-        val chan4SiteSettings = chan4.siteSettings as Chan4SiteSettings
+        val chan4SiteSettings = site.siteSettings as Chan4SiteSettings
 
-        val passcodeInfo = chan4.passcodeInfo()
-          ?: throw ChanDataSourceException("Site ${chan4.readableName} does not support passcodeInfo")
+        val passcodeInfo = site.passcodeInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support passcodeInfo")
 
         val loginUrl = passcodeInfo.loginUrl()
 
@@ -536,6 +551,11 @@ class Chan4DataSource(
         val request = Request.Builder()
           .url(loginUrl)
           .post(formBuilder.build())
+          .also { requestBuilder ->
+            site.requestModifier().modifyLoginRequest(
+              requestBuilder = requestBuilder
+            )
+          }
           .build()
 
         return@Try kurobaOkHttpClient.okHttpClient().suspendCall(request).unwrap().use { response ->

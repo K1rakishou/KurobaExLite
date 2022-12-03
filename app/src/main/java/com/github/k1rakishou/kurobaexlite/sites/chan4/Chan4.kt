@@ -83,8 +83,8 @@ class Chan4(
   override fun replyInfo(): Site.ReplyInfo = chan4ReplyInfo
   override fun bookmarkInfo(): Site.BookmarkInfo = chan4BookmarkInfo
   override fun catalogPagesInfo(): Site.CatalogPagesInfo = chan4CatalogPagesInfo
-  override fun globalSearchInfo(): Site.GlobalSearchInfo? = chan4GlobalSearchInfo
-  override fun passcodeInfo(): Site.PasscodeInfo? = chan4PasscodeInfo
+  override fun globalSearchInfo(): Site.GlobalSearchInfo = chan4GlobalSearchInfo
+  override fun passcodeInfo(): Site.PasscodeInfo = chan4PasscodeInfo
 
   override fun matchesUrl(httpUrl: HttpUrl): Boolean {
     val domain = httpUrl.domain()

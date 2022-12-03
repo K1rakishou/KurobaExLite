@@ -188,6 +188,11 @@ class ThreadScreenViewModel(
 
       val postLoadResult = postLoadResultMaybe.unwrap()
       if (postLoadResult == null || threadDescriptor == null) {
+        threadScreenState.threadCellDataState.value = formatThreadCellData(
+          postLoadResult = postLoadResult,
+          prevThreadStatusCellData = prevCellDataState
+        )
+
         onRefreshFinished?.invoke()
         return@launch
       }
@@ -338,6 +343,11 @@ class ThreadScreenViewModel(
 
     val postLoadResult = postLoadResultMaybe.unwrap()
     if (postLoadResult == null || threadDescriptor == null) {
+      threadScreenState.threadCellDataState.value = formatThreadCellData(
+        postLoadResult = postLoadResult,
+        prevThreadStatusCellData = prevCellDataState
+      )
+
       threadScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
       onThreadLoadingEnd(threadDescriptor)
       _postsFullyParsedOnceFlow.emit(true)

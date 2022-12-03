@@ -4,6 +4,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -24,6 +25,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBoardDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalog
+import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalogPageJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachThread
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -44,6 +46,7 @@ import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
 import okhttp3.Request
+import kotlin.math.ceil
 
 class DvachDataSource(
   private val siteManager: SiteManager,
@@ -73,6 +76,11 @@ class DvachDataSource(
         val request = Request.Builder()
           .url(boardsUrl)
           .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifyGetBoardsRequest(
+              requestBuilder = requestBuilder
+            )
+          }
           .build()
 
         val dvachBoardDataListJsonAdapter = Types.newParameterizedType(List::class.java, DvachBoardDataJson::class.java)
@@ -376,8 +384,62 @@ class DvachDataSource(
   }
 
   override suspend fun loadCatalogPagesData(input: CatalogDescriptor): Result<CatalogPagesData?> {
-    // TODO: Dvach support
-    return Result.failure(NotImplementedError())
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(input.siteKey)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val catalogPagesInfo = site.catalogPagesInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support catalogPagesInfo")
+
+        val catalogPagesUrl = catalogPagesInfo.catalogPagesUrl(input.boardCode)
+        logcat(TAG, LogPriority.VERBOSE) { "loadCatalogPagesData() url='$catalogPagesUrl'" }
+
+        val request = Request.Builder()
+          .url(catalogPagesUrl)
+          .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifyGetCatalogPagesRequest(
+              requestBuilder = requestBuilder
+            )
+          }
+          .build()
+
+        val dvachCatalogPageJsonAdapter = moshi.adapter<DvachCatalogPageJson>(DvachCatalogPageJson::class.java)
+
+        val dvachCatalogPageJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
+          request,
+          dvachCatalogPageJsonAdapter
+        )
+
+        val dvachCatalogPageJson = dvachCatalogPageJsonResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert catalog pages json into catalogPageJsonList object")
+
+        if (!dvachCatalogPageJson.isValid()) {
+          return@Try null
+        }
+
+        val threadsPerPage = dvachCatalogPageJson.board?.threadsPerPage ?: 10
+        val threadsTotalCount = dvachCatalogPageJson.threads.size
+        val maxPages = ceil(threadsTotalCount.toDouble() / (threadsPerPage.coerceAtLeast(1)).toDouble()).toInt()
+
+        val totalThreadsCount = threadsPerPage * maxPages
+        val pagesInfoMap = mutableMapWithCap<ThreadDescriptor, Int>(totalThreadsCount)
+
+        dvachCatalogPageJson.threads.forEachIndexed { index, dvachCatalogPageThreadJson ->
+          val page = ((index / threadsPerPage) + 1)
+
+          val threadDescriptor = ThreadDescriptor.create(input, dvachCatalogPageThreadJson.postNo)
+          pagesInfoMap[threadDescriptor] = page
+        }
+
+        return@Try CatalogPagesData(
+          pagesTotal = maxPages,
+          pagesInfo = pagesInfoMap
+        )
+      }
+    }
+
   }
 
   override suspend fun loadSearchPageData(input: SearchParams): Result<SearchResult> {

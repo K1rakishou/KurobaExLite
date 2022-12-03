@@ -22,7 +22,7 @@ class SiteManager(
   private val siteProvider: SiteProvider
 ) : ISiteManager {
 
-  private val sites by lazy(mode = LazyThreadSafetyMode.NONE) {
+  private val sites by lazy {
     val map = ConcurrentHashMap<SiteKey, Site>()
     map.putAll(siteProvider.getAllSites())
     return@lazy map
@@ -46,13 +46,12 @@ class SiteManager(
 
   override fun resolveDescriptorFromRawIdentifier(rawIdentifier: String): ResolvedDescriptor? {
     val httpUrl = rawIdentifier.toHttpUrlOrNull()
+      ?: return null
 
     for ((_, site) in sites) {
-      if (httpUrl != null) {
-        val resolvedDescriptor = site.resolveDescriptorFromUrl(httpUrl)
-        if (resolvedDescriptor != null) {
-          return resolvedDescriptor
-        }
+      val resolvedDescriptor = site.resolveDescriptorFromUrl(httpUrl)
+      if (resolvedDescriptor != null) {
+        return resolvedDescriptor
       }
     }
 
