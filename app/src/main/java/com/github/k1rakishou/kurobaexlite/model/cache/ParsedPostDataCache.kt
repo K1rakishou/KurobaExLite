@@ -326,6 +326,8 @@ class ParsedPostDataCache(
       postCommentUnparsed = postData.postCommentUnparsed,
       postSubjectUnparsed = postData.postSubjectUnparsed,
       timeMs = postData.timeMs,
+      opMark = postData.opMark,
+      sage = postData.sage,
       name = postData.name,
       tripcode = postData.tripcode,
       posterId = postData.posterId,
@@ -355,6 +357,8 @@ class ParsedPostDataCache(
       postCommentUnparsed = postCellData.postCommentUnparsed,
       postSubjectUnparsed = postCellData.postSubjectUnparsed,
       timeMs = postCellData.timeMs,
+      opMark = postCellData.opMark,
+      sage = postCellData.sage,
       name = postCellData.name,
       tripcode = postCellData.tripcode,
       posterId = postCellData.posterId,
@@ -379,6 +383,8 @@ class ParsedPostDataCache(
     postCommentUnparsed: String,
     postSubjectUnparsed: String,
     timeMs: Long?,
+    opMark: Boolean,
+    sage: Boolean,
     name: String?,
     tripcode: String?,
     posterId: String?,
@@ -444,6 +450,8 @@ class ParsedPostDataCache(
           postIndex = originalPostOrder,
           postDescriptor = postDescriptor,
           postTimeMs = timeMs,
+          opMark = opMark,
+          sage = sage,
           posterName = name,
           posterTripcode = tripcode,
           posterId = posterId,
@@ -550,6 +558,8 @@ class ParsedPostDataCache(
     postIndex: Int,
     postDescriptor: PostDescriptor,
     postTimeMs: Long?,
+    opMark: Boolean,
+    sage: Boolean,
     posterName: String?,
     posterTripcode: String?,
     posterId: String?,
@@ -586,6 +596,8 @@ class ParsedPostDataCache(
 
         appendNameTripcodeId(
           chanTheme = chanTheme,
+          opMark = opMark,
+          sage = sage,
           posterName = posterName,
           posterTripcode = posterTripcode,
           posterId = posterId
@@ -785,6 +797,8 @@ class ParsedPostDataCache(
 
   private fun AnnotatedString.Builder.appendNameTripcodeId(
     chanTheme: ChanTheme,
+    opMark: Boolean,
+    sage: Boolean,
     posterName: String?,
     posterTripcode: String?,
     posterId: String?
@@ -798,7 +812,21 @@ class ParsedPostDataCache(
             append(" ")
           }
 
+          if (opMark) {
+            withStyle(SpanStyle(color = chanTheme.accentColor)) {
+              append("#OP")
+              append(" ")
+            }
+          }
+
           append(posterName)
+
+          if (sage) {
+            withStyle(SpanStyle(color = chanTheme.accentColor)) {
+              append(" ")
+              append("SAGE")
+            }
+          }
         }
 
         if (posterTripcode.isNotNullNorBlank()) {

@@ -13,6 +13,8 @@ interface IPostData {
   val postDescriptor: PostDescriptor
   val postSubjectUnparsed: String
   val postCommentUnparsed: String
+  val opMark: Boolean
+  val sage: Boolean
   val name: String?
   val tripcode: String?
   val posterId: String?
@@ -44,6 +46,8 @@ interface IPostData {
     postSubjectUnparsed: String = this.postSubjectUnparsed,
     postCommentUnparsed: String = this.postCommentUnparsed,
     timeMs: Long? = this.timeMs,
+    opMark: Boolean = this.opMark,
+    sage: Boolean = this.sage,
     name: String? = this.name,
     tripcode: String? = this.tripcode,
     posterId: String? = this.posterId,

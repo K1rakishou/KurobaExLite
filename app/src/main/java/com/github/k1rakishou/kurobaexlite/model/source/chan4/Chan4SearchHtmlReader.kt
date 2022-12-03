@@ -85,6 +85,8 @@ class Chan4SearchHtmlReader(
             postCommentUnparsed = message,
             // TODO(KurobaEx): name, tripcode, posterId, countryFlag, boardFlag
             name = null,
+            opMark = false,
+            sage = false,
             tripcode = null,
             posterId = null,
             countryFlag = null,
@@ -110,6 +112,8 @@ class Chan4SearchHtmlReader(
             postCommentUnparsed = message,
             // TODO(KurobaEx): name, tripcode, posterId, countryFlag, boardFlag
             name = null,
+            opMark = false,
+            sage = false,
             tripcode = null,
             posterId = null,
             countryFlag = null,

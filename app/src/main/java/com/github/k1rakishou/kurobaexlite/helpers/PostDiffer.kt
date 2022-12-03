@@ -17,6 +17,12 @@ object PostDiffer {
     if (one.name != other.name) {
       return true
     }
+    if (one.opMark != other.opMark) {
+      return true
+    }
+    if (one.sage != other.sage) {
+      return true
+    }
     if (one.tripcode != other.tripcode) {
       return true
     }

@@ -363,6 +363,8 @@ abstract class PostScreenViewModel(
           postIndex = postCellData.originalPostOrder,
           postDescriptor = postCellData.postDescriptor,
           postTimeMs = postCellData.timeMs,
+          opMark = postCellData.opMark,
+          sage = postCellData.sage,
           posterName = postCellData.name,
           posterTripcode = postCellData.tripcode,
           posterId = postCellData.posterId,

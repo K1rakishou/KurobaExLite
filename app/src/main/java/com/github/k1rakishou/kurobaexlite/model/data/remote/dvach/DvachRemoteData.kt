@@ -87,6 +87,10 @@ data class DvachPost(
 ) {
   val isOp: Boolean
     get() = parent == 0L
+  val opMark: Boolean
+    get() = op == 1L
+  val sage: Boolean
+    get() = name.contains("ID:&nbsp;Heaven") || email.contains("mailto:sage")
 
   val originalPostNo: Long
     get() {
