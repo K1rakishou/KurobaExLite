@@ -150,7 +150,7 @@ class Chan4(
     postSubNo: Long?
   ): String {
     return buildString {
-      append("https://boards.4channel.org/")
+      append("https://boards.4chan.org/")
       append(threadDescriptor.boardCode)
       append("/thread/")
       append(threadDescriptor.threadNo)

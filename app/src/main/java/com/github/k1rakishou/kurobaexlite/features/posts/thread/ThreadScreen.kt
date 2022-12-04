@@ -95,7 +95,7 @@ class ThreadScreen(
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
 
   private val threadScreenToolbarActionHandler by lazy {
-    ThreadScreenToolbarActionHandler()
+    ThreadScreenToolbarActionHandler(componentActivity)
   }
 
   private val linkableClickHelper by lazy {
@@ -166,7 +166,6 @@ class ThreadScreen(
             menuItems = floatingMenuItems,
             onMenuItemClicked = { menuItem ->
               threadScreenToolbarActionHandler.processClickedToolbarMenuItem(
-                componentActivity = componentActivity,
                 menuItem = menuItem
               )
             }

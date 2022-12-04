@@ -41,18 +41,14 @@ class CatalogScreenToolbarActionHandler(
   private val bookmarkAllCatalogThreads: BookmarkAllCatalogThreads by inject(BookmarkAllCatalogThreads::class.java)
   private val addToHistoryAllCatalogThreads: AddToHistoryAllCatalogThreads by inject(AddToHistoryAllCatalogThreads::class.java)
 
-  private lateinit var catalogScreenViewModel: CatalogScreenViewModel
-  private lateinit var threadScreenViewModel: ThreadScreenViewModel
-  private lateinit var homeScreenViewModel: HomeScreenViewModel
+  private val catalogScreenViewModel by componentActivity.viewModels<CatalogScreenViewModel>()
+  private val threadScreenViewModel by componentActivity.viewModels<ThreadScreenViewModel>()
+  private val homeScreenViewModel by componentActivity.viewModels<HomeScreenViewModel>()
 
   fun processClickedToolbarMenuItem(
     navigationRouter: NavigationRouter,
     menuItem: FloatingMenuItem
   ) {
-    catalogScreenViewModel = componentActivity.viewModels<CatalogScreenViewModel>().value
-    threadScreenViewModel = componentActivity.viewModels<ThreadScreenViewModel>().value
-    homeScreenViewModel = componentActivity.viewModels<HomeScreenViewModel>().value
-
     logcat { "catalog processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
 
     when (menuItem.menuItemKey) {

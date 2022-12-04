@@ -10,19 +10,19 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 
-class ThreadScreenToolbarActionHandler {
+class ThreadScreenToolbarActionHandler(
+  componentActivity: ComponentActivity
+) {
   private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
 
-  private lateinit var threadScreenViewModel: ThreadScreenViewModel
+  private val threadScreenViewModel by componentActivity.viewModels<ThreadScreenViewModel>()
 
   fun processClickedToolbarMenuItem(
-    componentActivity: ComponentActivity,
     menuItem: FloatingMenuItem,
   ) {
     logcat { "thread processClickedToolbarMenuItem id=${menuItem.menuItemKey}" }
-    threadScreenViewModel = componentActivity.viewModels<ThreadScreenViewModel>().value
 
     when (menuItem.menuItemKey) {
       ACTION_RELOAD -> {

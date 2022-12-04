@@ -222,6 +222,7 @@
 
     <string name="post_longtap_menu_mark_post_as_own">Mark post as mine</string>
     <string name="post_longtap_menu_unmark_post_as_own">Unmark post as mine</string>
+    <string name="post_longtap_menu_copy_url">Copy post url</string>
 
     <string name="post_search_longtap_menu_add_to_history">Add to history</string>
 

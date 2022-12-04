@@ -6,10 +6,12 @@ import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -31,6 +33,8 @@ class PostLongtapContentMenu(
   private val markedPostManager: MarkedPostManager by inject(MarkedPostManager::class.java)
   private val modifyMarkedPosts: ModifyMarkedPosts by inject(ModifyMarkedPosts::class.java)
   private val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
+  private val siteManager: SiteManager by inject(SiteManager::class.java)
+  private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
 
   fun showMenu(
     postListOptions: PostListOptions,
@@ -67,6 +71,12 @@ class PostLongtapContentMenu(
             )
           }
         }
+
+        this += FloatingMenuItem.Text(
+          menuItemKey = COPY_POST_URL,
+          menuItemData = postCellData.postDescriptor,
+          text = FloatingMenuItem.MenuItemText.Id(R.string.post_longtap_menu_copy_url)
+        )
       }
 
       if (floatingMenuItems.isEmpty()) {
@@ -159,6 +169,22 @@ class PostLongtapContentMenu(
 
         reparsePostsFunc(postsToReparse)
       }
+      COPY_POST_URL -> {
+        val postDescriptor = menuItem.data as? PostDescriptor
+          ?: return
+
+        val postUrl = siteManager.bySiteKey(postDescriptor.siteKey)?.desktopUrl(
+          threadDescriptor = postDescriptor.threadDescriptor,
+          postNo = postDescriptor.postNo,
+          postSubNo = postDescriptor.postSubNo
+        )
+
+        if (postUrl.isNullOrBlank()) {
+          return
+        }
+
+        androidHelpers.copyToClipboard("Post url", postUrl)
+      }
     }
   }
 
@@ -167,6 +193,7 @@ class PostLongtapContentMenu(
     private const val QUOTE_TEXT = 1
     private const val MARK_MARK_POST_AS_OWN = 2
     private const val MARK_UNMARK_POST_AS_OWN = 3
+    private const val COPY_POST_URL = 4
   }
 
 }
