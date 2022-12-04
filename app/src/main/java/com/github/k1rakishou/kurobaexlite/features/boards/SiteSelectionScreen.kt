@@ -129,7 +129,7 @@ class SiteSelectionScreen(
           modifier = Modifier
             .size(26.dp),
           model = request,
-          contentDescription = null
+          contentDescription = "Site icon"
         )
 
         Spacer(modifier = Modifier.width(16.dp))

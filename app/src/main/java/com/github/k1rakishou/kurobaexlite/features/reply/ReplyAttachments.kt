@@ -126,7 +126,7 @@ private fun AttachedMediaThumbnail(
         .size(mediaHeightPx)
         .videoFrameMillis(frameMillis = 1000L)
         .build(),
-      contentDescription = null,
+      contentDescription = "Attached media",
       contentScale = ContentScale.Crop,
       content = {
         val state = painter.state

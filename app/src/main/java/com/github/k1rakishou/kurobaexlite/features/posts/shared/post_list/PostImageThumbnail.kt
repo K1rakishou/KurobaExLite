@@ -140,7 +140,7 @@ fun PostImageThumbnail(
         SubcomposeAsyncImage(
           modifier = Modifier.fillMaxSize(),
           model = imageRequest,
-          contentDescription = null,
+          contentDescription = "Post image thumbnail",
           contentScale = contentScale,
           onState = { state ->
             loadErrorMut = if (state is AsyncImagePainter.State.Error) {

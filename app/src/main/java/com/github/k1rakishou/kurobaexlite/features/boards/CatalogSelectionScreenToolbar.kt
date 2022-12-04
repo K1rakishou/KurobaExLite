@@ -88,7 +88,7 @@ class CatalogSelectionScreenToolbar(
                 AsyncImage(
                   modifier = Modifier.size(18.dp),
                   model = request,
-                  contentDescription = null
+                  contentDescription = "Site icon"
                 )
               }
 

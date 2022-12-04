@@ -614,7 +614,7 @@ private fun BuildImageSearchResult(
     AsyncImage(
       modifier = Modifier.fillMaxSize(),
       model = request,
-      contentDescription = null
+      contentDescription = "Remote image"
     )
 
     if (imageInfo != null) {

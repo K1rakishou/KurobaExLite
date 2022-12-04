@@ -165,7 +165,7 @@ class Dvach(
 
   override fun requestModifier(): RequestModifier<Site> = chan4RequestModifier as RequestModifier<Site>
 
-  override fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String? {
+  override fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String {
     return buildString {
       append("https://${getCurrentDomain()}/")
       append(threadDescriptor.boardCode)

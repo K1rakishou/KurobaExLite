@@ -1682,7 +1682,7 @@ private fun DisplayImagePreview(
       .crossfade(false)
       .size(Size.ORIGINAL)
       .build(),
-    contentDescription = null,
+    contentDescription = "Media viewer post thumbnail icon",
     contentScale = ContentScale.Fit,
     content = {
       val state = painter.state

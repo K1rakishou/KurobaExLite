@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
@@ -59,10 +60,12 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostIm
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.createClickableTextColorMap
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectClickedAnnotations
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -644,7 +647,14 @@ private fun PostCellIcon(
   AsyncImage(
     modifier = Modifier.fillMaxSize(),
     model = imageRequest,
-    contentDescription = "poster flag"
+    onState = { state ->
+      if (state is AsyncImagePainter.State.Error) {
+        logcatError("PostCellIcon") {
+          "Failed to load icon \'${iconUrl}\', error: ${state.result.throwable.errorMessageOrClassName()}"
+        }
+      }
+    },
+    contentDescription = "Poster flag"
   )
 }
 

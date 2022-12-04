@@ -352,7 +352,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
           .size(thumbnailSize)
           .graphicsLayer { alpha = if (isDead) 0.5f else 1f },
         threadDescriptor = threadDescriptor,
-        iconUrl = thumbnailUrl,
+        thumbnailUrl = thumbnailUrl,
         watching = watching,
         isDead = isDead,
         onBookmarkThumbnailClicked = onBookmarkThumbnailClicked
@@ -586,7 +586,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
 private fun BookmarkThumbnail(
   modifier: Modifier = Modifier,
   threadDescriptor: ThreadDescriptor,
-  iconUrl: String,
+  thumbnailUrl: String,
   watching: Boolean,
   isDead: Boolean,
   onBookmarkThumbnailClicked: (ThreadDescriptor) -> Unit
@@ -626,9 +626,9 @@ private fun BookmarkThumbnail(
       }
     }
 
-    val imageRequest = remember(key1 = isDead, key2 = watching, key3 = iconUrl) {
+    val imageRequest = remember(key1 = isDead, key2 = watching, key3 = thumbnailUrl) {
       ImageRequest.Builder(context)
-        .data(iconUrl)
+        .data(thumbnailUrl)
         .crossfade(true)
         .transformations(transformations)
         .size(Size.ORIGINAL)
@@ -639,13 +639,13 @@ private fun BookmarkThumbnail(
       modifier = Modifier.fillMaxSize(),
       model = imageRequest,
       contentScale = ContentScale.Crop,
-      contentDescription = null,
+      contentDescription = "Bookmark thumbnail",
       content = {
         val state = painter.state
 
         if (state is AsyncImagePainter.State.Error) {
           logcatError(BookmarksScreen.TAG) {
-            "BookmarkThumbnail() url=${iconUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
+            "BookmarkThumbnail() url=${thumbnailUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
           }
 
           KurobaComposeIcon(

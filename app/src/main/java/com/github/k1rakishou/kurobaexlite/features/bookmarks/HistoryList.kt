@@ -323,7 +323,7 @@ private fun CatalogNavigationElement(
 
       NavigationIcon(
         modifier = Modifier.size(thumbnailSize),
-        iconUrl = navigationElement.iconUrl,
+        navigationIconUrl = navigationElement.iconUrl,
       )
 
       Spacer(modifier = Modifier.width(8.dp))
@@ -396,7 +396,7 @@ private fun ThreadNavigationElement(
 
       NavigationIcon(
         modifier = Modifier.size(thumbnailSize),
-        iconUrl = navigationElement.iconUrl
+        navigationIconUrl = navigationElement.iconUrl
       )
 
       Spacer(modifier = Modifier.width(8.dp))
@@ -440,7 +440,7 @@ private fun ThreadNavigationElement(
 @Composable
 private fun NavigationIcon(
   modifier: Modifier = Modifier,
-  iconUrl: String,
+  navigationIconUrl: String,
 ) {
   val context = LocalContext.current
 
@@ -462,19 +462,19 @@ private fun NavigationIcon(
     SubcomposeAsyncImage(
       modifier = Modifier.fillMaxSize(),
       model = ImageRequest.Builder(context)
-        .data(iconUrl)
+        .data(navigationIconUrl)
         .crossfade(true)
         .transformations(circleCropTransformation)
         .size(Size.ORIGINAL)
         .build(),
       contentScale = ContentScale.Crop,
-      contentDescription = null,
+      contentDescription = "Navigation icon",
       content = {
         val state = painter.state
 
         if (state is AsyncImagePainter.State.Error) {
           logcatError(TAG) {
-            "NavigationIcon() url=${iconUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
+            "NavigationIcon() url=${navigationIconUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
           }
 
           KurobaComposeIcon(

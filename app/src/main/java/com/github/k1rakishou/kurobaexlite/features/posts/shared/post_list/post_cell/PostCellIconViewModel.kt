@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -17,10 +16,6 @@ class PostCellIconViewModel(
     val iconId = when (postIcon) {
       is PostIcon.CountryFlag -> "country"
       is PostIcon.BoardFlag -> "board_flag"
-      else -> {
-        logcatError(TAG) { "postIcon not supported: ${postIcon::class.java.simpleName}" }
-        return null
-      }
     }
 
     val params: Map<String, String> = when (postIcon) {
@@ -32,10 +27,6 @@ class PostCellIconViewModel(
           "board_flag_code" to postIcon.flagId,
           "board_code" to postDescriptor.boardCode,
         )
-      }
-      else -> {
-        logcatError(TAG) { "postIcon not supported: ${postIcon::class.java.simpleName}" }
-        return null
       }
     }
 

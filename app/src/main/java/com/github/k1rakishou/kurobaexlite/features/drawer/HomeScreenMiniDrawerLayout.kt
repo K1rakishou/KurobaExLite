@@ -299,7 +299,7 @@ private fun BuildMiniDrawerElement(
         ),
         model = imageRequest,
         contentScale = ContentScale.Crop,
-        contentDescription = null
+        contentDescription = "Mini drawer icon"
       )
 
       if (miniDrawerElement is MiniDrawerElement.History) {
