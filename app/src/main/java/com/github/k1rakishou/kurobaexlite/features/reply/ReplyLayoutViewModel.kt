@@ -90,6 +90,12 @@ class ReplyLayoutViewModel(
     processReplyLayoutStates()
   }
 
+  override fun onCleared() {
+    super.onCleared()
+
+    replyLayoutStateMap.values.forEach { replyLayoutState -> replyLayoutState.onDestroy() }
+  }
+
   fun getOrCreateReplyLayoutState(chanDescriptor: ChanDescriptor?): IReplyLayoutState {
     if (chanDescriptor == null) {
       return FakeReplyLayoutState()

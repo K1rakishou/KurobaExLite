@@ -5,6 +5,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.LoginDetails
 import com.github.k1rakishou.kurobaexlite.model.data.local.LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
@@ -56,7 +57,7 @@ interface Site {
   fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String?
   fun iconUrl(iconId: String, params: Map<String, String>): String?
 
-  fun commentFormattingButtons(catalogDescriptor: CatalogDescriptor): List<FormattingButton>
+  fun commentFormattingButtons(chanCatalog: ChanCatalog): List<FormattingButton>
 
   interface CatalogInfo  {
     fun catalogUrl(boardCode: String): String

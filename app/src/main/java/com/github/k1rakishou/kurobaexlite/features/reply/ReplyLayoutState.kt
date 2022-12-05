@@ -14,7 +14,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.getSelectedText
 import androidx.compose.ui.text.input.getTextAfterSelection
 import androidx.compose.ui.text.input.getTextBeforeSelection
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import logcat.logcat
@@ -43,6 +45,7 @@ import java.io.File
 interface IReplyLayoutState {
   val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
 
+  fun onDestroy()
   fun onBackPressed(): Boolean
   fun collapseReplyLayout()
   fun openReplyLayout()
@@ -56,6 +59,10 @@ class FakeReplyLayoutState : IReplyLayoutState {
   private val _replyLayoutVisibilityState = mutableStateOf(ReplyLayoutVisibility.Collapsed)
   override val replyLayoutVisibilityState: State<ReplyLayoutVisibility>
     get() = _replyLayoutVisibilityState
+
+  override fun onDestroy() {
+
+  }
 
   override fun onBackPressed(): Boolean {
     return false
@@ -91,7 +98,8 @@ class ReplyLayoutState(
 ) : IReplyLayoutState {
   private val globalUiInfoManager: GlobalUiInfoManager by lazy { GlobalContext.get().get() }
   private val siteManager: SiteManager by lazy { GlobalContext.get().get() }
-  private val appResources: AppResources by lazy { GlobalContext.get().get() }
+  private val loadChanCatalog: LoadChanCatalog by lazy { GlobalContext.get().get() }
+  private val coroutineScope = KurobaCoroutineScope()
 
   val isCatalogMode: Boolean
     get() = chanDescriptor is CatalogDescriptor
@@ -161,12 +169,18 @@ class ReplyLayoutState(
   init {
     bundle.putParcelable(chanDescriptorKey, chanDescriptor)
     restoreFromBundle()
-    initReplyFormattingButtons()
+
+    coroutineScope.launch {
+      initReplyFormattingButtons()
+    }
   }
 
-  private fun initReplyFormattingButtons() {
+  private suspend fun initReplyFormattingButtons() {
+    val chanCatalog = loadChanCatalog.await(chanDescriptor).getOrNull()
+      ?: return
+
     val newFormattingButtons = siteManager.bySiteKey(chanDescriptor.siteKey)
-      ?.commentFormattingButtons(chanDescriptor.catalogDescriptor())
+      ?.commentFormattingButtons(chanCatalog)
       ?: emptyList()
 
     _replyFormattingButtons.value = newFormattingButtons
@@ -356,6 +370,10 @@ class ReplyLayoutState(
       _replyLayoutVisibilityState.value = ReplyLayoutVisibility.Opened
       onReplyLayoutVisibilityStateChanged()
     }
+  }
+
+  override fun onDestroy() {
+    coroutineScope.cancelChildren()
   }
 
   override fun onBackPressed(): Boolean {

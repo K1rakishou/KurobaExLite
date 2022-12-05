@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.sites.dvach
 
 import android.content.Context
+import androidx.compose.ui.text.AnnotatedString
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
@@ -12,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.LoginDetails
 import com.github.k1rakishou.kurobaexlite.model.data.local.LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
@@ -211,9 +213,46 @@ class Dvach(
     }
   }
 
-  override fun commentFormattingButtons(catalogDescriptor: CatalogDescriptor): List<FormattingButton> {
-    // TODO: Dvach support
-    return emptyList()
+  override fun commentFormattingButtons(chanCatalog: ChanCatalog): List<FormattingButton> {
+    val formattingButtons = mutableListOf<FormattingButton>()
+
+    formattingButtons += FormattingButton(
+      title = AnnotatedString(">"),
+      openTag = ">",
+      closeTag = ""
+    )
+
+    formattingButtons += FormattingButton(
+      title = AnnotatedString("[spoiler]"),
+      openTag = "[spoiler]",
+      closeTag = "[/spoiler]"
+    )
+
+    formattingButtons += FormattingButton(
+      title = AnnotatedString("[b]"),
+      openTag = "[b]",
+      closeTag = "[/b]"
+    )
+
+    formattingButtons += FormattingButton(
+      title = AnnotatedString("[i]"),
+      openTag = "[i]",
+      closeTag = "[/i]"
+    )
+
+    formattingButtons += FormattingButton(
+      title = AnnotatedString("[u]"),
+      openTag = "[u]",
+      closeTag = "[/u]"
+    )
+
+    formattingButtons += FormattingButton(
+      title = AnnotatedString("[s]"),
+      openTag = "[s]",
+      closeTag = "[/s]"
+    )
+
+    return formattingButtons
   }
 
   class BoardsInfo(

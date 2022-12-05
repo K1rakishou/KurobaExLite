@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.LoginDetails
 import com.github.k1rakishou.kurobaexlite.model.data.local.LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
@@ -189,8 +190,8 @@ class Chan4(
     }
   }
 
-  override fun commentFormattingButtons(catalogDescriptor: CatalogDescriptor): List<FormattingButton> {
-    val boardCode = catalogDescriptor.boardCode
+  override fun commentFormattingButtons(chanCatalog: ChanCatalog): List<FormattingButton> {
+    val boardCode = chanCatalog.catalogDescriptor.boardCode
     val formattingButtons = mutableListOf<FormattingButton>()
 
     formattingButtons += FormattingButton(
@@ -220,6 +221,8 @@ class Chan4(
         closeTag = "[/math]"
       )
     }
+
+    // TODO: spoiler button for boards that support it
 
     if (boardCode == "jp" || boardCode == "vip") {
       formattingButtons += FormattingButton(
