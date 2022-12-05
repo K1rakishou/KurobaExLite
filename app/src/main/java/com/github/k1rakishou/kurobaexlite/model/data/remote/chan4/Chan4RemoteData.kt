@@ -20,7 +20,8 @@ data class Chan4BoardDataJson(
   @Json(name = "title") val boardTitle: String?,
   @Json(name = "meta_description") val boardDescription: String?,
   @Json(name = "ws_board") val workSafe: Int?,
-  @Json(name = "board_flags") val boardFlags: Chan4BoardFlagsJson?
+  @Json(name = "board_flags") val boardFlags: Chan4BoardFlagsJson?,
+  @Json(name = "bump_limit") val bumpLimit: Int?,
 )
 
 @JsonClass(generateAdapter = false)

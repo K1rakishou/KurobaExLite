@@ -88,14 +88,14 @@ class DvachReplyInfo(
         .adapter(PostingResult::class.java)
         .fromJson(result)
     } catch (error: Throwable) {
-      logcatError(TAG) { "Couldn't handle server response! response = \"$result\"" }
+      logcatError(TAG) { "Couldn't handle server response! (fromJson error) response: \"$result\"" }
 
       val errorMessage = "Failed process server response, error: ${error.errorMessageOrClassName(userReadable = true)}"
       return ReplyResponse.Error(errorMessage)
     }
 
     if (postingResult == null) {
-      logcatError(TAG) { "Couldn't handle server response! response = \"$result\"" }
+      logcatError(TAG) { "Couldn't handle server response! (postingResult == null) response: \"$result\"" }
 
       val errorMessage = "Failed process server response (postingResult == null)"
       return ReplyResponse.Error(errorMessage)
@@ -131,11 +131,18 @@ class DvachReplyInfo(
       return ReplyResponse.Error(errorMessage = "Failed to post, bad response status code: ${response.code}")
     }
 
-    var threadNo = postingResult.threadNo ?: 0
-    val postNo = postingResult.postNo ?: 0
+    var threadNo = 0L
+    var postNo = 0L
 
-    if (threadNo == 0L) {
-      threadNo = postNo
+    when (replyChanDescriptor) {
+      is CatalogDescriptor -> {
+        threadNo = postingResult.threadNo ?: 0L
+        postNo = threadNo
+      }
+      is ThreadDescriptor -> {
+        threadNo = replyChanDescriptor.threadNo
+        postNo = postingResult.postNo ?: 0L
+      }
     }
 
     if (threadNo > 0 && postNo > 0) {
@@ -145,14 +152,13 @@ class DvachReplyInfo(
         siteKey = replyChanDescriptor.siteKey,
         boardCode = replyChanDescriptor.boardCode,
         threadNo = threadNo,
-        postNo = postNo,
-        postSubNo = 0
+        postNo = postNo
       )
 
       return ReplyResponse.Success(resultPostDescriptor)
     }
 
-    logcatError(TAG) { "Couldn't handle server response! response: \"$result\"" }
+    logcatError(TAG) { "Couldn't handle server response! (threadNo: ${threadNo}, postNo=${postNo}) response: \"$result\"" }
     return ReplyResponse.Error(errorMessage = "Failed to post, see the logs for more info")
   }
 

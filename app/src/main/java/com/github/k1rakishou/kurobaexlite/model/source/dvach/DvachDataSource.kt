@@ -3,12 +3,17 @@ package com.github.k1rakishou.kurobaexlite.model.source.dvach
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
+import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ChanDataSourceException
+import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.PostDataSticky
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
@@ -27,7 +32,9 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBoardDataJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalogPageJson
-import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachThread
+import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachPasscodeResult
+import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachThreadFull
+import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachThreadPartial
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
@@ -40,20 +47,25 @@ import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ILoginDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ILogoutDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
+import com.github.k1rakishou.kurobaexlite.sites.dvach.Dvach
+import com.github.k1rakishou.kurobaexlite.sites.settings.DvachSiteSettings
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
+import okhttp3.FormBody
 import okhttp3.Request
 import org.jsoup.Jsoup
+import java.net.HttpCookie
 import kotlin.math.ceil
 
 class DvachDataSource(
   private val siteManager: SiteManager,
   private val kurobaOkHttpClient: ProxiedOkHttpClient,
-  private val moshi: Moshi
+  private val moshi: Moshi,
+  private val loadChanCatalog: LoadChanCatalog
 ) : ICatalogDataSource<CatalogDescriptor, CatalogData>,
   IThreadDataSource<ThreadDescriptor, ThreadData>,
   IBoardDataSource<SiteKey, CatalogsData>,
@@ -107,7 +119,8 @@ class DvachDataSource(
             boardDescription = boardDescription,
             workSafe = boardDataJson.workSafe,
             maxAttachFilesPerPost = 4,
-            flags = emptyList()
+            flags = emptyList(),
+            bumpLimit = boardDataJson.bumpLimit
           )
         }
 
@@ -270,24 +283,43 @@ class DvachDataSource(
           }
           .build()
 
-        val dvachThreadJsonAdapter = moshi.adapter<DvachThread>(DvachThread::class.java)
+        val dvachThread = if (lastCachedThreadPost == null) {
+          val dvachThreadFullJsonAdapter = moshi.adapter<DvachThreadFull>(DvachThreadFull::class.java)
 
-        val threadDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
-          request,
-          dvachThreadJsonAdapter
-        )
+          val threadDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
+            request,
+            dvachThreadFullJsonAdapter
+          )
 
-        val dvachThread = threadDataJsonResult.unwrap()
-          ?: throw ChanDataSourceException("Failed to convert thread json into DvachThread object")
+          threadDataJsonResult.unwrap()
+            ?: throw ChanDataSourceException("Failed to convert thread json into DvachThreadFull object")
+        } else {
+          val dvachThreadPartialJsonAdapter = moshi.adapter<DvachThreadPartial>(DvachThreadPartial::class.java)
 
-        if (dvachThread.error != null) {
-          throw ChanDataSourceException("Failed to load thread. Server returned error: \'${dvachThread.error.message()}\'")
+          val threadDataJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
+            request,
+            dvachThreadPartialJsonAdapter
+          )
+
+          threadDataJsonResult.unwrap()
+            ?: throw ChanDataSourceException("Failed to convert thread json into DvachThreadPartial object")
         }
 
-        val defaultName = dvachThread.board?.defaultName ?: DEFAULT_NAME
-        val threadPosts = dvachThread.threads?.getOrNull(0)?.posts ?: emptyList()
+        if (dvachThread.error != null) {
+          throw ChanDataSourceException("Failed to load thread. Server returned error: \'${dvachThread.error!!.message()}\'")
+        }
+
+        val threadPosts = dvachThread.threadPosts ?: emptyList()
         val totalCount = threadPosts.size
         val postDataList = mutableListWithCap<IPostData>(initialCapacity = totalCount)
+
+        val catalogBumpLimit = if (dvachThread is DvachThreadFull) {
+          dvachThread.board?.bumpLimit
+        } else {
+          loadChanCatalog.await(chanDescriptor = input.catalogDescriptor).getOrNull()?.bumpLimit
+        }
+
+        val isBumpLimit = catalogBumpLimit != null && totalCount > catalogBumpLimit
 
         threadPosts.forEachIndexed { order, threadPost ->
           val threadNo = if (threadPost.parent == 0L) {
@@ -317,9 +349,6 @@ class DvachDataSource(
             null
           }
 
-          val bumpLimit = dvachThread.board
-            ?.let { dvachBoardInfo -> dvachBoardInfo.bumpLimit != null && totalCount > dvachBoardInfo.bumpLimit }
-
           val images = threadPost.files
             ?.mapNotNull { dvachFile ->
               return@mapNotNull dvachFile.toPostImageData(
@@ -330,14 +359,14 @@ class DvachDataSource(
             ?: emptyList()
 
           val parsedFlags = parseFlags(threadPost.icon)
-          val parsedName = parseName(defaultName, threadPost.name)
+          val parsedName = parseName(DEFAULT_NAME, threadPost.name)
 
           postDataList += if (threadNo == postNo) {
             OriginalPostData(
               originalPostOrder = order,
               postDescriptor = postDescriptor,
-              postSubjectUnparsed = threadPost.subject ?: "",
-              postCommentUnparsed = threadPost.comment ?: "",
+              postSubjectUnparsed = threadPost.subject,
+              postCommentUnparsed = threadPost.comment,
               opMark = threadPost.opMark,
               sage = threadPost.sage,
               name = parsedName.name,
@@ -355,7 +384,7 @@ class DvachDataSource(
               deleted = false,
               closed = threadPost.closed == 1,
               sticky = sticky,
-              bumpLimit = bumpLimit,
+              bumpLimit = isBumpLimit,
               imageLimit = null,
             )
           } else {
@@ -464,13 +493,92 @@ class DvachDataSource(
   }
 
   override suspend fun login(input: DvachLoginDetails): Result<DvachLoginResult> {
-    // TODO: Dvach support
-    return Result.failure(NotImplementedError())
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(Dvach.SITE_KEY)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+        val dvachSiteSettings = site.siteSettings as DvachSiteSettings
+
+        val passcodeInfo = site.passcodeInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support passcodeInfo")
+
+        val loginUrl = passcodeInfo.loginUrl()
+
+        logcat(TAG, LogPriority.VERBOSE) { "login() url='$loginUrl'" }
+
+        val formBuilder = FormBody.Builder()
+
+        formBuilder
+          .add("passcode", input.passcode)
+
+        val request = Request.Builder()
+          .url(loginUrl)
+          .post(formBuilder.build())
+          .also { requestBuilder ->
+            site.requestModifier().modifyLoginRequest(
+              requestBuilder = requestBuilder
+            )
+          }
+          .build()
+
+        return@Try kurobaOkHttpClient.okHttpClient().suspendCall(request).unwrap().use { response ->
+          val result = response.body?.string()
+            ?: throw EmptyBodyResponseException()
+
+          if (!response.isSuccessful) {
+            throw ChanDataSourceException("Login failure! Bad response status code: ${response.code}")
+          }
+
+          val passcodeResult = moshi
+            .adapter(DvachPasscodeResult::class.java)
+            .fromJson(result)
+
+          if (passcodeResult == null) {
+            throw ChanDataSourceException("Login failure! Failed to parse server response")
+          }
+
+          if (passcodeResult.error != null) {
+            throw ChanDataSourceException(passcodeResult.error.message)
+          }
+
+          val cookies = response.headers("Set-Cookie")
+          var tokenCookie: String? = null
+
+          for (cookie in cookies) {
+            try {
+              val parsedList = HttpCookie.parse(cookie)
+
+              for (parsed in parsedList) {
+                if (parsed.name == "passcode_auth" && parsed.value.isNotEmpty()) {
+                  tokenCookie = parsed.value
+                }
+              }
+            } catch (error: IllegalArgumentException) {
+              logcatError(TAG) { "Error while processing cookies, error: ${error.asLogIfImportantOrErrorMessage()}" }
+            }
+          }
+
+          if (tokenCookie.isNullOrBlank()) {
+            throw ChanDataSourceException("Could not get pass id")
+          }
+
+          dvachSiteSettings.passcodeCookie.write(tokenCookie)
+          return@use DvachLoginResult(tokenCookie )
+        }
+      }
+    }
   }
 
   override suspend fun logout(input: Unit): Result<Unit> {
-    // TODO: Dvach support
-    return Result.failure(NotImplementedError())
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val dvach = siteManager.bySiteKey(Dvach.SITE_KEY)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val dvachSiteSettings = dvach.siteSettings as DvachSiteSettings
+        dvachSiteSettings.passcodeCookie.write("")
+      }
+    }
   }
 
   private fun parseName(defaultName: String, name: String): ParsedName {

@@ -12,6 +12,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
+import com.github.k1rakishou.kurobaexlite.model.data.local.LoginDetails
+import com.github.k1rakishou.kurobaexlite.model.data.local.LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -21,6 +23,8 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ILoginDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.ILogoutDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.dvach.DvachDataSource
 import com.github.k1rakishou.kurobaexlite.sites.FormattingButton
@@ -72,6 +76,7 @@ class Dvach(
   private val postImageInfo by lazy { PostImageInfo(getCurrentDomain = { currentDomain() }) }
   private val catalogPagesInfo by lazy { CatalogPagesInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { currentDomain() }) }
   private val replyInfo by lazy { DvachReplyInfo(site = this, moshi = moshi, proxiedOkHttpClient = proxiedOkHttpClient) }
+  private val passcodeInfo by lazy { PasscodeInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { currentDomain() }) }
 
   @Volatile
   private var _currentDomain = defaultDomain
@@ -106,10 +111,7 @@ class Dvach(
     return null
   }
 
-  override fun passcodeInfo(): Site.PasscodeInfo? {
-    // TODO: Dvach support
-    return null
-  }
+  override fun passcodeInfo(): Site.PasscodeInfo = passcodeInfo
 
   override fun matchesUrl(httpUrl: HttpUrl): Boolean {
     val domain = httpUrl.domain()
@@ -300,6 +302,24 @@ class Dvach(
     }
   }
 
+  class PasscodeInfo(
+    private val dvachDataSource: DvachDataSource,
+    private val getCurrentDomain: () -> String
+  ): Site.PasscodeInfo {
+
+    override fun loginUrl(): String {
+      return "https://${getCurrentDomain()}/user/passlogin?json=1"
+    }
+
+    override fun loginDataSource(): ILoginDataSource<LoginDetails, LoginResult> {
+      return dvachDataSource as ILoginDataSource<LoginDetails, LoginResult>
+    }
+
+    override fun logoutDataSource(): ILogoutDataSource<Unit, Unit> {
+      return dvachDataSource
+    }
+  }
+
   private class DvachRequestModifier(
     site: Dvach,
     appSettings: AppSettings
@@ -308,6 +328,11 @@ class Dvach(
     override suspend fun modifyReplyRequest(requestBuilder: Request.Builder) {
       super.modifyReplyRequest(requestBuilder)
       addUserCodeCookie(requestBuilder)
+
+      val passcodeCookie = (site.siteSettings as DvachSiteSettings).passcodeCookie.read()
+      if (passcodeCookie.isNotBlank()) {
+        requestBuilder.appendCookieHeader("passcode_auth=${passcodeCookie}")
+      }
     }
 
     override suspend fun modifyCaptchaGetRequest(requestBuilder: Request.Builder) {

@@ -14,7 +14,8 @@ data class ChanCatalog(
   val boardDescription: String?,
   val workSafe: Boolean,
   val maxAttachFilesPerPost: Int,
-  val flags: List<BoardFlag>
+  val flags: List<BoardFlag>,
+  val bumpLimit: Int?
 )
 
 @Parcelize

@@ -14,8 +14,8 @@ import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
-import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginDetails
-import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginResult
+import com.github.k1rakishou.kurobaexlite.model.data.local.LoginDetails
+import com.github.k1rakishou.kurobaexlite.model.data.local.LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
@@ -360,8 +360,8 @@ class Chan4(
       return "https://sys.4chan.org/auth"
     }
 
-    override fun loginDataSource(): ILoginDataSource<Chan4LoginDetails, Chan4LoginResult> {
-      return chan4DataSource
+    override fun loginDataSource(): ILoginDataSource<LoginDetails, LoginResult> {
+      return chan4DataSource as ILoginDataSource<LoginDetails, LoginResult>
     }
 
     override fun logoutDataSource(): ILogoutDataSource<Unit, Unit> {

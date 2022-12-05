@@ -15,7 +15,7 @@ data class Chan4LoginResult(
 
 data class DvachLoginDetails(
   val passcode: String
-)
+) : LoginDetails
 
 data class DvachLoginResult(
   val passcodeCookie: String

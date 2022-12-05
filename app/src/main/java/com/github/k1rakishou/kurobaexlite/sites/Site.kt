@@ -5,8 +5,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
-import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginDetails
-import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginResult
+import com.github.k1rakishou.kurobaexlite.model.data.local.LoginDetails
+import com.github.k1rakishou.kurobaexlite.model.data.local.LoginResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
@@ -112,7 +112,7 @@ interface Site {
   interface PasscodeInfo {
     fun loginUrl(): String
 
-    fun loginDataSource(): ILoginDataSource<Chan4LoginDetails, Chan4LoginResult>
+    fun loginDataSource(): ILoginDataSource<LoginDetails, LoginResult>
     fun logoutDataSource(): ILogoutDataSource<Unit, Unit>
   }
 

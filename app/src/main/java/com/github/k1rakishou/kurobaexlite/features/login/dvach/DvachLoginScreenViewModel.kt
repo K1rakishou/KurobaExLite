@@ -1,19 +1,19 @@
-package com.github.k1rakishou.kurobaexlite.features.login
+package com.github.k1rakishou.kurobaexlite.features.login.dvach
 
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginDetails
-import com.github.k1rakishou.kurobaexlite.model.data.local.Chan4LoginResult
-import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
-import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
+import com.github.k1rakishou.kurobaexlite.model.data.local.DvachLoginDetails
+import com.github.k1rakishou.kurobaexlite.model.data.local.LoginResult
+import com.github.k1rakishou.kurobaexlite.sites.dvach.Dvach
+import com.github.k1rakishou.kurobaexlite.sites.settings.DvachSiteSettings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class Chan4LoginScreenViewModel(
+class DvachLoginScreenViewModel(
   private val siteManager: SiteManager
 ) : BaseViewModel() {
 
@@ -21,23 +21,22 @@ class Chan4LoginScreenViewModel(
   val passcodeCookieChangesFlow: StateFlow<String?>
     get() = _passcodeCookieChangesFlow.asStateFlow()
 
-  private val chan4SiteSettings by lazy { siteManager.bySiteKey(Chan4.SITE_KEY)!!.siteSettings as Chan4SiteSettings }
+  private val dvachSiteSettings by lazy { siteManager.bySiteKey(Dvach.SITE_KEY)!!.siteSettings as DvachSiteSettings }
 
   override suspend fun onViewModelReady() {
     super.onViewModelReady()
 
-    chan4SiteSettings.passcodeCookie.listen()
+    dvachSiteSettings.passcodeCookie.listen()
       .collectLatest { passcodeCookie -> _passcodeCookieChangesFlow.emit(passcodeCookie) }
   }
 
   fun login(
-    token: String,
-    pin: String,
+    passcode: String,
     onLoginStart: () -> Unit,
     onLoginEnd: () -> Unit,
-    onLoginResult: (Result<Chan4LoginResult>) -> Unit
+    onLoginResult: (Result<LoginResult>) -> Unit
   ) {
-    val loginDataSource = siteManager.bySiteKey(Chan4.SITE_KEY)
+    val loginDataSource = siteManager.bySiteKey(Dvach.SITE_KEY)
       ?.passcodeInfo()
       ?.loginDataSource()
       ?: return
@@ -46,8 +45,7 @@ class Chan4LoginScreenViewModel(
       try {
         onLoginStart()
 
-        val chan4LoginDetails = Chan4LoginDetails(token, pin)
-        val loginResult = loginDataSource.login(chan4LoginDetails)
+        val loginResult = loginDataSource.login(DvachLoginDetails(passcode))
         onLoginResult(loginResult)
       } finally {
         onLoginEnd()
@@ -60,7 +58,7 @@ class Chan4LoginScreenViewModel(
     onLogoutEnd: () -> Unit,
     onLogoutResult: (Result<Unit>
   ) -> Unit) {
-    val logoutDataSource = siteManager.bySiteKey(Chan4.SITE_KEY)
+    val logoutDataSource = siteManager.bySiteKey(Dvach.SITE_KEY)
       ?.passcodeInfo()
       ?.logoutDataSource()
       ?: return

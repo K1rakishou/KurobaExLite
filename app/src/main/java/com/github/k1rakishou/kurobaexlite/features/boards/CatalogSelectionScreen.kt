@@ -131,8 +131,10 @@ class CatalogSelectionScreen(
       },
       refreshSiteBoardInfo = {
         coroutineScope.launch {
+          val currentSiteKey = getCurrentSiteKey()
+
           catalogSelectionScreenViewModel.getOrLoadBoardsForSite(
-            siteKey = getCurrentSiteKey(),
+            siteKey = currentSiteKey,
             forceReload = true
           )
         }
@@ -238,6 +240,10 @@ class CatalogSelectionScreen(
   }
 
   private suspend fun getCurrentSiteKey(): SiteKey {
+    if (currentSiteKeyArg != null) {
+      return currentSiteKeyArg!!
+    }
+
     val lastUsedSiteKey = appSettings.catalogSelectionScreenLastUsedSite.read()
     return siteManager.bySiteKeyOrDefault(SiteKey(lastUsedSiteKey)).siteKey
   }

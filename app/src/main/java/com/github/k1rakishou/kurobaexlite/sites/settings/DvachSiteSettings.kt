@@ -2,7 +2,11 @@ package com.github.k1rakishou.kurobaexlite.sites.settings
 
 import android.content.Context
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.text.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.login.chan4.Chan4LoginScreen
+import com.github.k1rakishou.kurobaexlite.features.login.dvach.DvachLoginScreen
+import com.github.k1rakishou.kurobaexlite.features.settings.items.LinkSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.MapSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.StringSettingItem
@@ -13,9 +17,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
 import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class DvachSiteSettings(
@@ -85,6 +91,32 @@ class DvachSiteSettings(
         title = appContext.resources.getString(R.string.dvach_setting_user_code_cookie),
         delegate = userCodeCookie,
         showDialogScreen = showDialogScreen
+      ),
+      LinkSettingItem(
+        key = "dvach_passcode_options",
+        title = appContext.resources.getString(R.string.dvach_setting_passcode),
+        subtitle = buildAnnotatedString {
+          val currentPasscodeCookie = passcodeCookie.read().asFormattedToken()
+
+          if (currentPasscodeCookie.isNotEmpty()) {
+            append(currentPasscodeCookie)
+          } else {
+            append(appContext.resources.getString(R.string.chan4_setting_passcode_not_logged_in))
+          }
+        },
+        onClicked = {
+          coroutineScope.launch {
+            val currentPasscodeCookie = passcodeCookie.read()
+
+            val dvachLoginScreen = ComposeScreen.createScreen<DvachLoginScreen>(
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter,
+              args = { putString(Chan4LoginScreen.CURRENT_PASSCODE_COOKIE, currentPasscodeCookie) }
+            )
+
+            navigationRouter.presentScreen(dvachLoginScreen)
+          }
+        }
       )
     )
   }

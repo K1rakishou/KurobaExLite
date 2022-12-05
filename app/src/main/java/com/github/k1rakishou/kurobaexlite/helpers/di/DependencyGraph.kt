@@ -21,7 +21,8 @@ import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaSol
 import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaViewModel
 import com.github.k1rakishou.kurobaexlite.features.captcha.dvach.DvachCaptchaScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.login.Chan4LoginScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.login.chan4.Chan4LoginScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.login.dvach.DvachLoginScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
@@ -494,6 +495,9 @@ object DependencyGraph {
     viewModel {
       Chan4LoginScreenViewModel(siteManager = get())
     }
+    viewModel {
+      DvachLoginScreenViewModel(siteManager = get())
+    }
   }
 
   private fun Module.interactors() {
@@ -697,7 +701,7 @@ object DependencyGraph {
 
   private fun Module.model() {
     single { Chan4DataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
-    single { DvachDataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get()) }
+    single { DvachDataSource(siteManager = get(), kurobaOkHttpClient = get(), moshi = get(), loadChanCatalog = get()) }
 
     single { ChanCache(androidHelpers = get()) }
 

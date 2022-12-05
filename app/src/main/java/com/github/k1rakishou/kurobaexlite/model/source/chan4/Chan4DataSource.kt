@@ -130,7 +130,8 @@ class Chan4DataSource(
             boardDescription = boardDescription,
             workSafe = boardDataJson.workSafe == 1,
             maxAttachFilesPerPost = 1,
-            flags = allFlags
+            flags = allFlags,
+            bumpLimit = boardDataJson.bumpLimit
           )
         }
 

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.login
+package com.github.k1rakishou.kurobaexlite.features.login.chan4
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -143,7 +143,7 @@ class Chan4LoginScreen(
         modifier = Modifier.wrapContentSize(),
         enabled = !blockInput && token.text.isNotEmpty() && pin.text.isNotEmpty(),
         onClick = { onLoginClicked(token.text, pin.text) },
-        text = stringResource(id = R.string.chan4_login_screen_login)
+        text = stringResource(id = R.string.login_screen_login)
       )
     }
   }
@@ -186,7 +186,7 @@ class Chan4LoginScreen(
         modifier = Modifier.wrapContentSize(),
         onClick = { onLogoutClicked() },
         enabled = !blockInput,
-        text = stringResource(id = R.string.chan4_login_screen_logout)
+        text = stringResource(id = R.string.login_screen_logout)
       )
     }
   }
@@ -204,13 +204,13 @@ class Chan4LoginScreen(
             longToast = true,
             message = { throwable ->
               appResources.string(
-                R.string.chan4_login_failed_to_log_out,
+                R.string.login_failed_to_log_out,
                 throwable.errorMessageOrClassName(userReadable = true)
               )
             }
           )
           .toastOnSuccess(
-            message = { appResources.string(R.string.chan4_login_successfully_logged_out) }
+            message = { appResources.string(R.string.login_successfully_logged_out) }
           )
       }
     )
@@ -233,20 +233,20 @@ class Chan4LoginScreen(
             longToast = true,
             message = { throwable ->
               appResources.string(
-                R.string.chan4_login_failed_to_log_in,
+                R.string.login_failed_to_log_in,
                 throwable.errorMessageOrClassName(userReadable = true)
               )
             }
           )
           .toastOnSuccess(
-            message = { appResources.string(R.string.chan4_login_successfully_logged_in) }
+            message = { appResources.string(R.string.login_successfully_logged_in) }
           )
       }
     )
   }
 
   companion object {
-    val SCREEN_KEY = ScreenKey("LoginScreen")
+    val SCREEN_KEY = ScreenKey("Chan4LoginScreen")
 
     const val CURRENT_PASSCODE_COOKIE = "current_passcode_cookie"
   }

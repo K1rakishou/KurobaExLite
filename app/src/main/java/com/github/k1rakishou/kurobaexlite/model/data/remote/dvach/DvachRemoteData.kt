@@ -17,7 +17,8 @@ data class DvachBoardDataJson(
   @Json(name = "id") val boardCode: String?,
   @Json(name = "name") val boardTitle: String?,
   @Json(name = "info_outer") val boardDescription: String?,
-  @Json(name = "category") val category: String?
+  @Json(name = "category") val category: String?,
+  @Json(name = "bump_limit") val bumpLimit: Int?,
 ) {
 
   val workSafe: Boolean
@@ -35,15 +36,33 @@ data class DvachCatalog(
   val error: DvachError?
 )
 
+interface DvachThread {
+  val error: DvachError?
+  val threadPosts: List<DvachPost>?
+}
+
 @JsonClass(generateAdapter = true)
-data class DvachThread(
+data class DvachThreadFull(
   @Json(name = "board")
   val board: DvachBoardInfo?,
   @Json(name = "threads")
   val threads: List<DvachThreadInternal>?,
   @Json(name = "error")
-  val error: DvachError?
-)
+  override val error: DvachError?
+) : DvachThread {
+  override val threadPosts: List<DvachPost>?
+    get() = threads?.firstOrNull()?.posts
+}
+
+@JsonClass(generateAdapter = true)
+data class DvachThreadPartial(
+  @Json(name = "posts")
+  val posts: List<DvachPost>?,
+  @Json(name = "error")
+  override val error: DvachError?
+) : DvachThread {
+  override val threadPosts: List<DvachPost>? = posts
+}
 
 @JsonClass(generateAdapter = true)
 data class DvachThreadInternal(
@@ -216,9 +235,23 @@ data class DvachCatalogPageThreadJson(
 )
 
 @JsonClass(generateAdapter = true)
+data class DvachPasscodeResult(
+  val result: Int,
+  val passcode: DvachPasscodeInfo?,
+  val error: DvachError?,
+)
+
+@JsonClass(generateAdapter = true)
+data class DvachPasscodeInfo(
+  val type: String,
+  val expires: Int,
+)
+
+@JsonClass(generateAdapter = true)
 data class DvachError(
   @Json(name = "code")
-  val errorCode: Int
+  val errorCode: Int,
+  val message: String
 ) {
 
   fun message(): String {

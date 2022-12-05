@@ -29,7 +29,8 @@ data class ChanCatalogEntity(
   @ColumnInfo(name = "database_id") val databaseId: Long = -1L,
   @ColumnInfo(name = "board_title") val boardTitle: String?,
   @ColumnInfo(name = "board_description") val boardDescription: String?,
-  @ColumnInfo(name = "work_safe") val workSafe: Boolean
+  @ColumnInfo(name = "work_safe") val workSafe: Boolean,
+  @ColumnInfo(name = "bump_limit") val bumpLimit: Int?,
 ) {
 
   fun toChanCatalog(flags: List<BoardFlag>): ChanCatalog {
@@ -39,7 +40,8 @@ data class ChanCatalogEntity(
       boardDescription = boardDescription,
       workSafe = workSafe,
       maxAttachFilesPerPost = 1,
-      flags = flags
+      flags = flags,
+      bumpLimit = bumpLimit
     )
   }
 

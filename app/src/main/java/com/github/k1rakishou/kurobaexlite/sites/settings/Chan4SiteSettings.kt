@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.text.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.login.Chan4LoginScreen
+import com.github.k1rakishou.kurobaexlite.features.login.chan4.Chan4LoginScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.BooleanSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.LinkSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.MapSettingItem
