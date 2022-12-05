@@ -647,7 +647,7 @@ private fun PostCellIcon(
   if (imageRequest == null) {
     return
   }
-  
+
   AsyncImage(
     modifier = Modifier.fillMaxSize(),
     model = imageRequest,
@@ -670,7 +670,7 @@ private fun PostCellIcon(postCellIcon: ParsedPostDataCache.PostCellIcon) {
       ParsedPostDataCache.PostCellIcon.Archived -> R.drawable.archived_icon
       ParsedPostDataCache.PostCellIcon.Closed -> R.drawable.closed_icon
       ParsedPostDataCache.PostCellIcon.Sticky -> R.drawable.sticky_icon
-      ParsedPostDataCache.PostCellIcon.RollingSticky -> R.drawable.cyclic_icon
+      ParsedPostDataCache.PostCellIcon.RollingSticky -> R.drawable.rolling_sticky_icon
       else -> error("Unexpected postCellIcon: ${postCellIcon}")
     }
   }
