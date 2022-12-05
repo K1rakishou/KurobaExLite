@@ -214,8 +214,8 @@ class DvachDataSource(
           postDataList += OriginalPostData(
             originalPostOrder = order,
             postDescriptor = postDescriptor,
-            postSubjectUnparsed = catalogThread.subject ?: "",
-            postCommentUnparsed = catalogThread.comment ?: "",
+            postSubjectUnparsed = catalogThread.subject,
+            postCommentUnparsed = catalogThread.comment,
             opMark = catalogThread.opMark,
             sage = catalogThread.sage,
             name = parsedName.name,
@@ -227,7 +227,7 @@ class DvachDataSource(
             images = images,
             threadRepliesTotal = catalogThread.postsCount,
             threadImagesTotal = catalogThread.filesCount,
-            threadPostersTotal = null,
+            threadPostersTotal = catalogThread.postersCount,
             lastModified = catalogThread.lasthit,
             archived = false,
             deleted = false,
@@ -321,6 +321,10 @@ class DvachDataSource(
 
         val isBumpLimit = catalogBumpLimit != null && totalCount > catalogBumpLimit
 
+        val threadRepliesTotal = (dvachThread as? DvachThreadFull)?.postsCount
+        val threadImagesTotal = (dvachThread as? DvachThreadFull)?.filesCount
+        val threadPostersTotal = (dvachThread as? DvachThreadFull)?.postersCount
+
         threadPosts.forEachIndexed { order, threadPost ->
           val threadNo = if (threadPost.parent == 0L) {
             threadPost.num
@@ -376,9 +380,9 @@ class DvachDataSource(
               boardFlag = parsedFlags.boardFlag,
               timeMs = threadPost.timestamp.times(1000L),
               images = images,
-              threadRepliesTotal = threadPost.postsCount,
-              threadImagesTotal = threadPost.filesCount,
-              threadPostersTotal = threadPost.postersCount,
+              threadRepliesTotal = threadRepliesTotal,
+              threadImagesTotal = threadImagesTotal,
+              threadPostersTotal = threadPostersTotal,
               lastModified = threadPost.lasthit,
               archived = false,
               deleted = false,

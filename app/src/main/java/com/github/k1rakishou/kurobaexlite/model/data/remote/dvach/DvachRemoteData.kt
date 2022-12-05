@@ -47,6 +47,12 @@ data class DvachThreadFull(
   val board: DvachBoardInfo?,
   @Json(name = "threads")
   val threads: List<DvachThreadInternal>?,
+  @Json(name = "posts_count")
+  val postsCount: Int?,
+  @Json(name = "files_count")
+  val filesCount: Int?,
+  @Json(name = "unique_posters")
+  val postersCount: Int?,
   @Json(name = "error")
   override val error: DvachError?
 ) : DvachThread {
