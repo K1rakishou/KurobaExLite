@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.captcha
+package com.github.k1rakishou.kurobaexlite.features.captcha.chan4
 
 import android.app.Activity
 import android.content.BroadcastReceiver

@@ -122,7 +122,13 @@ class CatalogScreen(
       showCatalogSelectionScreen = {
         val catalogSelectionScreen = ComposeScreen.createScreen<CatalogSelectionScreen>(
           componentActivity = componentActivity,
-          navigationRouter = navigationRouter
+          navigationRouter = navigationRouter,
+          args = {
+            putParcelable(
+              CatalogSelectionScreen.CURRENT_SITE_KEY_ARG,
+              catalogScreenViewModel.chanDescriptor?.siteKey
+            )
+          }
         )
 
         navigationRouter.pushScreen(catalogSelectionScreen)

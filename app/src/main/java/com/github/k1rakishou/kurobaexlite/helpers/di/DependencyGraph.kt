@@ -17,8 +17,9 @@ import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.bookmarks.HistoryScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaSolverHelper
-import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaViewModel
+import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaSolverHelper
+import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaViewModel
+import com.github.k1rakishou.kurobaexlite.features.captcha.dvach.DvachCaptchaScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.login.Chan4LoginScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
@@ -444,6 +445,13 @@ object DependencyGraph {
         moshi = get(),
         loadChanCatalog = get(),
         chan4CaptchaSolverHelper = get()
+      )
+    }
+    viewModel {
+      DvachCaptchaScreenViewModel(
+        proxiedOkHttpClient = get(),
+        siteManager = get(),
+        moshi = get(),
       )
     }
 

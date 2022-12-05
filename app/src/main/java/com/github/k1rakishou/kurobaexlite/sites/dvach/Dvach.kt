@@ -1,9 +1,12 @@
 package com.github.k1rakishou.kurobaexlite.sites.dvach
 
 import android.content.Context
+import coil.request.ImageRequest
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.DvachPostParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
@@ -11,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -33,51 +37,56 @@ import kotlinx.coroutines.launch
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.Request
 
 class Dvach(
   private val appContext: Context,
   private val appScope: CoroutineScope,
   private val dvachDataSource: DvachDataSource,
   private val appSettings: AppSettings,
+  private val proxiedOkHttpClient: ProxiedOkHttpClient,
   private val moshi: Moshi,
 ) : Site {
   override val siteKey: SiteKey = SITE_KEY
   override val readableName: String = "Dvach"
   override val firewallChallengeEndpoint: HttpUrl? = null
-  override val siteCaptcha: SiteCaptcha = SiteCaptcha.DvachCaptcha
+  override val siteCaptcha: SiteCaptcha = SiteCaptcha.DvachCaptcha()
   override val siteSettings: SiteSettings by lazy { DvachSiteSettings(appContext, moshi, defaultDomain) }
 
   private val dvachSiteSettings: DvachSiteSettings
     get() = siteSettings as DvachSiteSettings
 
   private val icon: HttpUrl
-    get() = "https://${getCurrentDomain()}/favicon.ico".toHttpUrl()
+    get() = "https://${currentDomain()}/favicon.ico".toHttpUrl()
 
   private val dvachPostParser by lazy { DvachPostParser() }
   private val chan4RequestModifier by lazy { DvachRequestModifier(this, appSettings) }
   private val dvachBoardsInfo by lazy {
     BoardsInfo(
       dvachDataSource = dvachDataSource,
-      getCurrentDomain = { getCurrentDomain() }
+      getCurrentDomain = { currentDomain() }
     )
   }
-  private val catalogInfo by lazy { CatalogInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { getCurrentDomain() }) }
-  private val threadInfo by lazy { ThreadInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { getCurrentDomain() }) }
-  private val postImageInfo by lazy { PostImageInfo(getCurrentDomain = { getCurrentDomain() }) }
-  private val catalogPagesInfo by lazy { CatalogPagesInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { getCurrentDomain() }) }
+  private val catalogInfo by lazy { CatalogInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { currentDomain() }) }
+  private val threadInfo by lazy { ThreadInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { currentDomain() }) }
+  private val postImageInfo by lazy { PostImageInfo(getCurrentDomain = { currentDomain() }) }
+  private val catalogPagesInfo by lazy { CatalogPagesInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { currentDomain() }) }
+  private val replyInfo by lazy { DvachReplyInfo(site = this, moshi = moshi, proxiedOkHttpClient = proxiedOkHttpClient) }
 
   @Volatile
-  private var currentDomain = defaultDomain
+  private var _currentDomain = defaultDomain
+  val currentDomain: String
+    get() = _currentDomain
 
   init {
     appScope.launch(Dispatchers.Main.immediate) {
-      currentDomain = dvachSiteSettings.currentDomain.read()
-      dvachSiteSettings.currentDomain.listen().collect { domain -> currentDomain = domain }
+      _currentDomain = dvachSiteSettings.currentDomain.read()
+      dvachSiteSettings.currentDomain.listen().collect { domain -> _currentDomain = domain }
     }
   }
 
-  private fun getCurrentDomain(): String {
-    return "https://${currentDomain}".toHttpUrlOrNull()?.domain()?.removeSuffix("/") ?: defaultDomain
+  private fun currentDomain(): String {
+    return "https://${_currentDomain}".toHttpUrlOrNull()?.domain()?.removeSuffix("/") ?: defaultDomain
   }
 
   override fun catalogInfo(): Site.CatalogInfo = catalogInfo
@@ -85,11 +94,7 @@ class Dvach(
   override fun boardsInfo(): Site.BoardsInfo = dvachBoardsInfo
   override fun postImageInfo(): Site.PostImageInfo = postImageInfo
   override fun catalogPagesInfo(): Site.CatalogPagesInfo = catalogPagesInfo
-
-  override fun replyInfo(): Site.ReplyInfo? {
-    // TODO: Dvach support
-    return null
-  }
+  override fun replyInfo(): Site.ReplyInfo = replyInfo
 
   override fun bookmarkInfo(): Site.BookmarkInfo? {
     // TODO: Dvach support
@@ -167,7 +172,7 @@ class Dvach(
 
   override fun desktopUrl(threadDescriptor: ThreadDescriptor, postNo: Long?, postSubNo: Long?): String {
     return buildString {
-      append("https://${getCurrentDomain()}/")
+      append("https://${currentDomain()}/")
       append(threadDescriptor.boardCode)
       append("/res/")
       append(threadDescriptor.threadNo)
@@ -188,7 +193,7 @@ class Dvach(
           return null
         }
 
-        return "https://${getCurrentDomain()}/${countryCode}"
+        return "https://${currentDomain()}/${countryCode}"
       }
       "board_flag" -> {
         val boardFlagCode = params["board_flag_code"]?.removePrefix("/")
@@ -196,7 +201,7 @@ class Dvach(
           return null
         }
 
-        return "https://${getCurrentDomain()}/${boardFlagCode}"
+        return "https://${currentDomain()}/${boardFlagCode}"
       }
       else -> {
         return null
@@ -300,9 +305,81 @@ class Dvach(
     appSettings: AppSettings
   ) : RequestModifier<Dvach>(site, appSettings) {
 
+    override suspend fun modifyReplyRequest(requestBuilder: Request.Builder) {
+      super.modifyReplyRequest(requestBuilder)
+      addUserCodeCookie(requestBuilder)
+    }
+
+    override suspend fun modifyCaptchaGetRequest(requestBuilder: Request.Builder) {
+      super.modifyCaptchaGetRequest(requestBuilder)
+      addUserCodeCookie(requestBuilder)
+    }
+
+    override suspend fun modifyGetCatalogPagesRequest(requestBuilder: Request.Builder) {
+      super.modifyGetCatalogPagesRequest(requestBuilder)
+      addUserCodeCookie(requestBuilder)
+    }
+
+    override suspend fun modifySearchRequest(requestBuilder: Request.Builder) {
+      super.modifySearchRequest(requestBuilder)
+      addUserCodeCookie(requestBuilder)
+    }
+
+    override suspend fun modifyLoginRequest(requestBuilder: Request.Builder) {
+      super.modifyLoginRequest(requestBuilder)
+      addUserCodeCookie(requestBuilder)
+    }
+
+    override suspend fun modifyGetBoardsRequest(requestBuilder: Request.Builder) {
+      super.modifyGetBoardsRequest(requestBuilder)
+      addUserCodeCookie(requestBuilder)
+    }
+
+    override suspend fun modifyCatalogOrThreadGetRequest(
+      chanDescriptor: ChanDescriptor,
+      requestBuilder: Request.Builder
+    ) {
+      super.modifyCatalogOrThreadGetRequest(chanDescriptor, requestBuilder)
+      addUserCodeCookie(requestBuilder)
+    }
+
+    override suspend fun modifyGetMediaRequest(requestBuilder: Request.Builder) {
+      super.modifyGetMediaRequest(requestBuilder)
+      addUserCodeCookie(requestBuilder)
+    }
+
+    override suspend fun modifyCoilImageRequest(requestUrl: HttpUrl, imageRequestBuilder: ImageRequest.Builder) {
+      super.modifyCoilImageRequest(requestUrl, imageRequestBuilder)
+      addUserCodeCookie(imageRequestBuilder)
+    }
+
+    private suspend fun addUserCodeCookie(
+      requestBuilder: Request.Builder
+    ) {
+      val userCodeCookie = (site.siteSettings as DvachSiteSettings).userCodeCookie.read()
+      if (userCodeCookie.isEmpty()) {
+        return
+      }
+
+      requestBuilder.appendCookieHeader("${USER_CODE_COOKIE_KEY}=${userCodeCookie}")
+    }
+
+    private suspend fun addUserCodeCookie(
+      imageRequestBuilder: ImageRequest.Builder
+    ) {
+      val userCodeCookie = (site.siteSettings as DvachSiteSettings).userCodeCookie.read()
+      if (userCodeCookie.isEmpty()) {
+        return
+      }
+
+      imageRequestBuilder.addHeader("Cookie", "${USER_CODE_COOKIE_KEY}=${userCodeCookie}")
+    }
+
   }
 
   companion object {
+    const val USER_CODE_COOKIE_KEY = "usercode_auth"
+
     val SITE_KEY = SiteKey("Dvach")
 
     private val siteDomains = arrayOf(

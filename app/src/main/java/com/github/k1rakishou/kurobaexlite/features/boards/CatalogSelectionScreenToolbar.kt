@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 class CatalogSelectionScreenToolbar(
+  private val currentSiteKeyArg: SiteKey?,
   private val appResources: AppResources,
   private val defaultToolbarKey: String,
   private val defaultToolbarStateKey: String
@@ -142,10 +143,11 @@ class CatalogSelectionScreenToolbar(
     LaunchedEffect(
       key1 = Unit,
       block = {
-        val lastUsedSite = appSettings.catalogSelectionScreenLastUsedSite.read()
+        val lastUsedSite = currentSiteKeyArg?.key ?: appSettings.catalogSelectionScreenLastUsedSite.read()
         onLastUsedSiteChanged(lastUsedSite)
 
-        appSettings.catalogSelectionScreenLastUsedSite.listen()
+        appSettings.catalogSelectionScreenLastUsedSite
+          .listen(eagerly = false)
           .collect { lastUsedSite -> onLastUsedSiteChanged(lastUsedSite) }
       }
     )

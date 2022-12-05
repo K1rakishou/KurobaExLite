@@ -25,7 +25,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
-import com.github.k1rakishou.kurobaexlite.features.captcha.Chan4CaptchaScreen
+import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaScreen
+import com.github.k1rakishou.kurobaexlite.features.captcha.dvach.DvachCaptchaScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
@@ -43,6 +44,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.CancellationException
 
@@ -115,7 +117,7 @@ fun ProcessCaptchaRequestEvents(
         val componentActivity = componentActivityProvider()
         val navigationRouter = navigationRouterProvider()
 
-        val captchaScreen = when (siteCaptcha) {
+        val captchaScreen: FloatingComposeScreen = when (siteCaptcha) {
           SiteCaptcha.Chan4Captcha -> {
             ComposeScreen.createScreen<Chan4CaptchaScreen>(
               componentActivity = componentActivity,
@@ -144,9 +146,30 @@ fun ProcessCaptchaRequestEvents(
               }
             )
           }
-          SiteCaptcha.DvachCaptcha -> {
-            // TODO: Dvach support
-            TODO()
+          is SiteCaptcha.DvachCaptcha -> {
+            ComposeScreen.createScreen<DvachCaptchaScreen>(
+              componentActivity = componentActivity,
+              navigationRouter = navigationRouter,
+              callbacks = {
+                callback<Captcha>(
+                  callbackKey = DvachCaptchaScreen.ON_CAPTCHA_SOLVED,
+                  func = { captcha ->
+                    if (captchaRequest.completableDeferred.isActive) {
+                      captchaRequest.completableDeferred.complete(captcha)
+                    }
+                  }
+                )
+
+                callback(
+                  callbackKey = DvachCaptchaScreen.ON_SCREEN_DISMISSED,
+                  func = {
+                    if (captchaRequest.completableDeferred.isActive) {
+                      captchaRequest.completableDeferred.completeExceptionally(CancellationException())
+                    }
+                  }
+                )
+              }
+            )
           }
         }
 

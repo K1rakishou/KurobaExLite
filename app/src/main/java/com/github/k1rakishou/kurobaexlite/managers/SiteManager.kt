@@ -107,6 +107,7 @@ class SiteProvider(
       appScope = appScope,
       dvachDataSource = dvachDataSource,
       appSettings = appSettings,
+      proxiedOkHttpClient = proxiedOkHttpClient,
       moshi = moshi
     )
 

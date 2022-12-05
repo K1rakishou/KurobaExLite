@@ -233,6 +233,9 @@
     <string name="chan4_captcha_layout_captcha_already_expired">The captcha has already expired</string>
     <string name="chan4_captcha_layout_failed_to_find_solution">Failed to find captcha solution</string>
 
+    <string name="dvach_captcha_layout_reload">Reload</string>
+    <string name="dvach_captcha_layout_verify">Verify</string>
+
     <string name="chan4_login_screen_login">Login</string>
     <string name="chan4_login_screen_logout">Logout</string>
     <string name="chan4_login_failed_to_log_in">Failed to log in, error: \'$1%s\'</string>
@@ -320,6 +323,7 @@
 
     <string name="dvach_setting_site_domain">Site domain</string>
     <string name="dvach_setting_passcode_cookie">Passcode cookie</string>
+    <string name="dvach_setting_user_code_cookie">User code cookie</string>
 
     <string name="crash_report_activity_title">The application has crashed!</string>
     <string name="crash_report_activity_crash_message_section">Crash message</string>

@@ -26,6 +26,7 @@ class DvachSiteSettings(
 
   val currentDomain by lazy { StringSetting(defaultDomain, "current_domain", dataStore) }
   val passcodeCookie by lazy { StringSetting("", "passcode_cookie", dataStore) }
+  val userCodeCookie by lazy { StringSetting("", "user_code_cookie", dataStore) }
 
   override val cloudFlareClearanceCookie: MapSetting<String, String> by lazy {
     MapSetting<String, String>(
@@ -80,6 +81,11 @@ class DvachSiteSettings(
         valueMapperTo = { value -> value },
         valueFormatter = { value -> value.asFormattedToken() }
       ),
+      StringSettingItem(
+        title = appContext.resources.getString(R.string.dvach_setting_user_code_cookie),
+        delegate = userCodeCookie,
+        showDialogScreen = showDialogScreen
+      )
     )
   }
 }

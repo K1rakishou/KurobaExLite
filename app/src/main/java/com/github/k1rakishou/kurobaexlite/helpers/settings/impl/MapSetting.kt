@@ -12,6 +12,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
@@ -134,8 +135,15 @@ class MapSetting<K, V>(
     withCache { clear() }
   }
 
-  override fun listen(): Flow<Map<K, V>> {
+  override fun listen(eagerly: Boolean): Flow<Map<K, V>> {
     return dataStore.data
+      .let { flow ->
+        return@let if (eagerly) {
+          flow
+        } else {
+          flow.drop(1)
+        }
+      }
       .map { prefs ->
         val mapSettingEntries = moshi
           .adapter<MapSettingEntries>(MapSettingEntries::class.java)

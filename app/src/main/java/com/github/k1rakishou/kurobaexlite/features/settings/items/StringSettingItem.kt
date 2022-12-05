@@ -11,6 +11,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -119,13 +120,15 @@ class StringSettingItem(
       if (value != null) {
         Spacer(modifier = Modifier.height(4.dp))
 
+        val valueFormatted = remember(key1 = value) { "\"${settingDisplayFormatter(value)}\"" }
+
         Text(
           modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(),
           fontSize = 14.sp,
           color = chanTheme.textColorSecondary,
-          text = settingDisplayFormatter(value)
+          text = valueFormatted
         )
       }
     }

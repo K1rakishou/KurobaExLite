@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
@@ -67,8 +68,15 @@ class BooleanSetting(
     return newValue
   }
 
-  override fun listen(): Flow<Boolean> {
+  override fun listen(eagerly: Boolean): Flow<Boolean> {
     return dataStore.data
+      .let { flow ->
+        return@let if (eagerly) {
+          flow
+        } else {
+          flow.drop(1)
+        }
+      }
       .map { prefs -> prefs.get(prefsKey) ?: read() }
       .catch {
         write(defaultValue)

@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
@@ -59,8 +60,15 @@ class StringSetting(
     dataStore.edit { prefs -> prefs.remove(prefsKey) }
   }
 
-  override fun listen(): Flow<String> {
+  override fun listen(eagerly: Boolean): Flow<String> {
     return dataStore.data
+      .let { flow ->
+        return@let if (eagerly) {
+          flow
+        } else {
+          flow.drop(1)
+        }
+      }
       .map { prefs -> prefs.get(prefsKey) ?: read() }
       .catch {
         write(defaultValue)

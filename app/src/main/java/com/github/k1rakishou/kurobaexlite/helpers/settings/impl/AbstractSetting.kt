@@ -15,7 +15,12 @@ abstract class AbstractSetting<T>(
   abstract suspend fun read(): T
   abstract suspend fun write(value: T)
   abstract suspend fun remove()
-  abstract fun listen(): Flow<T>
+
+  /**
+   * When [eagerly] is true, a value will be emitted right after subscribing to the flow, otherwise it will be skipped and
+   * only the actual updates will be emitted
+   * */
+  abstract fun listen(eagerly: Boolean = true): Flow<T>
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

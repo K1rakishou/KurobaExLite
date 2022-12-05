@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
@@ -63,16 +64,24 @@ class EnumSetting<T : Enum<T>>(
     dataStore.edit { prefs -> prefs.remove(prefsKey) }
   }
 
-  override fun listen(): Flow<T> {
-    return dataStore.data.map { prefs ->
-      val enumName = prefs.get(prefsKey)
-      val enumValue = enumValues.firstOrNull { it.name == enumName }
+  override fun listen(eagerly: Boolean): Flow<T> {
+    return dataStore.data
+      .let { flow ->
+        return@let if (eagerly) {
+          flow
+        } else {
+          flow.drop(1)
+        }
+      }
+      .map { prefs ->
+        val enumName = prefs.get(prefsKey)
+        val enumValue = enumValues.firstOrNull { it.name == enumName }
 
-      return@map enumValue ?: read()
-    }.catch {
-      write(defaultValue)
-      emit(defaultValue)
-    }
+        return@map enumValue ?: read()
+      }.catch {
+        write(defaultValue)
+        emit(defaultValue)
+      }
   }
 
 }

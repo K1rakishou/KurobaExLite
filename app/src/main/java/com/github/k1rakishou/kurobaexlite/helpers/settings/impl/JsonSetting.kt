@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.squareup.moshi.JsonAdapter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
@@ -62,8 +63,15 @@ class JsonSetting<T : Any?>(
     dataStore.edit { prefs -> prefs.remove(prefsKey) }
   }
 
-  override fun listen(): Flow<T> {
+  override fun listen(eagerly: Boolean): Flow<T> {
     return dataStore.data
+      .let { flow ->
+        return@let if (eagerly) {
+          flow
+        } else {
+          flow.drop(1)
+        }
+      }
       .map { prefs ->
         return@map prefs.get(prefsKey)
           ?.let { fromJson(it) }

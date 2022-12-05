@@ -3,13 +3,14 @@ package com.github.k1rakishou.kurobaexlite.features.boards
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -89,12 +90,15 @@ class CatalogSelectionScreen(
   override val screenKey: ScreenKey = SCREEN_KEY
   override val hasFab: Boolean = false
 
+  private val currentSiteKeyArg: SiteKey? by argumentOrNullLazy(CURRENT_SITE_KEY_ARG)
+
   private val defaultToolbarKey = "${screenKey.key}_default"
   private val defaultToolbarStateKey = "${defaultToolbarKey}_state"
   private val searchToolbarKey = "${screenKey.key}_search"
 
   override val defaultToolbar by lazy {
     CatalogSelectionScreenToolbar(
+      currentSiteKeyArg = currentSiteKeyArg,
       appResources = appResources,
       defaultToolbarKey = defaultToolbarKey,
       defaultToolbarStateKey = defaultToolbarStateKey
@@ -220,6 +224,7 @@ class CatalogSelectionScreen(
     ) {
       KurobaComposeFadeIn {
         ContentInternal(
+          currentSiteKeyArg = currentSiteKeyArg,
           paddingValues = paddingValues,
           pullToRefreshState = pullToRefreshState,
           popScreen = { popScreen() }
@@ -247,6 +252,8 @@ class CatalogSelectionScreen(
 
   companion object {
     val SCREEN_KEY = ScreenKey("CatalogSelectionScreen")
+
+    const val CURRENT_SITE_KEY_ARG = "current_site_key"
   }
 }
 
@@ -294,6 +301,7 @@ private fun ToolbarInternal(
 
 @Composable
 private fun ContentInternal(
+  currentSiteKeyArg: SiteKey?,
   paddingValues: PaddingValues,
   pullToRefreshState: PullToRefreshState,
   popScreen: () -> Unit
@@ -314,12 +322,18 @@ private fun ContentInternal(
   LaunchedEffect(
     key1 = Unit,
     block = {
-      val lastUsedSiteKey = appSettings.catalogSelectionScreenLastUsedSite.read()
-      currentSiteKeyMut = siteManager.bySiteKeyOrDefault(SiteKey(lastUsedSiteKey)).siteKey
-
-      appSettings.catalogSelectionScreenLastUsedSite.listen().collect { updatedSiteKeyRaw ->
-        currentSiteKeyMut = siteManager.bySiteKeyOrDefault(SiteKey(updatedSiteKeyRaw)).siteKey
+      if (currentSiteKeyArg != null) {
+        currentSiteKeyMut = currentSiteKeyArg
+      } else {
+        val lastUsedSiteKey = appSettings.catalogSelectionScreenLastUsedSite.read()
+        currentSiteKeyMut = siteManager.bySiteKeyOrDefault(SiteKey(lastUsedSiteKey)).siteKey
       }
+
+      appSettings.catalogSelectionScreenLastUsedSite
+        .listen(eagerly = false)
+        .collect { updatedSiteKeyRaw ->
+          currentSiteKeyMut = siteManager.bySiteKeyOrDefault(SiteKey(updatedSiteKeyRaw)).siteKey
+        }
     }
   )
 
@@ -566,10 +580,11 @@ private fun BuildChanBoardCell(
   Column(
     modifier = Modifier
       .fillMaxWidth()
-      .wrapContentHeight()
+      .heightIn(min = 42.dp)
       .then(backgroundColorModifier)
       .kurobaClickable(onClick = { onBoardClicked(chanBoardUiData.catalogDescriptor) })
-      .padding(horizontal = horizPadding, vertical = vertPadding)
+      .padding(horizontal = horizPadding, vertical = vertPadding),
+    verticalArrangement = Arrangement.Center
   ) {
     kotlin.run {
       val textFormatted = remember(key1 = searchQuery, key2 = chanTheme) {
