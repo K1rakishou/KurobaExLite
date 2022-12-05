@@ -27,9 +27,12 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
 import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
+import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
+import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBoardDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBookmarkCatalogInfo
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalogPageJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachPasscodeResult
@@ -184,7 +187,7 @@ class DvachDataSource(
             postNo = catalogThread.num
           )
 
-          val sticky = if (catalogThread.sticky == 1) {
+          val sticky = if (catalogThread.isSticky) {
             val maxCapacity = if (catalogThread.endless == 1) {
               1000
             } else {
@@ -341,8 +344,8 @@ class DvachDataSource(
             postNo = postNo
           )
 
-          val sticky = if (threadPost.sticky == 1) {
-            val maxCapacity = if (threadPost.endless == 1) {
+          val sticky = if (threadPost.isSticky) {
+            val maxCapacity = if (threadPost.isEndless) {
               1000
             } else {
               0
@@ -428,8 +431,103 @@ class DvachDataSource(
   }
 
   override suspend fun loadBookmarkData(input: ThreadDescriptor): Result<ThreadBookmarkData> {
-    // TODO: Dvach support
-    return Result.failure(NotImplementedError())
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(input.siteKey)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val bookmarkInfo = site.bookmarkInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support bookmarks")
+
+        val bookmarkUrl = bookmarkInfo.bookmarkUrl(
+          boardCode = input.boardCode,
+          threadNo = input.threadNo
+        )
+        logcat(TAG, LogPriority.VERBOSE) { "loadBookmarkData() url='$bookmarkUrl'" }
+
+        val request = Request.Builder()
+          .url(bookmarkUrl)
+          .get()
+          .also { requestBuilder ->
+            site.requestModifier().modifyCatalogOrThreadGetRequest(
+              chanDescriptor = input,
+              requestBuilder = requestBuilder
+            )
+          }
+          .build()
+
+        val threadBookmarkInfoJsonAdapter = moshi.adapter<DvachBookmarkCatalogInfo>(DvachBookmarkCatalogInfo::class.java)
+        val threadBookmarkInfoJsonResult = kurobaOkHttpClient.okHttpClient().suspendConvertWithJsonAdapter(
+          request,
+          threadBookmarkInfoJsonAdapter
+        )
+
+        val boardsDataJson = threadBookmarkInfoJsonResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert thread json into ThreadBookmarkInfoJson object")
+
+        val thread = boardsDataJson.threads.firstOrNull()
+          ?: throw ChanDataSourceException("Server returned no thread info")
+
+        val threadBookmarkInfoPostObjects = thread.posts.map { postInfoForBookmarkJson ->
+          if (postInfoForBookmarkJson.isOp) {
+            val stickyCap = if (postInfoForBookmarkJson.isEndless) {
+              1000
+            } else {
+              0
+            }
+
+            val stickyPost = StickyThread.create(
+              isSticky = postInfoForBookmarkJson.isSticky,
+              stickyCap = stickyCap
+            )
+
+            val isBumpLimit = boardsDataJson.board?.let { boardsDataJson ->
+              val bumpLimit = loadChanCatalog.await(input.catalogDescriptor).getOrNull()?.bumpLimit ?: return@let false
+              return@let boardsDataJson.bumpLimit > bumpLimit
+            } ?: false
+
+            val thumbnailParams = postInfoForBookmarkJson.firstFile?.thumbnail?.let { thumbnail ->
+              ThreadBookmarkInfoPostObject.ThumbnailParams.Dvach(thumbnail)
+            }
+
+            return@map ThreadBookmarkInfoPostObject.OriginalPost(
+              postDescriptor = PostDescriptor.create(input, postInfoForBookmarkJson.num),
+              closed = boardsDataJson.isClosed,
+              archived = false,
+              isBumpLimit = isBumpLimit,
+              isImageLimit = false,
+              stickyThread = stickyPost,
+              thumbnailParams = thumbnailParams,
+              subject = postInfoForBookmarkJson.subject,
+              comment = postInfoForBookmarkJson.comment ?: "",
+            )
+          } else {
+            return@map ThreadBookmarkInfoPostObject.RegularPost(
+              postDescriptor = PostDescriptor.create(input, postInfoForBookmarkJson.num),
+              comment = postInfoForBookmarkJson.comment ?: ""
+            )
+          }
+        }
+
+        val thumbnailParams = (threadBookmarkInfoPostObjects.firstOrNull() as? ThreadBookmarkInfoPostObject.OriginalPost)?.thumbnailParams
+        val originalPostThumbnail = (thumbnailParams as? ThreadBookmarkInfoPostObject.ThumbnailParams.Dvach)?.thumbnail
+
+        val bookmarkThumbnailUrl = if (originalPostThumbnail != null) {
+          site.postImageInfo()?.let { postImageInfo ->
+            val params = (postImageInfo as Dvach.PostImageInfo).wrapThumbnailParameters(originalPostThumbnail)
+            postImageInfo.thumbnailUrl(params)
+          }
+        } else {
+          null
+        }
+
+        return@Try ThreadBookmarkData(
+          threadDescriptor = input,
+          postObjects = threadBookmarkInfoPostObjects,
+          bookmarkThumbnailUrl = bookmarkThumbnailUrl
+        )
+      }
+    }
   }
 
   override suspend fun loadCatalogPagesData(input: CatalogDescriptor): Result<CatalogPagesData?> {

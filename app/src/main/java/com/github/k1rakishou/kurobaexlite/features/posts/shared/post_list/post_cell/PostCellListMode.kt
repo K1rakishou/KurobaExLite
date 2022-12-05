@@ -644,6 +644,10 @@ private fun PostCellIcon(
     }
   )
 
+  if (imageRequest == null) {
+    return
+  }
+  
   AsyncImage(
     modifier = Modifier.fillMaxSize(),
     model = imageRequest,

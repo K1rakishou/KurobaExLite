@@ -116,6 +116,10 @@ data class DvachPost(
     get() = op == 1L
   val sage: Boolean
     get() = name.contains("ID:&nbsp;Heaven") || email.contains("mailto:sage")
+  val isSticky: Boolean
+    get() = sticky > 0L
+  val isEndless: Boolean
+    get() = endless == 1
 
   val originalPostNo: Long
     get() {
@@ -134,10 +138,57 @@ data class DvachPost(
     )
   }
 
-  fun isSage(): Boolean {
-    return email.contains("mailto:sage")
-  }
 }
+
+@JsonClass(generateAdapter = true)
+data class DvachBookmarkCatalogInfo(
+  @Json(name = "board")
+  val board: DvachThreadBoardInfo?,
+  @Json(name = "threads")
+  val threads: List<DvachThreadPostInfo>,
+  @Json(name = "is_closed")
+  val closed: Int
+) {
+  val isClosed: Boolean
+    get() = closed == 1
+}
+
+@JsonClass(generateAdapter = true)
+data class DvachThreadBoardInfo(
+  @Json(name = "bump_limit")
+  val bumpLimit: Int,
+)
+
+@JsonClass(generateAdapter = true)
+data class DvachThreadPostInfo(
+  @Json(name = "posts")
+  val posts: List<DvachBookmarkPostInfo>
+)
+
+@JsonClass(generateAdapter = true)
+data class DvachBookmarkPostInfo(
+  val num: Long,
+  val parent: Long,
+  val comment: String?,
+  val subject: String?,
+  val sticky: Long,
+  val endless: Long,
+  val files: List<DvachBookmarkFileInfo>?
+) {
+  val isOp: Boolean
+    get() = parent == 0L
+  val isSticky: Boolean
+    get() = sticky == 1L
+  val isEndless: Boolean
+    get() = endless == 1L
+  val firstFile: DvachBookmarkFileInfo?
+    get() = files?.firstOrNull()
+}
+
+@JsonClass(generateAdapter = true)
+data class DvachBookmarkFileInfo(
+  val thumbnail: String
+)
 
 @JsonClass(generateAdapter = true)
 data class DvachFile(

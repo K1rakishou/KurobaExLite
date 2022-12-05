@@ -218,7 +218,6 @@ data class Chan4PostInfoForBookmarkJson(
   @Json(name = "imagelimit") val imageLimit: Int?,
   @Json(name = "sticky") val sticky: Int?,
   @Json(name = "sticky_cap") val stickyCap: Int?,
-
   val tim: Long?
 ) {
   val isOp: Boolean

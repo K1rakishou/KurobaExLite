@@ -395,6 +395,10 @@ class Chan4DataSource(
               stickyCap = postInfoForBookmarkJson.stickyCap ?: -1
             )
 
+            val thumbnailParams = postInfoForBookmarkJson.tim?.let { tim ->
+              ThreadBookmarkInfoPostObject.ThumbnailParams.Chan4(tim)
+            }
+
             return@map ThreadBookmarkInfoPostObject.OriginalPost(
               postDescriptor = PostDescriptor.create(input, postInfoForBookmarkJson.postNo),
               closed = postInfoForBookmarkJson.isClosed,
@@ -402,7 +406,7 @@ class Chan4DataSource(
               isBumpLimit = postInfoForBookmarkJson.isBumpLimit,
               isImageLimit = postInfoForBookmarkJson.isImageLimit,
               stickyThread = stickyPost,
-              tim = postInfoForBookmarkJson.tim,
+              thumbnailParams = thumbnailParams,
               subject = postInfoForBookmarkJson.sub,
               comment = postInfoForBookmarkJson.comment,
             )
@@ -414,7 +418,8 @@ class Chan4DataSource(
           }
         }
 
-        val originalPostTim = (threadBookmarkInfoPostObjects.firstOrNull() as? ThreadBookmarkInfoPostObject.OriginalPost)?.tim
+        val thumbnailParams = (threadBookmarkInfoPostObjects.firstOrNull() as? ThreadBookmarkInfoPostObject.OriginalPost)?.thumbnailParams
+        val originalPostTim = (thumbnailParams as? ThreadBookmarkInfoPostObject.ThumbnailParams.Chan4)?.tim
 
         val bookmarkThumbnailUrl = if (originalPostTim != null) {
           site.postImageInfo()?.let { postImageInfo ->

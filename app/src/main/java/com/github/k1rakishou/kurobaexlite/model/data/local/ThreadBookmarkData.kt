@@ -75,7 +75,7 @@ sealed class ThreadBookmarkInfoPostObject {
     val isBumpLimit: Boolean,
     val isImageLimit: Boolean,
     val stickyThread: StickyThread,
-    val tim: Long?,
+    val thumbnailParams: ThumbnailParams?,
     val subject: String?,
     val comment: String
   ) : ThreadBookmarkInfoPostObject() {
@@ -83,8 +83,13 @@ sealed class ThreadBookmarkInfoPostObject {
     override fun toString(): String {
       return "OriginalPost(postDescriptor=$postDescriptor, closed=$closed, archived=$archived, " +
         "isBumpLimit=$isBumpLimit, isImageLimit=$isImageLimit, stickyThread=$stickyThread, " +
-        "tim=$tim, subject=$subject, comment=$comment)"
+        "thumbnailParams=$thumbnailParams, subject=$subject, comment=$comment)"
     }
+  }
+
+  sealed interface ThumbnailParams {
+    data class Chan4(val tim: Long?) : ThumbnailParams
+    data class Dvach(val thumbnail: String?) : ThumbnailParams
   }
 
   data class RegularPost(
