@@ -51,7 +51,7 @@ fun PostCell(
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onGoToPostClicked: ((PostCellData) -> Unit)?,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {

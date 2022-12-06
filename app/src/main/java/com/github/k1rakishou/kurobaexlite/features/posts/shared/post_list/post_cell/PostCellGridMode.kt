@@ -65,7 +65,7 @@ fun PostCellGridMode(
   cellsPadding: PaddingValues,
   postBlinkAnimationState: PostBlinkAnimationState,
   postCellSubjectTextSizeSp: TextUnit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
   onCopySelectedText: (String) -> Unit,
@@ -317,7 +317,7 @@ private fun PostCellTitle(
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
   postCellSubjectTextSizeSp: TextUnit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
 ) {
   val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
 
@@ -358,7 +358,7 @@ private fun PostCellTitle(
 @Composable
 private fun PostCellThumbnail(
   postCellData: PostCellData,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
   val postImage = postCellData.images!!.first()
@@ -377,11 +377,11 @@ private fun PostCellThumbnail(
         .aspectRatio(ratio = 16f / 13f),
       postImage = postImage,
       contentScale = ContentScale.Crop,
-      onClickWithError = { clickedImageResult ->
+      onClick = { clickedImage ->
         val boundsInWindow = boundsInWindowMut
           ?: return@PostImageThumbnail
 
-        onPostImageClicked(chanDescriptor, clickedImageResult, boundsInWindow)
+        onPostImageClicked(chanDescriptor, clickedImage, boundsInWindow)
       }
     )
   }

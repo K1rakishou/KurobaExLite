@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -37,7 +38,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.util.freeFocusSafe
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
@@ -49,9 +52,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.java.KoinJavaComponent.inject
 
 class PostsScreenLocalSearchToolbar(
   private val screenKey: ScreenKey,
+  val currentSiteKey: () -> SiteKey?,
   val onToolbarCreated: () -> Unit,
   val onToolbarDisposed: () -> Unit,
   val onSearchQueryUpdated: (String?) -> Unit,
@@ -59,6 +64,8 @@ class PostsScreenLocalSearchToolbar(
   val showFoundPostsInPopup: (List<PostDescriptor>) -> Unit,
   val closeSearch: suspend (toolbarKey: String) -> Unit
 ) : KurobaChildToolbar() {
+  private val siteManager by inject<SiteManager>(SiteManager::class.java)
+
   private val key = "${screenKey.key}_PostsScreenLocalSearchToolbar"
   private val state = State("${key}_state")
 
@@ -239,7 +246,25 @@ class PostsScreenLocalSearchToolbar(
           }
         }
 
-        if (screenKey == CatalogScreen.SCREEN_KEY) {
+        val siteKey = currentSiteKey()
+
+        val siteSupportsGlobalSearch by produceState(
+          initialValue = false,
+          key1 = siteKey,
+          producer = {
+            if (siteKey == null) {
+              value = false
+              return@produceState
+            }
+
+            value = siteManager.bySiteKey(siteKey)
+              ?.globalSearchInfo()
+              ?.supportsGlobalSearch
+              ?: false
+          }
+        )
+
+        if (siteSupportsGlobalSearch && screenKey == CatalogScreen.SCREEN_KEY) {
           Spacer(modifier = Modifier.width(8.dp))
 
           KurobaComposeCard(

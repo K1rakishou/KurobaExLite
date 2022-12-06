@@ -104,9 +104,10 @@ interface Site {
     val supportsSiteWideSearch: Boolean
     val supportsCatalogSpecificSearch: Boolean
 
-    fun globalSearchUrl(boardCode: String, query: String, page: Int): String
-    fun globalSearchUrl(query: String, page: Int): String
+    val supportsGlobalSearch: Boolean
+      get() = supportsSiteWideSearch || supportsCatalogSpecificSearch
 
+    fun globalSearchUrl(boardCode: String?, query: String, page: Int): String
     fun globalSearchDataSource(): IGlobalSearchDataSource<SearchParams, SearchResult>
   }
 

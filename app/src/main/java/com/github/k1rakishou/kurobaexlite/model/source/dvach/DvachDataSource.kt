@@ -36,6 +36,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBookmarkC
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalogPageJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachPasscodeResult
+import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachSearchResult
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachThreadFull
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachThreadPartial
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -590,8 +591,124 @@ class DvachDataSource(
   }
 
   override suspend fun loadSearchPageData(input: SearchParams): Result<SearchResult> {
-    // TODO: Dvach support
-    return Result.failure(NotImplementedError())
+    // Dvach search returns all results as a single list with no paging
+    if (input.page > 0) {
+      return Result.success(SearchResult(emptyList()))
+    }
+
+    return withContext(Dispatchers.IO) {
+      return@withContext Result.Try {
+        val site = siteManager.bySiteKey(input.catalogDescriptor.siteKey)
+          ?: throw ChanDataSourceException("Unsupported site: ${input}")
+
+        val globalSearchInfo = site.globalSearchInfo()
+          ?: throw ChanDataSourceException("Site ${site.readableName} does not support globalSearchInfo")
+
+        if (input.isSiteWideSearch && !globalSearchInfo.supportsSiteWideSearch) {
+          throw ChanDataSourceException("Site \'${site.readableName}\' does not support site-wide global search")
+        }
+
+        if (!input.isSiteWideSearch && !globalSearchInfo.supportsCatalogSpecificSearch) {
+          throw ChanDataSourceException("Site \'${site.readableName}\' does not support catalog specific global search")
+        }
+
+        val boardCode = if (input.isSiteWideSearch) {
+          null
+        } else {
+          input.catalogDescriptor.boardCode
+        }
+
+        val globalSearchUrl = globalSearchInfo.globalSearchUrl(
+          boardCode = boardCode,
+          query = input.query,
+          page = input.page
+        )
+
+        logcat(TAG, LogPriority.VERBOSE) { "loadSearchPageData() url='$globalSearchUrl'" }
+
+        val formBuilder = FormBody.Builder().apply {
+          add("board", input.catalogDescriptor.boardCode)
+          add("text", input.query)
+        }
+
+        val request = Request.Builder()
+          .url(globalSearchUrl)
+          .post(formBuilder.build())
+          .also { requestBuilder ->
+            site.requestModifier().modifySearchRequest(
+              requestBuilder = requestBuilder
+            )
+          }
+          .build()
+
+        val dvachSearchResultJsonAdapter = moshi.adapter<DvachSearchResult>(DvachSearchResult::class.java)
+        val dvachSearchResultJsonResult = kurobaOkHttpClient.okHttpClient()
+          .suspendConvertWithJsonAdapter(request, dvachSearchResultJsonAdapter)
+
+        val dvachSearchResultJson = dvachSearchResultJsonResult.unwrap()
+          ?: throw ChanDataSourceException("Failed to convert catalog pages json into DvachSearchResult object")
+
+        if (dvachSearchResultJson.error != null) {
+          throw ChanDataSourceException("Failed to load thread. Server returned error: \'${dvachSearchResultJson.error.message()}\'")
+        }
+
+        val searchResultPosts = dvachSearchResultJson.posts
+        if (searchResultPosts.isNullOrEmpty()) {
+          return@Try SearchResult(emptyList())
+        }
+
+        val postDataList = mutableListWithCap<IPostData>(initialCapacity = searchResultPosts.size)
+
+
+        searchResultPosts.forEachIndexed { order, dvachPost ->
+          val threadNo = if (dvachPost.parent == 0L) {
+            dvachPost.num
+          } else {
+            dvachPost.parent
+          }
+
+          val postNo = dvachPost.num
+
+          val postDescriptor = PostDescriptor.create(
+            siteKey = site.siteKey,
+            boardCode = input.catalogDescriptor.boardCode,
+            threadNo = threadNo,
+            postNo = postNo
+          )
+
+          val parsedFlags = parseFlags(dvachPost.icon)
+          val parsedName = parseName(DEFAULT_NAME, dvachPost.name)
+
+          postDataList += PostData(
+            originalPostOrder = order,
+            postDescriptor = postDescriptor,
+            postSubjectUnparsed = dvachPost.subject,
+            postCommentUnparsed = dvachPost.comment,
+            opMark = dvachPost.opMark,
+            sage = dvachPost.sage,
+            name = parsedName.name,
+            tripcode = dvachPost.trip,
+            posterId = parsedName.posterId,
+            countryFlag = parsedFlags.countryFlag,
+            boardFlag = parsedFlags.boardFlag,
+            timeMs = dvachPost.timestamp.times(1000L),
+            images = emptyList(),
+            threadRepliesTotal = null,
+            threadImagesTotal = null,
+            threadPostersTotal = null,
+            archived = false,
+            deleted = false,
+            closed = false,
+            sticky = null,
+            bumpLimit = null,
+            imageLimit = null,
+          )
+        }
+
+        // Need to reverse the results because by default they go from oldest to newest
+        return@Try SearchResult(postDataList.asReversed())
+      }
+    }
   }
 
   override suspend fun login(input: DvachLoginDetails): Result<DvachLoginResult> {

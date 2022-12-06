@@ -54,8 +54,6 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
-import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
@@ -215,6 +213,7 @@ class ThreadScreen(
   private val localSearchToolbar: PostsScreenLocalSearchToolbar by lazy {
     PostsScreenLocalSearchToolbar(
       screenKey = screenKey,
+      currentSiteKey = { threadScreenViewModel.threadDescriptor?.siteKey },
       onToolbarCreated = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, true) },
       onToolbarDisposed = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, false) },
       onSearchQueryUpdated = { searchQuery -> threadScreenViewModel.updateSearchQuery(searchQuery) },
@@ -366,20 +365,8 @@ class ThreadScreen(
         linkableClickHelperProvider = { linkableClickHelper },
         navigationRouterProvider = { navigationRouter },
         showRepliesForPost = { postViewMode -> showRepliesForPost(postViewMode) },
-        onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
-          val postImageData = if (postImageDataResult.isFailure) {
-            snackbarManager.errorToast(
-              message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(userReadable = true),
-              screenKey = screenKey
-            )
-
-            return@ThreadPostListScreen
-          } else {
-            postImageDataResult.getOrThrow()
-          }
-
+        onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
           val threadDescriptor = chanDescriptor as ThreadDescriptor
-
           clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
           val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
@@ -426,7 +413,7 @@ private fun BoxScope.ThreadPostListScreen(
   linkableClickHelperProvider: () -> LinkableClickHelper,
   navigationRouterProvider: () -> NavigationRouter,
   showRepliesForPost: (PopupPostsScreen.PopupPostViewMode) -> Unit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()

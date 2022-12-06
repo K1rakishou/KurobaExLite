@@ -16,6 +16,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.LoginDetails
 import com.github.k1rakishou.kurobaexlite.model.data.local.LoginResult
+import com.github.k1rakishou.kurobaexlite.model.data.local.SearchParams
+import com.github.k1rakishou.kurobaexlite.model.data.local.SearchResult
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -27,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ILoginDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.ILogoutDataSource
 import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
@@ -82,6 +85,7 @@ class Dvach(
   private val replyInfo by lazy { DvachReplyInfo(site = this, moshi = moshi, proxiedOkHttpClient = proxiedOkHttpClient) }
   private val passcodeInfo by lazy { PasscodeInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { currentDomain() }) }
   private val bookmarkInfo by lazy { BookmarkInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { currentDomain() }) }
+  private val globalSearchInfo by lazy { GlobalSearchInfo(dvachDataSource = dvachDataSource, getCurrentDomain = { currentDomain() }) }
 
   @Volatile
   private var _currentDomain = defaultDomain
@@ -106,12 +110,7 @@ class Dvach(
   override fun catalogPagesInfo(): Site.CatalogPagesInfo = catalogPagesInfo
   override fun replyInfo(): Site.ReplyInfo = replyInfo
   override fun bookmarkInfo(): Site.BookmarkInfo = bookmarkInfo
-
-  override fun globalSearchInfo(): Site.GlobalSearchInfo? {
-    // TODO: Dvach support
-    return null
-  }
-
+  override fun globalSearchInfo(): Site.GlobalSearchInfo = globalSearchInfo
   override fun passcodeInfo(): Site.PasscodeInfo = passcodeInfo
 
   override fun matchesUrl(httpUrl: HttpUrl): Boolean {
@@ -370,6 +369,25 @@ class Dvach(
     override fun bookmarkDataSource(): IBookmarkDataSource<ThreadDescriptor, ThreadBookmarkData> {
       return dvachDataSource
     }
+  }
+
+  class GlobalSearchInfo(
+    private val dvachDataSource: DvachDataSource,
+    private val getCurrentDomain: () -> String
+  ): Site.GlobalSearchInfo {
+    override val resultsPerPage: Int = Int.MAX_VALUE
+
+    override val supportsSiteWideSearch: Boolean = false
+    override val supportsCatalogSpecificSearch: Boolean = true
+
+    override fun globalSearchUrl(boardCode: String?, query: String, page: Int): String {
+      return "https://${getCurrentDomain()}/user/search?json=1"
+    }
+
+    override fun globalSearchDataSource(): IGlobalSearchDataSource<SearchParams, SearchResult> {
+      return dvachDataSource
+    }
+
   }
 
   private class DvachRequestModifier(

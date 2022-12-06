@@ -60,8 +60,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostIm
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
@@ -673,20 +671,7 @@ private fun AlbumImageItem(
       postImage = albumImage.postImage,
       contentScale = ContentScale.Crop,
       onLongClick = { albumScreenViewModel.toggleImageSelection(albumImage) },
-      onClickWithError = { clickedImageResult ->
-        if (clickedImageResult.isFailure) {
-          val error = clickedImageResult.exceptionOrThrow()
-
-          snackbarManager.errorToast(
-            message = error.errorMessageOrClassName(userReadable = true),
-            screenKey = MainScreen.SCREEN_KEY
-          )
-
-          return@PostImageThumbnail
-        }
-
-        val clickedPostImage = clickedImageResult.getOrThrow()
-
+      onClick = { clickedPostImage ->
         if (isInSelectionMode) {
           albumScreenViewModel.toggleImageSelection(albumImage)
           return@PostImageThumbnail

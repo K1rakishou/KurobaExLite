@@ -55,8 +55,6 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
-import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
@@ -211,6 +209,7 @@ class CatalogScreen(
   private val localSearchToolbar: PostsScreenLocalSearchToolbar by lazy {
     PostsScreenLocalSearchToolbar(
       screenKey = screenKey,
+      currentSiteKey = { catalogScreenViewModel.catalogDescriptor?.siteKey },
       onToolbarCreated = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, true) },
       onToolbarDisposed = { globalUiInfoManager.onChildScreenSearchStateChanged(screenKey, false) },
       onSearchQueryUpdated = { searchQuery -> catalogScreenViewModel.updateSearchQuery(searchQuery) },
@@ -443,20 +442,8 @@ class CatalogScreen(
         replyLayoutStateProvider = { replyLayoutState },
         navigationRouterProvider = { navigationRouter },
         postLongtapContentMenuProvider = { postLongtapContentMenu },
-        onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
-          val postImageData = if (postImageDataResult.isFailure) {
-            snackbarManager.errorToast(
-              message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(userReadable = true),
-              screenKey = screenKey
-            )
-
-            return@CatalogPostListScreen
-          } else {
-            postImageDataResult.getOrThrow()
-          }
-
+        onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
           val catalogDescriptor = chanDescriptor as CatalogDescriptor
-
           clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
 
           val mediaViewerScreen = ComposeScreen.createScreen<MediaViewerScreen>(
@@ -502,7 +489,7 @@ private fun BoxScope.CatalogPostListScreen(
   replyLayoutStateProvider: () -> IReplyLayoutState,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
   navigationRouterProvider: () -> NavigationRouter,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()

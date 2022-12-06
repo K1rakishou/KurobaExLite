@@ -36,6 +36,16 @@ data class DvachCatalog(
   val error: DvachError?
 )
 
+@JsonClass(generateAdapter = true)
+data class DvachSearchResult(
+  @Json(name = "board")
+  val board: DvachBoardInfo?,
+  @Json(name = "posts")
+  val posts: List<DvachPost>?,
+  @Json(name = "error")
+  val error: DvachError?
+)
+
 interface DvachThread {
   val error: DvachError?
   val threadPosts: List<DvachPost>?

@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -119,6 +120,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaBottomSheet
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaBottomSheetState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -788,13 +790,7 @@ private fun MediaViewerBottomSheet(
       onQuoteSelectedText = { withText, selectedText, postCellData ->
         // no-op
       },
-      onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
-        val clickedPostImage = postImageDataResult.getOrNull()
-        if (clickedPostImage == null) {
-          // TODO(KurobaEx): toast?
-          return@PostListContent
-        }
-
+      onPostImageClicked = { chanDescriptor, clickedPostImage, thumbnailBoundsInRoot ->
         val imageToScrollToIndex = mediaViewerScreenState.mediaList
           .indexOfFirst { it.fullImageUrl == clickedPostImage.fullImageAsUrl }
           .takeIf { index -> index >= 0 }
@@ -1133,22 +1129,31 @@ private fun TransitionPreview(
   LaunchedEffect(
     key1 = Unit,
     block = {
-      var success = false
-
       try {
-        withTimeout(timeMillis = 1000) {
-          bitmapMut = mediaViewerScreenViewModel.loadThumbnailBitmap(context, postImage)
+        logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
+          "TransitionPreview.loadThumbnailBitmap(url=${postImage.thumbnailAsUrl}) start"
         }
 
-        success = true
-      } catch (error: Throwable) {
-        logcatError(MediaViewerScreen.TAG) { "loadThumbnailBitmap() error: ${error.errorMessageOrClassName()}" }
-        success = false
-      } finally {
-        if (!success) {
-          logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() success: false" }
+        bitmapMut = withTimeout(timeMillis = 1000) { mediaViewerScreenViewModel.loadThumbnailBitmap(context, postImage) }
+        if (bitmapMut == null) {
+          logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
+            "TransitionPreview.loadThumbnailBitmap(url=${postImage.thumbnailAsUrl}) canceled"
+          }
+
           onTransitionFinished()
+          return@LaunchedEffect
         }
+
+        logcat(MediaViewerScreen.TAG, LogPriority.VERBOSE) {
+          "TransitionPreview.loadThumbnailBitmap(url=${postImage.thumbnailAsUrl}) success"
+        }
+      } catch (error: Throwable) {
+        logcatError(MediaViewerScreen.TAG) {
+          "TransitionPreview.loadThumbnailBitmap(url=${postImage.thumbnailAsUrl}) " +
+            "error: ${error.errorMessageOrClassName()}"
+        }
+
+        onTransitionFinished()
       }
     }
   )
@@ -1688,13 +1693,40 @@ private fun DisplayImagePreview(
       val state = painter.state
       if (state is AsyncImagePainter.State.Error) {
         logcatError(tag = MediaViewerScreen.TAG) {
-          "DisplayImagePreview() url=${postImageData}, " +
+          "DisplayImagePreview() url=${postImageData.fullImageAsUrl}, " +
             "postDescriptor=${postImageData.ownerPostDescriptor}, " +
             "error=${state.result.throwable}"
         }
-      }
 
-      SubcomposeAsyncImageContent()
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 24.dp)
+            .drawBehind { drawRect(Color.Black.copy(alpha = 0.5f)) },
+          contentAlignment = Alignment.Center
+        ) {
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            KurobaComposeIcon(
+              modifier = Modifier.size(80.dp, 80.dp),
+              drawableId = R.drawable.ic_baseline_warning_24
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            val errorText = remember(key1 = state) {
+              state.result.throwable.errorMessageOrClassName(userReadable = true)
+            }
+
+            Text(
+              text = errorText,
+              fontSize = 14.sp,
+              color = Color.White
+            )
+          }
+        }
+      } else {
+        SubcomposeAsyncImageContent()
+      }
 
       LaunchedEffect(
         key1 = state,

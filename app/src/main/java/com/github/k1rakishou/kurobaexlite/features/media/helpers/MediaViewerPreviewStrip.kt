@@ -180,7 +180,8 @@ private fun DisplayImagePreview(
       .then(highlightModifier)
       .padding(padding),
     bgColor = Color.Unspecified,
+    displayErrorMessage = false,
     postImage = postImage,
-    onClickWithError = { onPreviewClicked(postImage) }
+    onClick = { onPreviewClicked(postImage) }
   )
 }

@@ -9,6 +9,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
@@ -328,22 +329,14 @@ class Chan4(
     override val supportsSiteWideSearch: Boolean = true
     override val supportsCatalogSpecificSearch: Boolean = true
 
-    override fun globalSearchUrl(boardCode: String, query: String, page: Int): String {
+    override fun globalSearchUrl(boardCode: String?, query: String, page: Int): String {
       return buildString {
         append("https://find.4chan.org/?")
         append("q=${query}")
-        append("&b=${boardCode}")
 
-        if (page > 0) {
-          append("&o=${page * resultsPerPage}")
+        if (boardCode.isNotNullNorEmpty()) {
+          append("&b=${boardCode}")
         }
-      }
-    }
-
-    override fun globalSearchUrl(query: String, page: Int): String {
-      return buildString {
-        append("https://find.4chan.org/?")
-        append("q=${query}")
 
         if (page > 0) {
           append("&o=${page * resultsPerPage}")

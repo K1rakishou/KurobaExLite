@@ -22,7 +22,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
-import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
@@ -363,27 +362,22 @@ class MediaViewerScreenViewModel(
   }
 
   suspend fun loadThumbnailBitmap(context: Context, postImage: IPostImage): Bitmap? {
-    logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl} start" }
-
     val imageRequest = ImageRequest.Builder(context)
       .data(postImage.thumbnailAsUrl)
       .build()
 
     // Ideally this will only load the bitmap from the memory/disk cache.
-    val imageResult = imageLoader.execute(imageRequest)
+    val imageResult = try {
+      imageLoader.execute(imageRequest)
+    } catch (error: Throwable) {
+      return null
+    }
 
     if (imageResult is ErrorResult) {
-      logcatError(TAG) {
-        "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl}, " +
-          "error: ${imageResult.throwable.errorMessageOrClassName()}"
-      }
-
       return null
     }
 
     imageResult as SuccessResult
-
-    logcat(TAG, LogPriority.VERBOSE) { "loadThumbnailBitmap() url=${postImage.thumbnailAsUrl} end" }
     return (imageResult.drawable as BitmapDrawable).bitmap
   }
 

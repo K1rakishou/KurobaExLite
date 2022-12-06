@@ -103,7 +103,7 @@ fun PostCellListMode(
   cellsPadding: PaddingValues,
   postBlinkAnimationState: PostBlinkAnimationState,
   postCellSubjectTextSizeSp: TextUnit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
   textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
@@ -319,7 +319,7 @@ private fun PostCellTitleZeroOrOneThumbnails(
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
   postCellSubjectTextSizeSp: TextUnit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
   val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
@@ -365,7 +365,7 @@ private fun PostCellTitleTwoOrMoreThumbnails(
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
   postCellSubjectTextSizeSp: TextUnit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
@@ -492,7 +492,7 @@ private fun RowScope.PostCellSubject(
 private fun PostCellThumbnail(
   thumbnailSize: Dp,
   postImage: PostCellImageData,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
@@ -511,7 +511,7 @@ private fun PostCellThumbnail(
         val boundsInWindow = boundsInWindowMut
           ?: return@PostImageThumbnail
 
-        onPostImageClicked(chanDescriptor, Result.success(clickedImage), boundsInWindow)
+        onPostImageClicked(chanDescriptor, clickedImage, boundsInWindow)
       }
     )
   }

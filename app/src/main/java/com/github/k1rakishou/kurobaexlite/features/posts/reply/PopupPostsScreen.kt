@@ -78,8 +78,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
-import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
@@ -299,18 +297,7 @@ class PopupPostsScreen(
         linkableClickHelperProvider = { linkableClickHelper },
         stopPresenting = { stopPresenting() },
         onBackPressed = { coroutineScope.launch { onBackPressed() } },
-        onPostImageClicked = { chanDescriptor, postImageDataResult, thumbnailBoundsInRoot ->
-          val postImageData = if (postImageDataResult.isFailure) {
-            snackbarManager.errorToast(
-              message = postImageDataResult.exceptionOrThrow().errorMessageOrClassName(userReadable = true),
-              screenKey = screenKey
-            )
-
-            return@PopupPostsScreenContentLayout
-          } else {
-            postImageDataResult.getOrThrow()
-          }
-
+        onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
           val collectedImages = popupPostsScreenViewModel.collectCurrentImages(screenKey, chanDescriptor)
           if (collectedImages.isEmpty()) {
             return@PopupPostsScreenContentLayout
@@ -445,7 +432,7 @@ private fun PopupPostsScreenContentLayout(
   linkableClickHelperProvider: () -> LinkableClickHelper,
   stopPresenting: () -> Unit,
   onBackPressed: () -> Unit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
 ) {
   Layout(
     content = {
@@ -502,7 +489,7 @@ private fun PopupPostsScreenContent(
   linkableClickHelperProvider: () -> LinkableClickHelper,
   stopPresenting: () -> Unit,
   onBackPressed: () -> Unit,
-  onPostImageClicked: (ChanDescriptor, Result<IPostImage>, Rect) -> Unit,
+  onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
   val context = LocalContext.current

@@ -504,18 +504,25 @@ class Chan4DataSource(
         val globalSearchInfo = site.globalSearchInfo()
           ?: throw ChanDataSourceException("Site ${site.readableName} does not support globalSearchInfo")
 
-        val globalSearchUrl = if (input.isSiteWideSearch) {
-          globalSearchInfo.globalSearchUrl(
-            query = input.query,
-            page = input.page
-          )
-        } else {
-          globalSearchInfo.globalSearchUrl(
-            boardCode = input.catalogDescriptor.boardCode,
-            query = input.query,
-            page = input.page
-          )
+        if (input.isSiteWideSearch && !globalSearchInfo.supportsSiteWideSearch) {
+          throw ChanDataSourceException("Site \'${site.readableName}\' does not support site-wide global search")
         }
+
+        if (!input.isSiteWideSearch && !globalSearchInfo.supportsCatalogSpecificSearch) {
+          throw ChanDataSourceException("Site \'${site.readableName}\' does not support catalog specific global search")
+        }
+
+        val boardCode = if (input.isSiteWideSearch) {
+          null
+        } else {
+          input.catalogDescriptor.boardCode
+        }
+
+        val globalSearchUrl = globalSearchInfo.globalSearchUrl(
+          boardCode = boardCode,
+          query = input.query,
+          page = input.page
+        )
 
         logcat(TAG, LogPriority.VERBOSE) { "loadSearchPageData() url='$globalSearchUrl'" }
 
