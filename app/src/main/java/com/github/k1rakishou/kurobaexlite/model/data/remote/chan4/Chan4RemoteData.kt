@@ -95,7 +95,7 @@ abstract class Chan4SharedDataJson {
       return null
     }
 
-    return PostDataSticky(maxCapacity = stickyCap)
+    return PostDataSticky(maxCapacity = stickyCap?.takeIf { cap -> cap > 0 })
   }
 
   fun countryFlag(): PostIcon.CountryFlag? {

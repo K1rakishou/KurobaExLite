@@ -192,7 +192,7 @@ class DvachDataSource(
             val maxCapacity = if (catalogThread.endless == 1) {
               1000
             } else {
-              0
+              null
             }
 
             PostDataSticky(maxCapacity)
@@ -658,7 +658,6 @@ class DvachDataSource(
         }
 
         val postDataList = mutableListWithCap<IPostData>(initialCapacity = searchResultPosts.size)
-
 
         searchResultPosts.forEachIndexed { order, dvachPost ->
           val threadNo = if (dvachPost.parent == 0L) {
