@@ -12,20 +12,18 @@ class DvachPostParser : Chan4PostParser() {
     childTextParts: MutableList<TextPartMut>,
     postDescriptor: PostDescriptor
   ) {
+    super.parseSpanTag(htmlTag, childTextParts, postDescriptor)
+
     if (htmlTag.hasClass("unkfunc")) {
       for (childTextPart in childTextParts) {
         childTextPart.spans.add(TextPartSpan.FgColorId(ChanThemeColorId.PostInlineQuote))
       }
-
-      return
     }
 
-    if (htmlTag.hasClass("u")) {
+    if (htmlTag.hasClass("post__pomyanem")) {
       for (childTextPart in childTextParts) {
-        childTextPart.spans.add(TextPartSpan.Underline)
+        childTextPart.spans.add(TextPartSpan.FgColorId(ChanThemeColorId.Accent))
       }
-
-      return
     }
 
     parseLinkTag(htmlTag, childTextParts, postDescriptor)

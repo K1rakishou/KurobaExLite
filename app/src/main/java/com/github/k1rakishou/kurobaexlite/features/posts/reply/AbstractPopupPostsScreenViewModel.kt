@@ -53,7 +53,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     error("Reloading reply popups is not supported")
   }
 
-  override fun refresh(onRefreshFinished: (() -> Unit)?) {
+  override fun refresh() {
     error("Refreshing reply popups is not supported")
   }
 

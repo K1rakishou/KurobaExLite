@@ -65,12 +65,14 @@ class ThreadScreenViewModel(
     applicationVisibilityManager = applicationVisibilityManager,
     executeUpdate = { refresh() },
     canUpdate = {
-      return@ThreadAutoUpdater threadScreenState.postsAsyncDataState.value is AsyncData.Data &&
+      return@ThreadAutoUpdater loadThreadJob == null &&
+        threadScreenState.postsAsyncDataState.value is AsyncData.Data &&
         threadScreenState.currentSearchQuery == null
     }
   )
 
   private val threadScreenState = ThreadScreenPostsState()
+  private var refreshThreadJob: Job? = null
   private var loadThreadJob: Job? = null
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
   private val bookmarkThreadExecutor = RendezvousCoroutineExecutor(viewModelScope)
@@ -93,6 +95,17 @@ class ThreadScreenViewModel(
     super.onViewModelReady()
 
     loadPrevVisitedThread()
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+
+    refreshThreadJob?.cancel()
+    refreshThreadJob = null
+    loadThreadJob?.cancel()
+    loadThreadJob = null
+
+    threadAutoUpdater.stopAutoUpdaterLoop()
   }
 
   private suspend fun loadPrevVisitedThread() {
@@ -120,12 +133,6 @@ class ThreadScreenViewModel(
     logcat(tag = TAG) { "loadPrevVisitedThread() prevThreadDescriptor is null" }
   }
 
-  override fun onCleared() {
-    super.onCleared()
-
-    threadAutoUpdater.stopAutoUpdaterLoop()
-  }
-
   override fun reload(
     loadOptions: LoadOptions,
     onReloadFinished: (() -> Unit)?
@@ -139,11 +146,15 @@ class ThreadScreenViewModel(
     )
   }
 
-  override fun refresh(onRefreshFinished: (() -> Unit)?) {
-    loadThreadJob?.cancel()
-    loadThreadJob = null
+  override fun refresh() {
+    if (loadThreadJob != null) {
+      return
+    }
 
-    loadThreadJob = viewModelScope.launch {
+    refreshThreadJob?.cancel()
+    refreshThreadJob = null
+
+    refreshThreadJob = viewModelScope.launch {
       val threadPostsAsync = threadScreenState.postsAsyncDataState.value
       val threadDescriptor = chanThreadManager.currentlyOpenedThread
       val prevCellDataState = threadScreenState.threadCellDataState.value
@@ -151,7 +162,6 @@ class ThreadScreenViewModel(
 
       if (threadPostsAsync !is AsyncData.Data) {
         if (threadDescriptor == null) {
-          onRefreshFinished?.invoke()
           return@launch
         }
 
@@ -161,7 +171,6 @@ class ThreadScreenViewModel(
           onReloadFinished = null
         )
 
-        onRefreshFinished?.invoke()
         return@launch
       }
 
@@ -182,7 +191,6 @@ class ThreadScreenViewModel(
           prevThreadStatusCellData = prevCellDataState
         )
 
-        onRefreshFinished?.invoke()
         return@launch
       }
 
@@ -193,7 +201,6 @@ class ThreadScreenViewModel(
           prevThreadStatusCellData = prevCellDataState
         )
 
-        onRefreshFinished?.invoke()
         return@launch
       }
 
@@ -232,7 +239,6 @@ class ThreadScreenViewModel(
           } finally {
             withContext(Dispatchers.Main) {
               snackbarManager.popCatalogOrThreadPostsLoadingSnackbar()
-              onRefreshFinished?.invoke()
             }
           }
         }
@@ -249,6 +255,9 @@ class ThreadScreenViewModel(
     loadOptions: LoadOptions = LoadOptions(),
     onReloadFinished: (() -> Unit)? = null
   ) {
+    refreshThreadJob?.cancel()
+    refreshThreadJob = null
+
     loadThreadJob?.cancel()
     loadThreadJob = null
 

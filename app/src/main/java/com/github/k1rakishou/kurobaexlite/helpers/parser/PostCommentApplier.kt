@@ -1,10 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.helpers.parser
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
@@ -164,6 +165,8 @@ class PostCommentApplier {
       var annotationTag: String? = null
       var annotationValue: String? = null
       var bold = false
+      var italic = false
+      var script: Script? = null
 
       var start: Int? = null
       var end: Int? = null
@@ -187,7 +190,12 @@ class PostCommentApplier {
             is TextPartSpan.Linkable.Search,
             is TextPartSpan.PartialSpan,
             is TextPartSpan.Underline,
-            is TextPartSpan.Spoiler -> {
+            is TextPartSpan.Linethrough,
+            is TextPartSpan.Spoiler,
+            is TextPartSpan.Bold,
+            is TextPartSpan.Superscript,
+            is TextPartSpan.Subscript,
+            is TextPartSpan.Italic -> {
               error("${span.linkSpan::class.java.simpleName} is not supported as a partial span")
             }
           }
@@ -229,6 +237,21 @@ class PostCommentApplier {
         }
         is TextPartSpan.Underline -> {
           underline = true
+        }
+        is TextPartSpan.Linethrough -> {
+          linethrough = true
+        }
+        is TextPartSpan.Bold -> {
+          bold = true
+        }
+        is TextPartSpan.Italic -> {
+          italic = true
+        }
+        is TextPartSpan.Superscript -> {
+          script = Script.Super
+        }
+        is TextPartSpan.Subscript -> {
+          script = Script.Sub
         }
         is TextPartSpan.Linkable -> {
           when (span) {
@@ -293,25 +316,37 @@ class PostCommentApplier {
       }
 
       val fontWeight = if (bold) {
-        FontWeight.Bold
+        FontWeight.ExtraBold
       } else {
         null
+      }
+
+      val fontStyle = if (italic) {
+        FontStyle.Italic
+      } else {
+        null
+      }
+
+      val baselineShift = when (script) {
+        Script.Sub -> BaselineShift.Subscript
+        Script.Super -> BaselineShift.Superscript
+        null -> null
       }
 
       val spanStyle = SpanStyle(
         color = fgColor,
         background = bgColor,
         fontWeight = fontWeight,
+        fontStyle = fontStyle,
+        baselineShift = baselineShift,
         textDecoration = buildTextDecoration(underline, linethrough)
       )
 
-      if (!spanStyle.isEmpty()) {
-        addStyle(
-          style = spanStyle,
-          start = start ?: 0,
-          end = end ?: this.length
-        )
-      }
+      addStyle(
+        style = spanStyle,
+        start = start ?: 0,
+        end = end ?: this.length
+      )
 
       if (annotationTag != null) {
         addStringAnnotation(
@@ -324,15 +359,9 @@ class PostCommentApplier {
     }
   }
 
-  private fun SpanStyle.isEmpty(): Boolean {
-    return color.isUnspecified
-      && background.isUnspecified
-      && (textDecoration == null || textDecoration == TextDecoration.None)
-  }
-
   private fun buildTextDecoration(
     underline: Boolean,
-    linethrough: Boolean
+    linethrough: Boolean,
   ): TextDecoration? {
     if (!underline && !linethrough) {
       return null
@@ -415,6 +444,11 @@ class PostCommentApplier {
     }
 
     return false
+  }
+
+  private enum class Script {
+    Sub,
+    Super
   }
 
   companion object {

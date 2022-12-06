@@ -24,34 +24,36 @@ sealed class TextPartSpan {
       is Linkable.Search,
       is Linkable.Url,
       is PartialSpan,
-      is Underline -> PRIORITY_TEXT
+      is Underline,
+      is Linethrough,
+      is Bold,
+      is Italic,
+      is Superscript,
+      is Subscript -> PRIORITY_TEXT
       is FgColor,
       is FgColorId -> PRIORITY_FOREGROUND
       Spoiler -> PRIORITY_SPOILER
     }
   }
 
-  @Immutable
   class PartialSpan(
     val start: Int,
     val end: Int,
     val linkSpan: TextPartSpan
   ) : TextPartSpan()
 
-  @Immutable
   class BgColor(val color: Int) : TextPartSpan()
-  @Immutable
   class FgColor(val color: Int) : TextPartSpan()
-  @Immutable
   class BgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
-  @Immutable
   class FgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
-  @Immutable
   object Spoiler : TextPartSpan()
-  @Immutable
   object Underline : TextPartSpan()
+  object Linethrough : TextPartSpan()
+  object Bold : TextPartSpan()
+  object Italic : TextPartSpan()
+  object Superscript : TextPartSpan()
+  object Subscript : TextPartSpan()
 
-  @Immutable
   sealed class Linkable : TextPartSpan() {
 
     fun serialize(): Buffer {
@@ -74,7 +76,6 @@ sealed class TextPartSpan {
 
     protected abstract fun serializeLinkable(buffer: Buffer)
 
-    @Immutable
     data class Quote(
       val crossThread: Boolean,
       val dead: Boolean,
@@ -97,7 +98,6 @@ sealed class TextPartSpan {
       }
     }
 
-    @Immutable
     data class Search(
       val boardCode: String,
       val searchQuery: String
@@ -117,7 +117,6 @@ sealed class TextPartSpan {
       }
     }
 
-    @Immutable
     data class Board(
       val boardCode: String
     ) : Linkable() {
@@ -133,7 +132,6 @@ sealed class TextPartSpan {
       }
     }
 
-    @Immutable
     data class Url(
       val url: String
     ) : Linkable() {
@@ -149,7 +147,6 @@ sealed class TextPartSpan {
       }
     }
 
-    @Immutable
     enum class Id(val value: Int) {
       Quote(0),
       Search(1),

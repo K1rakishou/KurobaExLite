@@ -130,6 +130,8 @@ data class DvachPost(
     get() = sticky > 0L
   val isEndless: Boolean
     get() = endless == 1
+  val isBanned: Boolean
+    get() = banned == 1L
 
   val originalPostNo: Long
     get() {

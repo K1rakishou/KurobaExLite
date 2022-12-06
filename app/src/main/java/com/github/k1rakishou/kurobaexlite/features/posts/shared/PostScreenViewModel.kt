@@ -157,7 +157,7 @@ abstract class PostScreenViewModel(
     onReloadFinished: (() -> Unit)? = null
   )
   
-  abstract fun refresh(onRefreshFinished: (() -> Unit)? = null)
+  abstract fun refresh()
 
   suspend fun onThreadLoadingStart(threadDescriptor: ThreadDescriptor?, loadOptions: LoadOptions) {
     if (loadOptions.showLoadingIndicator) {

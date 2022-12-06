@@ -476,9 +476,9 @@ class ParsedPostDataCache(
         parsedPostDataContext = parsedPostDataContext,
       )
     } catch (error: Throwable) {
-      logcatError(TAG) { "Error parsing ${postDescriptor.postNo}! Error: ${error.asLog()}" }
+      logcatError(TAG) { "Error parsing ${postDescriptor}! Error: ${error.asLog()}" }
 
-      val postComment = "Error parsing ${postDescriptor.postNo}!\n\nError: ${error.errorMessageOrClassName(userReadable = true)}"
+      val postComment = "Error parsing ${postDescriptor}!\n\nError: ${error.errorMessageOrClassName(userReadable = true)}"
       val postCommentAnnotated = AnnotatedString(postComment)
 
       return ParsedPostData(

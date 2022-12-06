@@ -29,12 +29,18 @@ open class Chan4PostParser : AbstractSitePostParser() {
     childTextParts: MutableList<TextPartMut>,
     postDescriptor: PostDescriptor
   ) {
+    super.parseSpanTag(htmlTag, childTextParts, postDescriptor)
+
     if (htmlTag.hasClass("quote")) {
       for (childTextPart in childTextParts) {
         childTextPart.spans.add(TextPartSpan.FgColorId(ChanThemeColorId.PostInlineQuote))
       }
+    }
 
-      return
+    if (htmlTag.hasClass("s")) {
+      for (childTextPart in childTextParts) {
+        childTextPart.spans.add(TextPartSpan.Linethrough)
+      }
     }
 
     parseLinkTag(htmlTag, childTextParts, postDescriptor)

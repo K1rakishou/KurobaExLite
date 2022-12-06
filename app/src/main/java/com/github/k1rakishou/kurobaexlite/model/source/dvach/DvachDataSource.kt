@@ -36,6 +36,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBookmarkC
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalogPageJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachPasscodeResult
+import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachPost
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachSearchResult
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachThreadFull
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachThreadPartial
@@ -219,7 +220,7 @@ class DvachDataSource(
             originalPostOrder = order,
             postDescriptor = postDescriptor,
             postSubjectUnparsed = catalogThread.subject,
-            postCommentUnparsed = catalogThread.comment,
+            postCommentUnparsed = processComment(catalogThread),
             opMark = catalogThread.opMark,
             sage = catalogThread.sage,
             name = parsedName.name,
@@ -374,7 +375,7 @@ class DvachDataSource(
               originalPostOrder = order,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.subject,
-              postCommentUnparsed = threadPost.comment,
+              postCommentUnparsed = processComment(threadPost),
               opMark = threadPost.opMark,
               sage = threadPost.sage,
               name = parsedName.name,
@@ -399,8 +400,8 @@ class DvachDataSource(
             PostData(
               originalPostOrder = order,
               postDescriptor = postDescriptor,
-              postSubjectUnparsed = threadPost.subject ?: "",
-              postCommentUnparsed = threadPost.comment ?: "",
+              postSubjectUnparsed = threadPost.subject,
+              postCommentUnparsed = processComment(threadPost),
               opMark = threadPost.opMark,
               sage = threadPost.sage,
               name = parsedName.name,
@@ -682,7 +683,7 @@ class DvachDataSource(
             originalPostOrder = order,
             postDescriptor = postDescriptor,
             postSubjectUnparsed = dvachPost.subject,
-            postCommentUnparsed = dvachPost.comment,
+            postCommentUnparsed = processComment(dvachPost),
             opMark = dvachPost.opMark,
             sage = dvachPost.sage,
             name = parsedName.name,
@@ -706,6 +707,16 @@ class DvachDataSource(
 
         // Need to reverse the results because by default they go from oldest to newest
         return@Try SearchResult(postDataList.asReversed())
+      }
+    }
+  }
+
+  private fun processComment(dvachPost: DvachPost): String {
+    return buildString(capacity = dvachPost.comment.length) {
+      append(dvachPost.comment)
+
+      if (dvachPost.isBanned) {
+        append(BANNED_MARK_HTML)
       }
     }
   }
@@ -859,6 +870,7 @@ class DvachDataSource(
     private const val TAG = "DvachDataSource"
 
     private const val DEFAULT_NAME = "Аноним"
+    private const val BANNED_MARK_HTML = "<br><br><span class=\"post__pomyanem\">(Автор этого поста был забанен. Помянем.)</span>"
   }
 
 }

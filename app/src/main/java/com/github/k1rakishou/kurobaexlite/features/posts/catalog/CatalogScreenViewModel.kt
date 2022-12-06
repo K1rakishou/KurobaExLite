@@ -92,7 +92,7 @@ class CatalogScreenViewModel(
     )
   }
 
-  override fun refresh(onRefreshFinished: (() -> Unit)?) {
+  override fun refresh() {
     error("Refreshing catalogs is not supported")
   }
 
