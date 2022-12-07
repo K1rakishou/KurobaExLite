@@ -13,6 +13,9 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.sync.Mutex
 import logcat.logcat
+import java.util.concurrent.TimeUnit
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 class ChanThreadCache(
   val threadDescriptor: ThreadDescriptor
@@ -28,6 +31,10 @@ class ChanThreadCache(
   override var lastUpdateTime: Long = SystemClock.elapsedRealtime()
     private set
 
+  @Volatile
+  var lastFullUpdateTime: Long = 0L
+    private set
+
   override val chanDescriptor: ChanDescriptor = threadDescriptor
 
   override suspend fun hasPosts(): Boolean {
@@ -38,7 +45,8 @@ class ChanThreadCache(
     mutex.withLockNonCancellable { lastUpdateTime = SystemClock.elapsedRealtime() }
   }
 
-  suspend fun insert(postCellDataCollection: Collection<IPostData>): PostsLoadResult {
+  @OptIn(ExperimentalTime::class)
+  suspend fun insert(postCellDataCollection: Collection<IPostData>, isIncrementalUpdate: Boolean): PostsLoadResult {
     BackgroundUtils.ensureBackgroundThread()
 
     return mutex.withLockNonCancellable {
@@ -50,46 +58,57 @@ class ChanThreadCache(
 
       val allPostDescriptorsFromServer = postCellDataCollection.associateBy { it.postDescriptor }
 
-      postCellDataCollection.forEach { postData ->
-        val prevPostData = postsMap[postData.postDescriptor]
+      val duration = measureTime {
+        postCellDataCollection.forEach { postData ->
+          val prevPostData = postsMap[postData.postDescriptor]
 
-        if (prevPostData != null && PostDiffer.postsDiffer(postData, prevPostData)) {
-          val index = posts.indexOfFirst { oldPostData ->
-            oldPostData.postDescriptor == postData.postDescriptor
+          if (prevPostData != null && PostDiffer.postsDiffer(postData, prevPostData)) {
+            val index = posts.indexOfFirst { oldPostData ->
+              oldPostData.postDescriptor == postData.postDescriptor
+            }
+            check(index >= 0) { "postMap contains this post but posts list does not!" }
+
+            val postDataWithPostIndex = postData.copy(originalPostOrder = posts[index].originalPostOrder)
+            posts[index] = postDataWithPostIndex
+            postsMap[postDataWithPostIndex.postDescriptor] = postDataWithPostIndex
+
+            updatedPosts += postDataWithPostIndex
+          } else if (prevPostData == null) {
+            val prevPostIndex = posts.lastOrNull()?.originalPostOrder ?: 0
+            val postDataWithPostIndex = postData.copy(originalPostOrder = prevPostIndex + 1)
+
+            posts.add(postDataWithPostIndex)
+            postsMap[postDataWithPostIndex.postDescriptor] = postDataWithPostIndex
+
+            insertedPosts += postDataWithPostIndex
+            needSorting = true
+          } else {
+            unchangedPosts += postData
           }
-          check(index >= 0) { "postMap contains this post but posts list does not!" }
-
-          posts[index] = postData
-          postsMap[postData.postDescriptor] = postData
-
-          updatedPosts += postData
-        } else if (prevPostData == null) {
-          posts.add(postData)
-          postsMap[postData.postDescriptor] = postData
-
-          insertedPosts += postData
-          needSorting = true
-        } else {
-          unchangedPosts += postData
         }
-      }
 
-      posts.forEach { postData ->
-        if (!allPostDescriptorsFromServer.containsKey(postData.postDescriptor)) {
-          deletedPosts += postData
+        if (!isIncrementalUpdate) {
+          posts.forEach { postData ->
+            if (!allPostDescriptorsFromServer.containsKey(postData.postDescriptor)) {
+              deletedPosts += postData
+            }
+          }
         }
-      }
 
-      if (needSorting) {
-        posts.sortWith(POSTS_COMPARATOR)
+        if (needSorting) {
+          posts.sortWith(POSTS_COMPARATOR)
+        }
       }
 
       logcat(tag = TAG) {
-        "insert() insertedPosts=${insertedPosts.size}, " +
+        "insert(isIncrementalUpdate: ${isIncrementalUpdate}) " +
+          "insertedPosts=${insertedPosts.size}, " +
           "updatedPosts=${updatedPosts.size}, " +
           "unchangedPosts=${unchangedPosts.size}, " +
+          "deletedPosts=${deletedPosts.size}, " +
           "totalFromServer=${postCellDataCollection.size}, " +
-          "totalCached=${postsMap.size}"
+          "totalCached=${postsMap.size}, " +
+          "insertion took: ${duration}"
       }
 
       return@withLockNonCancellable PostsLoadResult(
@@ -137,6 +156,14 @@ class ChanThreadCache(
 
   suspend fun getLastLoadedPostForIncrementalUpdate(): IPostData? {
     return mutex.withLockNonCancellable {
+      val currentTime = SystemClock.elapsedRealtime()
+
+      // Once in FULL_UPDATE_INTERVAL_MS make full thread updates. We need this to keep track of deleted posts.
+      if (currentTime - lastFullUpdateTime > FULL_UPDATE_INTERVAL_MS) {
+        lastFullUpdateTime = currentTime
+        return@withLockNonCancellable null
+      }
+
       // Threads must have more than one post since the very first post is always the OP and we load that post from the
       // catalog thread list which doesn't mean we have visited that thread yet
       if (posts.size <= 1) {
@@ -157,6 +184,7 @@ class ChanThreadCache(
     private const val TAG = "ChanThreadCache"
 
     private val POSTS_COMPARATOR = compareBy<IPostData> { postData -> postData.postDescriptor }
+    private val FULL_UPDATE_INTERVAL_MS = TimeUnit.MINUTES.toMillis(1)
   }
 
 }

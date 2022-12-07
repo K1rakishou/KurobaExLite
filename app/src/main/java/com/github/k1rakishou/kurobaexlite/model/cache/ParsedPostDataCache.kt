@@ -613,9 +613,9 @@ class ParsedPostDataCache(
           buildAnnotatedString(capacity = 32) {
             pushStyle(SpanStyle(color = chanTheme.postDetailsColor))
 
-            if (parsedPostDataContext.isParsingThread) {
+            if (parsedPostDataContext.isParsingThread && postIndex > 0) {
               append("#")
-              append((postIndex + 1).toString())
+              append(postIndex.toString())
               append(AppConstants.TEXT_SEPARATOR)
             }
 

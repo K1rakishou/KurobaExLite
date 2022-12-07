@@ -84,7 +84,8 @@ class ChanCache(
 
   suspend fun insertThreadPosts(
     threadDescriptor: ThreadDescriptor,
-    threadPostCells: Collection<IPostData>
+    threadPostCells: Collection<IPostData>,
+    isIncrementalUpdate: Boolean
   ): PostsLoadResult {
     return withContext(Dispatchers.IO) {
       val chanThread = threads.getOrPut(
@@ -93,7 +94,7 @@ class ChanCache(
       )
 
       val hasPosts = chanThread.hasPosts()
-      val postsMergeResult = chanThread.insert(threadPostCells)
+      val postsMergeResult = chanThread.insert(threadPostCells, isIncrementalUpdate)
 
       // Only run evictOld() routine when inserting new threads into the cache
       if (!hasPosts) {

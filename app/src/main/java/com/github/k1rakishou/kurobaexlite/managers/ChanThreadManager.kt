@@ -68,7 +68,13 @@ class ChanThreadManager(
       ?.postDescriptor
 
     return threadDataSource.loadThread(threadDescriptor, lastCachedThreadPost)
-      .map { threadData -> chanCache.insertThreadPosts(threadDescriptor, threadData.threadPosts) }
+      .map { threadData ->
+        return@map chanCache.insertThreadPosts(
+          threadDescriptor = threadDescriptor,
+          threadPostCells = threadData.threadPosts,
+          isIncrementalUpdate = lastCachedThreadPost != null
+        )
+      }
   }
 
   class CatalogNotSupported(siteKey: SiteKey) : ClientException("Site \'${siteKey.key}\' does not support catalogs")

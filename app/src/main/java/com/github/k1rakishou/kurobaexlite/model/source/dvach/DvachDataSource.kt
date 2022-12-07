@@ -181,7 +181,7 @@ class DvachDataSource(
         val postDataList = mutableListWithCap<IPostData>(initialCapacity = totalCount)
         val defaultName = dvachCatalog.board?.defaultName ?: DEFAULT_NAME
 
-        catalogThreads.forEachIndexed { order, catalogThread ->
+        catalogThreads.forEach { catalogThread ->
           val postDescriptor = PostDescriptor.create(
             siteKey = site.siteKey,
             boardCode = boardCode,
@@ -217,7 +217,7 @@ class DvachDataSource(
           val parsedName = parseName(defaultName, catalogThread.name)
 
           postDataList += OriginalPostData(
-            originalPostOrder = order,
+            originalPostOrder = -1,
             postDescriptor = postDescriptor,
             postSubjectUnparsed = catalogThread.subject,
             postCommentUnparsed = processComment(catalogThread),
@@ -330,7 +330,7 @@ class DvachDataSource(
         val threadImagesTotal = (dvachThread as? DvachThreadFull)?.filesCount
         val threadPostersTotal = (dvachThread as? DvachThreadFull)?.postersCount
 
-        threadPosts.forEachIndexed { order, threadPost ->
+        threadPosts.forEach { threadPost ->
           val threadNo = if (threadPost.parent == 0L) {
             threadPost.num
           } else {
@@ -372,7 +372,7 @@ class DvachDataSource(
 
           postDataList += if (threadNo == postNo) {
             OriginalPostData(
-              originalPostOrder = order,
+              originalPostOrder = -1,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.subject,
               postCommentUnparsed = processComment(threadPost),
@@ -398,7 +398,7 @@ class DvachDataSource(
             )
           } else {
             PostData(
-              originalPostOrder = order,
+              originalPostOrder = -1,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.subject,
               postCommentUnparsed = processComment(threadPost),

@@ -182,8 +182,8 @@ class Chan4DataSource(
         val totalCount = catalogPagesDataJson.sumOf { catalogPageData -> catalogPageData.threads.size }
         val postDataList = mutableListWithCap<IPostData>(initialCapacity = totalCount)
 
-        catalogPagesDataJson.forEachIndexed { page, catalogPage ->
-          postDataList += catalogPage.threads.mapIndexed { index, catalogThread ->
+        catalogPagesDataJson.forEach { catalogPage ->
+          postDataList += catalogPage.threads.map { catalogThread ->
             val postDescriptor = PostDescriptor.create(
               siteKey = site.siteKey,
               boardCode = boardCode,
@@ -191,8 +191,8 @@ class Chan4DataSource(
               postNo = catalogThread.no
             )
 
-            return@mapIndexed OriginalPostData(
-              originalPostOrder = page * index,
+            return@map OriginalPostData(
+              originalPostOrder = -1,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = catalogThread.sub ?: "",
               postCommentUnparsed = catalogThread.com ?: "",
@@ -275,7 +275,7 @@ class Chan4DataSource(
 
         val postDataList = mutableListWithCap<IPostData>(initialCapacity = threadDataJson.posts.size)
 
-        postDataList += threadDataJson.posts.mapIndexed { index, threadPost ->
+        postDataList += threadDataJson.posts.map { threadPost ->
           val postDescriptor = PostDescriptor.create(
             siteKey = site.siteKey,
             boardCode = boardCode,
@@ -284,8 +284,8 @@ class Chan4DataSource(
           )
 
           if (postDescriptor.isOP) {
-            return@mapIndexed OriginalPostData(
-              originalPostOrder = index,
+            return@map OriginalPostData(
+              originalPostOrder = -1,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.sub ?: "",
               postCommentUnparsed = threadPost.com ?: "",
@@ -315,8 +315,8 @@ class Chan4DataSource(
               imageLimit = threadPost.imageLimit?.let { imageLimit -> imageLimit == 1 },
             )
           } else {
-            return@mapIndexed PostData(
-              originalPostOrder = index,
+            return@map PostData(
+              originalPostOrder = -1,
               postDescriptor = postDescriptor,
               postSubjectUnparsed = threadPost.sub ?: "",
               postCommentUnparsed = threadPost.com ?: "",
