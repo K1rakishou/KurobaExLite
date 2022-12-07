@@ -51,7 +51,7 @@ class ThreadScreenViewModel(
   savedStateHandle: SavedStateHandle,
   private val loadChanThreadView: LoadChanThreadView,
   private val updateChanThreadView: UpdateChanThreadView,
-  private val postFollowStack: PostFollowStack,
+  private val crossThreadFollowHistory: CrossThreadFollowHistory,
   private val lastVisitedEndpointManager: LastVisitedEndpointManager,
   private val loadNavigationHistory: LoadNavigationHistory,
   private val addOrRemoveBookmark: AddOrRemoveBookmark,
@@ -629,47 +629,11 @@ class ThreadScreenViewModel(
     )
   }
 
-  suspend fun onBackPressed(): Boolean {
-    val topFollowEntry = postFollowStack.pop()
+  fun onBackPressed(): Boolean {
+    val topThreadDescriptor = crossThreadFollowHistory.pop()
       ?: return false
 
-    when (topFollowEntry) {
-      is PostFollowStack.Entry.Post -> {
-        val popupInfo = topFollowEntry.popupInfo
-        if (popupInfo != null) {
-          val descriptor = chanDescriptor
-            ?: return true
-
-          val popupPostViewMode = when (popupInfo.type) {
-            PostFollowStack.Entry.PopupInfo.Type.RepliesFrom -> {
-              PopupPostsScreen.PopupPostViewMode.RepliesFrom(
-                chanDescriptor = descriptor,
-                postDescriptor = topFollowEntry.postDescriptor
-              )
-            }
-            PostFollowStack.Entry.PopupInfo.Type.ReplyTo -> {
-              PopupPostsScreen.PopupPostViewMode.ReplyTo(
-                chanDescriptor = descriptor,
-                postDescriptor = topFollowEntry.postDescriptor
-              )
-            }
-          }
-
-          _displayPostsPopupScreenFlow.emit(popupPostViewMode)
-        } else {
-          val loadOptions = LoadOptions(scrollToPost = topFollowEntry.postDescriptor)
-
-          loadThread(
-            threadDescriptor = topFollowEntry.postDescriptor.threadDescriptor,
-            loadOptions = loadOptions
-          )
-        }
-      }
-      is PostFollowStack.Entry.Thread -> {
-        loadThread(topFollowEntry.threadDescriptor)
-      }
-    }
-
+    loadThread(topThreadDescriptor)
     return true
   }
 

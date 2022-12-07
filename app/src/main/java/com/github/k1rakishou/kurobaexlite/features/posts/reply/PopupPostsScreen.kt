@@ -72,7 +72,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.PostFollowStack
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
@@ -80,7 +79,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
@@ -503,7 +501,6 @@ private fun PopupPostsScreenContent(
   val replyLayoutViewModel: ReplyLayoutViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val androidHelpers: AndroidHelpers = koinRemember()
-  val postFollowStack: PostFollowStack = koinRemember()
 
   val viewProvider by rememberUpdatedState(newValue = { view })
 
@@ -645,12 +642,6 @@ private fun PopupPostsScreenContent(
             postDescriptor = postCellData.postDescriptor,
             blink = true
           )
-
-          processPostFollow(
-            popupPostsScreenViewModel = popupPostsScreenViewModel,
-            screenKey = screenKey,
-            postFollowStack = postFollowStack
-          )
         }
 
         val parentScreenKey = if (postListOptions.isCatalogMode) {
@@ -708,39 +699,5 @@ private fun PopupPostsScreenContent(
     )
 
     Spacer(modifier = Modifier.width(8.dp))
-  }
-}
-
-private fun processPostFollow(
-  popupPostsScreenViewModel: DefaultPopupPostsScreenViewModel,
-  screenKey: ScreenKey,
-  postFollowStack: PostFollowStack
-) {
-  val postDataState = popupPostsScreenViewModel.postDataStateMap[screenKey]
-  if (postDataState != null) {
-    val topEntry = postDataState.postReplyChainStack.lastOrNull()
-
-    val postDescriptor = when (topEntry) {
-      is PopupPostsScreen.PopupPostViewMode.RepliesFrom -> topEntry.postDescriptor
-      is PopupPostsScreen.PopupPostViewMode.ReplyTo -> topEntry.postDescriptor
-      is PopupPostsScreen.PopupPostViewMode.PostList,
-      null -> null
-    }
-
-    if (postDescriptor != null) {
-      @Suppress("KotlinConstantConditions") val popupType = when (topEntry) {
-        is PopupPostsScreen.PopupPostViewMode.RepliesFrom -> PostFollowStack.Entry.PopupInfo.Type.RepliesFrom
-        is PopupPostsScreen.PopupPostViewMode.ReplyTo -> PostFollowStack.Entry.PopupInfo.Type.ReplyTo
-        is PopupPostsScreen.PopupPostViewMode.PostList,
-        null -> unreachable()
-      }
-
-      postFollowStack.push(
-        postDescriptor = postDescriptor,
-        popupInfo = PostFollowStack.Entry.PopupInfo(
-          type = popupType
-        )
-      )
-    }
   }
 }

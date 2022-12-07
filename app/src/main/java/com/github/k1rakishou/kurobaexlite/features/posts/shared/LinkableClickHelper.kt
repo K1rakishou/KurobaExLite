@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.PostFollowStack
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -26,7 +26,7 @@ class LinkableClickHelper(
   private val screenCoroutineScope: CoroutineScope
 ) {
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
-  private val postFollowStack: PostFollowStack by inject(PostFollowStack::class.java)
+  private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
   private val chanCache: ChanCache by inject(ChanCache::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
@@ -105,7 +105,7 @@ class LinkableClickHelper(
                   ),
                   negativeButton = DialogScreen.cancelButton(),
                   positiveButton = DialogScreen.okButton {
-                    postFollowStack.push(postCellData.postDescriptor.threadDescriptor)
+                    crossThreadFollowHistory.push(postCellData.postDescriptor.threadDescriptor)
 
                     loadThreadFunc(linkable.postDescriptor.threadDescriptor)
                   }

@@ -423,7 +423,6 @@ private fun BoxScope.ThreadPostListScreen(
   val snackbarManager = koinRemember<SnackbarManager>()
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val androidHelpers = koinRemember<AndroidHelpers>()
-  val postFollowStack = koinRemember<PostFollowStack>()
 
   val windowInsets = LocalWindowInsets.current
   val context = LocalContext.current
@@ -548,7 +547,6 @@ private fun BoxScope.ThreadPostListScreen(
     onGoToPostClicked = null,
     onPostListScrolled = { delta ->
       globalUiInfoManager.onContentListScrolling(screenKey, delta)
-      postFollowStack.onPostListScrolled(delta)
     },
     onPostListTouchingTopOrBottomStateChanged = { touchingBottom ->
       globalUiInfoManager.onContentListTouchingTopOrBottomStateChanged(screenKey, touchingBottom)
