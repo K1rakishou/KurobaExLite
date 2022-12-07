@@ -365,7 +365,7 @@ private fun rememberLogObserver(
 
   fun showErrorSnackbar(errorMessage: String) {
     // Don't care about this error, videos still play just fine
-    if (errorMessage.contains("ffmpeg tls:", ignoreCase = true)) {
+    if (errorMessage.contains("ffmpeg tls:")) {
       return
     }
 
@@ -398,6 +398,10 @@ private fun rememberLogObserver(
         }
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_WARN -> {
           logcat(MPV_TAG, LogPriority.WARN) { "[WARNING] ${prefix} ${text}" }
+
+          if (prefix.contains("ffmpeg") && text.contains("https: HTTP error")) {
+            showErrorSnackbar(errorMessage = "[ERROR] ${prefix} ${text}")
+          }
         }
       }
     }

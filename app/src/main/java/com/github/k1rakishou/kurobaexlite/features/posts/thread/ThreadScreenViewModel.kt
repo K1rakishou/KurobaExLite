@@ -65,7 +65,7 @@ class ThreadScreenViewModel(
     applicationVisibilityManager = applicationVisibilityManager,
     executeUpdate = { refresh() },
     canUpdate = {
-      return@ThreadAutoUpdater loadThreadJob == null &&
+      return@ThreadAutoUpdater !isLoadingThread &&
         threadScreenState.postsAsyncDataState.value is AsyncData.Data &&
         threadScreenState.currentSearchQuery == null
     }
@@ -76,6 +76,9 @@ class ThreadScreenViewModel(
   private var loadThreadJob: Job? = null
   private val updateChanThreadViewExecutor = DebouncingCoroutineExecutor(viewModelScope)
   private val bookmarkThreadExecutor = RendezvousCoroutineExecutor(viewModelScope)
+
+  private val isLoadingThread: Boolean
+    get() = loadThreadJob?.isActive == true
 
   private val _displayPostsPopupScreenFlow = MutableSharedFlow<PopupPostsScreen.PopupPostViewMode>(
     extraBufferCapacity = 1,
@@ -147,7 +150,7 @@ class ThreadScreenViewModel(
   }
 
   override fun refresh() {
-    if (loadThreadJob != null) {
+    if (isLoadingThread) {
       return
     }
 

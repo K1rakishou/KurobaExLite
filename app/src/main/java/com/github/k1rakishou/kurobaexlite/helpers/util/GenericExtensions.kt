@@ -9,6 +9,7 @@ import android.util.SparseArray
 import android.view.MotionEvent
 import android.view.View
 import androidx.activity.ComponentActivity
+import androidx.annotation.FloatRange
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.focus.FocusRequester
@@ -707,7 +708,7 @@ fun Request.Builder.appendCookieHeader(value: String): Request.Builder {
   return header(COOKIE_HEADER_NAME, fullCookieValue)
 }
 
-fun String?.asFormattedToken(): String {
+fun String?.asFormattedToken(@FloatRange(from = 0.0, to = 1.0) percent: Float = 0.4f): String {
   if (this == null) {
     return "<null>"
   }
@@ -716,7 +717,7 @@ fun String?.asFormattedToken(): String {
     return "<empty>"
   }
 
-  val tokenPartLength = (this.length.toFloat() * 0.2f).toInt() / 2
+  val tokenPartLength = (this.length.toFloat() * percent).toInt() / 2
   val startTokenPart = this.substring(0, tokenPartLength)
   val endTokenPart = this.substring(this.length - tokenPartLength)
 

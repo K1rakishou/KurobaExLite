@@ -1644,7 +1644,6 @@ private fun PageContent(
       }
       is ImageLoadState.Error -> {
         DisplayImageLoadError(
-          toolbarHeight = toolbarHeight,
           postImageDataLoadState = postImageDataLoadState
         )
       }
@@ -1654,16 +1653,32 @@ private fun PageContent(
 
 @Composable
 private fun DisplayImageLoadError(
-  toolbarHeight: Dp,
   postImageDataLoadState: ImageLoadState.Error
 ) {
-  val additionalPaddings = remember(toolbarHeight) { PaddingValues(top = toolbarHeight) }
-
-  InsetsAwareBox(
-    modifier = Modifier.fillMaxSize(),
-    additionalPaddings = additionalPaddings
+  Box(
+    modifier = Modifier.fillMaxSize()
+      .padding(horizontal = 16.dp, vertical = 24.dp)
+      .drawBehind { drawRect(Color.Black.copy(alpha = 0.5f)) },
+    contentAlignment = Alignment.Center
   ) {
-    KurobaComposeText(text = "Error: ${postImageDataLoadState.exception.errorMessageOrClassName(userReadable = true)}")
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      KurobaComposeIcon(
+        modifier = Modifier.size(80.dp, 80.dp),
+        drawableId = R.drawable.ic_baseline_warning_24
+      )
+
+      Spacer(modifier = Modifier.height(32.dp))
+
+      val errorText = remember(key1 = postImageDataLoadState) {
+        postImageDataLoadState.exception.errorMessageOrClassName(userReadable = true)
+      }
+
+      Text(
+        text = errorText,
+        fontSize = 14.sp,
+        color = Color.White
+      )
+    }
   }
 }
 

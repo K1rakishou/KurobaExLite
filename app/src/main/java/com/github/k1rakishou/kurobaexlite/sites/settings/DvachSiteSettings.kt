@@ -75,7 +75,8 @@ class DvachSiteSettings(
       StringSettingItem(
         title = appContext.resources.getString(R.string.dvach_setting_passcode_cookie),
         delegate = passcodeCookie,
-        showDialogScreen = showDialogScreen
+        showDialogScreen = showDialogScreen,
+        settingDisplayFormatter = { value -> value.asFormattedToken() },
       ),
       MapSettingItem<String, String>(
         title = appContext.resources.getString(R.string.site_setting_cloudflare_clearance_cookie),
@@ -90,7 +91,8 @@ class DvachSiteSettings(
       StringSettingItem(
         title = appContext.resources.getString(R.string.dvach_setting_user_code_cookie),
         delegate = userCodeCookie,
-        showDialogScreen = showDialogScreen
+        showDialogScreen = showDialogScreen,
+        settingDisplayFormatter = { value -> value.asFormattedToken() },
       ),
       LinkSettingItem(
         key = "dvach_passcode_options",
