@@ -88,7 +88,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import logcat.LogPriority
 import logcat.logcat
@@ -688,11 +687,6 @@ private fun HomeScreenContentActual(
         pagerState = pagerState,
         pagesWrapper = pagesWrapper,
         mainUiLayoutMode = mainUiLayoutMode,
-        onGoBackFabClicked = {
-          coroutineScope.launch {
-            threadScreenViewModel.onBackPressed()
-          }
-        },
         onReplyFabClicked = { screenKey -> homeScreenViewModel.onHomeScreenFabClicked(screenKey) }
       )
 

@@ -106,11 +106,11 @@ fun BoxScope.PostsScreenFabContainer(
     modifier = Modifier
       .align(Alignment.BottomEnd)
       .offset { IntOffset(x = -(horizOffset.roundToPx()), y = -(insets.bottom + vertOffset).roundToPx()) }
+      .passClicksThrough(passClicks = passClicks)
   ) {
     KurobaFloatingActionButton(
       modifier = Modifier
-        .graphicsLayer { this.alpha = toolbarAlphaState.value }
-        .passClicksThrough(passClicks = passClicks),
+        .graphicsLayer { this.alpha = toolbarAlphaState.value },
       iconDrawableId = R.drawable.ic_baseline_create_24,
       onClick = { onReplyFabClicked(screenKey) }
     )

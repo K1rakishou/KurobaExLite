@@ -42,7 +42,6 @@ fun BoxScope.HomeScreenFabContainer(
   pagerState: PagerState,
   pagesWrapper: HomeScreenPageConverter.PagesWrapper,
   mainUiLayoutMode: MainUiLayoutMode,
-  onGoBackFabClicked: () -> Unit,
   onReplyFabClicked: (ScreenKey) -> Unit
 ) {
   require(pagesWrapper.pagesCount > 0) { "pagesWrapper is empty!" }
@@ -156,11 +155,11 @@ fun BoxScope.HomeScreenFabContainer(
     modifier = Modifier
       .align(Alignment.BottomEnd)
       .offset { IntOffset(x = -(horizOffset.roundToPx()), y = -(insets.bottom + vertOffset).roundToPx()) }
+      .passClicksThrough(passClicks = passClicks),
   ) {
     KurobaFloatingActionButton(
       modifier = Modifier
-        .graphicsLayer { this.alpha = toolbarAlphaState.value }
-        .passClicksThrough(passClicks = passClicks),
+        .graphicsLayer { this.alpha = toolbarAlphaState.value },
       iconDrawableId = R.drawable.ic_baseline_create_24,
       onClick = { onReplyFabClicked(currentScreenKey) }
     )
