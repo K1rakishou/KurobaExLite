@@ -223,10 +223,6 @@ data class DvachFile(
     postImageInfo: Site.PostImageInfo,
     postDescriptor: PostDescriptor,
   ): PostImageData? {
-    if (path?.contains("/stickers/", ignoreCase = true) == true) {
-      return null
-    }
-
     if (postImageInfo !is Dvach.PostImageInfo) {
       return null
     }
