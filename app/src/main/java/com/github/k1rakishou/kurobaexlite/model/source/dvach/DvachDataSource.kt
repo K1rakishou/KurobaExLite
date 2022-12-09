@@ -814,17 +814,32 @@ class DvachDataSource(
     val result = HtmlUnescape.unescape(name).trim()
     val posterIdMarker = " ID: "
 
-    if (!result.contains(posterIdMarker)) {
-      return ParsedName(name = result, posterId = null)
+    if (result.contains(posterIdMarker)) {
+      val split = result.split(posterIdMarker).map { it.trim() }
+
+      val posterName = split.getOrNull(0) ?: defaultName
+      val posterIdHtml = split.getOrNull(1) ?: ""
+      val posterId = Jsoup.parseBodyFragment(posterIdHtml).text().trim()
+
+      return ParsedName(name = posterName, posterId = posterId)
     }
 
-    val split = result.split(posterIdMarker).map { it.trim() }
+    val styleAttrMarker = "style=\"color:rgb("
+    if (result.contains(styleAttrMarker)) {
+      val startOffset = result.indexOfFirst { it == '>' }
+      if (startOffset > 0) {
+        val posterId = Jsoup.parseBodyFragment(result.substring(startOffset + 1)).text().trim()
 
-    val posterName = split.getOrNull(0) ?: defaultName
-    val posterIdHtml = split.getOrNull(1) ?: ""
-    val posterId = Jsoup.parseBodyFragment(posterIdHtml).text().trim()
+        var posterName = result.substringBefore("<")
+        if (posterName.isEmpty()) {
+          posterName = DEFAULT_NAME
+        }
 
-    return ParsedName(name = posterName, posterId = posterId)
+        return ParsedName(name = posterName, posterId = posterId)
+      }
+    }
+
+    return ParsedName(name = result, posterId = null)
   }
 
   private fun parseFlags(iconRaw: String?): ParsedFlags {

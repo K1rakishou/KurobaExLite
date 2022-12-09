@@ -825,7 +825,7 @@ fun String.extractFileNameExtension(): String? {
   return this.substring(index + 1).takeIf { extension -> extension.length <= maxExtensionLength }
 }
 
-fun String.indexOfFirst(
+private fun String.indexOfFirst(
   startIndex: Int = 0,
   endIndex: Int = lastIndex,
   predicate: (Char) -> Boolean
