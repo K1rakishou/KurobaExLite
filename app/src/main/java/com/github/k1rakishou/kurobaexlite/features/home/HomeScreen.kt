@@ -4,12 +4,15 @@ import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,6 +53,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
@@ -63,10 +67,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
@@ -280,7 +280,7 @@ class HomeScreen(
   }
 }
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ContentInternal(
   isDrawerDragGestureCurrentlyAllowed: (AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
@@ -385,7 +385,7 @@ private fun ContentInternal(
     }
   )
 
-  val pageCount by remember { derivedStateOf { pagerState.pageCount } }
+  val pageCount = pagesWrapper.pagesCount
   val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
   val targetPageIndex by remember { derivedStateOf { pagerState.targetPage } }
 
@@ -546,7 +546,7 @@ private fun ShowAndProcessSnackbars() {
   )
 }
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HomeScreenContentActual(
   currentPageIndex: Int,
@@ -654,7 +654,8 @@ private fun HomeScreenContentActual(
       HorizontalPager(
         modifier = Modifier.fillMaxSize(),
         state = pagerState,
-        count = pagesWrapper.pagesCount,
+        pageCount = pagesWrapper.pagesCount,
+        beyondBoundsPageCount = 1,
         key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey()}
       ) { page ->
         val childPage = remember(key1 = page) { pagesWrapper.pageByIndex(page) }
@@ -797,7 +798,7 @@ private fun ListenForFirewallBypassManagerEvents(
   )
 }
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 private suspend fun scrollToPageByScreenKey(
   screenKey: ScreenKey,
   pagesWrapper: HomeScreenPageConverter.PagesWrapper,

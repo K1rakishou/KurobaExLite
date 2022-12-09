@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.media.helpers
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -28,8 +30,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostIm
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.scrollbar
@@ -37,7 +37,7 @@ import kotlinx.coroutines.CancellationException
 
 private const val TAG = "MediaViewerPreviewStrip"
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MediaViewerPreviewStrip(
   pagerState: PagerState,

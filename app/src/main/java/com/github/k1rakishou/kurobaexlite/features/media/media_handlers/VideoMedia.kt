@@ -4,6 +4,7 @@ import android.content.Context
 import android.view.View
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
@@ -52,8 +54,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -68,13 +68,17 @@ private const val MPV_TAG = "mpv"
 private const val MPV_OPTION_CHANGE_TOAST = "mpv_option_change_toast"
 
 private val durationFormatter = PeriodFormatterBuilder()
-  .printZeroAlways().minimumPrintedDigits(2).appendMinutes()
+  .printZeroAlways()
+  .minimumPrintedDigits(2)
+  .appendMinutes()
   .appendSeparator(":")
-  .printZeroAlways().minimumPrintedDigits(2).appendSeconds()
+  .printZeroAlways()
+  .minimumPrintedDigits(2)
+  .appendSeconds()
   .toFormatter()
 
 @Suppress("UnnecessaryVariable", "FoldInitializerAndIfToElvis")
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DisplayVideo(
   pageIndex: Int,

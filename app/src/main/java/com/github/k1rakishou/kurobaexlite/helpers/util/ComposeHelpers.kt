@@ -1,13 +1,17 @@
 package com.github.k1rakishou.kurobaexlite.helpers.util
 
+import androidx.annotation.IntRange
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.GestureCancellationException
 import androidx.compose.foundation.gestures.PressGestureScope
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
@@ -200,5 +204,16 @@ private class PressGestureScopeImpl(
       mutex.lock()
     }
     return isReleased
+  }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun rememberPagerState(
+  key1: Any,
+  @IntRange(from = 0) initialPage: Int = 0,
+): PagerState {
+  return rememberSaveable(key1, saver = PagerState.Saver) {
+    PagerState(initialPage = initialPage)
   }
 }

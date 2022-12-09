@@ -12,6 +12,7 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
@@ -113,10 +117,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.ExperimentalPagerApi
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.HorizontalPager
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.PagerState
-import com.github.k1rakishou.kurobaexlite.ui.elements.pager.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaBottomSheet
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaBottomSheetState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
@@ -524,7 +524,7 @@ class MediaViewerScreen(
 }
 
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MediaViewerContent(
   screenKey: ScreenKey,
@@ -843,7 +843,7 @@ private fun MediaViewerBottomSheet(
   )
 }
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MediaViewerContentAfterTransition(
   pagerState: PagerState?,
@@ -1251,7 +1251,7 @@ private fun InitMediaViewerData(
   )
 }
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MediaViewerPagerContainer(
   availableSize: IntSize,
@@ -1320,7 +1320,7 @@ private fun MediaViewerPagerContainer(
         }
 
         val currentPage = pagerState.currentPage
-        val pageCount = pagerState.pageCount
+        val pageCount = mediaList.size
 
         var nextPage = when (mediaNavigationEvent) {
           MediaViewerScreenState.MediaNavigationEvent.GoToPrev -> currentPage - 1
@@ -1416,14 +1416,13 @@ private fun MediaViewerPagerContainer(
   LaunchedEffect(
     key1 = currentPageIndex,
     block = {
-      val pageCount = pagerState.pageCount
-      mediaViewerScreenState.removeCurrentlyLoadedMediaState(currentPageIndex, pageCount)
+      mediaViewerScreenState.removeCurrentlyLoadedMediaState(currentPageIndex, mediaList.size)
     }
   )
 
   HorizontalPager(
     modifier = Modifier.fillMaxSize(),
-    count = mediaList.size,
+    pageCount = mediaList.size,
     state = pagerState,
     key = { page -> mediaList.getOrNull(page)?.fullImageUrlAsString ?: "<null>" }
   ) { page ->
@@ -1477,7 +1476,7 @@ private fun MediaViewerPagerContainer(
   }
 }
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PageContent(
   page: Int,
