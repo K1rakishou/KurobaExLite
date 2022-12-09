@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -24,7 +23,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Velocity
@@ -332,34 +330,21 @@ internal fun Pager(
       .collect { state.updateCurrentPageBasedOnLazyListState() }
   }
   val density = LocalDensity.current
-  val layoutDirection = LocalLayoutDirection.current
-  LaunchedEffect(density, contentPadding, isVertical, layoutDirection, reverseLayout, state) {
-    with(density) {
-      // this should be exposed on LazyListLayoutInfo instead. b/200920410
-      state.afterContentPadding = if (isVertical) {
-        if (!reverseLayout) {
-          contentPadding.calculateBottomPadding()
-        } else {
-          contentPadding.calculateTopPadding()
-        }
-      } else {
-        if (!reverseLayout) {
-          contentPadding.calculateEndPadding(layoutDirection)
-        } else {
-          contentPadding.calculateStartPadding(layoutDirection)
-        }
-      }.roundToPx()
-    }
+  LaunchedEffect(density, state, itemSpacing) {
+    with(density) { state.itemSpacing = itemSpacing.roundToPx() }
   }
 
   val pagerScope = remember(state) { PagerScopeImpl(state) }
 
   // We only consume nested flings in the main-axis, allowing cross-axis flings to propagate
   // as normal
-  val consumeFlingNestedScrollConnection = ConsumeFlingNestedScrollConnection(
-    consumeHorizontal = !isVertical,
-    consumeVertical = isVertical,
-  )
+  val consumeFlingNestedScrollConnection = remember(isVertical) {
+    ConsumeFlingNestedScrollConnection(
+      consumeHorizontal = !isVertical,
+      consumeVertical = isVertical,
+      pagerState = state,
+    )
+  }
 
   if (isVertical) {
     LazyColumn(
@@ -422,9 +407,11 @@ internal fun Pager(
   }
 }
 
+@OptIn(ExperimentalPagerApi::class)
 private class ConsumeFlingNestedScrollConnection(
   private val consumeHorizontal: Boolean,
   private val consumeVertical: Boolean,
+  private val pagerState: PagerState,
 ) : NestedScrollConnection {
   override fun onPostScroll(
     consumed: Offset,
@@ -438,9 +425,15 @@ private class ConsumeFlingNestedScrollConnection(
   }
 
   override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-    // We can consume all post fling velocity on the main-axis
-    // so that it doesn't propagate up to the Pager
-    return available.consume(consumeHorizontal, consumeVertical)
+    return if (pagerState.currentPageOffset != 0f) {
+      // The Pager is already scrolling. This means that a nested scroll child was
+      // scrolled to end, and the Pager can use this fling
+      Velocity.Zero
+    } else {
+      // A nested scroll child is still scrolling. We can consume all post fling
+      // velocity on the main-axis so that it doesn't propagate up to the Pager
+      available.consume(consumeHorizontal, consumeVertical)
+    }
   }
 }
 

@@ -17,7 +17,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -568,13 +567,11 @@ private fun HomeScreenContentActual(
   val maxDrawerWidth = with(density) { 600.dp.roundToPx() }
   val drawerPhoneVisibleWindowWidth = with(density) { remember { 40.dp.toPx().toInt() } }
 
-  val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val homeScreenViewModel: HomeScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   var drawerWidth by remember { mutableStateOf(0) }
 
-  val coroutineScope = rememberCoroutineScope()
   val drawerDragGestureDetectorState = rememberDrawerDragGestureDetectorState()
   val drawerLongtapDragGestureZoneState = rememberDrawerLongtapDragGestureZoneState()
 

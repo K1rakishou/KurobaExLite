@@ -88,12 +88,15 @@ class PagerState(
       val layoutInfo = lazyListState.layoutInfo
       return layoutInfo.visibleItemsInfo.maxByOrNull {
         val start = maxOf(it.offset, 0)
-        val end = minOf(it.offset + it.size, layoutInfo.viewportEndOffset - afterContentPadding)
+        val end = minOf(
+          it.offset + it.size,
+          layoutInfo.viewportEndOffset - layoutInfo.afterContentPadding
+        )
         end - start
       }
     }
 
-  internal var afterContentPadding = 0
+  internal var itemSpacing by mutableStateOf(0)
 
   private val currentPageLayoutInfo: LazyListItemInfo?
     get() = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull {
@@ -138,9 +141,7 @@ class PagerState(
    */
   val currentPageOffset: Float by derivedStateOf {
     currentPageLayoutInfo?.let {
-      // We coerce since itemSpacing can make the offset > 1f.
-      // We don't want to count spacing in the offset so cap it to 1f
-      (-it.offset / it.size.toFloat()).coerceIn(-1f, 1f)
+      (-it.offset / (it.size + itemSpacing).toFloat()).coerceIn(-0.5f, 0.5f)
     } ?: 0f
   }
 
@@ -155,9 +156,17 @@ class PagerState(
    * The target page for any on-going animations or scrolls by the user.
    * Returns the current page if a scroll or animation is not currently in progress.
    */
+  @Deprecated(
+    "targetPage is deprecated in favor of currentPage as currentPage property is" +
+      "now being updated right after we over scrolled the half of the previous current page." +
+      "If you still think that you need targetPage, not currentPage please file a bug as " +
+      "we are planning to remove this property in future.",
+    ReplaceWith("currentPage")
+  )
   val targetPage: Int
-    get() {
-      return when {
+    get() = animationTargetPage
+      ?: flingAnimationTarget?.invoke()
+      ?: when {
         // If a scroll isn't in progress, return the current page
         !isScrollInProgress -> currentPage
         // If the offset is 0f (or very close), return the current page
@@ -167,7 +176,6 @@ class PagerState(
         // If we're offset towards the end, guess the next page
         else -> (currentPage + 1).coerceAtMost(pageCount - 1)
       }
-    }
 
   @Deprecated(
     "Replaced with animateScrollToPage(page, pageOffset)",
@@ -225,11 +233,11 @@ class PagerState(
           // offset from the size
           lazyListState.animateScrollToItem(
             index = page,
-            scrollOffset = (target.size * pageOffset).roundToInt()
+            scrollOffset = ((target.size + itemSpacing) * pageOffset).roundToInt()
           )
         } else if (layoutInfo.visibleItemsInfo.isNotEmpty()) {
           // If we don't, we use the current page size as a guide
-          val currentSize = layoutInfo.visibleItemsInfo.first().size
+          val currentSize = layoutInfo.visibleItemsInfo.first().size + itemSpacing
           lazyListState.animateScrollToItem(
             index = page,
             scrollOffset = (currentSize * pageOffset).roundToInt()
@@ -238,13 +246,13 @@ class PagerState(
           // The target should be visible now
           target = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == page }
 
-          if (target != null && target.size != currentSize) {
+          if (target != null && target.size + itemSpacing != currentSize) {
             // If the size we used for calculating the offset differs from the actual
             // target page size, we need to scroll again. This doesn't look great,
             // but there's not much else we can do.
             lazyListState.animateScrollToItem(
               index = page,
-              scrollOffset = (target.size * pageOffset).roundToInt()
+              scrollOffset = ((target.size + itemSpacing) * pageOffset).roundToInt()
             )
           }
         }
@@ -284,7 +292,7 @@ class PagerState(
       if (pageOffset.absoluteValue > 0.0001f) {
         currentPageLayoutInfo?.let {
           scroll {
-            scrollBy(it.size * pageOffset)
+            scrollBy((it.size + itemSpacing) * pageOffset)
           }
         }
       }
@@ -331,7 +339,7 @@ class PagerState(
   }
 
   private fun requireCurrentPageOffset(value: Float, name: String) {
-    require(value in -1f..1f) { "$name must be >= 0 and <= 1" }
+    require(value in -1f..1f) { "$name must be >= -1 and <= 1" }
   }
 
   companion object {
