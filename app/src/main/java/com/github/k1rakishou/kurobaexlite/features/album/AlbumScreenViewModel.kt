@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.album
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -379,7 +380,7 @@ class AlbumScreenViewModel(
 
   }
 
-  @Stable
+  @Immutable
   data class AlbumImage(
     val postImage: IPostImage,
     val postSubject: String?,

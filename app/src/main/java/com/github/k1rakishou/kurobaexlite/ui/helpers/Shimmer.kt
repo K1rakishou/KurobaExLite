@@ -138,7 +138,7 @@ class ShimmerState(
     return rotation + 90        // 0..90..0
   }
 
-  private fun Float.toRadian(): Float = this / 180 * 3.141592653589793f
+  private fun Float.toRadian(): Float = (this.toDouble() / 180.0 * Math.PI).toFloat()
 
   suspend fun start(maxWidth: Float, maxHeight: Float, chanTheme: ChanTheme) {
     animatedState.snapTo(0.5f)

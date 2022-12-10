@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.os.Parcelable
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -475,7 +474,6 @@ private fun BoxScope.ToolbarInternal(
   )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ContentInternal(
   screenKey: ScreenKey,
@@ -643,7 +641,6 @@ private fun AlbumImageItem(
   onThumbnailClicked: (IPostImage) -> Unit,
 ) {
   val albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel()
-  val snackbarManager: SnackbarManager = koinRemember()
   val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember()
 
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
@@ -652,6 +649,33 @@ private fun AlbumImageItem(
 //  val ratio = remember(key1 = albumImage.postImage) { aspectRatioFromImageDimensions(albumImage.postImage) }
 
   val imageItemScaleAnimation by animateFloatAsState(targetValue = if (selected) 0.85f else 1f)
+
+  val onClickRemembered = remember(
+    isInSelectionMode,
+    albumImage,
+    albumScreenViewModel,
+    clickedThumbnailBoundsStorage,
+    boundsInWindowMut
+  ) {
+    onClick@ { clickedPostImage: IPostImage ->
+      if (isInSelectionMode) {
+        albumScreenViewModel.toggleImageSelection(albumImage)
+        return@onClick
+      }
+
+      val boundsInWindow = boundsInWindowMut
+      if (boundsInWindow == null) {
+        return@onClick
+      }
+
+      clickedThumbnailBoundsStorage.storeBounds(clickedPostImage, boundsInWindow)
+      onThumbnailClicked(clickedPostImage)
+    }
+  }
+
+  val onLongClickRemembered = remember(key1 = albumScreenViewModel) {
+    { _: IPostImage -> albumScreenViewModel.toggleImageSelection(albumImage) }
+  }
 
   Box {
     PostImageThumbnail(
@@ -670,21 +694,8 @@ private fun AlbumImageItem(
       showShimmerEffectWhenLoading = true,
       postImage = albumImage.postImage,
       contentScale = ContentScale.Crop,
-      onLongClick = { albumScreenViewModel.toggleImageSelection(albumImage) },
-      onClick = { clickedPostImage ->
-        if (isInSelectionMode) {
-          albumScreenViewModel.toggleImageSelection(albumImage)
-          return@PostImageThumbnail
-        }
-
-        val boundsInWindow = boundsInWindowMut
-        if (boundsInWindow == null) {
-          return@PostImageThumbnail
-        }
-
-        clickedThumbnailBoundsStorage.storeBounds(clickedPostImage, boundsInWindow)
-        onThumbnailClicked(clickedPostImage)
-      }
+      onLongClick = onLongClickRemembered,
+      onClick = onClickRemembered
     )
 
     if (albumShowImageInfo && albumImage.postSubject.isNotNullNorEmpty()) {
