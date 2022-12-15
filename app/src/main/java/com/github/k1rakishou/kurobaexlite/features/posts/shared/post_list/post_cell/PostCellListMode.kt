@@ -143,8 +143,8 @@ fun PostCellListMode(
     }
   }
 
-  val postCellBackgroundColorAnimatable = remember { Animatable(initialValue = postCellBackgroundColor) }
-  val postCellBackgroundColorAnimatableProvider = remember { { postCellBackgroundColorAnimatable } }
+  val postCellBackgroundColorAnimatable = remember(postCellBackgroundColor) { Animatable(initialValue = postCellBackgroundColor) }
+  val postCellBackgroundColorAnimatableProvider = remember(postCellBackgroundColor) { { postCellBackgroundColorAnimatable } }
 
   BlinkAnimation(
     postCellDefaultBgColor = postCellBackgroundColor,
