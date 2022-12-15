@@ -63,7 +63,7 @@ class Chan4(
   private val chan4BoardsInfo by lazy { BoardsInfo(chan4DataSource) }
   private val chan4PostImageInfo by lazy { PostImageInfo() }
   private val chan4RequestModifier by lazy { Chan4RequestModifier(this, appSettings) }
-  private val chan4SiteSettings by lazy { Chan4SiteSettings(appContext, moshi) }
+  private val chan4SiteSettings by lazy { Chan4SiteSettings(appContext, moshi, defaultDomain) }
   private val chan4ReplyInfo by lazy { Chan4ReplyInfo(this, proxiedOkHttpClient, loadChanCatalog) }
   private val chan4BookmarkInfo by lazy { BookmarkInfo(chan4DataSource) }
   private val chan4CatalogPagesInfo by lazy { CatalogPagesInfo(chan4DataSource) }
@@ -94,7 +94,15 @@ class Chan4(
       return false
     }
 
-    return siteDomains.any { siteHost -> siteHost.contains(domain) }
+    if (siteDomains.any { siteHost -> siteHost.contains(domain) }) {
+      return true
+    }
+
+    if (mediaDomains.any { siteHost -> siteHost.contains(domain) }) {
+      return true
+    }
+
+    return false
   }
 
   override fun parser(): AbstractSitePostParser = chan4PostParser
@@ -424,8 +432,14 @@ class Chan4(
     private val siteDomains = arrayOf(
       "4chan.org",
       "4channel.org",
+    )
+
+    private val mediaDomains = arrayOf(
       "4cdn.org"
     )
+
+    private val defaultDomain: String
+      get() = siteDomains.first()
   }
 
 }

@@ -25,8 +25,9 @@ import kotlinx.coroutines.launch
 
 class Chan4SiteSettings(
   appContext: Context,
-  moshi: Moshi
-) : SiteSettings(appContext, moshi, "chan4") {
+  moshi: Moshi,
+  defaultDomain: String
+) : SiteSettings(appContext, moshi, "chan4", defaultDomain) {
 
   val rememberCaptchaCookies by lazy { BooleanSetting(true, "remember_captcha_cookies", dataStore) }
   val chan4CaptchaCookie by lazy { StringSetting("", "chan4_captcha_cookie", dataStore) }

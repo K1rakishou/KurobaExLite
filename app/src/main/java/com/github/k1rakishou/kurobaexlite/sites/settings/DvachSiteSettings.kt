@@ -27,10 +27,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 class DvachSiteSettings(
   appContext: Context,
   moshi: Moshi,
-  private val defaultDomain: String
-) : SiteSettings(appContext, moshi, "dvach") {
-
-  val currentDomain by lazy { StringSetting(defaultDomain, "current_domain", dataStore) }
+  defaultDomain: String
+) : SiteSettings(appContext, moshi, "dvach", defaultDomain) {
   val passcodeCookie by lazy { StringSetting("", "passcode_cookie", dataStore) }
   val userCodeCookie by lazy { StringSetting("", "user_code_cookie", dataStore) }
 
@@ -58,7 +56,7 @@ class DvachSiteSettings(
     return listOf(
       StringSettingItem(
         title = appContext.resources.getString(R.string.dvach_setting_site_domain),
-        delegate = currentDomain,
+        delegate = currentSiteDomain,
         showDialogScreen = showDialogScreen,
         valueValidator = { input ->
           val fullInput = "https://${input}"

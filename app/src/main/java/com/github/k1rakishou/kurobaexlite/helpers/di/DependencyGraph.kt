@@ -571,11 +571,7 @@ object DependencyGraph {
     }
     single {
       LoadBookmarks(
-        appContext = get(),
         appScope = get(),
-        androidHelpers = get(),
-        appSettings = get(),
-        applicationVisibilityManager = get(),
         bookmarksManager = get(),
         kurobaExLiteDatabase = get(),
         restartBookmarkBackgroundWatcher = get()

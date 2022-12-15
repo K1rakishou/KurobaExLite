@@ -16,12 +16,14 @@ import kotlinx.coroutines.CoroutineScope
 abstract class SiteSettings(
   protected val appContext: Context,
   protected val moshi: Moshi,
-  val key: String
+  val key: String,
+  private val defaultDomain: String
 ) {
   private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "${key}_site_settings")
   protected val dataStore by lazy { appContext.dataStore }
 
   val lastUsedBoardFlags by lazy { StringSetting("", "last_used_board_flags", dataStore) }
+  val currentSiteDomain by lazy { StringSetting(defaultDomain, "current_site_domain", dataStore) }
 
   abstract val cloudFlareClearanceCookie: MapSetting<String, String>
 

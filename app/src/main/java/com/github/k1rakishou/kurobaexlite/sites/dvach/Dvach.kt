@@ -94,8 +94,8 @@ class Dvach(
 
   init {
     appScope.launch(Dispatchers.Main.immediate) {
-      _currentDomain = dvachSiteSettings.currentDomain.read()
-      dvachSiteSettings.currentDomain.listen().collect { domain -> _currentDomain = domain }
+      _currentDomain = dvachSiteSettings.currentSiteDomain.read()
+      dvachSiteSettings.currentSiteDomain.listen().collect { domain -> _currentDomain = domain }
     }
   }
 

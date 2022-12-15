@@ -1,12 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
-import android.content.Context
-import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeValueSafe
-import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
@@ -19,11 +15,7 @@ import logcat.logcat
 import java.util.concurrent.atomic.AtomicBoolean
 
 class LoadBookmarks(
-  private val appContext: Context,
   private val appScope: CoroutineScope,
-  private val appSettings: AppSettings,
-  private val androidHelpers: AndroidHelpers,
-  private val applicationVisibilityManager: ApplicationVisibilityManager,
   private val bookmarksManager: BookmarksManager,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase,
   private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher,
