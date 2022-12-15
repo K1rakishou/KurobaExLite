@@ -53,6 +53,7 @@ class ChanThreadManager(
   }
 
   suspend fun loadThread(threadDescriptor: ThreadDescriptor?): Result<PostsLoadResult?> {
+    val loadingNewThread = _currentlyOpenedThreadFlow.value != threadDescriptor
     _currentlyOpenedThreadFlow.value = threadDescriptor
 
     if (threadDescriptor == null) {
@@ -64,8 +65,14 @@ class ChanThreadManager(
       ?.threadDataSource()
       ?: return Result.failure(ThreadNotSupported(threadDescriptor.siteKey))
 
-    val lastCachedThreadPost = chanCache.getLastLoadedPostForIncrementalUpdate(threadDescriptor)
-      ?.postDescriptor
+    val lastCachedThreadPost = if (loadingNewThread) {
+      // Do not use incremental thread update when loading a different thread from one we are currently in or if we
+      // haven't loaded any threads yet.
+      null
+    } else {
+      chanCache.getLastLoadedPostForIncrementalUpdate(threadDescriptor)
+        ?.postDescriptor
+    }
 
     return threadDataSource.loadThread(threadDescriptor, lastCachedThreadPost)
       .map { threadData ->
