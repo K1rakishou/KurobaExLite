@@ -140,7 +140,7 @@ fun MediaViewerPreviewStrip(
     ) {
       items(
         count = mediaList.size,
-        key = { index -> mediaList[index].fullImageUrlAsString },
+        key = { index -> mediaList[index].uniqueKey() },
         itemContent = { index ->
           val postImage = mediaList[index].postImage
 

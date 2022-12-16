@@ -11,6 +11,10 @@ sealed class ImageLoadState {
   val fullImageUrl by lazy { postImage.fullImageAsUrl }
   val fullImageUrlAsString by lazy { postImage.fullImageAsString }
 
+  fun uniqueKey(): String {
+    return postImage.uniqueKey()
+  }
+
   data class PreparingForLoading(
     override val postImage: IPostImage
   ) : ImageLoadState()

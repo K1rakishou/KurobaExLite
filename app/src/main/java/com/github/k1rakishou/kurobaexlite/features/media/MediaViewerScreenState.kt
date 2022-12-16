@@ -193,7 +193,7 @@ class MediaViewerScreenState(
   fun onPageDisposed(postImageDataLoadState: ImageLoadState) {
     val imagesMut = _mediaList
 
-    val indexOfThisImage = imagesMut.indexOfFirst { it.fullImageUrl == postImageDataLoadState.fullImageUrl }
+    val indexOfThisImage = imagesMut.indexOfFirst { it.uniqueKey() == postImageDataLoadState.uniqueKey() }
     if (indexOfThisImage >= 0) {
       val prevPostImageData = imagesMut[indexOfThisImage].postImage
       imagesMut.set(indexOfThisImage, ImageLoadState.PreparingForLoading(prevPostImageData))
@@ -238,7 +238,7 @@ class MediaViewerScreenState(
         Snapshot.withMutableSnapshot {
           newMediaList.forEach { newMedia ->
             val alreadyAdded = _mediaList.any { imageLoadState ->
-              imageLoadState.postImage.fullImageAsString == newMedia.postImage.fullImageAsString
+              imageLoadState.postImage.uniqueKey() == newMedia.postImage.uniqueKey()
             }
 
             if (alreadyAdded) {

@@ -611,7 +611,7 @@ private fun ContentInternal(
 
       albumImages.fastForEach { albumImage ->
         item(
-          key = albumImage.postImage.fullImageAsString,
+          key = albumImage.postImage.uniqueKey(),
           content = {
             AlbumImageItem(
               isInSelectionMode = isInSelectionMode,

@@ -26,6 +26,11 @@ interface IPostImage {
 
   val thumbnailAsString: String
   val fullImageAsString: String
+
+  fun uniqueKey(): String {
+    return "${ownerPostDescriptor.asKey()}_${fullImageAsUrl}"
+  }
+
 }
 
 @Immutable

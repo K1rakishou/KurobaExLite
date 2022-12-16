@@ -343,7 +343,7 @@ class AlbumScreenViewModel(
       Snapshot.withMutableSnapshot {
         newAlbumImages.forEach { newAlbumImage ->
           val alreadyAdded = _albumImages.any { albumImage ->
-            albumImage.postImage.fullImageAsString == newAlbumImage.postImage.fullImageAsString
+            albumImage.postImage.uniqueKey() == newAlbumImage.postImage.uniqueKey()
           }
 
           if (alreadyAdded) {

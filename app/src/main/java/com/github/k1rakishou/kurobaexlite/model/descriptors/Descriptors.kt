@@ -278,6 +278,23 @@ data class PostDescriptor(
     }
   }
 
+  fun asKey(): String {
+    return buildString(capacity = 32) {
+      append(siteKeyActual)
+      append("_")
+      append(boardCode)
+      append("_")
+      append(threadNo)
+      append("_")
+      append(postNo)
+
+      if (postSubNo > 0) {
+        append("_")
+        append(postSubNo)
+      }
+    }
+  }
+
   companion object {
 
     fun create(

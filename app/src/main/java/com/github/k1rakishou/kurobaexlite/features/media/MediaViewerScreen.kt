@@ -354,7 +354,7 @@ class MediaViewerScreen(
     val fullImageUrl = postImageData.fullImageAsUrl
 
     val index = mediaViewerScreenState.mediaListMutable().indexOfFirst { imageLoadState ->
-      imageLoadState.fullImageUrl == postImageData.fullImageAsUrl
+      imageLoadState.uniqueKey() == postImageData.uniqueKey()
     }
 
     // We can just stream videos without having to load them first
@@ -375,9 +375,9 @@ class MediaViewerScreen(
       return
     }
 
-    val fullImageUrlAsString = postImageDataLoadState.fullImageUrlAsString
+    val fullImageUniqueKey = postImageDataLoadState.uniqueKey()
 
-    if (!mediaViewerScreenViewModel.enqueueMediaLoadRequest(fullImageUrlAsString)) {
+    if (!mediaViewerScreenViewModel.enqueueMediaLoadRequest(fullImageUniqueKey)) {
       // Already enqueued
       return
     }
@@ -393,7 +393,7 @@ class MediaViewerScreen(
         mediaViewerScreenState = mediaViewerScreenState
       )
     } finally {
-      mediaViewerScreenViewModel.removeEnqueuedMediaLoadRequest(fullImageUrlAsString)
+      mediaViewerScreenViewModel.removeEnqueuedMediaLoadRequest(fullImageUniqueKey)
     }
   }
 
@@ -792,7 +792,7 @@ private fun MediaViewerBottomSheet(
       },
       onPostImageClicked = { chanDescriptor, clickedPostImage, thumbnailBoundsInRoot ->
         val imageToScrollToIndex = mediaViewerScreenState.mediaList
-          .indexOfFirst { it.fullImageUrl == clickedPostImage.fullImageAsUrl }
+          .indexOfFirst { it.uniqueKey() == clickedPostImage.uniqueKey() }
           .takeIf { index -> index >= 0 }
 
         if (imageToScrollToIndex == null) {
@@ -995,7 +995,7 @@ private fun MediaViewerContentAfterTransition(
             onPreviewClicked = { postImage ->
               coroutineScope.launch {
                 mediaList
-                  .indexOfFirst { it.fullImageUrl == postImage.fullImageAsUrl }
+                  .indexOfFirst { it.uniqueKey() == postImage.uniqueKey() }
                   .takeIf { index -> index >= 0 }
                   ?.let { scrollIndex -> pagerState.scrollToPage(scrollIndex) }
               }
@@ -1424,7 +1424,7 @@ private fun MediaViewerPagerContainer(
     modifier = Modifier.fillMaxSize(),
     pageCount = mediaList.size,
     state = pagerState,
-    key = { page -> mediaList.getOrNull(page)?.fullImageUrlAsString ?: "<null>" }
+    key = { page -> mediaList.getOrNull(page)?.uniqueKey() ?: page }
   ) { page ->
     val mediaState = remember(key1 = page) {
       val prevMediaState = mediaViewerScreenState.getMediaStateByIndex(page)

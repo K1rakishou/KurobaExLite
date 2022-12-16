@@ -92,7 +92,7 @@ fun DisplayFullImage(
           }
 
           return@Try ComposeSubsamplingScaleImageSource(
-            debugKey = postImageDataLoadState.fullImageUrlAsString,
+            debugKey = postImageDataLoadState.uniqueKey(),
             inputStream = inputStream
           )
         }
