@@ -104,6 +104,7 @@ class DvachReplyInfo(
     if (postingResult.error != null) {
       val errorCode = postingResult.error.code
       val errorText = postingResult.error.message
+      val fullErrorMessage = "${errorText} (${errorCode})"
 
       if (errorCode == INVALID_CAPTCHA_ERROR_CODE || errorText.equals(INVALID_CAPTCHA_ERROR_TEXT, ignoreCase = true)) {
         return ReplyResponse.AuthenticationRequired(
@@ -121,10 +122,10 @@ class DvachReplyInfo(
       }
 
       if (errorText.contains(PROBABLY_BANNED_TEXT, ignoreCase = true)) {
-        return ReplyResponse.NotAllowedToPost(errorMessage = errorText)
+        return ReplyResponse.NotAllowedToPost(errorMessage = fullErrorMessage)
       }
 
-      return ReplyResponse.Error(errorMessage = errorText)
+      return ReplyResponse.Error(errorMessage = fullErrorMessage)
     }
 
     if (!response.isSuccessful) {
@@ -206,6 +207,10 @@ class DvachReplyInfo(
     formBuilder.addFormDataPart("name", replyData.name ?: "")
     formBuilder.addFormDataPart("email", replyData.options ?: "")
     formBuilder.addFormDataPart("comment", replyData.message)
+
+    replyData.flag?.flagId?.let { flagId ->
+      formBuilder.addFormDataPart("icon", flagId.toString())
+    }
 
     if (chanDescriptor is CatalogDescriptor && replyData.subject.isNotNullNorEmpty()) {
       formBuilder.addFormDataPart("subject", replyData.subject)

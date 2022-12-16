@@ -24,6 +24,7 @@ data class ChanCatalogFlagEntity(
   @Embedded(prefix = "catalog_") val catalogKey: CatalogKey,
   @ColumnInfo(name = "flag_key") val flagKey: String,
   @ColumnInfo(name = "flag_name") val flagName: String,
+  @ColumnInfo(name = "flag_id") val flagId: Int?,
   @ColumnInfo(name = "sort_order") val sortOrder: Int,
 ) {
 

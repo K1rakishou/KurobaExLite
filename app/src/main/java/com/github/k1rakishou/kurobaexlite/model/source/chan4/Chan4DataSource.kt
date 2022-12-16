@@ -117,10 +117,16 @@ class Chan4DataSource(
 
           val loadedFlags = boardDataJson.boardFlags
             ?.list
-            ?.map { boardFlagJson -> BoardFlag(boardFlagJson.key, boardFlagJson.name) }
+            ?.map { boardFlagJson ->
+              return@map BoardFlag(
+                key = boardFlagJson.key,
+                name = boardFlagJson.name,
+                flagId = null
+              )
+            }
 
           if (loadedFlags.isNotNullNorEmpty()) {
-            allFlags += BoardFlag("0", "Default")
+            allFlags += BoardFlag.defaultEntry()
             allFlags.addAll(loadedFlags)
           }
 

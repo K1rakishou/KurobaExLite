@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -22,7 +21,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -47,7 +45,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -454,7 +451,7 @@ private fun ColumnScope.FlagSelector(
     return
   }
 
-  val lastUsedFlagText = remember(key1 = lastUsedFlag) { "[${lastUsedFlag.key}] ${lastUsedFlag.name}" }
+  val lastUsedFlagText = remember(key1 = lastUsedFlag) { lastUsedFlag.asUserReadableString() }
   val flagSelectorAlpha = if (replyLayoutEnabled) 1f else ContentAlpha.disabled
 
   Spacer(modifier = Modifier.height(16.dp))
@@ -471,11 +468,18 @@ private fun ColumnScope.FlagSelector(
     modifier = Modifier
       .fillMaxWidth()
       .height(42.dp)
-      .border(
-        width = 1.dp,
-        brush = SolidColor(chanTheme.defaultColors.controlNormalColor),
-        shape = RoundedCornerShape(4.dp)
-      )
+      .drawBehind {
+        drawRoundRect(
+          color = chanTheme.backColorSecondary,
+          topLeft = Offset.Zero,
+          size = Size(
+            width = this.size.width,
+            height = this.size.height
+          ),
+          alpha = 0.4f,
+          cornerRadius = CornerRadius(4.dp.toPx())
+        )
+      }
       .kurobaClickable(
         enabled = replyLayoutEnabled,
         bounded = true,

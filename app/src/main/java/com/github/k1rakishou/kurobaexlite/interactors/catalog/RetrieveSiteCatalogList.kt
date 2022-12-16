@@ -54,7 +54,13 @@ class RetrieveSiteCatalogList(
               val flags = chanCatalogFlagDao.selectCatalogFlags(
                 siteKey = catalogEntity.chanCatalogEntity.catalogKey.siteKey,
                 boardCode = catalogEntity.chanCatalogEntity.catalogKey.boardCode
-              ).map { chanCatalogFlagEntity -> BoardFlag(chanCatalogFlagEntity.flagKey, chanCatalogFlagEntity.flagName) }
+              ).map { chanCatalogFlagEntity ->
+                return@map BoardFlag(
+                  key = chanCatalogFlagEntity.flagKey,
+                  name = chanCatalogFlagEntity.flagName,
+                  flagId = chanCatalogFlagEntity.flagId
+                )
+              }
 
               return@map catalogEntity.toChanCatalog(flags)
             }
@@ -153,23 +159,24 @@ class RetrieveSiteCatalogList(
         return@forEach
       }
 
-      val siteKey = siteCatalog.catalogDescriptor.siteKeyActual
+      val siteKey = siteCatalog.catalogDescriptor.siteKey
       val boardCode = siteCatalog.catalogDescriptor.boardCode
 
       val chanCatalogFlagEntities = siteCatalog.flags.mapIndexed { sortOrder, boardFlag ->
         ChanCatalogFlagEntity(
           catalogKey = CatalogKey(
-            siteKey = siteKey,
+            siteKey = siteKey.key,
             boardCode = boardCode
           ),
           flagKey = boardFlag.key,
           flagName = boardFlag.name,
+          flagId = boardFlag.flagId,
           sortOrder = sortOrder
         )
       }
 
       chanCatalogFlagDao.replaceCatalogFlags(
-        siteKey = siteKey,
+        siteKey = siteKey.key,
         boardCode = boardCode,
         newChanCatalogFlagEntities = chanCatalogFlagEntities
       )

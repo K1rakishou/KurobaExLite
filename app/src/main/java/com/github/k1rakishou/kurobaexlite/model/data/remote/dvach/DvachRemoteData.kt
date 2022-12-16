@@ -19,12 +19,20 @@ data class DvachBoardDataJson(
   @Json(name = "info_outer") val boardDescription: String?,
   @Json(name = "category") val category: String?,
   @Json(name = "bump_limit") val bumpLimit: Int?,
+  @Json(name = "icons") val icons: List<DvachBoardIconJson>?,
 ) {
 
   val workSafe: Boolean
     get() = category?.equals("Взрослым", ignoreCase = true) == true
 
 }
+
+@JsonClass(generateAdapter = true)
+data class DvachBoardIconJson(
+  val name: String,
+  val url: String,
+  val num: Int
+)
 
 @JsonClass(generateAdapter = true)
 data class DvachCatalog(

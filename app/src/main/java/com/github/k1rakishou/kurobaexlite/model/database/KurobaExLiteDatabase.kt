@@ -28,6 +28,7 @@ import com.github.k1rakishou.kurobaexlite.model.database.converters.DateTimeType
 import com.github.k1rakishou.kurobaexlite.model.database.converters.HttpUrlTypeConverter
 import com.github.k1rakishou.kurobaexlite.model.database.migations.Migration_v1_to_v2
 import com.github.k1rakishou.kurobaexlite.model.database.migations.Migration_v2_to_v3
+import com.github.k1rakishou.kurobaexlite.model.database.migations.Migration_v3_to_v4
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -43,7 +44,7 @@ import kotlinx.coroutines.withContext
     ThreadBookmarkSortOrderEntity::class,
     ChanCatalogFlagEntity::class
   ],
-  version = 3,
+  version = 4,
   exportSchema = true
 )
 @TypeConverters(
@@ -90,6 +91,7 @@ abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
         .addMigrations(
           Migration_v1_to_v2(),
           Migration_v2_to_v3(),
+          Migration_v3_to_v4(),
         )
         .build()
     }

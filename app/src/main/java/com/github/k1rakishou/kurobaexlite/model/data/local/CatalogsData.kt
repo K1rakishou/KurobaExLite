@@ -21,5 +21,24 @@ data class ChanCatalog(
 @Parcelize
 data class BoardFlag(
   val key: String,
-  val name: String
-) : Parcelable
+  val name: String,
+  val flagId: Int?,
+) : Parcelable {
+
+  fun asUserReadableString(): String {
+    if (key.contains("/") || key.contains(".")) {
+      return name
+    }
+
+    return "[${key}] ${name}"
+  }
+
+  companion object {
+    fun defaultEntry() = BoardFlag(
+      key = "0",
+      name = "Default",
+      flagId = null
+    )
+  }
+
+}

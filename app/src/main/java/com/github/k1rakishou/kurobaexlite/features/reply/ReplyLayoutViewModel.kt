@@ -25,7 +25,6 @@ import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
-import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -413,14 +412,20 @@ class ReplyLayoutViewModel(
     val chanCatalog = loadChanCatalog.await(chanDescriptor).getOrNull()
       ?: return
 
-    if (chanCatalog.flags.isEmpty()) {
+    val flags = chanCatalog.flags
+    if (flags.isEmpty()) {
       return
     }
 
-    val lastUsedFlag = if (!loadLastUsedBoardFlags(chanDescriptor.catalogDescriptor(), chanCatalog)) {
-      chanCatalog.flags.first()
-    } else {
+    val loaded = loadLastUsedBoardFlags(
+      catalogDescriptor = chanDescriptor.catalogDescriptor(),
+      flags = chanCatalog.flags
+    )
+
+    val lastUsedFlag = if (loaded) {
       lastUsedBoardFlagMap[chanDescriptor.catalogDescriptor()]
+    } else {
+      flags.first()
     }
 
     replyLayoutStateMap[chanDescriptor]?.onFlagChanged(lastUsedFlag)
@@ -447,7 +452,7 @@ class ReplyLayoutViewModel(
     replyLayoutStateMap[chanDescriptor]?.onFlagChanged(boardFlag)
   }
 
-  private suspend fun loadLastUsedBoardFlags(catalogDescriptor: CatalogDescriptor, chanCatalog: ChanCatalog): Boolean {
+  private suspend fun loadLastUsedBoardFlags(catalogDescriptor: CatalogDescriptor, flags: List<BoardFlag>): Boolean {
     if (lastUsedBoardFlagMap.containsKey(catalogDescriptor)) {
       return true
     }
@@ -477,9 +482,9 @@ class ReplyLayoutViewModel(
         continue
       }
 
-      val boardFlag = chanCatalog.flags
+      val boardFlag = flags
         .firstOrNull { boardFlag -> boardFlag.key == flagKey }
-        ?: chanCatalog.flags.first()
+        ?: flags.first()
 
       _lastUsedBoardFlagMap[descriptor] = boardFlag
       return true

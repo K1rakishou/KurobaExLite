@@ -176,7 +176,9 @@ private suspend fun displayFlagSelector(
   loadChanCatalog: LoadChanCatalog,
   replyLayoutViewModel: ReplyLayoutViewModel
 ) {
-  val boardFlags = loadChanCatalog.await(chanDescriptor).getOrNull()
+  val chanCatalog = loadChanCatalog.await(chanDescriptor).getOrNull()
+
+  val boardFlags = chanCatalog
     ?.flags
     ?.takeIf { it.isNotEmpty() }
     ?: return
@@ -187,7 +189,7 @@ private suspend fun displayFlagSelector(
     floatingMenuItems += FloatingMenuItem.Text(
       menuItemKey = boardFlag.key,
       menuItemData = boardFlag,
-      text = FloatingMenuItem.MenuItemText.String("[${boardFlag.key}] ${boardFlag.name}")
+      text = FloatingMenuItem.MenuItemText.String(boardFlag.asUserReadableString())
     )
   }
 

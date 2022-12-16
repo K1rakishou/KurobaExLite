@@ -17,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.PostDataSticky
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
+import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogPagesData
 import com.github.k1rakishou.kurobaexlite.model.data.local.CatalogsData
@@ -32,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadData
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBoardDataJson
+import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBoardIconJson
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachBookmarkCatalogInfo
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalog
 import com.github.k1rakishou.kurobaexlite.model.data.remote.dvach.DvachCatalogPageJson
@@ -124,7 +126,7 @@ class DvachDataSource(
             boardDescription = boardDescription,
             workSafe = boardDataJson.workSafe,
             maxAttachFilesPerPost = 4,
-            flags = emptyList(),
+            flags = parseSupportedIcons(boardDataJson.icons),
             bumpLimit = boardDataJson.bumpLimit
           )
         }
@@ -132,6 +134,25 @@ class DvachDataSource(
         return@Try CatalogsData(chanBoards)
       }
     }
+  }
+
+  private fun parseSupportedIcons(icons: List<DvachBoardIconJson>?): List<BoardFlag> {
+    if (icons.isNullOrEmpty()) {
+      return emptyList()
+    }
+
+    val flags = mutableListWithCap<BoardFlag>(icons.size + 1)
+    flags += BoardFlag.defaultEntry()
+
+    icons.forEach { dvachBoardIconJson ->
+      flags += BoardFlag(
+        key = dvachBoardIconJson.url,
+        name = dvachBoardIconJson.name,
+        flagId = dvachBoardIconJson.num
+      )
+    }
+
+    return flags
   }
 
   override suspend fun loadCatalog(input: CatalogDescriptor): Result<CatalogData> {

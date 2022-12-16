@@ -35,7 +35,13 @@ class LoadChanCatalog(
         val flags = chanCatalogFlagDao.selectCatalogFlags(
           siteKey = catalogEntity.catalogKey.siteKey,
           boardCode = catalogEntity.catalogKey.boardCode
-        ).map { chanCatalogFlagEntity -> BoardFlag(chanCatalogFlagEntity.flagKey, chanCatalogFlagEntity.flagName) }
+        ).map { chanCatalogFlagEntity ->
+          return@map BoardFlag(
+            key = chanCatalogFlagEntity.flagKey,
+            name = chanCatalogFlagEntity.flagName,
+            flagId = chanCatalogFlagEntity.flagId
+          )
+        }
 
         return@transaction catalogEntity.toChanCatalog(flags)
       }.unwrap()
