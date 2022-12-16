@@ -7,6 +7,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.managers.CatalogManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.entity.CatalogKey
@@ -28,9 +29,13 @@ class RetrieveSiteCatalogList(
   private val kurobaExLiteDatabase: KurobaExLiteDatabase
 ) {
 
-  suspend fun await(siteKey: SiteKey, forceReload: Boolean): Result<List<ChanCatalog>> {
+  suspend fun await(
+    siteKey: SiteKey,
+    forceReload: Boolean,
+    networkLoadAllowed: Boolean = true
+  ): Result<List<ChanCatalog>> {
     return Result.Try {
-      logcat(TAG) { "siteKey=$siteKey, forceReload=$forceReload" }
+      logcat(TAG) { "siteKey=$siteKey, forceReload=$forceReload, networkLoadAllowed=${networkLoadAllowed}" }
 
       val site = siteManager.bySiteKey(siteKey)
       if (site == null) {
@@ -77,6 +82,11 @@ class RetrieveSiteCatalogList(
 
           // fallthrough
         }
+
+        if (!networkLoadAllowed) {
+          logcat(TAG) { "networkLoadAllowed == false, exiting" }
+          return@Try emptyList()
+        }
       }
 
       val loadBoardsResult = site.boardsInfo()?.siteBoardsDataSource()?.loadBoards(siteKey)
@@ -117,14 +127,19 @@ class RetrieveSiteCatalogList(
           databaseIdMap[catalogDescriptor] = databaseId
         }
 
+        logcat(TAG) { "insertOrUpdateBoards()" }
         insertOrUpdateBoards(siteCatalogs, databaseIdMap)
+
+        logcat(TAG) { "insertOrUpdateBoardOrders()" }
         insertOrUpdateBoardOrders(catalogEntityListSorted, siteCatalogs, databaseIdMap)
+
+        logcat(TAG) { "insertOrUpdateBoardFlags()" }
         insertOrUpdateBoardFlags(siteCatalogs)
       }.onFailure { error ->
         logcatError(TAG) { "Inserting ${siteCatalogs.size} siteCatalogs into database... ERROR, error=${error.errorMessageOrClassName()}" }
       }.onSuccess {
         logcat(TAG) { "Inserting ${siteCatalogs.size} siteCatalogs into database... SUCCESS" }
-      }
+      }.unwrap()
 
       catalogManager.insertMany(siteCatalogs)
 
@@ -195,7 +210,6 @@ class RetrieveSiteCatalogList(
         )
       }
 
-      logcat(TAG) { "replaceChanCatalogSortOrderEntityList() chanCatalogSortOrderEntityList=${chanCatalogSortOrderEntityList.size}" }
       if (chanCatalogSortOrderEntityList.isNotEmpty()) {
         chanCatalogDao.replaceChanCatalogSortOrderEntityList(chanCatalogSortOrderEntityList)
       }

@@ -16,17 +16,11 @@ import kotlinx.coroutines.CoroutineScope
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import org.koin.java.KoinJavaComponent.inject
-import java.util.concurrent.ConcurrentHashMap
 
 class SiteManager(
   private val siteProvider: SiteProvider
 ) : ISiteManager {
-
-  private val sites by lazy {
-    val map = ConcurrentHashMap<SiteKey, Site>()
-    map.putAll(siteProvider.getAllSites())
-    return@lazy map
-  }
+  val sites by lazy { siteProvider.getAllSites() }
 
   override fun byUrl(httpUrl: HttpUrl): Site? {
     return sites.values.firstOrNull { site -> site.matchesUrl(httpUrl) }
@@ -73,7 +67,7 @@ class SiteManager(
     return null
   }
 
-  fun iterateSites(iterator: (Site) -> Unit) {
+  inline fun iterateSites(iterator: (Site) -> Unit) {
     sites.entries.forEach { (_, site) -> iterator(site) }
   }
 

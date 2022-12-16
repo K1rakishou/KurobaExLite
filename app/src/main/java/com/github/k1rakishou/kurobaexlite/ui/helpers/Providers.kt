@@ -247,7 +247,13 @@ data class Insets(
     newTop: Dp = top,
     newBottom: Dp = bottom,
   ): Insets {
-    return Insets(density, newLeft, newRight, newTop, newBottom)
+    return Insets(
+      density = density,
+      left = newLeft,
+      right = newRight,
+      top = newTop,
+      bottom = newBottom
+    )
   }
 
 }

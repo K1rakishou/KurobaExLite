@@ -145,7 +145,9 @@ abstract class ChanCatalogDao {
   open suspend fun replaceChanCatalogSortOrderEntityList(
     chanCatalogSortOrderEntityList: List<ChanCatalogSortOrderEntity>
   ) {
-    clearChanCatalogSortOrderEntities()
+    val databaseIdsToDelete = chanCatalogSortOrderEntityList.map { it.ownerDatabaseId }
+    clearChanCatalogSortOrderEntities(databaseIdsToDelete)
+
     insertManyChanCatalogSortOrderEntity(chanCatalogSortOrderEntityList)
   }
 
@@ -192,7 +194,7 @@ abstract class ChanCatalogDao {
   @Insert(onConflict = OnConflictStrategy.ABORT)
   protected abstract suspend fun insertManyChanCatalogSortOrderEntity(chanCatalogSortOrderEntityList: List<ChanCatalogSortOrderEntity>)
 
-  @Query("DELETE FROM chan_catalog_sort_order")
-  protected abstract suspend fun clearChanCatalogSortOrderEntities()
+  @Query("DELETE FROM chan_catalog_sort_order WHERE owner_database_id IN (:databaseIdsToDelete)")
+  protected abstract suspend fun clearChanCatalogSortOrderEntities(databaseIdsToDelete: List<Long>)
 
 }

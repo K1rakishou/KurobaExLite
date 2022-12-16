@@ -1,8 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.features.boards
 
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 
-data class ChanBoardUiData(
+data class ChanCatalogUiData(
+  val siteKey: SiteKey,
   val catalogDescriptor: CatalogDescriptor,
   val title: String,
   val subtitle: String?

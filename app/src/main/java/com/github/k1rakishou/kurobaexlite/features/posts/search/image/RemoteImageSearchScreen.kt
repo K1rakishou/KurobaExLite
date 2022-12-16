@@ -327,8 +327,12 @@ private fun ContentInternal(
         .wrapContentHeight()
         .fillMaxWidth(),
       onValueChange = { newValue ->
+        val queryDiffers = searchQuery.text != newValue.text
         searchQuery = newValue
-        remoteImageSearchScreenViewModel.onSearchQueryChanged(newValue.text)
+
+        if (queryDiffers) {
+          remoteImageSearchScreenViewModel.onSearchQueryChanged(newValue.text)
+        }
       },
       singleLine = true,
       maxLines = 1,
@@ -460,7 +464,7 @@ private fun BuildImageSearchResults(
   val searchResults = remoteImageSearchScreenViewModel.searchResults[lastUsedSearchInstance]
     ?: return
 
-  val imageSearchResults = when (val result = searchResults) {
+  val imageSearchResults = when (searchResults) {
     AsyncData.Uninitialized -> {
       return
     }
@@ -478,12 +482,12 @@ private fun BuildImageSearchResults(
         modifier = Modifier
           .fillMaxSize()
           .padding(bottom = windowInsets.bottom),
-        errorMessage = result.error.errorMessageOrClassName(userReadable = true)
+        errorMessage = searchResults.error.errorMessageOrClassName(userReadable = true)
       )
 
       return
     }
-    is AsyncData.Data -> result.data
+    is AsyncData.Data -> searchResults.data
   }
 
   val lazyGridState = rememberLazyGridState(

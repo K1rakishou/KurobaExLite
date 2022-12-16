@@ -9,3 +9,5 @@ sealed class AsyncData<out T> {
   data class Error(val error: Throwable) : AsyncData<Nothing>()
   data class Data<T>(val data: T) : AsyncData<T>()
 }
+
+fun <T> T.asAsyncData(): AsyncData.Data<T> = AsyncData.Data(this)

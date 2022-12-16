@@ -6,6 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingItem
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.MapSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -22,6 +23,7 @@ abstract class SiteSettings(
   private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "${key}_site_settings")
   protected val dataStore by lazy { appContext.dataStore }
 
+  val siteEnabled by lazy { BooleanSetting(true, "site_enabled", dataStore) }
   val lastUsedBoardFlags by lazy { StringSetting("", "last_used_board_flags", dataStore) }
   val currentSiteDomain by lazy { StringSetting(defaultDomain, "current_site_domain", dataStore) }
 

@@ -7,10 +7,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
@@ -23,7 +28,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
@@ -32,8 +39,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
+import com.github.k1rakishou.kurobaexlite.base.asAsyncData
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.site.SiteSettingsScreen
@@ -44,6 +55,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -69,6 +81,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberPullToRefreshState
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.toPersistentMap
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -207,16 +221,6 @@ class CatalogSelectionScreen(
       }
     )
 
-    val windowInsets = LocalWindowInsets.current
-    val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-    val paddingValues = remember(key1 = windowInsets) {
-      windowInsets.copyInsets(
-        newLeft = 0.dp,
-        newRight = 0.dp,
-        newTop = windowInsets.top + toolbarHeight
-      ).asPaddingValues()
-    }
-
     val pullToRefreshState = rememberPullToRefreshState()
 
     GradientBackground(
@@ -227,7 +231,6 @@ class CatalogSelectionScreen(
       KurobaComposeFadeIn {
         ContentInternal(
           currentSiteKeyArg = currentSiteKeyArg,
-          paddingValues = paddingValues,
           pullToRefreshState = pullToRefreshState,
           popScreen = { popScreen() }
         )
@@ -308,11 +311,12 @@ private fun ToolbarInternal(
 @Composable
 private fun ContentInternal(
   currentSiteKeyArg: SiteKey?,
-  paddingValues: PaddingValues,
   pullToRefreshState: PullToRefreshState,
   popScreen: () -> Unit
 ) {
+  val windowInsets = LocalWindowInsets.current
   val coroutineScope = rememberCoroutineScope()
+  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
   val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
   val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel = koinRememberViewModel()
@@ -320,8 +324,6 @@ private fun ContentInternal(
   val siteManager: SiteManager = koinRemember()
 
   val searchQuery by catalogSelectionScreenViewModel.searchQueryState
-  val loadedBoardsForSite by catalogSelectionScreenViewModel.loadedBoardsForSite
-
   var currentSiteKeyMut by remember { mutableStateOf<SiteKey?>(null) }
   val currentSiteKey = currentSiteKeyMut
 
@@ -357,11 +359,20 @@ private fun ContentInternal(
     }
   )
 
+  val paddingValues = remember(key1 = windowInsets) {
+    windowInsets.copyInsets(
+      newLeft = 0.dp,
+      newRight = 0.dp,
+      newTop = windowInsets.top + toolbarHeight
+    ).asPaddingValues()
+  }
+
   val pullToRefreshToPadding = remember(key1 = paddingValues) { paddingValues.calculateTopPadding() }
 
   PullToRefresh(
     pullToRefreshState = pullToRefreshState,
     topPadding = pullToRefreshToPadding,
+    canPull = { searchQuery == null },
     onTriggered = {
       if (currentSiteKey == null) {
         return@PullToRefresh
@@ -376,9 +387,8 @@ private fun ContentInternal(
       }
     }
   ) {
-    BuildBoardsList(
+    CatalogsList(
       searchQuery = searchQuery,
-      loadedBoardsForSite = loadedBoardsForSite,
       paddingValues = paddingValues,
       onBoardClicked = { clickedCatalogDescriptor ->
         coroutineScope.launch {
@@ -391,52 +401,69 @@ private fun ContentInternal(
 }
 
 @Composable
-private fun BuildBoardsList(
+private fun CatalogsList(
   searchQuery: String?,
-  loadedBoardsForSite: AsyncData<List<ChanBoardUiData>>,
   paddingValues: PaddingValues,
   onBoardClicked: (CatalogDescriptor) -> Unit
 ) {
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val chanThreadManaber: ChanThreadManager = koinRemember()
+  val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel = koinRememberViewModel()
 
   val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
   val subtitleTextSize by globalUiInfoManager.textSubTitleSizeSp.collectAsState()
   val defaultHorizPadding = remember { globalUiInfoManager.defaultHorizPadding }
   val defaultVertPadding = remember { globalUiInfoManager.defaultVertPadding }
 
-  val loadedBoardsForSiteUpdated by rememberUpdatedState(newValue = loadedBoardsForSite)
+  val loadedCatalogsForAllSites by catalogSelectionScreenViewModel.loadedCatalogsForAllSites
+  val loadedCatalogsForCurrentSite by catalogSelectionScreenViewModel.loadedCatalogsForCurrentSite
+
+  val loadedCatalogs = if (searchQuery.isNullOrEmpty()) {
+    loadedCatalogsForCurrentSite
+  } else {
+    loadedCatalogsForAllSites
+  }
+
+  val loadedCatalogsUpdated by rememberUpdatedState(newValue = loadedCatalogs)
   val searchQueryUpdated by rememberUpdatedState(newValue = searchQuery)
 
-  var filteredBoardsAsyncData by remember { mutableStateOf(loadedBoardsForSite) }
+  var filteredBoardsAsyncData by remember { mutableStateOf(loadedCatalogs) }
   val currentlyViewedCatalogDescriptor by chanThreadManaber.currentlyOpenedCatalogFlow.collectAsState()
 
   LaunchedEffect(
     key1 = Unit,
     block = {
       combine(
-        flow = snapshotFlow { loadedBoardsForSiteUpdated },
+        flow = snapshotFlow { loadedCatalogsUpdated },
         flow2 = snapshotFlow { searchQueryUpdated },
         transform = { a, b -> a to b }
-      ).collectLatest { (chanBoardUiAsyncData, query) ->
-        if (chanBoardUiAsyncData !is AsyncData.Data || query.isNullOrEmpty()) {
-          filteredBoardsAsyncData = chanBoardUiAsyncData
+      ).collectLatest { (loadedCatalogsAsyncData, query) ->
+        if (loadedCatalogsAsyncData !is AsyncData.Data || query.isNullOrEmpty()) {
+          filteredBoardsAsyncData = loadedCatalogsAsyncData
           return@collectLatest
         }
 
         delay(250L)
 
-        val chanBoards = chanBoardUiAsyncData.data
-        val filteredBoards = chanBoards.filter { chanBoardUiData -> chanBoardUiData.matchesQuery(query) }
-        val sortedBoards = WeightedSorter.sort(
-          input = filteredBoards,
-          query = query,
-          textSelector = { chanBoardUiData -> "/${chanBoardUiData.boardCode}/" }
-        )
+        val filteredBoards = loadedCatalogsAsyncData.data
+          .filter { chanBoardUiData -> chanBoardUiData.matchesQuery(query) }
 
-        filteredBoardsAsyncData = AsyncData.Data(sortedBoards)
+        val resultList = mutableListWithCap<ChanCatalogUiData>(filteredBoards.size)
+
+        filteredBoards.groupBy { it.siteKey }.values.forEach { catalogs ->
+          val sortedCatalogs = WeightedSorter.sort(
+            input = catalogs,
+            query = query,
+            textSelector = { chanBoardUiData -> "/${chanBoardUiData.boardCode}/" }
+          )
+
+          resultList += sortedCatalogs
+        }
+
+        filteredBoardsAsyncData = resultList.asAsyncData()
       }
-    })
+    }
+  )
 
   val lazyListState = rememberLazyListState()
 
@@ -453,6 +480,16 @@ private fun BuildBoardsList(
       lazyListState.scrollToItem(0)
     }
   )
+
+  val catalogsGroupedBySiteKey = remember(key1 = filteredBoardsAsyncData, key2 = searchQuery) {
+    val local = filteredBoardsAsyncData
+
+    return@remember if (local is AsyncData.Data) {
+      local.data.groupBy { it.siteKey }.toPersistentMap()
+    } else {
+      null
+    }
+  }
 
   LazyColumnWithFastScroller(
     lazyListContainerModifier = Modifier.fillMaxSize(),
@@ -487,8 +524,8 @@ private fun BuildBoardsList(
           }
         }
         is AsyncData.Data -> {
-          val siteBoards = loadBoardsForSiteAsyncData.data
-          if (siteBoards.isEmpty()) {
+          val allCatalogs = loadBoardsForSiteAsyncData.data
+          if (allCatalogs.isEmpty()) {
             if (searchQuery == null) {
               item(key = "no_boards_indicator") {
                 KurobaComposeText(
@@ -519,7 +556,8 @@ private fun BuildBoardsList(
               subtitleTextSize = subtitleTextSize,
               horizPadding = defaultHorizPadding,
               vertPadding = defaultVertPadding,
-              chanBoardUiDataList = siteBoards,
+              allCatalogs = allCatalogs,
+              catalogsGroupedBySiteKey = catalogsGroupedBySiteKey,
               onBoardClicked = onBoardClicked
             )
           }
@@ -536,38 +574,98 @@ private fun LazyListScope.buildChanBoardsList(
   subtitleTextSize: TextUnit,
   horizPadding: Dp,
   vertPadding: Dp,
-  chanBoardUiDataList: List<ChanBoardUiData>,
+  allCatalogs: List<ChanCatalogUiData>,
+  catalogsGroupedBySiteKey: PersistentMap<SiteKey, List<ChanCatalogUiData>>?,
   onBoardClicked: (CatalogDescriptor) -> Unit
 ) {
-  items(
-    count = chanBoardUiDataList.size,
-    key = { index -> chanBoardUiDataList[index].catalogDescriptor },
-    itemContent = { index ->
-      val chanBoard = chanBoardUiDataList[index]
+  val builtHeaders = mutableSetOf<SiteKey>()
 
-      BuildChanBoardCell(
-        currentlyViewedCatalogDescriptor = currentlyViewedCatalogDescriptor,
-        searchQuery = searchQuery,
-        titleTextSize = titleTextSize,
-        subtitleTextSize = subtitleTextSize,
-        horizPadding = horizPadding,
-        vertPadding = vertPadding,
-        chanBoardUiData = chanBoard,
-        onBoardClicked = onBoardClicked
+  for (chanBoardUiData in allCatalogs) {
+    val siteKey = chanBoardUiData.siteKey
+
+    if (
+      searchQuery.isNotNullNorEmpty() &&
+      catalogsGroupedBySiteKey != null &&
+      builtHeaders.add(siteKey)
+    ) {
+      item(
+        key = "ChanBoardListHeader_${siteKey}",
+        contentType = "ChanBoardListHeader",
+        content = {
+          ChanBoardListHeader(siteKey)
+        }
       )
     }
-  )
+
+    item(
+      key = "ChanBoardCell_${chanBoardUiData.catalogDescriptor}",
+      contentType = "ChanBoardCell",
+      content = {
+        ChanBoardCell(
+          currentlyViewedCatalogDescriptor = currentlyViewedCatalogDescriptor,
+          searchQuery = searchQuery,
+          titleTextSize = titleTextSize,
+          subtitleTextSize = subtitleTextSize,
+          horizPadding = horizPadding,
+          vertPadding = vertPadding,
+          chanCatalogUiData = chanBoardUiData,
+          onBoardClicked = onBoardClicked
+        )
+      }
+    )
+  }
 }
 
 @Composable
-private fun BuildChanBoardCell(
+private fun ChanBoardListHeader(siteKey: SiteKey) {
+  val context = LocalContext.current
+  val chanTheme = LocalChanTheme.current
+  val siteManager: SiteManager = koinRemember()
+
+  val siteIconUrl = remember(siteKey) { siteManager.bySiteKey(siteKey)?.icon() }
+  val siteName = remember(siteKey ) { siteManager.bySiteKey(siteKey)?.readableName ?: "" }
+
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .height(42.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    if (siteIconUrl != null) {
+      val request = remember(key1 = siteIconUrl) {
+        ImageRequest.Builder(context)
+          .data(siteIconUrl)
+          .build()
+      }
+
+      Spacer(modifier = Modifier.width(12.dp))
+
+      AsyncImage(
+        modifier = Modifier.size(24.dp),
+        model = request,
+        contentDescription = "Site icon"
+      )
+
+      Spacer(modifier = Modifier.width(12.dp))
+    }
+
+    KurobaComposeText(
+      text = siteName,
+      fontSize = 16.sp,
+      color = chanTheme.textColorSecondary
+    )
+  }
+}
+
+@Composable
+private fun ChanBoardCell(
   currentlyViewedCatalogDescriptor: CatalogDescriptor?,
   searchQuery: String?,
   titleTextSize: TextUnit,
   subtitleTextSize: TextUnit,
   horizPadding: Dp,
   vertPadding: Dp,
-  chanBoardUiData: ChanBoardUiData,
+  chanCatalogUiData: ChanCatalogUiData,
   onBoardClicked: (CatalogDescriptor) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -577,7 +675,7 @@ private fun BuildChanBoardCell(
     chanTheme.highlighterColor.copy(alpha = 0.3f)
   }
 
-  val backgroundColorModifier = if (chanBoardUiData.catalogDescriptor == currentlyViewedCatalogDescriptor) {
+  val backgroundColorModifier = if (chanCatalogUiData.catalogDescriptor == currentlyViewedCatalogDescriptor) {
     Modifier.background(bgColorWithAlpha)
   } else {
     Modifier
@@ -588,7 +686,7 @@ private fun BuildChanBoardCell(
       .fillMaxWidth()
       .heightIn(min = 42.dp)
       .then(backgroundColorModifier)
-      .kurobaClickable(onClick = { onBoardClicked(chanBoardUiData.catalogDescriptor) })
+      .kurobaClickable(onClick = { onBoardClicked(chanCatalogUiData.catalogDescriptor) })
       .padding(horizontal = horizPadding, vertical = vertPadding),
     verticalArrangement = Arrangement.Center
   ) {
@@ -596,7 +694,7 @@ private fun BuildChanBoardCell(
       val textFormatted = remember(key1 = searchQuery, key2 = chanTheme) {
         return@remember buildAnnotatedString {
           val titleFormatted = buildAnnotatedString {
-            withStyle(SpanStyle(color = chanTheme.textColorPrimary)) { append(chanBoardUiData.title) }
+            withStyle(SpanStyle(color = chanTheme.textColorPrimary)) { append(chanCatalogUiData.title) }
           }
 
           if (searchQuery != null && searchQuery.isNotEmpty()) {
@@ -621,12 +719,12 @@ private fun BuildChanBoardCell(
       )
     }
 
-    if (chanBoardUiData.subtitle.isNotNullNorEmpty()) {
+    if (chanCatalogUiData.subtitle.isNotNullNorEmpty()) {
       kotlin.run {
         val textFormatted = remember(key1 = searchQuery, key2 = chanTheme) {
           return@remember buildAnnotatedString {
             val subtitleFormatted = buildAnnotatedString {
-              withStyle(SpanStyle(color = chanTheme.textColorSecondary)) { append(chanBoardUiData.subtitle) }
+              withStyle(SpanStyle(color = chanTheme.textColorSecondary)) { append(chanCatalogUiData.subtitle) }
             }
 
             if (searchQuery != null && searchQuery.isNotEmpty()) {

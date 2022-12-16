@@ -311,6 +311,8 @@
     <string name="settings_screen_report_description">Report a crash or other issue</string>
 
     <string name="site_setting_cloudflare_clearance_cookie">CloudFlare clearance cookie</string>
+    <string name="site_setting_is_enabled">Site enabled</string>
+
     <string name="chan4_setting_remember_captcha_cookies">Remember captcha cookies</string>
     <string name="chan4_setting_4chan_cookie">4chan captcha cookie</string>
     <string name="chan4_setting_4channel_cookie">4channel captcha cookie</string>

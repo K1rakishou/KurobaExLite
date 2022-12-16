@@ -6,6 +6,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.login.chan4.Chan4LoginScreen
 import com.github.k1rakishou.kurobaexlite.features.login.dvach.DvachLoginScreen
+import com.github.k1rakishou.kurobaexlite.features.settings.items.BooleanSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.LinkSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.MapSettingItem
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingItem
@@ -54,6 +55,10 @@ class DvachSiteSettings(
     showDialogScreen: suspend (DialogScreen.Params) -> Unit
   ): List<SettingItem> {
     return listOf(
+      BooleanSettingItem(
+        title = appContext.resources.getString(R.string.site_setting_is_enabled),
+        delegate = siteEnabled
+      ),
       StringSettingItem(
         title = appContext.resources.getString(R.string.dvach_setting_site_domain),
         delegate = currentSiteDomain,

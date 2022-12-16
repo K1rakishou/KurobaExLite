@@ -57,6 +57,10 @@ class Chan4SiteSettings(
   ): List<SettingItem> {
     return listOf(
       BooleanSettingItem(
+        title = appContext.resources.getString(R.string.site_setting_is_enabled),
+        delegate = siteEnabled
+      ),
+      BooleanSettingItem(
         title = appContext.resources.getString(R.string.chan4_setting_remember_captcha_cookies),
         delegate = rememberCaptchaCookies
       ),
