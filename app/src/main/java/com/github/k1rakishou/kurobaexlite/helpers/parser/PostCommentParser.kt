@@ -67,8 +67,14 @@ class PostCommentParser(
     postDescriptor: PostDescriptor
   ): List<TextPart> {
     val htmlNodes = htmlParser.parse(postCommentUnparsed).nodes
+    val parserContext = PostCommentParserContext()
 
-    return processNodes(postDescriptor, htmlNodes, postParser)
+    return processNodes(
+      postDescriptor = postDescriptor,
+      htmlNodes = htmlNodes,
+      sitePostParser = postParser,
+      parserContext = parserContext
+    )
       .map { textPartMut -> postParser.postProcessTextParts(textPartMut) }
       .map { textPartMut -> textPartMut.toTextPartWithSortedSpans() }
   }
@@ -76,7 +82,8 @@ class PostCommentParser(
   private fun processNodes(
     postDescriptor: PostDescriptor,
     htmlNodes: List<HtmlNode>,
-    sitePostParser: AbstractSitePostParser
+    sitePostParser: AbstractSitePostParser,
+    parserContext: PostCommentParserContext
   ): MutableList<TextPartMut> {
     if (htmlNodes.isEmpty()) {
       return mutableListOf()
@@ -87,11 +94,15 @@ class PostCommentParser(
     for (htmlNode in htmlNodes) {
       when (htmlNode) {
         is HtmlNode.Tag -> {
-          val htmlTag = htmlNode.htmlTag
-          val childTextParts = processNodes(postDescriptor, htmlTag.children, sitePostParser)
-          sitePostParser.parseHtmlNode(htmlTag, childTextParts, postDescriptor)
+          parserContext.onTagOpened(htmlNode)
 
+          val htmlTag = htmlNode.htmlTag
+          val childTextParts = processNodes(postDescriptor, htmlTag.children, sitePostParser, parserContext)
+          sitePostParser.parseHtmlNode(htmlTag, childTextParts, postDescriptor, parserContext)
+          sitePostParser.postProcessHtmlNode(htmlTag, childTextParts, postDescriptor, parserContext)
           currentTextParts.addAll(childTextParts)
+
+          parserContext.onTagClosed(htmlNode)
         }
         is HtmlNode.Text -> {
           currentTextParts += TextPartMut(htmlNode.text)
@@ -100,6 +111,28 @@ class PostCommentParser(
     }
 
     return currentTextParts
+  }
+
+  class PostCommentParserContext {
+    private var _ulTagsCounter = 0
+    val ulTagsCounter: Int
+      get() = _ulTagsCounter
+
+    val isInsideUlTag: Boolean
+      get() = _ulTagsCounter > 0
+
+    fun onTagOpened(tagNode: HtmlNode.Tag) {
+      when (val tagName = tagNode.htmlTag.tagName) {
+        "ul" -> ++_ulTagsCounter
+      }
+    }
+
+    fun onTagClosed(tagNode: HtmlNode.Tag) {
+      when (val tagName = tagNode.htmlTag.tagName) {
+        "ul" -> --_ulTagsCounter
+      }
+    }
+
   }
 
 }

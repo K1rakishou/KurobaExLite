@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.sites.chan4
 
 import android.content.Context
 import androidx.compose.ui.text.AnnotatedString
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.Chan4PostParser
@@ -56,6 +57,7 @@ class Chan4(
   private val appSettings: AppSettings,
   private val moshi: Moshi,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val staticHtmlColorRepository: StaticHtmlColorRepository,
   private val loadChanCatalog: LoadChanCatalog,
 ) : Site {
   private val chan4CatalogInfo by lazy { CatalogInfo(chan4DataSource) }
@@ -69,7 +71,7 @@ class Chan4(
   private val chan4CatalogPagesInfo by lazy { CatalogPagesInfo(chan4DataSource) }
   private val chan4GlobalSearchInfo by lazy { GlobalSearchInfo(chan4DataSource) }
   private val chan4PasscodeInfo by lazy { Chan4PasscodeInfo(chan4DataSource) }
-  private val chan4PostParser by lazy { Chan4PostParser() }
+  private val chan4PostParser by lazy { Chan4PostParser(staticHtmlColorRepository) }
   private val icon by lazy { "https://s.4cdn.org/image/favicon.ico".toHttpUrl() }
 
   override val siteKey: SiteKey = SITE_KEY

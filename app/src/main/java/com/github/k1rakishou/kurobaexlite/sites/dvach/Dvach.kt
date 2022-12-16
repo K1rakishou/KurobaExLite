@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.sites.dvach
 import android.content.Context
 import androidx.compose.ui.text.AnnotatedString
 import coil.request.ImageRequest
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.DvachPostParser
@@ -56,6 +57,7 @@ class Dvach(
   private val dvachDataSource: DvachDataSource,
   private val appSettings: AppSettings,
   private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val staticHtmlColorRepository: StaticHtmlColorRepository,
   private val moshi: Moshi,
 ) : Site {
   override val siteKey: SiteKey = SITE_KEY
@@ -70,7 +72,7 @@ class Dvach(
   private val icon: HttpUrl
     get() = "https://${currentDomain()}/favicon.ico".toHttpUrl()
 
-  private val dvachPostParser by lazy { DvachPostParser() }
+  private val dvachPostParser by lazy { DvachPostParser(staticHtmlColorRepository) }
   private val chan4RequestModifier by lazy { DvachRequestModifier(this, appSettings) }
   private val dvachBoardsInfo by lazy {
     BoardsInfo(

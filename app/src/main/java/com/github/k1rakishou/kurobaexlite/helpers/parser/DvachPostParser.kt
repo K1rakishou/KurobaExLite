@@ -1,11 +1,14 @@
 package com.github.k1rakishou.kurobaexlite.helpers.parser
 
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 
-class DvachPostParser : Chan4PostParser() {
+class DvachPostParser(
+  staticHtmlColorRepository: StaticHtmlColorRepository
+) : Chan4PostParser(staticHtmlColorRepository) {
 
   override fun parseSpanTag(
     htmlTag: HtmlTag,
@@ -35,7 +38,6 @@ class DvachPostParser : Chan4PostParser() {
     postDescriptor: PostDescriptor
   ) {
     val className = htmlTag.classAttrOrNull()
-      ?: return
 
     var childTextPart = if (childTextParts.size == 1) {
       childTextParts.first()
@@ -81,7 +83,11 @@ class DvachPostParser : Chan4PostParser() {
     childTextParts += TextPartMut(text = "\n")
   }
 
-  override fun parseLinkable(className: String, href: String, postDescriptor: PostDescriptor): TextPartSpan.Linkable? {
+  override fun parseLinkable(className: String?, href: String, postDescriptor: PostDescriptor): TextPartSpan.Linkable? {
+    if (className == null) {
+      return TextPartSpan.Linkable.Url(href)
+    }
+
     val isQuoteLink = className.equals(other = "post-reply-link", ignoreCase = true)
     if (!isQuoteLink) {
       return null

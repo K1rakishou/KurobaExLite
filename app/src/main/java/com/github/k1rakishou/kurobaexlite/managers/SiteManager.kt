@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
 import android.content.Context
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
@@ -83,6 +84,7 @@ class SiteProvider(
   private val moshi by inject<Moshi>(Moshi::class.java)
   private val proxiedOkHttpClient by inject<ProxiedOkHttpClient>(ProxiedOkHttpClient::class.java)
   private val loadChanCatalog by inject<LoadChanCatalog>(LoadChanCatalog::class.java)
+  private val staticHtmlColorRepository by inject<StaticHtmlColorRepository>(StaticHtmlColorRepository::class.java)
 
   fun getAllSites(): Map<SiteKey, Site> {
     val sites = mutableMapOf<SiteKey, Site>()
@@ -93,6 +95,7 @@ class SiteProvider(
       appSettings = appSettings,
       moshi = moshi,
       proxiedOkHttpClient = proxiedOkHttpClient,
+      staticHtmlColorRepository = staticHtmlColorRepository,
       loadChanCatalog = loadChanCatalog
     )
 
@@ -102,6 +105,7 @@ class SiteProvider(
       dvachDataSource = dvachDataSource,
       appSettings = appSettings,
       proxiedOkHttpClient = proxiedOkHttpClient,
+      staticHtmlColorRepository = staticHtmlColorRepository,
       moshi = moshi
     )
 

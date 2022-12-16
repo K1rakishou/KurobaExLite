@@ -1,5 +1,6 @@
 package helpers
 
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.parser.Chan4PostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -8,10 +9,11 @@ import org.junit.Assert
 import org.junit.Test
 
 class Chan4PostParserTest {
+  private val staticHtmlColorRepository = StaticHtmlColorRepository()
 
   @Test
   fun internalQuote() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
@@ -28,7 +30,7 @@ class Chan4PostParserTest {
 
   @Test
   fun catalogSearchLink1() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
 
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
@@ -45,7 +47,7 @@ class Chan4PostParserTest {
 
   @Test
   fun catalogSearchLink2() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
@@ -60,7 +62,7 @@ class Chan4PostParserTest {
 
   @Test
   fun crossThreadLink1() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
@@ -76,7 +78,7 @@ class Chan4PostParserTest {
 
   @Test
   fun crossThreadLink2() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
@@ -92,7 +94,7 @@ class Chan4PostParserTest {
 
   @Test
   fun crossThreadLink3() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
@@ -108,7 +110,7 @@ class Chan4PostParserTest {
 
   @Test
   fun crossThreadLink4() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
@@ -124,7 +126,7 @@ class Chan4PostParserTest {
 
   @Test
   fun crossThreadLink5() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
@@ -140,7 +142,7 @@ class Chan4PostParserTest {
 
   @Test
   fun boardLink1() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(
@@ -154,7 +156,7 @@ class Chan4PostParserTest {
 
   @Test
   fun boardLink2() {
-    val postCommentParser = Chan4PostParser()
+    val postCommentParser = Chan4PostParser(staticHtmlColorRepository)
     val postDescriptor = PostDescriptor.create(SiteKey("test"), "test", 111, 111)
 
     val linkable = postCommentParser.parseLinkable(

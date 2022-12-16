@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.helpers.parser
 
 import androidx.annotation.CallSuper
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import logcat.LogPriority
@@ -10,12 +11,15 @@ import org.nibor.autolink.LinkExtractor
 import org.nibor.autolink.LinkType
 import java.util.*
 
-abstract class AbstractSitePostParser {
+abstract class AbstractSitePostParser(
+  private val staticHtmlColorRepository: StaticHtmlColorRepository
+) {
 
   fun parseHtmlNode(
     htmlTag: HtmlTag,
     childTextParts: MutableList<TextPartMut>,
-    postDescriptor: PostDescriptor
+    postDescriptor: PostDescriptor,
+    parserContext: PostCommentParser.PostCommentParserContext
   ) {
     when (htmlTag.tagName) {
       "br" -> parseNewLineTag(childTextParts)
@@ -28,6 +32,8 @@ abstract class AbstractSitePostParser {
       "sub" -> parseSubscriptTag(childTextParts)
       "span" -> parseSpanTag(htmlTag, childTextParts, postDescriptor)
       "a" -> parseLinkTag(htmlTag, childTextParts, postDescriptor)
+      "ul" -> { /**no-op*/ }
+      "li" -> parseLiTag(htmlTag, childTextParts, postDescriptor, parserContext)
       "wbr" -> {
         error("<wbr> tags should all be removed during the HTML parsing stage. This is most likely a HTML parser bug.")
       }
@@ -38,6 +44,58 @@ abstract class AbstractSitePostParser {
         }
       }
     }
+  }
+
+  fun postProcessHtmlNode(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>,
+    postDescriptor: PostDescriptor,
+    parserContext: PostCommentParser.PostCommentParserContext
+  ) {
+    parseAnyTagStyleAttribute(htmlTag, childTextParts)
+  }
+
+  private fun parseAnyTagStyleAttribute(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>
+  ) {
+    val styleAttribute = htmlTag.attrUnescapedOrNull("style")
+      ?: return
+
+    val parameters = styleAttribute.split(';')
+
+    for (parameter in parameters) {
+      if (parameter.startsWith("color:")) {
+        val colorName = parameter.split(":").getOrNull(1) ?: continue
+        val colorRgb = staticHtmlColorRepository.getColorValueByHtmlColorName(colorName) ?: continue
+
+        for (childTextPart in childTextParts) {
+          childTextPart.spans.add(TextPartSpan.FgColor(colorRgb))
+        }
+      }
+    }
+  }
+
+  open fun parseLiTag(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>,
+    postDescriptor: PostDescriptor,
+    parserContext: PostCommentParser.PostCommentParserContext
+  ) {
+    if (parserContext.isInsideUlTag) {
+      val text = buildString {
+        repeat(parserContext.ulTagsCounter.coerceAtMost(5)) {
+          append("  ")
+        }
+
+        append("•")
+        append(" ")
+      }
+
+      childTextParts.add(0, TextPartMut(text))
+    }
+
+    childTextParts += TextPartMut("\n")
   }
 
   open fun parseSubscriptTag(childTextParts: MutableList<TextPartMut>) {
@@ -78,7 +136,7 @@ abstract class AbstractSitePostParser {
   }
 
   abstract fun parseLinkTag(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>, postDescriptor: PostDescriptor)
-  abstract fun parseLinkable(className: String, href: String, postDescriptor: PostDescriptor): TextPartSpan.Linkable?
+  abstract fun parseLinkable(className: String?, href: String, postDescriptor: PostDescriptor): TextPartSpan.Linkable?
   abstract fun postProcessTextParts(textPartMut: TextPartMut): TextPartMut
 
   protected fun mergeChildTextPartsIntoOne(

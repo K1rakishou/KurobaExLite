@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.di
 
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
 import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.GlobalSearchRepository
@@ -20,4 +21,5 @@ internal fun Module.model() {
     )
   }
   single { GlobalSearchRepository(siteManager = get()) }
+  single { StaticHtmlColorRepository() }
 }

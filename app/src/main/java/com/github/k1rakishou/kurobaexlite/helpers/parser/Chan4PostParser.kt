@@ -2,13 +2,16 @@ package com.github.k1rakishou.kurobaexlite.helpers.parser
 
 import androidx.annotation.VisibleForTesting
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.util.decodeUrlOrNull
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import java.nio.charset.StandardCharsets
 
-open class Chan4PostParser : AbstractSitePostParser() {
+open class Chan4PostParser(
+  staticHtmlColorRepository: StaticHtmlColorRepository
+) : AbstractSitePostParser(staticHtmlColorRepository) {
 
   override fun parseNewLineTag(childTextParts: MutableList<TextPartMut>) {
     childTextParts += TextPartMut(text = "\n")
@@ -88,7 +91,7 @@ open class Chan4PostParser : AbstractSitePostParser() {
 
   @VisibleForTesting
   override fun parseLinkable(
-    className: String,
+    className: String?,
     href: String,
     postDescriptor: PostDescriptor
   ): TextPartSpan.Linkable? {
