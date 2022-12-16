@@ -33,6 +33,7 @@ abstract class AbstractSitePostParser(
       "sup" -> parseSuperscriptTag(childTextParts)
       "sub" -> parseSubscriptTag(childTextParts)
       "span" -> parseSpanTag(htmlTag, childTextParts, postDescriptor)
+      "ins" -> parseInsTag(htmlTag, childTextParts, postDescriptor)
       "a" -> parseLinkTag(htmlTag, childTextParts, postDescriptor)
       "ul" -> { /**no-op*/ }
       "li" -> parseLiTag(htmlTag, childTextParts, postDescriptor, parserContext)
@@ -70,52 +71,9 @@ abstract class AbstractSitePostParser(
     parseAnyTagColorAttribute(htmlTag, childTextParts)
   }
 
-  private fun parseAnyTagColorAttribute(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>) {
-    val colorName = htmlTag.attrUnescapedOrNull("color")
-      ?: return
-
-    val color = staticHtmlColorRepository.getColorValueByHtmlColorName(colorName)
-      ?: return
-
+  open fun parseInsTag(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>, postDescriptor: PostDescriptor) {
     for (childTextPart in childTextParts) {
-      childTextPart.spans.add(TextPartSpan.FgColor(color))
-    }
-  }
-
-  private fun parseAnyTagSizeAttribute(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>) {
-    val sizeAttribute = htmlTag.attrUnescapedOrNull("size")
-      ?: return
-
-    val minSize = TextPartSpan.FontSize.MIN_FONT_SIZE_INCREMENT
-    val maxSize = TextPartSpan.FontSize.MAX_FONT_SIZE_INCREMENT
-
-    val fontSize = sizeAttribute.toIntOrNull()
-      .takeIf { size -> size in minSize..maxSize }
-      ?: return
-
-    for (childTextPart in childTextParts) {
-      childTextPart.spans.add(TextPartSpan.FontSize(fontSize))
-    }
-  }
-
-  private fun parseAnyTagStyleAttribute(
-    htmlTag: HtmlTag,
-    childTextParts: MutableList<TextPartMut>
-  ) {
-    val styleAttribute = htmlTag.attrUnescapedOrNull("style")
-      ?: return
-
-    val parameters = styleAttribute.split(';')
-
-    for (parameter in parameters) {
-      if (parameter.startsWith("color:")) {
-        val colorName = parameter.split(":").getOrNull(1) ?: continue
-        val colorRgb = staticHtmlColorRepository.getColorValueByHtmlColorName(colorName) ?: continue
-
-        for (childTextPart in childTextParts) {
-          childTextPart.spans.add(TextPartSpan.FgColor(colorRgb))
-        }
-      }
+      childTextPart.spans.add(TextPartSpan.Underline)
     }
   }
 
@@ -213,6 +171,62 @@ abstract class AbstractSitePostParser(
       text = totalText.toString(),
       spans = totalSpans
     )
+  }
+
+  private fun parseAnyTagColorAttribute(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>) {
+    val colorName = htmlTag.attrUnescapedOrNull("color")
+      ?: return
+
+    val color = staticHtmlColorRepository.parseColor(colorName)
+      ?: return
+
+    for (childTextPart in childTextParts) {
+      childTextPart.spans.add(TextPartSpan.FgColor(color))
+    }
+  }
+
+  private fun parseAnyTagSizeAttribute(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>) {
+    val sizeAttribute = htmlTag.attrUnescapedOrNull("size")
+      ?: return
+
+    val minSize = TextPartSpan.FontSize.MIN_FONT_SIZE_INCREMENT
+    val maxSize = TextPartSpan.FontSize.MAX_FONT_SIZE_INCREMENT
+
+    val fontSize = sizeAttribute.toIntOrNull()
+      .takeIf { size -> size in minSize..maxSize }
+      ?: return
+
+    for (childTextPart in childTextParts) {
+      childTextPart.spans.add(TextPartSpan.FontSize(fontSize))
+    }
+  }
+
+  private fun parseAnyTagStyleAttribute(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>
+  ) {
+    val styleAttribute = htmlTag.attrUnescapedOrNull("style")
+      ?: return
+
+    val parameters = styleAttribute.split(';')
+
+    for (parameter in parameters) {
+      if (parameter.startsWith("color:")) {
+        val colorName = parameter.split(":").getOrNull(1)?.trim() ?: continue
+        val colorRgb = staticHtmlColorRepository.parseColor(colorName) ?: continue
+
+        for (childTextPart in childTextParts) {
+          childTextPart.spans.add(TextPartSpan.FgColor(colorRgb))
+        }
+      } else if (parameter.startsWith("background-color:")) {
+        val colorName = parameter.split(":").getOrNull(1)?.trim() ?: continue
+        val colorRgb = staticHtmlColorRepository.parseColor(colorName) ?: continue
+
+        for (childTextPart in childTextParts) {
+          childTextPart.spans.add(TextPartSpan.BgColor(colorRgb))
+        }
+      }
+    }
   }
 
   companion object {

@@ -4,7 +4,7 @@ import androidx.annotation.VisibleForTesting
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
 import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.util.decodeUrlOrNull
-import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.removeAllBefore
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 import java.nio.charset.StandardCharsets
@@ -81,10 +81,7 @@ open class Chan4PostParser(
     }
 
     val linkable = parseLinkable(className, href, postDescriptor)
-    if (linkable == null) {
-      logcatError { "Failed to parse linkable. className='$className', href='$href'" }
-      return
-    }
+      ?: TextPartSpan.Linkable.Url(href)
 
     childTextPart.spans += linkable
   }
@@ -277,11 +274,16 @@ open class Chan4PostParser(
   protected fun preprocessHref(href: String): String {
     // //boards.4channel.org/qst/thread/5126311#p5126311  -> qst/thread/5126311#p5126311
     // /qst/thread/5126311#p5126311                       -> qst/thread/5126311#p5126311
+    // https://2ch.hk/bo/res/489664.html                  -> bo/res/489664.html
 
     var resultHref = href
 
-    if (href.startsWith("//")) {
-      resultHref = href.removePrefix("//").dropWhile { it != '/' }
+    if (resultHref.contains("://")) {
+      resultHref = resultHref.removeAllBefore("://").dropWhile { it != '/' }
+    }
+
+    if (resultHref.startsWith("//")) {
+      resultHref = resultHref.removePrefix("//").dropWhile { it != '/' }
     }
 
     return resultHref.removePrefix("/")

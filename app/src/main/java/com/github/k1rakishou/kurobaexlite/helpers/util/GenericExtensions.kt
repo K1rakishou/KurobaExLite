@@ -1047,3 +1047,40 @@ fun FocusRequester.freeFocusSafe() {
 
   }
 }
+
+fun String.substringSafe(startIndex: Int): String? {
+  if (startIndex < 0 || startIndex > lastIndex) {
+    return null
+  }
+
+  return substring(startIndex)
+}
+
+fun String.substringSafe(startIndex: Int, endIndex: Int): String? {
+  if (startIndex < 0 || startIndex > lastIndex) {
+    return null
+  }
+
+  if (endIndex < 0 || endIndex > lastIndex) {
+    return null
+  }
+
+  if (startIndex > endIndex) {
+    return null
+  }
+
+  return substring(startIndex, endIndex)
+}
+
+fun String.removeAllBefore(delimiter: String, removeDelimiter: Boolean = true): String {
+  val index = indexOf(delimiter)
+  if (index < 0) {
+    return this
+  }
+
+  if (removeDelimiter) {
+    return substring(index + delimiter.length)
+  }
+
+  return substring(index)
+}

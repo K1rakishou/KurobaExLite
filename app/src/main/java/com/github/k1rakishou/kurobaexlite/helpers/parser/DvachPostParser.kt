@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.helpers.parser
 
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
 import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
-import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
 
@@ -63,10 +62,7 @@ class DvachPostParser(
     }
 
     val linkable = parseLinkable(className, href, postDescriptor)
-    if (linkable == null) {
-      logcatError { "Failed to parse linkable. className='$className', href='$href'" }
-      return
-    }
+      ?: TextPartSpan.Linkable.Url(href)
 
     if (linkable is TextPartSpan.Linkable.Quote) {
       childTextPart = quoteTrimUnnecessaryCharacters(childTextPart)
@@ -84,15 +80,6 @@ class DvachPostParser(
   }
 
   override fun parseLinkable(className: String?, href: String, postDescriptor: PostDescriptor): TextPartSpan.Linkable? {
-    if (className == null) {
-      return TextPartSpan.Linkable.Url(href)
-    }
-
-    val isQuoteLink = className.equals(other = "post-reply-link", ignoreCase = true)
-    if (!isQuoteLink) {
-      return null
-    }
-
     val hrefPreprocessed = preprocessHref(href)
 
     // '/a/res/7526735.html#7526735'
@@ -121,6 +108,10 @@ class DvachPostParser(
         ?: return null
       postNo = threadNoPostNoSplit.getOrNull(1)?.toLongOrNull()
         ?: return null
+    } else if (threadNoPostNo.endsWith(".html")) {
+      threadNo = threadNoPostNo.removeSuffix(".html").toLongOrNull()
+        ?: return null
+      postNo = threadNo
     } else {
       threadNo = threadNoPostNo.toLongOrNull()
         ?: return null
