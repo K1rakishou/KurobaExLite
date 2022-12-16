@@ -7,6 +7,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.sp
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.util.createAnnotationItem
@@ -20,9 +23,12 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 
-class PostCommentApplier {
+class PostCommentApplier(
+  private val appResources: AppResources
+) {
 
-  suspend fun applyTextPartsToAnnotatedString(
+  fun applyTextPartsToAnnotatedString(
+    defaultPostCommentFontSize: Int,
     chanTheme: ChanTheme,
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     textParts: List<TextPart>,
@@ -35,6 +41,7 @@ class PostCommentApplier {
 
       for (textPart in textParts) {
         val (text, overflowHappened) = processTextPart(
+          defaultPostCommentFontSize = defaultPostCommentFontSize,
           markedPosts = markedPosts,
           chanTheme = chanTheme,
           textPart = textPart,
@@ -112,7 +119,8 @@ class PostCommentApplier {
   }
 
   @Suppress("UnnecessaryVariable")
-  private suspend fun processTextPart(
+  private fun processTextPart(
+    defaultPostCommentFontSize: Int,
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     chanTheme: ChanTheme,
     textPart: TextPart,
@@ -133,6 +141,7 @@ class PostCommentApplier {
 
       if (textPart.spans.isNotEmpty()) {
         processTextPartSpans(
+          defaultPostCommentFontSize = defaultPostCommentFontSize,
           markedPosts = markedPosts,
           spans = textPart.spans,
           chanTheme = chanTheme,
@@ -151,6 +160,7 @@ class PostCommentApplier {
   }
 
   private fun AnnotatedString.Builder.processTextPartSpans(
+    defaultPostCommentFontSize: Int,
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     spans: List<TextPartSpan>,
     chanTheme: ChanTheme,
@@ -167,6 +177,7 @@ class PostCommentApplier {
       var bold = false
       var italic = false
       var script: Script? = null
+      var currentFontSize = defaultPostCommentFontSize
 
       var start: Int? = null
       var end: Int? = null
@@ -181,21 +192,7 @@ class PostCommentApplier {
             is TextPartSpan.Linkable.Url -> {
               fgColor = chanTheme.postLinkColor
             }
-            is TextPartSpan.BgColor,
-            is TextPartSpan.BgColorId,
-            is TextPartSpan.FgColor,
-            is TextPartSpan.FgColorId,
-            is TextPartSpan.Linkable.Board,
-            is TextPartSpan.Linkable.Quote,
-            is TextPartSpan.Linkable.Search,
-            is TextPartSpan.PartialSpan,
-            is TextPartSpan.Underline,
-            is TextPartSpan.Linethrough,
-            is TextPartSpan.Spoiler,
-            is TextPartSpan.Bold,
-            is TextPartSpan.Superscript,
-            is TextPartSpan.Subscript,
-            is TextPartSpan.Italic -> {
+            else -> {
               error("${span.linkSpan::class.java.simpleName} is not supported as a partial span")
             }
           }
@@ -217,6 +214,9 @@ class PostCommentApplier {
         }
         is TextPartSpan.FgColorId -> {
           fgColor = chanTheme.getColorByColorId(span.colorId)
+        }
+        is TextPartSpan.Heading -> {
+          currentFontSize += span.calculateNewFontSize(currentFontSize)
         }
         is TextPartSpan.Spoiler -> {
           bgColor = chanTheme.postSpoilerColor
@@ -333,8 +333,15 @@ class PostCommentApplier {
         null -> null
       }
 
+      val fontSize = if (currentFontSize == defaultPostCommentFontSize) {
+        TextUnit.Unspecified
+      } else {
+        with(appResources.composeDensity) { currentFontSize.sp }
+      }
+
       val spanStyle = SpanStyle(
         color = fgColor,
+        fontSize = fontSize,
         background = bgColor,
         fontWeight = fontWeight,
         fontStyle = fontStyle,

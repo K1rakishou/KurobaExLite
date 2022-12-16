@@ -21,7 +21,9 @@ abstract class AbstractSitePostParser(
     postDescriptor: PostDescriptor,
     parserContext: PostCommentParser.PostCommentParserContext
   ) {
-    when (htmlTag.tagName) {
+    val tagName = htmlTag.tagName
+
+    when (tagName) {
       "br" -> parseNewLineTag(childTextParts)
       "p" -> parseParagraphTag(childTextParts)
       "s" -> parseStrikethroughTag(childTextParts)
@@ -38,6 +40,17 @@ abstract class AbstractSitePostParser(
         error("<wbr> tags should all be removed during the HTML parsing stage. This is most likely a HTML parser bug.")
       }
       else -> {
+        if (tagName.startsWith("h", ignoreCase = true) && tagName.length == 2) {
+          parseHeadingTag(
+            htmlTag = htmlTag,
+            childTextParts = childTextParts,
+            postDescriptor = postDescriptor,
+            parserContext = parserContext
+          )
+
+          return
+        }
+
         logcat(priority = LogPriority.WARN, tag = TAG) {
           "Unsupported tag with name '${htmlTag.tagName}' found. " +
             "(postDescriptor=$postDescriptor, htmlTag=$htmlTag)"
@@ -73,6 +86,22 @@ abstract class AbstractSitePostParser(
           childTextPart.spans.add(TextPartSpan.FgColor(colorRgb))
         }
       }
+    }
+  }
+
+  open fun parseHeadingTag(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>,
+    postDescriptor: PostDescriptor,
+    parserContext: PostCommentParser.PostCommentParserContext
+  ) {
+    val headingSize = htmlTag.tagName.getOrNull(1)
+      ?.digitToIntOrNull()
+      ?.takeIf { size -> size in 0..5 }
+      ?: return
+
+    for (childTextPart in childTextParts) {
+      childTextPart.spans.add(TextPartSpan.Heading(headingSize))
     }
   }
 

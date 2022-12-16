@@ -100,7 +100,7 @@ internal fun Module.misc() {
   single { GlobalConstants(get()) }
   single { createMoshi() }
   single { PostCommentParser(siteManager = get()) }
-  single { PostCommentApplier() }
+  single { PostCommentApplier(appResources = get()) }
   single { FullScreenHelpers(get()) }
   single { AndroidHelpers(application = get(), snackbarManager = get()) }
   single { PostBindProcessor(get()) }
@@ -113,6 +113,7 @@ internal fun Module.misc() {
     ParsedPostDataCache(
       appContext = get(),
       coroutineScope = get(),
+      appSettings = get(),
       postCommentParser = get(),
       postCommentApplier = get(),
       postReplyChainManager = get(),

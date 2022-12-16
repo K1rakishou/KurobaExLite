@@ -18,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPart
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
@@ -61,6 +62,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class ParsedPostDataCache(
   private val appContext: Context,
   private val coroutineScope: CoroutineScope,
+  private val appSettings: AppSettings,
   private val postCommentParser: PostCommentParser,
   private val postCommentApplier: PostCommentApplier,
   private val postReplyChainManager: PostReplyChainManager,
@@ -404,6 +406,8 @@ class ParsedPostDataCache(
   ): ParsedPostData {
     BackgroundUtils.ensureBackgroundThread()
 
+    val defaultPostCommentFontSize = appSettings.postCellCommentTextSizeSp.read()
+
     try {
       val textParts = postCommentParser.parsePostComment(
         postCommentUnparsed = postCommentUnparsed,
@@ -417,6 +421,7 @@ class ParsedPostDataCache(
       }
 
       val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
+        defaultPostCommentFontSize = defaultPostCommentFontSize,
         markedPosts = getMarkedPostInfoSetForQuoteSpans(textParts),
         chanTheme = chanTheme,
         textParts = textParts,

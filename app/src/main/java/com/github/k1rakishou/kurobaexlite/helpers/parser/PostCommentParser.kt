@@ -50,7 +50,13 @@ class PostCommentParser(
     val postParser = site.parser()
 
     return Result
-      .Try { parsePostComment(postParser, postCommentUnparsed, postDescriptor) }
+      .Try {
+        parsePostComment(
+          postParser = postParser,
+          postCommentUnparsed = postCommentUnparsed,
+          postDescriptor = postDescriptor
+        )
+      }
       .getOrElse { error ->
         logcatError { "Failed to parse post '${postDescriptor.asReadableString()}, error=${error.asLog()}" }
 
@@ -97,9 +103,27 @@ class PostCommentParser(
           parserContext.onTagOpened(htmlNode)
 
           val htmlTag = htmlNode.htmlTag
-          val childTextParts = processNodes(postDescriptor, htmlTag.children, sitePostParser, parserContext)
-          sitePostParser.parseHtmlNode(htmlTag, childTextParts, postDescriptor, parserContext)
-          sitePostParser.postProcessHtmlNode(htmlTag, childTextParts, postDescriptor, parserContext)
+          val childTextParts = processNodes(
+            postDescriptor = postDescriptor,
+            htmlNodes = htmlTag.children,
+            sitePostParser = sitePostParser,
+            parserContext = parserContext
+          )
+
+          sitePostParser.parseHtmlNode(
+            htmlTag = htmlTag,
+            childTextParts = childTextParts,
+            postDescriptor = postDescriptor,
+            parserContext = parserContext
+          )
+
+          sitePostParser.postProcessHtmlNode(
+            htmlTag = htmlTag,
+            childTextParts = childTextParts,
+            postDescriptor = postDescriptor,
+            parserContext = parserContext
+          )
+
           currentTextParts.addAll(childTextParts)
 
           parserContext.onTagClosed(htmlNode)
