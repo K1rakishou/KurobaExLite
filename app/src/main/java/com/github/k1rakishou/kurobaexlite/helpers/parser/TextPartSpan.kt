@@ -30,7 +30,8 @@ sealed class TextPartSpan {
       is Italic,
       is Superscript,
       is Subscript,
-      is Heading -> PRIORITY_TEXT
+      is Heading,
+      is FontSize -> PRIORITY_TEXT
       is FgColor,
       is FgColorId -> PRIORITY_FOREGROUND
       Spoiler -> PRIORITY_SPOILER
@@ -49,15 +50,24 @@ sealed class TextPartSpan {
   class FgColorId(val colorId: ChanThemeColorId) : TextPartSpan()
 
   class Heading(private val headingValue: Int) : TextPartSpan() {
-
     fun calculateNewFontSize(fontSize: Int): Int {
-      return fontSize + (MAX_FONT_SIZE_INCREMENT - (headingValue.coerceAtMost(MAX_FONT_SIZE_INCREMENT).toFloat() * 1.5f).toInt())
+      return fontSize + (MAX_FONT_SIZE_INCREMENT - (headingValue.coerceAtMost(MAX_FONT_SIZE_INCREMENT).toFloat() * 2f).toInt())
     }
 
     companion object {
-      private const val MAX_FONT_SIZE_INCREMENT = 7
+      private const val MAX_FONT_SIZE_INCREMENT = 10
+    }
+  }
+
+  class FontSize(private val fontSizeValue: Int) : TextPartSpan() {
+    fun calculateNewFontSize(fontSize: Int): Int {
+      return fontSize + fontSizeValue
     }
 
+    companion object {
+      const val MIN_FONT_SIZE_INCREMENT = 1
+      const val MAX_FONT_SIZE_INCREMENT = 7
+    }
   }
 
   object Spoiler : TextPartSpan()

@@ -216,7 +216,10 @@ class PostCommentApplier(
           fgColor = chanTheme.getColorByColorId(span.colorId)
         }
         is TextPartSpan.Heading -> {
-          currentFontSize += span.calculateNewFontSize(currentFontSize)
+          currentFontSize = span.calculateNewFontSize(currentFontSize)
+        }
+        is TextPartSpan.FontSize -> {
+          currentFontSize = span.calculateNewFontSize(currentFontSize)
         }
         is TextPartSpan.Spoiler -> {
           bgColor = chanTheme.postSpoilerColor

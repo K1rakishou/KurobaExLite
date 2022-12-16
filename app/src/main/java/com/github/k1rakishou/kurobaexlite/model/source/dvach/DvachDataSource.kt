@@ -738,6 +738,8 @@ class DvachDataSource(
 
       if (dvachPost.isBanned) {
         append(BANNED_MARK_HTML)
+      } else if (dvachPost.isWarned) {
+        append(WARNED_MARK_HTML)
       }
     }
   }
@@ -907,6 +909,7 @@ class DvachDataSource(
 
     private const val DEFAULT_NAME = "Аноним"
     private const val BANNED_MARK_HTML = "<br><br><span class=\"post__pomyanem\">(Автор этого поста был забанен. Помянем.)</span>"
+    private const val WARNED_MARK_HTML = "<br><br><span class=\"post__pomyanem\">(Автор этого поста был предупрежден.)</span>"
   }
 
 }

@@ -66,6 +66,36 @@ abstract class AbstractSitePostParser(
     parserContext: PostCommentParser.PostCommentParserContext
   ) {
     parseAnyTagStyleAttribute(htmlTag, childTextParts)
+    parseAnyTagSizeAttribute(htmlTag, childTextParts)
+    parseAnyTagColorAttribute(htmlTag, childTextParts)
+  }
+
+  private fun parseAnyTagColorAttribute(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>) {
+    val colorName = htmlTag.attrUnescapedOrNull("color")
+      ?: return
+
+    val color = staticHtmlColorRepository.getColorValueByHtmlColorName(colorName)
+      ?: return
+
+    for (childTextPart in childTextParts) {
+      childTextPart.spans.add(TextPartSpan.FgColor(color))
+    }
+  }
+
+  private fun parseAnyTagSizeAttribute(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>) {
+    val sizeAttribute = htmlTag.attrUnescapedOrNull("size")
+      ?: return
+
+    val minSize = TextPartSpan.FontSize.MIN_FONT_SIZE_INCREMENT
+    val maxSize = TextPartSpan.FontSize.MAX_FONT_SIZE_INCREMENT
+
+    val fontSize = sizeAttribute.toIntOrNull()
+      .takeIf { size -> size in minSize..maxSize }
+      ?: return
+
+    for (childTextPart in childTextParts) {
+      childTextPart.spans.add(TextPartSpan.FontSize(fontSize))
+    }
   }
 
   private fun parseAnyTagStyleAttribute(

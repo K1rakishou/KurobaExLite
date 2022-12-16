@@ -12,6 +12,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Stable
 abstract class PostScreenState(
@@ -36,6 +37,10 @@ abstract class PostScreenState(
     get() = _chanDescriptorFlow.asStateFlow()
   val chanDescriptor: ChanDescriptor?
     get() = _chanDescriptorFlow.value
+
+  private val _parsingInProgress = AtomicBoolean(false)
+  val parsingInProgress: Boolean
+    get() = _parsingInProgress.get()
 
   private val _contentLoaded = MutableStateFlow(false)
   val contentLoaded: StateFlow<Boolean>
@@ -99,10 +104,12 @@ abstract class PostScreenState(
   fun onStartLoading(chanDescriptor: ChanDescriptor?) {
     _contentLoaded.value = false
     _contentDrawnOnce.value = false
+    _parsingInProgress.set(true)
   }
 
   fun onEndLoading(chanDescriptor: ChanDescriptor?) {
     _contentLoaded.value = true
+    _parsingInProgress.set(false)
   }
 
   fun onPostListDisposed(chanDescriptor: ChanDescriptor?) {

@@ -78,7 +78,7 @@ class ThreadScreenViewModel(
   private val bookmarkThreadExecutor = RendezvousCoroutineExecutor(viewModelScope)
 
   private val isLoadingThread: Boolean
-    get() = loadThreadJob?.isActive == true
+    get() = loadThreadJob?.isActive == true || threadScreenState.parsingInProgress
 
   private val _displayPostsPopupScreenFlow = MutableSharedFlow<PopupPostsScreen.PopupPostViewMode>(
     extraBufferCapacity = 1,

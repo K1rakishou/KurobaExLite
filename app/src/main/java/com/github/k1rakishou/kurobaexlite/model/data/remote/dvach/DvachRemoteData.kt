@@ -140,6 +140,8 @@ data class DvachPost(
     get() = endless == 1
   val isBanned: Boolean
     get() = banned == 1L
+  val isWarned: Boolean
+    get() = banned == 2L
 
   val originalPostNo: Long
     get() {
