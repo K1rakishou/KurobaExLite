@@ -128,7 +128,6 @@ class InstallMpvNativeLibrariesFromGithub(
           }
         }
 
-        logcat(TAG) { "Done" }
         logcat(TAG) { "Deleting old lib files" }
 
         mpvSettings.mpvNativeLibsDir.listFiles()
@@ -136,8 +135,6 @@ class InstallMpvNativeLibrariesFromGithub(
             logcat(TAG) { "Deleting ${libFile.absolutePath}" }
             libFile.delete()
           }
-
-        logcat(TAG) { "Done" }
 
         logcat(TAG) { "Extracting archived libs into \'${mpvSettings.mpvNativeLibsDir}\'" }
         extractArchiveAndMoveToLibsDirectory(mpvLibsZipArchiveFile, mpvSettings.mpvNativeLibsDir)
@@ -225,7 +222,7 @@ class InstallMpvNativeLibrariesFromGithub(
     private const val TAG = "InstallMpvNativeLibrariesFromGithubUseCase"
     private const val KUROBAEX_MPV_LIBS_RELEASES_ENDPOINT = "https://api.github.com/repos/K1rakishou/KurobaEx-mpv-libs/releases"
 
-    private val LIB_ABIS = setOf("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
+    private val LIB_ABIS = setOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
       .map { it.lowercase() }
   }
 
