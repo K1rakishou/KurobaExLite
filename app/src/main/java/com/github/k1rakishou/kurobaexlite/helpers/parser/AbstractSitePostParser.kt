@@ -21,9 +21,7 @@ abstract class AbstractSitePostParser(
     postDescriptor: PostDescriptor,
     parserContext: PostCommentParser.PostCommentParserContext
   ) {
-    val tagName = htmlTag.tagName
-
-    when (tagName) {
+    when (val tagName = htmlTag.tagName) {
       "br" -> parseNewLineTag(childTextParts)
       "p" -> parseParagraphTag(childTextParts)
       "s" -> parseStrikethroughTag(childTextParts)

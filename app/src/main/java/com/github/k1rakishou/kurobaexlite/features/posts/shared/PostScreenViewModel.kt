@@ -502,7 +502,7 @@ abstract class PostScreenViewModel(
       }
 
       val chunksCount = globalConstants.coresCount.coerceAtLeast(2)
-      val chunkSize = (postDataList.size / chunksCount).coerceAtLeast(chunksCount)
+      val chunkSize = ((postDataList.size / chunksCount) + 1).coerceAtLeast(chunksCount)
       val chanTheme = themeEngine.chanTheme
       val isParsingCatalog = chanDescriptor is CatalogDescriptor
 
@@ -580,7 +580,7 @@ abstract class PostScreenViewModel(
           repliesToPostDataSet += repliesToPostDescriptorSet
             .mapNotNull { postDescriptor -> postDataMap[postDescriptor] }
 
-          val repliesToChunkSize = (repliesToPostDataSet.size / chunksCount).coerceAtLeast(chunksCount)
+          val repliesToChunkSize = ((repliesToPostDataSet.size / chunksCount) + 1).coerceAtLeast(chunksCount)
 
           if (repliesToPostDataSet.isNotEmpty()) {
             logcat(TAG, LogPriority.VERBOSE) {

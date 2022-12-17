@@ -27,6 +27,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
@@ -76,9 +77,7 @@ class ParsedPostDataCache(
   private val threadParsedPostDataMap = mutableMapWithCap<PostDescriptor, ParsedPostData>(1024)
 
   @GuardedBy("mutex")
-  private val catalogPendingUpdates = mutableSetOf<PostDescriptor>()
-  @GuardedBy("mutex")
-  private val threadPendingUpdates = mutableSetOf<PostDescriptor>()
+  private val pendingPostUpdates = mutableMapOf<ChanDescriptor, HashSet<PostDescriptor>>()
 
   private val updateNotifyDebouncer = DebouncingCoroutineExecutor(coroutineScope)
 
@@ -137,13 +136,13 @@ class ParsedPostDataCache(
         is CatalogDescriptor -> {
           postDescriptors.forEach { postDescriptor ->
             catalogParsedPostDataMap.remove(postDescriptor)
-            catalogPendingUpdates.remove(postDescriptor)
+            pendingPostUpdates[chanDescriptor]?.remove(postDescriptor)
           }
         }
         is ThreadDescriptor -> {
           postDescriptors.forEach { postDescriptor ->
             threadParsedPostDataMap.remove(postDescriptor)
-            threadPendingUpdates.remove(postDescriptor)
+            pendingPostUpdates[chanDescriptor]?.remove(postDescriptor)
           }
         }
       }
@@ -264,37 +263,28 @@ class ParsedPostDataCache(
     postDescriptor: PostDescriptor
   ) {
     mutex.withLockNonCancellable {
-      when (chanDescriptor) {
-        is CatalogDescriptor -> catalogPendingUpdates += postDescriptor
-        is ThreadDescriptor -> threadPendingUpdates += postDescriptor
-      }
+      val pendingUpdatesSet = pendingPostUpdates.getOrPut(
+        key = chanDescriptor,
+        defaultValue = { mutableSetWithCap<PostDescriptor>(128) }
+      )
+      pendingUpdatesSet += postDescriptor
     }
-
-    _chanDescriptorPostsUpdatedFlow.emit(chanDescriptor)
 
     updateNotifyDebouncer.post(timeout = 250L) {
       mutex.withLockNonCancellable {
-        val updates = when (chanDescriptor) {
-          is CatalogDescriptor -> {
-            val updates = catalogPendingUpdates.toSet()
-            catalogPendingUpdates.clear()
+        val pendingPostUpdatesCopy = pendingPostUpdates.toMap()
+        pendingPostUpdates.clear()
 
-            updates
+        pendingPostUpdatesCopy.entries.forEach { (chanDescriptor, updates) ->
+          _chanDescriptorPostsUpdatedFlow.emit(chanDescriptor)
+
+          if (updates.isEmpty()) {
+            return@withLockNonCancellable
           }
-          is ThreadDescriptor -> {
-            val updates = threadPendingUpdates.toSet()
-            threadPendingUpdates.clear()
 
-            updates
-          }
+          logcat(TAG) { "notifyListenersPostDataUpdated() chanDescriptor: ${chanDescriptor}, updates: ${updates.size}" }
+          _postDataUpdatesFlow.emit(Pair(chanDescriptor, updates))
         }
-
-        if (updates.isEmpty()) {
-          return@withLockNonCancellable
-        }
-
-        logcat(TAG) { "notifyListenersPostDataUpdated() chanDescriptor: ${chanDescriptor}, updates: ${updates.size}" }
-        _postDataUpdatesFlow.emit(Pair(chanDescriptor, updates))
       }
     }
   }

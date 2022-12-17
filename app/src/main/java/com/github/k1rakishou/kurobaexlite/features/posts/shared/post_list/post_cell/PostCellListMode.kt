@@ -312,6 +312,8 @@ private fun RowScope.PostCellMarks(columnHeight: Int, postCellData: PostCellData
       }
     }
   )
+
+  Spacer(modifier = Modifier.width(4.dp))
 }
 
 @Composable

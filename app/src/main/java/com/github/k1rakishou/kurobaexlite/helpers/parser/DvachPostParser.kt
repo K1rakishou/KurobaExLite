@@ -152,6 +152,7 @@ class DvachPostParser(
         }
 
         if (ch.isWhitespace() && !processingPostNumber) {
+          ++offset
           continue
         }
 

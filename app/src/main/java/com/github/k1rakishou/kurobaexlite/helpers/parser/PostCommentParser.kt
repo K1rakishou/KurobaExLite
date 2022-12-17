@@ -129,7 +129,13 @@ class PostCommentParser(
           parserContext.onTagClosed(htmlNode)
         }
         is HtmlNode.Text -> {
-          currentTextParts += TextPartMut(htmlNode.text)
+          val nodeText = if (parserContext.isInsideDivTag) {
+            htmlNode.text.trim { ch -> ch.isWhitespace() }
+          } else {
+            htmlNode.text
+          }
+
+          currentTextParts += TextPartMut(nodeText)
         }
       }
     }
@@ -142,18 +148,26 @@ class PostCommentParser(
     val ulTagsCounter: Int
       get() = _ulTagsCounter
 
+    private var _divTagsCounter = 0
+    val divTagsCounter: Int
+      get() = _divTagsCounter
+
     val isInsideUlTag: Boolean
       get() = _ulTagsCounter > 0
+    val isInsideDivTag: Boolean
+      get() = _divTagsCounter > 0
 
     fun onTagOpened(tagNode: HtmlNode.Tag) {
       when (val tagName = tagNode.htmlTag.tagName) {
         "ul" -> ++_ulTagsCounter
+        "div" -> ++_divTagsCounter
       }
     }
 
     fun onTagClosed(tagNode: HtmlNode.Tag) {
       when (val tagName = tagNode.htmlTag.tagName) {
         "ul" -> --_ulTagsCounter
+        "div" -> --_divTagsCounter
       }
     }
 
