@@ -812,6 +812,7 @@ private fun MediaViewerBottomSheet(
         coroutineScope.launch { kurobaBottomSheetState.collapse() }
         scrollToImagesByIndex(imageToScrollToIndex)
       },
+      onPostImageLongClicked = { _, _ -> },
       onGoToPostClicked = { postCellData ->
         when (postCellData.chanDescriptor) {
           is CatalogDescriptor -> {
@@ -1665,7 +1666,8 @@ private fun DisplayImageLoadError(
   postImageDataLoadState: ImageLoadState.Error
 ) {
   Box(
-    modifier = Modifier.fillMaxSize()
+    modifier = Modifier
+      .fillMaxSize()
       .padding(horizontal = 16.dp, vertical = 24.dp)
       .drawBehind { drawRect(Color.Black.copy(alpha = 0.5f)) },
     contentAlignment = Alignment.Center

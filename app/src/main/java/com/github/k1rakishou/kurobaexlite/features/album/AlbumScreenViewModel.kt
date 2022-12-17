@@ -69,6 +69,10 @@ class AlbumScreenViewModel(
     _allImageKeys.clear()
   }
 
+  fun isInSelectionMode(): Boolean {
+    return _selectedImages.isNotEmpty()
+  }
+
   fun isImageSelected(albumImage: AlbumImage): Boolean {
     return _selectedImages.containsKey(albumImage.postImage.serverFileName)
   }

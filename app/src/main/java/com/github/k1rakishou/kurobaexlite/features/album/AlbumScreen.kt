@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -55,6 +56,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
@@ -94,6 +96,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class AlbumScreen(
   screenArgs: Bundle? = null,
@@ -104,6 +107,12 @@ class AlbumScreen(
   override val hasFab: Boolean = false
 
   private val chanDescriptor: ChanDescriptor by requireArgumentLazy(CHAN_DESCRIPTOR_ARG)
+
+  private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModel<AlbumScreenViewModel>()
+
+  private val postImageLongtapContentMenu by lazy {
+    PostImageLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  }
 
   private val keySuffix by lazy {
     when (chanDescriptor) {
@@ -214,6 +223,7 @@ class AlbumScreen(
   @Composable
   override fun HomeNavigationScreenContent() {
     val windowInsets = LocalWindowInsets.current
+    val view = LocalView.current
     val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
     val paddingValues = remember(key1 = windowInsets) {
       windowInsets.copyInsets(
@@ -274,6 +284,18 @@ class AlbumScreen(
             )
 
             navigationRouter.presentScreen(mediaViewerScreen)
+          },
+          onThumbnailLongClicked = { albumImage, postImage ->
+            if (albumScreenViewModel.isInSelectionMode()) {
+              albumScreenViewModel.toggleImageSelection(albumImage)
+              return@ContentInternal
+            }
+
+            postImageLongtapContentMenu.showMenu(
+              postImage = postImage,
+              viewProvider = { view },
+              onAlbumScreenToggleSelection = { albumScreenViewModel.toggleImageSelection(albumImage) }
+            )
           },
           onSelectionModeChanged = { isInSelectionMode ->
             if (isInSelectionMode) {
@@ -482,6 +504,7 @@ private fun ContentInternal(
   defaultToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcons>,
   selectionToolbarState: SimpleToolbarState<AlbumScreen.ToolbarIcons>,
   onThumbnailClicked: (IPostImage) -> Unit,
+  onThumbnailLongClicked: (AlbumScreenViewModel.AlbumImage, IPostImage) -> Unit,
   onSelectionModeChanged: (Boolean) -> Unit,
   isTopmostScreen: () -> Boolean,
 ) {
@@ -618,6 +641,7 @@ private fun ContentInternal(
               albumShowImageInfo = albumShowImageInfo,
               albumImage = albumImage,
               onThumbnailClicked = onThumbnailClicked,
+              onThumbnailLongClicked = onThumbnailLongClicked,
             )
           }
         )
@@ -639,6 +663,7 @@ private fun AlbumImageItem(
   albumShowImageInfo: Boolean,
   albumImage: AlbumScreenViewModel.AlbumImage,
   onThumbnailClicked: (IPostImage) -> Unit,
+  onThumbnailLongClicked: (AlbumScreenViewModel.AlbumImage, IPostImage) -> Unit
 ) {
   val albumScreenViewModel: AlbumScreenViewModel = koinRememberViewModel()
   val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember()
@@ -673,8 +698,8 @@ private fun AlbumImageItem(
     }
   }
 
-  val onLongClickRemembered = remember(key1 = albumScreenViewModel) {
-    { _: IPostImage -> albumScreenViewModel.toggleImageSelection(albumImage) }
+  val onLongClickRemembered = remember(albumImage) {
+    { postImage: IPostImage -> onThumbnailLongClicked(albumImage, postImage) }
   }
 
   Box {
@@ -695,7 +720,7 @@ private fun AlbumImageItem(
       postImage = albumImage.postImage,
       contentScale = ContentScale.Crop,
       onLongClick = onLongClickRemembered,
-      onClick = onClickRemembered
+      onClick = onClickRemembered,
     )
 
     if (albumShowImageInfo && albumImage.postSubject.isNotNullNorEmpty()) {

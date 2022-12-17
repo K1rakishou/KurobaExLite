@@ -101,6 +101,7 @@ internal fun PostListContent(
   onCurrentlyTouchingPostList: (Boolean) -> Unit,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   onGoToPostClicked: ((PostCellData) -> Unit)?,
   emptyContent: @Composable (Any, Boolean, Boolean) -> Unit = { lazyItemScope, isInPopup, isCatalogMode ->
     PostListEmptyContent(lazyItemScope, isInPopup, isCatalogMode)
@@ -291,6 +292,7 @@ internal fun PostListContent(
       onFastScrollerDragStateChanged(isDraggingFastScroller)
     },
     onPostImageClicked = onPostImageClicked,
+    onPostImageLongClicked = onPostImageLongClicked,
     onGoToPostClicked = onGoToPostClicked,
     emptyContent = emptyContent,
     loadingContent = loadingContent,
@@ -429,6 +431,7 @@ private fun PostListInternal(
   onPostRepliesClicked: (PostCellData) -> Unit,
   onThreadStatusCellClicked: (ThreadDescriptor) -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   onGoToPostClicked: ((PostCellData) -> Unit)?,
   onCopySelectedText: (String) -> Unit,
   onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
@@ -526,6 +529,7 @@ private fun PostListInternal(
             onPostCellCommentLongClicked = onPostCellCommentLongClicked,
             onPostRepliesClicked = onPostRepliesClicked,
             onPostImageClicked = onPostImageClicked,
+            onPostImageLongClicked = onPostImageLongClicked,
             onGoToPostClicked = onGoToPostClicked,
             onFastScrollerDragStateChanged = onFastScrollerDragStateChanged,
             onPostListScrolled = onPostListScrolled,
@@ -560,6 +564,7 @@ private fun PostListInternal(
             onPostCellCommentLongClicked = onPostCellCommentLongClicked,
             onPostRepliesClicked = onPostRepliesClicked,
             onPostImageClicked = onPostImageClicked,
+            onPostImageLongClicked = onPostImageLongClicked,
             onGoToPostClicked = onGoToPostClicked,
             onFastScrollerDragStateChanged = onFastScrollerDragStateChanged,
             onPostListScrolled = onPostListScrolled,
@@ -599,6 +604,7 @@ private fun PostsListMode(
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   onGoToPostClicked: ((PostCellData) -> Unit)?,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
   onPostListScrolled: (Float) -> Unit,
@@ -720,6 +726,7 @@ private fun PostsListMode(
                 onPostCellCommentLongClicked = onPostCellCommentLongClicked,
                 onPostRepliesClicked = onPostRepliesClicked,
                 onPostImageClicked = onPostImageClicked,
+                onPostImageLongClicked = onPostImageLongClicked,
                 onGoToPostClicked = onGoToPostClicked,
                 reparsePostSubject = reparsePostSubjectRemembered
               )
@@ -762,6 +769,7 @@ private fun PostsGridMode(
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   onGoToPostClicked: ((PostCellData) -> Unit)?,
   onFastScrollerDragStateChanged: (Boolean) -> Unit,
   onPostListScrolled: (Float) -> Unit,
@@ -886,6 +894,7 @@ private fun PostsGridMode(
                 onPostCellCommentLongClicked = onPostCellCommentLongClicked,
                 onPostRepliesClicked = onPostRepliesClicked,
                 onPostImageClicked = onPostImageClicked,
+                onPostImageLongClicked = onPostImageLongClicked,
                 onGoToPostClicked = onGoToPostClicked,
                 reparsePostSubject = { postCellData, onPostSubjectParsed ->
                   postsScreenViewModel.reparsePostSubject(
@@ -1130,6 +1139,7 @@ private fun PostCellContainer(
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   onGoToPostClicked: ((PostCellData) -> Unit)?,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
@@ -1174,6 +1184,7 @@ private fun PostCellContainer(
         onPostCellCommentLongClicked = onPostCellCommentLongClicked,
         onPostRepliesClicked = onPostRepliesClicked,
         onPostImageClicked = onPostImageClicked,
+        onPostImageLongClicked = onPostImageLongClicked,
         onGoToPostClicked = onGoToPostClicked,
         reparsePostSubject = reparsePostSubject
       )

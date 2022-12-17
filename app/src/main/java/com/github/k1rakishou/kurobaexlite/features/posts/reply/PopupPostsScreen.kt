@@ -69,6 +69,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.buttonsLayoutId
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.postListLayoutId
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
@@ -122,6 +123,10 @@ class PopupPostsScreen(
 
   private val postLongtapContentMenu by lazy {
     PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  }
+
+  private val postImageLongtapContentMenu by lazy {
+    PostImageLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -274,6 +279,7 @@ class PopupPostsScreen(
     }
 
     val density = LocalDensity.current
+    val view = LocalView.current
     val buttonsHeightPx = with(density) { remember(key1 = buttonsHeight) { buttonsHeight.toPx().toInt() } }
 
     HandleBackPresses {
@@ -325,6 +331,12 @@ class PopupPostsScreen(
           )
 
           navigationRouter.presentScreen(mediaViewerScreen)
+        },
+        onPostImageLongClicked = { chanDescriptor, longClickedImage ->
+          postImageLongtapContentMenu.showMenu(
+            postImage = longClickedImage,
+            viewProvider = { view }
+          )
         }
       )
     }
@@ -431,6 +443,7 @@ private fun PopupPostsScreenContentLayout(
   stopPresenting: () -> Unit,
   onBackPressed: () -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
 ) {
   Layout(
     content = {
@@ -442,7 +455,8 @@ private fun PopupPostsScreenContentLayout(
         linkableClickHelperProvider = linkableClickHelperProvider,
         stopPresenting = stopPresenting,
         onBackPressed = onBackPressed,
-        onPostImageClicked = onPostImageClicked
+        onPostImageClicked = onPostImageClicked,
+        onPostImageLongClicked = onPostImageLongClicked,
       )
     },
     measurePolicy = { measurables, constraints ->
@@ -488,6 +502,7 @@ private fun PopupPostsScreenContent(
   stopPresenting: () -> Unit,
   onBackPressed: () -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
   val context = LocalContext.current
@@ -633,6 +648,7 @@ private fun PopupPostsScreenContent(
         }
       },
       onPostImageClicked = onPostImageClicked,
+      onPostImageLongClicked = onPostImageLongClicked,
       onGoToPostClicked = { postCellData ->
         if (postListOptions.isCatalogMode) {
           threadScreenViewModel.loadThread(postCellData.postDescriptor.threadDescriptor)

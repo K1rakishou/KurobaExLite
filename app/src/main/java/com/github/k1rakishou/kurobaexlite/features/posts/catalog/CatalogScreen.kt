@@ -37,6 +37,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.Catalog
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.search.global.GlobalSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchButtons
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
@@ -104,6 +105,10 @@ class CatalogScreen(
 
   private val postLongtapContentMenu by lazy {
     PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  }
+
+  private val postImageLongtapContentMenu by lazy {
+    PostImageLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val replyLayoutState: IReplyLayoutState
@@ -385,6 +390,8 @@ class CatalogScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
+    val view = LocalView.current
+
     HandleBackPresses {
       for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
         if (composeScreen.onBackPressed()) {
@@ -462,6 +469,12 @@ class CatalogScreen(
 
           navigationRouter.presentScreen(mediaViewerScreen)
         },
+        onPostImageLongClicked = { chanDescriptor, longClickedImage ->
+          postImageLongtapContentMenu.showMenu(
+            postImage = longClickedImage,
+            viewProvider = { view }
+          )
+        },
         postListSearchButtons = {
           PostListSearchButtons(
             postsScreenViewModelProvider = { catalogScreenViewModel },
@@ -490,6 +503,7 @@ private fun BoxScope.CatalogPostListScreen(
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
   navigationRouterProvider: () -> NavigationRouter,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
@@ -642,6 +656,7 @@ private fun BoxScope.CatalogPostListScreen(
       // no-op
     },
     onPostImageClicked = onPostImageClicked,
+    onPostImageLongClicked = onPostImageLongClicked,
     onGoToPostClicked = null,
     onPostListScrolled = { delta ->
       globalUiInfoManager.onContentListScrolling(screenKey, delta)

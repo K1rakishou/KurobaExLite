@@ -66,6 +66,7 @@ fun PostCellGridMode(
   postBlinkAnimationState: PostBlinkAnimationState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
   onCopySelectedText: (String) -> Unit,
@@ -136,7 +137,8 @@ fun PostCellGridMode(
               chanDescriptor = chanDescriptor,
               postCellData = postCellData,
               postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-              onPostImageClicked = onPostImageClicked
+              onPostImageClicked = onPostImageClicked,
+              onPostImageLongClicked = onPostImageLongClicked
             )
           }
         },
@@ -318,6 +320,7 @@ private fun PostCellTitle(
   postCellData: PostCellData,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
 ) {
   val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
 
@@ -325,6 +328,7 @@ private fun PostCellTitle(
     PostCellThumbnail(
       postCellData = postCellData,
       onPostImageClicked = onPostImageClicked,
+      onPostImageLongClicked = onPostImageLongClicked,
       chanDescriptor = chanDescriptor
     )
 
@@ -359,6 +363,7 @@ private fun PostCellTitle(
 private fun PostCellThumbnail(
   postCellData: PostCellData,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
   val postImage = postCellData.images!!.first()
@@ -382,6 +387,9 @@ private fun PostCellThumbnail(
           ?: return@PostImageThumbnail
 
         onPostImageClicked(chanDescriptor, clickedImage, boundsInWindow)
+      },
+      onLongClick = { longClickedImage ->
+        onPostImageLongClicked(chanDescriptor, longClickedImage)
       }
     )
   }

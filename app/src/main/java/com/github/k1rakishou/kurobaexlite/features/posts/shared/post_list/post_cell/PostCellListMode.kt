@@ -104,6 +104,7 @@ fun PostCellListMode(
   postBlinkAnimationState: PostBlinkAnimationState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
   textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
@@ -176,6 +177,7 @@ fun PostCellListMode(
           postCellData = postCellData,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
           onPostImageClicked = onPostImageClicked,
+          onPostImageLongClicked = onPostImageLongClicked,
           reparsePostSubject = reparsePostSubject
         )
       } else {
@@ -184,6 +186,7 @@ fun PostCellListMode(
           postCellData = postCellData,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
           onPostImageClicked = onPostImageClicked,
+          onPostImageLongClicked = onPostImageLongClicked,
           reparsePostSubject = reparsePostSubject
         )
       }
@@ -322,6 +325,7 @@ private fun PostCellTitleZeroOrOneThumbnails(
   postCellData: PostCellData,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
   val postSubject = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostSubject }
@@ -339,6 +343,7 @@ private fun PostCellTitleZeroOrOneThumbnails(
         thumbnailSize = ThumbnailSize,
         postImage = postImage,
         onPostImageClicked = onPostImageClicked,
+        onPostImageLongClicked = onPostImageLongClicked,
         chanDescriptor = chanDescriptor
       )
 
@@ -368,6 +373,7 @@ private fun PostCellTitleTwoOrMoreThumbnails(
   postCellData: PostCellData,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
@@ -411,6 +417,7 @@ private fun PostCellTitleTwoOrMoreThumbnails(
               thumbnailSize = ThumbnailSize,
               postImage = postImage,
               onPostImageClicked = onPostImageClicked,
+              onPostImageLongClicked = onPostImageLongClicked,
               chanDescriptor = chanDescriptor
             )
 
@@ -495,6 +502,7 @@ private fun PostCellThumbnail(
   thumbnailSize: Dp,
   postImage: PostCellImageData,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
@@ -514,6 +522,9 @@ private fun PostCellThumbnail(
           ?: return@PostImageThumbnail
 
         onPostImageClicked(chanDescriptor, clickedImage, boundsInWindow)
+      },
+      onLongClick = { longClickedImage ->
+        onPostImageLongClicked(chanDescriptor, longClickedImage)
       }
     )
   }

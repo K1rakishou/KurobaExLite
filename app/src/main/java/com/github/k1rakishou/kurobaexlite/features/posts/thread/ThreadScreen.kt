@@ -14,7 +14,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -38,6 +37,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchButtons
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
@@ -101,6 +101,10 @@ class ThreadScreen(
 
   private val postLongtapContentMenu by lazy {
     PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  }
+
+  private val postImageLongtapContentMenu by lazy {
+    PostImageLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val replyLayoutState: IReplyLayoutState
@@ -292,6 +296,8 @@ class ThreadScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
+    val view = LocalView.current
+
     LaunchedEffect(
       key1 = Unit,
       block = {
@@ -370,6 +376,12 @@ class ThreadScreen(
 
           navigationRouter.presentScreen(mediaViewerScreen)
         },
+        onPostImageLongClicked = { chanDescriptor, longClickedImage ->
+          postImageLongtapContentMenu.showMenu(
+            postImage = longClickedImage,
+            viewProvider = { view }
+          )
+        },
         postListSearchButtons = {
           PostListSearchButtons(
             postsScreenViewModelProvider = { threadScreenViewModel },
@@ -421,6 +433,7 @@ private fun BoxScope.ThreadPostListScreen(
   navigationRouterProvider: () -> NavigationRouter,
   showRepliesForPost: (PopupPostsScreen.PopupPostViewMode) -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   postListSearchButtons: @Composable () -> Unit
 ) {
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
@@ -443,7 +456,6 @@ private fun BoxScope.ThreadPostListScreen(
   val viewProvider by rememberUpdatedState(newValue = { view })
 
   val kurobaSnackbarState = rememberKurobaSnackbarState()
-  val coroutineScope = rememberCoroutineScope()
 
   val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
   val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
@@ -551,6 +563,7 @@ private fun BoxScope.ThreadPostListScreen(
       }
     },
     onPostImageClicked = onPostImageClicked,
+    onPostImageLongClicked = onPostImageLongClicked,
     onGoToPostClicked = null,
     onPostListScrolled = { delta ->
       globalUiInfoManager.onContentListScrolling(screenKey, delta)

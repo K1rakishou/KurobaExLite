@@ -52,6 +52,7 @@ fun PostCell(
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostRepliesClicked: (PostCellData) -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
+  onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   onGoToPostClicked: ((PostCellData) -> Unit)?,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
@@ -73,6 +74,7 @@ fun PostCell(
         postBlinkAnimationState = postBlinkAnimationState,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         onPostImageClicked = onPostImageClicked,
+        onPostImageLongClicked = onPostImageLongClicked,
         reparsePostSubject = reparsePostSubject,
         textSelectionEnabled = textSelectionEnabled,
         detectLinkableClicks = detectLinkableClicks,
@@ -96,6 +98,7 @@ fun PostCell(
         postBlinkAnimationState = postBlinkAnimationState,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         onPostImageClicked = onPostImageClicked,
+        onPostImageLongClicked = onPostImageLongClicked,
         textSelectionEnabled = textSelectionEnabled,
         detectLinkableClicks = detectLinkableClicks,
         onCopySelectedText = onCopySelectedText,

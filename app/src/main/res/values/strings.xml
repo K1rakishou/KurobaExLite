@@ -83,6 +83,9 @@
     <string name="quote">Quote</string>
     <string name="quote_text">Quote Text</string>
 
+    <string name="copy_image_full_url">Copy image full url</string>
+    <string name="album_screen_toggle_selection">Select image</string>
+
     <string name="type_to_search_hint">Type to search</string>
     <string name="downloading_file">Downloading file, this may take some time</string>
     <string name="doing_heavy_lifting_please_wait">Doing heavy lifting, please wait…</string>
