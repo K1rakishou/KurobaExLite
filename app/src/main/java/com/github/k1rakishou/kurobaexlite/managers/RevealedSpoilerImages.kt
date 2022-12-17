@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.managers
 
+import android.util.LruCache
 import androidx.annotation.GuardedBy
-import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -11,7 +11,7 @@ import okhttp3.HttpUrl
 
 class RevealedSpoilerImages {
   @GuardedBy("itself")
-  private val cache = mutableSetWithCap<HttpUrl>(256)
+  private val cache = LruCache<HttpUrl, Unit>(4096)
 
   private val _spoilerImageRevealedEvents = MutableSharedFlow<HttpUrl>(
     extraBufferCapacity = Channel.UNLIMITED
@@ -20,7 +20,7 @@ class RevealedSpoilerImages {
     get() = _spoilerImageRevealedEvents.asSharedFlow()
 
   fun isSpoilerImageRevealed(imageUrl: HttpUrl): Boolean {
-    return synchronized(cache) { cache.contains(imageUrl) }
+    return synchronized(cache) { cache.get(imageUrl) != null }
   }
 
   fun onFullImageOpened(postImage: IPostImage) {
@@ -31,7 +31,7 @@ class RevealedSpoilerImages {
     val imageUrl = postImage.fullImageAsUrl
 
     synchronized(cache) {
-      if (cache.add(imageUrl)) {
+      if (cache.put(imageUrl, Unit) == null) {
         _spoilerImageRevealedEvents.tryEmit(imageUrl)
       }
     }

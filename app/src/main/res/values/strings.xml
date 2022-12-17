@@ -85,7 +85,7 @@
 
     <string name="type_to_search_hint">Type to search</string>
     <string name="downloading_file">Downloading file, this may take some time</string>
-    <string name="loading_please_wait">Loading, please wait…</string>
+    <string name="doing_heavy_lifting_please_wait">Doing heavy lifting, please wait…</string>
 
     <string name="type_to_search_bookmarks_hint">Type to search bookmarks</string>
     <string name="type_to_search_history_hint">Type to search history</string>

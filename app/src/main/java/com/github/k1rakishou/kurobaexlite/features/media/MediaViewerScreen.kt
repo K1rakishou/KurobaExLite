@@ -138,6 +138,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.progress.ProgressScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberKurobaBottomSheetState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -291,18 +292,27 @@ class MediaViewerScreen(
     mpvSettings: MpvSettings,
     context: Context
   ) {
+    var job: Job? = null
+
     val progressScreen = ComposeScreen.createScreen<ProgressScreen>(
       componentActivity = componentActivity,
       navigationRouter = navigationRouter,
       args = {
-        putString(
-          ProgressScreen.TITLE,
-          context.resources.getString(R.string.media_viewer_plugins_loading_libs)
+        putString(ProgressScreen.TITLE, context.resources.getString(R.string.media_viewer_plugins_loading_libs))
+        putBoolean(ProgressScreen.CANCELLABLE, true)
+      },
+      callbacks = {
+        callback(
+          callbackKey = ProgressScreen.CANCELLATION_CALLBACK,
+          func = {
+            job?.cancel()
+            job = null
+          }
         )
       }
     )
 
-    mediaViewerScreenViewModel.installMpvLibsFromGithub(
+    job = mediaViewerScreenViewModel.installMpvLibsFromGithub(
       mpvSettings = mpvSettings,
       showLoading = { navigationRouter.presentScreen(progressScreen) },
       hideLoading = { navigationRouter.stopPresentingScreen(progressScreen.screenKey) },

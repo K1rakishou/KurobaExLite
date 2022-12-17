@@ -53,6 +53,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineE
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
@@ -103,6 +104,7 @@ fun DisplayVideo(
   }
 
   val snackbarManager: SnackbarManager = koinRemember()
+  val revealedSpoilerImages: RevealedSpoilerImages = koinRemember()
 
   val librariesInstalledAndLoadedMut by produceState<Boolean?>(
     initialValue = null,
@@ -234,7 +236,10 @@ fun DisplayVideo(
   val eventObserver = rememberEventObserver(
     videoMediaState = videoMediaState,
     videoMediaStateSaveable = videoMediaStateSaveable,
-    mpvViewMut = mpvViewMut
+    mpvViewMut = mpvViewMut,
+    onVideoStartedPlaying = {
+      revealedSpoilerImages.onFullImageOpened(postImageDataLoadState.postImage)
+    }
   )
 
   val logObserver = rememberLogObserver(videoMediaState)
@@ -417,6 +422,7 @@ private fun rememberEventObserver(
   videoMediaState: MediaState.Video,
   videoMediaStateSaveable: VideoMediaStateSaveable,
   mpvViewMut: MPVView?,
+  onVideoStartedPlaying: () -> Unit
 ): MPVLib.EventObserver {
   var videoStartedPlaying by videoMediaState.videoStartedPlayingState
   val mpvViewMutUpdated by rememberUpdatedState(newValue = mpvViewMut)
@@ -569,6 +575,8 @@ private fun rememberEventObserver(
                 mpvView.pauseUnpause(videoMediaStateUpdated.isPausedState.value)
               }
             }
+
+            onVideoStartedPlaying()
           }
           MPVLib.mpvEventId.MPV_EVENT_END_FILE -> {
             logcat(TAG) { "onEvent MPV_EVENT_END_FILE" }

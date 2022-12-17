@@ -128,6 +128,10 @@ abstract class ComposeScreen protected constructor(
     return lazy { savedStateViewModel.getArgumentOrNull(key) }
   }
 
+  protected fun <T : Any> argumentOrDefaultLazy(key: String, default: T): Lazy<T> {
+    return lazy { savedStateViewModel.getArgumentOrNull(key) ?: default }
+  }
+
   protected fun <T : Any> requireArgumentLazy(key: String): Lazy<T> {
     return lazy {
       val arg = argumentOrNullLazy<T>(key).value

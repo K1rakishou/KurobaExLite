@@ -43,6 +43,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -332,8 +333,8 @@ class MediaViewerScreenViewModel(
     hideLoading: () -> Unit,
     onFailed: (Throwable) -> Unit,
     onSuccess: () -> Unit
-  ) {
-    viewModelScope.launch {
+  ): Job {
+    return viewModelScope.launch {
       val result = try {
         showLoading()
         installMpvNativeLibrariesFromGithub.execute(mpvSettings)

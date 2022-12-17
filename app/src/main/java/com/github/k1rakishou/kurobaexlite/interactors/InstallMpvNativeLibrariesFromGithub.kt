@@ -6,7 +6,9 @@ import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendConvertWithJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
@@ -16,15 +18,16 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
-import java.io.File
-import java.io.IOException
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import logcat.logcat
 import okhttp3.Request
 import okhttp3.internal.closeQuietly
+import java.io.File
+import java.io.IOException
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
 
 class InstallMpvNativeLibrariesFromGithub(
   private val appContext: Context,
@@ -110,34 +113,41 @@ class InstallMpvNativeLibrariesFromGithub(
     logcat(TAG) { "mpvLibsZipArchiveFile: \'${mpvLibsZipArchiveFile.absolutePath}\'" }
 
     try {
-      if (mpvLibsZipArchiveFile.exists()) {
-        mpvLibsZipArchiveFile.delete()
-      }
-
-      if (!mpvLibsZipArchiveFile.createNewFile()) {
-        throw MpvInstallLibsFromGithubException("Failed to create mpv libs output file on disk")
-      }
-
-      body.source().inputStream().use { inputStream ->
-        mpvLibsZipArchiveFile.outputStream().use { outputStream ->
-          inputStream.copyTo(outputStream)
-        }
-      }
-
-      logcat(TAG) { "Done" }
-      logcat(TAG) { "Deleting old lib files" }
-
-      mpvSettings.mpvNativeLibsDir.listFiles()
-        ?.forEach { libFile ->
-          logcat(TAG) { "Deleting ${libFile.absolutePath}" }
-          libFile.delete()
+      runInterruptible {
+        if (mpvLibsZipArchiveFile.exists()) {
+          mpvLibsZipArchiveFile.delete()
         }
 
-      logcat(TAG) { "Done" }
+        if (!mpvLibsZipArchiveFile.createNewFile()) {
+          throw MpvInstallLibsFromGithubException("Failed to create mpv libs output file on disk")
+        }
 
-      logcat(TAG) { "Extracting archived libs into \'${mpvSettings.mpvNativeLibsDir}\'" }
-      extractArchiveAndMoveToLibsDirectory(mpvLibsZipArchiveFile, mpvSettings.mpvNativeLibsDir)
-      logcat(TAG) { "Done" }
+        body.source().inputStream().use { inputStream ->
+          mpvLibsZipArchiveFile.outputStream().use { outputStream ->
+            inputStream.copyTo(outputStream)
+          }
+        }
+
+        logcat(TAG) { "Done" }
+        logcat(TAG) { "Deleting old lib files" }
+
+        mpvSettings.mpvNativeLibsDir.listFiles()
+          ?.forEach { libFile ->
+            logcat(TAG) { "Deleting ${libFile.absolutePath}" }
+            libFile.delete()
+          }
+
+        logcat(TAG) { "Done" }
+
+        logcat(TAG) { "Extracting archived libs into \'${mpvSettings.mpvNativeLibsDir}\'" }
+        extractArchiveAndMoveToLibsDirectory(mpvLibsZipArchiveFile, mpvSettings.mpvNativeLibsDir)
+        logcat(TAG) { "Done" }
+      }
+    } catch (error: Throwable) {
+      logcatError(TAG) { "Got error: \'${error.errorMessageOrClassName()}\' deleting everything in \'${mpvSettings.mpvNativeLibsDir}\'" }
+      mpvSettings.mpvNativeLibsDir.listFiles()?.forEach { file -> file.delete() }
+
+      throw error
     } finally {
       mpvLibsZipArchiveFile.delete()
     }
