@@ -685,9 +685,6 @@ private fun BoxScope.CatalogPostListScreen(
       screenContentLoaded = screenContentLoaded,
       lastLoadedEndedWithError = lastLoadedEndedWithError,
       mainUiLayoutMode = mainUiLayoutMode,
-      onGoBackFabClicked = {
-        // no-op
-      },
       onReplyFabClicked = { clickedFabScreenKey ->
         if (screenKey != clickedFabScreenKey) {
           return@PostsScreenFabContainer

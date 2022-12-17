@@ -78,7 +78,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.GenericLazyStateWr
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
@@ -110,7 +109,13 @@ class ThreadScreen(
   override val defaultToolbar: KurobaChildToolbar by lazy {
     ThreadScreenDefaultToolbar(
       threadScreenViewModel = threadScreenViewModel,
-      onBackPressed = { globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY, true) },
+      onBackPressed = {
+        if (processBackPressEvent()) {
+          return@ThreadScreenDefaultToolbar
+        }
+
+        globalUiInfoManager.updateCurrentPage(CatalogScreen.SCREEN_KEY, true)
+      },
       toggleBookmarkState = { longClicked ->
         val bookmarkDescriptor = threadScreenViewModel.threadDescriptor
           ?: return@ThreadScreenDefaultToolbar
@@ -302,27 +307,7 @@ class ThreadScreen(
       }
     )
 
-    HandleBackPresses {
-      for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
-        if (composeScreen.onBackPressed()) {
-          return@HandleBackPresses true
-        }
-      }
-
-      if (replyLayoutState.onBackPressed()) {
-        return@HandleBackPresses true
-      }
-
-      if (kurobaToolbarContainerState.onBackPressed()) {
-        return@HandleBackPresses true
-      }
-
-      if (threadScreenViewModel.onBackPressed()) {
-        return@HandleBackPresses true
-      }
-
-      return@HandleBackPresses false
-    }
+    HandleBackPresses { processBackPressEvent() }
 
     ProcessCaptchaRequestEvents(
       currentChanDescriptorProvider = { threadScreenViewModel.threadDescriptor },
@@ -394,6 +379,28 @@ class ThreadScreen(
         }
       )
     }
+  }
+
+  private suspend fun processBackPressEvent(): Boolean {
+    for (composeScreen in navigationRouter.navigationScreensStackExcept(this).asReversed()) {
+      if (composeScreen.onBackPressed()) {
+        return true
+      }
+    }
+
+    if (replyLayoutState.onBackPressed()) {
+      return true
+    }
+
+    if (kurobaToolbarContainerState.onBackPressed()) {
+      return true
+    }
+
+    if (threadScreenViewModel.onBackPressed()) {
+      return true
+    }
+
+    return false
   }
 
   companion object {
@@ -568,11 +575,6 @@ private fun BoxScope.ThreadPostListScreen(
       screenContentLoaded = screenContentLoaded,
       lastLoadedEndedWithError = lastLoadedEndedWithError,
       mainUiLayoutMode = mainUiLayoutMode,
-      onGoBackFabClicked = {
-        coroutineScope.launch {
-          threadScreenViewModel.onBackPressed()
-        }
-      },
       onReplyFabClicked = { clickedFabScreenKey ->
         if (screenKey != clickedFabScreenKey) {
           return@PostsScreenFabContainer

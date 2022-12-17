@@ -37,7 +37,6 @@ fun BoxScope.PostsScreenFabContainer(
   screenContentLoaded: Boolean,
   lastLoadedEndedWithError: Boolean,
   mainUiLayoutMode: MainUiLayoutMode,
-  onGoBackFabClicked: () -> Unit,
   onReplyFabClicked: (ScreenKey) -> Unit,
 ) {
   if (mainUiLayoutMode != MainUiLayoutMode.Split) {

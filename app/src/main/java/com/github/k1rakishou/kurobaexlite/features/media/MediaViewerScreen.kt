@@ -282,7 +282,7 @@ class MediaViewerScreen(
         stopPresenting()
         ScreenCallbackStorage.invokeCallback(screenKey, openingCatalogOrScreenCallbackKey)
       },
-      onBackPressed = { coroutineScope.launch { onBackPressed() } },
+      onToolbarBackPressed = { stopPresenting() },
       stopPresenting = { stopPresenting() },
     )
   }
@@ -537,7 +537,7 @@ private fun MediaViewerContent(
   onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
   loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
   onOpeningCatalogOrThread: () -> Unit,
-  onBackPressed: () -> Unit,
+  onToolbarBackPressed: () -> Unit,
   stopPresenting: () -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -621,7 +621,7 @@ private fun MediaViewerContent(
                   coroutineScope.launch { kurobaBottomSheetState.open() }
                 }
               },
-              onBackPressed = onBackPressed,
+              onToolbarBackPressed = onToolbarBackPressed,
               onInstallMpvLibsFromGithubButtonClicked = onInstallMpvLibsFromGithubButtonClicked,
               loadFullImage = loadFullImage,
               stopPresenting = stopPresenting,
@@ -856,7 +856,7 @@ private fun MediaViewerContentAfterTransition(
   onPreviewLoadingFinished: (IPostImage) -> Unit,
   onDownloadButtonClicked: (IPostImage) -> Unit,
   onShowPostWithCommentsClicked: () -> Unit,
-  onBackPressed: () -> Unit,
+  onToolbarBackPressed: () -> Unit,
   onInstallMpvLibsFromGithubButtonClicked: () -> Unit,
   loadFullImage: (AtomicInteger, ImageLoadState.PreparingForLoading, (Int, Float) -> Unit) -> Unit,
   stopPresenting: () -> Unit
@@ -910,7 +910,7 @@ private fun MediaViewerContentAfterTransition(
         mediaViewerScreenState = mediaViewerScreenState,
         pagerState = pagerState,
         onDownloadMediaClicked = { postImage -> onDownloadButtonClicked(postImage) },
-        onBackPressed = { coroutineScope.launch { onBackPressed() } }
+        onBackPressed = { onToolbarBackPressed() }
       )
     }
 
