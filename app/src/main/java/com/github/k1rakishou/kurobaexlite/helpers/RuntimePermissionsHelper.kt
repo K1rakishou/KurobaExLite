@@ -6,6 +6,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.OnRequestPermissionsResultCallback
 import androidx.core.app.ComponentActivity
 import androidx.core.content.ContextCompat
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 class RuntimePermissionsHelper(
   private val applicationContext: Context,
@@ -17,23 +19,41 @@ class RuntimePermissionsHelper(
     return ContextCompat.checkSelfPermission(applicationContext, permission) == PackageManager.PERMISSION_GRANTED
   }
 
-  fun requestPermission(permission: String, callback: Callback): Boolean {
-    if (pendingCallback == null) {
-      pendingCallback = CallbackHolder().also { holder ->
-        holder.callback = callback
-        holder.permission = permission
-      }
-
-      ActivityCompat.requestPermissions(
-        (callbackActivity as ComponentActivity),
-        arrayOf(permission),
-        RUNTIME_PERMISSION_RESULT_ID
+  suspend fun requestPermission(permission: String): Boolean {
+    return suspendCancellableCoroutine<Boolean> { cancellableContinuation ->
+      requestPermission(
+        permission = permission,
+        callback = object : Callback {
+          override fun onRuntimePermissionResult(granted: Boolean) {
+            cancellableContinuation.resumeSafe(granted)
+          }
+        }
       )
+    }
+  }
 
+  fun requestPermission(permission: String, callback: Callback): Boolean {
+    if (hasPermission(permission)) {
+      callback.onRuntimePermissionResult(true)
       return true
     }
 
-    return false
+    if (pendingCallback != null) {
+      return false
+    }
+
+    pendingCallback = CallbackHolder().also { holder ->
+      holder.callback = callback
+      holder.permission = permission
+    }
+
+    ActivityCompat.requestPermissions(
+      (callbackActivity as ComponentActivity),
+      arrayOf(permission),
+      RUNTIME_PERMISSION_RESULT_ID
+    )
+
+    return true
   }
 
   fun onRequestPermissionsResult(

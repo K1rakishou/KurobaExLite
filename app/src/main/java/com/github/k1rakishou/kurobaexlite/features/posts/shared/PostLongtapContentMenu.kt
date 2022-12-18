@@ -40,7 +40,8 @@ class PostLongtapContentMenu(
     postListOptions: PostListOptions,
     postCellData: PostCellData,
     viewProvider: () -> View,
-    reparsePostsFunc: (Collection<PostDescriptor>) -> Unit
+    reparsePostsFunc: (Collection<PostDescriptor>) -> Unit,
+    startPostSelection: ((PostDescriptor) -> Unit)? = null
   ) {
     screenCoroutineScope.launch {
       val floatingMenuItems = mutableListOf<FloatingMenuItem>().apply {
@@ -56,7 +57,17 @@ class PostLongtapContentMenu(
             menuItemData = postCellData.postDescriptor,
             text = FloatingMenuItem.MenuItemText.Id(R.string.quote_text)
           )
+        }
 
+        if (startPostSelection != null) {
+          this += FloatingMenuItem.Text(
+            menuItemKey = POST_SELECTION,
+            menuItemData = postCellData.postDescriptor,
+            text = FloatingMenuItem.MenuItemText.Id(R.string.post_longtap_menu_post_selection)
+          )
+        }
+
+        if (!postListOptions.isCatalogMode) {
           if (markedPostManager.isPostMarkedAsMine(postCellData.postDescriptor)) {
             this += FloatingMenuItem.Text(
               menuItemKey = MARK_UNMARK_POST_AS_OWN,
@@ -107,7 +118,8 @@ class PostLongtapContentMenu(
       processClickedToolbarMenuItem(
         menuItem = selectedMenuItem,
         postCellData = postCellData,
-        reparsePostsFunc = reparsePostsFunc
+        reparsePostsFunc = reparsePostsFunc,
+        startPostSelection = { postDescriptor -> startPostSelection?.invoke(postDescriptor) }
       )
     }
   }
@@ -115,7 +127,8 @@ class PostLongtapContentMenu(
   private suspend fun processClickedToolbarMenuItem(
     menuItem: FloatingMenuItem,
     postCellData: PostCellData,
-    reparsePostsFunc: (Collection<PostDescriptor>) -> Unit
+    reparsePostsFunc: (Collection<PostDescriptor>) -> Unit,
+    startPostSelection: (PostDescriptor) -> Unit
   ) {
     when (menuItem.menuItemKey as Int) {
       QUOTE,
@@ -185,6 +198,9 @@ class PostLongtapContentMenu(
 
         androidHelpers.copyToClipboard("Post url", postUrl)
       }
+      POST_SELECTION -> {
+        startPostSelection(postCellData.postDescriptor)
+      }
     }
   }
 
@@ -194,6 +210,7 @@ class PostLongtapContentMenu(
     private const val MARK_MARK_POST_AS_OWN = 2
     private const val MARK_UNMARK_POST_AS_OWN = 3
     private const val COPY_POST_URL = 4
+    private const val POST_SELECTION = 5
   }
 
 }

@@ -1,6 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
 import androidx.compose.animation.Animatable
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,10 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.Text
@@ -23,7 +27,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.ContentScale
@@ -37,6 +40,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListSelectionState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.createClickableTextColorMap
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectClickedAnnotations
 import com.github.k1rakishou.kurobaexlite.helpers.util.ensureSingleMeasurable
@@ -50,12 +54,14 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun PostCellGridMode(
   staggeredGridMode: Boolean,
@@ -63,6 +69,7 @@ fun PostCellGridMode(
   currentlyOpenedThread: ThreadDescriptor?,
   postCellData: PostCellData,
   cellsPadding: PaddingValues,
+  postListSelectionState: PostListSelectionState,
   postBlinkAnimationState: PostBlinkAnimationState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
@@ -86,7 +93,6 @@ fun PostCellGridMode(
   val startPadding = remember(key1 = cellsPadding) { cellsPadding.calculateStartPadding(LayoutDirection.Ltr) }
   val endPadding = remember(key1 = cellsPadding) { cellsPadding.calculateEndPadding(LayoutDirection.Ltr) }
   val bottomPadding = remember(key1 = cellsPadding) { cellsPadding.calculateBottomPadding().coerceAtLeast(4.dp) }
-
   val highlightColorWithAlpha = remember(key1 = chanTheme.highlighterColor) { chanTheme.highlighterColor.copy(alpha = 0.3f) }
 
   val postCellBackgroundColor = remember(
@@ -101,6 +107,7 @@ fun PostCellGridMode(
     }
   }
 
+  val isInPostSelectionMode by postListSelectionState.isInSelectionMode
   val postCellBackgroundColorAnimatable = remember { Animatable(initialValue = postCellBackgroundColor) }
   val postCellBackgroundColorAnimatableProvider = remember { { postCellBackgroundColorAnimatable } }
 
@@ -122,57 +129,82 @@ fun PostCellGridMode(
     modifier = Modifier.padding(4.dp),
     backgroundColor = postCellBackgroundColorAnimatable.value
   ) {
-    Column(
+    Row(
       modifier = Modifier
         .fillMaxSize()
         .wrapContentHeight()
         .aspectRatio(ratio = ratio)
     ) {
-      PostCellGridModeLayout(
-        title = {
-          Column {
-            PostCellTitle(
-              startPadding = startPadding,
-              endPadding = endPadding,
-              chanDescriptor = chanDescriptor,
-              postCellData = postCellData,
-              postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
-              onPostImageClicked = onPostImageClicked,
-              onPostImageLongClicked = onPostImageLongClicked
+      AnimatedContent(
+        targetState = isInPostSelectionMode
+      ) { isInPostSelectionModeState ->
+        if (isInPostSelectionModeState) {
+          val isPostSelected = postListSelectionState.isPostSelected(postCellData.postDescriptor)
+
+          Box(
+            modifier = Modifier
+              .fillMaxHeight()
+              .width(42.dp),
+            contentAlignment = Alignment.Center
+          ) {
+            KurobaComposeCheckbox(
+              currentlyChecked = isPostSelected,
+              onCheckChanged = { postListSelectionState.toggleSelection(postCellData.postDescriptor) }
             )
           }
-        },
-        comment = {
-          PostCellComment(
-            startPadding = startPadding,
-            endPadding = endPadding,
-            postCellData = postCellData,
-            textSelectionEnabled = textSelectionEnabled,
-            detectLinkableClicks = detectLinkableClicks,
-            onCopySelectedText = onCopySelectedText,
-            onQuoteSelectedText = onQuoteSelectedText,
-            postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-            onPostCellCommentClicked = onPostCellCommentClicked,
-            onPostCellCommentLongClicked = onPostCellCommentLongClicked,
-            onTextSelectionModeChanged = onTextSelectionModeChanged
-          )
-        },
-        footer = {
-          PostCellFooter(
-            startPadding = startPadding,
-            endPadding = endPadding,
-            bottomPadding = bottomPadding,
-            postCellData = postCellData,
-            postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-            onPostRepliesClicked = onPostRepliesClicked
-          )
         }
-      )
+      }
+
+      Column(
+        modifier = Modifier
+          .fillMaxSize()
+      ) {
+        PostCellGridModeLayout(
+          title = {
+            Column {
+              PostCellTitle(
+                startPadding = startPadding,
+                endPadding = endPadding,
+                chanDescriptor = chanDescriptor,
+                postCellData = postCellData,
+                postListSelectionState = postListSelectionState,
+                postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
+                onPostImageClicked = onPostImageClicked,
+                onPostImageLongClicked = onPostImageLongClicked
+              )
+            }
+          },
+          comment = {
+            PostCellComment(
+              startPadding = startPadding,
+              endPadding = endPadding,
+              postCellData = postCellData,
+              textSelectionEnabled = textSelectionEnabled,
+              detectLinkableClicks = detectLinkableClicks,
+              onCopySelectedText = onCopySelectedText,
+              onQuoteSelectedText = onQuoteSelectedText,
+              postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+              onPostCellCommentClicked = onPostCellCommentClicked,
+              onPostCellCommentLongClicked = onPostCellCommentLongClicked,
+              onTextSelectionModeChanged = onTextSelectionModeChanged
+            )
+          },
+          footer = {
+            PostCellFooter(
+              startPadding = startPadding,
+              endPadding = endPadding,
+              bottomPadding = bottomPadding,
+              postCellData = postCellData,
+              postCellCommentTextSizeSp = postCellCommentTextSizeSp,
+              onPostRepliesClicked = onPostRepliesClicked
+            )
+          }
+        )
+      }
     }
   }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun PostCellGridModeLayout(
   title: @Composable () -> Unit,
@@ -318,6 +350,7 @@ private fun PostCellTitle(
   endPadding: Dp,
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
+  postListSelectionState: PostListSelectionState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
@@ -327,6 +360,7 @@ private fun PostCellTitle(
   if (postCellData.images.isNotNullNorEmpty()) {
     PostCellThumbnail(
       postCellData = postCellData,
+      postListSelectionState = postListSelectionState,
       onPostImageClicked = onPostImageClicked,
       onPostImageLongClicked = onPostImageLongClicked,
       chanDescriptor = chanDescriptor
@@ -362,12 +396,14 @@ private fun PostCellTitle(
 @Composable
 private fun PostCellThumbnail(
   postCellData: PostCellData,
+  postListSelectionState: PostListSelectionState,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
   val postImage = postCellData.images!!.first()
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
+  val isInSelectionMode by postListSelectionState.isInSelectionMode
 
   Box(
     modifier = Modifier
@@ -383,12 +419,22 @@ private fun PostCellThumbnail(
       postImage = postImage,
       contentScale = ContentScale.Crop,
       onClick = { clickedImage ->
+        if (isInSelectionMode) {
+          postListSelectionState.toggleSelection(postImage.ownerPostDescriptor)
+          return@PostImageThumbnail
+        }
+
         val boundsInWindow = boundsInWindowMut
           ?: return@PostImageThumbnail
 
         onPostImageClicked(chanDescriptor, clickedImage, boundsInWindow)
       },
       onLongClick = { longClickedImage ->
+        if (isInSelectionMode) {
+          postListSelectionState.toggleSelection(postImage.ownerPostDescriptor)
+          return@PostImageThumbnail
+        }
+
         onPostImageLongClicked(chanDescriptor, longClickedImage)
       }
     )

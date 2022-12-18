@@ -1,15 +1,36 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack
 
+import androidx.annotation.CallSuper
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.github.k1rakishou.kurobaexlite.helpers.util.removeIfKt
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
-interface DisposableElement {
-  val elementKey: String
+abstract class DisposableElement {
+  abstract val elementKey: String
 
-  fun onCreate()
-  fun onDispose()
+  private val _lifecycleEvents = MutableSharedFlow<Lifecycle>(extraBufferCapacity = Channel.UNLIMITED)
+  val lifecycleEvents: SharedFlow<Lifecycle>
+    get() = _lifecycleEvents.asSharedFlow()
+
+  @CallSuper
+  open fun onCreate() {
+    _lifecycleEvents.tryEmit(Lifecycle.Created)
+  }
+
+  @CallSuper
+  open fun onDispose() {
+    _lifecycleEvents.tryEmit(Lifecycle.Disposed)
+  }
+
+  enum class Lifecycle {
+    Created,
+    Disposed
+  }
 }
 
 class SimpleStackContainerElement<T : DisposableElement>(

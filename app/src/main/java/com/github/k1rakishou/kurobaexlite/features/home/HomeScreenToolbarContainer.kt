@@ -95,6 +95,7 @@ fun HomeScreenToolbarContainer(
   val isDraggingFastScroller by hideableUiVisibilityInfo.fastScrollerDragState.collectAsState()
   val screensUsingSearch by hideableUiVisibilityInfo.childScreensUsingSearch.collectAsState()
   val replyLayoutOpened by hideableUiVisibilityInfo.replyLayoutOpened.collectAsState()
+  val isInPostSelectionMode by hideableUiVisibilityInfo.isInPostSelectionMode.collectAsState()
 
   val combinedToolbarState by remember(key1 = currentScreenKey, key2 = mainUiLayoutMode) {
     derivedStateOf {
@@ -105,6 +106,7 @@ fun HomeScreenToolbarContainer(
         isDraggingPostList = isDraggingPostList,
         isDraggingFastScroller = isDraggingFastScroller,
         replyLayoutOpened = replyLayoutOpened,
+        isInPostSelectionMode = isInPostSelectionMode,
         mainUiLayoutMode = mainUiLayoutMode,
         screensUsingSearch = screensUsingSearch
       )
@@ -129,6 +131,7 @@ fun HomeScreenToolbarContainer(
       when {
         state.currentScreenKey in state.screensUsingSearch -> 1f
         state.replyLayoutOpened -> 1f
+        state.isInPostSelectionMode -> 1f
         state.mainUiLayoutMode == MainUiLayoutMode.Split -> 1f
         state.isDraggingFastScroller -> 0f
         state.touchingTopOrBottomOfList -> 1f
@@ -261,6 +264,7 @@ private data class CombinedToolbarState(
   val isDraggingPostList: Boolean,
   val isDraggingFastScroller: Boolean,
   val replyLayoutOpened: Boolean,
+  val isInPostSelectionMode: Boolean,
   val mainUiLayoutMode: MainUiLayoutMode,
   val screensUsingSearch: Set<ScreenKey>
 )

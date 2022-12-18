@@ -33,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostBlinkAnimationState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCell
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.rememberPostBlinkAnimationState
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
@@ -286,6 +287,7 @@ private fun PostSearchCell(
   val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
   val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
   val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
+  val postListSelectionState = rememberPostListSelectionState(postSelectionEnabled = false)
 
   Column(
     modifier = Modifier
@@ -311,6 +313,7 @@ private fun PostSearchCell(
       postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
       postCellData = postCellData,
       cellsPadding = remember { PaddingValues(horizontal = 8.dp) },
+      postListSelectionState = postListSelectionState,
       postBlinkAnimationState = postBlinkAnimationState,
       onTextSelectionModeChanged = {
         // no-op

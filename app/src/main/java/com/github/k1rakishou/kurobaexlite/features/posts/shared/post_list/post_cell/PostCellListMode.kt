@@ -1,6 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
 import androidx.compose.animation.Animatable
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,6 +60,7 @@ import coil.request.ImageRequest
 import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListSelectionState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.createClickableTextColorMap
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectClickedAnnotations
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
@@ -81,6 +85,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -95,12 +100,14 @@ import java.util.*
 
 private val ThumbnailSize = 70.dp
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun PostCellListMode(
   chanDescriptor: ChanDescriptor,
   currentlyOpenedThread: ThreadDescriptor?,
   postCellData: PostCellData,
   cellsPadding: PaddingValues,
+  postListSelectionState: PostListSelectionState,
   postBlinkAnimationState: PostBlinkAnimationState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
@@ -146,6 +153,7 @@ fun PostCellListMode(
 
   val postCellBackgroundColorAnimatable = remember(postCellBackgroundColor) { Animatable(initialValue = postCellBackgroundColor) }
   val postCellBackgroundColorAnimatableProvider = remember(postCellBackgroundColor) { { postCellBackgroundColorAnimatable } }
+  val isInPostSelectionMode by postListSelectionState.isInSelectionMode
 
   BlinkAnimation(
     postCellDefaultBgColor = postCellBackgroundColor,
@@ -161,6 +169,26 @@ fun PostCellListMode(
       .drawBehind { drawRect(postCellBackgroundColorAnimatable.value) }
       .padding(resultPaddings)
   ) {
+    AnimatedContent(
+      targetState = isInPostSelectionMode
+    ) { isInPostSelectionModeState ->
+      if (isInPostSelectionModeState) {
+        val isPostSelected = postListSelectionState.isPostSelected(postCellData.postDescriptor)
+
+        Box(
+          modifier = Modifier
+            .fillMaxHeight()
+            .width(42.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          KurobaComposeCheckbox(
+            currentlyChecked = isPostSelected,
+            onCheckChanged = { postListSelectionState.toggleSelection(postCellData.postDescriptor) }
+          )
+        }
+      }
+    }
+
     var columnHeightMut by remember { mutableStateOf<Int?>(null) }
     val columnHeight = columnHeightMut
 
@@ -175,6 +203,7 @@ fun PostCellListMode(
         PostCellTitleZeroOrOneThumbnails(
           chanDescriptor = chanDescriptor,
           postCellData = postCellData,
+          postListSelectionState = postListSelectionState,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
           onPostImageClicked = onPostImageClicked,
           onPostImageLongClicked = onPostImageLongClicked,
@@ -184,6 +213,7 @@ fun PostCellListMode(
         PostCellTitleTwoOrMoreThumbnails(
           chanDescriptor = chanDescriptor,
           postCellData = postCellData,
+          postListSelectionState = postListSelectionState,
           postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
           onPostImageClicked = onPostImageClicked,
           onPostImageLongClicked = onPostImageLongClicked,
@@ -195,6 +225,7 @@ fun PostCellListMode(
 
       PostCellComment(
         postCellData = postCellData,
+        isInPostSelectionMode = isInPostSelectionMode,
         textSelectionEnabled = textSelectionEnabled,
         detectLinkableClicks = detectLinkableClicks,
         onCopySelectedText = onCopySelectedText,
@@ -323,6 +354,7 @@ private fun RowScope.PostCellMarks(columnHeight: Int, postCellData: PostCellData
 private fun PostCellTitleZeroOrOneThumbnails(
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
+  postListSelectionState: PostListSelectionState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
@@ -342,6 +374,7 @@ private fun PostCellTitleZeroOrOneThumbnails(
       PostCellThumbnail(
         thumbnailSize = ThumbnailSize,
         postImage = postImage,
+        postListSelectionState = postListSelectionState,
         onPostImageClicked = onPostImageClicked,
         onPostImageLongClicked = onPostImageLongClicked,
         chanDescriptor = chanDescriptor
@@ -371,6 +404,7 @@ private fun PostCellTitleZeroOrOneThumbnails(
 private fun PostCellTitleTwoOrMoreThumbnails(
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
+  postListSelectionState: PostListSelectionState,
   postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
@@ -416,6 +450,7 @@ private fun PostCellTitleTwoOrMoreThumbnails(
             PostCellThumbnail(
               thumbnailSize = ThumbnailSize,
               postImage = postImage,
+              postListSelectionState = postListSelectionState,
               onPostImageClicked = onPostImageClicked,
               onPostImageLongClicked = onPostImageLongClicked,
               chanDescriptor = chanDescriptor
@@ -500,12 +535,14 @@ private fun RowScope.PostCellSubject(
 @Composable
 private fun PostCellThumbnail(
   thumbnailSize: Dp,
+  postListSelectionState: PostListSelectionState,
   postImage: PostCellImageData,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   chanDescriptor: ChanDescriptor
 ) {
   var boundsInWindowMut by remember { mutableStateOf<Rect?>(null) }
+  val isInSelectionMode by postListSelectionState.isInSelectionMode
 
   Box(
     modifier = Modifier
@@ -518,12 +555,22 @@ private fun PostCellThumbnail(
       modifier = Modifier.size(thumbnailSize),
       postImage = postImage,
       onClick = { clickedImage ->
+        if (isInSelectionMode) {
+          postListSelectionState.toggleSelection(postImage.ownerPostDescriptor)
+          return@PostImageThumbnail
+        }
+
         val boundsInWindow = boundsInWindowMut
           ?: return@PostImageThumbnail
 
         onPostImageClicked(chanDescriptor, clickedImage, boundsInWindow)
       },
       onLongClick = { longClickedImage ->
+        if (isInSelectionMode) {
+          postListSelectionState.toggleSelection(postImage.ownerPostDescriptor)
+          return@PostImageThumbnail
+        }
+
         onPostImageLongClicked(chanDescriptor, longClickedImage)
       }
     )
@@ -698,6 +745,7 @@ private fun PostCellIcon(postCellIcon: ParsedPostDataCache.PostCellIcon) {
 @Composable
 private fun PostCellComment(
   postCellData: PostCellData,
+  isInPostSelectionMode: Boolean,
   textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
   postCellCommentTextSizeSp: TextUnit,
@@ -710,18 +758,20 @@ private fun PostCellComment(
   val chanTheme = LocalChanTheme.current
   val clickedTextBackgroundColorMap = remember(key1 = chanTheme) { createClickableTextColorMap(chanTheme) }
   val postComment = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.processedPostComment }
-  var isInSelectionMode by remember { mutableStateOf(false) }
+  var isInTextSelectionMode by remember { mutableStateOf(false) }
 
   if (postComment.isNotNullNorBlank()) {
     PostCellCommentSelectionWrapper(
-      textSelectionEnabled = textSelectionEnabled,
+      textSelectionEnabled = textSelectionEnabled && !isInPostSelectionMode,
       onCopySelectedText = onCopySelectedText,
       onQuoteSelectedText = { withText, selectedText -> onQuoteSelectedText(withText, selectedText, postCellData) },
       onTextSelectionModeChanged = { inSelectionMode ->
-        isInSelectionMode = inSelectionMode
+        isInTextSelectionMode = inSelectionMode
         onTextSelectionModeChanged(inSelectionMode)
       }
     ) { textModifier, onTextLayout ->
+      val isTextClickable = detectLinkableClicks && !isInTextSelectionMode && !isInPostSelectionMode
+
       KurobaComposeClickableText(
         modifier = Modifier
           .fillMaxWidth()
@@ -729,7 +779,7 @@ private fun PostCellComment(
           .then(textModifier),
         fontSize = postCellCommentTextSizeSp,
         text = postComment,
-        isTextClickable = detectLinkableClicks && !isInSelectionMode,
+        isTextClickable = isTextClickable,
         annotationBgColors = clickedTextBackgroundColorMap,
         detectClickedAnnotations = { offset, textLayoutResult, text ->
           return@KurobaComposeClickableText detectClickedAnnotations(offset, textLayoutResult, text)

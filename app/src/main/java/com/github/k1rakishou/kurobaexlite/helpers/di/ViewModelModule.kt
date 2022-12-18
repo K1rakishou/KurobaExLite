@@ -20,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImag
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCellIconViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
+import com.github.k1rakishou.kurobaexlite.features.screenshot.PostScreenshotScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
@@ -198,5 +199,8 @@ internal fun Module.viewModels() {
   }
   viewModel {
     DvachLoginScreenViewModel(siteManager = get())
+  }
+  viewModel {
+    PostScreenshotScreenViewModel(androidHelpers = get())
   }
 }

@@ -87,6 +87,7 @@ fun BoxScope.HomeScreenFabContainer(
   val screensUsingSearch by hideableUiVisibilityInfo.childScreensUsingSearch.collectAsState()
   val hasLoadError by hideableUiVisibilityInfo.hasLoadError.collectAsState()
   val replyLayoutOpened by hideableUiVisibilityInfo.replyLayoutOpened.collectAsState()
+  val isInPostSelectionMode by hideableUiVisibilityInfo.isInPostSelectionMode.collectAsState()
   val screenContentLoaded by currentScreen.screenContentLoadedFlow.collectAsState()
 
   LaunchedEffect(
@@ -111,6 +112,7 @@ fun BoxScope.HomeScreenFabContainer(
         screenContentLoaded = screenContentLoaded,
         hasLoadError = hasLoadError,
         replyLayoutOpened = replyLayoutOpened,
+        isInPostSelectionMode = isInPostSelectionMode,
         screensUsingSearch = screensUsingSearch
       )
     }
@@ -139,6 +141,7 @@ fun BoxScope.HomeScreenFabContainer(
         state.screensUsingSearch.isNotEmpty() -> 0f
         state.hasLoadError -> 0f
         state.replyLayoutOpened -> 0f
+        state.isInPostSelectionMode -> 0f
         state.isDraggingFastScroller -> 0f
         state.touchingTopOrBottomOfList -> 1f
         state.isDraggingPostList -> state.postListScrollPosition
@@ -177,5 +180,6 @@ private data class CombinedFabState(
   val screenContentLoaded: Boolean,
   val hasLoadError: Boolean,
   val replyLayoutOpened: Boolean,
+  val isInPostSelectionMode: Boolean,
   val screensUsingSearch: Set<ScreenKey>
 )

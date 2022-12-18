@@ -74,6 +74,7 @@ class GlobalUiInfoManager(
 
   private val hideableUiVisibilityInfoMap = mutableMapOf<ScreenKey, HideableUiVisibilityInfo>()
   private val replyLayoutVisibilityInfoMap = mutableMapOf<ScreenKey, MutableState<ReplyLayoutVisibility>>()
+  private val postSelectionInfoMap = mutableMapOf<ScreenKey, MutableState<Boolean>>()
 
   private val pagerDisplayedDeferred = CompletableDeferred<Unit>()
   private val currentUiLayoutModeKnownDeferred = CompletableDeferred<Unit>()
@@ -324,6 +325,13 @@ class GlobalUiInfoManager(
       }
   }
 
+  fun isInPostSelectionMode(screenKey: ScreenKey): Boolean {
+    return postSelectionInfoMap.entries
+      .any { (otherScreenKey, isInPostSelectionMode) ->
+        return@any otherScreenKey == screenKey && isInPostSelectionMode.value
+      }
+  }
+
   fun isAnyReplyLayoutOpened(): Boolean {
     return replyLayoutVisibilityInfoMap.values
       .any { replyLayoutVisibilityState -> replyLayoutVisibilityState.value != ReplyLayoutVisibility.Collapsed }
@@ -477,6 +485,25 @@ class GlobalUiInfoManager(
     )
 
     hideableUiVisibilityInfo.update(replyLayoutOpened = replyLayoutVisibility != ReplyLayoutVisibility.Collapsed)
+  }
+
+  fun screenIsInPostSelectionModeStateChanged(
+    screenKey: ScreenKey,
+    isInPostSelectionMode: Boolean
+  ) {
+    val isInPostSelectionModeState = postSelectionInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { mutableStateOf(isInPostSelectionMode) }
+    )
+
+    isInPostSelectionModeState.value = isInPostSelectionMode
+
+    val hideableUiVisibilityInfo = hideableUiVisibilityInfoMap.getOrPut(
+      key = screenKey,
+      defaultValue = { HideableUiVisibilityInfo() }
+    )
+
+    hideableUiVisibilityInfo.update(isInPostSelectionMode = isInPostSelectionMode)
   }
 
   fun onLoadingErrorUpdatedOrRemoved(screenKey: ScreenKey, hasLoadError: Boolean) {

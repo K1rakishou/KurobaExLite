@@ -73,6 +73,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtap
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
@@ -541,6 +542,8 @@ private fun PopupPostsScreenContent(
     }
   )
 
+  val postListSelectionState = rememberPostListSelectionState(postSelectionEnabled = false)
+
   Box(
     modifier = Modifier
       .layoutId(postListLayoutId)
@@ -549,6 +552,7 @@ private fun PopupPostsScreenContent(
     PostListContent(
       lazyStateWrapper = lazyListStateWrapper as GenericLazyStateWrapper,
       postListOptions = postListOptions,
+      postListSelectionState = postListSelectionState,
       postsScreenViewModelProvider = { popupPostsScreenViewModel },
       onPostCellClicked = { postCellData -> /*no-op*/ },
       onPostCellLongClicked = { postCellData ->

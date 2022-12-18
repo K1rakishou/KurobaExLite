@@ -38,11 +38,16 @@ class HideableUiVisibilityInfo() : Parcelable {
   val replyLayoutOpened: StateFlow<Boolean>
     get() = _replyLayoutOpened.asStateFlow()
 
+  private val _isInPostSelectionMode = MutableStateFlow(false)
+  val isInPostSelectionMode: StateFlow<Boolean>
+    get() = _isInPostSelectionMode.asStateFlow()
+
   constructor(parcel: Parcel) : this() {
     _contentListScrollState.value = parcel.readFloat()
     _contentListTouchingTopOrBottomState.value = parcel.readBooleanKt()
     _hasLoadError.value = parcel.readBooleanKt()
     _replyLayoutOpened.value = parcel.readBooleanKt()
+    _isInPostSelectionMode.value = parcel.readBooleanKt()
   }
 
   fun update(
@@ -52,6 +57,7 @@ class HideableUiVisibilityInfo() : Parcelable {
     fastScrollerDragState: Boolean? = null,
     hasLoadError: Boolean? = null,
     replyLayoutOpened: Boolean? = null,
+    isInPostSelectionMode: Boolean? = null,
     childScreenSearchInfo: ChildScreenSearchInfo? = null
   ) {
     contentListScrollState?.let { _contentListScrollState.value = it }
@@ -60,6 +66,7 @@ class HideableUiVisibilityInfo() : Parcelable {
     fastScrollerDragState?.let { _fastScrollerDragState.value = it }
     hasLoadError?.let { _hasLoadError.value = it }
     replyLayoutOpened?.let { _replyLayoutOpened.value = it }
+    isInPostSelectionMode?.let { _isInPostSelectionMode.value = it }
 
     childScreenSearchInfo?.let { screenSearchInfo ->
       val prevValue = _childScreensUsingSearch.value.toMutableSet()
@@ -79,6 +86,7 @@ class HideableUiVisibilityInfo() : Parcelable {
     parcel.writeBooleanKt(_contentListTouchingTopOrBottomState.value)
     parcel.writeBooleanKt(_hasLoadError.value)
     parcel.writeBooleanKt(_replyLayoutOpened.value)
+    parcel.writeBooleanKt(_isInPostSelectionMode.value)
   }
 
   override fun describeContents(): Int {

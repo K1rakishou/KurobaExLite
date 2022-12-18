@@ -78,6 +78,8 @@ class PostsScreenLocalSearchToolbar(
     get() = state.foundEntriesState
 
   override fun onCreate() {
+    super.onCreate()
+
     check(screenKey == CatalogScreen.SCREEN_KEY || screenKey == ThreadScreen.SCREEN_KEY) {
       "Unsupported screenKey: $screenKey"
     }
@@ -86,6 +88,7 @@ class PostsScreenLocalSearchToolbar(
   }
 
   override fun onDispose() {
+    super.onDispose()
     onToolbarDisposed()
 
     state.reset()

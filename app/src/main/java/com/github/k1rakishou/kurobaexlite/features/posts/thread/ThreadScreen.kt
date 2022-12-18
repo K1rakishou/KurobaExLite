@@ -45,13 +45,17 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFabCo
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.ProcessCaptchaRequestEvents
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListSelectionState
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenSelectionToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.toolbar.ThreadScreenDefaultToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.toolbar.ThreadScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.features.screenshot.PostScreenshotScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -63,6 +67,7 @@ import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
@@ -70,6 +75,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSna
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.DisposableElement
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
@@ -237,6 +243,45 @@ class ThreadScreen(
     )
   }
 
+  private val selectionToolbar: PostsScreenSelectionToolbar<PostsScreenSelectionToolbar.State.SelectablePost> by lazy {
+    PostsScreenSelectionToolbar<PostsScreenSelectionToolbar.State.SelectablePost>(
+      screenKey = screenKey,
+      onCancelSelection = {
+        kurobaToolbarContainerState.popToolbar(
+          expectedKey = selectionToolbar.toolbarKey,
+          withAnimation = false
+        )
+      },
+      onScreenshotPosts = { selectedPosts ->
+        val threadDescriptor = threadScreenViewModel.threadDescriptor
+          ?: return@PostsScreenSelectionToolbar
+
+        val postScreenshotScreen = ComposeScreen.createScreen<PostScreenshotScreen>(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          args = {
+            putParcelable(
+              PostScreenshotScreen.CHAN_DESCRIPTOR,
+              threadDescriptor
+            )
+
+            putParcelableArray(
+              PostScreenshotScreen.POST_DESCRIPTORS,
+              selectedPosts.map { it.postDescriptor }.toTypedArray()
+            )
+          }
+        )
+
+        navigationRouter.presentScreen(postScreenshotScreen)
+
+        kurobaToolbarContainerState.popToolbar(
+          expectedKey = selectionToolbar.toolbarKey,
+          withAnimation = false
+        )
+      }
+    )
+  }
+
   override val kurobaToolbarContainerState by lazy {
     kurobaToolbarContainerViewModel.getOrCreate<KurobaChildToolbar>(screenKey)
   }
@@ -321,6 +366,7 @@ class ThreadScreen(
       navigationRouterProvider = { navigationRouter }
     )
 
+    val postListSelectionState = rememberPostListSelectionState()
     val screenContentLoaded by screenContentLoadedFlow.collectAsState()
     val currentThreadDescriptor by threadScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
 
@@ -346,11 +392,43 @@ class ThreadScreen(
       }
     )
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        postListSelectionState.selectedItemsUpdateFlow.collectLatest { selectedPostDescriptors ->
+          selectionToolbar.onSelectedPostsUpdated(selectedPostDescriptors)
+
+          globalUiInfoManager.screenIsInPostSelectionModeStateChanged(
+            screenKey = screenKey,
+            isInPostSelectionMode = selectedPostDescriptors.isNotEmpty()
+          )
+
+          if (selectedPostDescriptors.isEmpty()) {
+            kurobaToolbarContainerState.popToolbar(selectionToolbar.toolbarKey)
+          }
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        selectionToolbar.lifecycleEvents.collectLatest { lifecycle ->
+          if (lifecycle != DisposableElement.Lifecycle.Disposed) {
+            return@collectLatest
+          }
+
+          postListSelectionState.clearSelection()
+        }
+      }
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
       ThreadPostListScreen(
         screenContentLoaded = screenContentLoaded,
         screenKey = screenKey,
         isCatalogScreen = isCatalogScreen,
+        postListSelectionState = postListSelectionState,
         replyLayoutStateProvider = { replyLayoutState },
         postLongtapContentMenuProvider = { postLongtapContentMenu },
         linkableClickHelperProvider = { linkableClickHelper },
@@ -388,7 +466,11 @@ class ThreadScreen(
             searchToolbarProvider = { localSearchToolbar },
             kurobaToolbarContainerStateProvider = { kurobaToolbarContainerState }
           )
-        }
+        },
+        startPostSelection = { postDescriptor ->
+          kurobaToolbarContainerState.setToolbar(selectionToolbar)
+          postListSelectionState.toggleSelection(postDescriptor)
+        },
       )
     }
   }
@@ -427,6 +509,7 @@ private fun BoxScope.ThreadPostListScreen(
   screenContentLoaded: Boolean,
   screenKey: ScreenKey,
   isCatalogScreen: Boolean,
+  postListSelectionState: PostListSelectionState,
   replyLayoutStateProvider: () -> IReplyLayoutState,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
   linkableClickHelperProvider: () -> LinkableClickHelper,
@@ -434,7 +517,8 @@ private fun BoxScope.ThreadPostListScreen(
   showRepliesForPost: (PopupPostsScreen.PopupPostViewMode) -> Unit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
-  postListSearchButtons: @Composable () -> Unit
+  postListSearchButtons: @Composable () -> Unit,
+  startPostSelection: (PostDescriptor) -> Unit
 ) {
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
   val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
@@ -497,6 +581,7 @@ private fun BoxScope.ThreadPostListScreen(
     modifier = Modifier.fillMaxSize(),
     lazyStateWrapper = lazyListStateWrapper as GenericLazyStateWrapper,
     postListOptions = postListOptions,
+    postListSelectionState = postListSelectionState,
     postsScreenViewModelProvider = { threadScreenViewModel },
     onPostCellClicked = { postCellData ->
       // no-op
@@ -516,7 +601,8 @@ private fun BoxScope.ThreadPostListScreen(
             chanDescriptor = threadDescriptor,
             postDescriptors = postDescriptors
           )
-        }
+        },
+        startPostSelection = startPostSelection
       )
     },
     onLinkableClicked = { postCellData, linkable ->

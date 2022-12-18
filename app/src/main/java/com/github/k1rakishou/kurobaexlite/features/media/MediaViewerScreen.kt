@@ -93,6 +93,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
@@ -746,11 +747,13 @@ private fun MediaViewerBottomSheet(
 
   val _lazyListState = rememberLazyListState()
   val lazyListStateWrapper = remember(key1 = _lazyListState) { LazyListStateWrapper(_lazyListState) }
+  val postListSelectionState = rememberPostListSelectionState(postSelectionEnabled = false)
 
   Column(modifier = Modifier.fillMaxSize()) {
     PostListContent(
       lazyStateWrapper = lazyListStateWrapper as GenericLazyStateWrapper,
       postListOptions = postListOptions,
+      postListSelectionState = postListSelectionState,
       postsScreenViewModelProvider = { popupPostsScreenViewModel },
       onPostCellClicked = { postCellData -> /*no-op*/ },
       onPostCellLongClicked = { postCellData ->

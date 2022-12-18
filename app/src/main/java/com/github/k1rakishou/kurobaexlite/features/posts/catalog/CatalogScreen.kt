@@ -46,7 +46,10 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFabCo
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.ProcessCaptchaRequestEvents
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListSelectionState
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenLocalSearchToolbar
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenSelectionToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.sort.SortCatalogThreadsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
@@ -54,6 +57,7 @@ import com.github.k1rakishou.kurobaexlite.features.reply.IReplyLayoutState
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutContainer
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
+import com.github.k1rakishou.kurobaexlite.features.screenshot.PostScreenshotScreen
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -73,6 +77,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSna
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.DisposableElement
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
@@ -275,6 +280,45 @@ class CatalogScreen(
     )
   }
 
+  private val selectionToolbar: PostsScreenSelectionToolbar<PostsScreenSelectionToolbar.State.SelectablePost> by lazy {
+    PostsScreenSelectionToolbar<PostsScreenSelectionToolbar.State.SelectablePost>(
+      screenKey = screenKey,
+      onCancelSelection = {
+        kurobaToolbarContainerState.popToolbar(
+          expectedKey = selectionToolbar.toolbarKey,
+          withAnimation = false
+        )
+      },
+      onScreenshotPosts = { selectedPosts ->
+        val catalogDescriptor = catalogScreenViewModel.catalogDescriptor
+          ?: return@PostsScreenSelectionToolbar
+
+        val postScreenshotScreen = ComposeScreen.createScreen<PostScreenshotScreen>(
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          args = {
+            putParcelable(
+              PostScreenshotScreen.CHAN_DESCRIPTOR,
+              catalogDescriptor
+            )
+
+            putParcelableArray(
+              PostScreenshotScreen.POST_DESCRIPTORS,
+              selectedPosts.map { it.postDescriptor }.toTypedArray()
+            )
+          }
+        )
+
+        navigationRouter.presentScreen(postScreenshotScreen)
+
+        kurobaToolbarContainerState.popToolbar(
+          expectedKey = selectionToolbar.toolbarKey,
+          withAnimation = false
+        )
+      }
+    )
+  }
+
   private suspend fun floatingMenuItems(): List<FloatingMenuItem> {
     val menuItems = mutableListOf<FloatingMenuItem>()
 
@@ -416,8 +460,10 @@ class CatalogScreen(
       navigationRouterProvider = { navigationRouter }
     )
 
+    val postListSelectionState = rememberPostListSelectionState()
     val screenContentLoaded by screenContentLoadedFlow.collectAsState()
-    val currentCatalogDescriptor by threadScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
+    val currentCatalogDescriptorMut by threadScreenViewModel.currentlyOpenedCatalogFlow.collectAsState()
+    val currentCatalogDescriptor = currentCatalogDescriptorMut
 
     LaunchedEffect(
       key1 = currentCatalogDescriptor,
@@ -441,11 +487,43 @@ class CatalogScreen(
       }
     )
 
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        postListSelectionState.selectedItemsUpdateFlow.collectLatest { selectedPostDescriptors ->
+          selectionToolbar.onSelectedPostsUpdated(selectedPostDescriptors)
+
+          globalUiInfoManager.screenIsInPostSelectionModeStateChanged(
+            screenKey = screenKey,
+            isInPostSelectionMode = selectedPostDescriptors.isNotEmpty()
+          )
+
+          if (selectedPostDescriptors.isEmpty()) {
+            kurobaToolbarContainerState.popToolbar(selectionToolbar.toolbarKey)
+          }
+        }
+      }
+    )
+
+    LaunchedEffect(
+      key1 = Unit,
+      block = {
+        selectionToolbar.lifecycleEvents.collectLatest { lifecycle ->
+          if (lifecycle != DisposableElement.Lifecycle.Disposed) {
+            return@collectLatest
+          }
+
+          postListSelectionState.clearSelection()
+        }
+      }
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
       CatalogPostListScreen(
         screenContentLoaded = screenContentLoaded,
         screenKey = screenKey,
         isCatalogScreen = isCatalogScreen,
+        postListSelectionState = postListSelectionState,
         replyLayoutStateProvider = { replyLayoutState },
         navigationRouterProvider = { navigationRouter },
         postLongtapContentMenuProvider = { postLongtapContentMenu },
@@ -481,7 +559,11 @@ class CatalogScreen(
             searchToolbarProvider = { localSearchToolbar },
             kurobaToolbarContainerStateProvider = { kurobaToolbarContainerState }
           )
-        }
+        },
+        startPostSelection = { postDescriptor ->
+          kurobaToolbarContainerState.setToolbar(selectionToolbar)
+          postListSelectionState.toggleSelection(postDescriptor)
+        },
       )
     }
   }
@@ -499,12 +581,14 @@ private fun BoxScope.CatalogPostListScreen(
   screenContentLoaded: Boolean,
   screenKey: ScreenKey,
   isCatalogScreen: Boolean,
+  postListSelectionState: PostListSelectionState,
   replyLayoutStateProvider: () -> IReplyLayoutState,
   postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
   navigationRouterProvider: () -> NavigationRouter,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
-  postListSearchButtons: @Composable () -> Unit
+  postListSearchButtons: @Composable () -> Unit,
+  startPostSelection: (PostDescriptor) -> Unit
 ) {
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
   val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
@@ -611,6 +695,7 @@ private fun BoxScope.CatalogPostListScreen(
     modifier = Modifier.fillMaxSize(),
     lazyStateWrapper = lazyStateWrapper as GenericLazyStateWrapper,
     postListOptions = postListOptions,
+    postListSelectionState = postListSelectionState,
     postsScreenViewModelProvider = { catalogScreenViewModel },
     onPostCellClicked = { postCellData ->
       globalUiInfoManager.updateCurrentPage(screenKey = ThreadScreen.SCREEN_KEY)
@@ -637,7 +722,8 @@ private fun BoxScope.CatalogPostListScreen(
             chanDescriptor = catalogDescriptor,
             postDescriptors = postDescriptors
           )
-        }
+        },
+        startPostSelection = startPostSelection
       )
     },
     onLinkableClicked = { postCellData, linkable ->

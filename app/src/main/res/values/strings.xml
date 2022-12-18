@@ -149,6 +149,8 @@
     <string name="album_toolbar_album_grid_mode_column_count">Album grid mode column count</string>
     <string name="album_toolbar_album_show_image_info">Show image info</string>
 
+    <string name="posts_screen_selection_toolbar_title">%1$d item(s) selected</string>
+
     <string name="remote_image_search_screen_title">Image search</string>
     <string name="remote_image_search_screen_current_instance">Current search instance</string>
     <string name="remote_image_search_screen_select_source">Select source</string>
@@ -226,6 +228,7 @@
     <string name="post_longtap_menu_mark_post_as_own">Mark post as mine</string>
     <string name="post_longtap_menu_unmark_post_as_own">Unmark post as mine</string>
     <string name="post_longtap_menu_copy_url">Copy post url</string>
+    <string name="post_longtap_menu_post_selection">Select</string>
 
     <string name="post_search_longtap_menu_add_to_history">Add to history</string>
 
@@ -359,11 +362,17 @@
     <string name="report_issue_screen_issue_title">Issue title (%1$d/%2$d)</string>
     <string name="report_issue_screen_issue_description">Issue description (%1$d/%2$d)</string>
     <string name="report_issue_screen_description_cannot_be_empty_error_comment_mode">Description cannot be empty!</string>
-    <string name="report_issue_screen_error_while_trying_to_send_report">Error while trying to send report: %1$s</string>
+    <string name="report_issue_screen_error_while_trying_to_send_report">Error while trying to send report: $1%s</string>
     <string name="report_issue_screen_title_cannot_be_empty_error">Title cannot be empty!</string>
     <string name="report_issue_screen_description_cannot_be_empty_error">If description is empty, logs cannot be empty!</string>
     <string name="report_issue_screen_logs_are_empty_error">\"Attach logs\" option is checked, but logs are empty!</string>
     <string name="report_issue_report_sent_message">Sent \;)</string>
+
+    <string name="post_screenshot_screen_take_screenshot">Take screenshot</string>
+    <string name="post_screenshot_screen_need_permissions">Cannot take store screenshots on disk without WRITE_EXTERNAL_STORAGE permission</string>
+    <string name="post_screenshot_screen_take_screenshot_success">Screenshot successfully stored on disk</string>
+    <string name="post_screenshot_screen_take_screenshot_failure">Failed to store screenshot on disk</string>
+    <string name="post_screenshot_screen_take_screenshot_error">Failed to store screenshot on disk, error: \'$1%s\'</string>
 
     <string name="new_bookmark_options_screen_start_watching_thread">Start watching thread</string>
     <string name="new_bookmark_options_screen_do_not_show_this_dialog">Do not show this dialog anymore (Longtap the bookmark icon to show it again)</string>

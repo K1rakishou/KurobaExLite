@@ -55,6 +55,7 @@ fun BoxScope.PostsScreenFabContainer(
   var activeSnackbarsCount by remember { mutableStateOf(0) }
   val screensUsingSearch by hideableUiVisibilityInfo.childScreensUsingSearch.collectAsState()
   val replyLayoutOpened by hideableUiVisibilityInfo.replyLayoutOpened.collectAsState()
+  val isInPostSelectionMode by hideableUiVisibilityInfo.isInPostSelectionMode.collectAsState()
 
   LaunchedEffect(
     key1 = screenKey,
@@ -71,6 +72,7 @@ fun BoxScope.PostsScreenFabContainer(
         activeSnackbarsCount = activeSnackbarsCount,
         screenContentLoaded = screenContentLoaded,
         replyLayoutOpened = replyLayoutOpened,
+        isInPostSelectionMode = isInPostSelectionMode,
         lastLoadedEndedWithError = lastLoadedEndedWithError,
         screensUsingSearch = screensUsingSearch
       )
@@ -90,6 +92,7 @@ fun BoxScope.PostsScreenFabContainer(
         !state.screenContentLoaded -> 0f
         state.activeSnackbarsCount > 0 -> 0f
         state.replyLayoutOpened -> 0f
+        state.isInPostSelectionMode -> 0f
         state.lastLoadedEndedWithError -> 0f
         state.screensUsingSearch.isNotEmpty() -> 0f
         else -> 1f
@@ -120,6 +123,7 @@ private data class CombinedFabState(
   val activeSnackbarsCount: Int,
   val screenContentLoaded: Boolean,
   val replyLayoutOpened: Boolean,
+  val isInPostSelectionMode: Boolean,
   val lastLoadedEndedWithError: Boolean,
   val screensUsingSearch: Set<ScreenKey>
 )

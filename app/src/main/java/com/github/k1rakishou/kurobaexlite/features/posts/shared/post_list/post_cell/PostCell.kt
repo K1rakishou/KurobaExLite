@@ -24,6 +24,7 @@ import com.github.k1rakishou.composecustomtextselection.lib.SelectionToolbarMenu
 import com.github.k1rakishou.composecustomtextselection.lib.rememberSelectionState
 import com.github.k1rakishou.composecustomtextselection.lib.textSelectionAfterDoubleTapOrTapWithLongTap
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListSelectionState
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -42,6 +43,7 @@ fun PostCell(
   postCellSubjectTextSizeSp: TextUnit,
   postCellData: PostCellData,
   cellsPadding: PaddingValues,
+  postListSelectionState: PostListSelectionState,
   postBlinkAnimationState: PostBlinkAnimationState,
   onTextSelectionModeChanged: (inSelectionMode: Boolean) -> Unit,
   onPostBind: (PostCellData) -> Unit,
@@ -71,6 +73,7 @@ fun PostCell(
         currentlyOpenedThread = currentlyOpenedThread,
         postCellData = postCellData,
         cellsPadding = cellsPadding,
+        postListSelectionState = postListSelectionState,
         postBlinkAnimationState = postBlinkAnimationState,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         onPostImageClicked = onPostImageClicked,
@@ -95,6 +98,7 @@ fun PostCell(
         currentlyOpenedThread = currentlyOpenedThread,
         postCellData = postCellData,
         cellsPadding = cellsPadding,
+        postListSelectionState = postListSelectionState,
         postBlinkAnimationState = postBlinkAnimationState,
         postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         onPostImageClicked = onPostImageClicked,

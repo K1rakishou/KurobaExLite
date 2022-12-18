@@ -5,7 +5,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.helpers.SaveableComponent
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.DisposableElement
 
-abstract class KurobaChildToolbar : DisposableElement {
+abstract class KurobaChildToolbar : DisposableElement() {
   abstract val toolbarKey: String
   abstract val toolbarState: ToolbarState?
 
@@ -14,14 +14,6 @@ abstract class KurobaChildToolbar : DisposableElement {
 
   @Composable
   abstract fun Content()
-
-  override fun onCreate() {
-
-  }
-
-  override fun onDispose() {
-
-  }
 
   interface ToolbarState : SaveableComponent
 

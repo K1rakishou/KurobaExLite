@@ -251,12 +251,22 @@ class HomeScreen(
         if (globalUiInfoManager.isReplyLayoutOpened(currentPage.screenKey())) {
           return false
         }
+        if (globalUiInfoManager.isInPostSelectionMode(currentPage.screenKey())) {
+          return false
+        }
       }
       is SplitPage -> {
         val anyReplyLayoutsOpened = currentPage.childScreens
           .any { childScreen -> globalUiInfoManager.isReplyLayoutOpened(childScreen.screenKey) }
 
         if (anyReplyLayoutsOpened) {
+          return false
+        }
+
+        val anyScreensInPostSelectionMode = currentPage.childScreens
+          .any { childScreen -> globalUiInfoManager.isInPostSelectionMode(childScreen.screenKey) }
+
+        if (anyScreensInPostSelectionMode) {
           return false
         }
       }

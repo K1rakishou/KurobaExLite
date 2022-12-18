@@ -88,6 +88,7 @@ internal fun PostListContent(
   modifier: Modifier = Modifier,
   lazyStateWrapper: GenericLazyStateWrapper,
   postListOptions: PostListOptions,
+  postListSelectionState: PostListSelectionState,
   postsScreenViewModelProvider: () -> PostScreenViewModel,
   onPostCellClicked: (PostCellData) -> Unit,
   onPostCellLongClicked: (PostCellData) -> Unit,
@@ -240,6 +241,7 @@ internal fun PostListContent(
     lazyStateWrapper = lazyStateWrapperUpdated as GenericLazyStateWrapper,
     postBlinkAnimationState = postBlinkAnimationState,
     postListOptions = postListOptions,
+    postListSelectionState = postListSelectionState,
     postListAsync = postListAsync,
     postsScreenViewModelProvider = postsScreenViewModelProvider,
     onPostCellClicked = onPostCellClicked,
@@ -422,6 +424,7 @@ private fun PostListInternal(
   lazyStateWrapper: GenericLazyStateWrapper,
   postBlinkAnimationState: PostBlinkAnimationState,
   postListOptions: PostListOptions,
+  postListSelectionState: PostListSelectionState,
   postListAsync: AsyncData<PostsState>,
   postsScreenViewModelProvider: () -> PostScreenViewModel,
   onPostCellClicked: (PostCellData) -> Unit,
@@ -517,6 +520,7 @@ private fun PostListInternal(
             contentPadding = contentPadding,
             cellsPadding = cellsPadding,
             postListOptions = postListOptions,
+            postListSelectionState = postListSelectionState,
             postListAsync = postListAsync,
             lazyListStateWrapper = lazyStateWrapper as LazyListStateWrapper,
             postBlinkAnimationState = postBlinkAnimationState,
@@ -552,6 +556,7 @@ private fun PostListInternal(
             contentPadding = contentPadding,
             cellsPadding = cellsPadding,
             postListOptions = postListOptions,
+            postListSelectionState = postListSelectionState,
             postListAsync = postListAsync,
             lazyGridStateWrapper = lazyStateWrapper as LazyGridStateWrapper,
             postBlinkAnimationState = postBlinkAnimationState,
@@ -592,6 +597,7 @@ private fun PostsListMode(
   contentPadding: PaddingValues,
   cellsPadding: PaddingValues,
   postListOptions: PostListOptions,
+  postListSelectionState: PostListSelectionState,
   postListAsync: AsyncData<PostsState>,
   lazyListStateWrapper: LazyListStateWrapper,
   postBlinkAnimationState: PostBlinkAnimationState,
@@ -710,6 +716,7 @@ private fun PostsListMode(
                 isInPopup = isInPopup,
                 postCellData = postCellData,
                 postListOptions = postListOptions,
+                postListSelectionState = postListSelectionState,
                 postBlinkAnimationState = postBlinkAnimationState,
                 index = index,
                 totalCount = postCellDataList.size,
@@ -757,6 +764,7 @@ private fun PostsGridMode(
   contentPadding: PaddingValues,
   cellsPadding: PaddingValues,
   postListOptions: PostListOptions,
+  postListSelectionState: PostListSelectionState,
   postListAsync: AsyncData<PostsState>,
   lazyGridStateWrapper: LazyGridStateWrapper,
   postBlinkAnimationState: PostBlinkAnimationState,
@@ -878,6 +886,7 @@ private fun PostsGridMode(
                 isInPopup = isInPopup,
                 postCellData = postCellData,
                 postListOptions = postListOptions,
+                postListSelectionState = postListSelectionState,
                 postBlinkAnimationState = postBlinkAnimationState,
                 index = index,
                 totalCount = postCellDataList.size,
@@ -1123,6 +1132,7 @@ private fun PostCellContainer(
   isInPopup: Boolean,
   postCellData: PostCellData,
   postListOptions: PostListOptions,
+  postListSelectionState: PostListSelectionState,
   postBlinkAnimationState: PostBlinkAnimationState,
   index: Int,
   totalCount: Int,
@@ -1144,7 +1154,8 @@ private fun PostCellContainer(
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
-  var isInSelectionMode by remember { mutableStateOf(false) }
+  var isInTextSelectionMode by remember { mutableStateOf(false) }
+  val isInPostSelectionMode by postListSelectionState.isInSelectionMode
 
   PostCellContainerAnimated(
     animateInsertion = animateInsertion,
@@ -1153,13 +1164,23 @@ private fun PostCellContainer(
     Column(
       modifier = Modifier
         .kurobaClickable(
-          enabled = !isInSelectionMode,
+          enabled = !isInTextSelectionMode,
           onClick = {
+            if (isInPostSelectionMode) {
+              postListSelectionState.toggleSelection(postCellData.postDescriptor)
+              return@kurobaClickable
+            }
+
             if (isCatalogMode) {
               onPostCellClicked(postCellData)
             }
           },
           onLongClick = {
+            if (isInPostSelectionMode) {
+              postListSelectionState.toggleSelection(postCellData.postDescriptor)
+              return@kurobaClickable
+            }
+
             onPostCellLongClicked(postCellData)
           }
         )
@@ -1175,7 +1196,8 @@ private fun PostCellContainer(
         postCellData = postCellData,
         cellsPadding = cellsPadding,
         postBlinkAnimationState = postBlinkAnimationState,
-        onTextSelectionModeChanged = { inSelectionMode -> isInSelectionMode = inSelectionMode },
+        postListSelectionState = postListSelectionState,
+        onTextSelectionModeChanged = { inSelectionMode -> isInTextSelectionMode = inSelectionMode },
         onPostBind = onPostBind,
         onPostUnbind = onPostUnbind,
         onCopySelectedText = onCopySelectedText,
