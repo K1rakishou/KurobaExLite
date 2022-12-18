@@ -252,7 +252,7 @@ fun LazyVerticalGridWithFastScroller(
           if (paddingTop > 0.dp) {
             item(
               key = "top_inset_spacer",
-              span = { GridItemSpan(maxCurrentLineSpan) },
+              span = { GridItemSpan(maxLineSpan) },
               contentType = "spacer",
               content = {
                 Spacer(modifier = Modifier.height(paddingTop))
@@ -265,7 +265,7 @@ fun LazyVerticalGridWithFastScroller(
           if (paddingBottom > 0.dp) {
             item(
               key = "bottom_inset_spacer",
-              span = { GridItemSpan(maxCurrentLineSpan) },
+              span = { GridItemSpan(maxLineSpan) },
               contentType = "spacer",
               content = {
                 Spacer(modifier = Modifier.height(paddingBottom))
