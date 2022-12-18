@@ -46,6 +46,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.verticalScrollbar
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.delay
@@ -152,12 +153,18 @@ class PostScreenshotScreen(
 
     Column {
       val screenshotInProgress = screenshotJob != null
+      val contentPadding = PaddingValues()
 
       Column(
         modifier = Modifier
           .verticalScroll(
             state = scrollState,
             enabled = !screenshotInProgress
+          )
+          .verticalScrollbar(
+            contentPadding = contentPadding,
+            scrollState = scrollState,
+            enabled = screenshotJob == null
           )
           .weight(1f, false)
       ) {

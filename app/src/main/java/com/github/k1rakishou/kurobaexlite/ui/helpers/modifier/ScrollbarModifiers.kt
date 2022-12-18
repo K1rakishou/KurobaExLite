@@ -629,8 +629,13 @@ fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo
  * */
 fun Modifier.verticalScrollbar(
   contentPadding: PaddingValues,
-  scrollState: ScrollState
+  scrollState: ScrollState,
+  enabled: Boolean = true
 ): Modifier {
+  if (!enabled) {
+    return this
+  }
+
   return composed {
     val density = LocalDensity.current
     val chanTheme = LocalChanTheme.current
