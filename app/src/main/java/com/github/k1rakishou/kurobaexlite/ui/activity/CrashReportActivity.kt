@@ -32,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
@@ -52,7 +51,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
-import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideEverything
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.verticalScrollbar
 import kotlinx.coroutines.Dispatchers
@@ -97,13 +96,12 @@ class CrashReportActivity : ComponentActivity() {
 
     logcat(TAG) { "Got new exception: ${className}" }
 
-    WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
     fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
     appRestarter.attachActivity(this)
 
     setContent {
-      ProvideAllTheStuff(
+      ProvideEverything(
         componentActivity = this,
         window = window,
         themeEngine = themeEngine,

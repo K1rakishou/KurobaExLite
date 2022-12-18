@@ -5,10 +5,15 @@ import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,6 +33,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyGridStateWrapper
@@ -71,20 +77,20 @@ fun LazyColumnWithFastScroller(
   content: LazyListScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val paddingTopPx = with(LocalDensity.current) {
-    remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
-  }
-  val paddingBottomPx = with(LocalDensity.current) {
-    remember(contentPadding) { contentPadding.calculateBottomPadding().toPx().toInt() }
-  }
+  val density = LocalDensity.current
+  val layoutDirection = LocalLayoutDirection.current
+
+  val paddingTop = remember(contentPadding) { contentPadding.calculateTopPadding() }
+  val paddingBottom = remember(contentPadding) { contentPadding.calculateBottomPadding() }
+
   val lazyListStateWrapper = remember { LazyListStateWrapper(lazyListState) }
   val coroutineScope = rememberCoroutineScope()
 
   var scrollbarDragProgress by remember { mutableStateOf<Float?>(null) }
 
   BoxWithConstraints(modifier = lazyListContainerModifier) {
-    val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
-    val maxHeightPx = with(LocalDensity.current) { maxHeight.toPx().toInt() }
+    val maxWidthPx = with(density) { maxWidth.toPx().toInt() }
+    val maxHeightPx = with(density) { maxHeight.toPx().toInt() }
 
     Box(
       modifier = Modifier
@@ -97,8 +103,8 @@ fun LazyColumnWithFastScroller(
               coroutineScope = coroutineScope,
               lazyStateWrapper = lazyListStateWrapper,
               width = maxWidthPx,
-              paddingTop = paddingTopPx,
-              paddingBottom = paddingBottomPx,
+              paddingTop = with(density) { paddingTop.roundToPx() },
+              paddingBottom = with(density) { paddingBottom.roundToPx() },
               scrollbarWidth = scrollbarWidth,
               onScrollbarDragStateUpdated = { dragProgress ->
                 scrollbarDragProgress = dragProgress
@@ -108,6 +114,13 @@ fun LazyColumnWithFastScroller(
           }
         )
     ) {
+      val contentPaddingForLazyList = remember(key1 = contentPadding, key2 = layoutDirection) {
+        PaddingValues(
+          start = contentPadding.calculateStartPadding(layoutDirection),
+          end = contentPadding.calculateEndPadding(layoutDirection)
+        )
+      }
+
       LazyColumn(
         modifier = Modifier
           .scrollbar(
@@ -126,8 +139,30 @@ fun LazyColumnWithFastScroller(
           .then(lazyListModifier),
         userScrollEnabled = userScrollEnabled,
         state = lazyListState,
-        contentPadding = contentPadding,
-        content = content
+        contentPadding = contentPaddingForLazyList,
+        content = {
+          if (paddingTop > 0.dp) {
+            item(
+              key = "top_inset_spacer",
+              contentType = "spacer",
+              content = {
+                Spacer(modifier = Modifier.height(paddingTop))
+              }
+            )
+          }
+
+          content()
+
+          if (paddingBottom > 0.dp) {
+            item(
+              key = "bottom_inset_spacer",
+              contentType = "spacer",
+              content = {
+                Spacer(modifier = Modifier.height(paddingBottom))
+              }
+            )
+          }
+        }
       )
     }
   }
@@ -149,20 +184,20 @@ fun LazyVerticalGridWithFastScroller(
   content: LazyGridScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val paddingTopPx = with(LocalDensity.current) {
-    remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
-  }
-  val paddingBottomPx = with(LocalDensity.current) {
-    remember(contentPadding) { contentPadding.calculateBottomPadding().toPx().toInt() }
-  }
+  val density = LocalDensity.current
+  val layoutDirection = LocalLayoutDirection.current
+
+  val paddingTop = remember(contentPadding) { contentPadding.calculateTopPadding() }
+  val paddingBottom = remember(contentPadding) { contentPadding.calculateBottomPadding() }
+
   val lazyGridStateWrapper = remember { LazyGridStateWrapper(lazyGridState) }
   val coroutineScope = rememberCoroutineScope()
 
   var scrollbarManualDragProgress by remember { mutableStateOf<Float?>(null) }
 
   BoxWithConstraints(modifier = lazyGridContainerModifier) {
-    val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
-    val maxHeightPx = with(LocalDensity.current) { maxHeight.toPx().toInt() }
+    val maxWidthPx = with(density) { maxWidth.toPx().toInt() }
+    val maxHeightPx = with(density) { maxHeight.toPx().toInt() }
 
     Box(
       modifier = Modifier
@@ -175,8 +210,8 @@ fun LazyVerticalGridWithFastScroller(
               coroutineScope = coroutineScope,
               lazyStateWrapper = lazyGridStateWrapper,
               width = maxWidthPx,
-              paddingTop = paddingTopPx,
-              paddingBottom = paddingBottomPx,
+              paddingTop = with(density) { paddingTop.roundToPx() },
+              paddingBottom = with(density) { paddingBottom.roundToPx() },
               scrollbarWidth = scrollbarWidth,
               onScrollbarDragStateUpdated = { dragProgress ->
                 scrollbarManualDragProgress = dragProgress
@@ -186,6 +221,13 @@ fun LazyVerticalGridWithFastScroller(
           }
         )
     ) {
+      val contentPaddingForLazyGrid = remember(key1 = contentPadding, key2 = layoutDirection) {
+        PaddingValues(
+          start = contentPadding.calculateStartPadding(layoutDirection),
+          end = contentPadding.calculateEndPadding(layoutDirection)
+        )
+      }
+
       LazyVerticalGrid(
         modifier = Modifier
           .then(lazyGridModifier)
@@ -205,8 +247,32 @@ fun LazyVerticalGridWithFastScroller(
         columns = columns,
         userScrollEnabled = userScrollEnabled,
         state = lazyGridStateWrapper.lazyGridState,
-        contentPadding = contentPadding,
-        content = content
+        contentPadding = contentPaddingForLazyGrid,
+        content = {
+          if (paddingTop > 0.dp) {
+            item(
+              key = "top_inset_spacer",
+              span = { GridItemSpan(maxCurrentLineSpan) },
+              contentType = "spacer",
+              content = {
+                Spacer(modifier = Modifier.height(paddingTop))
+              }
+            )
+          }
+
+          content()
+
+          if (paddingBottom > 0.dp) {
+            item(
+              key = "bottom_inset_spacer",
+              span = { GridItemSpan(maxCurrentLineSpan) },
+              contentType = "spacer",
+              content = {
+                Spacer(modifier = Modifier.height(paddingBottom))
+              }
+            )
+          }
+        }
       )
     }
   }
@@ -228,20 +294,20 @@ fun LazyVerticalStaggeredGridWithFastScroller(
   content: LazyStaggeredGridScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val paddingTopPx = with(LocalDensity.current) {
-    remember(contentPadding) { contentPadding.calculateTopPadding().toPx().toInt() }
-  }
-  val paddingBottomPx = with(LocalDensity.current) {
-    remember(contentPadding) { contentPadding.calculateBottomPadding().toPx().toInt() }
-  }
+  val density = LocalDensity.current
+  val layoutDirection = LocalLayoutDirection.current
+
+  val paddingTop = remember(contentPadding) { contentPadding.calculateTopPadding() }
+  val paddingBottom = remember(contentPadding) { contentPadding.calculateBottomPadding() }
+
   val lazyStaggeredGridStateWrapper = remember { LazyStaggeredGridStateWrapper(lazyStaggeredGridState) }
   val coroutineScope = rememberCoroutineScope()
 
   var scrollbarManualDragProgress by remember { mutableStateOf<Float?>(null) }
 
   BoxWithConstraints(modifier = lazyStaggeredGridContainerModifier) {
-    val maxWidthPx = with(LocalDensity.current) { maxWidth.toPx().toInt() }
-    val maxHeightPx = with(LocalDensity.current) { maxHeight.toPx().toInt() }
+    val maxWidthPx = with(density) { maxWidth.toPx().toInt() }
+    val maxHeightPx = with(density) { maxHeight.toPx().toInt() }
 
     Box(
       modifier = Modifier
@@ -254,8 +320,8 @@ fun LazyVerticalStaggeredGridWithFastScroller(
               coroutineScope = coroutineScope,
               lazyStateWrapper = lazyStaggeredGridStateWrapper,
               width = maxWidthPx,
-              paddingTop = paddingTopPx,
-              paddingBottom = paddingBottomPx,
+              paddingTop = with(density) { paddingTop.roundToPx() },
+              paddingBottom = with(density) { paddingBottom.roundToPx() },
               scrollbarWidth = scrollbarWidth,
               onScrollbarDragStateUpdated = { dragProgress ->
                 scrollbarManualDragProgress = dragProgress
@@ -265,6 +331,14 @@ fun LazyVerticalStaggeredGridWithFastScroller(
           }
         )
     ) {
+      val contentPaddingForLazyStaggeredGrid = remember(key1 = contentPadding, key2 = layoutDirection) {
+        PaddingValues(
+          start = contentPadding.calculateStartPadding(layoutDirection),
+          end = contentPadding.calculateEndPadding(layoutDirection)
+        )
+      }
+
+
       LazyVerticalStaggeredGrid(
         modifier = Modifier
           .then(lazyStaggeredGridModifier)
@@ -284,8 +358,34 @@ fun LazyVerticalStaggeredGridWithFastScroller(
         columns = columns,
         userScrollEnabled = userScrollEnabled,
         state = lazyStaggeredGridStateWrapper.lazyStaggeredGridState,
-        contentPadding = contentPadding,
-        content = content
+        contentPadding = contentPaddingForLazyStaggeredGrid,
+        content = {
+          if (paddingTop > 0.dp) {
+            item(
+              key = "top_inset_spacer",
+              // TODO: there is no span in the API
+//              span = { GridItemSpan(maxCurrentLineSpan) },
+              contentType = "spacer",
+              content = {
+                Spacer(modifier = Modifier.height(paddingTop))
+              }
+            )
+          }
+
+          content()
+
+          if (paddingBottom > 0.dp) {
+            item(
+              key = "bottom_inset_spacer",
+              // TODO: there is no span in the API
+//              span = { GridItemSpan(maxCurrentLineSpan) },
+              contentType = "spacer",
+              content = {
+                Spacer(modifier = Modifier.height(paddingBottom))
+              }
+            )
+          }
+        }
       )
     }
   }

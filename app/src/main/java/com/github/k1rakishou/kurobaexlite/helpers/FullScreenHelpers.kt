@@ -4,6 +4,7 @@ import android.os.Build
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
+import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 
 class FullScreenHelpers(
@@ -11,6 +12,8 @@ class FullScreenHelpers(
 ) {
 
   fun setupEdgeToEdge(window: Window) {
+    WindowCompat.setDecorFitsSystemWindows(window, false)
+
     window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
     window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION)
 

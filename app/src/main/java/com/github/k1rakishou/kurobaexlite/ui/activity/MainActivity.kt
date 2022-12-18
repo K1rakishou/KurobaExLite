@@ -9,7 +9,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.remember
 import androidx.core.app.ActivityCompat
-import androidx.core.view.WindowCompat
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
@@ -24,7 +23,7 @@ import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideAllTheStuff
+import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideEverything
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import logcat.logcat
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -67,7 +66,6 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     mainActivityIntentHandler.onCreate(this)
     updateManager.checkForUpdates()
 
-    WindowCompat.setDecorFitsSystemWindows(window, false)
     fullScreenHelpers.setupEdgeToEdge(window = window)
     fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
     appRestarter.attachActivity(this)
@@ -78,7 +76,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     mainActivityViewModel.onLifecycleCreate()
 
     setContent {
-      ProvideAllTheStuff(
+      ProvideEverything(
         componentActivity = this,
         window = window,
         themeEngine = themeEngine,

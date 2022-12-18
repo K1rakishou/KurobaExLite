@@ -40,7 +40,7 @@ val LocalRuntimePermissionsHelper = compositionLocalOf<RuntimePermissionsHelper>
 val LocalWindowSizeClass = staticCompositionLocalOf<WindowSizeClass> { error("LocalWindowSizeClass not initialized") }
 
 @Composable
-fun ProvideAllTheStuff(
+fun ProvideEverything(
   componentActivity: ComponentActivity,
   window: Window,
   themeEngine: ThemeEngine,
@@ -149,13 +149,14 @@ fun ProvideWindowInsets(
   content: @Composable () -> Unit
 ) {
   val density = LocalDensity.current
-  val view = LocalView.current
+  val localView = LocalView.current
+  val view = window.decorView
   var currentInsets by remember { mutableStateOf(Insets(density, 0.dp, 0.dp, 0.dp, 0.dp)) }
 
   DisposableEffect(
     key1 = view,
     effect = {
-      val attachListener = object : View.OnAttachStateChangeListener {
+      val attachStateChangeListener = object : View.OnAttachStateChangeListener {
         override fun onViewAttachedToWindow(v: View) {
           v.requestApplyInsets()
         }
@@ -165,7 +166,7 @@ fun ProvideWindowInsets(
         }
       }
 
-      val listener = OnApplyWindowInsetsListener { view, insets ->
+      val applyWindowInsetsListener = OnApplyWindowInsetsListener { _, insets ->
         val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
 
         val left = with(density) { Math.max(imeInsets.left, insets.systemWindowInsetLeft).toFloat().toDp() }
@@ -181,19 +182,18 @@ fun ProvideWindowInsets(
           bottom = bottom
         )
 
-        return@OnApplyWindowInsetsListener ViewCompat.onApplyWindowInsets(
-          view,
-          insets.replaceSystemWindowInsets(0, 0, 0, 0)
-        )
+        return@OnApplyWindowInsetsListener WindowInsetsCompat.CONSUMED
       }
 
-      ViewCompat.setOnApplyWindowInsetsListener(window.decorView, listener)
-      ViewCompat.requestApplyInsets(window.decorView)
-      window.decorView.addOnAttachStateChangeListener(attachListener)
+      ViewCompat.setOnApplyWindowInsetsListener(view, applyWindowInsetsListener)
+      view.addOnAttachStateChangeListener(attachStateChangeListener)
+      localView.addOnAttachStateChangeListener(attachStateChangeListener)
+      ViewCompat.requestApplyInsets(view)
 
       onDispose {
-        ViewCompat.setOnApplyWindowInsetsListener(window.decorView, null)
-        window.decorView.removeOnAttachStateChangeListener(attachListener)
+        ViewCompat.setOnApplyWindowInsetsListener(view, null)
+        view.removeOnAttachStateChangeListener(attachStateChangeListener)
+        localView.removeOnAttachStateChangeListener(attachStateChangeListener)
       }
     }
   )

@@ -535,7 +535,6 @@ private fun BoxScope.ThreadPostListScreen(
   val view = LocalView.current
 
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-  val fabVertOffset = dimensionResource(id = R.dimen.post_list_fab_bottom_offset)
   var replyLayoutContainerHeight by remember { mutableStateOf(0.dp) }
   val viewProvider by rememberUpdatedState(newValue = { view })
 
@@ -562,7 +561,7 @@ private fun BoxScope.ThreadPostListScreen(
         pullToRefreshEnabled = true,
         contentPadding = PaddingValues(
           top = toolbarHeight + windowInsets.top,
-          bottom = bottomPadding + fabVertOffset
+          bottom = bottomPadding
         ),
         mainUiLayoutMode = mainUiLayoutMode,
         postCellCommentTextSizeSp = postCellCommentTextSizeSp,

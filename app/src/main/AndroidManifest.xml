@@ -48,6 +48,7 @@
         <activity
             android:name=".ui.activity.CrashReportActivity"
             android:launchMode="singleTask"
+            android:theme="@style/DefaultTheme"
             android:process=":crashReportProcess" />
 
         <receiver

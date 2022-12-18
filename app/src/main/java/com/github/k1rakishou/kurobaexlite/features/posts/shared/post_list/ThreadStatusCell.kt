@@ -8,7 +8,8 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.requiredHeightIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,11 +23,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
@@ -68,19 +69,23 @@ internal fun ThreadStatusCell(
         timeUntilNextUpdateSeconds = threadScreenViewModel.timeUntilNextUpdateMs / 1000L
         delay(1000L)
       }
-    })
+    }
+  )
+
+  val fabSize = dimensionResource(id = R.dimen.fab_size) + (dimensionResource(id = R.dimen.post_list_fab_bottom_offset) * 2)
 
   Box(
     modifier = Modifier
       .fillMaxWidth()
-      .wrapContentHeight()
+      .requiredHeightIn(min = fabSize)
       .kurobaClickable(
         onClick = {
           if (threadStatusCellDataUpdated.canRefresh()) {
             onThreadStatusCellClicked(chanDescriptor)
           }
         }
-      )
+      ),
+    contentAlignment = Alignment.Center
   ) {
     val context = LocalContext.current
 
@@ -208,17 +213,14 @@ internal fun ThreadStatusCell(
     val combinedPaddings = remember {
       PaddingValues(
         start = padding.calculateStartPadding(LayoutDirection.Ltr),
-        end = padding.calculateEndPadding(LayoutDirection.Ltr),
-        top = 16.dp,
-        bottom = 16.dp
+        end = padding.calculateEndPadding(LayoutDirection.Ltr)
       )
     }
 
     Text(
       modifier = Modifier
-        .fillMaxWidth()
-        .padding(combinedPaddings)
-        .align(Alignment.Center),
+        .wrapContentSize()
+        .padding(combinedPaddings),
       text = threadStatusCellText,
       color = chanTheme.textColorSecondary,
       textAlign = TextAlign.Center
