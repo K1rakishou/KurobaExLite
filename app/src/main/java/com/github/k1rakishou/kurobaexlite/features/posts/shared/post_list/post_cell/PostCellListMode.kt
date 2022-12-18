@@ -1,8 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
 import androidx.compose.animation.Animatable
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -85,7 +82,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -100,7 +96,6 @@ import java.util.*
 
 private val ThumbnailSize = 70.dp
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun PostCellListMode(
   chanDescriptor: ChanDescriptor,
@@ -138,22 +133,39 @@ fun PostCellListMode(
   }
 
   val highlightColorWithAlpha = remember(key1 = chanTheme.highlighterColor) { chanTheme.highlighterColor.copy(alpha = 0.3f) }
+  val selectColorWithAlpha = remember(key1 = chanTheme.selectedOnBackColor) { chanTheme.selectedOnBackColor.copy(alpha = 0.5f) }
+
+  val isInPostSelectionMode by postListSelectionState.isInSelectionMode
+  val isPostSelected = if (isInPostSelectionMode) {
+    postListSelectionState.isPostSelected(postCellData.postDescriptor)
+  } else {
+    false
+  }
 
   val postCellBackgroundColor = remember(
-    key1 = isCatalogMode,
-    key2 = currentlyOpenedThread,
-    key3 = postCellData.postDescriptor
+    isCatalogMode,
+    currentlyOpenedThread,
+    postCellData.postDescriptor,
+    isInPostSelectionMode,
+    isPostSelected
   ) {
-    if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
-      highlightColorWithAlpha
-    } else {
-      Color.Unspecified
+    if (isInPostSelectionMode) {
+      if (isPostSelected) {
+        return@remember selectColorWithAlpha
+      }
+
+      return@remember Color.Unspecified
     }
+
+    if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
+      return@remember highlightColorWithAlpha
+    }
+
+    return@remember Color.Unspecified
   }
 
   val postCellBackgroundColorAnimatable = remember(postCellBackgroundColor) { Animatable(initialValue = postCellBackgroundColor) }
   val postCellBackgroundColorAnimatableProvider = remember(postCellBackgroundColor) { { postCellBackgroundColorAnimatable } }
-  val isInPostSelectionMode by postListSelectionState.isInSelectionMode
 
   BlinkAnimation(
     postCellDefaultBgColor = postCellBackgroundColor,
@@ -169,26 +181,6 @@ fun PostCellListMode(
       .drawBehind { drawRect(postCellBackgroundColorAnimatable.value) }
       .padding(resultPaddings)
   ) {
-    AnimatedContent(
-      targetState = isInPostSelectionMode
-    ) { isInPostSelectionModeState ->
-      if (isInPostSelectionModeState) {
-        val isPostSelected = postListSelectionState.isPostSelected(postCellData.postDescriptor)
-
-        Box(
-          modifier = Modifier
-            .fillMaxHeight()
-            .width(42.dp),
-          contentAlignment = Alignment.Center
-        ) {
-          KurobaComposeCheckbox(
-            currentlyChecked = isPostSelected,
-            onCheckChanged = { postListSelectionState.toggleSelection(postCellData.postDescriptor) }
-          )
-        }
-      }
-    }
-
     var columnHeightMut by remember { mutableStateOf<Int?>(null) }
     val columnHeight = columnHeightMut
 

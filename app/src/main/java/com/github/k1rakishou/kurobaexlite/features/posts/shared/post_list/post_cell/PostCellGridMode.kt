@@ -1,7 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
 import androidx.compose.animation.Animatable
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,12 +10,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.Text
@@ -54,7 +51,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
@@ -94,22 +90,39 @@ fun PostCellGridMode(
   val endPadding = remember(key1 = cellsPadding) { cellsPadding.calculateEndPadding(LayoutDirection.Ltr) }
   val bottomPadding = remember(key1 = cellsPadding) { cellsPadding.calculateBottomPadding().coerceAtLeast(4.dp) }
   val highlightColorWithAlpha = remember(key1 = chanTheme.highlighterColor) { chanTheme.highlighterColor.copy(alpha = 0.3f) }
-
-  val postCellBackgroundColor = remember(
-    key1 = isCatalogMode,
-    key2 = currentlyOpenedThread,
-    key3 = postCellData.postDescriptor
-  ) {
-    if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
-      highlightColorWithAlpha
-    } else {
-      chanTheme.backColorSecondary
-    }
-  }
+  val selectColorWithAlpha = remember(key1 = chanTheme.selectedOnBackColor) { chanTheme.selectedOnBackColor.copy(alpha = 0.5f) }
 
   val isInPostSelectionMode by postListSelectionState.isInSelectionMode
-  val postCellBackgroundColorAnimatable = remember { Animatable(initialValue = postCellBackgroundColor) }
-  val postCellBackgroundColorAnimatableProvider = remember { { postCellBackgroundColorAnimatable } }
+  val isPostSelected = if (isInPostSelectionMode) {
+    postListSelectionState.isPostSelected(postCellData.postDescriptor)
+  } else {
+    false
+  }
+
+  val postCellBackgroundColor = remember(
+    isCatalogMode,
+    currentlyOpenedThread,
+    postCellData.postDescriptor,
+    isInPostSelectionMode,
+    isPostSelected
+  ) {
+    if (isInPostSelectionMode) {
+      if (isPostSelected) {
+        return@remember selectColorWithAlpha
+      }
+
+      return@remember chanTheme.backColorSecondary
+    }
+
+    if (isCatalogMode && currentlyOpenedThread == postCellData.postDescriptor.threadDescriptor) {
+      return@remember highlightColorWithAlpha
+    }
+
+    return@remember chanTheme.backColorSecondary
+  }
+
+  val postCellBackgroundColorAnimatable = remember(postCellBackgroundColor) { Animatable(initialValue = postCellBackgroundColor) }
+  val postCellBackgroundColorAnimatableProvider = remember(postCellBackgroundColor) { { postCellBackgroundColorAnimatable } }
 
   BlinkAnimation(
     postCellDefaultBgColor = postCellBackgroundColor,
@@ -135,26 +148,6 @@ fun PostCellGridMode(
         .wrapContentHeight()
         .aspectRatio(ratio = ratio)
     ) {
-      AnimatedContent(
-        targetState = isInPostSelectionMode
-      ) { isInPostSelectionModeState ->
-        if (isInPostSelectionModeState) {
-          val isPostSelected = postListSelectionState.isPostSelected(postCellData.postDescriptor)
-
-          Box(
-            modifier = Modifier
-              .fillMaxHeight()
-              .width(42.dp),
-            contentAlignment = Alignment.Center
-          ) {
-            KurobaComposeCheckbox(
-              currentlyChecked = isPostSelected,
-              onCheckChanged = { postListSelectionState.toggleSelection(postCellData.postDescriptor) }
-            )
-          }
-        }
-      }
-
       Column(
         modifier = Modifier
           .fillMaxSize()
