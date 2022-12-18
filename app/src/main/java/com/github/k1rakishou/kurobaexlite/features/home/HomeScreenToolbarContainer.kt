@@ -60,6 +60,10 @@ fun HomeScreenToolbarContainer(
     }
   }
 
+  if (animationProgress.isNaN()) {
+    return
+  }
+
   val currentScreenMut by remember(key1 = currentPage) {
     derivedStateOf {
       pagesWrapper.pageByIndex(currentPage)
