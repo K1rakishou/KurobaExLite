@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.features.screenshot
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentSize
@@ -62,7 +61,6 @@ class PostScreenshot {
 
   @Composable
   fun ScreenshotContainer(
-    columnScope: ColumnScope,
     chanDescriptor: ChanDescriptor,
     postListOptions: PostListOptions
   ) {
@@ -117,52 +115,50 @@ class PostScreenshot {
 
     val postListSelectionState = rememberPostListSelectionState(postSelectionEnabled = false)
 
-    with(columnScope) {
-      Column(
-        modifier = Modifier
-          .wrapContentSize()
-          .drawBehind { drawRect(chanTheme.backColor) }
-          .onGloballyPositioned {
-            _composableBounds.value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-              it.boundsInWindow()
-            } else {
-              it.boundsInRoot()
-            }
+    Column(
+      modifier = Modifier
+        .wrapContentSize()
+        .drawBehind { drawRect(chanTheme.backColor) }
+        .onGloballyPositioned {
+          _composableBounds.value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            it.boundsInWindow()
+          } else {
+            it.boundsInRoot()
           }
-      ) {
-        screenshotData.posts.forEachIndexed { index, postCellData ->
-          key(postCellData.postDescriptor) {
-            PostCell(
-              postViewMode = postListOptions.postViewMode,
-              textSelectionEnabled = false,
-              chanDescriptor = chanDescriptor,
-              currentlyOpenedThread = null,
-              detectLinkableClicks = false,
-              postCellCommentTextSizeSp = postListOptions.postCellCommentTextSizeSp,
-              postCellSubjectTextSizeSp = postListOptions.postCellSubjectTextSizeSp,
-              postCellData = postCellData,
-              cellsPadding = cellsPadding,
-              postListSelectionState = postListSelectionState,
-              postBlinkAnimationState = postBlinkAnimationState,
-              onTextSelectionModeChanged = { _ -> },
-              onPostBind = { },
-              onPostUnbind = { },
-              onCopySelectedText = { },
-              onQuoteSelectedText = { _, _, _ -> },
-              onPostCellCommentClicked = { _, _, _ -> },
-              onPostCellCommentLongClicked = { _, _, _ -> },
-              onPostRepliesClicked = { _ -> },
-              onPostImageClicked = { _, _, _ -> },
-              onPostImageLongClicked = { _, _ -> },
-              onGoToPostClicked = null,
-              reparsePostSubject = { _, _ -> }
-            )
+        }
+    ) {
+      screenshotData.posts.forEachIndexed { index, postCellData ->
+        key(postCellData.postDescriptor) {
+          PostCell(
+            postViewMode = postListOptions.postViewMode,
+            textSelectionEnabled = false,
+            chanDescriptor = chanDescriptor,
+            currentlyOpenedThread = null,
+            detectLinkableClicks = false,
+            postCellCommentTextSizeSp = postListOptions.postCellCommentTextSizeSp,
+            postCellSubjectTextSizeSp = postListOptions.postCellSubjectTextSizeSp,
+            postCellData = postCellData,
+            cellsPadding = cellsPadding,
+            postListSelectionState = postListSelectionState,
+            postBlinkAnimationState = postBlinkAnimationState,
+            onTextSelectionModeChanged = { _ -> },
+            onPostBind = { },
+            onPostUnbind = { },
+            onCopySelectedText = { },
+            onQuoteSelectedText = { _, _, _ -> },
+            onPostCellCommentClicked = { _, _, _ -> },
+            onPostCellCommentLongClicked = { _, _, _ -> },
+            onPostRepliesClicked = { _ -> },
+            onPostImageClicked = { _, _, _ -> },
+            onPostImageLongClicked = { _, _ -> },
+            onGoToPostClicked = null,
+            reparsePostSubject = { _, _ -> }
+          )
 
-            if (index < screenshotData.posts.lastIndex) {
-              KurobaComposeDivider(
-                modifier = Modifier.fillMaxWidth()
-              )
-            }
+          if (index < screenshotData.posts.lastIndex) {
+            KurobaComposeDivider(
+              modifier = Modifier.fillMaxWidth()
+            )
           }
         }
       }

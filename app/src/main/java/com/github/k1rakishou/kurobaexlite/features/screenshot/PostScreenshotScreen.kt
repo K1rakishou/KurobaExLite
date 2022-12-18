@@ -56,7 +56,12 @@ class PostScreenshotScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
+) : FloatingComposeScreen(
+  screenArgs = screenArgs,
+  componentActivity = componentActivity,
+  navigationRouter = navigationRouter,
+  canDismissByClickingOutside = false
+) {
   override val screenKey: ScreenKey = SCREEN_KEY
 
   private val postScreenshotScreenViewModel by componentActivity.viewModel<PostScreenshotScreenViewModel>()
@@ -124,7 +129,7 @@ class PostScreenshotScreen(
       return
     }
 
-    var job by remember { mutableStateOf<Job?>(null) }
+    var screenshotJob by remember { mutableStateOf<Job?>(null) }
 
     LaunchedEffect(
       key1 = Unit,
@@ -146,25 +151,28 @@ class PostScreenshotScreen(
     val scrollState = rememberScrollState()
 
     Column {
+      val screenshotInProgress = screenshotJob != null
+
       Column(
         modifier = Modifier
-          .verticalScroll(scrollState)
+          .verticalScroll(
+            state = scrollState,
+            enabled = !screenshotInProgress
+          )
           .weight(1f, false)
       ) {
         postScreenshot.ScreenshotContainer(
-          columnScope = this,
           chanDescriptor = chanDescriptorLocal,
           postListOptions = postListOptions
         )
       }
-
 
       Spacer(modifier = Modifier.height(16.dp))
 
       Row {
         Spacer(modifier = Modifier.weight(1f))
 
-        val buttonTextId = if (job == null) {
+        val buttonTextId = if (screenshotJob == null) {
           R.string.close
         } else {
           R.string.cancel
@@ -173,11 +181,11 @@ class PostScreenshotScreen(
         KurobaComposeTextBarButton(
           text = stringResource(id = buttonTextId),
           onClick = {
-            if (job == null) {
+            if (screenshotJob == null) {
               stopPresenting()
             } else {
-              job?.cancel()
-              job = null
+              screenshotJob?.cancel()
+              screenshotJob = null
             }
           }
         )
@@ -186,13 +194,13 @@ class PostScreenshotScreen(
 
         KurobaComposeTextBarButton(
           text = stringResource(id = R.string.post_screenshot_screen_take_screenshot),
-          enabled = job == null,
+          enabled = screenshotJob == null,
           onClick = {
             val appContext = context.applicationContext
             val composableHeight = postScreenshot.composableBounds.value?.height
               ?: return@KurobaComposeTextBarButton
 
-            job = coroutineScope.launch {
+            screenshotJob = coroutineScope.launch {
               try {
                 scrollState.scrollTo(0)
                 awaitFrame()
@@ -216,7 +224,7 @@ class PostScreenshotScreen(
                   }
                 )
               } finally {
-                job = null
+                screenshotJob = null
               }
             }
           }
@@ -249,7 +257,7 @@ class PostScreenshotScreen(
 
     if (result.isFailure) {
       val errorMessage = result.exceptionOrThrow().errorMessageOrClassName(userReadable = true)
-      snackbarManager.errorToast(R.string.post_screenshot_screen_take_screenshot_error, errorMessage)
+      snackbarManager.errorToast(appResources.string(R.string.post_screenshot_screen_take_screenshot_error, errorMessage))
       return
     }
 
