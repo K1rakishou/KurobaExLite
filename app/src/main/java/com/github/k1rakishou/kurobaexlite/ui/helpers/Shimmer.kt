@@ -141,7 +141,7 @@ class ShimmerState(
   private fun Float.toRadian(): Float = (this.toDouble() / 180.0 * Math.PI).toFloat()
 
   suspend fun start(maxWidth: Float, maxHeight: Float, chanTheme: ChanTheme) {
-    animatedState.snapTo(0.5f)
+    animatedState.snapTo(0f)
 
     pivotPoint = -Offset(0f, 0f) + Rect(0f, 0f, maxWidth, maxHeight).center
 
