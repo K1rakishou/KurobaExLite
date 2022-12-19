@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.requiredHeightIn
+import androidx.compose.foundation.layout.requiredWidthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -41,6 +43,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalRuntimePermissionsHelper
@@ -131,6 +134,7 @@ class PostScreenshotScreen(
     }
 
     var screenshotJob by remember { mutableStateOf<Job?>(null) }
+    var initialized by remember { mutableStateOf(false) }
 
     LaunchedEffect(
       key1 = Unit,
@@ -146,8 +150,20 @@ class PostScreenshotScreen(
         }
 
         postScreenshot.init(chanTheme, postCellDataList)
+        initialized = true
       }
     )
+
+    if (!initialized) {
+      KurobaComposeLoadingIndicator(
+        modifier = Modifier
+          .requiredWidthIn(min = 256.dp)
+          .requiredHeightIn(min = 128.dp),
+        fadeInTimeMs = 100
+      )
+
+      return
+    }
 
     val scrollState = rememberScrollState()
 
