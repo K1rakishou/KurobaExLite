@@ -736,9 +736,9 @@ fun Matcher.groupOrNull(group: Int): String? {
   }
 }
 
-suspend fun <T, R> processDataCollectionConcurrently(
+suspend fun <T, R> parallelForEach(
   dataList: Collection<T>,
-  batchCount: Int,
+  parallelization: Int,
   dispatcher: CoroutineDispatcher,
   processFunc: suspend (T) -> R?
 ): List<R> {
@@ -748,7 +748,7 @@ suspend fun <T, R> processDataCollectionConcurrently(
 
   return supervisorScope {
     return@supervisorScope dataList
-      .chunked(batchCount)
+      .chunked(parallelization)
       .flatMap { dataChunk ->
         return@flatMap dataChunk
           .map { data ->
@@ -791,7 +791,7 @@ suspend fun <T : Any> retryableIoTask(attempts: Int, task: suspend (Int) -> T): 
       }
     }
 
-    throw RuntimeException("Shouldn't be called")
+    unreachable()
   }
 }
 

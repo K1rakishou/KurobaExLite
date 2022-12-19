@@ -8,7 +8,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMe
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.util.processDataCollectionConcurrently
+import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -59,31 +59,31 @@ class FetchThreadBookmarkInfo(
   private suspend fun fetchThreadBookmarkInfoBatched(
     watchingBookmarkDescriptors: List<ThreadDescriptor>
   ): List<ThreadBookmarkFetchResult> {
-    val batchSize = (appSettings.processorsCount * BATCH_PER_CORE)
+    val parallelization = (appSettings.processorsCount * BATCH_PER_CORE)
       .coerceAtLeast(MIN_BATCHES_COUNT)
 
-    return processDataCollectionConcurrently(
+    return parallelForEach(
       dataList = watchingBookmarkDescriptors,
-      batchCount = batchSize,
+      parallelization = parallelization,
       dispatcher = Dispatchers.IO
     ) { threadDescriptor ->
       val site = siteManager.bySiteKey(threadDescriptor.siteKey)
       if (site == null) {
         logcatError(TAG) { "Site with key ${threadDescriptor.siteKeyActual} not found in siteRepository!" }
-        return@processDataCollectionConcurrently null
+        return@parallelForEach null
       }
 
       val bookmarkInfo = site.bookmarkInfo()
       if (bookmarkInfo == null) {
         logcatError(TAG) { "Site with key ${threadDescriptor.siteKeyActual} does not support bookmarks!" }
-        return@processDataCollectionConcurrently null
+        return@parallelForEach null
       }
 
       if (!bookmarksManager.contains(threadDescriptor)) {
-        return@processDataCollectionConcurrently ThreadBookmarkFetchResult.AlreadyDeleted(threadDescriptor)
+        return@parallelForEach ThreadBookmarkFetchResult.AlreadyDeleted(threadDescriptor)
       }
 
-      return@processDataCollectionConcurrently bookmarkInfo.bookmarkDataSource()
+      return@parallelForEach bookmarkInfo.bookmarkDataSource()
         .loadBookmarkData(threadDescriptor)
         .map { threadBookmarkData -> ThreadBookmarkFetchResult.Success(threadBookmarkData, threadDescriptor)  }
         .getOrElse { error ->

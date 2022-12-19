@@ -30,7 +30,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.util.processDataCollectionConcurrently
+import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.PersistBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
@@ -576,16 +576,16 @@ class ReplyNotificationsHelper(
   ): Map<ThreadDescriptor, BitmapDrawable> {
     val resultMap = ConcurrentHashMap<ThreadDescriptor, BitmapDrawable>()
 
-    processDataCollectionConcurrently(
+    parallelForEach(
       dataList = bookmarks.entries,
-      batchCount = MAX_THUMBNAIL_REQUESTS_PER_BATCH,
+      parallelization = MAX_THUMBNAIL_REQUESTS_PER_BATCH,
       dispatcher = Dispatchers.IO
     ) { (threadDescriptor, threadBookmark) ->
       val thumbnailUrl = threadBookmark.thumbnailUrl
-        ?: return@processDataCollectionConcurrently null
+        ?: return@parallelForEach null
 
       val bitmapDrawable = downloadThumbnailForNotification(thumbnailUrl)
-        ?: return@processDataCollectionConcurrently null
+        ?: return@parallelForEach null
 
       resultMap[threadDescriptor] = bitmapDrawable
     }

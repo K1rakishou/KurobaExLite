@@ -31,7 +31,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.screenshot.ScreenshotResult
 import com.github.k1rakishou.kurobaexlite.helpers.screenshot.screenshot
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.util.processDataCollectionConcurrently
+import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -170,16 +170,16 @@ class PostScreenshot {
       return false
     }
 
-    val batchCount = globalConstants.coresCount.coerceAtLeast(2)
+    val parallelization = globalConstants.coresCount.coerceAtLeast(2)
     val postParserDispatcher = globalConstants.postParserDispatcher
 
-    val updatedPosts = processDataCollectionConcurrently(
+    val updatedPosts = parallelForEach(
       dataList = posts,
-      batchCount = batchCount,
+      parallelization = parallelization,
       dispatcher = postParserDispatcher
     ) { postCellData ->
       val oldParsedPostData = postCellData.parsedPostData
-        ?: return@processDataCollectionConcurrently postCellData
+        ?: return@parallelForEach postCellData
 
       val updateParsedPostDataContext = oldParsedPostData.parsedPostDataContext.copy(revealFullPostComment = true)
 
@@ -189,7 +189,7 @@ class PostScreenshot {
         chanTheme = chanTheme
       )
 
-      return@processDataCollectionConcurrently postCellData.copy(parsedPostData = newParsedPostData)
+      return@parallelForEach postCellData.copy(parsedPostData = newParsedPostData)
     }
 
     screenshotData.value = ScreenshotData(updatedPosts)

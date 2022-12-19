@@ -15,7 +15,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.util.processDataCollectionConcurrently
+import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdateBookmarkInfoUponThreadOpen
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
@@ -283,11 +283,11 @@ abstract class PostScreenViewModel(
     }
 
     val chanTheme = themeEngine.chanTheme
-    val batchCount = globalConstants.coresCount.coerceAtLeast(2)
+    val parallelization = globalConstants.coresCount.coerceAtLeast(2)
 
-    val reparsedPostCellDataList = processDataCollectionConcurrently(
+    val reparsedPostCellDataList = parallelForEach(
       dataList = postCellDataList,
-      batchCount = batchCount,
+      parallelization = parallelization,
       dispatcher = globalConstants.postParserDispatcher
     ) { (postCellData, parsedPostDataContext) ->
       val newParsedPostData = parsedPostDataCache.calculateParsedPostData(
@@ -296,7 +296,7 @@ abstract class PostScreenViewModel(
         parsedPostDataContext = parsedPostDataContext
       )
 
-      return@processDataCollectionConcurrently postCellData.copy(parsedPostData = newParsedPostData)
+      return@parallelForEach postCellData.copy(parsedPostData = newParsedPostData)
     }
 
     postScreenState.insertOrUpdateMany(reparsedPostCellDataList)
