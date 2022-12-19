@@ -5,15 +5,10 @@ import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -33,7 +28,6 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyGridStateWrapper
@@ -78,7 +72,6 @@ fun LazyColumnWithFastScroller(
 ) {
   val chanTheme = LocalChanTheme.current
   val density = LocalDensity.current
-  val layoutDirection = LocalLayoutDirection.current
 
   val paddingTop = remember(contentPadding) { contentPadding.calculateTopPadding() }
   val paddingBottom = remember(contentPadding) { contentPadding.calculateBottomPadding() }
@@ -114,13 +107,6 @@ fun LazyColumnWithFastScroller(
           }
         )
     ) {
-      val contentPaddingForLazyList = remember(key1 = contentPadding, key2 = layoutDirection) {
-        PaddingValues(
-          start = contentPadding.calculateStartPadding(layoutDirection),
-          end = contentPadding.calculateEndPadding(layoutDirection)
-        )
-      }
-
       LazyColumn(
         modifier = Modifier
           .scrollbar(
@@ -139,30 +125,8 @@ fun LazyColumnWithFastScroller(
           .then(lazyListModifier),
         userScrollEnabled = userScrollEnabled,
         state = lazyListState,
-        contentPadding = contentPaddingForLazyList,
-        content = {
-          if (paddingTop > 0.dp) {
-            item(
-              key = "top_inset_spacer",
-              contentType = "spacer",
-              content = {
-                Spacer(modifier = Modifier.height(paddingTop))
-              }
-            )
-          }
-
-          content()
-
-          if (paddingBottom > 0.dp) {
-            item(
-              key = "bottom_inset_spacer",
-              contentType = "spacer",
-              content = {
-                Spacer(modifier = Modifier.height(paddingBottom))
-              }
-            )
-          }
-        }
+        contentPadding = contentPadding,
+        content = content
       )
     }
   }
@@ -185,7 +149,6 @@ fun LazyVerticalGridWithFastScroller(
 ) {
   val chanTheme = LocalChanTheme.current
   val density = LocalDensity.current
-  val layoutDirection = LocalLayoutDirection.current
 
   val paddingTop = remember(contentPadding) { contentPadding.calculateTopPadding() }
   val paddingBottom = remember(contentPadding) { contentPadding.calculateBottomPadding() }
@@ -221,13 +184,6 @@ fun LazyVerticalGridWithFastScroller(
           }
         )
     ) {
-      val contentPaddingForLazyGrid = remember(key1 = contentPadding, key2 = layoutDirection) {
-        PaddingValues(
-          start = contentPadding.calculateStartPadding(layoutDirection),
-          end = contentPadding.calculateEndPadding(layoutDirection)
-        )
-      }
-
       LazyVerticalGrid(
         modifier = Modifier
           .then(lazyGridModifier)
@@ -247,32 +203,8 @@ fun LazyVerticalGridWithFastScroller(
         columns = columns,
         userScrollEnabled = userScrollEnabled,
         state = lazyGridStateWrapper.lazyGridState,
-        contentPadding = contentPaddingForLazyGrid,
-        content = {
-          if (paddingTop > 0.dp) {
-            item(
-              key = "top_inset_spacer",
-              span = { GridItemSpan(maxLineSpan) },
-              contentType = "spacer",
-              content = {
-                Spacer(modifier = Modifier.height(paddingTop))
-              }
-            )
-          }
-
-          content()
-
-          if (paddingBottom > 0.dp) {
-            item(
-              key = "bottom_inset_spacer",
-              span = { GridItemSpan(maxLineSpan) },
-              contentType = "spacer",
-              content = {
-                Spacer(modifier = Modifier.height(paddingBottom))
-              }
-            )
-          }
-        }
+        contentPadding = contentPadding,
+        content = content
       )
     }
   }
@@ -295,7 +227,6 @@ fun LazyVerticalStaggeredGridWithFastScroller(
 ) {
   val chanTheme = LocalChanTheme.current
   val density = LocalDensity.current
-  val layoutDirection = LocalLayoutDirection.current
 
   val paddingTop = remember(contentPadding) { contentPadding.calculateTopPadding() }
   val paddingBottom = remember(contentPadding) { contentPadding.calculateBottomPadding() }
@@ -331,14 +262,6 @@ fun LazyVerticalStaggeredGridWithFastScroller(
           }
         )
     ) {
-      val contentPaddingForLazyStaggeredGrid = remember(key1 = contentPadding, key2 = layoutDirection) {
-        PaddingValues(
-          start = contentPadding.calculateStartPadding(layoutDirection),
-          end = contentPadding.calculateEndPadding(layoutDirection)
-        )
-      }
-
-
       LazyVerticalStaggeredGrid(
         modifier = Modifier
           .then(lazyStaggeredGridModifier)
@@ -358,34 +281,8 @@ fun LazyVerticalStaggeredGridWithFastScroller(
         columns = columns,
         userScrollEnabled = userScrollEnabled,
         state = lazyStaggeredGridStateWrapper.lazyStaggeredGridState,
-        contentPadding = contentPaddingForLazyStaggeredGrid,
-        content = {
-          if (paddingTop > 0.dp) {
-            item(
-              key = "top_inset_spacer",
-              // TODO: there is no span in the API
-//              span = { GridItemSpan(maxCurrentLineSpan) },
-              contentType = "spacer",
-              content = {
-                Spacer(modifier = Modifier.height(paddingTop))
-              }
-            )
-          }
-
-          content()
-
-          if (paddingBottom > 0.dp) {
-            item(
-              key = "bottom_inset_spacer",
-              // TODO: there is no span in the API
-//              span = { GridItemSpan(maxCurrentLineSpan) },
-              contentType = "spacer",
-              content = {
-                Spacer(modifier = Modifier.height(paddingBottom))
-              }
-            )
-          }
-        }
+        contentPadding = contentPadding,
+        content = content
       )
     }
   }
