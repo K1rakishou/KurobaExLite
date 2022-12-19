@@ -184,16 +184,18 @@ fun ScreenTransition(
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .graphicsLayer(alpha = alphaAnimated)
+          .graphicsLayer {
+            alpha = alphaAnimated
+          }
           .drawBehind { drawRect(composeScreen.backgroundColor) }
       ) {
         Box(
           modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer(
-              scaleX = scaleAnimated,
+            .graphicsLayer {
+              scaleX = scaleAnimated
               scaleY = scaleAnimated
-            )
+            }
         ) {
           content()
         }
@@ -202,11 +204,11 @@ fun ScreenTransition(
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .graphicsLayer(
-            alpha = alphaAnimated,
-            scaleX = scaleAnimated,
+          .graphicsLayer {
+            alpha = alphaAnimated
+            scaleX = scaleAnimated
             scaleY = scaleAnimated
-          )
+          }
       ) {
         content()
       }

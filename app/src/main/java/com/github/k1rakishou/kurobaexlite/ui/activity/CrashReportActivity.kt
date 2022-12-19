@@ -424,7 +424,6 @@ class CrashReportActivity : ComponentActivity() {
     val reportFooter = reportManager.getReportFooter(context)
 
     val resultString = buildString(16000) {
-      appendLine("Title (put this into the Github issue title)")
       appendLine("Exception: ${className}")
       appendLine("Message: ${message}")
       appendLine()
