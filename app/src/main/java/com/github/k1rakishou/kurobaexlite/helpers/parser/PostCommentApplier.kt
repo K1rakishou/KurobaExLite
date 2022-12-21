@@ -159,7 +159,7 @@ class PostCommentApplier(
 
       if (overflow) {
         append("\n")
-        append(buildClickToViewFullSpan(chanTheme))
+        append(buildClickToViewFullSpan(defaultPostCommentFontSize, chanTheme))
       }
     }
 
@@ -420,6 +420,7 @@ class PostCommentApplier(
   }
 
   private fun buildClickToViewFullSpan(
+    defaultPostCommentFontSize: Int,
     chanTheme: ChanTheme
   ) : AnnotatedString {
     return buildAnnotatedString(capacity = CLICK_TO_EXPAND.length) {
@@ -428,6 +429,7 @@ class PostCommentApplier(
       addStyle(
         style = SpanStyle(
           color = chanTheme.postLinkColor,
+          fontSize = defaultPostCommentFontSize.sp,
           textDecoration = TextDecoration.Underline
         ),
         start = 0,

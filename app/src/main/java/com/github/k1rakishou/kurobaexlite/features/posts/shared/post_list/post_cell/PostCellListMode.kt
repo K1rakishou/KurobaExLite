@@ -50,8 +50,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
@@ -691,14 +692,24 @@ private fun PostCellIcon(
     return
   }
 
-  AsyncImage(
+  SubcomposeAsyncImage(
     modifier = Modifier.fillMaxSize(),
     model = imageRequest,
-    onState = { state ->
+    content = {
+      val state = painter.state
       if (state is AsyncImagePainter.State.Error) {
         logcatError("PostCellIcon") {
           "Failed to load icon \'${iconUrl}\', error: ${state.result.throwable.errorMessageOrClassName()}"
         }
+
+        Image(
+          modifier = Modifier.fillMaxSize(),
+          painter = painterResource(id = R.drawable.error_icon),
+          contentDescription = "Error loading poster flag"
+        )
+
+      } else if (state is AsyncImagePainter.State.Success) {
+        SubcomposeAsyncImageContent(modifier = Modifier.fillMaxSize())
       }
     },
     contentDescription = "Poster flag"
