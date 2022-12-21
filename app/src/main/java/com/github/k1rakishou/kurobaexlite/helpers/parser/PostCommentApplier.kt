@@ -149,7 +149,9 @@ class PostCommentApplier(
           parsedPostDataContext = parsedPostDataContext,
           totalLength = totalLength
         )
-      } else {
+      }
+
+      if (textPart.spans.isEmpty() || textPart.spans.all { textPartSpan -> textPartSpan.isPartialSpan }) {
         addStyle(
           style = SpanStyle(fontSize = defaultPostCommentFontSize.sp),
           start = 0,

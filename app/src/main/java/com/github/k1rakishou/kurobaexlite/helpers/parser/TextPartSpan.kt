@@ -15,6 +15,9 @@ sealed class TextPartSpan {
   val PRIORITY_FOREGROUND = 2
   val PRIORITY_SPOILER = 1000
 
+  val isPartialSpan: Boolean
+    get() = this is PartialSpan
+
   fun priority(): Int {
     return when (this) {
       is BgColor,
