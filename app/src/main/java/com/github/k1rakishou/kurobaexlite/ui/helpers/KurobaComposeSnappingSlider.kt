@@ -33,15 +33,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
+import kotlin.math.roundToInt
 
 @Composable
 fun KurobaComposeSnappingSlider(
   modifier: Modifier = Modifier,
   slideOffsetState: MutableState<Float>,
   onValueChange: (Float) -> Unit,
-  backgroundColor: Color,
   slideSteps: Int? = null,
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
@@ -61,7 +60,8 @@ fun KurobaComposeSnappingSlider(
       )
   ) {
     val trackColor = chanTheme.accentColor
-    val thumbColorNormal = remember(key1 = backgroundColor) {
+
+    val thumbColorNormal = remember(key1 = trackColor) {
       if (ThemeEngine.isDarkColor(trackColor)) {
         Color.LightGray
       } else {

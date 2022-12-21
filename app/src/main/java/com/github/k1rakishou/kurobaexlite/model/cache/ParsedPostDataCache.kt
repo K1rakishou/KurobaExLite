@@ -10,6 +10,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
@@ -130,17 +131,23 @@ class ParsedPostDataCache(
       }
   }
 
-  suspend fun delete(chanDescriptor: ChanDescriptor, postDescriptors: Collection<PostDescriptor>) {
+  suspend fun delete(chanDescriptor: ChanDescriptor) {
     mutex.withLock {
       when (chanDescriptor) {
         is CatalogDescriptor -> {
-          postDescriptors.forEach { postDescriptor ->
+          val toDelete = catalogParsedPostDataMap.keys
+            .filter { postDescriptor -> postDescriptor.catalogDescriptor == chanDescriptor }
+
+          toDelete.forEach { postDescriptor ->
             catalogParsedPostDataMap.remove(postDescriptor)
             pendingPostUpdates[chanDescriptor]?.remove(postDescriptor)
           }
         }
         is ThreadDescriptor -> {
-          postDescriptors.forEach { postDescriptor ->
+          val toDelete = threadParsedPostDataMap.keys
+            .filter { postDescriptor -> postDescriptor.threadDescriptor == chanDescriptor }
+
+          toDelete.forEach { postDescriptor ->
             threadParsedPostDataMap.remove(postDescriptor)
             pendingPostUpdates[chanDescriptor]?.remove(postDescriptor)
           }
@@ -396,8 +403,6 @@ class ParsedPostDataCache(
   ): ParsedPostData {
     BackgroundUtils.ensureBackgroundThread()
 
-    val defaultPostCommentFontSize = appSettings.postCellCommentTextSizeSp.read()
-
     try {
       val textParts = postCommentParser.parsePostComment(
         postCommentUnparsed = postCommentUnparsed,
@@ -411,7 +416,6 @@ class ParsedPostDataCache(
       }
 
       val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
-        defaultPostCommentFontSize = defaultPostCommentFontSize,
         markedPosts = getMarkedPostInfoSetForQuoteSpans(textParts),
         chanTheme = chanTheme,
         textParts = textParts,
@@ -548,7 +552,7 @@ class ParsedPostDataCache(
     return repliesTo
   }
 
-  fun parseAndProcessPostSubject(
+  suspend fun parseAndProcessPostSubject(
     chanTheme: ChanTheme,
     postIndex: Int,
     postDescriptor: PostDescriptor,
@@ -568,8 +572,11 @@ class ParsedPostDataCache(
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
     val compactMode = parsedPostDataContext.postViewMode != PostViewMode.List
+    val defaultPostSubjectFontSize = appSettings.calculateFontSizeInSp(14.sp)
 
     return buildAnnotatedString(capacity = postSubjectParsed.length) {
+      pushStyle(SpanStyle(fontSize = defaultPostSubjectFontSize))
+
       if (postSubjectParsed.isNotBlank()) {
         val subjectAnnotatedString = AnnotatedString(
           text = postSubjectParsed,

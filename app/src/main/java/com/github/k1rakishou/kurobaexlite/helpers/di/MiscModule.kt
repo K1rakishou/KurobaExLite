@@ -100,7 +100,7 @@ internal fun Module.misc() {
   single { GlobalConstants(get()) }
   single { createMoshi() }
   single { PostCommentParser(siteManager = get()) }
-  single { PostCommentApplier(appResources = get()) }
+  single { PostCommentApplier(appSettings = get(), appResources = get()) }
   single { FullScreenHelpers(get()) }
   single { AndroidHelpers(application = get(), snackbarManager = get()) }
   single { PostBindProcessor(get()) }

@@ -252,11 +252,7 @@ class PopupPostsScreen(
   @Composable
   override fun FloatingContent() {
     val orientation = LocalConfiguration.current.orientation
-
-    val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
-    val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
     val postsAsyncDataState by popupPostsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-
     val coroutineScope = rememberCoroutineScope()
 
     val postListOptions by remember {
@@ -270,8 +266,6 @@ class PopupPostsScreen(
           pullToRefreshEnabled = false,
           contentPadding = PaddingValues(),
           mainUiLayoutMode = MainUiLayoutMode.Phone,
-          postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
           detectLinkableClicks = true,
           orientation = orientation,
           postViewMode = PostViewMode.List

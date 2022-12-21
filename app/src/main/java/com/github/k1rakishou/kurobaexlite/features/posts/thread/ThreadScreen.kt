@@ -540,11 +540,12 @@ private fun BoxScope.ThreadPostListScreen(
 
   val kurobaSnackbarState = rememberKurobaSnackbarState()
 
-  val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
-  val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
   val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
 
-  val postListOptions by remember(key1 = windowInsets, key2 = replyLayoutVisibilityInfoStateForScreen) {
+  val postListOptions by remember(
+    windowInsets,
+    replyLayoutVisibilityInfoStateForScreen
+  ) {
     derivedStateOf {
       val bottomPadding = when (replyLayoutVisibilityInfoStateForScreen) {
         ReplyLayoutVisibility.Collapsed -> windowInsets.bottom
@@ -564,8 +565,6 @@ private fun BoxScope.ThreadPostListScreen(
           bottom = bottomPadding
         ),
         mainUiLayoutMode = mainUiLayoutMode,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         detectLinkableClicks = true,
         orientation = orientation,
         postViewMode = PostViewMode.List

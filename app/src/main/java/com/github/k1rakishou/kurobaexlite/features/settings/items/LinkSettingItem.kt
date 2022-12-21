@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -13,6 +12,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
@@ -43,7 +43,7 @@ class LinkSettingItem(
         .graphicsLayer { alpha = if (isSettingEnabled) 1f else disabledAlpha }
         .padding(vertical = 12.dp, horizontal = 8.dp)
     ) {
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight(),
@@ -53,7 +53,7 @@ class LinkSettingItem(
       )
 
       if (subtitle != null) {
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(),

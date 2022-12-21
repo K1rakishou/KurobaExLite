@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +67,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
+import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -295,12 +298,18 @@ private fun CatalogNavigationElement(
   onRemoveClicked: (UiNavigationElement.Catalog) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+  val defaultItemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
+
   val postCommentApplier = koinRemember<PostCommentApplier>()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
+
+  val globalFontSizeMultiplier by globalUiInfoManager.globalFontSizeMultiplier.collectAsState()
+  val itemHeight = defaultItemHeight * (globalFontSizeMultiplier / 100f)
 
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .wrapContentHeight()
+      .height(itemHeight)
       .padding(vertical = 2.dp)
       .kurobaClickable(onClick = { onItemClicked(navigationElement) }),
     verticalAlignment = Alignment.CenterVertically
@@ -353,7 +362,7 @@ private fun CatalogNavigationElement(
     KurobaComposeText(
       modifier = Modifier.fillMaxWidth(),
       text = textFormatted,
-      fontSize = 15.sp,
+      fontSize = 15.sp.coerceIn(min = 13.sp, max = 17.sp),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
@@ -430,7 +439,7 @@ private fun ThreadNavigationElement(
     KurobaComposeText(
       modifier = Modifier.fillMaxWidth(),
       text = textFormatted,
-      fontSize = 15.sp,
+      fontSize = 15.sp.coerceIn(min = 13.sp, max = 17.sp),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )

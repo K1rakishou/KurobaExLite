@@ -7,9 +7,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.util.createAnnotationItem
@@ -24,16 +24,17 @@ import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 
 class PostCommentApplier(
+  private val appSettings: AppSettings,
   private val appResources: AppResources
 ) {
 
-  fun applyTextPartsToAnnotatedString(
-    defaultPostCommentFontSize: Int,
+  suspend fun applyTextPartsToAnnotatedString(
     chanTheme: ChanTheme,
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     textParts: List<TextPart>,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
+    val defaultPostCommentFontSize = appSettings.calculateFontSizeInPixels(16)
     val capacity = textParts.sumOf { it.text.length }
 
     return buildAnnotatedString(capacity = capacity) {
@@ -147,6 +148,12 @@ class PostCommentApplier(
           chanTheme = chanTheme,
           parsedPostDataContext = parsedPostDataContext,
           totalLength = totalLength
+        )
+      } else {
+        addStyle(
+          style = SpanStyle(fontSize = defaultPostCommentFontSize.sp),
+          start = 0,
+          end = this.length
         )
       }
 
@@ -336,15 +343,9 @@ class PostCommentApplier(
         null -> null
       }
 
-      val fontSize = if (currentFontSize == defaultPostCommentFontSize) {
-        TextUnit.Unspecified
-      } else {
-        with(appResources.composeDensity) { currentFontSize.sp }
-      }
-
       val spanStyle = SpanStyle(
         color = fgColor,
-        fontSize = fontSize,
+        fontSize = currentFontSize.sp,
         background = bgColor,
         fontWeight = fontWeight,
         fontStyle = fontStyle,

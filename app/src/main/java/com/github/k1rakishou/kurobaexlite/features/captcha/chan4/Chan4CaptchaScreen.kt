@@ -68,6 +68,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.flow.collectLatest
@@ -235,7 +236,6 @@ class Chan4CaptchaScreen(
         KurobaComposeSnappingSlider(
           slideOffsetState = scrollValueState,
           slideSteps = SLIDE_STEPS,
-          backgroundColor = chanTheme.backColor,
           modifier = Modifier
             .wrapContentHeight()
             .fillMaxWidth()
@@ -340,7 +340,7 @@ class Chan4CaptchaScreen(
 
         KurobaComposeText(
           text = "${captchaTtlMillis / 1000L} sec",
-          fontSize = 13.sp,
+          fontSize = 13.sp.coerceIn(min = 11.sp, max = 17.sp),
           modifier = Modifier.align(Alignment.CenterVertically)
         )
       }

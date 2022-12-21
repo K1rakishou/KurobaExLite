@@ -299,7 +299,7 @@ fun KurobaComposeText(
     modifier = modifier,
     color = actualTextColorPrimary,
     text = text,
-    fontSize = fontSize,
+    fontSize = collectTextFontSize(defaultFontSize = fontSize),
     maxLines = maxLines,
     overflow = overflow,
     softWrap = softWrap,

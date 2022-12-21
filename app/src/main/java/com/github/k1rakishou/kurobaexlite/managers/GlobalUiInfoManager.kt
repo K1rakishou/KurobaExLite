@@ -7,10 +7,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -103,12 +101,9 @@ class GlobalUiInfoManager(
   private val _currentPageMapFlow = mutableMapOf<MainUiLayoutMode, MutableStateFlow<CurrentPage>>()
 
   // vvv Settings
-  private val _textTitleSizeSp = MutableStateFlow(0.sp)
-  val textTitleSizeSp: StateFlow<TextUnit>
-    get() = _textTitleSizeSp.asStateFlow()
-  private val _textSubTitleSizeSp = MutableStateFlow(0.sp)
-  val textSubTitleSizeSp: StateFlow<TextUnit>
-    get() = _textSubTitleSizeSp.asStateFlow()
+  private val _globalFontSizeMultiplier = MutableStateFlow(100)
+  val globalFontSizeMultiplier: StateFlow<Int>
+    get() = _globalFontSizeMultiplier.asStateFlow()
 
   private val _catalogPostViewMode = MutableStateFlow<PostViewMode>(PostViewMode.List)
   val catalogPostViewMode: StateFlow<PostViewMode>
@@ -122,13 +117,6 @@ class GlobalUiInfoManager(
   private val _albumShowImageInfo = MutableStateFlow<Boolean>(true)
   val albumShowImageInfo: StateFlow<Boolean>
     get() = _albumShowImageInfo.asStateFlow()
-
-  private val _postCellCommentTextSizeSp = MutableStateFlow(0.sp)
-  val postCellCommentTextSizeSp: StateFlow<TextUnit>
-    get() = _postCellCommentTextSizeSp.asStateFlow()
-  private val _postCellSubjectTextSizeSp = MutableStateFlow(0.sp)
-  val postCellSubjectTextSizeSp: StateFlow<TextUnit>
-    get() = _postCellSubjectTextSizeSp.asStateFlow()
 
   private val _historyEnabled = MutableStateFlow(true)
   val historyEnabled: StateFlow<Boolean>
@@ -208,24 +196,16 @@ class GlobalUiInfoManager(
     logcat { "UiInfoManager initialization started" }
     job.cancelChildren()
 
-    _textTitleSizeSp.value = appSettings.textTitleSizeSp.read().sp
-    _textSubTitleSizeSp.value = appSettings.textSubTitleSizeSp.read().sp
+    _globalFontSizeMultiplier.value = appSettings.globalFontSizeMultiplier.read()
     _catalogPostViewMode.value = appSettings.catalogPostViewMode.read().toPostViewMode()
     _catalogGridModeColumnCount.value = appSettings.catalogGridModeColumnCount.read()
     _albumGridModeColumnCount.value = appSettings.albumColumnCount.read()
     _albumShowImageInfo.value = appSettings.albumShowImageInfo.read()
-    _postCellCommentTextSizeSp.value = appSettings.postCellCommentTextSizeSp.read().sp
-    _postCellSubjectTextSizeSp.value = appSettings.postCellSubjectTextSizeSp.read().sp
     _historyEnabled.value = appSettings.historyEnabled.read()
 
     coroutineScope.launch {
-      appSettings.textTitleSizeSp.listen()
-        .collectLatest { value -> _textTitleSizeSp.value = value.sp }
-    }
-
-    coroutineScope.launch {
-      appSettings.textSubTitleSizeSp.listen()
-        .collectLatest { value -> _textSubTitleSizeSp.value = value.sp }
+      appSettings.globalFontSizeMultiplier.listen()
+        .collectLatest { value -> _globalFontSizeMultiplier.value = value }
     }
 
     coroutineScope.launch {
@@ -246,16 +226,6 @@ class GlobalUiInfoManager(
     coroutineScope.launch {
       appSettings.albumShowImageInfo.listen()
         .collectLatest { value -> _albumShowImageInfo.value = value }
-    }
-
-    coroutineScope.launch {
-      appSettings.postCellCommentTextSizeSp.listen()
-        .collectLatest { value -> _postCellCommentTextSizeSp.value = value.sp }
-    }
-
-    coroutineScope.launch {
-      appSettings.postCellSubjectTextSizeSp.listen()
-        .collectLatest { value -> _postCellSubjectTextSizeSp.value = value.sp }
     }
 
     coroutineScope.launch {

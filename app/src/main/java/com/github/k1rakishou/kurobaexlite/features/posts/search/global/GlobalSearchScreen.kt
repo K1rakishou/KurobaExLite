@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,9 +34,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_c
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.rememberPostBlinkAnimationState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
-import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -282,10 +279,6 @@ private fun PostSearchCell(
   postBlinkAnimationState: PostBlinkAnimationState,
   postSearchLongtapContentMenuProvider: () -> PostSearchLongtapContentMenu
 ) {
-  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
-
-  val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
-  val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
   val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
   val postListSelectionState = rememberPostListSelectionState(postSelectionEnabled = false)
 
@@ -309,8 +302,6 @@ private fun PostSearchCell(
       // TODO(KurobaEx): mark this one?
       currentlyOpenedThread = null,
       detectLinkableClicks = false,
-      postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-      postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
       postCellData = postCellData,
       cellsPadding = remember { PaddingValues(horizontal = 8.dp) },
       postListSelectionState = postListSelectionState,

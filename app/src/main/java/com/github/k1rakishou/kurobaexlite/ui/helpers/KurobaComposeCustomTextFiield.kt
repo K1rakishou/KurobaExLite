@@ -79,14 +79,16 @@ fun KurobaComposeCustomTextField(
     }
   }
 
-  val textStyle = remember(key1 = actualTextColor, key2 = fontSize, key3 = enabled) {
+  val updatedFontSize = collectTextFontSize(defaultFontSize = fontSize)
+
+  val textStyle = remember(key1 = actualTextColor, key2 = updatedFontSize, key3 = enabled) {
     val textColorWithAlpha = if (enabled) {
       actualTextColor
     } else {
       actualTextColor.copy(alpha = disabledContentAlpha)
     }
 
-    return@remember TextStyle.Default.copy(color = textColorWithAlpha, fontSize = fontSize)
+    return@remember TextStyle.Default.copy(color = textColorWithAlpha, fontSize = updatedFontSize)
   }
 
   val indicatorLineModifier = if (drawBottomIndicator) {
@@ -122,7 +124,7 @@ fun KurobaComposeCustomTextField(
         enabled = enabled,
         inputText = localInput.text,
         labelText = labelText,
-        fontSize = fontSize,
+        fontSize = updatedFontSize,
         parentBackgroundColor = parentBackgroundColor,
         interactionSource = interactionSource,
       )
@@ -164,7 +166,7 @@ fun KurobaComposeCustomTextField(
       }
 
       Column {
-        Text(
+        KurobaComposeText(
           text = counterText,
           fontSize = 12.sp,
           color = counterTextColor,
@@ -370,7 +372,7 @@ fun KurobaLabelText(
 
     val hintColorAnimated by animateColorAsState(targetValue = hintColor)
 
-    Text(
+    KurobaComposeText(
       text = labelText,
       fontSize = fontSize,
       color = hintColorAnimated

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -35,6 +34,7 @@ import com.github.k1rakishou.chan.core.mpv.MpvUtils
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
@@ -89,7 +89,7 @@ internal fun MediaViewerScreenVideoControls(
         }
       }
 
-      Text(
+      KurobaComposeText(
         text = timePositionText,
         color = Color.White,
         fontSize = 16.sp
@@ -132,7 +132,7 @@ internal fun MediaViewerScreenVideoControls(
 
       Spacer(modifier = Modifier.width(10.dp))
 
-      Text(
+      KurobaComposeText(
         text = durationText,
         color = Color.White,
         fontSize = 16.sp
@@ -174,7 +174,7 @@ internal fun MediaViewerScreenVideoControls(
       ) {
         val alpha = if (videoStartedPlayingUpdated) 1f else disabledAlpha
 
-        Text(
+        KurobaComposeText(
           modifier = Modifier.graphicsLayer { this.alpha = alpha },
           text = hwDecText,
           color = Color.White,

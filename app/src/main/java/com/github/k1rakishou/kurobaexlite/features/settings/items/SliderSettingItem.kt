@@ -17,26 +17,24 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
-import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
-import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.RangeSetting
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.launch
 
-class StringSettingItem(
+class SliderSettingItem(
   title: String,
-  subtitle: AnnotatedString? = null,
+  subtitle: AnnotatedString?,
   dependencies: List<BooleanSetting> = emptyList(),
-  val delegate: StringSetting,
+  val delegate: RangeSetting,
   val enabled: Boolean = true,
-  val showDialogScreen: suspend (DialogScreen.Params) -> Unit,
-  val valueValidator: (String) -> Result<String> = { Result.success(it) },
-  val settingDisplayFormatter: (String) -> String = { it },
-  val onSettingUpdated: (suspend () -> Unit)? = null
+  val showSliderDialog: suspend (AppSettingsScreenViewModel.SliderDialogParameters) -> Int?,
+  val settingDisplayFormatter: (Int) -> String,
+  val sliderCurrentValueFormatter: (Int) -> String,
+  val onSettingUpdated: (suspend () -> Unit)?
 ) : SettingItem(delegate.settingKey, title, subtitle, dependencies) {
 
   @Composable
@@ -60,36 +58,16 @@ class StringSettingItem(
           enabled = isSettingEnabled,
           onClick = {
             coroutineScope.launch {
-              val dialogParams = DialogScreen.Params(
-                title = DialogScreen.Text.String("Enter value"),
-                inputs = listOf(DialogScreen.Input.String(initialValue = value)),
-                negativeButton = DialogScreen.DialogButton(
-                  buttonText = R.string.cancel,
-                  onClick = { /*No-op*/ }
-                ),
-                neutralButton = DialogScreen.DialogButton(
-                  buttonText = R.string.reset,
-                  onClick = { coroutineScope.launch { delegate.write(delegate.defaultValue) } }
-                ),
-                positiveButton = DialogScreen.PositiveDialogButton(
-                  buttonText = R.string.ok,
-                  onClick = { inputs ->
-                    val input = inputs.firstOrNull() ?: return@PositiveDialogButton
-
-                    coroutineScope.launch {
-                      val formattedSetting = valueValidator(input)
-                      if (formattedSetting.isFailure) {
-                        snackbarManager.errorToast("Validation failed: ${formattedSetting.exceptionOrThrow().message ?: "No error message"}")
-                        return@launch
-                      }
-
-                      delegate.write(formattedSetting.getOrThrow())
-                    }
-                  }
-                )
+              val sliderDialogParameters = AppSettingsScreenViewModel.SliderDialogParameters(
+                title = title,
+                delegate = delegate,
+                currentValueFormatter = sliderCurrentValueFormatter
               )
 
-              showDialogScreen(dialogParams)
+              val result = showSliderDialog(sliderDialogParameters)
+                ?: return@launch
+
+              delegate.write(result)
               onSettingUpdated?.invoke()
             }
           }
@@ -120,7 +98,7 @@ class StringSettingItem(
       if (value != null) {
         Spacer(modifier = Modifier.height(4.dp))
 
-        val valueFormatted = remember(key1 = value) { "\"${settingDisplayFormatter(value)}\"" }
+        val valueFormatted = remember(key1 = value) { settingDisplayFormatter(value) }
 
         KurobaComposeText(
           modifier = Modifier

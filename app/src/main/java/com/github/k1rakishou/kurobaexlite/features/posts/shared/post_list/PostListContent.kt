@@ -1191,8 +1191,6 @@ private fun PostCellContainer(
         chanDescriptor = chanDescriptor,
         currentlyOpenedThread = currentlyOpenedThread,
         detectLinkableClicks = postListOptions.detectLinkableClicks,
-        postCellCommentTextSizeSp = postListOptions.postCellCommentTextSizeSp,
-        postCellSubjectTextSizeSp = postListOptions.postCellSubjectTextSizeSp,
         postCellData = postCellData,
         cellsPadding = cellsPadding,
         postBlinkAnimationState = postBlinkAnimationState,

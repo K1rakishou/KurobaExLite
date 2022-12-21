@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +35,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeRadioButton
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -259,11 +259,6 @@ class FloatingMenuScreen(
     val chanTheme = LocalChanTheme.current
     val density = LocalDensity.current
 
-    val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
-    val headerTextSize = with(density) {
-      remember(key1 = titleTextSize) { (titleTextSize.toPx() + 4.sp.toPx()).toSp() }
-    }
-
     val headerTitle = when (item.text) {
       is FloatingMenuItem.MenuItemText.Id -> stringResource(id = item.text.id)
       is FloatingMenuItem.MenuItemText.String -> item.text.text
@@ -276,11 +271,11 @@ class FloatingMenuScreen(
         .padding(horizontal = 8.dp, vertical = 16.dp),
       contentAlignment = Alignment.CenterStart
     ) {
-      Text(
+      KurobaComposeText(
         modifier = Modifier.wrapContentSize(),
         text = headerTitle,
         color = chanTheme.textColorPrimary,
-        fontSize = headerTextSize
+        fontSize = 18.sp
       )
     }
   }
@@ -433,8 +428,6 @@ class FloatingMenuScreen(
     onItemClicked: (() -> Unit)?
   ) {
     val chanTheme = LocalChanTheme.current
-    val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
-    val subtitleTextSize by globalUiInfoManager.textSubTitleSizeSp.collectAsState()
     val defaultHorizPadding = globalUiInfoManager.defaultHorizPadding
     val defaultVertPadding = globalUiInfoManager.defaultVertPadding
 
@@ -467,32 +460,32 @@ class FloatingMenuScreen(
         .then(modifier)
     ) {
       if (subtitle.isNullOrBlank()) {
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxHeight()
             .align(Alignment.CenterStart),
           text = title,
           color = chanTheme.textColorPrimary,
-          fontSize = titleTextSize
+          fontSize = 16.sp
         )
       } else {
         Column(
           modifier = Modifier.wrapContentHeight()
         ) {
-          Text(
+          KurobaComposeText(
             modifier = Modifier.wrapContentHeight(),
             text = title,
             color = chanTheme.textColorPrimary,
-            fontSize = titleTextSize
+            fontSize = 16.sp
           )
 
           Spacer(modifier = Modifier.height(2.dp))
 
-          Text(
+          KurobaComposeText(
             modifier = Modifier.wrapContentHeight(),
             text = subtitle,
             color = chanTheme.textColorSecondary,
-            fontSize = subtitleTextSize
+            fontSize = 14.sp
           )
         }
       }

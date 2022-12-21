@@ -307,6 +307,8 @@
 
     <string name="settings_screen_ui_group">Interface</string>
     <string name="settings_screen_layout_mode">Layout mode</string>
+    <string name="settings_screen_global_text_size_multiplier">Font size multiplier</string>
+    <string name="settings_screen_global_text_size_multiplier_current_value">Font size multiplier: %1$d\%%</string>
 
     <string name="settings_screen_about_layout_group">About</string>
     <string name="settings_screen_check_for_updates">Current version: %1$s-%2$s-%3$s</string>

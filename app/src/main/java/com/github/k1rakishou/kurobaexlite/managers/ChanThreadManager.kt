@@ -30,9 +30,7 @@ class ChanThreadManager(
     get() = _currentlyOpenedThreadFlow.value
 
   suspend fun delete(chanDescriptor: ChanDescriptor) {
-    val postDescriptors = chanCache.getPostDescriptors(chanDescriptor)
-    parsedPostDataCache.delete(chanDescriptor, postDescriptors)
-
+    parsedPostDataCache.delete(chanDescriptor)
     chanCache.delete(chanDescriptor)
   }
 

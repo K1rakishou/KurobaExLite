@@ -110,7 +110,7 @@ abstract class ComposeScreen protected constructor(
     return savedStateViewModel.getArgumentOrNull(key)
   }
 
-  fun <T : Any> argumentOr(key: String, default: T): T {
+  fun <T : Any> argumentOrDefault(key: String, default: T): T {
     return savedStateViewModel.getArgumentOrNull(key) ?: default
   }
 

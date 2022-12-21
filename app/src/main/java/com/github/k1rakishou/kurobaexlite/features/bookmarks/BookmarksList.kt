@@ -84,6 +84,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
+import com.github.k1rakishou.kurobaexlite.ui.helpers.collectTextFontSize
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.ReorderableState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.detectReorder
@@ -247,13 +248,15 @@ private fun LazyItemScope.ThreadBookmarkItem(
   onBookmarkDeleted: (ThreadBookmarkUi) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val itemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
+  val defaultItemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
   val animationDurationMs = 500
 
   val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
   val postCommentApplier: PostCommentApplier = koinRemember()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   val isDrawerCurrentlyOpened by listenForDrawerVisibilityEvents()
+  val globalFontSizeMultiplier by globalUiInfoManager.globalFontSizeMultiplier.collectAsState()
 
   val textAnimationSpec = remember(key1 = isDrawerCurrentlyOpened) {
     if (isDrawerCurrentlyOpened && canUseFancyAnimations) {
@@ -302,11 +305,13 @@ private fun LazyItemScope.ThreadBookmarkItem(
     }
   }
 
+  val itemHeight = defaultItemHeight * (globalFontSizeMultiplier / 100f)
+
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .padding(vertical = 2.dp)
       .height(itemHeight)
+      .padding(vertical = 2.dp)
       .draggedItem(offset)
       .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
       .drawBehind {
@@ -477,7 +482,6 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
 ) {
   val context = LocalContext.current
   val chanTheme = LocalChanTheme.current
-  val fontSize = 13.sp
 
   val transition = updateTransition(
     targetState = threadBookmarkStatsUi,
@@ -560,7 +564,10 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
     )
   }
 
-  val bookmarkInlinedContent = remember(key1 = isDead) {
+  val defaultFontSize = 13.sp
+  val fontSize = collectTextFontSize(defaultFontSize)
+
+  val bookmarkInlinedContent = remember(isDead, fontSize) {
     val resultMap = mutableMapOf<String, InlineTextContent>()
 
     BookmarksScreen.BookmarkAnnotatedContent.values().forEach { bookmarkAnnotatedContent ->
@@ -576,7 +583,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
   KurobaComposeText(
     modifier = modifier,
     color = Color.Unspecified,
-    fontSize = fontSize,
+    fontSize = defaultFontSize,
     text = bookmarkAdditionalInfoText,
     inlineContent = bookmarkInlinedContent
   )

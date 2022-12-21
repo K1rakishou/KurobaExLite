@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -19,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.EnumSetting
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -85,7 +85,7 @@ class EnumSettingItem<T : Enum<T>>(
         .graphicsLayer { alpha = if (isSettingEnabled) 1f else disabledAlpha }
         .padding(vertical = 12.dp, horizontal = 8.dp)
     ) {
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight(),
@@ -95,7 +95,7 @@ class EnumSettingItem<T : Enum<T>>(
       )
 
       if (subtitle != null) {
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(),
@@ -108,7 +108,7 @@ class EnumSettingItem<T : Enum<T>>(
       if (value != null) {
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(),

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
@@ -227,7 +226,7 @@ class DialogScreen(
   private fun buildInputLabel(hint: Text): @Composable ((InteractionSource) -> Unit) = {
     val chanTheme = LocalChanTheme.current
 
-    Text(
+    KurobaComposeText(
       text = hint.actualText(),
       color = chanTheme.textColorHint,
       fontSize = 12.sp

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,6 +23,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.MapSetting
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -143,7 +143,7 @@ class MapSettingItem<K, V>(
         }
       }
 
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight(),
@@ -153,7 +153,7 @@ class MapSettingItem<K, V>(
       )
 
       if (subtitle != null) {
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(),
@@ -169,7 +169,7 @@ class MapSettingItem<K, V>(
         valueFormatter(valueMapperFrom(entry.value))
       }
 
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight(),

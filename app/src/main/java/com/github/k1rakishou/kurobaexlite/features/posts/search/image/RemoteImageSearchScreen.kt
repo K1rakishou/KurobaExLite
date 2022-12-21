@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -67,6 +66,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -622,7 +622,7 @@ private fun BuildImageSearchResult(
     )
 
     if (imageInfo != null) {
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight()
@@ -630,7 +630,7 @@ private fun BuildImageSearchResult(
           .padding(horizontal = 4.dp, vertical = 2.dp)
           .align(Alignment.BottomEnd),
         text = imageInfo,
-        fontSize = 11.sp,
+        fontSize = 11.sp.coerceIn(min = 11.sp, max = 13.sp),
         color = Color.White
       )
     }

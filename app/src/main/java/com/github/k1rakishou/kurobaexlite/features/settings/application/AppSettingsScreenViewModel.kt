@@ -18,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherBg
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherFg
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.RangeSetting
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.RestartBookmarkBackgroundWatcher
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
@@ -55,6 +56,10 @@ class AppSettingsScreenViewModel(
   private val _showMenuItemsFlow = MutableSharedFlow<DisplayedMenuOptions>(extraBufferCapacity = Channel.RENDEZVOUS)
   val showMenuItemsFlow: SharedFlow<DisplayedMenuOptions>
     get() = _showMenuItemsFlow.asSharedFlow()
+
+  private val _showSliderDialogFlow = MutableSharedFlow<SliderDialogParameters>(extraBufferCapacity = Channel.RENDEZVOUS)
+  val showSliderDialogFlow: SharedFlow<SliderDialogParameters>
+    get() = _showSliderDialogFlow.asSharedFlow()
 
   private val _showScreenFlow = MutableSharedFlow<DisplayScreenRequest>(
     extraBufferCapacity = 1,
@@ -143,6 +148,19 @@ class AppSettingsScreenViewModel(
           title = appResources.string(R.string.settings_screen_layout_mode),
           delegate = appSettings.layoutType,
           showOptionsScreen = { items -> displayOptionsAndWaitForSelection(items) }
+        )
+
+        slider(
+          title = appResources.string(R.string.settings_screen_global_text_size_multiplier),
+          delegate = appSettings.globalFontSizeMultiplier,
+          showSliderDialog = { sliderDialogParameters ->
+            _showSliderDialogFlow.emit(sliderDialogParameters)
+            return@slider sliderDialogParameters.await()
+          },
+          settingDisplayFormatter = { value -> "${value}%" },
+          sliderCurrentValueFormatter = { value ->
+            appResources.string(R.string.settings_screen_global_text_size_multiplier_current_value, value)
+          }
         )
       }
     )
@@ -249,6 +267,23 @@ class AppSettingsScreenViewModel(
     val items: List<FloatingMenuItem>,
     val result: CompletableDeferred<String?>
   )
+
+  data class SliderDialogParameters(
+    val title: String,
+    val delegate: RangeSetting,
+    val currentValueFormatter: (Int) -> String
+  ) {
+    private val deferred: CompletableDeferred<Int?> = CompletableDeferred()
+
+    fun complete(value: Int?) {
+      deferred.complete(value)
+    }
+
+    suspend fun await(): Int? {
+      return deferred.await()
+    }
+
+  }
 
   class DisplayScreenRequest(
     val screenBuilder: (ComponentActivity, NavigationRouter) -> ComposeScreen

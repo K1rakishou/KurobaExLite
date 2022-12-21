@@ -1,8 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.features.settings.items
 
 import androidx.compose.ui.text.AnnotatedString
+import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.EnumSetting
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.RangeSetting
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.StringSetting
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
@@ -103,6 +105,32 @@ class SettingGroupBuilder(
       delegate = delegate,
       showDialogScreen = showDialogScreen,
       settingDisplayFormatter = settingNameMapper,
+      onSettingUpdated = onSettingUpdated
+    )
+
+    return this
+  }
+
+  fun slider(
+    title: String,
+    delegate: RangeSetting,
+    showSliderDialog: suspend (AppSettingsScreenViewModel.SliderDialogParameters) -> Int?,
+    sliderCurrentValueFormatter: (Int) -> String,
+    enabled: Boolean = true,
+    subtitleBuilder: (AnnotatedString.Builder.() -> Unit)? = null,
+    dependencies: List<BooleanSetting> = emptyList(),
+    settingDisplayFormatter: (Int) -> String = { it.toString() },
+    onSettingUpdated: (suspend () -> Unit)? = null
+  ): SettingGroupBuilder {
+    settings += SliderSettingItem(
+      title = title,
+      subtitle = buildSubtitle(subtitleBuilder),
+      dependencies = dependencies,
+      enabled = enabled,
+      delegate = delegate,
+      showSliderDialog = showSliderDialog,
+      settingDisplayFormatter = settingDisplayFormatter,
+      sliderCurrentValueFormatter = sliderCurrentValueFormatter,
       onSettingUpdated = onSettingUpdated
     )
 

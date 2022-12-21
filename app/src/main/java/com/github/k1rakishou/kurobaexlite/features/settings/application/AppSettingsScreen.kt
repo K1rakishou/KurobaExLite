@@ -10,13 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,17 +36,20 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.SliderDialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.KurobaComposeFadeIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class AppSettingsScreen(
   screenArgs: Bundle? = null,
@@ -104,6 +107,8 @@ class AppSettingsScreen(
 
   @Composable
   override fun HomeNavigationScreenContent() {
+    val coroutineScope = rememberCoroutineScope()
+
     HandleBackPresses {
       if (kurobaToolbarContainerState.onBackPressed()) {
         return@HandleBackPresses true
@@ -119,6 +124,27 @@ class AppSettingsScreen(
       displayScreen = { displayScreenRequest ->
         displayScreen(displayScreenRequest)
       },
+      displaySliderDialogAndWaitForResult = { sliderDialogParameters ->
+        coroutineScope.launch { displaySliderDialogAndWaitForResult(sliderDialogParameters) }
+      }
+    )
+  }
+
+  private suspend fun displaySliderDialogAndWaitForResult(
+    sliderDialogParameters: AppSettingsScreenViewModel.SliderDialogParameters
+  ) {
+    val delegate = sliderDialogParameters.delegate
+
+    SliderDialogScreen.show(
+      componentActivity = componentActivity,
+      navigationRouter = navigationRouter,
+      title = sliderDialogParameters.title,
+      minValue = delegate.minValue,
+      currentValue = delegate.read(),
+      maxValue = delegate.maxValue,
+      sliderSteps = delegate.maxValue - delegate.minValue,
+      currentValueFormatter = sliderDialogParameters.currentValueFormatter,
+      onResult = { updatedValue -> sliderDialogParameters.complete(updatedValue) }
     )
   }
 
@@ -164,11 +190,11 @@ class AppSettingsScreen(
 
 }
 
-
 @Composable
 private fun ContentInternal(
   displayMenuOptionsAndWaitForResult: (AppSettingsScreenViewModel.DisplayedMenuOptions) -> Unit,
-  displayScreen: (AppSettingsScreenViewModel.DisplayScreenRequest) -> Unit
+  displayScreen: (AppSettingsScreenViewModel.DisplayScreenRequest) -> Unit,
+  displaySliderDialogAndWaitForResult: (AppSettingsScreenViewModel.SliderDialogParameters) -> Unit
 ) {
   val appSettingsScreenViewModel: AppSettingsScreenViewModel = koinRememberViewModel()
 
@@ -177,6 +203,15 @@ private fun ContentInternal(
     block = {
       appSettingsScreenViewModel.showMenuItemsFlow.collectLatest { displayedMenuOptions ->
         displayMenuOptionsAndWaitForResult(displayedMenuOptions)
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      appSettingsScreenViewModel.showSliderDialogFlow.collectLatest { sliderDialogParameters ->
+        displaySliderDialogAndWaitForResult(sliderDialogParameters)
       }
     }
   )
@@ -257,7 +292,7 @@ private fun SettingGroup(group: SettingGroup) {
         .wrapContentHeight()
     ) {
       if (group.groupName != null) {
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
@@ -270,7 +305,7 @@ private fun SettingGroup(group: SettingGroup) {
       }
 
       if (group.groupDescription != null) {
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()

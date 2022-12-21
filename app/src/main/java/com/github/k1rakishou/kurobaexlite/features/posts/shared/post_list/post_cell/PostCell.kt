@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.TextUnit
 import androidx.core.content.res.ResourcesCompat
 import com.github.k1rakishou.composecustomtextselection.lib.ConfigurableTextToolbar
 import com.github.k1rakishou.composecustomtextselection.lib.SelectableTextContainer
@@ -39,8 +38,6 @@ fun PostCell(
   chanDescriptor: ChanDescriptor,
   currentlyOpenedThread: ThreadDescriptor?,
   detectLinkableClicks: Boolean,
-  postCellCommentTextSizeSp: TextUnit,
-  postCellSubjectTextSizeSp: TextUnit,
   postCellData: PostCellData,
   cellsPadding: PaddingValues,
   postListSelectionState: PostListSelectionState,
@@ -75,7 +72,6 @@ fun PostCell(
         cellsPadding = cellsPadding,
         postListSelectionState = postListSelectionState,
         postBlinkAnimationState = postBlinkAnimationState,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         onPostImageClicked = onPostImageClicked,
         onPostImageLongClicked = onPostImageLongClicked,
         reparsePostSubject = reparsePostSubject,
@@ -83,7 +79,6 @@ fun PostCell(
         detectLinkableClicks = detectLinkableClicks,
         onCopySelectedText = onCopySelectedText,
         onQuoteSelectedText = onQuoteSelectedText,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostCellCommentLongClicked = onPostCellCommentLongClicked,
         onTextSelectionModeChanged = onTextSelectionModeChanged,
@@ -100,14 +95,12 @@ fun PostCell(
         cellsPadding = cellsPadding,
         postListSelectionState = postListSelectionState,
         postBlinkAnimationState = postBlinkAnimationState,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         onPostImageClicked = onPostImageClicked,
         onPostImageLongClicked = onPostImageLongClicked,
         textSelectionEnabled = textSelectionEnabled,
         detectLinkableClicks = detectLinkableClicks,
         onCopySelectedText = onCopySelectedText,
         onQuoteSelectedText = onQuoteSelectedText,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
         onPostCellCommentClicked = onPostCellCommentClicked,
         onPostCellCommentLongClicked = onPostCellCommentLongClicked,
         onTextSelectionModeChanged = onTextSelectionModeChanged,

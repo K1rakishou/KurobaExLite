@@ -610,8 +610,6 @@ private fun BoxScope.CatalogPostListScreen(
   var replyLayoutContainerHeight by remember { mutableStateOf(0.dp) }
 
   val kurobaSnackbarState = rememberKurobaSnackbarState()
-  val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
-  val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
   val replyLayoutVisibilityInfoStateForScreen by globalUiInfoManager.replyLayoutVisibilityInfoStateForScreen(screenKey)
   val catalogPostViewMode by globalUiInfoManager.catalogPostViewMode.collectAsState()
   val viewProvider by rememberUpdatedState(newValue = { view })
@@ -641,8 +639,6 @@ private fun BoxScope.CatalogPostListScreen(
           bottom = bottomPadding + fabSize + fabVertOffset
         ),
         mainUiLayoutMode = mainUiLayoutMode,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         detectLinkableClicks = true,
         orientation = orientation,
         postViewMode = catalogPostViewMode

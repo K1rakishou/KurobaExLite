@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
@@ -102,8 +101,6 @@ class PostScreenshotScreen(
     val postListOptionsMut by produceState<PostListOptions?>(
       initialValue = null,
       producer = {
-        val postCellCommentTextSizeSp = appSettings.postCellCommentTextSizeSp.read()
-        val postCellSubjectTextSizeSp = appSettings.postCellSubjectTextSizeSp.read()
         val catalogPostViewMode = if (chanDescriptor is CatalogDescriptor) {
           appSettings.catalogPostViewMode.read().toPostViewMode()
         } else {
@@ -120,8 +117,6 @@ class PostScreenshotScreen(
           detectLinkableClicks = false,
           mainUiLayoutMode = MainUiLayoutMode.Phone,
           contentPadding = PaddingValues(0.dp),
-          postCellCommentTextSizeSp = postCellCommentTextSizeSp.sp,
-          postCellSubjectTextSizeSp = postCellSubjectTextSizeSp.sp,
           orientation = Configuration.ORIENTATION_PORTRAIT,
           postViewMode = catalogPostViewMode
         )

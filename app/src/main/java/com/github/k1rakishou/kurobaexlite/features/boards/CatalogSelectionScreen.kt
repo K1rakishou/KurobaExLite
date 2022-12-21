@@ -37,7 +37,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -410,8 +409,6 @@ private fun CatalogsList(
   val chanThreadManaber: ChanThreadManager = koinRemember()
   val catalogSelectionScreenViewModel: CatalogSelectionScreenViewModel = koinRememberViewModel()
 
-  val titleTextSize by globalUiInfoManager.textTitleSizeSp.collectAsState()
-  val subtitleTextSize by globalUiInfoManager.textSubTitleSizeSp.collectAsState()
   val defaultHorizPadding = remember { globalUiInfoManager.defaultHorizPadding }
   val defaultVertPadding = remember { globalUiInfoManager.defaultVertPadding }
 
@@ -552,8 +549,6 @@ private fun CatalogsList(
             buildChanBoardsList(
               currentlyViewedCatalogDescriptor = currentlyViewedCatalogDescriptor,
               searchQuery = searchQuery,
-              titleTextSize = titleTextSize,
-              subtitleTextSize = subtitleTextSize,
               horizPadding = defaultHorizPadding,
               vertPadding = defaultVertPadding,
               allCatalogs = allCatalogs,
@@ -570,8 +565,6 @@ private fun CatalogsList(
 private fun LazyListScope.buildChanBoardsList(
   currentlyViewedCatalogDescriptor: CatalogDescriptor?,
   searchQuery: String?,
-  titleTextSize: TextUnit,
-  subtitleTextSize: TextUnit,
   horizPadding: Dp,
   vertPadding: Dp,
   allCatalogs: List<ChanCatalogUiData>,
@@ -604,8 +597,6 @@ private fun LazyListScope.buildChanBoardsList(
         ChanBoardCell(
           currentlyViewedCatalogDescriptor = currentlyViewedCatalogDescriptor,
           searchQuery = searchQuery,
-          titleTextSize = titleTextSize,
-          subtitleTextSize = subtitleTextSize,
           horizPadding = horizPadding,
           vertPadding = vertPadding,
           chanCatalogUiData = chanBoardUiData,
@@ -661,8 +652,6 @@ private fun ChanBoardListHeader(siteKey: SiteKey) {
 private fun ChanBoardCell(
   currentlyViewedCatalogDescriptor: CatalogDescriptor?,
   searchQuery: String?,
-  titleTextSize: TextUnit,
-  subtitleTextSize: TextUnit,
   horizPadding: Dp,
   vertPadding: Dp,
   chanCatalogUiData: ChanCatalogUiData,
@@ -714,7 +703,7 @@ private fun ChanBoardCell(
 
       KurobaComposeText(
         text = textFormatted,
-        fontSize = titleTextSize,
+        fontSize = 16.sp,
         maxLines = 1
       )
     }
@@ -744,7 +733,7 @@ private fun ChanBoardCell(
 
         KurobaComposeText(
           text = textFormatted,
-          fontSize = subtitleTextSize,
+          fontSize = 14.sp,
           maxLines = 3
         )
       }

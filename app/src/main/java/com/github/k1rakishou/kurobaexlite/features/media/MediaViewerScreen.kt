@@ -32,7 +32,6 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -107,7 +106,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
@@ -710,13 +708,9 @@ private fun MediaViewerBottomSheet(
   val popupPostsScreenViewModel: MediaViewerPopupPostsScreenViewModel = koinRememberViewModel()
   val catalogScreenViewModel: CatalogScreenViewModel = koinRememberViewModel()
   val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
-  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val androidHelpers: AndroidHelpers = koinRemember()
 
-  val postCellCommentTextSizeSp by globalUiInfoManager.postCellCommentTextSizeSp.collectAsState()
-  val postCellSubjectTextSizeSp by globalUiInfoManager.postCellSubjectTextSizeSp.collectAsState()
   val currentPageIndex by mediaViewerScreenState.currentPageIndex
-
   var postsLoadedOnce by remember(key1 = currentPageIndex) { mutableStateOf(false) }
   val postImage = currentPageIndex?.let { pageIndex -> mediaViewerScreenState.mediaList.getOrNull(pageIndex)?.postImage }
   val sheetPaddingValuesUpdated by rememberUpdatedState(newValue = sheetPaddingValues)
@@ -736,8 +730,6 @@ private fun MediaViewerBottomSheet(
         pullToRefreshEnabled = false,
         contentPadding = paddingValues,
         mainUiLayoutMode = MainUiLayoutMode.Phone,
-        postCellCommentTextSizeSp = postCellCommentTextSizeSp,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
         detectLinkableClicks = true,
         orientation = orientation,
         postViewMode = PostViewMode.List
@@ -1084,7 +1076,7 @@ private fun MediaViewerBottomIcons(
       if (replyCountToCurrentImagePost != null) {
         val replyCountIconBg = remember { Color.Black.copy(alpha = 0.8f) }
 
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .graphicsLayer { alpha = mediaViewerUiAlpha }
             .wrapContentSize()
@@ -1687,7 +1679,7 @@ private fun DisplayImageLoadError(
         postImageDataLoadState.exception.errorMessageOrClassName(userReadable = true)
       }
 
-      Text(
+      KurobaComposeText(
         text = errorText,
         fontSize = 14.sp,
         color = Color.White
@@ -1746,7 +1738,7 @@ private fun DisplayImagePreview(
               state.result.throwable.errorMessageOrClassName(userReadable = true)
             }
 
-            Text(
+            KurobaComposeText(
               text = errorText,
               fontSize = 14.sp,
               color = Color.White

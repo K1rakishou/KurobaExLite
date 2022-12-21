@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -56,6 +55,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import logcat.LogPriority
@@ -350,7 +350,7 @@ private fun SeekToHint(
         return@remember "${currentPosFormatted} / ${durationFormatted}"
       }
 
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .wrapContentSize()
           .padding(horizontal = 24.dp, vertical = 12.dp),
@@ -627,7 +627,7 @@ private fun DisplayVideoPlaybackError(
         .kurobaClickable(hasClickIndication = false, onClick = { onVideoTapped() }),
       contentAlignment = Alignment.Center,
     ) {
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight(),
@@ -680,7 +680,7 @@ private fun DisplayMpvLibrariesAreNotLoadedError(
           .fillMaxWidth()
           .wrapContentHeight()
       ) {
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(),

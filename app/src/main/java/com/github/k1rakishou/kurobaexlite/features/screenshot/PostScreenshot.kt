@@ -135,8 +135,6 @@ class PostScreenshot {
             chanDescriptor = chanDescriptor,
             currentlyOpenedThread = null,
             detectLinkableClicks = false,
-            postCellCommentTextSizeSp = postListOptions.postCellCommentTextSizeSp,
-            postCellSubjectTextSizeSp = postListOptions.postCellSubjectTextSizeSp,
             postCellData = postCellData,
             cellsPadding = cellsPadding,
             postListSelectionState = postListSelectionState,

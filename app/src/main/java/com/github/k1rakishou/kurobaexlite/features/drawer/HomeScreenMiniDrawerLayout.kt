@@ -69,9 +69,11 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
+import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.ScrollbarDimens
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.scrollbar
@@ -341,7 +343,7 @@ private fun BoxScope.MiniDrawerHistoryInfo(miniDrawerHistoryElement: MiniDrawerE
     maxLines = 2,
     overflow = TextOverflow.Ellipsis,
     textAlign = TextAlign.Center,
-    fontSize = 12.sp,
+    fontSize = 12.sp.coerceIn(min = 12.sp, max = 12.sp),
     color = Color.White
   )
 }
@@ -405,7 +407,7 @@ private fun BoxScope.MiniDrawerBookmarkInfo(additionalBookmarkInfo: AdditionalBo
 
   val alphaAnimation by animateFloatAsState(targetValue = if (additionalBookmarkInfo.canShow) 1f else 0f)
 
-  Text(
+  KurobaComposeText(
     modifier = Modifier
       .wrapContentSize()
       .align(Alignment.BottomCenter)
@@ -415,7 +417,7 @@ private fun BoxScope.MiniDrawerBookmarkInfo(additionalBookmarkInfo: AdditionalBo
     text = formattedText,
     maxLines = 1,
     overflow = TextOverflow.Ellipsis,
-    fontSize = 12.sp,
+    fontSize = 12.sp.coerceIn(min = 12.sp, max = 12.sp),
     color = Color.White
   )
 }

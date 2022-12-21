@@ -75,7 +75,7 @@ abstract class FloatingComposeScreen(
 
   @OptIn(ExperimentalComposeUiApi::class)
   @Composable
-  override fun Content() {
+  final override fun Content() {
     val localFocusManager = LocalFocusManager.current
     val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
 

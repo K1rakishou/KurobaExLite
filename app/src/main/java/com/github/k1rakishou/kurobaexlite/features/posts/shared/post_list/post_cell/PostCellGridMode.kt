@@ -34,8 +34,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListSelectionState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.createClickableTextColorMap
@@ -52,6 +52,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -67,14 +68,12 @@ fun PostCellGridMode(
   cellsPadding: PaddingValues,
   postListSelectionState: PostListSelectionState,
   postBlinkAnimationState: PostBlinkAnimationState,
-  postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
   textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
   onCopySelectedText: (String) -> Unit,
   onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
-  postCellCommentTextSizeSp: TextUnit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onPostCellCommentLongClicked: (PostCellData, AnnotatedString, Int) -> Unit,
   onTextSelectionModeChanged: (inSelectionMode: Boolean) -> Unit,
@@ -161,7 +160,6 @@ fun PostCellGridMode(
                 chanDescriptor = chanDescriptor,
                 postCellData = postCellData,
                 postListSelectionState = postListSelectionState,
-                postCellSubjectTextSizeSp = postCellSubjectTextSizeSp,
                 onPostImageClicked = onPostImageClicked,
                 onPostImageLongClicked = onPostImageLongClicked
               )
@@ -176,7 +174,6 @@ fun PostCellGridMode(
               detectLinkableClicks = detectLinkableClicks,
               onCopySelectedText = onCopySelectedText,
               onQuoteSelectedText = onQuoteSelectedText,
-              postCellCommentTextSizeSp = postCellCommentTextSizeSp,
               onPostCellCommentClicked = onPostCellCommentClicked,
               onPostCellCommentLongClicked = onPostCellCommentLongClicked,
               onTextSelectionModeChanged = onTextSelectionModeChanged
@@ -188,7 +185,6 @@ fun PostCellGridMode(
               endPadding = endPadding,
               bottomPadding = bottomPadding,
               postCellData = postCellData,
-              postCellCommentTextSizeSp = postCellCommentTextSizeSp,
               onPostRepliesClicked = onPostRepliesClicked
             )
           }
@@ -253,7 +249,6 @@ private fun PostCellFooter(
   endPadding: Dp,
   bottomPadding: Dp,
   postCellData: PostCellData,
-  postCellCommentTextSizeSp: TextUnit,
   onPostRepliesClicked: (PostCellData) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
@@ -266,14 +261,14 @@ private fun PostCellFooter(
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (postFooterText.isNotNullNorEmpty()) {
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight()
           .kurobaClickable(onClick = { onPostRepliesClicked(postCellData) })
           .padding(start = startPadding, top = 4.dp, end = endPadding, bottom = bottomPadding),
         color = chanTheme.textColorSecondary,
-        fontSize = postCellCommentTextSizeSp,
+        fontSize = 16.sp,
         text = postFooterText
       )
     } else {
@@ -290,7 +285,6 @@ private fun PostCellComment(
   postCellData: PostCellData,
   textSelectionEnabled: Boolean,
   detectLinkableClicks: Boolean,
-  postCellCommentTextSizeSp: TextUnit,
   onCopySelectedText: (String) -> Unit,
   onQuoteSelectedText: (Boolean, String, PostCellData) -> Unit,
   onPostCellCommentClicked: (PostCellData, AnnotatedString, Int) -> Unit,
@@ -317,7 +311,6 @@ private fun PostCellComment(
           .fillMaxSize()
           .padding(start = startPadding, end = endPadding)
           .then(textModifier),
-        fontSize = postCellCommentTextSizeSp,
         text = postComment,
         overflow = TextOverflow.Ellipsis,
         isTextClickable = detectLinkableClicks && !isInSelectionMode,
@@ -344,7 +337,6 @@ private fun PostCellTitle(
   chanDescriptor: ChanDescriptor,
   postCellData: PostCellData,
   postListSelectionState: PostListSelectionState,
-  postCellSubjectTextSizeSp: TextUnit,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
 ) {
@@ -369,10 +361,8 @@ private fun PostCellTitle(
         .padding(start = startPadding, end = endPadding),
       text = postSubject,
       maxLines = 2,
-      fontSize = postCellSubjectTextSizeSp,
       inlineContent = inlinedContentForPostCell(
-        postCellData = postCellData,
-        postCellSubjectTextSizeSp = postCellSubjectTextSizeSp
+        postCellData = postCellData
       )
     )
 

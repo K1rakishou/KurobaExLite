@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.ContentAlpha
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
@@ -25,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeSwitch
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.launch
@@ -75,7 +75,7 @@ class BooleanSettingItem(
         modifier = Modifier.weight(1f),
         verticalArrangement = Arrangement.Center
       ) {
-        Text(
+        KurobaComposeText(
           modifier = Modifier
             .fillMaxWidth()
             .fillMaxHeight(fraction = 0.5f),
@@ -85,7 +85,7 @@ class BooleanSettingItem(
         )
 
         if (subtitle != null) {
-          Text(
+          KurobaComposeText(
             modifier = Modifier
               .fillMaxWidth()
               .fillMaxHeight(fraction = 0.5f),
