@@ -10,11 +10,13 @@ import androidx.compose.animation.core.FloatTweenSpec
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredWidthIn
@@ -23,6 +25,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.FractionalThreshold
+import androidx.compose.material.rememberSwipeableState
+import androidx.compose.material.swipeable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -45,6 +51,7 @@ import androidx.compose.ui.layout.SubcomposeLayoutState
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -166,18 +173,21 @@ fun KurobaSnackbarContainer(
       key(snackbarInfo.snackbarId) {
         val snackbarAnimation = snackbarAnimations[snackbarInfo.snackbarIdForCompose]
 
-        KurobaSnackbarItem(
-          layoutAnimationIsInProgress = animationInProgress,
-          animationDuration = animationDuration,
-          isTablet = isTablet,
-          chanTheme = chanTheme,
-          snackbarInfo = snackbarInfo,
-          snackbarAnimation = snackbarAnimation,
-          onSnackbarSizeChanged = { snackbarId, intSize -> visibleSnackbarSizeMap[snackbarId] = intSize },
-          onSnackbarDisposed = { snackbarId -> visibleSnackbarSizeMap.remove(snackbarId) },
-          onAnimationEnded = { finishedAnimation -> kurobaSnackbarState.onAnimationEnded(finishedAnimation) },
-          dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
-        )
+        BoxWithConstraints {
+          KurobaSnackbarItem(
+            containerWidth = constraints.maxWidth,
+            layoutAnimationIsInProgress = animationInProgress,
+            animationDuration = animationDuration,
+            isTablet = isTablet,
+            chanTheme = chanTheme,
+            snackbarInfo = snackbarInfo,
+            snackbarAnimation = snackbarAnimation,
+            onSnackbarSizeChanged = { snackbarId, intSize -> visibleSnackbarSizeMap[snackbarId] = intSize },
+            onSnackbarDisposed = { snackbarId -> visibleSnackbarSizeMap.remove(snackbarId) },
+            onAnimationEnded = { finishedAnimation -> kurobaSnackbarState.onAnimationEnded(finishedAnimation) },
+            dismissSnackbar = { snackbarId -> snackbarManager.popSnackbar(snackbarId) }
+          )
+        }
       }
     }
   }
@@ -308,8 +318,10 @@ private fun safeScreenKey(screenKey: ScreenKey): ScreenKey {
   return MainScreen.SCREEN_KEY
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun KurobaSnackbarItem(
+  containerWidth: Int,
   layoutAnimationIsInProgress: Boolean,
   animationDuration: Int,
   isTablet: Boolean,
@@ -385,13 +397,15 @@ private fun KurobaSnackbarItem(
   )
 
   val animationInProgress = layoutAnimationIsInProgress || fadeInOrOutAnimationJob != null
+  val hasClickableItems = remember(key1 = snackbarInfo) { snackbarInfo.hasClickableItems }
+  val canBeSwipedAway = hasClickableItems && snackbarInfo.aliveUntil != null
 
   val clickableModifier = if (animationInProgress) {
     Modifier
   } else {
     Modifier.kurobaClickable(
       onClick = {
-        if (snackbarInfo.hasClickableItems) {
+        if (hasClickableItems) {
           return@kurobaClickable
         }
 
@@ -400,10 +414,39 @@ private fun KurobaSnackbarItem(
     )
   }
 
+  val anchors = remember(key1 = containerWidth) {
+    mapOf(
+      (-containerWidth.toFloat()) to Anchors.SwipedLeft,
+      0f to Anchors.Visible,
+      containerWidth.toFloat() to Anchors.SwipedRight
+    )
+  }
+
+  val swipeableState = rememberSwipeableState(initialValue = Anchors.Visible)
+  val currentOffset by swipeableState.offset
+  val currentValue = swipeableState.currentValue
+
+  LaunchedEffect(
+    key1 = currentValue,
+    block = {
+      if (currentValue != Anchors.Visible) {
+        dismissSnackbar(snackbarInfo.snackbarId)
+      }
+    }
+  )
+
   Box(
     modifier = Modifier
       .fillMaxWidth()
       .wrapContentHeight()
+      .swipeable(
+        enabled = canBeSwipedAway,
+        state = swipeableState,
+        anchors = anchors,
+        orientation = Orientation.Horizontal,
+        thresholds = { _, _ -> FractionalThreshold(.5f) },
+      )
+      .absoluteOffset { IntOffset(currentOffset.toInt(), 0) }
       .graphicsLayer { alpha = animatedAlpha }
       .onGloballyPositioned { layoutCoordinates ->
         onSnackbarSizeChanged(snackbarInfo.snackbarId, layoutCoordinates.size)
@@ -545,10 +588,12 @@ private fun RowScope.KurobaSnackbarContent(
     )
 
     Box(
-      modifier = Modifier.kurobaClickable(
-        bounded = false,
-        onClick = { onDismissSnackbar(snackbarId) }
-      ),
+      modifier = Modifier
+        .size(30.dp)
+        .kurobaClickable(
+          bounded = false,
+          onClick = { onDismissSnackbar(snackbarId) }
+        ),
       contentAlignment = Alignment.Center
     ) {
       KurobaComposeLoadingIndicator(
@@ -632,4 +677,10 @@ private fun RowScope.KurobaSnackbarContent(
       }
     }
   }
+}
+
+private enum class Anchors {
+  SwipedLeft,
+  Visible,
+  SwipedRight
 }
