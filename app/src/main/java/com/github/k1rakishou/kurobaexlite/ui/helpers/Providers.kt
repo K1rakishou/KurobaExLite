@@ -168,11 +168,12 @@ fun ProvideWindowInsets(
 
       val applyWindowInsetsListener = OnApplyWindowInsetsListener { _, insets ->
         val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+        val systemBarInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
 
-        val left = with(density) { Math.max(imeInsets.left, insets.systemWindowInsetLeft).toFloat().toDp() }
-        val top = with(density) { Math.max(imeInsets.top, insets.systemWindowInsetTop).toFloat().toDp() }
-        val right = with(density) { Math.max(imeInsets.right, insets.systemWindowInsetRight).toFloat().toDp() }
-        val bottom = with(density) { Math.max(imeInsets.bottom, insets.systemWindowInsetBottom).toFloat().toDp() }
+        val left = with(density) { Math.max(imeInsets.left, systemBarInsets.left).toFloat().toDp() }
+        val top = with(density) { Math.max(imeInsets.top, systemBarInsets.top).toFloat().toDp() }
+        val right = with(density) { Math.max(imeInsets.right, systemBarInsets.right).toFloat().toDp() }
+        val bottom = with(density) { Math.max(imeInsets.bottom, systemBarInsets.bottom).toFloat().toDp() }
 
         currentInsets = Insets(
           density = density,
