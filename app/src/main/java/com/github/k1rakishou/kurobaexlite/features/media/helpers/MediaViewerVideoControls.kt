@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -33,8 +32,9 @@ import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.chan.core.mpv.MpvUtils
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeThemeDependantText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 
@@ -89,13 +89,16 @@ internal fun MediaViewerScreenVideoControls(
         }
       }
 
-      KurobaComposeText(
+      KurobaComposeThemeDependantText(
         text = timePositionText,
-        color = Color.White,
         fontSize = 16.sp
       )
 
       Spacer(modifier = Modifier.width(10.dp))
+
+      val seekbarColor = remember(key1 = chanTheme.backColor) {
+        ThemeEngine.resolveDarkOrLightColor(chanTheme.backColor)
+      }
 
       MpvSeekbar(
         modifier = Modifier
@@ -120,9 +123,9 @@ internal fun MediaViewerScreenVideoControls(
             }
           ),
         enabled = videoStartedPlayingUpdated,
-        trackColor = Color.White,
+        trackColor = seekbarColor,
         thumbColorNormal = chanTheme.accentColor,
-        thumbColorPressed = Color.White,
+        thumbColorPressed = seekbarColor,
         thumbRadiusNormalDp = 8.dp,
         thumbRadiusPressedDp = 10.dp,
         slideOffsetState = videoMediaState.slideOffsetState,
@@ -132,9 +135,8 @@ internal fun MediaViewerScreenVideoControls(
 
       Spacer(modifier = Modifier.width(10.dp))
 
-      KurobaComposeText(
+      KurobaComposeThemeDependantText(
         text = durationText,
-        color = Color.White,
         fontSize = 16.sp
       )
     }
@@ -174,10 +176,9 @@ internal fun MediaViewerScreenVideoControls(
       ) {
         val alpha = if (videoStartedPlayingUpdated) 1f else disabledAlpha
 
-        KurobaComposeText(
+        KurobaComposeThemeDependantText(
           modifier = Modifier.graphicsLayer { this.alpha = alpha },
           text = hwDecText,
-          color = Color.White,
           fontSize = 16.sp,
           textAlign = TextAlign.Center
         )

@@ -684,10 +684,8 @@ private fun PopupPostsScreenContent(
       .height(buttonsHeight)
       .padding(vertical = 4.dp)
   ) {
-    val textColor = if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
-      Color.LightGray
-    } else {
-      Color.DarkGray
+    val textColor = remember(key1 = chanTheme.backColor) {
+      ThemeEngine.resolveDarkOrLightColor(chanTheme.backColor)
     }
 
     Spacer(modifier = Modifier.width(8.dp))

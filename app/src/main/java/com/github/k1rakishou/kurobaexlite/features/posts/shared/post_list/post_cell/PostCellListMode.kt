@@ -82,6 +82,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
@@ -442,7 +443,7 @@ private fun PostCellTitleTwoOrMoreThumbnails(
               }
             }
 
-            KurobaComposeText(
+            KurobaComposeCustomUnitText(
               modifier = Modifier
                 .width(ThumbnailSize)
                 .wrapContentHeight(),

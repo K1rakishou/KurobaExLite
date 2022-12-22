@@ -31,8 +31,19 @@ fun <T : Any> rememberSaveableResettable(key1: Any, init: () -> T): T {
 
 @Composable
 fun collectTextFontSize(defaultFontSize: TextUnit): TextUnit {
-  if (defaultFontSize.isUnspecified) {
-    return defaultFontSize
+  val defaultFontSizeKurobaUnits = rememberKurobaTextUnit(fontSize = defaultFontSize)
+
+  return collectTextFontSize(defaultFontSize = defaultFontSizeKurobaUnits)
+}
+
+@Composable
+fun collectTextFontSize(defaultFontSize: KurobaTextUnit): TextUnit {
+  val textUnit = defaultFontSize.fontSize
+  val min = defaultFontSize.min
+  val max = defaultFontSize.max
+
+  if (textUnit.isUnspecified) {
+    return textUnit
   }
 
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
@@ -50,19 +61,19 @@ fun collectTextFontSize(defaultFontSize: TextUnit): TextUnit {
     }
   )
 
-  return (defaultFontSize * globalFontSizeMultiplier)
+  var updatedTextUnit = (textUnit * globalFontSizeMultiplier)
+
+  if (min != null && updatedTextUnit < min) {
+    updatedTextUnit = min
+  }
+
+  if (max != null && updatedTextUnit > max) {
+    updatedTextUnit = max
+  }
+
+  return updatedTextUnit
 }
 
-fun TextUnit.coerceIn(min: TextUnit? = null, max: TextUnit? = null): TextUnit {
-  var textUnit = this
-
-  if (min != null && textUnit < min) {
-    textUnit = min
-  }
-
-  if (max != null && textUnit > max) {
-    textUnit = max
-  }
-
-  return textUnit
+fun TextUnit.coerceIn(min: TextUnit? = null, max: TextUnit? = null): KurobaTextUnit {
+  return KurobaTextUnit(fontSize = this, min = min, max = max)
 }

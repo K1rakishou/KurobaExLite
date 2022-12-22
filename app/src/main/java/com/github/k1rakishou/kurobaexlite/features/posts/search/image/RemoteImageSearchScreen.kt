@@ -57,6 +57,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
@@ -622,7 +623,7 @@ private fun BuildImageSearchResult(
     )
 
     if (imageInfo != null) {
-      KurobaComposeText(
+      KurobaComposeCustomUnitText(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight()

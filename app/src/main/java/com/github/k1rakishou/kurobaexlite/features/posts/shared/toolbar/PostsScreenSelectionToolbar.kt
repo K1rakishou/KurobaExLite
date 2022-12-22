@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.os.Parcelable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
@@ -17,7 +16,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeThemeDependantText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -64,7 +63,7 @@ class PostsScreenSelectionToolbar<T : PostsScreenSelectionToolbar.State.Selectab
       middlePart = {
         val selectedItemsCount by state.selectedItemsCount
 
-        KurobaToolbarText(
+        KurobaComposeThemeDependantText(
           text = stringResource(id = R.string.posts_screen_selection_toolbar_title, selectedItemsCount),
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,

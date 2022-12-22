@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -69,7 +68,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
@@ -333,7 +332,7 @@ private fun BoxScope.MiniDrawerHistoryInfo(miniDrawerHistoryElement: MiniDrawerE
     return@remember "${chanDescriptor.siteKey.key}\n/${chanDescriptor.boardCode}/"
   }
 
-  Text(
+  KurobaComposeCustomUnitText(
     modifier = Modifier
       .wrapContentSize()
       .align(Alignment.BottomCenter)
@@ -407,7 +406,7 @@ private fun BoxScope.MiniDrawerBookmarkInfo(additionalBookmarkInfo: AdditionalBo
 
   val alphaAnimation by animateFloatAsState(targetValue = if (additionalBookmarkInfo.canShow) 1f else 0f)
 
-  KurobaComposeText(
+  KurobaComposeCustomUnitText(
     modifier = Modifier
       .wrapContentSize()
       .align(Alignment.BottomCenter)

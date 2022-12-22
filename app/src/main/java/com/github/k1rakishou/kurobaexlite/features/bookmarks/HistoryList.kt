@@ -62,6 +62,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -359,7 +360,7 @@ private fun CatalogNavigationElement(
       }
     }
 
-    KurobaComposeText(
+    KurobaComposeCustomUnitText(
       modifier = Modifier.fillMaxWidth(),
       text = textFormatted,
       fontSize = 15.sp.coerceIn(min = 13.sp, max = 17.sp),
@@ -436,7 +437,7 @@ private fun ThreadNavigationElement(
       }
     }
 
-    KurobaComposeText(
+    KurobaComposeCustomUnitText(
       modifier = Modifier.fillMaxWidth(),
       text = textFormatted,
       fontSize = 15.sp.coerceIn(min = 13.sp, max = 17.sp),

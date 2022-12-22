@@ -135,7 +135,8 @@ fun PostImageThumbnail(
               if (postImage.imageType() == ImageType.Video) {
                 KurobaComposeIcon(
                   modifier = Modifier.requiredSize(32.dp),
-                  drawableId = R.drawable.ic_play_circle_outline_white_24dp
+                  drawableId = R.drawable.ic_play_circle_outline_white_24dp,
+                  iconColor = Color.White
                 )
               }
             } else if (state is AsyncImagePainter.State.Error) {

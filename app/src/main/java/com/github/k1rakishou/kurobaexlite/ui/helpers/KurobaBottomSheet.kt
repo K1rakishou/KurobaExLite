@@ -55,11 +55,12 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import kotlin.reflect.KClass
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.isAccessible
-import kotlinx.coroutines.launch
 
 private val sheetHeaderHeightDp = 32.dp
 
@@ -256,11 +257,7 @@ fun SheetHeader(
   }
 
   val color = remember(key1 = isSheetBackgroundDark) {
-    if (isSheetBackgroundDark) {
-      Color.LightGray
-    } else {
-      Color.DarkGray
-    }
+    ThemeEngine.resolveDarkOrLightColor(isSheetBackgroundDark)
   }
 
   Box(

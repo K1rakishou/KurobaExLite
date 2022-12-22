@@ -207,11 +207,8 @@ private fun KurobaCustomLabelText(
         return@remember Color.DarkGray.copy(alpha = alpha)
       }
 
-      return@remember if (ThemeEngine.isDarkColor(parentBackgroundColor)) {
-        Color.LightGray.copy(alpha = alpha)
-      } else {
-        Color.DarkGray.copy(alpha = alpha)
-      }
+      return@remember ThemeEngine.resolveDarkOrLightColor(parentBackgroundColor)
+        .copy(alpha = alpha)
     }
 
     Text(

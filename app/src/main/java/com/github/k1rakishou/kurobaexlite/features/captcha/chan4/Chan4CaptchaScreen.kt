@@ -59,6 +59,7 @@ import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowMainAxisAlignment
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeSnappingSlider
@@ -338,7 +339,7 @@ class Chan4CaptchaScreen(
       if (captchaTtlMillis >= 0L) {
         Spacer(modifier = Modifier.width(8.dp))
 
-        KurobaComposeText(
+        KurobaComposeCustomUnitText(
           text = "${captchaTtlMillis / 1000L} sec",
           fontSize = 13.sp.coerceIn(min = 11.sp, max = 17.sp),
           modifier = Modifier.align(Alignment.CenterVertically)

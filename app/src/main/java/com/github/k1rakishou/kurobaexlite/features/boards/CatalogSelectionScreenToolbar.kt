@@ -32,9 +32,10 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarText
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeThemeDependantText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -92,21 +93,21 @@ class CatalogSelectionScreenToolbar(
                 )
               }
 
-              KurobaToolbarText(
+              KurobaComposeThemeDependantText(
                 text = toolbarTitle!!,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
+                fontSize = 20.sp.coerceIn(min = 20.sp, max = 20.sp)
               )
             }
 
             if (toolbarSubtitle != null) {
-              KurobaToolbarText(
+              KurobaComposeThemeDependantText(
                 text = toolbarSubtitle!!,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 12.sp
+                fontSize = 12.sp.coerceIn(min = 12.sp, max = 12.sp)
               )
             }
           }

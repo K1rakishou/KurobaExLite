@@ -92,10 +92,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -239,30 +242,166 @@ fun KurobaComposeError(
 }
 
 @Composable
+fun KurobaComposeThemeDependantText(
+  text: String,
+  modifier: Modifier = Modifier,
+  fontSize: TextUnit = TextUnit.Unspecified,
+  fontStyle: FontStyle? = null,
+  fontWeight: FontWeight? = null,
+  fontFamily: FontFamily? = null,
+  letterSpacing: TextUnit = TextUnit.Unspecified,
+  textDecoration: TextDecoration? = null,
+  textAlign: TextAlign? = null,
+  lineHeight: TextUnit = TextUnit.Unspecified,
+  overflow: TextOverflow = TextOverflow.Clip,
+  softWrap: Boolean = true,
+  maxLines: Int = Int.MAX_VALUE,
+  minLines: Int = 1,
+) {
+  val fontSizeKurobaUnits = rememberKurobaTextUnit(fontSize = fontSize)
+
+  KurobaComposeThemeDependantText(
+    text = text,
+    modifier = modifier,
+    fontSize = fontSizeKurobaUnits,
+    fontStyle = fontStyle,
+    fontWeight = fontWeight,
+    fontFamily = fontFamily,
+    letterSpacing = letterSpacing,
+    textDecoration = textDecoration,
+    textAlign = textAlign,
+    lineHeight = lineHeight,
+    overflow = overflow,
+    softWrap = softWrap,
+    maxLines = maxLines,
+    minLines = minLines,
+  )
+}
+
+@Composable
+fun KurobaComposeThemeDependantText(
+  text: String,
+  modifier: Modifier = Modifier,
+  fontSize: KurobaTextUnit = rememberKurobaTextUnit(fontSize = 16.sp),
+  fontStyle: FontStyle? = null,
+  fontWeight: FontWeight? = null,
+  fontFamily: FontFamily? = null,
+  letterSpacing: TextUnit = TextUnit.Unspecified,
+  textDecoration: TextDecoration? = null,
+  textAlign: TextAlign? = null,
+  lineHeight: TextUnit = TextUnit.Unspecified,
+  overflow: TextOverflow = TextOverflow.Clip,
+  softWrap: Boolean = true,
+  maxLines: Int = Int.MAX_VALUE,
+  minLines: Int = 1,
+) {
+  val chanTheme = LocalChanTheme.current
+
+  val textColor = remember(key1 = chanTheme.backColor) {
+    ThemeEngine.resolveDarkOrLightColor(chanTheme.backColor)
+  }
+
+  KurobaComposeCustomUnitText(
+    text = text,
+    modifier = modifier,
+    color = textColor,
+    fontSize = fontSize,
+    fontStyle = fontStyle,
+    fontWeight = fontWeight,
+    fontFamily = fontFamily,
+    letterSpacing = letterSpacing,
+    textDecoration = textDecoration,
+    textAlign = textAlign,
+    lineHeight = lineHeight,
+    overflow = overflow,
+    softWrap = softWrap,
+    maxLines = maxLines,
+    minLines = minLines,
+  )
+}
+
+@Composable
 fun KurobaComposeText(
   text: String,
   modifier: Modifier = Modifier,
   color: Color? = null,
+  fontStyle: FontStyle? = null,
   fontSize: TextUnit = 16.sp,
   fontWeight: FontWeight? = null,
+  fontFamily: FontFamily? = null,
   maxLines: Int = Int.MAX_VALUE,
+  minLines: Int = 1,
   overflow: TextOverflow = TextOverflow.Clip,
   softWrap: Boolean = true,
   enabled: Boolean = true,
   textAlign: TextAlign? = null,
+  letterSpacing: TextUnit = TextUnit.Unspecified,
+  textDecoration: TextDecoration? = null,
+  lineHeight: TextUnit = TextUnit.Unspecified,
   inlineContent: Map<String, InlineTextContent> = mapOf()
 ) {
-  KurobaComposeText(
-    text = AnnotatedString(text),
+  val fontSizeInKurobaUnits = rememberKurobaTextUnit(fontSize = fontSize)
+
+  KurobaComposeCustomUnitText(
+    text = text,
     modifier = modifier,
     color = color,
-    fontSize = fontSize,
+    fontStyle = fontStyle,
+    fontSize = fontSizeInKurobaUnits,
     fontWeight = fontWeight,
+    fontFamily = fontFamily,
     maxLines = maxLines,
+    minLines = minLines,
     overflow = overflow,
     softWrap = softWrap,
     enabled = enabled,
     textAlign = textAlign,
+    letterSpacing = letterSpacing,
+    textDecoration = textDecoration,
+    lineHeight = lineHeight,
+    inlineContent = inlineContent,
+  )
+}
+
+@Composable
+fun KurobaComposeCustomUnitText(
+  text: String,
+  modifier: Modifier = Modifier,
+  color: Color? = null,
+  fontStyle: FontStyle? = null,
+  fontSize: KurobaTextUnit = rememberKurobaTextUnit(fontSize = 16.sp),
+  fontWeight: FontWeight? = null,
+  fontFamily: FontFamily? = null,
+  maxLines: Int = Int.MAX_VALUE,
+  minLines: Int = 1,
+  overflow: TextOverflow = TextOverflow.Clip,
+  softWrap: Boolean = true,
+  enabled: Boolean = true,
+  textAlign: TextAlign? = null,
+  letterSpacing: TextUnit = TextUnit.Unspecified,
+  textDecoration: TextDecoration? = null,
+  lineHeight: TextUnit = TextUnit.Unspecified,
+  inlineContent: Map<String, InlineTextContent> = mapOf()
+) {
+  val annotatedText = remember(key1 = text) { AnnotatedString(text) }
+
+  KurobaComposeCustomUnitText(
+    text = annotatedText,
+    modifier = modifier,
+    color = color,
+    fontSize = fontSize,
+    fontStyle = fontStyle,
+    fontFamily = fontFamily,
+    fontWeight = fontWeight,
+    maxLines = maxLines,
+    minLines = minLines,
+    overflow = overflow,
+    softWrap = softWrap,
+    enabled = enabled,
+    textAlign = textAlign,
+    lineHeight = lineHeight,
+    letterSpacing = letterSpacing,
+    textDecoration = textDecoration,
     inlineContent = inlineContent
   )
 }
@@ -275,10 +414,61 @@ fun KurobaComposeText(
   fontSize: TextUnit = 16.sp,
   fontWeight: FontWeight? = null,
   maxLines: Int = Int.MAX_VALUE,
+  minLines: Int = 1,
   overflow: TextOverflow = TextOverflow.Clip,
   softWrap: Boolean = true,
   enabled: Boolean = true,
   textAlign: TextAlign? = null,
+  fontStyle: FontStyle? = null,
+  fontFamily: FontFamily? = null,
+  letterSpacing: TextUnit = TextUnit.Unspecified,
+  textDecoration: TextDecoration? = null,
+  lineHeight: TextUnit = TextUnit.Unspecified,
+  inlineContent: Map<String, InlineTextContent> = mapOf(),
+  onTextLayout: (TextLayoutResult) -> Unit = {},
+) {
+  val fontSizeInKurobaUnits = rememberKurobaTextUnit(fontSize = fontSize)
+
+  KurobaComposeCustomUnitText(
+    text = text,
+    modifier = modifier,
+    color = color,
+    fontSize = fontSizeInKurobaUnits,
+    fontWeight = fontWeight,
+    maxLines = maxLines,
+    minLines = minLines,
+    overflow = overflow,
+    softWrap = softWrap,
+    enabled = enabled,
+    textAlign = textAlign,
+    fontStyle = fontStyle,
+    fontFamily = fontFamily,
+    letterSpacing = letterSpacing,
+    textDecoration = textDecoration,
+    lineHeight = lineHeight,
+    inlineContent = inlineContent,
+    onTextLayout = onTextLayout,
+  )
+}
+
+@Composable
+fun KurobaComposeCustomUnitText(
+  text: AnnotatedString,
+  modifier: Modifier = Modifier,
+  color: Color? = null,
+  fontSize: KurobaTextUnit = KurobaTextUnit(16.sp),
+  fontWeight: FontWeight? = null,
+  maxLines: Int = Int.MAX_VALUE,
+  minLines: Int = 1,
+  overflow: TextOverflow = TextOverflow.Clip,
+  softWrap: Boolean = true,
+  enabled: Boolean = true,
+  textAlign: TextAlign? = null,
+  fontStyle: FontStyle? = null,
+  fontFamily: FontFamily? = null,
+  letterSpacing: TextUnit = TextUnit.Unspecified,
+  textDecoration: TextDecoration? = null,
+  lineHeight: TextUnit = TextUnit.Unspecified,
   inlineContent: Map<String, InlineTextContent> = mapOf(),
   onTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
@@ -300,11 +490,17 @@ fun KurobaComposeText(
     color = actualTextColorPrimary,
     text = text,
     fontSize = collectTextFontSize(defaultFontSize = fontSize),
+    fontStyle = fontStyle,
+    fontFamily = fontFamily,
     maxLines = maxLines,
+    minLines = minLines,
     overflow = overflow,
     softWrap = softWrap,
     textAlign = textAlign,
     fontWeight = fontWeight,
+    letterSpacing = letterSpacing,
+    textDecoration = textDecoration,
+    lineHeight = lineHeight,
     inlineContent = inlineContent,
     onTextLayout = onTextLayout
   )
@@ -707,9 +903,9 @@ fun KurobaComposeClickableIcon(
     }
 
     if (colorBehindIcon == null) {
-      ThemeEngine.resolveDrawableTintColor(chanTheme)
+      ThemeEngine.resolveDarkOrLightColor(chanTheme)
     } else {
-      ThemeEngine.resolveDrawableTintColor(ThemeEngine.isDarkColor(colorBehindIcon.value))
+      ThemeEngine.resolveDarkOrLightColor(ThemeEngine.isDarkColor(colorBehindIcon.value))
     }
   }
 
@@ -754,9 +950,9 @@ fun KurobaComposeIcon(
     }
 
     if (colorBehindIcon == null) {
-      ThemeEngine.resolveDrawableTintColor(chanTheme)
+      ThemeEngine.resolveDarkOrLightColor(chanTheme)
     } else {
-      ThemeEngine.resolveDrawableTintColor(ThemeEngine.isDarkColor(colorBehindIcon.value))
+      ThemeEngine.resolveDarkOrLightColor(ThemeEngine.isDarkColor(colorBehindIcon.value))
     }
   }
 

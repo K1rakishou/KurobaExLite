@@ -76,6 +76,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks.ThreadBookmarkUi
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
@@ -90,6 +91,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.Reorderabl
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.detectReorder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.draggedItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.reorderable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberKurobaTextUnit
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -564,7 +566,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
     )
   }
 
-  val defaultFontSize = 13.sp
+  val defaultFontSize = rememberKurobaTextUnit(fontSize = 13.sp)
   val fontSize = collectTextFontSize(defaultFontSize)
 
   val bookmarkInlinedContent = remember(isDead, fontSize) {
@@ -580,7 +582,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
     return@remember resultMap
   }
 
-  KurobaComposeText(
+  KurobaComposeCustomUnitText(
     modifier = modifier,
     color = Color.Unspecified,
     fontSize = defaultFontSize,

@@ -23,7 +23,7 @@ import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
-import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeThemeDependantText
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -57,7 +57,7 @@ class SimpleToolbar<T : Any>(
             horizontalAlignment = Alignment.CenterHorizontally
           ) {
             Row {
-              KurobaToolbarText(
+              KurobaComposeThemeDependantText(
                 text = toolbarTitle!!,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -68,7 +68,7 @@ class SimpleToolbar<T : Any>(
             }
 
             if (toolbarSubtitle != null) {
-              KurobaToolbarText(
+              KurobaComposeThemeDependantText(
                 text = toolbarSubtitle!!,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
