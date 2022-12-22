@@ -22,6 +22,8 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +38,7 @@ class CatalogScreenViewModel(
   private val updateChanCatalogView: UpdateChanCatalogView,
   private val lastVisitedEndpointManager: LastVisitedEndpointManager,
   private val loadNavigationHistory: LoadNavigationHistory,
-) : PostScreenViewModel(savedStateHandle) {
+) : PostScreenViewModel(savedStateHandle), ThemeEngine.ThemeChangesListener {
   private val screenKey: ScreenKey = CatalogScreen.SCREEN_KEY
 
   private val catalogScreenState = CatalogScreenPostsState()
@@ -52,7 +54,24 @@ class CatalogScreenViewModel(
   override suspend fun onViewModelReady() {
     super.onViewModelReady()
 
+    themeEngine.addListener(this)
     loadPrevVisitedCatalog()
+  }
+
+  override fun onThemeChanged(newChanTheme: ChanTheme) {
+    reload(
+      loadOptions = LoadOptions(
+        showLoadingIndicator = false,
+        forced = true,
+        loadFromNetwork = false
+      )
+    )
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+
+    themeEngine.removeListener(this)
   }
 
   private suspend fun loadPrevVisitedCatalog() {

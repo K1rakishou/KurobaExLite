@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificatio
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.CrashReportActivity
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineName
@@ -21,6 +22,7 @@ import org.koin.java.KoinJavaComponent.inject
 import kotlin.system.exitProcess
 
 class KurobaExLiteApplication : Application() {
+  private val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
   private val replyNotificationsHelper: ReplyNotificationsHelper by inject(ReplyNotificationsHelper::class.java)
 
@@ -48,6 +50,7 @@ class KurobaExLiteApplication : Application() {
     }
 
     registerActivityLifecycleCallbacks(applicationVisibilityManager)
+    themeEngine.init()
     replyNotificationsHelper.init()
 
     Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->

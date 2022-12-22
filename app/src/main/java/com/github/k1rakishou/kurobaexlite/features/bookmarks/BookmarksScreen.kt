@@ -35,7 +35,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -57,6 +56,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookma
 import com.github.k1rakishou.kurobaexlite.model.data.ui.DrawerVisibility
 import com.github.k1rakishou.kurobaexlite.model.data.ui.UiNavigationElement
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
@@ -355,10 +355,9 @@ private fun ContentInternal(
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val snackbarManager = koinRemember<SnackbarManager>()
   val appSettings = koinRemember<AppSettings>()
+  val themeEngine = koinRemember<ThemeEngine>()
 
   val windowInsets = LocalWindowInsets.current
-  val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
-
   var isFullyClosed by remember { mutableStateOf(true) }
 
   LaunchedEffect(
@@ -486,6 +485,28 @@ private fun ContentInternal(
         )
 
         Spacer(modifier = Modifier.width(8.dp))
+
+        kotlin.run {
+          val isDarkThemeUsedMut by appSettings.isDarkThemeUsed.listen().collectAsState(initial = null)
+          val isDarkThemeUsed = isDarkThemeUsedMut
+
+          if (isDarkThemeUsed != null) {
+            val iconId = if (isDarkThemeUsed) {
+              R.drawable.ic_baseline_light_mode_24
+            } else {
+              R.drawable.ic_baseline_dark_mode_24
+            }
+
+            KurobaComposeIcon(
+              modifier = Modifier
+                .size(iconSize)
+                .kurobaClickable(bounded = false, onClick = { themeEngine.toggleTheme() }),
+              drawableId = iconId
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+          }
+        }
 
         KurobaComposeIcon(
           modifier = Modifier

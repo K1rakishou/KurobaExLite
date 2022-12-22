@@ -90,8 +90,8 @@
     <string name="downloading_file">Downloading file, this may take some time</string>
     <string name="doing_heavy_lifting_please_wait">Doing heavy lifting, please wait…</string>
 
-    <string name="type_to_search_bookmarks_hint">Type to search bookmarks</string>
-    <string name="type_to_search_history_hint">Type to search history</string>
+    <string name="type_to_search_bookmarks_hint">Search bookmarks</string>
+    <string name="type_to_search_history_hint">Search history</string>
 
     <string name="main_activity_press_back_again_to_exit">Press back again to exit the app</string>
     <string name="main_screen_view_model_failed_to_load_bookmarks_from_database">Failed to load bookmarks from database, error: \'%1$s\'</string>

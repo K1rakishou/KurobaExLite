@@ -154,6 +154,12 @@ class ChanThreadCache(
     return mutex.withLockNonCancellable { posts.lastOrNull() }
   }
 
+  suspend fun resetLastFullUpdateTime() {
+    mutex.withLockNonCancellable {
+      lastFullUpdateTime = 0L
+    }
+  }
+
   suspend fun getLastLoadedPostForIncrementalUpdate(): IPostData? {
     return mutex.withLockNonCancellable {
       val currentTime = SystemClock.elapsedRealtime()

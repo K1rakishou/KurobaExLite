@@ -82,6 +82,10 @@ class ChanThreadManager(
       }
   }
 
+  suspend fun resetThreadLastFullUpdateTime(threadDescriptor: ThreadDescriptor) {
+    chanCache.resetThreadLastFullUpdateTime(threadDescriptor)
+  }
+
   class CatalogNotSupported(siteKey: SiteKey) : ClientException("Site \'${siteKey.key}\' does not support catalogs")
   class ThreadNotSupported(siteKey: SiteKey) : ClientException("Site \'${siteKey.key}\' does not support threads")
 

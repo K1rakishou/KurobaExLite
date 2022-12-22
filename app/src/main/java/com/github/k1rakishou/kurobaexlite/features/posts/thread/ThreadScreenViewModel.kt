@@ -34,6 +34,8 @@ import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.CatalogPagesRepository
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.Dispatchers
@@ -58,7 +60,7 @@ class ThreadScreenViewModel(
   private val updatePostSeenForBookmark: UpdatePostSeenForBookmark,
   private val catalogPagesRepository: CatalogPagesRepository,
   private val applicationVisibilityManager: ApplicationVisibilityManager,
-) : PostScreenViewModel(savedStateHandle) {
+) : PostScreenViewModel(savedStateHandle), ThemeEngine.ThemeChangesListener {
   private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
 
   private val threadAutoUpdater = ThreadAutoUpdater(
@@ -97,7 +99,18 @@ class ThreadScreenViewModel(
   override suspend fun onViewModelReady() {
     super.onViewModelReady()
 
+    themeEngine.addListener(this)
     loadPrevVisitedThread()
+  }
+
+  override fun onThemeChanged(newChanTheme: ChanTheme) {
+    reload(
+      loadOptions = LoadOptions(
+        showLoadingIndicator = false,
+        forced = true,
+        loadFromNetwork = false
+      )
+    )
   }
 
   override fun onCleared() {
@@ -109,6 +122,7 @@ class ThreadScreenViewModel(
     loadThreadJob = null
 
     threadAutoUpdater.stopAutoUpdaterLoop()
+    themeEngine.removeListener(this)
   }
 
   private suspend fun loadPrevVisitedThread() {
@@ -335,7 +349,23 @@ class ThreadScreenViewModel(
       chanThreadManager.delete(threadDescriptor)
     }
 
-    val postLoadResultMaybe = chanThreadManager.loadThread(threadDescriptor)
+    val postLoadResultMaybe = if (loadOptions.loadFromNetwork || threadDescriptor == null) {
+      if (loadOptions.deleteCached && threadDescriptor != null) {
+        chanThreadManager.delete(threadDescriptor)
+      }
+
+      chanThreadManager.loadThread(threadDescriptor)
+    } else {
+      val threadPosts = chanCache.getThreadPosts(threadDescriptor)
+      val postsLoadResult = PostsLoadResult(
+        chanDescriptor = threadDescriptor,
+        updatedPosts = threadPosts,
+        newPosts = emptyList()
+      )
+
+      Result.success(postsLoadResult)
+    }
+
     if (postLoadResultMaybe.isFailure) {
       val error = postLoadResultMaybe.exceptionOrThrow()
       logcatError { "loadThreadInternal() error=${error.asLogIfImportantOrErrorMessage()}" }
@@ -414,7 +444,7 @@ class ThreadScreenViewModel(
         postDataList = allCombinedPosts,
         isCatalogMode = false,
         postViewMode = postViewMode,
-        forced = false
+        forced = loadOptions.forced,
       )
 
       threadScreenState.insertOrUpdateMany(initiallyParsedPosts)
@@ -429,7 +459,7 @@ class ThreadScreenViewModel(
         postDataList = allCombinedPosts,
         isCatalogMode = false,
         postViewMode = postViewMode,
-        forced = false
+        forced = loadOptions.forced,
       )
 
       val threadPostsState = PostsState(threadDescriptor)
@@ -450,7 +480,10 @@ class ThreadScreenViewModel(
       chanDescriptor = threadDescriptor,
       postDataList = allCombinedPosts,
       postViewMode = postViewMode,
-      parsePostsOptions = ParsePostsOptions(parseRepliesTo = true),
+      parsePostsOptions = ParsePostsOptions(
+        forced = loadOptions.forced,
+        parseRepliesTo = true
+      ),
       sorter = { postCellDataCollection -> ThreadPostSorter.sortThreadPostCellData(postCellDataCollection) },
       onStartParsingPosts = {
         snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(

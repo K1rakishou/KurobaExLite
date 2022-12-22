@@ -45,6 +45,10 @@ class ChanCache(
     }
   }
 
+  suspend fun resetThreadLastFullUpdateTime(threadDescriptor: ThreadDescriptor) {
+    threads[threadDescriptor]?.resetLastFullUpdateTime()
+  }
+
   suspend fun onCatalogOrThreadAccessed(chanDescriptor: ChanDescriptor) {
     when (chanDescriptor) {
       is CatalogDescriptor -> catalogs[chanDescriptor]?.onCatalogAccessed()

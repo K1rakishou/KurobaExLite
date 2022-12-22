@@ -30,6 +30,7 @@ import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
@@ -135,9 +136,17 @@ class SiteSelectionScreen(
         Spacer(modifier = Modifier.width(16.dp))
       }
 
+      val textColor = remember(key1 = chanTheme.backColor) {
+        if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
+          Color.White
+        } else {
+          Color.Black
+        }
+      }
+
       KurobaComposeText(
         text = site.siteName,
-        color = Color.White,
+        color = textColor,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         fontSize = 20.sp

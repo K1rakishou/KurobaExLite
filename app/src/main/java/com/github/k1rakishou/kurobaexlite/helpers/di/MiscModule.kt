@@ -104,7 +104,7 @@ internal fun Module.misc() {
   single { FullScreenHelpers(get()) }
   single { AndroidHelpers(application = get(), snackbarManager = get()) }
   single { PostBindProcessor(get()) }
-  single { ThemeEngine() }
+  single { ThemeEngine(appScope = get(), appSettings = get()) }
   single { MediaViewerPostListScroller() }
   single { CrossThreadFollowHistory() }
   single { ClickedThumbnailBoundsStorage() }

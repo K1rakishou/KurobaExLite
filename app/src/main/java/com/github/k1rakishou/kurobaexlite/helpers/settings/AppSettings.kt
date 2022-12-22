@@ -76,6 +76,9 @@ class AppSettings(
   val albumShowImageInfo by lazy { BooleanSetting(true, "album_show_image_info", dataStore) }
   val automaticallyStartWatchingBookmarks by lazy { BooleanSetting(true, "automatically_start_watching_bookmarks", dataStore) }
   val catalogSelectionScreenLastUsedSite by lazy { StringSetting("", "catalog_selection_screen_last_used_site", dataStore) }
+  val currentLightThemeName by lazy { StringSetting("", "current_light_theme_name", dataStore) }
+  val currentDarkThemeName by lazy { StringSetting("", "current_dark_theme_name", dataStore) }
+  val isDarkThemeUsed by lazy { BooleanSetting(true, "is_dark_theme_used", dataStore) }
 
   val userAgent by lazy {
     val userAgent = try {

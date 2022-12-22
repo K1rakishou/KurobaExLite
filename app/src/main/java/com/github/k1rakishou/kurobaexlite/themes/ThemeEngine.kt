@@ -3,16 +3,42 @@ import android.graphics.Color
 import androidx.annotation.FloatRange
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.themes.def.Kuroneko
+import com.github.k1rakishou.kurobaexlite.themes.def.Shironeko
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.Color as ComposeColor
 
 
-class ThemeEngine {
-  val chanTheme: ChanTheme = Kuroneko()
+class ThemeEngine(
+  private val appScope: CoroutineScope,
+  private val appSettings: AppSettings
+) {
+  private val defaultLightTheme = Shironeko()
+  private val defaultDarkTheme = Kuroneko()
+
+  @Volatile
+  private var _chanTheme: ChanTheme = defaultDarkTheme
+  val chanTheme: ChanTheme
+    get() = _chanTheme
 
   private val listeners = hashMapOf<Long, ThemeChangesListener>()
+
+  fun init() {
+    appScope.launch {
+      updateThemeAndNotifyListeners()
+    }
+  }
+
+  fun toggleTheme() {
+    appScope.launch {
+      appSettings.isDarkThemeUsed.toggle()
+      updateThemeAndNotifyListeners()
+    }
+  }
 
   fun addListener(key: Long, listener: ThemeChangesListener) {
     listeners[key] = listener
@@ -32,6 +58,38 @@ class ThemeEngine {
 
   fun notifyListeners(chanTheme: ChanTheme) {
     listeners.forEach { listener -> listener.value.onThemeChanged(chanTheme) }
+  }
+
+  private suspend fun updateThemeAndNotifyListeners() {
+    val currentDarkThemeName = appSettings.currentDarkThemeName.read()
+    val currentLightThemeName = appSettings.currentLightThemeName.read()
+    val isDarkThemeUsed = appSettings.isDarkThemeUsed.read()
+
+    _chanTheme = if (isDarkThemeUsed) {
+      themeByThemeNameOrDefault(currentDarkThemeName, true)
+    } else {
+      themeByThemeNameOrDefault(currentLightThemeName, false)
+    }
+
+    notifyListeners(_chanTheme)
+  }
+
+  private suspend fun themeByThemeNameOrDefault(currentThemeName: String, isDarkThemeUsed: Boolean): ChanTheme {
+    if (currentThemeName == defaultDarkTheme.name) {
+      return defaultDarkTheme
+    }
+
+    if (currentThemeName == defaultLightTheme.name) {
+      return defaultLightTheme
+    }
+
+    // TODO: load theme by name from disk
+
+    if (isDarkThemeUsed) {
+      return defaultDarkTheme
+    }
+
+    return defaultLightTheme
   }
 
   interface ThemeChangesListener {

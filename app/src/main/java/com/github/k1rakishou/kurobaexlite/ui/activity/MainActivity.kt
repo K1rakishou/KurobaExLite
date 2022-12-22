@@ -22,6 +22,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ProvideEverything
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
@@ -30,7 +31,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 import kotlin.time.Duration.Companion.seconds
 
-class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback {
+class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback, ThemeEngine.ThemeChangesListener {
   private val mainActivityViewModel: MainActivityViewModel by viewModel()
 
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
@@ -67,13 +68,14 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     updateManager.checkForUpdates()
 
     fullScreenHelpers.setupEdgeToEdge(window = window)
-    fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
     appRestarter.attachActivity(this)
 
     clickedThumbnailBoundsStorage.clear()
 
     mainActivityViewModel.onAttachActivity(this)
     mainActivityViewModel.onLifecycleCreate()
+
+    themeEngine.addListener(this)
 
     setContent {
       ProvideEverything(
@@ -106,6 +108,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     localFilePicker.detachActivity()
     mainActivityIntentHandler.onDestroy()
     appRestarter.detachActivity()
+    themeEngine.removeListener(this)
 
     mainActivityViewModel.onLifecycleDestroy()
     mainActivityViewModel.onDetachActivity()
@@ -177,6 +180,10 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     super.onActivityResult(requestCode, resultCode, data)
 
     localFilePicker.onActivityResult(requestCode, resultCode, data)
+  }
+
+  override fun onThemeChanged(newChanTheme: ChanTheme) {
+    fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
   }
 
   private fun processSaveableComponents() {
