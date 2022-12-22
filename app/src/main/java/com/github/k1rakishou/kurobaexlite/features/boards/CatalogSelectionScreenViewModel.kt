@@ -15,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
+import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -83,6 +84,20 @@ class CatalogSelectionScreenViewModel(
     forceReload: Boolean,
     hidePullToRefreshIndicator: (() -> Unit)?
   ) {
+    if (true) {
+      hidePullToRefreshIndicator?.invoke()
+      _loadedCatalogsForCurrentSite.value = (0..100).map { index ->
+        ChanCatalogUiData(
+          siteKey = Chan4.SITE_KEY,
+          catalogDescriptor = CatalogDescriptor(Chan4.SITE_KEY, "${index}"),
+          title = "Test catalog ${index}",
+          subtitle = "${index}"
+        )
+      }.asAsyncData()
+
+      return
+    }
+
     coroutineScope.coroutineContext[Job]!!.invokeOnCompletion { boardsForSiteLoading.set(false) }
 
     val loadedBoardsForSite = loadedBoardsPerSite.getOrPut(
