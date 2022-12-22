@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -140,6 +141,12 @@ class PostCommentApplier(
       append(textPartText)
       overflowHappened = overflow
 
+      addStyle(
+        style = SpanStyle(fontSize = defaultPostCommentFontSize.sp),
+        start = 0,
+        end = this.length
+      )
+
       if (textPart.spans.isNotEmpty()) {
         processTextPartSpans(
           defaultPostCommentFontSize = defaultPostCommentFontSize,
@@ -148,14 +155,6 @@ class PostCommentApplier(
           chanTheme = chanTheme,
           parsedPostDataContext = parsedPostDataContext,
           totalLength = totalLength
-        )
-      }
-
-      if (textPart.spans.isEmpty() || textPart.spans.all { textPartSpan -> textPartSpan.isPartialSpan }) {
-        addStyle(
-          style = SpanStyle(fontSize = defaultPostCommentFontSize.sp),
-          start = 0,
-          end = this.length
         )
       }
 
@@ -345,9 +344,15 @@ class PostCommentApplier(
         null -> null
       }
 
+      val actualFontSize = if (currentFontSize == defaultPostCommentFontSize) {
+        TextUnit.Unspecified
+      } else {
+        currentFontSize.sp
+      }
+
       val spanStyle = SpanStyle(
         color = fgColor,
-        fontSize = currentFontSize.sp,
+        fontSize = actualFontSize,
         background = bgColor,
         fontWeight = fontWeight,
         fontStyle = fontStyle,

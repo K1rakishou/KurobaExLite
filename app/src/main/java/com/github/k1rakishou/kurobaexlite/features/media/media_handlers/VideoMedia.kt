@@ -406,6 +406,10 @@ private fun rememberLogObserver(
           logcat(MPV_TAG, LogPriority.VERBOSE) { "[DEBUG] ${prefix} ${text}" }
         }
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_WARN -> {
+          if (text.contains("vd could not consume packet")) {
+            return@LogObserver
+          }
+
           logcat(MPV_TAG, LogPriority.WARN) { "[WARNING] ${prefix} ${text}" }
 
           if (prefix.contains("ffmpeg") && text.contains("https: HTTP error")) {

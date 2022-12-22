@@ -4,6 +4,7 @@ import androidx.annotation.VisibleForTesting
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
 import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.util.decodeUrlOrNull
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.removeAllBefore
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
@@ -54,9 +55,6 @@ open class Chan4PostParser(
     childTextParts: MutableList<TextPartMut>,
     postDescriptor: PostDescriptor
   ) {
-    val className = htmlTag.classAttrOrNull()
-      ?: return
-
     val childTextPart = if (childTextParts.size == 1) {
       childTextParts.first()
     } else {
@@ -80,8 +78,17 @@ open class Chan4PostParser(
       return
     }
 
-    val linkable = parseLinkable(className, href, postDescriptor)
-      ?: TextPartSpan.Linkable.Url(href)
+    var linkable: TextPartSpan.Linkable? = null
+
+    if (href.isNotNullNorEmpty()) {
+      val className = htmlTag.classAttrOrNull()
+
+      linkable = parseLinkable(className, href, postDescriptor)
+    }
+
+    if (linkable == null) {
+      linkable = TextPartSpan.Linkable.Url(href)
+    }
 
     childTextPart.spans += linkable
   }
