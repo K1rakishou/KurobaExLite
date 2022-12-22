@@ -103,7 +103,9 @@ fun PostCellGridMode(
     currentlyOpenedThread,
     postCellData.postDescriptor,
     isInPostSelectionMode,
-    isPostSelected
+    isPostSelected,
+    chanTheme,
+    highlightColorWithAlpha
   ) {
     if (isInPostSelectionMode) {
       if (isPostSelected) {

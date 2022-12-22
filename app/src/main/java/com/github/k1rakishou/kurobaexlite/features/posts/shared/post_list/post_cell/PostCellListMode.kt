@@ -148,7 +148,9 @@ fun PostCellListMode(
     currentlyOpenedThread,
     postCellData.postDescriptor,
     isInPostSelectionMode,
-    isPostSelected
+    isPostSelected,
+    selectColorWithAlpha,
+    highlightColorWithAlpha
   ) {
     if (isInPostSelectionMode) {
       if (isPostSelected) {
