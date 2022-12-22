@@ -34,6 +34,7 @@ abstract class AbstractSitePostParser(
       "ins" -> parseInsTag(htmlTag, childTextParts, postDescriptor)
       "a" -> parseLinkTag(htmlTag, childTextParts, postDescriptor)
       "ul" -> { /**no-op*/ }
+      "tr" -> { parseTrTag(htmlTag, childTextParts, postDescriptor, parserContext) }
       "li" -> parseLiTag(htmlTag, childTextParts, postDescriptor, parserContext)
       "wbr" -> {
         error("<wbr> tags should all be removed during the HTML parsing stage. This is most likely a HTML parser bug.")
@@ -88,6 +89,17 @@ abstract class AbstractSitePostParser(
 
     for (childTextPart in childTextParts) {
       childTextPart.spans.add(TextPartSpan.Heading(headingSize))
+    }
+  }
+
+  open fun parseTrTag(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>,
+    postDescriptor: PostDescriptor,
+    parserContext: PostCommentParser.PostCommentParserContext
+  ) {
+    if (parserContext.isInsideTableTag) {
+      childTextParts += TextPartMut("\n")
     }
   }
 

@@ -137,15 +137,10 @@ class PostCommentApplier(
         textPart = textPart,
         parsedPostDataContext = parsedPostDataContext
       )
-
-      append(textPartText)
       overflowHappened = overflow
 
-      addStyle(
-        style = SpanStyle(fontSize = defaultPostCommentFontSize.sp),
-        start = 0,
-        end = this.length
-      )
+      pushStyle(style = SpanStyle(fontSize = defaultPostCommentFontSize.sp))
+      append(textPartText)
 
       if (textPart.spans.isNotEmpty()) {
         processTextPartSpans(
