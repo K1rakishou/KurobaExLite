@@ -29,8 +29,8 @@ fun GradientBackground(
       modifier = Modifier
         .fillMaxSize()
         .drawWithCache {
-          val currentTopColor = chanTheme.gradientTopColor.copy(alpha = 0.035f)
-          val currentBottomColor = chanTheme.gradientBottomColor.copy(alpha = 0.035f)
+          val currentTopColor = chanTheme.gradientTopColor
+          val currentBottomColor = chanTheme.gradientBottomColor
           val behindGradientColor = chanTheme.behindGradientColor
 
           // Compute the start and end coordinates such that the gradients are angled 11.06

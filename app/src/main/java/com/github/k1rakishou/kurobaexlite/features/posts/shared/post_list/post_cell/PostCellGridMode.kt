@@ -88,7 +88,7 @@ fun PostCellGridMode(
   val startPadding = remember(key1 = cellsPadding) { cellsPadding.calculateStartPadding(LayoutDirection.Ltr) }
   val endPadding = remember(key1 = cellsPadding) { cellsPadding.calculateEndPadding(LayoutDirection.Ltr) }
   val bottomPadding = remember(key1 = cellsPadding) { cellsPadding.calculateBottomPadding().coerceAtLeast(4.dp) }
-  val highlightColorWithAlpha = remember(key1 = chanTheme.highlighterColor) { chanTheme.highlighterColor.copy(alpha = 0.3f) }
+  val highlightColorWithAlpha = remember(key1 = chanTheme.highlightedOnBackColor) { chanTheme.highlightedOnBackColor.copy(alpha = 0.3f) }
   val selectColorWithAlpha = remember(key1 = chanTheme.selectedOnBackColor) { chanTheme.selectedOnBackColor.copy(alpha = 0.5f) }
 
   val isInPostSelectionMode by postListSelectionState.isInSelectionMode

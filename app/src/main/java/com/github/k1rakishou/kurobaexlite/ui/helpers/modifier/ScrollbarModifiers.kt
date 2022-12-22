@@ -562,51 +562,18 @@ fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo
               val offsetY = topPaddingPx + scrollbarOffsetY
               val offsetX = this.size.width - scrollbarDimens.width
 
-              kotlin.run {
-                val trackWidth = scrollbarDimens.width.toFloat()
-                val trackHeight = this.size.height - (topPaddingPx + bottomPaddingPx)
+              val trackWidth = scrollbarDimens.width.toFloat()
+              val trackHeight = this.size.height - (topPaddingPx + bottomPaddingPx)
 
-                val topLeft = Offset(offsetX, topPaddingPx)
-                val size = Size(trackWidth, trackHeight)
+              val topLeft = Offset(offsetX, topPaddingPx)
+              val size = Size(trackWidth, trackHeight)
 
-                drawRect(
-                  color = scrollbarTrackColor,
-                  topLeft = topLeft,
-                  size = size,
-                  alpha = trackAlphaAnimated
-                )
-
-                if (fastScrollerMarks != null) {
-                  val unit = trackHeight / lazyStateWrapper.totalItemsCount.toFloat()
-                  val halfUnit = unit / 2f
-
-                  val markLeft = this.size.width - trackWidth
-                  val markRight = this.size.width
-
-                  translate(top = topLeft.y) {
-                    for (fastScrollerMark in fastScrollerMarks.marks) {
-                      val color = fastScrollerMark.type.color
-                      val startPosition = fastScrollerMark.startPosition
-                      val endPosition = fastScrollerMark.endPosition
-
-                      var top = startPosition * unit - halfUnit
-                      var bottom = (endPosition * unit) + halfUnit
-
-                      if (bottom - top < minLabelHeight) {
-                        top -= minLabelHeight / 2f
-                        bottom += minLabelHeight / 2f
-                      }
-
-                      drawRect(
-                        color = color,
-                        topLeft = Offset(markLeft, top),
-                        size = Size(markRight - markLeft, bottom - top),
-                        alpha = thumbAlphaAnimated
-                      )
-                    }
-                  }
-                }
-              }
+              drawRect(
+                color = scrollbarTrackColor,
+                topLeft = topLeft,
+                size = size,
+                alpha = trackAlphaAnimated
+              )
 
               kotlin.run {
                 drawRect(
@@ -615,6 +582,37 @@ fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<ItemInfo
                   size = Size(scrollbarDimens.width.toFloat(), scrollbarHeightAdjusted),
                   alpha = thumbAlphaAnimated
                 )
+              }
+
+              if (fastScrollerMarks != null) {
+                val unit = trackHeight / lazyStateWrapper.totalItemsCount.toFloat()
+                val halfUnit = unit / 2f
+
+                val markLeft = this.size.width - trackWidth
+                val markRight = this.size.width
+
+                translate(top = topLeft.y) {
+                  for (fastScrollerMark in fastScrollerMarks.marks) {
+                    val color = fastScrollerMark.type.color
+                    val startPosition = fastScrollerMark.startPosition
+                    val endPosition = fastScrollerMark.endPosition
+
+                    var top = startPosition * unit - halfUnit
+                    var bottom = (endPosition * unit) + halfUnit
+
+                    if (bottom - top < minLabelHeight) {
+                      top -= minLabelHeight / 2f
+                      bottom += minLabelHeight / 2f
+                    }
+
+                    drawRect(
+                      color = color,
+                      topLeft = Offset(markLeft, top),
+                      size = Size(markRight - markLeft, bottom - top),
+                      alpha = thumbAlphaAnimated
+                    )
+                  }
+                }
               }
             }
           }

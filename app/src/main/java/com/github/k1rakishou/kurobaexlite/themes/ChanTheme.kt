@@ -41,7 +41,7 @@ abstract class ChanTheme {
   abstract val backColor: Color
   abstract val backColorSecondary: Color
   abstract val selectedOnBackColor: Color
-  abstract val highlighterColor: Color
+  abstract val highlightedOnBackColor: Color
   abstract val errorColor: Color
   abstract val textColorPrimary: Color
   abstract val textColorSecondary: Color

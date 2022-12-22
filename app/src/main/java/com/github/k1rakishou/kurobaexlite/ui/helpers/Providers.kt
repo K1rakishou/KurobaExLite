@@ -87,10 +87,10 @@ fun ProvideChanTheme(
 ) {
   var chanTheme by remember { mutableStateOf(themeEngine.chanTheme) }
 
-  DisposableEffect(themeEngine.chanTheme) {
+  DisposableEffect(key1 = Unit) {
     val themeUpdateObserver = object : ThemeEngine.ThemeChangesListener {
-      override fun onThemeChanged() {
-        chanTheme = themeEngine.chanTheme.fullCopy()
+      override fun onThemeChanged(newChanTheme: ChanTheme) {
+        chanTheme = newChanTheme.fullCopy()
       }
     }
 

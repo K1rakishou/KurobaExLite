@@ -3,13 +3,14 @@ import android.graphics.Color
 import androidx.annotation.FloatRange
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
+import com.github.k1rakishou.kurobaexlite.themes.def.Kuroneko
 import kotlin.math.min
 import kotlin.math.roundToInt
 import androidx.compose.ui.graphics.Color as ComposeColor
 
 
 class ThemeEngine {
-  val chanTheme: ChanTheme = DefaultDarkTheme()
+  val chanTheme: ChanTheme = Kuroneko()
 
   private val listeners = hashMapOf<Long, ThemeChangesListener>()
 
@@ -29,12 +30,12 @@ class ThemeEngine {
     listeners.remove(listener.hashCode().toLong())
   }
 
-  fun notifyListeners() {
-    listeners.forEach { listener -> listener.value.onThemeChanged() }
+  fun notifyListeners(chanTheme: ChanTheme) {
+    listeners.forEach { listener -> listener.value.onThemeChanged(chanTheme) }
   }
 
   interface ThemeChangesListener {
-    fun onThemeChanged()
+    fun onThemeChanged(newChanTheme: ChanTheme)
   }
 
   companion object {

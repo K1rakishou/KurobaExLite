@@ -2,14 +2,12 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar
 
 import android.os.Bundle
 import android.os.Parcelable
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
@@ -19,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -65,9 +64,8 @@ class PostsScreenSelectionToolbar<T : PostsScreenSelectionToolbar.State.Selectab
       middlePart = {
         val selectedItemsCount by state.selectedItemsCount
 
-        Text(
+        KurobaToolbarText(
           text = stringResource(id = R.string.posts_screen_selection_toolbar_title, selectedItemsCount),
-          color = Color.White,
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           fontSize = 16.sp

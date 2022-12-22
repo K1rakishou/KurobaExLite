@@ -195,13 +195,14 @@ class CatalogSelectionScreen(
       key1 = Unit,
       block = {
         catalogSelectionScreenToolbarState().siteSelectorClickEventFlow.collect {
-          val currentSiteKey = getCurrentSiteKey()
+          val lastUsedSiteKey = appSettings.catalogSelectionScreenLastUsedSite.read()
+          val currentSiteKeyForSelection = siteManager.bySiteKeyOrDefault(SiteKey(lastUsedSiteKey)).siteKey
 
           val siteSelectionScreen = ComposeScreen.createScreen<SiteSelectionScreen>(
             componentActivity = componentActivity,
             navigationRouter = navigationRouter,
             args = {
-              putParcelable(SiteSelectionScreen.siteKeyParamKey, currentSiteKey)
+              putParcelable(SiteSelectionScreen.siteKeyParamKey, currentSiteKeyForSelection)
             },
             callbacks = {
               callback<SiteKey>(
@@ -660,8 +661,8 @@ private fun ChanBoardCell(
   val chanTheme = LocalChanTheme.current
   val postCommentApplier: PostCommentApplier = koinRemember()
 
-  val bgColorWithAlpha = remember(key1 = chanTheme.highlighterColor) {
-    chanTheme.highlighterColor.copy(alpha = 0.3f)
+  val bgColorWithAlpha = remember(key1 = chanTheme.highlightedOnBackColor) {
+    chanTheme.highlightedOnBackColor.copy(alpha = 0.3f)
   }
 
   val backgroundColorModifier = if (chanCatalogUiData.catalogDescriptor == currentlyViewedCatalogDescriptor) {

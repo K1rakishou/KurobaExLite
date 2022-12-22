@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,7 +16,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.toolbar.PostsScreenDefaultToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
+import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.channels.Channel
@@ -144,9 +143,8 @@ class CatalogScreenDefaultToolbar(
                     )
                   }
 
-                  Text(
+                  KurobaToolbarText(
                     text = toolbarTitle!!,
-                    color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = FontWeight.Bold,
@@ -155,9 +153,8 @@ class CatalogScreenDefaultToolbar(
                 }
 
                 if (toolbarSubtitle != null) {
-                  Text(
+                  KurobaToolbarText(
                     text = toolbarSubtitle!!,
-                    color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontSize = 12.sp
@@ -174,9 +171,8 @@ class CatalogScreenDefaultToolbar(
               Row {
                 Spacer(modifier = Modifier.width(8.dp))
 
-                Text(
+                KurobaToolbarText(
                   text = toolbarTitle!!,
-                  color = Color.White,
                   maxLines = 1,
                   overflow = TextOverflow.Ellipsis,
                   fontSize = 16.sp

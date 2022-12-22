@@ -79,7 +79,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
@@ -133,7 +132,7 @@ fun PostCellListMode(
     )
   }
 
-  val highlightColorWithAlpha = remember(key1 = chanTheme.highlighterColor) { chanTheme.highlighterColor.copy(alpha = 0.3f) }
+  val highlightColorWithAlpha = remember(key1 = chanTheme.highlightedOnBackColor) { chanTheme.highlightedOnBackColor.copy(alpha = 0.3f) }
   val selectColorWithAlpha = remember(key1 = chanTheme.selectedOnBackColor) { chanTheme.selectedOnBackColor.copy(alpha = 0.5f) }
 
   val isInPostSelectionMode by postListSelectionState.isInSelectionMode
@@ -255,25 +254,15 @@ private fun RowScope.GoToPostButton(
   onGoToPostClicked: (PostCellData) -> Unit,
   postCellData: PostCellData
 ) {
-  val chanTheme = LocalChanTheme.current
   val heightDp = with(LocalDensity.current) { columnHeight.toDp() }
 
   Spacer(modifier = Modifier.width(4.dp))
-
-  val cardBgColor = remember(key1 = chanTheme.backColor) {
-    if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
-      ThemeEngine.manipulateColor(chanTheme.backColor, 1.2f)
-    } else {
-      ThemeEngine.manipulateColor(chanTheme.backColor, 0.8f)
-    }
-  }
 
   KurobaComposeCard(
     modifier = Modifier
       .width(38.dp)
       .height(heightDp)
-      .kurobaClickable(bounded = true, onClick = { onGoToPostClicked(postCellData) }),
-    backgroundColor = cardBgColor
+      .kurobaClickable(bounded = true, onClick = { onGoToPostClicked(postCellData) })
   ) {
     Box(
       modifier = Modifier.fillMaxSize(),

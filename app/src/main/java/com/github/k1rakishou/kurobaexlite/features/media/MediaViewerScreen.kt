@@ -876,7 +876,7 @@ private fun MediaViewerContentAfterTransition(
   val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
   val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
   val mediaList = mediaViewerScreenState.mediaList
-  val bgColor = remember(chanTheme.backColor) { chanTheme.backColor.copy(alpha = 0.5f) }
+  val bgColor = chanTheme.backColor
 
   MediaViewerPagerContainer(
     availableSize = availableSize,
@@ -904,7 +904,7 @@ private fun MediaViewerContentAfterTransition(
     Box(
       modifier = Modifier.Companion
         .align(Alignment.TopCenter)
-        .alpha(mediaViewerUiAlpha)
+        .graphicsLayer { alpha = mediaViewerUiAlpha }
         .passClicksThrough(passClicks = !mediaViewerUiVisible)
         .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
         .background(bgColor)

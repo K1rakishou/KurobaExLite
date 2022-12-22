@@ -1,22 +1,23 @@
-package com.github.k1rakishou.kurobaexlite.themes
+package com.github.k1rakishou.kurobaexlite.themes.def
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
+import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 
 @Stable
-data class DefaultDarkTheme(
+data class Kuroneko(
   override val name: String = "Kuroneko",
   override val isLightTheme: Boolean = false,
   override val lightStatusBar: Boolean = true,
   override val lightNavBar: Boolean = true,
   override val accentColor: Color = Color(0xffe0224e),
-  override val gradientTopColor: Color = Color(0xff8252d1),
-  override val gradientBottomColor: Color = Color(0xffe01645),
+  override val gradientTopColor: Color = Color(0x078252d1),
+  override val gradientBottomColor: Color = Color(0x07e01645),
   override val behindGradientColor: Color = Color(0xff202020),
   override val backColor: Color = Color(0xff282828),
-  override val backColorSecondary: Color = Color(0xff191919),
-  override val selectedOnBackColor: Color = Color(0xff474747),
-  override val highlighterColor: Color = Color(0xff947383),
+  override val backColorSecondary: Color = Color(0xff363636),
+  override val selectedOnBackColor: Color = Color(0xff855a5a),
+  override val highlightedOnBackColor: Color = Color(0xff947383),
   override val errorColor: Color = Color(0xffff4444),
   override val textColorPrimary: Color = Color(0xffaeaed6),
   override val textColorSecondary: Color = Color(0xff8c8ca1),

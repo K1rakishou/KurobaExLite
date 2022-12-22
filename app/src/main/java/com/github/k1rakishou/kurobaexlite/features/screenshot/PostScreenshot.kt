@@ -29,6 +29,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_c
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
 import com.github.k1rakishou.kurobaexlite.helpers.screenshot.ScreenshotResult
 import com.github.k1rakishou.kurobaexlite.helpers.screenshot.screenshot
+import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
@@ -153,7 +154,7 @@ class PostScreenshot {
             reparsePostSubject = { _, _ -> }
           )
 
-          if (index < screenshotData.posts.lastIndex) {
+          if (postListOptions.postViewMode == PostViewMode.List && index < screenshotData.posts.lastIndex) {
             KurobaComposeDivider(
               modifier = Modifier.fillMaxWidth()
             )
