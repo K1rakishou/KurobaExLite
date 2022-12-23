@@ -876,7 +876,7 @@ private fun MediaViewerContentAfterTransition(
   val toolbarTotalHeight = remember { mutableStateOf<Int?>(null) }
   val globalMediaViewerControlsVisible by remember { mutableStateOf(true) }
   val mediaList = mediaViewerScreenState.mediaList
-  val bgColor = chanTheme.backColor
+  val backgroundColor = chanTheme.backColor
 
   MediaViewerPagerContainer(
     availableSize = availableSize,
@@ -907,11 +907,11 @@ private fun MediaViewerContentAfterTransition(
         .graphicsLayer { alpha = mediaViewerUiAlpha }
         .passClicksThrough(passClicks = !mediaViewerUiVisible)
         .onSizeChanged { size -> toolbarTotalHeight.value = size.height }
-        .background(bgColor)
+        .drawBehind { drawRect(backgroundColor) }
     ) {
       MediaViewerToolbar(
         toolbarHeight = toolbarHeight,
-        backgroundColor = bgColor,
+        backgroundColor = backgroundColor,
         screenKey = screenKey,
         mediaViewerScreenState = mediaViewerScreenState,
         pagerState = pagerState,
@@ -948,7 +948,7 @@ private fun MediaViewerContentAfterTransition(
           mediaViewerScreenState = mediaViewerScreenState,
           currentPageIndex = currentPageIndex,
           mediaViewerUiAlpha = mediaViewerUiAlpha,
-          bgColor = bgColor,
+          backgroundColor = backgroundColor,
           mediaViewerUiVisible = mediaViewerUiVisible,
           onShowPostWithCommentsClicked = onShowPostWithCommentsClicked
         )
@@ -961,7 +961,7 @@ private fun MediaViewerContentAfterTransition(
           .fillMaxWidth()
           .passClicksThrough(passClicks = !mediaViewerUiVisible)
           .graphicsLayer { this.alpha = alphaAnimated }
-          .background(bgColor)
+          .drawBehind { drawRect(backgroundColor) }
       ) {
         if (currentLoadedMedia is MediaState.Video) {
           MediaViewerScreenVideoControls(currentLoadedMedia)
@@ -996,7 +996,7 @@ private fun MediaViewerContentAfterTransition(
             pagerState = pagerState,
             mediaList = mediaList,
             mediaViewerScreenState = mediaViewerScreenState,
-            bgColor = bgColor,
+            backgroundColor = backgroundColor,
             toolbarHeightPx = actualToolbarCalculatedHeight,
             onPreviewClicked = { postImage ->
               coroutineScope.launch {
@@ -1018,7 +1018,7 @@ private fun MediaViewerBottomIcons(
   mediaViewerScreenState: MediaViewerScreenState,
   currentPageIndex: Int,
   mediaViewerUiAlpha: Float,
-  bgColor: Color,
+  backgroundColor: Color,
   mediaViewerUiVisible: Boolean,
   onShowPostWithCommentsClicked: () -> Unit
 ) {
@@ -1038,7 +1038,7 @@ private fun MediaViewerBottomIcons(
         modifier = Modifier
           .graphicsLayer { alpha = mediaViewerUiAlpha }
           .size(42.dp)
-          .background(bgColor, CircleShape)
+          .background(backgroundColor, CircleShape)
           .padding(8.dp),
         drawableId = R.drawable.ic_baseline_comment_24,
         enabled = mediaViewerUiVisible,

@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -43,7 +44,7 @@ fun MediaViewerPreviewStrip(
   pagerState: PagerState,
   mediaList: List<ImageLoadState>,
   mediaViewerScreenState: MediaViewerScreenState,
-  bgColor: Color,
+  backgroundColor: Color,
   toolbarHeightPx: Int?,
   onPreviewClicked: (IPostImage) -> Unit
 ) {
@@ -127,7 +128,7 @@ fun MediaViewerPreviewStrip(
       modifier = Modifier
         .height(itemSizeDp)
         .fillMaxWidth()
-        .background(bgColor)
+        .drawBehind { drawRect(backgroundColor) }
         .scrollbar(
           state = lazyListState,
           scrollbarDimens = ScrollbarDimens.Horizontal.Static(

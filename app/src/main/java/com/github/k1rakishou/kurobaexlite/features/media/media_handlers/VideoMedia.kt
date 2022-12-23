@@ -378,6 +378,11 @@ private fun rememberLogObserver(
       return
     }
 
+    // And about this one
+    if (errorMessage.contains("ffmpeg tcp:")) {
+      return
+    }
+
     errorMessages += errorMessage
 
     debouncingCoroutineExecutor.post(1000) {
