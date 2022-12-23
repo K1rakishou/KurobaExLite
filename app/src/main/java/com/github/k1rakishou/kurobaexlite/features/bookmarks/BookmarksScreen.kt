@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.transform.CircleCropTransformation
 import com.github.k1rakishou.kurobaexlite.R
@@ -46,10 +47,12 @@ import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.image.GrayscaleTransformation
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.DrawerContentType
+import com.github.k1rakishou.kurobaexlite.helpers.util.TaskType
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.util.rememberCoroutineTask
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
@@ -61,6 +64,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentIt
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
@@ -477,36 +481,16 @@ private fun ContentInternal(
 
         Spacer(modifier = Modifier.width(8.dp))
 
+        DrawerThemeToggleIcon(appSettings, iconSize, themeEngine)
+
+        Spacer(modifier = Modifier.width(8.dp))
+
         KurobaComposeIcon(
           modifier = Modifier
             .size(iconSize)
             .kurobaClickable(bounded = false, onClick = { openAppSettings() }),
           drawableId = R.drawable.ic_baseline_settings_24
         )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        kotlin.run {
-          val isDarkThemeUsedMut by appSettings.isDarkThemeUsed.listen().collectAsState(initial = null)
-          val isDarkThemeUsed = isDarkThemeUsedMut
-
-          if (isDarkThemeUsed != null) {
-            val iconId = if (isDarkThemeUsed) {
-              R.drawable.ic_baseline_light_mode_24
-            } else {
-              R.drawable.ic_baseline_dark_mode_24
-            }
-
-            KurobaComposeIcon(
-              modifier = Modifier
-                .size(iconSize)
-                .kurobaClickable(bounded = false, onClick = { themeEngine.toggleTheme() }),
-              drawableId = iconId
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-          }
-        }
 
         KurobaComposeIcon(
           modifier = Modifier
@@ -552,4 +536,68 @@ private fun ContentInternal(
       }
     }
   }
+}
+
+@Composable
+private fun DrawerContentTypeToggleIcon(
+  iconSize: Dp
+) {
+  val appSettings = koinRemember<AppSettings>()
+
+  val drawerContentTypeMut by appSettings.drawerContentType.listen().collectAsState(initial = null)
+  val drawerContentType = drawerContentTypeMut
+
+  if (drawerContentType == null) {
+    return
+  }
+
+  val coroutineTask = rememberCoroutineTask(taskType = TaskType.SingleInstance)
+
+  val drawableId = when (drawerContentType) {
+    DrawerContentType.History -> R.drawable.ic_baseline_bookmark_border_24
+    DrawerContentType.Bookmarks -> R.drawable.ic_baseline_history_24
+  }
+
+  KurobaComposeClickableIcon(
+    modifier = Modifier.size(iconSize),
+    drawableId = drawableId,
+    enabled = !coroutineTask.isRunning,
+    onClick = {
+      coroutineTask.launch {
+        val newDrawerContentType = when (drawerContentType) {
+          DrawerContentType.History -> DrawerContentType.Bookmarks
+          DrawerContentType.Bookmarks -> DrawerContentType.History
+        }
+
+        appSettings.drawerContentType.write(newDrawerContentType)
+      }
+    }
+  )
+}
+
+@Composable
+private fun DrawerThemeToggleIcon(
+  appSettings: AppSettings,
+  iconSize: Dp,
+  themeEngine: ThemeEngine
+) {
+  val isDarkThemeUsedMut by appSettings.isDarkThemeUsed.listen().collectAsState(initial = null)
+  val isDarkThemeUsed = isDarkThemeUsedMut
+
+  if (isDarkThemeUsed == null) {
+    return
+  }
+
+  val iconId = if (isDarkThemeUsed) {
+    R.drawable.ic_baseline_light_mode_24
+  } else {
+    R.drawable.ic_baseline_dark_mode_24
+  }
+
+  KurobaComposeIcon(
+    modifier = Modifier
+      .size(iconSize)
+      .kurobaClickable(bounded = false, onClick = { themeEngine.toggleTheme() }),
+    drawableId = iconId
+  )
 }

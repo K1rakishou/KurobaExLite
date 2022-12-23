@@ -557,7 +557,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
     }
   }
 
-  val bookmarkAdditionalInfoText = remember(threadBookmarkStatsCombined) {
+  val bookmarkAdditionalInfoText = remember(chanTheme, threadBookmarkStatsCombined) {
     convertBookmarkStateToText(
       context = context,
       chanTheme = chanTheme,
