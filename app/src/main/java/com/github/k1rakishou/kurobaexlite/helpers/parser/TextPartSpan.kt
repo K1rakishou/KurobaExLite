@@ -34,7 +34,8 @@ sealed class TextPartSpan {
       is Superscript,
       is Subscript,
       is Heading,
-      is FontSize -> PRIORITY_TEXT
+      is FontSize,
+      is Monospace -> PRIORITY_TEXT
       is FgColor,
       is FgColorId -> PRIORITY_FOREGROUND
       Spoiler -> PRIORITY_SPOILER
@@ -75,6 +76,7 @@ sealed class TextPartSpan {
 
   object Spoiler : TextPartSpan()
   object Underline : TextPartSpan()
+  object Monospace : TextPartSpan()
   object Linethrough : TextPartSpan()
   object Bold : TextPartSpan()
   object Italic : TextPartSpan()

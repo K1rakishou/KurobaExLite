@@ -34,8 +34,9 @@ abstract class AbstractSitePostParser(
       "ins" -> parseInsTag(htmlTag, childTextParts, postDescriptor)
       "a" -> parseLinkTag(htmlTag, childTextParts, postDescriptor)
       "ul" -> { /**no-op*/ }
-      "tr" -> { parseTrTag(htmlTag, childTextParts, postDescriptor, parserContext) }
+      "tr" -> parseTrTag(htmlTag, childTextParts, postDescriptor, parserContext)
       "li" -> parseLiTag(htmlTag, childTextParts, postDescriptor, parserContext)
+      "pre" -> parsePreTag(htmlTag, childTextParts, postDescriptor, parserContext)
       "wbr" -> {
         error("<wbr> tags should all be removed during the HTML parsing stage. This is most likely a HTML parser bug.")
       }
@@ -70,12 +71,26 @@ abstract class AbstractSitePostParser(
     parseAnyTagColorAttribute(htmlTag, childTextParts)
   }
 
+  @CallSuper
+  open fun parsePreTag(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>,
+    postDescriptor: PostDescriptor,
+    parserContext: PostCommentParser.PostCommentParserContext
+  ) {
+    for (childTextPart in childTextParts) {
+      childTextPart.spans.add(TextPartSpan.Monospace)
+    }
+  }
+
+  @CallSuper
   open fun parseInsTag(htmlTag: HtmlTag, childTextParts: MutableList<TextPartMut>, postDescriptor: PostDescriptor) {
     for (childTextPart in childTextParts) {
       childTextPart.spans.add(TextPartSpan.Underline)
     }
   }
 
+  @CallSuper
   open fun parseHeadingTag(
     htmlTag: HtmlTag,
     childTextParts: MutableList<TextPartMut>,
@@ -92,6 +107,7 @@ abstract class AbstractSitePostParser(
     }
   }
 
+  @CallSuper
   open fun parseTrTag(
     htmlTag: HtmlTag,
     childTextParts: MutableList<TextPartMut>,
@@ -103,6 +119,7 @@ abstract class AbstractSitePostParser(
     }
   }
 
+  @CallSuper
   open fun parseLiTag(
     htmlTag: HtmlTag,
     childTextParts: MutableList<TextPartMut>,
@@ -125,24 +142,28 @@ abstract class AbstractSitePostParser(
     childTextParts += TextPartMut("\n")
   }
 
+  @CallSuper
   open fun parseSubscriptTag(childTextParts: MutableList<TextPartMut>) {
     for (childTextPart in childTextParts) {
       childTextPart.spans.add(TextPartSpan.Subscript)
     }
   }
 
+  @CallSuper
   open fun parseSuperscriptTag(childTextParts: MutableList<TextPartMut>) {
     for (childTextPart in childTextParts) {
       childTextPart.spans.add(TextPartSpan.Superscript)
     }
   }
 
+  @CallSuper
   open fun parseEmphasizedTag(childTextParts: MutableList<TextPartMut>) {
     for (childTextPart in childTextParts) {
       childTextPart.spans.add(TextPartSpan.Italic)
     }
   }
 
+  @CallSuper
   open fun parseStrongTag(childTextParts: MutableList<TextPartMut>) {
     for (childTextPart in childTextParts) {
       childTextPart.spans.add(TextPartSpan.Bold)

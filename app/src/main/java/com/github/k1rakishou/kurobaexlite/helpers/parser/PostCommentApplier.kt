@@ -3,6 +3,7 @@ package com.github.k1rakishou.kurobaexlite.helpers.parser
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
@@ -181,6 +182,7 @@ class PostCommentApplier(
       var italic = false
       var script: Script? = null
       var currentFontSize = defaultPostCommentFontSize
+      var fontFamily: FontFamily? = null
 
       var start: Int? = null
       var end: Int? = null
@@ -258,6 +260,9 @@ class PostCommentApplier(
         }
         is TextPartSpan.Subscript -> {
           script = Script.Sub
+        }
+        is TextPartSpan.Monospace -> {
+          fontFamily = FontFamily.Monospace
         }
         is TextPartSpan.Linkable -> {
           when (span) {
@@ -351,6 +356,7 @@ class PostCommentApplier(
         background = bgColor,
         fontWeight = fontWeight,
         fontStyle = fontStyle,
+        fontFamily = fontFamily,
         baselineShift = baselineShift,
         textDecoration = buildTextDecoration(underline, linethrough)
       )

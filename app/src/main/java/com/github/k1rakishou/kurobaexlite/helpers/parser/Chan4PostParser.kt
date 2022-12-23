@@ -14,6 +14,20 @@ open class Chan4PostParser(
   staticHtmlColorRepository: StaticHtmlColorRepository
 ) : AbstractSitePostParser(staticHtmlColorRepository) {
 
+  override fun parsePreTag(
+    htmlTag: HtmlTag,
+    childTextParts: MutableList<TextPartMut>,
+    postDescriptor: PostDescriptor,
+    parserContext: PostCommentParser.PostCommentParserContext
+  ) {
+    super.parsePreTag(htmlTag, childTextParts, postDescriptor, parserContext)
+
+    val tagClass = htmlTag.classAttrOrNull()
+    if (tagClass == "prettyprint") {
+
+    }
+  }
+
   override fun parseNewLineTag(childTextParts: MutableList<TextPartMut>) {
     childTextParts += TextPartMut(text = "\n")
   }
