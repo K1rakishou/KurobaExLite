@@ -19,7 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -205,7 +204,7 @@ class PostsScreenLocalSearchToolbar(
 
   @OptIn(ExperimentalComposeUiApi::class)
   private fun buildRightPart(): @Composable (RowScope.() -> Unit) {
-    val func: @Composable (RowScope.() -> Unit) = {
+    return {
       val searchQuery by state.searchQuery
       val foundEntries by state.foundEntriesState
       val currentScrolledEntryIndex by state.currentScrolledEntryIndexState
@@ -220,11 +219,10 @@ class PostsScreenLocalSearchToolbar(
         val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
 
         if (isSearchQueryLengthGood) {
-          val current = currentScrolledEntryIndex?.plus(1) ?: "?"
-
           val totalFoundText = if (foundEntries.isEmpty()) {
             "---"
           } else {
+            val current = currentScrolledEntryIndex?.plus(1) ?: "?"
             "${current} / ${foundEntries.size}"
           }
 
@@ -251,21 +249,16 @@ class PostsScreenLocalSearchToolbar(
 
         val siteKey = currentSiteKey()
 
-        val siteSupportsGlobalSearch by produceState(
-          initialValue = false,
-          key1 = siteKey,
-          producer = {
-            if (siteKey == null) {
-              value = false
-              return@produceState
-            }
-
-            value = siteManager.bySiteKey(siteKey)
-              ?.globalSearchInfo()
-              ?.supportsGlobalSearch
-              ?: false
+        val siteSupportsGlobalSearch = remember(key1 = siteKey) {
+          if (siteKey == null) {
+            return@remember false
           }
-        )
+
+          return@remember siteManager.bySiteKey(siteKey)
+            ?.globalSearchInfo()
+            ?.supportsGlobalSearch
+            ?: false
+        }
 
         if (siteSupportsGlobalSearch && screenKey == CatalogScreen.SCREEN_KEY) {
           Spacer(modifier = Modifier.width(8.dp))
@@ -286,8 +279,6 @@ class PostsScreenLocalSearchToolbar(
         }
       }
     }
-
-    return func
   }
 
   class State(
