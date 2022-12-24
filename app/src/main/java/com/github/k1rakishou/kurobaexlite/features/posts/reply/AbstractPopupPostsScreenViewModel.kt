@@ -217,7 +217,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       screenKey = screenKey,
       chanDescriptor = chanDescriptor,
       popupPostViewMode = popupPostViewMode,
-      postCellDataList = chanCache.getManyForDescriptor(
+      postCellDataList = chanPostCache.getManyForDescriptor(
         chanDescriptor = popupPostViewMode.chanDescriptor,
         postDescriptors = popupPostViewMode.asPostDescriptorList
       )
@@ -251,7 +251,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       screenKey = screenKey,
       chanDescriptor = chanDescriptor,
       popupPostViewMode = popupPostViewMode,
-      postCellDataList = chanCache.getManyForDescriptor(chanDescriptor, repliesFrom)
+      postCellDataList = chanPostCache.getManyForDescriptor(chanDescriptor, repliesFrom)
     )
 
     val sortedPosts = ThreadPostSorter.sortThreadPostCellData(posts)
@@ -272,7 +272,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
 
     val sortedPosts = when (chanDescriptor) {
       is CatalogDescriptor -> {
-        val threadPosts = chanCache.getCatalogPost(postDescriptor)
+        val threadPosts = chanPostCache.getCatalogPost(postDescriptor)
           ?.let { postData ->
             return@let parsePostDataList(
               screenKey = screenKey,
@@ -286,7 +286,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
         CatalogThreadSorter.sortCatalogPostCellData(threadPosts, appSettings.catalogSort.read())
       }
       is ThreadDescriptor -> {
-        val threadPosts = chanCache.getThreadPost(postDescriptor)
+        val threadPosts = chanPostCache.getThreadPost(postDescriptor)
           ?.let { postData ->
             return@let parsePostDataList(
               screenKey = screenKey,

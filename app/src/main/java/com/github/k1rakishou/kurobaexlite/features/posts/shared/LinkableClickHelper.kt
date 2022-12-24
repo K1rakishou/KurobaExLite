@@ -8,7 +8,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollo
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -27,7 +27,7 @@ class LinkableClickHelper(
 ) {
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
-  private val chanCache: ChanCache by inject(ChanCache::class.java)
+  private val chanPostCache: ChanPostCache by inject(ChanPostCache::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 
   fun processLongClickedLinkable(
@@ -77,7 +77,7 @@ class LinkableClickHelper(
       when (linkable) {
         is TextPartSpan.Linkable.Quote -> {
           if (linkable.dead) {
-            if (chanCache.getThreadPost(linkable.postDescriptor) == null) {
+            if (chanPostCache.getThreadPost(linkable.postDescriptor) == null) {
               snackbarManager.toast(
                 messageId = R.string.thread_toolbar_cannot_view_dead_posts,
                 screenKey = sourceScreenKey

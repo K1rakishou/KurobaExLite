@@ -32,7 +32,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -164,7 +164,7 @@ private fun ContentInternal(
   val mediaSaver = koinRemember<MediaSaver>()
   val snackbarManager = koinRemember<SnackbarManager>()
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
-  val chanCache = koinRemember<ChanCache>()
+  val chanPostCache = koinRemember<ChanPostCache>()
   val parsedPostDataCache = koinRemember<ParsedPostDataCache>()
 
   val contentPadding = remember(
@@ -187,7 +187,7 @@ private fun ContentInternal(
           navigationRouter = navigationRouterProvider(),
           appResources = appResources,
           mediaSaver = mediaSaver,
-          chanCache = chanCache,
+          chanPostCache = chanPostCache,
           parsedPostDataCache = parsedPostDataCache
         )
       }
@@ -258,7 +258,7 @@ private suspend fun onCancelMediaDownloadButtonClicked(
   navigationRouter: NavigationRouter,
   appResources: AppResources,
   mediaSaver: MediaSaver,
-  chanCache: ChanCache,
+  chanPostCache: ChanPostCache,
   parsedPostDataCache: ParsedPostDataCache
 ) {
   val activeDownloadsCount = mediaSaver.activeDownloadsCount()
@@ -295,7 +295,7 @@ private suspend fun onCancelMediaDownloadButtonClicked(
         is ThreadDescriptor -> {
           var threadTitle: String? = null
 
-          val postDescriptor = chanCache.getOriginalPost(chanDescriptor)?.postDescriptor
+          val postDescriptor = chanPostCache.getOriginalPost(chanDescriptor)?.postDescriptor
           if (postDescriptor != null) {
             threadTitle = parsedPostDataCache.formatThreadToolbarTitle(postDescriptor)
           }

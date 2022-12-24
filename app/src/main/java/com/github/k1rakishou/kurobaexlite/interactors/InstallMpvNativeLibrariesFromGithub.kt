@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Build
 import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
@@ -32,7 +32,7 @@ import java.util.zip.ZipInputStream
 class InstallMpvNativeLibrariesFromGithub(
   private val appContext: Context,
   private val moshi: Moshi,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient
+  private val proxiedOkHttpClient: IKurobaOkHttpClient
 ) {
   private val lookupTag = "v${MPVLib.SUPPORTED_MPV_PLAYER_VERSION}"
 

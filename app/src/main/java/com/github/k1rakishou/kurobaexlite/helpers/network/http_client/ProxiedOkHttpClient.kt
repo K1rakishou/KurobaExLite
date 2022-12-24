@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 class ProxiedOkHttpClient(
   private val siteManager: SiteManager,
   private val firewallBypassManager: FirewallBypassManager
-) : KurobaOkHttpClient {
+) : IKurobaOkHttpClient {
 
   private val okHttpClient by lazy {
     OkHttpClient.Builder()

@@ -292,6 +292,20 @@ inline fun Any.logcatError(
   logcat(priority = LogPriority.ERROR, tag = tag, message = message)
 }
 
+inline fun logcatVerbose(
+  tag: String,
+  message: () -> String
+) {
+  logcat(priority = LogPriority.VERBOSE, tag = tag, message = message)
+}
+
+inline fun Any.logcatVerbose(
+  tag: String? = null,
+  message: () -> String
+) {
+  logcat(priority = LogPriority.VERBOSE, tag = tag, message = message)
+}
+
 fun lerpFloat(from: Float, to: Float, progress: Float): Float {
   return from + progress * (to - from)
 }
@@ -1057,11 +1071,11 @@ fun String.substringSafe(startIndex: Int): String? {
 }
 
 fun String.substringSafe(startIndex: Int, endIndex: Int): String? {
-  if (startIndex < 0 || startIndex > lastIndex) {
+  if (startIndex < 0 || startIndex > length) {
     return null
   }
 
-  if (endIndex < 0 || endIndex > lastIndex) {
+  if (endIndex < 0 || endIndex > length) {
     return null
   }
 

@@ -13,6 +13,7 @@ import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.helpers.util.extractLinkableAnnotationItem
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.local.SpoilerPosition
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -124,11 +125,13 @@ internal fun processClickedAnnotation(
 
         reparsePost(
           postCellData,
-          parsedPostDataContext
-            .copy(textSpoilerOpenedPositionSet = textSpoilerOpenedPositionSet)
+          parsedPostDataContext.copy(textSpoilerOpenedPositionSet = textSpoilerOpenedPositionSet)
         )
 
         break
+      }
+      else -> {
+        logcatError("processClickedAnnotation") { "Unknown annotation tag: \'${clickedAnnotation.tag}\'"}
       }
     }
   }

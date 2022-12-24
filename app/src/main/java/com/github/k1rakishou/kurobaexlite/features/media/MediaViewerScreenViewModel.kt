@@ -17,7 +17,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.CacheFileType
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
@@ -34,7 +34,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
@@ -66,9 +66,9 @@ class MediaViewerScreenViewModel(
   private val mpvInitializer: MpvInitializer,
   private val appSettings: AppSettings,
   private val appResources: AppResources,
-  private val chanCache: ChanCache,
+  private val chanPostCache: IChanPostCache,
   private val siteManager: SiteManager,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val kurobaLruDiskCache: KurobaLruDiskCache,
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub,
   private val imageLoader: ImageLoader,
@@ -84,7 +84,7 @@ class MediaViewerScreenViewModel(
     savedStateHandle = savedStateHandle,
     appSettings = appSettings,
     appResources = appResources,
-    chanCache = chanCache
+    chanPostCache = chanPostCache
   )
 
   @GuardedBy("itself")
@@ -107,8 +107,8 @@ class MediaViewerScreenViewModel(
       val imagesToShow = mutableListOf<IPostImage>()
 
       val posts = when (chanDescriptor) {
-        is CatalogDescriptor -> chanCache.getCatalogThreads(chanDescriptor)
-        is ThreadDescriptor -> chanCache.getThreadPosts(chanDescriptor)
+        is CatalogDescriptor -> chanPostCache.getCatalogThreads(chanDescriptor)
+        is ThreadDescriptor -> chanPostCache.getThreadPosts(chanDescriptor)
       }
 
       posts.forEach { post ->
@@ -166,8 +166,8 @@ class MediaViewerScreenViewModel(
       kurobaLruDiskCache.manualTrim(CacheFileType.PostMediaFull)
 
       val posts = when (chanDescriptor) {
-        is CatalogDescriptor -> chanCache.getCatalogThreads(chanDescriptor)
-        is ThreadDescriptor -> chanCache.getThreadPosts(chanDescriptor)
+        is CatalogDescriptor -> chanPostCache.getCatalogThreads(chanDescriptor)
+        is ThreadDescriptor -> chanPostCache.getThreadPosts(chanDescriptor)
       }
 
       val postImages = mutableListWithCap<IPostImage>(posts.size)

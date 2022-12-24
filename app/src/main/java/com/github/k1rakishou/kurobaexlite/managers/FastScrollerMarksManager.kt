@@ -8,14 +8,13 @@ import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.buffer
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,12 +26,13 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
+import kotlin.time.Duration.Companion.seconds
 
 class FastScrollerMarksManager(
   private val appScope: CoroutineScope,
   private val appSettings: AppSettings,
   private val parsedPostDataCache: ParsedPostDataCache,
-  private val chanCache: ChanCache
+  private val chanPostCache: IChanPostCache
 ) {
   private val mutex = Mutex()
 
@@ -68,9 +68,9 @@ class FastScrollerMarksManager(
     chanDescriptor: ChanDescriptor
   ) {
     val postDescriptors = when (chanDescriptor) {
-      is CatalogDescriptor -> chanCache.getCatalogThreads(chanDescriptor)
+      is CatalogDescriptor -> chanPostCache.getCatalogThreads(chanDescriptor)
         .map { it.postDescriptor }
-      is ThreadDescriptor -> chanCache.getThreadPosts(chanDescriptor)
+      is ThreadDescriptor -> chanPostCache.getThreadPosts(chanDescriptor)
         .map { it.postDescriptor }
     }
 
@@ -139,13 +139,13 @@ class FastScrollerMarksManager(
         val catalogSortSetting = appSettings.catalogSort.read()
 
         CatalogThreadSorter.sortCatalogPostData(
-          catalogThreads = chanCache.getCatalogThreads(chanDescriptor),
+          catalogThreads = chanPostCache.getCatalogThreads(chanDescriptor),
           catalogSortSetting = catalogSortSetting
         )
       }
       is ThreadDescriptor -> {
         ThreadPostSorter.sortThreadPostData(
-          threadPosts = chanCache.getThreadPosts(chanDescriptor)
+          threadPosts = chanPostCache.getThreadPosts(chanDescriptor)
         )
       }
     }

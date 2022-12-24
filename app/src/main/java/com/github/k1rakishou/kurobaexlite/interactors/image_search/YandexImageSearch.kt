@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.image_search
 
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
@@ -17,7 +17,6 @@ import com.github.k1rakishou.kurobaexlite.model.FirewallType
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import logcat.logcat
@@ -25,9 +24,10 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import org.jsoup.Jsoup
+import java.nio.charset.StandardCharsets
 
 class YandexImageSearch(
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val moshi: Moshi
 ) {
 

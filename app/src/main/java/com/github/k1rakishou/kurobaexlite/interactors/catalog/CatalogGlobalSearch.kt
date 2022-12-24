@@ -10,7 +10,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.GlobalSearchRepository
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.themes.IThemeEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,7 +20,7 @@ class CatalogGlobalSearch(
   private val globalSearchRepository: GlobalSearchRepository,
   private val parsedPostDataCache: ParsedPostDataCache,
   private val postCommentApplier: PostCommentApplier,
-  private val themeEngine: ThemeEngine,
+  private val themeEngine: IThemeEngine,
   private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 

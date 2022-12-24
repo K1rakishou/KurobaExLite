@@ -359,7 +359,6 @@ private fun ContentInternal(
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val snackbarManager = koinRemember<SnackbarManager>()
   val appSettings = koinRemember<AppSettings>()
-  val themeEngine = koinRemember<ThemeEngine>()
 
   val windowInsets = LocalWindowInsets.current
   var isFullyClosed by remember { mutableStateOf(true) }
@@ -481,7 +480,7 @@ private fun ContentInternal(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        DrawerThemeToggleIcon(appSettings, iconSize, themeEngine)
+        DrawerThemeToggleIcon(appSettings, iconSize)
 
         Spacer(modifier = Modifier.width(8.dp))
 
@@ -578,9 +577,10 @@ private fun DrawerContentTypeToggleIcon(
 @Composable
 private fun DrawerThemeToggleIcon(
   appSettings: AppSettings,
-  iconSize: Dp,
-  themeEngine: ThemeEngine
+  iconSize: Dp
 ) {
+  val themeEngine = koinRemember<ThemeEngine>()
+
   val isDarkThemeUsedMut by appSettings.isDarkThemeUsed.listen().collectAsState(initial = null)
   val isDarkThemeUsed = isDarkThemeUsedMut
 

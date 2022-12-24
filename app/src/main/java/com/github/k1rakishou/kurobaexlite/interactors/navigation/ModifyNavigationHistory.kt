@@ -3,7 +3,7 @@ package com.github.k1rakishou.kurobaexlite.interactors.navigation
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -12,7 +12,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 
 class ModifyNavigationHistory(
   private val navigationHistoryManager: NavigationHistoryManager,
-  private val chanCache: ChanCache,
+  private val chanPostCache: IChanPostCache,
   private val parsedPostDataCache: ParsedPostDataCache,
   private val appSettings: AppSettings
 ) {
@@ -35,7 +35,7 @@ class ModifyNavigationHistory(
       maxLength = AppConstants.navHistoryMaxTitleLength
     )
 
-    val firstImageThumbnailUrl = chanCache.getOriginalPost(threadDescriptor)
+    val firstImageThumbnailUrl = chanPostCache.getOriginalPost(threadDescriptor)
       ?.images
       ?.firstOrNull()
       ?.thumbnailAsString
@@ -60,9 +60,9 @@ class ModifyNavigationHistory(
         maxLength = AppConstants.navHistoryMaxTitleLength
       )
 
-      var originalPost = chanCache.getOriginalPost(threadDescriptor)
+      var originalPost = chanPostCache.getOriginalPost(threadDescriptor)
       if (originalPost == null) {
-        originalPost = chanCache.getCatalogPost(threadDescriptor.toOriginalPostDescriptor())
+        originalPost = chanPostCache.getCatalogPost(threadDescriptor.toOriginalPostDescriptor())
       }
 
       val firstImageThumbnailUrl = originalPost

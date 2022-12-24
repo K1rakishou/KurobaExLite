@@ -9,10 +9,12 @@ import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
+import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequenceIndexed
+import com.github.k1rakishou.kurobaexlite.helpers.util.buffer
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
@@ -23,10 +25,9 @@ import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigatio
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
-import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
@@ -66,15 +67,17 @@ import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
+import kotlin.time.seconds
 
+@OptIn(ExperimentalTime::class)
 abstract class PostScreenViewModel(
   protected val savedStateHandle: SavedStateHandle
 ) : BaseViewModel() {
   protected val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
-  protected val chanCache: ChanCache by inject(ChanCache::class.java)
+  protected val chanPostCache: ChanPostCache by inject(ChanPostCache::class.java)
   protected val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
   protected val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
-  protected val postBindProcessor: PostBindProcessor by inject(PostBindProcessor::class.java)
+  protected val postBindProcessorCoordinator: PostBindProcessorCoordinator by inject(PostBindProcessorCoordinator::class.java)
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   protected val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
@@ -150,6 +153,26 @@ abstract class PostScreenViewModel(
           _fastScrollerMarksFlow.emit(fastScrollerMarks)
         }
     }
+
+    viewModelScope.launch {
+      postBindProcessorCoordinator.pendingPostsForReparsingFlow
+        .buffer(delay = 1.seconds, emitIfEmpty = false)
+        .collect { postDescriptorsForReparsing ->
+          val postCellDataList = postScreenState.getPosts(postDescriptorsForReparsing)
+          if (postCellDataList.isEmpty()) {
+            return@collect
+          }
+
+          val toParse = postCellDataList.mapNotNull { postCellData ->
+            val parsedPostDataContext = postCellData.parsedPostDataContext
+              ?: return@mapNotNull null
+
+            return@mapNotNull postCellData to parsedPostDataContext
+          }
+
+          reparsePostsSuspend(toParse)
+        }
+    }
   }
 
   abstract fun reload(
@@ -204,7 +227,7 @@ abstract class PostScreenViewModel(
     }
 
     if (threadDescriptor != null) {
-      chanCache.onCatalogOrThreadAccessed(threadDescriptor)
+      chanPostCache.onCatalogOrThreadAccessed(threadDescriptor)
       modifyNavigationHistory.addThread(threadDescriptor)
       updateBookmarkInfoUponThreadOpen.await(threadDescriptor)
 
@@ -225,7 +248,7 @@ abstract class PostScreenViewModel(
     }
 
     if (catalogDescriptor != null) {
-      chanCache.onCatalogOrThreadAccessed(catalogDescriptor)
+      chanPostCache.onCatalogOrThreadAccessed(catalogDescriptor)
       modifyNavigationHistory.addCatalog(catalogDescriptor)
 
       updatePostsParsedOnceJob = viewModelScope.launch {
@@ -576,7 +599,7 @@ abstract class PostScreenViewModel(
           val repliesToPostDescriptorSet = postReplyChainManager.getManyRepliesTo(postDescriptors)
 
           val repliesToPostDataSet = hashSetOf<IPostData>()
-          repliesToPostDataSet += chanCache.getManyForDescriptor(chanDescriptor, repliesToPostDescriptorSet)
+          repliesToPostDataSet += chanPostCache.getManyForDescriptor(chanDescriptor, repliesToPostDescriptorSet)
           repliesToPostDataSet += repliesToPostDescriptorSet
             .mapNotNull { postDescriptor -> postDataMap[postDescriptor] }
 
@@ -708,7 +731,7 @@ abstract class PostScreenViewModel(
 
     val catalogMode = descriptor is CatalogDescriptor
 
-    postBindProcessor.onPostBind(
+    postBindProcessorCoordinator.onPostBind(
       isCatalogMode = catalogMode,
       postsParsedOnce = postsFullyParsedOnceFlow.value,
       postDescriptor = postCellData.postDescriptor
@@ -721,7 +744,7 @@ abstract class PostScreenViewModel(
 
     val catalogMode = descriptor is CatalogDescriptor
 
-    postBindProcessor.onPostUnbind(
+    postBindProcessorCoordinator.onPostUnbind(
       isCatalogMode = catalogMode,
       postDescriptor = postCellData.postDescriptor
     )

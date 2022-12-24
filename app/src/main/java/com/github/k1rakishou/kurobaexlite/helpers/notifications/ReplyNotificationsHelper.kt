@@ -38,7 +38,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookma
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmarkReply
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.themes.IThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,7 +66,7 @@ class ReplyNotificationsHelper(
   private val notificationManager: NotificationManager,
   private val chanThreadManager: ChanThreadManager,
   private val bookmarksManager: BookmarksManager,
-  private val themeEngine: ThemeEngine,
+  private val themeEngine: IThemeEngine,
   private val postCommentParser: PostCommentParser,
   private val persistBookmarks: PersistBookmarks
 ) {

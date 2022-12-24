@@ -294,7 +294,7 @@ class ThreadScreenViewModel(
       val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(bookmarkDescriptor.toOriginalPostDescriptor())
         ?: return@post
 
-      val bookmarkThumbnail = chanCache.getOriginalPost(bookmarkDescriptor)
+      val bookmarkThumbnail = chanPostCache.getOriginalPost(bookmarkDescriptor)
         ?.images
         ?.firstOrNull()
         ?.thumbnailUrl
@@ -356,7 +356,7 @@ class ThreadScreenViewModel(
 
       chanThreadManager.loadThread(threadDescriptor)
     } else {
-      val threadPosts = chanCache.getThreadPosts(threadDescriptor)
+      val threadPosts = chanPostCache.getThreadPosts(threadDescriptor)
       val postsLoadResult = PostsLoadResult(
         chanDescriptor = threadDescriptor,
         updatedPosts = threadPosts,
@@ -602,7 +602,7 @@ class ThreadScreenViewModel(
   ) {
     updateChanThreadViewExecutor.post(timeout = 200L, key = key) {
       val contentLoaded = postScreenState.contentLoaded.value
-      val lastThreadPost = chanCache.getLastPost(threadDescriptor)?.postDescriptor
+      val lastThreadPost = chanPostCache.getLastPost(threadDescriptor)?.postDescriptor
 
       val firstVisiblePost = if (contentLoaded) {
         firstVisiblePostDescriptor

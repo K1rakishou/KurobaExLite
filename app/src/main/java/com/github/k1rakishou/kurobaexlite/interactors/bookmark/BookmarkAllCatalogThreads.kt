@@ -1,14 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
-import android.content.Context
-import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
@@ -25,12 +22,9 @@ import org.joda.time.DateTime
 import java.util.concurrent.atomic.AtomicBoolean
 
 class BookmarkAllCatalogThreads(
-  private val appContext: Context,
   private val appScope: CoroutineScope,
   private val appSettings: AppSettings,
-  private val androidHelpers: AndroidHelpers,
-  private val applicationVisibilityManager: ApplicationVisibilityManager,
-  private val chanCache: ChanCache,
+  private val chanPostCache: IChanPostCache,
   private val bookmarksManager: BookmarksManager,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase,
   private val parsedPostDataCache: ParsedPostDataCache,
@@ -54,7 +48,7 @@ class BookmarkAllCatalogThreads(
   }
 
   private suspend fun doTheWork(catalogDescriptor: CatalogDescriptor) {
-    val catalogThreads = chanCache.getCatalogThreads(catalogDescriptor)
+    val catalogThreads = chanPostCache.getCatalogThreads(catalogDescriptor)
     if (catalogThreads.isEmpty()) {
       return
     }

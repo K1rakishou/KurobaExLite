@@ -20,9 +20,9 @@ import kotlinx.coroutines.withContext
 import logcat.logcat
 import java.util.concurrent.ConcurrentHashMap
 
-class ChanCache(
+class ChanPostCache(
   private val androidHelpers: AndroidHelpers
-) {
+) : IChanPostCache {
   private val maxCachedCatalogs by lazy { if (androidHelpers.isDevFlavor()) 3 else 5 }
   private val maxCachedThreads by lazy { if (androidHelpers.isDevFlavor()) 5 else 30 }
 
@@ -32,7 +32,7 @@ class ChanCache(
   private val _threadPostUpdates = MutableSharedFlow<PostsLoadResult>(extraBufferCapacity = Channel.UNLIMITED)
   private val _catalogThreadUpdates = MutableSharedFlow<PostsLoadResult>(extraBufferCapacity = Channel.UNLIMITED)
 
-  fun listenForPostUpdates(chanDescriptor: ChanDescriptor): Flow<PostsLoadResult> {
+  override fun listenForPostUpdates(chanDescriptor: ChanDescriptor): Flow<PostsLoadResult> {
     return when (chanDescriptor) {
       is CatalogDescriptor -> {
         _catalogThreadUpdates
@@ -45,7 +45,7 @@ class ChanCache(
     }
   }
 
-  suspend fun resetThreadLastFullUpdateTime(threadDescriptor: ThreadDescriptor) {
+  override suspend fun resetThreadLastFullUpdateTime(threadDescriptor: ThreadDescriptor) {
     threads[threadDescriptor]?.resetLastFullUpdateTime()
   }
 
@@ -56,7 +56,7 @@ class ChanCache(
     }
   }
 
-  suspend fun insertCatalogThreads(
+  override suspend fun insertCatalogThreads(
     catalogDescriptor: CatalogDescriptor,
     catalogThreads: Collection<IPostData>
   ): PostsLoadResult {
@@ -86,7 +86,7 @@ class ChanCache(
     }
   }
 
-  suspend fun insertThreadPosts(
+  override suspend fun insertThreadPosts(
     threadDescriptor: ThreadDescriptor,
     threadPostCells: Collection<IPostData>,
     isIncrementalUpdate: Boolean
@@ -118,7 +118,7 @@ class ChanCache(
     }
   }
 
-  suspend fun delete(chanDescriptor: ChanDescriptor) {
+  override suspend fun delete(chanDescriptor: ChanDescriptor) {
     when (chanDescriptor) {
       is CatalogDescriptor -> catalogs.remove(chanDescriptor)
       is ThreadDescriptor -> threads.remove(chanDescriptor)
@@ -149,23 +149,23 @@ class ChanCache(
     return resultList
   }
 
-  suspend fun getThreadPosts(threadDescriptor: ThreadDescriptor): List<IPostData> {
+  override suspend fun getThreadPosts(threadDescriptor: ThreadDescriptor): List<IPostData> {
     return threads[threadDescriptor]?.getAll() ?: emptyList()
   }
 
-  suspend fun getCatalogThreads(catalogDescriptor: CatalogDescriptor): List<OriginalPostData> {
+  override suspend fun getCatalogThreads(catalogDescriptor: CatalogDescriptor): List<OriginalPostData> {
     return catalogs[catalogDescriptor]?.getPostDataList() ?: emptyList()
   }
 
-  suspend fun getCatalogPost(postDescriptor: PostDescriptor): OriginalPostData? {
+  override suspend fun getCatalogPost(postDescriptor: PostDescriptor): OriginalPostData? {
     return catalogs[postDescriptor.catalogDescriptor]?.getOriginalPost(postDescriptor)
   }
 
-  suspend fun getThreadPost(postDescriptor: PostDescriptor): IPostData? {
+  override suspend fun getThreadPost(postDescriptor: PostDescriptor): IPostData? {
     return threads[postDescriptor.threadDescriptor]?.getPost(postDescriptor)
   }
 
-  suspend fun getOriginalPost(threadDescriptor: ThreadDescriptor): OriginalPostData? {
+  override suspend fun getOriginalPost(threadDescriptor: ThreadDescriptor): OriginalPostData? {
     return threads[threadDescriptor]?.getOriginalPost()
   }
 
@@ -173,11 +173,11 @@ class ChanCache(
     return threads[threadDescriptor]?.getLastPost()
   }
 
-  suspend fun getLastLoadedPostForIncrementalUpdate(threadDescriptor: ThreadDescriptor): IPostData? {
+  override suspend fun getLastLoadedPostForIncrementalUpdate(threadDescriptor: ThreadDescriptor): IPostData? {
     return threads[threadDescriptor]?.getLastLoadedPostForIncrementalUpdate()
   }
 
-  suspend fun getNewPostsCount(postDescriptor: PostDescriptor): Int {
+  override suspend fun getNewPostsCount(postDescriptor: PostDescriptor): Int {
     return threads[postDescriptor.threadDescriptor]?.getNewPostsCount(postDescriptor) ?: 0
   }
 

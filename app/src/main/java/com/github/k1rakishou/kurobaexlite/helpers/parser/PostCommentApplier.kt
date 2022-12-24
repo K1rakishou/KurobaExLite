@@ -10,12 +10,15 @@ import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.buildAnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.util.createAnnotationItem
 import com.github.k1rakishou.kurobaexlite.helpers.util.findAllOccurrences
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPost
 import com.github.k1rakishou.kurobaexlite.model.data.local.MarkedPostType
@@ -26,11 +29,13 @@ import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 
 class PostCommentApplier(
+  private val androidHelpers: AndroidHelpers,
   private val appSettings: AppSettings,
-  private val appResources: AppResources
+  private val postBindProcessorCoordinator: PostBindProcessorCoordinator
 ) {
 
   suspend fun applyTextPartsToAnnotatedString(
+    postDescriptor: PostDescriptor,
     chanTheme: ChanTheme,
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     textParts: List<TextPart>,
@@ -44,6 +49,7 @@ class PostCommentApplier(
 
       for (textPart in textParts) {
         val (text, overflowHappened) = processTextPart(
+          postDescriptor = postDescriptor,
           defaultPostCommentFontSize = defaultPostCommentFontSize,
           markedPosts = markedPosts,
           chanTheme = chanTheme,
@@ -122,7 +128,8 @@ class PostCommentApplier(
   }
 
   @Suppress("UnnecessaryVariable")
-  private fun processTextPart(
+  private suspend fun processTextPart(
+    postDescriptor: PostDescriptor,
     defaultPostCommentFontSize: Int,
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     chanTheme: ChanTheme,
@@ -132,22 +139,47 @@ class PostCommentApplier(
   ): Pair<AnnotatedString, Boolean> {
     var overflowHappened = false
 
-    val resultString = buildAnnotatedString(capacity = textPart.text.length) {
+    val appliedDataResult = postBindProcessorCoordinator.applyData(
+      textPart = textPart,
+      postDescriptor = postDescriptor
+    )
+
+    val textPartProcessed = appliedDataResult.textPart
+
+    val resultString = buildAnnotatedString(capacity = textPartProcessed.text.length) {
+      pushStyle(style = SpanStyle(fontSize = defaultPostCommentFontSize.sp))
+
       val (textPartText, overflow) = trimTextPartIfNeeded(
         totalLength = totalLength,
-        textPart = textPart,
+        textPart = textPartProcessed,
         parsedPostDataContext = parsedPostDataContext
       )
+
       overflowHappened = overflow
 
-      pushStyle(style = SpanStyle(fontSize = defaultPostCommentFontSize.sp))
-      append(textPartText)
+      try {
+        val innerAnnotatedString = buildAnnotatedString(capacity = textPartText.length) {
+          appliedDataResult.applyToAnnotatedString(textPartText, this)
+        }
+        append(innerAnnotatedString)
+      } catch (error: Throwable) {
+        if (androidHelpers.isDevFlavor()) {
+          throw error
+        }
 
-      if (textPart.spans.isNotEmpty()) {
+        logcatError(TAG) {
+          "applyToAnnotatedString() error: ${error.asLogIfImportantOrErrorMessage()}, " +
+            "textPartText=${textPartText}, appliedDataResult=${appliedDataResult}"
+        }
+
+        append(textPartText)
+      }
+
+      if (textPartProcessed.spans.isNotEmpty()) {
         processTextPartSpans(
           defaultPostCommentFontSize = defaultPostCommentFontSize,
           markedPosts = markedPosts,
-          spans = textPart.spans,
+          spans = textPartProcessed.spans,
           chanTheme = chanTheme,
           parsedPostDataContext = parsedPostDataContext,
           totalLength = totalLength
@@ -473,6 +505,7 @@ class PostCommentApplier(
   }
 
   companion object {
+    private const val TAG = "PostCommentApplier"
     private const val ELLIPSIZE = "..."
     private const val CLICK_TO_EXPAND = "[Click to expand]"
 
@@ -481,6 +514,7 @@ class PostCommentApplier(
     const val ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG = "[click_to_view_full_comment]"
     const val ANNOTATION_POST_LINKABLE = "[post_linkable]"
     const val ANNOTATION_POST_SPOILER_TEXT = "[spoiler_text]"
+    const val ANNOTATION_INLINED_IMAGE = "[inlined_image]"
 
     private const val CROSS_THREAD_POSTFIX = "(CT) \u2192"
     private const val OP_POSTFIX = "(OP)"
@@ -490,7 +524,8 @@ class PostCommentApplier(
     val ALL_TAGS = mutableSetOf(
       ANNOTATION_CLICK_TO_VIEW_FULL_COMMENT_TAG,
       ANNOTATION_POST_LINKABLE,
-      ANNOTATION_POST_SPOILER_TEXT
+      ANNOTATION_POST_SPOILER_TEXT,
+      ANNOTATION_INLINED_IMAGE
     )
   }
 

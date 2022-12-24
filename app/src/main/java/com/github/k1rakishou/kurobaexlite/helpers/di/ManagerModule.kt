@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.di
 
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
@@ -19,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import org.koin.core.module.Module
 
 internal fun Module.managers() {
@@ -38,8 +40,9 @@ internal fun Module.managers() {
   single {
     ChanThreadManager(
       siteManager = get(),
-      chanCache = get(),
-      parsedPostDataCache = get()
+      chanPostCache = get<ChanPostCache>(),
+      parsedPostDataCache = get(),
+      postBindProcessorCoordinator = get()
     )
   }
 
@@ -50,7 +53,7 @@ internal fun Module.managers() {
       appScope = get(),
       appSettings = get(),
       androidHelpers = get(),
-      proxiedOkHttpClient = get(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
       moshi = get()
     )
   }
@@ -68,7 +71,7 @@ internal fun Module.managers() {
       appScope = get(),
       appSettings = get(),
       parsedPostDataCache = get(),
-      chanCache = get()
+      chanPostCache = get<ChanPostCache>()
     )
   }
 
@@ -84,7 +87,7 @@ internal fun Module.managers() {
       appScope = get(),
       appContext = get(),
       androidHelpers = get(),
-      proxiedOkHttpClient = get(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
       moshi = get(),
     )
   }

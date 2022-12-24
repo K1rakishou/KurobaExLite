@@ -18,7 +18,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
@@ -44,7 +44,7 @@ class AlbumScreenViewModel(
   private val appResources: AppResources,
   private val chanViewManager: ChanViewManager,
   private val parsedPostDataCache: ParsedPostDataCache,
-  private val chanCache: ChanCache,
+  private val chanPostCache: IChanPostCache,
   private val mediaSaver: MediaSaver,
 ) : BaseViewModel() {
   private val _selectedImages = mutableStateMapOf<String, Unit>()
@@ -118,8 +118,8 @@ class AlbumScreenViewModel(
       val imagesToSave = mutableListOf<IPostImage>()
 
       val posts = when (chanDescriptor) {
-        is CatalogDescriptor -> chanCache.getCatalogThreads(chanDescriptor)
-        is ThreadDescriptor -> chanCache.getThreadPosts(chanDescriptor)
+        is CatalogDescriptor -> chanPostCache.getCatalogThreads(chanDescriptor)
+        is ThreadDescriptor -> chanPostCache.getThreadPosts(chanDescriptor)
       }
 
       posts.forEach { postData ->
@@ -182,7 +182,7 @@ class AlbumScreenViewModel(
       logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${album.albumImages.size} album images" }
     }
 
-    chanCache.listenForPostUpdates(chanDescriptor)
+    chanPostCache.listenForPostUpdates(chanDescriptor)
       .collect { postLoadResult ->
         if (postLoadResult.newPostsCount <= 0) {
           return@collect
@@ -259,12 +259,12 @@ class AlbumScreenViewModel(
       val postDataList = when (chanDescriptor) {
         is CatalogDescriptor -> {
           CatalogThreadSorter.sortCatalogPostData(
-            catalogThreads = chanCache.getCatalogThreads(chanDescriptor),
+            catalogThreads = chanPostCache.getCatalogThreads(chanDescriptor),
             catalogSortSetting = appSettings.catalogSort.read()
           )
         }
         is ThreadDescriptor -> {
-          ThreadPostSorter.sortThreadPostData(chanCache.getThreadPosts(chanDescriptor))
+          ThreadPostSorter.sortThreadPostData(chanPostCache.getThreadPosts(chanDescriptor))
         }
       }
 

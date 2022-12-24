@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.model.source.chan4
 
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
@@ -66,7 +66,7 @@ import java.net.HttpCookie
 @Suppress("PARAMETER_NAME_CHANGED_ON_OVERRIDE")
 class Chan4DataSource(
   private val siteManager: SiteManager,
-  private val kurobaOkHttpClient: ProxiedOkHttpClient,
+  private val kurobaOkHttpClient: IKurobaOkHttpClient,
   private val moshi: Moshi
 ) : ICatalogDataSource<CatalogDescriptor, CatalogData>,
   IThreadDataSource<ThreadDescriptor, ThreadData>,

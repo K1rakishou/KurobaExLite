@@ -16,13 +16,13 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 class ThemeEngine(
   private val appScope: CoroutineScope,
   private val appSettings: AppSettings
-) {
+) : IThemeEngine {
   private val defaultLightTheme = Shironeko()
   private val defaultDarkTheme = Kuroneko()
 
   @Volatile
   private var _chanTheme: ChanTheme = defaultDarkTheme
-  val chanTheme: ChanTheme
+  override val chanTheme: ChanTheme
     get() = _chanTheme
 
   private val listeners = hashMapOf<Long, ThemeChangesListener>()
@@ -33,7 +33,7 @@ class ThemeEngine(
     }
   }
 
-  fun toggleTheme() {
+  override fun toggleTheme() {
     appScope.launch {
       appSettings.isDarkThemeUsed.toggle()
       updateThemeAndNotifyListeners()

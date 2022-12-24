@@ -8,7 +8,7 @@ import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.KurobaExLiteApplication
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.executors.SerializedCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.HashingUtil
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
@@ -19,8 +19,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import java.io.IOException
-import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,12 +29,14 @@ import okio.buffer
 import okio.source
 import org.joda.time.Duration
 import org.joda.time.format.PeriodFormatterBuilder
+import java.io.IOException
+import java.nio.charset.StandardCharsets
 
 class ReportManager(
   private val appScope: CoroutineScope,
   private val appContext: Context,
   private val androidHelpers: AndroidHelpers,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val moshi: Moshi
 ) {
   private val activityManager: ActivityManager?

@@ -416,6 +416,7 @@ class ParsedPostDataCache(
       }
 
       val processedPostComment = postCommentApplier.applyTextPartsToAnnotatedString(
+        postDescriptor = postDescriptor,
         markedPosts = getMarkedPostInfoSetForQuoteSpans(textParts),
         chanTheme = chanTheme,
         textParts = textParts,

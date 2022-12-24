@@ -167,7 +167,7 @@ class CatalogScreenViewModel(
 
       chanThreadManager.loadCatalog(catalogDescriptor)
     } else {
-      val catalogThreads = chanCache.getCatalogThreads(catalogDescriptor)
+      val catalogThreads = chanPostCache.getCatalogThreads(catalogDescriptor)
       val postsLoadResult = PostsLoadResult(
         chanDescriptor = catalogDescriptor,
         updatedPosts = catalogThreads,

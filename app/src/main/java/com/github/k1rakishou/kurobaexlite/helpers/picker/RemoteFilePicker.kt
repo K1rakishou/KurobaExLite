@@ -3,13 +3,12 @@ package com.github.k1rakishou.kurobaexlite.helpers.picker
 import android.content.Context
 import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
 import com.github.k1rakishou.kurobaexlite.helpers.executors.SerializedCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.extractFileNameExtension
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
-import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
@@ -19,11 +18,12 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.internal.closeQuietly
 import okio.sink
+import java.io.File
 
 class RemoteFilePicker(
   appContext: Context,
   private val appScope: CoroutineScope,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
 ) : AbstractFilePicker(appContext) {
   private val serializedCoroutineExecutor = SerializedCoroutineExecutor(appScope)
 

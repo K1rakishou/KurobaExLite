@@ -9,7 +9,7 @@ import androidx.annotation.GuardedBy
 import androidx.annotation.RequiresApi
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.executors.SerializedCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
@@ -52,7 +52,7 @@ class MediaSaver(
   private val applicationContext: Context,
   private val androidHelpers: AndroidHelpers,
   private val globalConstants: GlobalConstants,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val parsedPostDataCache: ParsedPostDataCache,
 ) {
   private val activeDownloadsMutex = Mutex()

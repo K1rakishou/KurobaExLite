@@ -15,7 +15,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanCache
+import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -29,7 +29,7 @@ class MediaViewerScreenState(
   private val savedStateHandle: SavedStateHandle,
   private val appSettings: AppSettings,
   private val appResources: AppResources,
-  private val chanCache: ChanCache
+  private val chanPostCache: IChanPostCache
 ) {
   var chanDescriptor: ChanDescriptor? = null
     private set
@@ -207,7 +207,7 @@ class MediaViewerScreenState(
   }
 
   private suspend fun listenForPostUpdates(chanDescriptor: ChanDescriptor) {
-    chanCache.listenForPostUpdates(chanDescriptor)
+    chanPostCache.listenForPostUpdates(chanDescriptor)
       .collect { postLoadResult ->
         if (postLoadResult.newPostsCount <= 0) {
           return@collect

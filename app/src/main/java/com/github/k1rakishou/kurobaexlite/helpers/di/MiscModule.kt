@@ -21,13 +21,15 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
+import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
+import com.github.k1rakishou.kurobaexlite.helpers.post_bind.processors.Chan4MathTagProcessor
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.DialogSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.RemoteImageSearchSettings
-import com.github.k1rakishou.kurobaexlite.managers.PostBindProcessor
 import com.github.k1rakishou.kurobaexlite.managers.SiteProvider
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4BoardFlagsJsonAdapter
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
@@ -90,7 +92,7 @@ internal fun Module.misc() {
     return@single imageLoader
   }
 
-  single {
+  single<ProxiedOkHttpClient> {
     ProxiedOkHttpClient(
       siteManager = get(),
       firewallBypassManager = get()
@@ -100,11 +102,16 @@ internal fun Module.misc() {
   single { GlobalConstants(get()) }
   single { createMoshi() }
   single { PostCommentParser(siteManager = get()) }
-  single { PostCommentApplier(appSettings = get(), appResources = get()) }
+  single {
+    PostCommentApplier(
+      androidHelpers = get(),
+      appSettings = get(),
+      postBindProcessorCoordinator = get()
+    )
+  }
   single { FullScreenHelpers(get()) }
   single { AndroidHelpers(application = get(), snackbarManager = get()) }
-  single { PostBindProcessor(get()) }
-  single { ThemeEngine(appScope = get(), appSettings = get()) }
+  single<ThemeEngine> { ThemeEngine(appScope = get(), appSettings = get()) }
   single { MediaViewerPostListScroller() }
   single { CrossThreadFollowHistory() }
   single { ClickedThumbnailBoundsStorage() }
@@ -122,12 +129,24 @@ internal fun Module.misc() {
   }
 
   single {
+    Chan4MathTagProcessor(
+      chanPostCache = get<ChanPostCache>(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      appSettings = get()
+    )
+  }
+
+  single {
+    PostBindProcessorCoordinator(chan4MathTagProcessor = get(), appScope = get())
+  }
+
+  single {
     MediaSaver(
       appScope = get(),
       applicationContext = get(),
       androidHelpers = get(),
       globalConstants = get(),
-      proxiedOkHttpClient = get(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
       parsedPostDataCache = get()
     )
   }
@@ -147,7 +166,7 @@ internal fun Module.misc() {
     RemoteFilePicker(
       appContext = get(),
       appScope = get(),
-      proxiedOkHttpClient = get(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
     )
   }
 
@@ -162,7 +181,7 @@ internal fun Module.misc() {
       notificationManager = get(),
       chanThreadManager = get(),
       bookmarksManager = get(),
-      themeEngine = get(),
+      themeEngine = get<ThemeEngine>(),
       postCommentParser = get(),
       persistBookmarks = get(),
     )

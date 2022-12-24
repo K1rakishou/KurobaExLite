@@ -10,9 +10,12 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.colorspace.connect
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -216,4 +219,21 @@ fun rememberPagerState(
   return rememberSaveable(key1, saver = PagerState.Saver) {
     PagerState(initialPage = initialPage)
   }
+}
+
+@Stable
+fun Color.toArgbUnsigned(): UInt {
+  val colorSpace = colorSpace
+  if (colorSpace.isSrgb) {
+    return (this.value shr 32).toUInt()
+  }
+
+  val color = floatArrayOf(red, green, blue, alpha)
+  // The transformation saturates the output
+  colorSpace.connect().transform(color)
+
+  return (color[3] * 255.0f + 0.5f).toUInt() shl 24 or
+    ((color[0] * 255.0f + 0.5f).toUInt() shl 16) or
+    ((color[1] * 255.0f + 0.5f).toUInt() shl 8) or
+    (color[2] * 255.0f + 0.5f).toUInt()
 }

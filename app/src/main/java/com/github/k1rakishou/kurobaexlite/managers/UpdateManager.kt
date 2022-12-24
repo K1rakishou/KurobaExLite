@@ -15,7 +15,7 @@ import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.groupOrNull
@@ -25,17 +25,17 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.regex.Matcher
-import java.util.regex.Pattern
-import kotlin.math.absoluteValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import logcat.logcat
 import okhttp3.Request
 import org.joda.time.Period
 import org.joda.time.format.PeriodFormatterBuilder
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+import kotlin.math.absoluteValue
 
 class UpdateManager(
   private val appContext: Context,
@@ -43,7 +43,7 @@ class UpdateManager(
   private val appScope: CoroutineScope,
   private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val moshi: Moshi
 ) {
   private val checking = AtomicBoolean(false)

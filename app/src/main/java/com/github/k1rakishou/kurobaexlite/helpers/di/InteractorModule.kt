@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.di
 
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddToHistoryAllCatalogThreads
@@ -27,6 +28,8 @@ import com.github.k1rakishou.kurobaexlite.interactors.navigation.PersistNavigati
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import org.koin.core.module.Module
 
 internal fun Module.interactors() {
@@ -51,7 +54,7 @@ internal fun Module.interactors() {
     InstallMpvNativeLibrariesFromGithub(
       appContext = get(),
       moshi = get(),
-      proxiedOkHttpClient = get()
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>()
     )
   }
   single {
@@ -109,7 +112,7 @@ internal fun Module.interactors() {
   single {
     UpdatePostSeenForBookmark(
       appScope = get(),
-      chanCache = get(),
+      chanPostCache = get<ChanPostCache>(),
       bookmarksManager = get(),
       kurobaExLiteDatabase = get(),
     )
@@ -146,7 +149,7 @@ internal fun Module.interactors() {
   single {
     ModifyNavigationHistory(
       navigationHistoryManager = get(),
-      chanCache = get(),
+      chanPostCache = get<ChanPostCache>(),
       parsedPostDataCache = get(),
       appSettings = get()
     )
@@ -165,7 +168,7 @@ internal fun Module.interactors() {
       globalSearchRepository = get(),
       parsedPostDataCache = get(),
       postCommentApplier = get(),
-      themeEngine = get()
+      themeEngine = get<ThemeEngine>()
     )
   }
   single { PersistBookmarks(bookmarksManager = get(), kurobaExLiteDatabase = get()) }
@@ -173,19 +176,16 @@ internal fun Module.interactors() {
     UpdateBookmarkInfoUponThreadOpen(
       appScope = get(),
       bookmarksManager = get(),
-      chanCache = get(),
+      chanPostCache = get<ChanPostCache>(),
       parsedPostDataCache = get(),
       kurobaExLiteDatabase = get(),
     )
   }
   single {
     BookmarkAllCatalogThreads(
-      appContext = get(),
       appScope = get(),
-      androidHelpers = get(),
       appSettings = get(),
-      applicationVisibilityManager = get(),
-      chanCache = get(),
+      chanPostCache = get<ChanPostCache>(),
       bookmarksManager = get(),
       kurobaExLiteDatabase = get(),
       parsedPostDataCache = get(),
@@ -196,12 +196,12 @@ internal fun Module.interactors() {
     AddToHistoryAllCatalogThreads(
       appScope = get(),
       modifyNavigationHistory = get(),
-      chanCache = get()
+      chanPostCache = get<ChanPostCache>()
     )
   }
   single {
     YandexImageSearch(
-      proxiedOkHttpClient = get(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
       moshi = get()
     )
   }

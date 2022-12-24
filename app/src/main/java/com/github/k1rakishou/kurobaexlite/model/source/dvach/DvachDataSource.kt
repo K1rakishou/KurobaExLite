@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.model.source.dvach
 
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -70,7 +70,7 @@ import kotlin.math.ceil
 
 class DvachDataSource(
   private val siteManager: SiteManager,
-  private val kurobaOkHttpClient: ProxiedOkHttpClient,
+  private val kurobaOkHttpClient: IKurobaOkHttpClient,
   private val moshi: Moshi,
   private val loadChanCatalog: LoadChanCatalog
 ) : ICatalogDataSource<CatalogDescriptor, CatalogData>,

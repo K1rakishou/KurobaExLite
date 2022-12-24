@@ -22,6 +22,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.screenshot.PostScreenshotScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreenViewModel
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainerViewModel
@@ -72,7 +74,7 @@ internal fun Module.viewModels() {
       appResources = get(),
       chanViewManager = get(),
       parsedPostDataCache = get(),
-      chanCache = get(),
+      chanPostCache = get<ChanPostCache>(),
       mediaSaver = get(),
     )
   }
@@ -103,9 +105,9 @@ internal fun Module.viewModels() {
       mpvInitializer = mpvInitializer,
       appSettings = get(),
       appResources = get(),
-      chanCache = get(),
+      chanPostCache = get<ChanPostCache>(),
       siteManager = get(),
-      proxiedOkHttpClient = get(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
       kurobaLruDiskCache = get(),
       installMpvNativeLibrariesFromGithub = get(),
       imageLoader = get(),
@@ -142,7 +144,7 @@ internal fun Module.viewModels() {
   }
   viewModel {
     Chan4CaptchaViewModel(
-      proxiedOkHttpClient = get(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
       siteManager = get(),
       firewallBypassManager = get(),
       moshi = get(),
@@ -152,7 +154,7 @@ internal fun Module.viewModels() {
   }
   viewModel {
     DvachCaptchaScreenViewModel(
-      proxiedOkHttpClient = get(),
+      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
       siteManager = get(),
       moshi = get(),
     )
