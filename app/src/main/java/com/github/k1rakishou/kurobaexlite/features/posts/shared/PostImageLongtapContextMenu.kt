@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.java.KoinJavaComponent.inject
 
-class PostImageLongtapContentMenu(
+class PostImageLongtapContextMenu(
   private val componentActivity: ComponentActivity,
   private val navigationRouter: NavigationRouter,
   private val screenCoroutineScope: CoroutineScope

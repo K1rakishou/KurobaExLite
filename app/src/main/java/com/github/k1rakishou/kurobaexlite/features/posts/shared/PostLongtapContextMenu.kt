@@ -7,6 +7,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
@@ -23,7 +24,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
-class PostLongtapContentMenu(
+class PostLongtapContextMenu(
   private val componentActivity: ComponentActivity,
   private val navigationRouter: NavigationRouter,
   private val screenCoroutineScope: CoroutineScope
@@ -35,6 +36,7 @@ class PostLongtapContentMenu(
   private val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
   private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
+  private val postBindProcessorCoordinator: PostBindProcessorCoordinator by inject(PostBindProcessorCoordinator::class.java)
 
   fun showMenu(
     postListOptions: PostListOptions,
@@ -66,6 +68,12 @@ class PostLongtapContentMenu(
             text = FloatingMenuItem.MenuItemText.Id(R.string.post_longtap_menu_post_selection)
           )
         }
+
+        this += FloatingMenuItem.Text(
+          menuItemKey = LOAD_INLINED_CONTENT,
+          menuItemData = postCellData.postDescriptor,
+          text = FloatingMenuItem.MenuItemText.Id(R.string.post_longtap_menu_load_inlined_content)
+        )
 
         if (!postListOptions.isCatalogMode) {
           if (markedPostManager.isPostMarkedAsMine(postCellData.postDescriptor)) {
@@ -118,6 +126,7 @@ class PostLongtapContentMenu(
       processClickedToolbarMenuItem(
         menuItem = selectedMenuItem,
         postCellData = postCellData,
+        postListOptions = postListOptions,
         reparsePostsFunc = reparsePostsFunc,
         startPostSelection = { postDescriptor -> startPostSelection?.invoke(postDescriptor) }
       )
@@ -127,6 +136,7 @@ class PostLongtapContentMenu(
   private suspend fun processClickedToolbarMenuItem(
     menuItem: FloatingMenuItem,
     postCellData: PostCellData,
+    postListOptions: PostListOptions,
     reparsePostsFunc: (Collection<PostDescriptor>) -> Unit,
     startPostSelection: (PostDescriptor) -> Unit
   ) {
@@ -201,6 +211,12 @@ class PostLongtapContentMenu(
       POST_SELECTION -> {
         startPostSelection(postCellData.postDescriptor)
       }
+      LOAD_INLINED_CONTENT -> {
+        postBindProcessorCoordinator.forceLoadInlinedContent(
+          isCatalogMode = postListOptions.isCatalogMode,
+          postDescriptor = postCellData.postDescriptor
+        )
+      }
     }
   }
 
@@ -211,6 +227,7 @@ class PostLongtapContentMenu(
     private const val MARK_UNMARK_POST_AS_OWN = 3
     private const val COPY_POST_URL = 4
     private const val POST_SELECTION = 5
+    private const val LOAD_INLINED_CONTENT = 6
   }
 
 }

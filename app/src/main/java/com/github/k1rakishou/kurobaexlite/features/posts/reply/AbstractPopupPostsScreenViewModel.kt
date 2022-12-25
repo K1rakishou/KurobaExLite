@@ -90,6 +90,8 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     screenKey: ScreenKey,
     popupPostViewMode: PopupPostsScreen.PopupPostViewMode,
   ) {
+    _postsFullyParsedOnceFlow.value = false
+
     val chanDescriptor = popupPostViewMode.chanDescriptor
     val postDataState = getOrCreatePostDataStateForScreen(screenKey, chanDescriptor)
 
@@ -108,6 +110,8 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
         isPushing = true
       )
     }
+
+    _postsFullyParsedOnceFlow.value = true
   }
 
   suspend fun loadRepliesForMode(

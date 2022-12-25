@@ -92,6 +92,8 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.detectReor
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.draggedItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.reorderable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberKurobaTextUnit
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -569,7 +571,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
   val defaultFontSize = rememberKurobaTextUnit(fontSize = 13.sp)
   val fontSize = collectTextFontSize(defaultFontSize)
 
-  val bookmarkInlinedContent = remember(isDead, fontSize) {
+  val bookmarkInlinedContent: ImmutableMap<String, InlineTextContent> = remember(isDead, fontSize) {
     val resultMap = mutableMapOf<String, InlineTextContent>()
 
     BookmarksScreen.BookmarkAnnotatedContent.values().forEach { bookmarkAnnotatedContent ->
@@ -579,7 +581,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
       )
     }
 
-    return@remember resultMap
+    return@remember resultMap.toImmutableMap()
   }
 
   KurobaComposeCustomUnitText(

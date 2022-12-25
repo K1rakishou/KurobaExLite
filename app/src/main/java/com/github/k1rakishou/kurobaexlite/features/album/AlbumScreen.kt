@@ -56,7 +56,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContentMenu
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContextMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
@@ -110,8 +110,8 @@ class AlbumScreen(
 
   private val albumScreenViewModel: AlbumScreenViewModel by componentActivity.viewModel<AlbumScreenViewModel>()
 
-  private val postImageLongtapContentMenu by lazy {
-    PostImageLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  private val postImageLongtapContextMenu by lazy {
+    PostImageLongtapContextMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val keySuffix by lazy {
@@ -291,7 +291,7 @@ class AlbumScreen(
               return@ContentInternal
             }
 
-            postImageLongtapContentMenu.showMenu(
+            postImageLongtapContextMenu.showMenu(
               postImage = postImage,
               viewProvider = { view },
               onAlbumScreenToggleSelection = { albumScreenViewModel.toggleImageSelection(albumImage) }

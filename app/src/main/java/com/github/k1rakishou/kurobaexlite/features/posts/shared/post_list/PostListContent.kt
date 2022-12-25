@@ -1187,6 +1187,7 @@ private fun PostCellContainer(
     ) {
       PostCell(
         postViewMode = postListOptions.postViewMode,
+        isCatalogMode = postListOptions.isCatalogMode,
         textSelectionEnabled = textSelectionEnabled,
         chanDescriptor = chanDescriptor,
         currentlyOpenedThread = currentlyOpenedThread,

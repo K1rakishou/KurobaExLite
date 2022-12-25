@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -23,8 +24,11 @@ import com.github.k1rakishou.composecustomtextselection.lib.SelectionToolbarMenu
 import com.github.k1rakishou.composecustomtextselection.lib.rememberSelectionState
 import com.github.k1rakishou.composecustomtextselection.lib.textSelectionAfterDoubleTapOrTapWithLongTap
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListSelectionState
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
+import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -34,6 +38,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 @Composable
 fun PostCell(
   postViewMode: PostViewMode = PostViewMode.List,
+  isCatalogMode: Boolean,
   textSelectionEnabled: Boolean,
   chanDescriptor: ChanDescriptor,
   currentlyOpenedThread: ThreadDescriptor?,
@@ -55,9 +60,23 @@ fun PostCell(
   onGoToPostClicked: ((PostCellData) -> Unit)?,
   reparsePostSubject: (PostCellData, (AnnotatedString?) -> Unit) -> Unit,
 ) {
+  val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
+  val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
+
+  val postsFullyParsedOnce by if (isCatalogMode) {
+    catalogScreenViewModel.postsFullyParsedOnceFlow.collectAsState(initial = false)
+  } else {
+    threadScreenViewModel.postsFullyParsedOnceFlow.collectAsState(initial = false)
+  }
+
   DisposableEffect(
     key1 = postCellData,
+    key2 = postsFullyParsedOnce,
     effect = {
+      if (!postsFullyParsedOnce) {
+        return@DisposableEffect onDispose { /**no-op*/ }
+      }
+
       onPostBind(postCellData)
       onDispose { onPostUnbind(postCellData) }
     }

@@ -729,11 +729,15 @@ abstract class PostScreenViewModel(
     val descriptor = chanDescriptor
       ?: return
 
+    val postsParsedOnce = postsFullyParsedOnceFlow.value
+    if (!postsParsedOnce) {
+      return
+    }
+
     val catalogMode = descriptor is CatalogDescriptor
 
     postBindProcessorCoordinator.onPostBind(
       isCatalogMode = catalogMode,
-      postsParsedOnce = postsFullyParsedOnceFlow.value,
       postDescriptor = postCellData.postDescriptor
     )
   }

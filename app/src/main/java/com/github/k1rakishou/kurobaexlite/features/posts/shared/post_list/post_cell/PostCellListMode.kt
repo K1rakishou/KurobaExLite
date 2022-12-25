@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell
 
-import android.content.Context
 import androidx.compose.animation.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -51,7 +50,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
@@ -62,9 +60,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostIm
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListSelectionState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.createClickableTextColorMap
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.detectClickedAnnotations
-import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
-import com.github.k1rakishou.kurobaexlite.helpers.post_bind.processors.Chan4MathTagProcessor
-import com.github.k1rakishou.kurobaexlite.helpers.post_bind.processors.IPostProcessor
+import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.util.asReadableFileSize
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
@@ -73,7 +69,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
-import com.github.k1rakishou.kurobaexlite.helpers.util.substringSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
@@ -86,6 +81,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
+import com.github.k1rakishou.kurobaexlite.ui.elements.LoadingWheel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
@@ -96,9 +92,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.collectTextFontSize
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
-import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -800,6 +793,32 @@ private fun PostCellFooter(
   val chanTheme = LocalChanTheme.current
   val postFooterText = remember(postCellData.parsedPostData) { postCellData.parsedPostData?.postFooterText }
 
+  val postBindProcessorCoordinator = koinRemember<PostBindProcessorCoordinator>()
+
+  var postBeingProcessedForInlinedContent by remember { mutableStateOf(false) }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      postBindProcessorCoordinator.postInlinedContentProcessingEventFlow.collect { inlinedContentProcessingEvent ->
+        if (postCellData.postDescriptor != inlinedContentProcessingEvent.postDescriptor) {
+          return@collect
+        }
+
+        val newFlag = when (inlinedContentProcessingEvent) {
+          is PostBindProcessorCoordinator.InlinedContentProcessingEvent.Started -> true
+          is PostBindProcessorCoordinator.InlinedContentProcessingEvent.Ended -> false
+        }
+
+        if (postBeingProcessedForInlinedContent == newFlag) {
+          return@collect
+        }
+
+        postBeingProcessedForInlinedContent = newFlag
+      }
+    }
+  )
+
   Row(
     modifier = Modifier
       .fillMaxWidth()
@@ -820,128 +839,27 @@ private fun PostCellFooter(
     } else {
       Spacer(modifier = Modifier.weight(1f))
     }
-  }
 
-}
-
-@Composable
-private fun inlinedContentForPostCellComment(postCellData: PostCellData): ImmutableMap<String, InlineTextContent> {
-  val processedPostComment = postCellData.parsedPostData?.processedPostComment
-  if (processedPostComment == null) {
-    return persistentMapOf()
-  }
-
-  val context = LocalContext.current
-  val chan4MathTagProcessor = koinRemember<Chan4MathTagProcessor>()
-
-  var formulas by remember { mutableStateOf<Map<String, CachedFormulaUi>>(emptyMap()) }
-
-  LaunchedEffect(
-    key1 = processedPostComment,
-    block = {
-      val inlinedImages = processedPostComment.getStringAnnotations(
-        tag = IPostProcessor.INLINE_CONTENT_TAG,
-        start = 0,
-        end = processedPostComment.length
-      ).filter { range -> range.item.startsWith("${PostCommentApplier.ANNOTATION_INLINED_IMAGE}:") }
-
-      if (inlinedImages.isEmpty()) {
-        return@LaunchedEffect
-      }
-
-      val foundFormulas = mutableMapOf<String, CachedFormulaUi>()
-
-      inlinedImages.forEach { inlinedImage ->
-        val formulaRaw = processedPostComment.text.substringSafe(inlinedImage.start, inlinedImage.end)
-        if (formulaRaw.isNullOrBlank()) {
-          return@forEach
-        }
-
-        val cachedFormula = chan4MathTagProcessor.getCachedFormulaBySanitizedRawFormula(
-          postDescriptor = postCellData.postDescriptor,
-          formulaRaw = formulaRaw
-        )
-
-        if (cachedFormula == null) {
-          return@forEach
-        }
-
-        foundFormulas[formulaRaw] = CachedFormulaUi(
-          formulaRaw = cachedFormula.formulaRaw,
-          formulaImageUrl = cachedFormula.formulaImageUrl,
-          imageWidth = cachedFormula.imageWidth,
-          imageHeight = cachedFormula.imageHeight,
-        )
-      }
-
-      formulas = foundFormulas
-    }
-  )
-
-  if (formulas.isEmpty()) {
-    return persistentMapOf()
-  }
-
-  return remember(key1 = formulas) {
-    val map = mutableMapOf<String, InlineTextContent>()
-
-    formulas.entries.forEach { (_, cachedFormulaUi) ->
-      val inlinedContentKey = cachedFormulaUi.inlinedContentKey()
-      val inlineTextContent = InlineTextContent(
-        placeholder = Placeholder(
-          width = cachedFormulaUi.imageWidth.sp,
-          height = cachedFormulaUi.imageHeight.sp,
-          placeholderVerticalAlign = PlaceholderVerticalAlign.Center
-        ),
-        children = { mathFormulaRaw ->
-          FormulaInlinedContent(
-            mathFormulaRaw = mathFormulaRaw,
-            chan4MathTagProcessor = chan4MathTagProcessor,
-            postCellData = postCellData,
-            context = context
-          )
-        }
-      )
-
-      map[inlinedContentKey] = inlineTextContent
-    }
-
-    return@remember map.toImmutableMap()
-  }
-}
-
-@Composable
-private fun FormulaInlinedContent(
-  mathFormulaRaw: String,
-  chan4MathTagProcessor: Chan4MathTagProcessor,
-  postCellData: PostCellData,
-  context: Context
-) {
-  val imageRequest by produceState<ImageRequest?>(
-    initialValue = null,
-    key1 = mathFormulaRaw,
-    producer = {
-      val mathFormulaImageUrl = chan4MathTagProcessor.getCachedFormulaBySanitizedRawFormula(
-        postDescriptor = postCellData.postDescriptor,
-        formulaRaw = mathFormulaRaw
-      )?.formulaImageUrl
-
-      value = if (mathFormulaImageUrl == null) {
-        null
+    if (postBeingProcessedForInlinedContent) {
+      val baseLineColor = if (chanTheme.isBackColorDark) {
+        Color.LightGray
       } else {
-        ImageRequest.Builder(context)
-          .data(mathFormulaImageUrl)
-          .size(Size.ORIGINAL)
-          .build()
+        Color.DarkGray
       }
-    }
-  )
 
-  if (imageRequest != null) {
-    AsyncImage(
-      modifier = Modifier.fillMaxSize(),
-      model = imageRequest,
-      contentDescription = "Math formula image"
-    )
+      val progressLineColor = if (chanTheme.isBackColorDark) {
+        Color.DarkGray
+      } else {
+        Color.LightGray
+      }
+
+      LoadingWheel(
+        modifier = Modifier.size(16.dp),
+        baseLineColor = baseLineColor,
+        progressLineColor = progressLineColor,
+        contentDesc = "Loading indicator for post cell inlined content"
+      )
+    }
   }
+
 }

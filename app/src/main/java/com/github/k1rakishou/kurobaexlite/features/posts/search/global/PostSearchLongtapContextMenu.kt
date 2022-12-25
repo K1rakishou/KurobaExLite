@@ -13,7 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 
-class PostSearchLongtapContentMenu(
+class PostSearchLongtapContextMenu(
   private val componentActivity: ComponentActivity,
   private val navigationRouter: NavigationRouter,
   private val screenCoroutineScope: CoroutineScope

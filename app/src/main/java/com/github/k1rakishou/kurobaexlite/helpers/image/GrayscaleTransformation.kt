@@ -14,9 +14,6 @@ import coil.transform.Transformation
  * */
 class GrayscaleTransformation : Transformation {
 
-  private val Bitmap.safeConfig: Bitmap.Config
-    get() = config ?: Bitmap.Config.ARGB_8888
-
   override val cacheKey: String = GrayscaleTransformation::class.java.name
 
   override suspend fun transform(input: Bitmap, size: Size): Bitmap {
@@ -41,3 +38,6 @@ class GrayscaleTransformation : Transformation {
     val COLOR_FILTER = ColorMatrixColorFilter(ColorMatrix().apply { setSaturation(0f) })
   }
 }
+
+val Bitmap.safeConfig: Bitmap.Config
+  get() = config ?: Bitmap.Config.ARGB_8888

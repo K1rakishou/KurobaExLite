@@ -338,7 +338,7 @@ fun KurobaComposeText(
   letterSpacing: TextUnit = TextUnit.Unspecified,
   textDecoration: TextDecoration? = null,
   lineHeight: TextUnit = TextUnit.Unspecified,
-  inlineContent: Map<String, InlineTextContent> = mapOf()
+  inlineContent: ImmutableMap<String, InlineTextContent> = persistentMapOf()
 ) {
   val fontSizeInKurobaUnits = rememberKurobaTextUnit(fontSize = fontSize)
 
@@ -381,7 +381,7 @@ fun KurobaComposeCustomUnitText(
   letterSpacing: TextUnit = TextUnit.Unspecified,
   textDecoration: TextDecoration? = null,
   lineHeight: TextUnit = TextUnit.Unspecified,
-  inlineContent: Map<String, InlineTextContent> = mapOf()
+  inlineContent: ImmutableMap<String, InlineTextContent> = persistentMapOf()
 ) {
   val annotatedText = remember(key1 = text) { AnnotatedString(text) }
 
@@ -424,7 +424,7 @@ fun KurobaComposeText(
   letterSpacing: TextUnit = TextUnit.Unspecified,
   textDecoration: TextDecoration? = null,
   lineHeight: TextUnit = TextUnit.Unspecified,
-  inlineContent: Map<String, InlineTextContent> = mapOf(),
+  inlineContent: ImmutableMap<String, InlineTextContent> = persistentMapOf(),
   onTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
   val fontSizeInKurobaUnits = rememberKurobaTextUnit(fontSize = fontSize)
@@ -469,7 +469,7 @@ fun KurobaComposeCustomUnitText(
   letterSpacing: TextUnit = TextUnit.Unspecified,
   textDecoration: TextDecoration? = null,
   lineHeight: TextUnit = TextUnit.Unspecified,
-  inlineContent: Map<String, InlineTextContent> = mapOf(),
+  inlineContent: ImmutableMap<String, InlineTextContent> = persistentMapOf(),
   onTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
   val textColorPrimary = if (color == null) {

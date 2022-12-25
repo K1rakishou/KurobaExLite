@@ -37,9 +37,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.Catalog
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.toolbar.CatalogScreenReplyToolbar
 import com.github.k1rakishou.kurobaexlite.features.posts.search.global.GlobalSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContentMenu
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContextMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchButtons
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContextMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFabContainer
@@ -108,12 +108,12 @@ class CatalogScreen(
     CatalogScreenToolbarActionHandler(componentActivity, screenCoroutineScope)
   }
 
-  private val postLongtapContentMenu by lazy {
-    PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  private val postLongtapContextMenu by lazy {
+    PostLongtapContextMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
-  private val postImageLongtapContentMenu by lazy {
-    PostImageLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  private val postImageLongtapContextMenu by lazy {
+    PostImageLongtapContextMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val replyLayoutState: IReplyLayoutState
@@ -526,7 +526,7 @@ class CatalogScreen(
         postListSelectionState = postListSelectionState,
         replyLayoutStateProvider = { replyLayoutState },
         navigationRouterProvider = { navigationRouter },
-        postLongtapContentMenuProvider = { postLongtapContentMenu },
+        postLongtapContextMenuProvider = { postLongtapContextMenu },
         onPostImageClicked = { chanDescriptor, postImageData, thumbnailBoundsInRoot ->
           val catalogDescriptor = chanDescriptor as CatalogDescriptor
           clickedThumbnailBoundsStorage.storeBounds(postImageData, thumbnailBoundsInRoot)
@@ -548,7 +548,7 @@ class CatalogScreen(
           navigationRouter.presentScreen(mediaViewerScreen)
         },
         onPostImageLongClicked = { chanDescriptor, longClickedImage ->
-          postImageLongtapContentMenu.showMenu(
+          postImageLongtapContextMenu.showMenu(
             postImage = longClickedImage,
             viewProvider = { view }
           )
@@ -583,7 +583,7 @@ private fun BoxScope.CatalogPostListScreen(
   isCatalogScreen: Boolean,
   postListSelectionState: PostListSelectionState,
   replyLayoutStateProvider: () -> IReplyLayoutState,
-  postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  postLongtapContextMenuProvider: () -> PostLongtapContextMenu,
   navigationRouterProvider: () -> NavigationRouter,
   onPostImageClicked: (ChanDescriptor, IPostImage, Rect) -> Unit,
   onPostImageLongClicked: (ChanDescriptor, IPostImage) -> Unit,
@@ -704,7 +704,7 @@ private fun BoxScope.CatalogPostListScreen(
       threadScreenViewModel.loadThread(threadDescriptor)
     },
     onPostCellLongClicked = { postCellData ->
-      postLongtapContentMenuProvider().showMenu(
+      postLongtapContextMenuProvider().showMenu(
         postListOptions = postListOptions,
         postCellData = postCellData,
         viewProvider = viewProvider,

@@ -37,9 +37,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.search.image.RemoteImageSearchScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContentMenu
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContextMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostListSearchButtons
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContextMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostsScreenFabContainer
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.ProcessCaptchaRequestEvents
@@ -105,12 +105,12 @@ class ThreadScreen(
     LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
-  private val postLongtapContentMenu by lazy {
-    PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  private val postLongtapContextMenu by lazy {
+    PostLongtapContextMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
-  private val postImageLongtapContentMenu by lazy {
-    PostImageLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  private val postImageLongtapContextMenu by lazy {
+    PostImageLongtapContextMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val replyLayoutState: IReplyLayoutState
@@ -430,7 +430,7 @@ class ThreadScreen(
         isCatalogScreen = isCatalogScreen,
         postListSelectionState = postListSelectionState,
         replyLayoutStateProvider = { replyLayoutState },
-        postLongtapContentMenuProvider = { postLongtapContentMenu },
+        postLongtapContextMenuProvider = { postLongtapContextMenu },
         linkableClickHelperProvider = { linkableClickHelper },
         navigationRouterProvider = { navigationRouter },
         showRepliesForPost = { postViewMode -> showRepliesForPost(postViewMode) },
@@ -455,7 +455,7 @@ class ThreadScreen(
           navigationRouter.presentScreen(mediaViewerScreen)
         },
         onPostImageLongClicked = { chanDescriptor, longClickedImage ->
-          postImageLongtapContentMenu.showMenu(
+          postImageLongtapContextMenu.showMenu(
             postImage = longClickedImage,
             viewProvider = { view }
           )
@@ -511,7 +511,7 @@ private fun BoxScope.ThreadPostListScreen(
   isCatalogScreen: Boolean,
   postListSelectionState: PostListSelectionState,
   replyLayoutStateProvider: () -> IReplyLayoutState,
-  postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  postLongtapContextMenuProvider: () -> PostLongtapContextMenu,
   linkableClickHelperProvider: () -> LinkableClickHelper,
   navigationRouterProvider: () -> NavigationRouter,
   showRepliesForPost: (PopupPostsScreen.PopupPostViewMode) -> Unit,
@@ -585,7 +585,7 @@ private fun BoxScope.ThreadPostListScreen(
       // no-op
     },
     onPostCellLongClicked = { postCellData ->
-      postLongtapContentMenuProvider().showMenu(
+      postLongtapContextMenuProvider().showMenu(
         postListOptions = postListOptions,
         postCellData = postCellData,
         viewProvider = viewProvider,

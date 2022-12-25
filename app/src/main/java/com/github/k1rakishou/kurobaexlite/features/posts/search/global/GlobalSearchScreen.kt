@@ -64,8 +64,8 @@ class GlobalSearchScreen(
 ) : HomeNavigationScreen<SimpleSearchToolbar>(screenArgs, componentActivity, navigationRouter) {
   private val globalSearchScreenViewModel: GlobalSearchScreenViewModel by componentActivity.viewModel()
 
-  private val postSearchLongtapContentMenu by lazy {
-    PostSearchLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  private val postSearchLongtapContextMenu by lazy {
+    PostSearchLongtapContextMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   private val catalogDescriptor: CatalogDescriptor by requireArgumentLazy(CATALOG_DESCRIPTOR)
@@ -160,7 +160,7 @@ class GlobalSearchScreen(
           paddingValues = paddingValues,
           screenKey = screenKey,
           catalogDescriptor = catalogDescriptor,
-          postSearchLongtapContentMenuProvider = { postSearchLongtapContentMenu }
+          postSearchLongtapContextMenuProvider = { postSearchLongtapContextMenu }
         )
       }
     }
@@ -185,7 +185,7 @@ private fun GlobalSearchList(
   paddingValues: PaddingValues,
   screenKey: ScreenKey,
   catalogDescriptor: CatalogDescriptor,
-  postSearchLongtapContentMenuProvider: () -> PostSearchLongtapContentMenu
+  postSearchLongtapContextMenuProvider: () -> PostSearchLongtapContextMenu
 ) {
   val globalSearchScreenViewModel: GlobalSearchScreenViewModel = koinRememberViewModel()
   val searchQuery by globalSearchScreenViewModel.searchQueryState
@@ -244,7 +244,7 @@ private fun GlobalSearchList(
             catalogDescriptor = catalogDescriptor,
             postCellData = postCellData,
             postBlinkAnimationState = postBlinkAnimationState,
-            postSearchLongtapContentMenuProvider = postSearchLongtapContentMenuProvider
+            postSearchLongtapContextMenuProvider = postSearchLongtapContextMenuProvider
           )
         }
       )
@@ -277,7 +277,7 @@ private fun PostSearchCell(
   catalogDescriptor: CatalogDescriptor,
   postCellData: PostCellData,
   postBlinkAnimationState: PostBlinkAnimationState,
-  postSearchLongtapContentMenuProvider: () -> PostSearchLongtapContentMenu
+  postSearchLongtapContextMenuProvider: () -> PostSearchLongtapContextMenu
 ) {
   val cellsPadding = remember { PaddingValues(horizontal = 8.dp) }
   val postListSelectionState = rememberPostListSelectionState(postSelectionEnabled = false)
@@ -293,12 +293,13 @@ private fun PostSearchCell(
             p1 = postCellData.postDescriptor
           )
         },
-        onLongClick = { postSearchLongtapContentMenuProvider().showMenu(postCellData) }
+        onLongClick = { postSearchLongtapContextMenuProvider().showMenu(postCellData) }
       )
   ) {
     PostCell(
       textSelectionEnabled = false,
       chanDescriptor = catalogDescriptor,
+      isCatalogMode = true,
       // TODO(KurobaEx): mark this one?
       currentlyOpenedThread = null,
       detectLinkableClicks = false,

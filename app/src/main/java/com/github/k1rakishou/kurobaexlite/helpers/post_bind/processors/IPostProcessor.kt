@@ -18,8 +18,9 @@ interface IPostProcessor {
 
   suspend fun process(
     isCatalogMode: Boolean,
-    postsParsedOnce: Boolean,
-    postDescriptor: PostDescriptor
+    postDescriptor: PostDescriptor,
+    onFoundContentToProcess: () -> Unit,
+    onEndedProcessing: () -> Unit,
   ): Boolean
 
   data class AppliedDataResult(

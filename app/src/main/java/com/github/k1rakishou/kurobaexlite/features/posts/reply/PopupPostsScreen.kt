@@ -69,8 +69,8 @@ import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.buttonsLayoutId
 import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen.Companion.postListLayoutId
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.LinkableClickHelper
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContentMenu
-import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContentMenu
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContextMenu
+import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostLongtapContextMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListContent
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
@@ -122,12 +122,12 @@ class PopupPostsScreen(
     LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
-  private val postLongtapContentMenu by lazy {
-    PostLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  private val postLongtapContextMenu by lazy {
+    PostLongtapContextMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
-  private val postImageLongtapContentMenu by lazy {
-    PostImageLongtapContentMenu(componentActivity, navigationRouter, screenCoroutineScope)
+  private val postImageLongtapContextMenu by lazy {
+    PostImageLongtapContextMenu(componentActivity, navigationRouter, screenCoroutineScope)
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY
@@ -292,7 +292,7 @@ class PopupPostsScreen(
         postListOptions = postListOptions,
         buttonsHeightPx = buttonsHeightPx,
         screenKey = screenKey,
-        postLongtapContentMenuProvider = { postLongtapContentMenu },
+        postLongtapContextMenuProvider = { postLongtapContextMenu },
         linkableClickHelperProvider = { linkableClickHelper },
         stopPresenting = { stopPresenting() },
         onBackPressed = { coroutineScope.launch { onBackPressed() } },
@@ -328,7 +328,7 @@ class PopupPostsScreen(
           navigationRouter.presentScreen(mediaViewerScreen)
         },
         onPostImageLongClicked = { chanDescriptor, longClickedImage ->
-          postImageLongtapContentMenu.showMenu(
+          postImageLongtapContextMenu.showMenu(
             postImage = longClickedImage,
             viewProvider = { view }
           )
@@ -433,7 +433,7 @@ private fun PopupPostsScreenContentLayout(
   postListOptions: PostListOptions,
   buttonsHeightPx: Int,
   screenKey: ScreenKey,
-  postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  postLongtapContextMenuProvider: () -> PostLongtapContextMenu,
   linkableClickHelperProvider: () -> LinkableClickHelper,
   stopPresenting: () -> Unit,
   onBackPressed: () -> Unit,
@@ -446,7 +446,7 @@ private fun PopupPostsScreenContentLayout(
         popupPostViewMode = popupPostViewMode,
         postListOptions = postListOptions,
         screenKey = screenKey,
-        postLongtapContentMenuProvider = postLongtapContentMenuProvider,
+        postLongtapContextMenuProvider = postLongtapContextMenuProvider,
         linkableClickHelperProvider = linkableClickHelperProvider,
         stopPresenting = stopPresenting,
         onBackPressed = onBackPressed,
@@ -492,7 +492,7 @@ private fun PopupPostsScreenContent(
   popupPostViewMode: PopupPostsScreen.PopupPostViewMode,
   postListOptions: PostListOptions,
   screenKey: ScreenKey,
-  postLongtapContentMenuProvider: () -> PostLongtapContentMenu,
+  postLongtapContextMenuProvider: () -> PostLongtapContextMenu,
   linkableClickHelperProvider: () -> LinkableClickHelper,
   stopPresenting: () -> Unit,
   onBackPressed: () -> Unit,
@@ -550,7 +550,7 @@ private fun PopupPostsScreenContent(
       postsScreenViewModelProvider = { popupPostsScreenViewModel },
       onPostCellClicked = { postCellData -> /*no-op*/ },
       onPostCellLongClicked = { postCellData ->
-        postLongtapContentMenuProvider().showMenu(
+        postLongtapContextMenuProvider().showMenu(
           postListOptions = postListOptions,
           postCellData = postCellData,
           viewProvider = viewProvider,

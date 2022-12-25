@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
 import com.github.k1rakishou.kurobaexlite.helpers.util.substringSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
+import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -67,7 +68,7 @@ class Chan4MathTagProcessor(
     }
   }
 
-  suspend fun getCachedFormulaBySanitizedRawFormula(
+  suspend fun getCachedFormulaByRawFormulaWithSanitization(
     postDescriptor: PostDescriptor,
     formulaRaw: String
   ): CachedFormula? {
@@ -114,8 +115,9 @@ class Chan4MathTagProcessor(
 
   override suspend fun process(
     isCatalogMode: Boolean,
-    postsParsedOnce: Boolean,
-    postDescriptor: PostDescriptor
+    postDescriptor: PostDescriptor,
+    onFoundContentToProcess: () -> Unit,
+    onEndedProcessing: () -> Unit,
   ) : Boolean {
     val postData = if (isCatalogMode) {
       chanPostCache.getCatalogPost(postDescriptor)
@@ -132,10 +134,24 @@ class Chan4MathTagProcessor(
       return false
     }
 
-    val foundLinks = processFormulas(postDescriptor, formulaInfoList)
-    if (foundLinks.isNotEmpty()) {
-      logcat(LogPriority.VERBOSE, TAG) { "process(${postDescriptor}) foundLinks=${foundLinks}" }
+    logcat(LogPriority.VERBOSE, TAG) { "process(${postDescriptor}) formulaInfoList=${formulaInfoList.size}" }
+
+    val foundLinks = try {
+      onFoundContentToProcess()
+
+      parallelForEach(
+        dataList = formulaInfoList,
+        parallelization = 4,
+        dispatcher = Dispatchers.IO
+      ) { formulaInfo -> processFormula(postDescriptor, formulaInfo) }
+    } catch (error: Throwable) {
+      getOrCreateCacheEntry(postDescriptor).clear()
+      throw error
+    } finally {
+      onEndedProcessing()
     }
+
+    logcat(LogPriority.VERBOSE, TAG) { "process(${postDescriptor}) end foundLinks=${foundLinks.size}" }
 
     return foundLinks.isNotEmpty()
   }
@@ -161,116 +177,110 @@ class Chan4MathTagProcessor(
     return formulaInfoList
   }
 
-  private suspend fun processFormulas(
+  private suspend fun processFormula(
     postDescriptor: PostDescriptor,
-    formulaInfoList: MutableList<FormulaInfo>
-  ): List<HttpUrl> {
-    return parallelForEach(
-      dataList = formulaInfoList,
-      parallelization = 4,
-      dispatcher = Dispatchers.IO
-    ) { formulaInfo ->
-      val cachedFormulaImageUrl = getOrCreateCacheEntry(postDescriptor)
-        .getCachedFormulaByRawFormula(formulaInfo.formulaRaw)
-        ?.formulaImageUrl
+    formulaInfo: FormulaInfo
+  ): HttpUrl? {
+    val cachedFormulaImageUrl = getOrCreateCacheEntry(postDescriptor)
+      .getCachedFormulaByRawFormula(formulaInfo.formulaRaw)
+      ?.formulaImageUrl
 
-      if (cachedFormulaImageUrl != null) {
-        return@parallelForEach null
+    if (cachedFormulaImageUrl != null) {
+      return null
+    }
+
+    val postBody = formatFetchFormulaImageUrlBody(formulaInfo)
+
+    val request = Request.Builder()
+      .url("https://www.quicklatex.com/latex3.f")
+      .post(postBody.toRequestBody())
+      .build()
+
+    val requestResponse = proxiedOkHttpClient.okHttpClient().suspendCall(request)
+      .onFailure { error ->
+        logcatError(TAG) { "Failed to fetch quicklatex formula url, error: ${error.asLogIfImportantOrErrorMessage()}" }
+      }
+      .getOrNull()
+
+    if (requestResponse == null) {
+      return null
+    }
+
+    return requestResponse.use { response ->
+      if (!response.isSuccessful) {
+        logcatError(TAG) { "Failed to fetch quicklatex formula url, bad status code: ${response.code}" }
+        return@use null
       }
 
-      val postBody = formatFetchFormulaImageUrlBody(formulaInfo)
-
-      val request = Request.Builder()
-        .url("https://www.quicklatex.com/latex3.f")
-        .post(postBody.toRequestBody())
-        .build()
-
-      val requestResponse = proxiedOkHttpClient.okHttpClient().suspendCall(request)
-        .onFailure { error ->
-          logcatError(TAG) { "Failed to fetch quicklatex formula url, error: ${error.asLogIfImportantOrErrorMessage()}" }
-        }
-        .getOrNull()
-
-      if (requestResponse == null) {
-        return@parallelForEach null
+      val responseBody = response.body
+      if (responseBody == null) {
+        logcatError(TAG) { "Failed to fetch quicklatex formula url, response body is null" }
+        return@use null
       }
 
-      return@parallelForEach requestResponse.use { response ->
-        if (!response.isSuccessful) {
-          logcatError(TAG) { "Failed to fetch quicklatex formula url, bad status code: ${response.code}" }
-          return@use null
-        }
+      val responseBodyString = responseBody.string()
 
-        val responseBody = response.body
-        if (responseBody == null) {
-          logcatError(TAG) { "Failed to fetch quicklatex formula url, response body is null" }
-          return@use null
-        }
+      val errorMatcher = ERROR_PATTERN.matcher(responseBodyString)
+      if (errorMatcher.find()) {
+        val errorMessage = errorMatcher.groupOrNull(1)
+        val errorCode = errorMatcher.groupOrNull(2)
 
-        val responseBodyString = responseBody.string()
+        val errorMessageFormatted = buildString {
+          append("Error message: ")
 
-        val errorMatcher = ERROR_PATTERN.matcher(responseBodyString)
-        if (errorMatcher.find()) {
-          val errorMessage = errorMatcher.groupOrNull(1)
-          val errorCode = errorMatcher.groupOrNull(2)
-
-          val errorMessageFormatted = buildString {
-            append("Error message: ")
-
-            if (errorMessage.isNotNullNorBlank()) {
-              append(errorMessage)
-            } else {
-              append("No error message")
-            }
-
-            append(", ")
-            append("Error code: ")
-
-            if (errorCode != null) {
-              append(errorCode)
-            } else {
-              append("No error code")
-            }
+          if (errorMessage.isNotNullNorBlank()) {
+            append(errorMessage)
+          } else {
+            append("No error message")
           }
 
-          logcatError(TAG) { "Failed to fetch quicklatex formula url, server returned error \'${errorMessageFormatted}\'" }
-          return@use null
+          append(", ")
+          append("Error code: ")
+
+          if (errorCode != null) {
+            append(errorCode)
+          } else {
+            append("No error code")
+          }
         }
 
-        val resultMatcher = RESULT_PATTERN.matcher(responseBodyString)
-        if (!resultMatcher.find()) {
-          logcatError(TAG) { "Failed to fetch quicklatex formula url, no link found in the response" }
-          return@use null
-        }
-
-        val formulaImageLink = resultMatcher.groupOrNull(1)?.toHttpUrlOrNull()
-        if (formulaImageLink == null) {
-          logcatError(TAG) { "Failed to fetch quicklatex formula url, formulaImageLink == null" }
-          return@use null
-        }
-
-        val imageWidth = resultMatcher.groupOrNull(3)?.toIntOrNull()
-        if (imageWidth == null || imageWidth <= 0) {
-          logcatError(TAG) { "Failed to fetch quicklatex formula url, imageWidth == null or < 0" }
-          return@use null
-        }
-
-        val imageHeight = resultMatcher.groupOrNull(4)?.toIntOrNull()
-        if (imageHeight == null || imageHeight <= 0) {
-          logcatError(TAG) { "Failed to fetch quicklatex formula url, imageHeight == null or < 0" }
-          return@use null
-        }
-
-        getOrCreateCacheEntry(postDescriptor).addFormula(
-          formulaRaw = formulaInfo.formulaRaw,
-          formulaSanitized = formulaInfo.formulaSanitized,
-          formulaImageUrl = formulaImageLink,
-          imageWidth = imageWidth,
-          imageHeight = imageHeight
-        )
-
-        return@use formulaImageLink
+        logcatError(TAG) { "Failed to fetch quicklatex formula url, server returned error \'${errorMessageFormatted}\'" }
+        return@use null
       }
+
+      val resultMatcher = RESULT_PATTERN.matcher(responseBodyString)
+      if (!resultMatcher.find()) {
+        logcatError(TAG) { "Failed to fetch quicklatex formula url, no link found in the response" }
+        return@use null
+      }
+
+      val formulaImageLink = resultMatcher.groupOrNull(1)?.toHttpUrlOrNull()
+      if (formulaImageLink == null) {
+        logcatError(TAG) { "Failed to fetch quicklatex formula url, formulaImageLink == null" }
+        return@use null
+      }
+
+      val imageWidth = resultMatcher.groupOrNull(3)?.toIntOrNull()
+      if (imageWidth == null || imageWidth <= 0) {
+        logcatError(TAG) { "Failed to fetch quicklatex formula url, imageWidth == null or < 0" }
+        return@use null
+      }
+
+      val imageHeight = resultMatcher.groupOrNull(4)?.toIntOrNull()
+      if (imageHeight == null || imageHeight <= 0) {
+        logcatError(TAG) { "Failed to fetch quicklatex formula url, imageHeight == null or < 0" }
+        return@use null
+      }
+
+      getOrCreateCacheEntry(postDescriptor).addFormula(
+        formulaRaw = formulaInfo.formulaRaw,
+        formulaSanitized = formulaInfo.formulaSanitized,
+        formulaImageUrl = formulaImageLink,
+        imageWidth = imageWidth,
+        imageHeight = imageHeight
+      )
+
+      return@use formulaImageLink
     }
   }
 
@@ -279,8 +289,8 @@ class Chan4MathTagProcessor(
   ): String {
     val random = ThreadLocalRandom.current().nextInt(100).toDouble()
     val fontSizePx = appSettings.calculateFontSizeInPixels(16)
-    val foregroundColor = String.format("%06X", 0x0)
-    val backgroundColor = String.format("%06X", 0xFFFFFF)
+    val foregroundColor = String.format("%06X", FORMULA_TEXT_COLOR)
+    val backgroundColor = String.format("%06X", FORMULA_BACKGROUND_COLOR)
 
     return "formula=${formulaInfo.formulaSanitized}&fsize=${fontSizePx}px&" +
       "fcolor=${foregroundColor}&bcolor=${backgroundColor}&mode=0&out=1" +
@@ -317,7 +327,7 @@ class Chan4MathTagProcessor(
       imageWidth: Int,
       imageHeight: Int
     ) {
-      mutex.withLock {
+      mutex.withLockNonCancellable {
         val previousFormulaIndex = formulas.indexOfFirst { cachedFormula -> cachedFormula.formulaRaw == formulaRaw }
         if (previousFormulaIndex < 0) {
           formulas += CachedFormula(
@@ -351,6 +361,12 @@ class Chan4MathTagProcessor(
       }
     }
 
+    suspend fun clear() {
+      mutex.withLockNonCancellable {
+        formulas.clear()
+      }
+    }
+
   }
 
   data class CachedFormula(
@@ -374,6 +390,9 @@ class Chan4MathTagProcessor(
     private val MATH_TAG_PATTERN = Pattern.compile("\\[(math|eqn)](.*?)\\[/\\1]", Pattern.DOTALL)
     private val ERROR_PATTERN = Pattern.compile("Error:\\s+(.+)\\s+\\=\\s+(-?\\d+)")
     private val RESULT_PATTERN = Pattern.compile("(https:\\/\\/.*?)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)")
+
+    const val FORMULA_TEXT_COLOR = 0x0
+    const val FORMULA_BACKGROUND_COLOR = 0xFFFFFF
 
     private fun sanitizeFormula(formulaRaw: String): String {
       val sanitized = formulaRaw

@@ -132,6 +132,7 @@ class PostScreenshot {
         key(postCellData.postDescriptor) {
           PostCell(
             postViewMode = postListOptions.postViewMode,
+            isCatalogMode = postListOptions.isCatalogMode,
             textSelectionEnabled = false,
             chanDescriptor = chanDescriptor,
             currentlyOpenedThread = null,
