@@ -108,7 +108,7 @@ abstract class PostScreenState(
   }
 
   fun onEndLoading(chanDescriptor: ChanDescriptor?) {
-    _contentLoaded.value = true
+    _contentLoaded.value = postsAsyncDataState.value is AsyncData.Data
     _parsingInProgress.set(false)
   }
 
