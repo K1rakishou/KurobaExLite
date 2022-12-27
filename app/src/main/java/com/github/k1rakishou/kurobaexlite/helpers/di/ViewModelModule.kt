@@ -22,6 +22,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenView
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.screenshot.PostScreenshotScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.themes.ThemesScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
@@ -185,6 +186,7 @@ internal fun Module.viewModels() {
       appResources = get(),
       snackbarManager = get(),
       updateManager = get(),
+      themeEngine = get(),
       restartBookmarkBackgroundWatcher = get()
     )
   }
@@ -204,5 +206,8 @@ internal fun Module.viewModels() {
   }
   viewModel {
     PostScreenshotScreenViewModel(androidHelpers = get())
+  }
+  viewModel {
+    ThemesScreenViewModel(themeStorage = get(), themeEngine = get())
   }
 }

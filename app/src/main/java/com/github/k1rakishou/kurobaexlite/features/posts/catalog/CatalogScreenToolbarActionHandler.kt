@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.catalog
 
 import android.os.Parcelable
 import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreen
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
@@ -28,6 +27,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
 import logcat.logcat
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 
 class CatalogScreenToolbarActionHandler(
@@ -41,9 +41,9 @@ class CatalogScreenToolbarActionHandler(
   private val bookmarkAllCatalogThreads: BookmarkAllCatalogThreads by inject(BookmarkAllCatalogThreads::class.java)
   private val addToHistoryAllCatalogThreads: AddToHistoryAllCatalogThreads by inject(AddToHistoryAllCatalogThreads::class.java)
 
-  private val catalogScreenViewModel by componentActivity.viewModels<CatalogScreenViewModel>()
-  private val threadScreenViewModel by componentActivity.viewModels<ThreadScreenViewModel>()
-  private val homeScreenViewModel by componentActivity.viewModels<HomeScreenViewModel>()
+  private val catalogScreenViewModel by componentActivity.viewModel<CatalogScreenViewModel>()
+  private val threadScreenViewModel by componentActivity.viewModel<ThreadScreenViewModel>()
+  private val homeScreenViewModel by componentActivity.viewModel<HomeScreenViewModel>()
 
   fun processClickedToolbarMenuItem(
     navigationRouter: NavigationRouter,

@@ -505,6 +505,7 @@ class FloatingMenuScreen(
     const val REMOTE_IMAGE_SEARCH_OPTIONS_MENUS = "remote_image_search_options_menu"
     const val FLAG_SELECTOR = "flag_selector"
     const val MEDIA_SAVER_ACTIVE_DOWNLOAD_SELECTOR = "media_viewer_active_download_selector"
+    const val THEMES_SCREEN_THEME_LONG_CLICK_OPTIONS = "themes_screen_theme_long_click_options"
   }
 }
 

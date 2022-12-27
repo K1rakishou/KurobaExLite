@@ -20,8 +20,8 @@ import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import java.io.File
 import logcat.logcat
+import java.io.File
 
 class AndroidHelpers(
   private val application: Application,
@@ -93,10 +93,6 @@ class AndroidHelpers(
 
   fun getApplicationLabel(): String {
     return application.packageManager.getApplicationLabel(application.applicationInfo).toString()
-  }
-
-  fun setClipboardContent(label: String, content: String) {
-    clipboardManager.setPrimaryClip(ClipData.newPlainText(label, content))
   }
 
   fun getFlavorType(): FlavorType {
@@ -235,6 +231,18 @@ class AndroidHelpers(
 
   fun copyToClipboard(label: String, content: String) {
     clipboardManager.setPrimaryClip(ClipData.newPlainText(label, content))
+  }
+
+  fun clipboardContent(): String? {
+    val primary = clipboardManager.primaryClip
+    if (primary != null && primary.itemCount > 0) {
+      val text = primary.getItemAt(0).text
+      if (!TextUtils.isEmpty(text)) {
+        return primary.getItemAt(0).text.toString()
+      }
+    }
+
+    return null
   }
 
   fun navigationGesturesUsed(view: View): Boolean {

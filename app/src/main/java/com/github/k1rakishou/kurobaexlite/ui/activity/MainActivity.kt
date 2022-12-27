@@ -9,6 +9,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.remember
 import androidx.core.app.ActivityCompat
+import com.github.k1rakishou.fsaf.FileChooser
+import com.github.k1rakishou.fsaf.callback.FSAFActivityCallbacks
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
@@ -31,7 +33,10 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.java.KoinJavaComponent.inject
 import kotlin.time.Duration.Companion.seconds
 
-class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsResultCallback, ThemeEngine.ThemeChangesListener {
+class MainActivity : ComponentActivity(),
+  ActivityCompat.OnRequestPermissionsResultCallback,
+  ThemeEngine.ThemeChangesListener,
+  FSAFActivityCallbacks {
   private val mainActivityViewModel: MainActivityViewModel by viewModel()
 
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
@@ -43,6 +48,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   private val mainActivityIntentHandler: MainActivityIntentHandler by inject(MainActivityIntentHandler::class.java)
   private val updateManager: UpdateManager by inject(UpdateManager::class.java)
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
+  private val fileChooser: FileChooser by inject(FileChooser::class.java)
 
   private var backPressedOnce = false
 
@@ -75,6 +81,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     mainActivityViewModel.onAttachActivity(this)
     mainActivityViewModel.onLifecycleCreate()
 
+    fileChooser.setCallbacks(this)
     themeEngine.addListener(this)
 
     setContent {
@@ -109,6 +116,7 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
     mainActivityIntentHandler.onDestroy()
     appRestarter.detachActivity()
     themeEngine.removeListener(this)
+    fileChooser.removeCallbacks()
 
     mainActivityViewModel.onLifecycleDestroy()
     mainActivityViewModel.onDetachActivity()
@@ -179,11 +187,19 @@ class MainActivity : ComponentActivity(), ActivityCompat.OnRequestPermissionsRes
   override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
     super.onActivityResult(requestCode, resultCode, data)
 
+    if (fileChooser.onActivityResult(requestCode, resultCode, data)) {
+      return
+    }
+
     localFilePicker.onActivityResult(requestCode, resultCode, data)
   }
 
   override fun onThemeChanged(newChanTheme: ChanTheme) {
     fullScreenHelpers.setupStatusAndNavBarColors(theme = themeEngine.chanTheme, window = window)
+  }
+
+  override fun fsafStartActivityForResult(intent: Intent, requestCode: Int) {
+    startActivityForResult(intent, requestCode)
   }
 
   private fun processSaveableComponents() {

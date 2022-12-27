@@ -15,11 +15,11 @@ class SettingScreenBuilder(
 ) {
   private val groups = mutableListOf<SettingGroup>()
 
-  fun group(
+  suspend fun group(
     groupKey: String,
     groupName: String?,
     groupDescription: String? = null,
-    builder: SettingGroupBuilder.() -> Unit
+    builder: suspend SettingGroupBuilder.() -> Unit
   ): SettingScreenBuilder {
     val settingGroupBuilder = SettingGroupBuilder(
       groupKey = groupKey,

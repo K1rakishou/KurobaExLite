@@ -14,6 +14,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.DialogSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -275,10 +276,13 @@ abstract class ComposeScreen protected constructor(
 
   protected fun <T> Result<T>.toastOnError(
     longToast: Boolean = false,
+    printStacktrace: Boolean = true,
     message: ((Throwable) -> String)? = null
   ): Result<T> {
     if (isFailure) {
-      val message = message?.invoke(this.exceptionOrThrow())
+      val exception = this.exceptionOrThrow()
+
+      val actualMessage = message?.invoke(exception)
         ?: this.exceptionOrThrow().errorMessageOrClassName(userReadable = true)
 
       val duration = if (longToast) {
@@ -287,9 +291,14 @@ abstract class ComposeScreen protected constructor(
         SnackbarManager.SHORT_DELAY
       }
 
-      logcatError(TAG) { "[${screenKey}] toastOnError() message: ${message}" }
+      if (printStacktrace) {
+        logcatError(TAG) { "[${screenKey.key}] toastOnError() error: ${exception.asLogIfImportantOrErrorMessage()}" }
+      } else {
+        logcatError(TAG) { "[${screenKey.key}] toastOnError() message: ${actualMessage}" }
+      }
+
       snackbarManager.errorToast(
-        message = message,
+        message = actualMessage,
         screenKey = screenKey,
         duration = duration.milliseconds
       )

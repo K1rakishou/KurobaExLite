@@ -5,6 +5,9 @@ import coil.Coil
 import coil.ImageLoader
 import coil.decode.VideoFrameDecoder
 import coil.disk.DiskCache
+import com.github.k1rakishou.fsaf.BadPathSymbolResolutionStrategy
+import com.github.k1rakishou.fsaf.FileChooser
+import com.github.k1rakishou.fsaf.FileManager
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaSolverHelper
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
@@ -12,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPost
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppRestarter
+import com.github.k1rakishou.kurobaexlite.helpers.Chan4BoardFlagsJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
@@ -31,9 +35,9 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.RemoteImageSearchSett
 import com.github.k1rakishou.kurobaexlite.managers.SiteProvider
 import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
-import com.github.k1rakishou.kurobaexlite.model.data.remote.chan4.Chan4BoardFlagsJsonAdapter
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.themes.ThemeStorage
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityIntentHandler
 import com.squareup.moshi.Moshi
 import org.koin.core.module.Module
@@ -45,6 +49,9 @@ internal fun Module.misc() {
   single { RemoteImageSearchSettings(fileName = "remote_image_search_settings", appContext = get(), moshi = get()) }
   single { DialogSettings(fileName = "dialog_settings", appContext = get(), moshi = get()) }
   single { KurobaExLiteDatabase.buildDatabase(application = get()) }
+
+  single { FileManager(appContext = get(), badPathSymbolResolutionStrategy = BadPathSymbolResolutionStrategy.ReplaceBadSymbols) }
+  single { FileChooser(appContext = get()) }
 
   single {
     val applicationContext = get<Context>().applicationContext
@@ -111,7 +118,8 @@ internal fun Module.misc() {
   }
   single { FullScreenHelpers(get()) }
   single { AndroidHelpers(application = get(), snackbarManager = get()) }
-  single<ThemeEngine> { ThemeEngine(appScope = get(), appSettings = get()) }
+  single<ThemeEngine> { ThemeEngine(appScope = get(), appSettings = get(), themeStorage = get()) }
+  single<ThemeStorage> { ThemeStorage(appContext = get(), moshi = get(), fileManager = get()) }
   single { MediaViewerPostListScroller() }
   single { CrossThreadFollowHistory() }
   single { ClickedThumbnailBoundsStorage() }

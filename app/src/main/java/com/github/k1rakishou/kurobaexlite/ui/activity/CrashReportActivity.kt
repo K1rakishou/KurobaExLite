@@ -447,7 +447,7 @@ class CrashReportActivity : ComponentActivity() {
       appendLine("```")
     }
 
-    androidHelpers.setClipboardContent("Crash report", resultString)
+    androidHelpers.copyToClipboard("Crash report", resultString)
 
     Toast.makeText(
       this,

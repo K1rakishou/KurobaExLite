@@ -13,6 +13,7 @@ import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreenBuilder
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreens
 import com.github.k1rakishou.kurobaexlite.features.settings.report.ReportIssueScreen
+import com.github.k1rakishou.kurobaexlite.features.themes.ThemesScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -23,6 +24,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.RestartBookmarkBa
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
+import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import kotlinx.coroutines.CompletableDeferred
@@ -45,6 +47,7 @@ class AppSettingsScreenViewModel(
   private val appResources: AppResources,
   private val snackbarManager: SnackbarManager,
   private val updateManager: UpdateManager,
+  private val themeEngine: ThemeEngine,
   private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher,
 ) : BaseViewModel() {
   private val _builtSettings = ConcurrentHashMap<SettingScreens, MutableStateFlow<SettingScreen?>>()
@@ -82,7 +85,7 @@ class AppSettingsScreenViewModel(
     return _builtSettings[key]!!.asStateFlow()
   }
 
-  private fun buildMainSettingsScreen() {
+  private suspend fun buildMainSettingsScreen() {
     val key = SettingScreens.Main
 
     if (_builtSettings[key]!!.value != null) {
@@ -162,6 +165,28 @@ class AppSettingsScreenViewModel(
             appResources.string(R.string.settings_screen_global_text_size_multiplier_current_value, value)
           }
         )
+
+        run {
+          val currentThemeName = themeEngine.currentThemeName()
+
+          link(
+            key = "app_themes",
+            title = appResources.string(R.string.settings_screen_app_themes_title),
+            subtitleBuilder = { append(appResources.string(R.string.settings_screen_app_themes_subtitle, currentThemeName)) },
+            onClicked = {
+              val displayScreenRequest = DisplayScreenRequest(
+                screenBuilder = { componentActivity, navigationRouter ->
+                  ComposeScreen.createScreen<ThemesScreen>(
+                    componentActivity = componentActivity,
+                    navigationRouter = navigationRouter
+                  )
+                }
+              )
+
+              _showScreenFlow.tryEmit(displayScreenRequest)
+            }
+          )
+        }
       }
     )
     builder.group(
@@ -187,6 +212,11 @@ class AppSettingsScreenViewModel(
           }
         )
 
+        boolean(
+          title = appResources.string(R.string.settings_screen_notify_about_beta_versions),
+          delegate = appSettings.notifyAboutBetaUpdates
+        )
+
         link(
           key = "report_issue",
           title = appResources.string(R.string.settings_screen_report),
@@ -205,11 +235,6 @@ class AppSettingsScreenViewModel(
 
             _showScreenFlow.tryEmit(displayScreenRequest)
           }
-        )
-
-        boolean(
-          title = appResources.string(R.string.settings_screen_notify_about_beta_versions),
-          delegate = appSettings.notifyAboutBetaUpdates
         )
 
         link(

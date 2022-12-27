@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
@@ -17,7 +18,7 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun GradientBackground(
   modifier: Modifier = Modifier,
-  content: @Composable () -> Unit
+  content: @Composable BoxScope.() -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
 
@@ -32,6 +33,12 @@ fun GradientBackground(
           val currentTopColor = chanTheme.gradientTopColor
           val currentBottomColor = chanTheme.gradientBottomColor
           val behindGradientColor = chanTheme.behindGradientColor
+
+          if (currentTopColor == currentBottomColor) {
+            return@drawWithCache onDrawBehind {
+              drawRect(behindGradientColor)
+            }
+          }
 
           // Compute the start and end coordinates such that the gradients are angled 11.06
           // degrees off the vertical axis

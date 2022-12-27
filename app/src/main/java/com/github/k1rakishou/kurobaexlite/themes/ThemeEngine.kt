@@ -15,10 +15,11 @@ import androidx.compose.ui.graphics.Color as ComposeColor
 
 class ThemeEngine(
   private val appScope: CoroutineScope,
-  private val appSettings: AppSettings
+  private val appSettings: AppSettings,
+  private val themeStorage: ThemeStorage
 ) : IThemeEngine {
-  private val defaultLightTheme = Shironeko()
-  private val defaultDarkTheme = Kuroneko()
+  val defaultLightTheme = Shironeko()
+  val defaultDarkTheme = Kuroneko()
 
   @Volatile
   private var _chanTheme: ChanTheme = defaultDarkTheme
@@ -29,6 +30,7 @@ class ThemeEngine(
 
   fun init() {
     appScope.launch {
+      themeStorage.loadAllThemes()
       updateThemeAndNotifyListeners()
     }
   }
@@ -36,6 +38,38 @@ class ThemeEngine(
   override fun toggleTheme() {
     appScope.launch {
       appSettings.isDarkThemeUsed.toggle()
+      updateThemeAndNotifyListeners()
+    }
+  }
+
+  override fun switchToDefaultTheme(darkThemeWasUsed: Boolean) {
+    appScope.launch {
+      appSettings.isDarkThemeUsed.write(darkThemeWasUsed)
+
+      if (darkThemeWasUsed) {
+        appSettings.currentDarkThemeName.write(defaultDarkTheme.name)
+      } else {
+        appSettings.currentLightThemeName.write(defaultLightTheme.name)
+      }
+
+      updateThemeAndNotifyListeners()
+    }
+  }
+
+  override fun switchToTheme(nameOnDisk: String) {
+    appScope.launch {
+      val theme = themeStorage.parseThemeByFileName(nameOnDisk)
+        .getOrNull()
+        ?: return@launch
+
+      appSettings.isDarkThemeUsed.write(theme.isDarkTheme)
+
+      if (theme.isDarkTheme) {
+        appSettings.currentDarkThemeName.write(nameOnDisk)
+      } else {
+        appSettings.currentLightThemeName.write(nameOnDisk)
+      }
+
       updateThemeAndNotifyListeners()
     }
   }
@@ -60,36 +94,63 @@ class ThemeEngine(
     listeners.forEach { listener -> listener.value.onThemeChanged(chanTheme) }
   }
 
+  suspend fun currentThemeName(): String {
+    val isDarkThemeUsed = appSettings.isDarkThemeUsed.read()
+
+    val currentThemeName = if (isDarkThemeUsed) {
+      appSettings.currentDarkThemeName.read()
+    } else {
+      appSettings.currentLightThemeName.read()
+    }
+
+    if (currentThemeName.isNotBlank()) {
+      return currentThemeName
+    }
+
+    return if (isDarkThemeUsed) {
+      defaultDarkTheme.name
+    } else {
+      defaultLightTheme.name
+    }
+  }
+
   private suspend fun updateThemeAndNotifyListeners() {
-    val currentDarkThemeName = appSettings.currentDarkThemeName.read()
-    val currentLightThemeName = appSettings.currentLightThemeName.read()
     val isDarkThemeUsed = appSettings.isDarkThemeUsed.read()
 
     _chanTheme = if (isDarkThemeUsed) {
-      themeByThemeNameOrDefault(currentDarkThemeName, true)
+      val nameOnDisk = appSettings.currentDarkThemeName.read()
+      themeByThemeNameOrDefault(nameOnDisk, true)
     } else {
-      themeByThemeNameOrDefault(currentLightThemeName, false)
+      val nameOnDisk = appSettings.currentLightThemeName.read()
+      themeByThemeNameOrDefault(nameOnDisk, false)
     }
 
     notifyListeners(_chanTheme)
   }
 
-  private suspend fun themeByThemeNameOrDefault(currentThemeName: String, isDarkThemeUsed: Boolean): ChanTheme {
-    if (currentThemeName == defaultDarkTheme.name) {
+  private suspend fun themeByThemeNameOrDefault(nameOnDisk: String, isDarkThemeUsed: Boolean): ChanTheme {
+    if (nameOnDisk == defaultDarkTheme.name) {
       return defaultDarkTheme
     }
 
-    if (currentThemeName == defaultLightTheme.name) {
+    if (nameOnDisk == defaultLightTheme.name) {
       return defaultLightTheme
     }
 
-    // TODO: load theme by name from disk
+    val chanTheme = themeStorage.getTheme(nameOnDisk)
+    if (chanTheme != null) {
+      return chanTheme
+    }
 
     if (isDarkThemeUsed) {
       return defaultDarkTheme
     }
 
     return defaultLightTheme
+  }
+
+  fun isDefaultTheme(nameOnDisk: String): Boolean {
+    return nameOnDisk == defaultLightTheme.name || nameOnDisk == defaultDarkTheme.name
   }
 
   interface ThemeChangesListener {

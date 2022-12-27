@@ -76,7 +76,6 @@ class ParsedPostDataCache(
   private val catalogParsedPostDataMap = mutableMapWithCap<PostDescriptor, ParsedPostData>(128)
   @GuardedBy("mutex")
   private val threadParsedPostDataMap = mutableMapWithCap<PostDescriptor, ParsedPostData>(1024)
-
   @GuardedBy("mutex")
   private val pendingPostUpdates = mutableMapOf<ChanDescriptor, HashSet<PostDescriptor>>()
 

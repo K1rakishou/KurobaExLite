@@ -620,6 +620,7 @@ fun KurobaComposeTextButton(
   modifier: Modifier = Modifier,
   text: String,
   enabled: Boolean = true,
+  fontSize: TextUnit = TextUnit.Unspecified,
   onClick: () -> Unit,
 ) {
   KurobaComposeButton(
@@ -630,6 +631,7 @@ fun KurobaComposeTextButton(
       Text(
         text = text,
         modifier = Modifier.wrapContentSize(),
+        fontSize = fontSize,
         textAlign = TextAlign.Center
       )
     }
@@ -712,6 +714,7 @@ fun KurobaComposeTextBarButton(
   text: String,
   enabled: Boolean = true,
   customTextColor: Color? = null,
+  fontSize: TextUnit = TextUnit.Unspecified,
   onClick: () -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
@@ -731,11 +734,12 @@ fun KurobaComposeTextBarButton(
       }
 
       Text(
-        text = text.uppercase(Locale.ENGLISH),
-        color = modifiedTextColor,
         modifier = Modifier
           .wrapContentSize()
           .align(Alignment.CenterVertically),
+        text = text.uppercase(Locale.ENGLISH),
+        color = modifiedTextColor,
+        fontSize = fontSize,
         textAlign = TextAlign.Center
       )
     },

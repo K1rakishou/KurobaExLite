@@ -79,6 +79,7 @@
     <string name="apply">Apply</string>
     <string name="undo">Undo</string>
     <string name="save">Save</string>
+    <string name="import_str">Import</string>
     <string name="copy">Copy</string>
     <string name="quote">Quote</string>
     <string name="quote_text">Quote Text</string>
@@ -157,6 +158,29 @@
     
     <string name="settings_screen_toolbar_title">Settings</string>
     <string name="settings_screen_requires_app_restart">Requires app restart!</string>
+
+    <string name="themes_screen_toolbar_title">Themes</string>
+    <string name="themes_screen_dark_theme_type_name">Dark</string>
+    <string name="themes_screen_light_theme_type_name">Light</string>
+    <string name="themes_screen_export_theme_json">Export theme json</string>
+    <string name="themes_screen_theme_export_success">Theme was successfully exported</string>
+    <string name="themes_screen_theme_export_error">Failed to export theme to a file</string>
+    <string name="themes_screen_copy_theme_json">Copy theme json to clipboard</string>
+    <string name="themes_screen_delete_theme">Delete theme</string>
+    <string name="themes_screen_delete_theme_success">Theme was successfully deleted</string>
+    <string name="themes_screen_delete_theme_error">Failed to delete theme</string>
+    <string name="themes_screen_copy_theme_json_success">Theme json copied to clipboard</string>
+    <string name="themes_screen_copy_theme_json_error">Failed to copy theme json to clipboard</string>
+    <string name="themes_screen_import_theme_from_file">Import theme from file</string>
+    <string name="themes_screen_import_theme_from_clipboard">Import theme from clipboard</string>
+    <string name="themes_screen_theme_import_success">Theme was successfully imported</string>
+    <string name="themes_screen_theme_import_error">Failed to import theme</string>
+    <string name="themes_screen_enter_output_theme_file_name_title">Enter output theme file name</string>
+    <string name="themes_screen_enter_output_theme_file_name_description">File name must be unique</string>
+    <string name="themes_screen_enter_output_theme_file_name_hint">Only characters, digits and \'_\' symbol are allowed</string>
+    <string name="themes_screen_enter_output_theme_file_name_null_or_blank">Bad theme file name: null or blank</string>
+    <string name="themes_screen_enter_output_theme_file_name_bad_symbols">Bad theme file name: Only characters, digits and \'_\' symbol are allowed</string>
+    <string name="themes_screen_enter_output_theme_file_name_already_exists">Bad theme file name: theme with name \'%1$s\' already exists</string>
 
     <string name="empty_setup_feature" translatable="false">&#128564;</string>
     <string name="empty_setup_no_catalog_selected">No catalog selected</string>
@@ -310,12 +334,14 @@
     <string name="settings_screen_layout_mode">Layout mode</string>
     <string name="settings_screen_global_text_size_multiplier">Font size multiplier</string>
     <string name="settings_screen_global_text_size_multiplier_current_value">Font size multiplier: %1$d\%%</string>
+    <string name="settings_screen_app_themes_title">Themes</string>
+    <string name="settings_screen_app_themes_subtitle">Current theme: \'%1$s\'</string>
 
     <string name="settings_screen_about_layout_group">About</string>
     <string name="settings_screen_check_for_updates">Current version: %1$s-%2$s-%3$s</string>
     <string name="settings_screen_check_for_updates_description">Click to check for updates</string>
     <string name="settings_screen_notify_about_beta_versions">Notify about new beta versions</string>
-    <string name="settings_screen_open_github_repository">Open github repository</string>
+    <string name="settings_screen_open_github_repository">Github repository</string>
     <string name="settings_screen_report">Report</string>
     <string name="settings_screen_report_description">Report a crash or other issue</string>
 

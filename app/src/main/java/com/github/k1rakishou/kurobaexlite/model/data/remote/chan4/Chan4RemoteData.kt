@@ -1,13 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.model.data.remote.chan4
 
-import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.model.data.PostDataSticky
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
-import com.squareup.moshi.FromJson
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
-import com.squareup.moshi.JsonReader
-import com.squareup.moshi.ToJson
 
 @JsonClass(generateAdapter = true)
 data class Chan4BoardsDataJson(
@@ -34,33 +30,6 @@ data class Chan4BoardFlagJson(
   val key: String,
   val name: String
 )
-
-class Chan4BoardFlagsJsonAdapter {
-
-  @FromJson
-  fun fromJson(jsonReader: JsonReader): Chan4BoardFlagsJson {
-    val resultList = mutableListOf<Chan4BoardFlagJson>()
-
-    jsonReader.beginObject()
-
-    while (jsonReader.hasNext()) {
-      val key = jsonReader.nextName()
-      val name = jsonReader.nextString()
-
-      resultList += Chan4BoardFlagJson(key, name)
-    }
-
-    jsonReader.endObject()
-
-    return Chan4BoardFlagsJson(resultList)
-  }
-
-  @ToJson
-  fun toJson(boardFlagsJson: Chan4BoardFlagsJson): String {
-    unreachable("Not used")
-  }
-
-}
 
 @JsonClass(generateAdapter = true)
 data class Chan4CatalogPageDataJson(
