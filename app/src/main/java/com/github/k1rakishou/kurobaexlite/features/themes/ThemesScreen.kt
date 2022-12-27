@@ -183,6 +183,7 @@ class ThemesScreen(
   private suspend fun importThemeFromClipboard() {
     val clipboardContent = androidHelpers.clipboardContent()
     if (clipboardContent.isNullOrEmpty()) {
+      snackbarManager.errorToast(R.string.themes_screen_clipboard_is_empty)
       return
     }
 
@@ -194,7 +195,7 @@ class ThemesScreen(
     val result = themesScreenViewModel.importThemeFromClipboard(
       themeJson = clipboardContent,
       themeFileName = themeFileName
-    ).toastOnError()
+    ).dialogOnError()
 
     val success = if (result.isFailure) {
       return
@@ -211,7 +212,7 @@ class ThemesScreen(
 
   private suspend fun importThemeFromFile() {
     val inputFileUri = fileChooser.openChooseFileDialogSuspend()
-      .toastOnError()
+      .dialogOnError()
       .getOrNull()
       ?: return
 
@@ -231,7 +232,7 @@ class ThemesScreen(
     val result = themesScreenViewModel.importThemeFromFile(
       inputFileUri = inputFileUri,
       themeFileName = themeFileName
-    ).toastOnError()
+    ).dialogOnError()
 
     val success = if (result.isFailure) {
       return
@@ -352,7 +353,7 @@ class ThemesScreen(
                   ?: return@launch
 
                 val success = themesScreenViewModel.exportThemeToFile(theme.chanTheme, fileUri)
-                  .toastOnError()
+                  .dialogOnError()
                   .getOrNull()
                   ?: return@launch
 
@@ -364,7 +365,7 @@ class ThemesScreen(
               }
               ACTION_COPY_THEME_JSON_TO_CLIPBOARD -> {
                 val json = themesScreenViewModel.convertThemeToJsonString(theme.chanTheme)
-                  .toastOnError()
+                  .dialogOnError()
                   .getOrNull()
                   ?: return@launch
 
@@ -373,7 +374,7 @@ class ThemesScreen(
               }
               ACTION_DELETE_THEME -> {
                 val success = themesScreenViewModel.deleteTheme(theme.nameOnDisk)
-                  .toastOnError()
+                  .dialogOnError()
                   .getOrNull()
                   ?: return@launch
 

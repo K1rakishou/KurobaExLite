@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.saveable.Saver
 import androidx.lifecycle.ViewModelProvider
+import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
@@ -18,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMe
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
@@ -25,8 +27,10 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaSavedStateViewModelFactory
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenSavedStateViewModel
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import logcat.LogPriority
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
@@ -283,7 +287,7 @@ abstract class ComposeScreen protected constructor(
       val exception = this.exceptionOrThrow()
 
       val actualMessage = message?.invoke(exception)
-        ?: this.exceptionOrThrow().errorMessageOrClassName(userReadable = true)
+        ?: exception.errorMessageOrClassName(userReadable = true)
 
       val duration = if (longToast) {
         SnackbarManager.STANDARD_DELAY
@@ -302,6 +306,41 @@ abstract class ComposeScreen protected constructor(
         screenKey = screenKey,
         duration = duration.milliseconds
       )
+    }
+
+    return this
+  }
+
+  protected suspend fun <T> Result<T>.dialogOnError(
+    printStacktrace: Boolean = true,
+    message: ((Throwable) -> String)? = null
+  ): Result<T> {
+    if (isFailure) {
+      val exception = this.exceptionOrThrow()
+
+      val actualMessage = message?.invoke(exception)
+        ?: exception.errorMessageOrClassName(userReadable = true)
+
+      if (printStacktrace) {
+        logcatError(TAG) { "[${screenKey.key}] dialogOnError() error: ${exception.asLogIfImportantOrErrorMessage()}" }
+      } else {
+        logcatError(TAG) { "[${screenKey.key}] dialogOnError() message: ${actualMessage}" }
+      }
+
+      suspendCancellableCoroutine<Unit> { cancellableContinuation ->
+        navigationRouter.presentScreen(
+          DialogScreen(
+            componentActivity = componentActivity,
+            navigationRouter = navigationRouter,
+            onDismissed = { cancellableContinuation.resumeSafe(Unit) },
+            params = DialogScreen.Params(
+              title = DialogScreen.Text.String("An error has occurred"),
+              description = DialogScreen.Text.String(actualMessage),
+              positiveButton = DialogScreen.PositiveDialogButton(buttonText = R.string.ok,)
+            )
+          )
+        )
+      }
     }
 
     return this

@@ -93,7 +93,7 @@ class ThemeStorage(
         val themeJson = themeToJsonString(chanTheme).unwrap()
         if (themeJson.isEmpty()) {
           logcatError(TAG) { "storeTheme() failed to convert chanTheme into json" }
-          throw ChanThemeException("failed to convert chanTheme into json")
+          throw ChanThemeException("Failed to convert chanTheme into json")
         }
 
         return@withContext storeTheme(themeJson, themeFileName)
@@ -110,13 +110,13 @@ class ThemeStorage(
         if (themeFile.exists()) {
           if (!themeFile.delete()) {
             logcatError(TAG) { "storeTheme() failed to delete existing themeFile: ${themeFile.absolutePath}" }
-            throw ChanThemeException("failed to delete existing themeFile: ${themeFile.absolutePath}")
+            throw ChanThemeException("Failed to delete existing themeFile: ${themeFile.absolutePath}")
           }
         }
 
         if (!themeFile.createNewFile()) {
           logcatError(TAG) { "storeTheme() failed to create new themeFile: ${themeFile.absolutePath}" }
-          throw ChanThemeException("failed to create new themeFile: ${themeFile.absolutePath}")
+          throw ChanThemeException("Failed to create new themeFile: ${themeFile.absolutePath}")
         }
 
         themeFile.outputStream().useBufferedSink { bufferedSink ->
@@ -142,7 +142,7 @@ class ThemeStorage(
         val themeFile = File(themesDirectory, themeFileName)
         if (!themeFile.exists()) {
           logcatError(TAG) { "parseThemeByFileName() themeFile does not exist (${themeFile.absolutePath})" }
-          throw ChanThemeException("themeFile does not exist (${themeFile.absolutePath})")
+          throw ChanThemeException("Theme file does not exist (${themeFile.absolutePath})")
         }
 
         val themeJson = themeFile.readText()
@@ -158,24 +158,24 @@ class ThemeStorage(
           moshi.adapter<ChanThemeJson>(ChanThemeJson::class.java).fromJson(themeJson)
         } catch (error: Throwable) {
           logcatError(TAG) { "parseThemeByFileName() error while parsing ChanThemeJson: ${error.asLogIfImportantOrErrorMessage()}" }
-          throw ChanThemeException("error while parsing ChanThemeJson: ${error.asLogIfImportantOrErrorMessage()}", error)
+          throw ChanThemeException("Error while parsing ChanThemeJson: ${error.asLogIfImportantOrErrorMessage()}", error)
         }
 
         if (chanThemeJson == null) {
           logcatError(TAG) { "parseThemeByFileName() failed to parse chanThemeJson" }
-          throw ChanThemeException("failed to parse chanThemeJson")
+          throw ChanThemeException("Failed to parse chanThemeJson")
         }
 
         val invalidFields = chanThemeJson.collectInvalidFields()
         if (invalidFields.isNotEmpty()) {
           logcatError(TAG) { "parseThemeByFileName() failed to parse fields: \'${invalidFields.joinToString()}\'" }
-          throw ChanThemeException("failed to parse fields: '${invalidFields.joinToString()}'")
+          throw ChanThemeException("Failed to parse fields or fields not found in json: '${invalidFields.joinToString()}'")
         }
 
         val malformedFields = chanThemeJson.collectMalformedFields()
         if (malformedFields.isNotEmpty()) {
           logcatError(TAG) { "parseThemeByFileName() malformed fields detected: \'${malformedFields.joinToString()}\'" }
-          throw ChanThemeException("malformed fields detected: '${malformedFields.joinToString()}'")
+          throw ChanThemeException("Malformed fields detected: '${malformedFields.joinToString()}'")
         }
 
         return@withContext chanThemeJson.toChanTheme()
@@ -189,7 +189,7 @@ class ThemeStorage(
         val externalFile = fileManager.fromUri(inputFileUri)
         if (externalFile == null) {
           logcatError(TAG) { "readThemeFromFile() externalFile is null: \'${inputFileUri}\'" }
-          throw ChanThemeException("externalFile is null: '${inputFileUri}'")
+          throw ChanThemeException("File is null: '${inputFileUri}'")
         }
 
         val themeJson = fileManager.getInputStream(externalFile)?.use { inputStream ->
@@ -198,7 +198,7 @@ class ThemeStorage(
 
         if (themeJson.isNullOrEmpty()) {
           logcatError(TAG) { "readThemeFromFile() failed to read externalFile: \'${inputFileUri}\'" }
-          throw ChanThemeException("failed to read externalFile: '${inputFileUri}'")
+          throw ChanThemeException("Failed to read externalFile: '${inputFileUri}'")
         }
 
         return@Try parseThemeJson(themeJson).unwrap()
@@ -335,33 +335,33 @@ class ThemeStorage(
     fun collectMalformedFields(): List<String> {
       val malformedFields = mutableListOf<String>()
 
-      if (accentColor.toColor() == null) malformedFields += "accent_color"
-      if (gradientTopColor.toColor() == null) malformedFields += "gradient_top_color"
-      if (gradientBottomColor.toColor() == null) malformedFields += "gradient_bottom_color"
-      if (behindGradientColor.toColor() == null) malformedFields += "behind_gradient_color"
-      if (backColor.toColor() == null) malformedFields += "back_color"
-      if (backColorSecondary.toColor() == null) malformedFields += "back_color_secondary"
-      if (selectedOnBackColor.toColor() == null) malformedFields += "selected_on_back_color"
-      if (highlightedOnBackColor.toColor() == null) malformedFields += "highlighted_on_back_color"
-      if (errorColor.toColor() == null) malformedFields += "error_color"
-      if (textColorPrimary.toColor() == null) malformedFields += "text_color_primary"
-      if (textColorSecondary.toColor() == null) malformedFields += "text_color_secondary"
-      if (textColorHint.toColor() == null) malformedFields += "text_color_hint"
-      if (postSavedReplyColor.toColor() == null) malformedFields += "post_saved_reply_color"
-      if (postSubjectColor.toColor() == null) malformedFields += "post_subject_color"
-      if (postDetailsColor.toColor() == null) malformedFields += "post_details_color"
-      if (postNameColor.toColor() == null) malformedFields += "post_name_color"
-      if (postInlineQuoteColor.toColor() == null) malformedFields += "post_inline_quote_color"
-      if (postQuoteColor.toColor() == null) malformedFields += "post_quote_color"
-      if (postLinkColor.toColor() == null) malformedFields += "post_link_color"
-      if (postSpoilerColor.toColor() == null) malformedFields += "post_spoiler_color"
-      if (postSpoilerRevealTextColor.toColor() == null) malformedFields += "post_spoiler_reveal_text_color"
-      if (dividerColor.toColor() == null) malformedFields += "divider_color"
-      if (scrollbarTrackColor.toColor() == null) malformedFields += "scrollbar_track_color"
-      if (scrollbarThumbColorNormal.toColor() == null) malformedFields += "scrollbar_thumb_color_normal"
-      if (scrollbarThumbColorDragged.toColor() == null) malformedFields += "scrollbar_thumb_color_dragged"
-      if (bookmarkCounterHasRepliesColor.toColor() == null) malformedFields += "bookmark_counter_has_replies_color"
-      if (bookmarkCounterNormalColor.toColor() == null) malformedFields += "bookmark_counter_normal_color"
+      if (accentColor.toColorOrNull() == null) malformedFields += "accent_color"
+      if (gradientTopColor.toColorOrNull() == null) malformedFields += "gradient_top_color"
+      if (gradientBottomColor.toColorOrNull() == null) malformedFields += "gradient_bottom_color"
+      if (behindGradientColor.toColorOrNull() == null) malformedFields += "behind_gradient_color"
+      if (backColor.toColorOrNull() == null) malformedFields += "back_color"
+      if (backColorSecondary.toColorOrNull() == null) malformedFields += "back_color_secondary"
+      if (selectedOnBackColor.toColorOrNull() == null) malformedFields += "selected_on_back_color"
+      if (highlightedOnBackColor.toColorOrNull() == null) malformedFields += "highlighted_on_back_color"
+      if (errorColor.toColorOrNull() == null) malformedFields += "error_color"
+      if (textColorPrimary.toColorOrNull() == null) malformedFields += "text_color_primary"
+      if (textColorSecondary.toColorOrNull() == null) malformedFields += "text_color_secondary"
+      if (textColorHint.toColorOrNull() == null) malformedFields += "text_color_hint"
+      if (postSavedReplyColor.toColorOrNull() == null) malformedFields += "post_saved_reply_color"
+      if (postSubjectColor.toColorOrNull() == null) malformedFields += "post_subject_color"
+      if (postDetailsColor.toColorOrNull() == null) malformedFields += "post_details_color"
+      if (postNameColor.toColorOrNull() == null) malformedFields += "post_name_color"
+      if (postInlineQuoteColor.toColorOrNull() == null) malformedFields += "post_inline_quote_color"
+      if (postQuoteColor.toColorOrNull() == null) malformedFields += "post_quote_color"
+      if (postLinkColor.toColorOrNull() == null) malformedFields += "post_link_color"
+      if (postSpoilerColor.toColorOrNull() == null) malformedFields += "post_spoiler_color"
+      if (postSpoilerRevealTextColor.toColorOrNull() == null) malformedFields += "post_spoiler_reveal_text_color"
+      if (dividerColor.toColorOrNull() == null) malformedFields += "divider_color"
+      if (scrollbarTrackColor.toColorOrNull() == null) malformedFields += "scrollbar_track_color"
+      if (scrollbarThumbColorNormal.toColorOrNull() == null) malformedFields += "scrollbar_thumb_color_normal"
+      if (scrollbarThumbColorDragged.toColorOrNull() == null) malformedFields += "scrollbar_thumb_color_dragged"
+      if (bookmarkCounterHasRepliesColor.toColorOrNull() == null) malformedFields += "bookmark_counter_has_replies_color"
+      if (bookmarkCounterNormalColor.toColorOrNull() == null) malformedFields += "bookmark_counter_normal_color"
 
       return malformedFields
     }
@@ -439,6 +439,24 @@ class ThemeStorage(
           bookmarkCounterHasRepliesColor = chanTheme.bookmarkCounterHasRepliesColor.toHexString(),
           bookmarkCounterNormalColor = chanTheme.bookmarkCounterNormalColor.toHexString(),
         )
+      }
+
+      private fun String?.toColorOrNull(): Color? {
+        if (this == null) {
+          return null
+        }
+
+        val str = if (this.startsWith("#")) {
+          this
+        } else {
+          "#$this"
+        }
+
+        return try {
+          Color(AndroidColor.parseColor(str))
+        } catch (error: Throwable) {
+          return null
+        }
       }
 
       private fun String?.toColor(): Color {

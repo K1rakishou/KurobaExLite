@@ -181,6 +181,7 @@
     <string name="themes_screen_enter_output_theme_file_name_null_or_blank">Bad theme file name: null or blank</string>
     <string name="themes_screen_enter_output_theme_file_name_bad_symbols">Bad theme file name: Only characters, digits and \'_\' symbol are allowed</string>
     <string name="themes_screen_enter_output_theme_file_name_already_exists">Bad theme file name: theme with name \'%1$s\' already exists</string>
+    <string name="themes_screen_clipboard_is_empty">Clipboard is empty</string>
 
     <string name="empty_setup_feature" translatable="false">&#128564;</string>
     <string name="empty_setup_no_catalog_selected">No catalog selected</string>

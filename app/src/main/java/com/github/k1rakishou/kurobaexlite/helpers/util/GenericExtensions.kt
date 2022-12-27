@@ -227,10 +227,10 @@ inline fun <T> Collection<T>?.isNotNullNorEmpty(): Boolean {
 
 @JvmOverloads
 fun Throwable.errorMessageOrClassName(userReadable: Boolean = false): String {
-  val actualMessage = if (cause?.message?.isNotNullNorBlank() == true) {
-    cause!!.message
-  } else {
+  val actualMessage = if (message?.isNotNullNorBlank() == true) {
     message
+  } else {
+    cause?.message
   }
 
   if (userReadable && actualMessage.isNotNullNorBlank()) {
