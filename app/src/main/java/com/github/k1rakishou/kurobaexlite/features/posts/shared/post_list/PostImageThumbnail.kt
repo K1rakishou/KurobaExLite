@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,9 +41,11 @@ import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
 import com.github.k1rakishou.kurobaexlite.model.data.imageType
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeThemeDependantText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.kurobaexlite.ui.helpers.rememberKurobaTextUnit
 import kotlinx.coroutines.flow.takeWhile
 
 @Composable
@@ -213,10 +214,9 @@ private fun PostImageThumbnailError(
     if (errorText != null) {
       Spacer(modifier = Modifier.height(4.dp))
 
-      Text(
+      KurobaComposeThemeDependantText(
         text = errorText,
-        fontSize = 11.sp,
-        color = Color.White
+        fontSize = rememberKurobaTextUnit(fontSize = 11.sp, min = 11.sp, max = 11.sp)
       )
     }
   }
