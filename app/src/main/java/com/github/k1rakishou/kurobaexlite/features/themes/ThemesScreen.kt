@@ -2,11 +2,13 @@ package com.github.k1rakishou.kurobaexlite.features.themes
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +39,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,6 +61,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
@@ -610,8 +615,17 @@ private fun ThemePreview(
 
           KurobaComposeThemeDependantText(
             text = chanThemeNameWithType,
-            fontSize = rememberKurobaTextUnit(fontSize = 14.sp, min = 14.sp, max = 14.sp)
+            fontSize = rememberKurobaTextUnit(fontSize = 14.sp, min = 14.sp, max = 14.sp),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
           )
+        }
+
+        Column(modifier = Modifier
+          .fillMaxSize()
+          .padding(horizontal = 4.dp)) {
+          Spacer(modifier = Modifier.height(32.dp))
+          PostPreview()
         }
 
         if (selected) {
@@ -643,6 +657,157 @@ private fun ThemePreview(
       }
     }
   }
+}
+
+@Composable
+private fun PostPreview() {
+  val chanTheme = LocalChanTheme.current
+
+  Row(
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    // Thumbnail section
+    Spacer(
+      modifier = Modifier
+        .width(64.dp)
+        .height(64.dp)
+        .background(chanTheme.backColorSecondary)
+    )
+
+    Spacer(modifier = Modifier.width(4.dp))
+
+    // Subject section
+    Column {
+      kotlin.run {
+        Spacer(
+          modifier = Modifier
+            .height(8.dp)
+            .fillMaxWidth(fraction = 1f)
+            .padding(vertical = 2.dp)
+            .background(chanTheme.postSubjectColor)
+        )
+        Spacer(
+          modifier = Modifier
+            .height(8.dp)
+            .fillMaxWidth(fraction = 0.55f)
+            .padding(vertical = 2.dp)
+            .background(chanTheme.postSubjectColor)
+        )
+      }
+
+      Spacer(
+        modifier = Modifier
+          .height(8.dp)
+          .fillMaxWidth(fraction = 0.35f)
+          .padding(vertical = 2.dp)
+          .background(chanTheme.postNameColor)
+      )
+
+      kotlin.run {
+        Spacer(
+          modifier = Modifier
+            .height(8.dp)
+            .fillMaxWidth(fraction = 1f)
+            .padding(vertical = 2.dp)
+            .background(chanTheme.postDetailsColor)
+        )
+        Spacer(
+          modifier = Modifier
+            .height(8.dp)
+            .fillMaxWidth(fraction = 0.7f)
+            .padding(vertical = 2.dp)
+            .background(chanTheme.postDetailsColor)
+        )
+      }
+    }
+  }
+
+  // Comment section
+  run {
+    Spacer(modifier = Modifier.height(8.dp))
+
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 0.2f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.postQuoteColor)
+    )
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 0.2f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.postQuoteColor)
+    )
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 1f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.postInlineQuoteColor)
+    )
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 0.6f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.postInlineQuoteColor)
+    )
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 1f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.textColorPrimary)
+    )
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 1f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.textColorPrimary)
+    )
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 6f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.textColorPrimary)
+    )
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 1f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.postLinkColor)
+    )
+    Spacer(
+      modifier = Modifier
+        .height(8.dp)
+        .fillMaxWidth(fraction = 0.65f)
+        .padding(vertical = 2.dp)
+        .background(chanTheme.postLinkColor)
+    )
+  }
+
+  Spacer(
+    modifier = Modifier
+      .height(8.dp)
+      .fillMaxWidth(fraction = 0.4f)
+      .padding(vertical = 2.dp)
+      .background(chanTheme.textColorSecondary)
+  )
+
+  // Divider section
+  Spacer(modifier = Modifier.height(4.dp))
+  KurobaComposeDivider(
+    modifier = Modifier
+      .height(1.dp)
+      .fillMaxWidth()
+  )
+  Spacer(modifier = Modifier.height(4.dp))
+
 }
 
 @Composable
