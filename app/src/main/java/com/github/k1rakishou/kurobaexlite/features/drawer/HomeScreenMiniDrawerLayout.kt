@@ -49,8 +49,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
-import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.bookmarks.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -93,7 +91,7 @@ fun HomeScreenMiniDrawerLayout() {
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
-  val bookmarksScreenViewModel = koinRememberViewModel<BookmarksScreenViewModel>()
+  val drawerScreenViewModel = koinRememberViewModel<DrawerScreenViewModel>()
   val historyScreenViewModel = koinRememberViewModel<HistoryScreenViewModel>()
 
   val drawerContentTypeMut by appSettings.drawerContentType.listen().collectAsState(initial = null)
@@ -117,7 +115,7 @@ fun HomeScreenMiniDrawerLayout() {
             }
         }
         DrawerContentType.Bookmarks -> {
-          bookmarksScreenViewModel.bookmarksListFlow
+          drawerScreenViewModel.bookmarksListFlow
             .collect { threadBookmarkUiList ->
               miniDrawerElements = MiniDrawerElement.Bookmark.fromThreadBookmarks(threadBookmarkUiList)
             }

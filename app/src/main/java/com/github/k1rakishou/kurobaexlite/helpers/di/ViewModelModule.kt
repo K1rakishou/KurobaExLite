@@ -4,10 +4,10 @@ import com.github.k1rakishou.chan.core.mpv.MpvInitializer
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.bookmarks.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaViewModel
 import com.github.k1rakishou.kurobaexlite.features.captcha.dvach.DvachCaptchaScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.drawer.DrawerScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.drawer.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.login.chan4.Chan4LoginScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.login.dvach.DvachLoginScreenViewModel
@@ -162,7 +162,7 @@ internal fun Module.viewModels() {
   }
 
   viewModel {
-    BookmarksScreenViewModel(
+    DrawerScreenViewModel(
       androidHelpers = get(),
       bookmarksManager = get(),
       catalogPagesRepository = get(),

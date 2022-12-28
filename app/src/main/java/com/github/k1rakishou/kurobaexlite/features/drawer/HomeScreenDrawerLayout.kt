@@ -28,7 +28,6 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.features.bookmarks.BookmarksScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
@@ -291,7 +290,7 @@ fun HomeScreenDrawerLayout(
       RouterHost(
         navigationRouter = router,
         defaultScreenFunc = {
-          ComposeScreen.createScreen<BookmarksScreen>(
+          ComposeScreen.createScreen<DrawerScreen>(
             componentActivity = componentActivity,
             navigationRouter = navigationRouterProvider()
           )

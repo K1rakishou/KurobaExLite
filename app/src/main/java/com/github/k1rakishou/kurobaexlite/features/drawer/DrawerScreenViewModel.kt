@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.bookmarks
+package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
@@ -29,7 +29,7 @@ import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
 
-class BookmarksScreenViewModel(
+class DrawerScreenViewModel(
   private val androidHelpers: AndroidHelpers,
   private val bookmarksManager: BookmarksManager,
   private val catalogPagesRepository: CatalogPagesRepository,

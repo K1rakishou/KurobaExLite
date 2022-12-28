@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.bookmarks
+package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import android.content.Context
 import androidx.compose.animation.Animatable
@@ -108,15 +108,15 @@ fun BookmarksList(
 ) {
   val windowInsets = LocalWindowInsets.current
 
-  val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
+  val drawerScreenViewModel: DrawerScreenViewModel = koinRememberViewModel()
   val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   val contentPadding = remember(key1 = windowInsets) { PaddingValues(bottom = windowInsets.bottom) }
   val pullToRefreshToPadding = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
 
-  val bookmarkListBeforeFiltering = bookmarksScreenViewModel.bookmarksList
-  val canUseFancyAnimations by bookmarksScreenViewModel.canUseFancyAnimations
+  val bookmarkListBeforeFiltering = drawerScreenViewModel.bookmarksList
+  val canUseFancyAnimations by drawerScreenViewModel.canUseFancyAnimations
 
   var bookmarkList by remember { mutableStateOf(bookmarkListBeforeFiltering) }
   var isInSearchMode by remember { mutableStateOf(false) }
@@ -154,7 +154,7 @@ fun BookmarksList(
   PullToRefresh(
     pullToRefreshState = pullToRefreshState,
     topPadding = pullToRefreshToPadding,
-    onTriggered = { bookmarksScreenViewModel.forceRefreshBookmarks() }
+    onTriggered = { drawerScreenViewModel.forceRefreshBookmarks() }
   ) {
     LazyColumnWithFastScroller(
       lazyListContainerModifier = Modifier
@@ -163,9 +163,9 @@ fun BookmarksList(
         .fillMaxSize()
         .reorderable(
           state = reorderableState,
-          canDragOver = { key, _ -> (key as? String)?.startsWith(BookmarksScreen.BookmarkAnnotatedContent.bookmarkItemKey) == true },
-          onMove = { from, to -> bookmarksScreenViewModel.onMove(from, to) },
-          onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from, to) }
+          canDragOver = { key, _ -> (key as? String)?.startsWith(DrawerScreen.BookmarkAnnotatedContent.bookmarkItemKey) == true },
+          onMove = { from, to -> drawerScreenViewModel.onMove(from, to) },
+          onDragEnd = { from, to -> drawerScreenViewModel.onMoveConfirmed(from, to) }
         ),
       lazyListState = reorderableState.lazyListState,
       contentPadding = contentPadding,
@@ -173,8 +173,8 @@ fun BookmarksList(
         if (bookmarkList.isEmpty()) {
           if (isInSearchMode) {
             item(
-              key = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksFoundMessageItemKey,
-              contentType = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksFoundMessageItemKey,
+              key = DrawerScreen.BookmarkAnnotatedContent.noBookmarksFoundMessageItemKey,
+              contentType = DrawerScreen.BookmarkAnnotatedContent.noBookmarksFoundMessageItemKey,
               content = {
                 KurobaComposeText(
                   modifier = Modifier
@@ -188,8 +188,8 @@ fun BookmarksList(
             )
           } else {
             item(
-              key = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksAddedMessageItemKey,
-              contentType = BookmarksScreen.BookmarkAnnotatedContent.noBookmarksAddedMessageItemKey,
+              key = DrawerScreen.BookmarkAnnotatedContent.noBookmarksAddedMessageItemKey,
+              contentType = DrawerScreen.BookmarkAnnotatedContent.noBookmarksAddedMessageItemKey,
               content = {
                 KurobaComposeText(
                   modifier = Modifier
@@ -221,10 +221,10 @@ fun BookmarksList(
                   globalUiInfoManager.closeDrawer(withAnimation = true)
                 },
                 onBookmarkThumbnailClicked = { threadDescriptor ->
-                  bookmarksScreenViewModel.toggleBookmarkWatchState(threadDescriptor)
+                  drawerScreenViewModel.toggleBookmarkWatchState(threadDescriptor)
                 },
                 onBookmarkDeleted = { clickedThreadBookmarkUi ->
-                  bookmarksScreenViewModel.deleteBookmark(
+                  drawerScreenViewModel.deleteBookmark(
                     threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
                     onBookmarkDeleted = { deletedBookmark, oldPosition ->
                       showRevertBookmarkDeletion(deletedBookmark, oldPosition)
@@ -255,7 +255,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
   val defaultItemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
   val animationDurationMs = 500
 
-  val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
+  val drawerScreenViewModel: DrawerScreenViewModel = koinRememberViewModel()
   val postCommentApplier: PostCommentApplier = koinRemember()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
@@ -270,7 +270,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
     }
   }
 
-  val defaultBgColor = if (bookmarksScreenViewModel.bookmarksToMark.containsKey(threadBookmarkUi.threadDescriptor)) {
+  val defaultBgColor = if (drawerScreenViewModel.bookmarksToMark.containsKey(threadBookmarkUi.threadDescriptor)) {
     chanTheme.accentColor.copy(alpha = 0.3f)
   } else {
     chanTheme.backColor
@@ -329,7 +329,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
     if (searchQuery.isEmpty()) {
       KurobaComposeIcon(
         modifier = Modifier
-          .size(BookmarksScreen.BookmarkAnnotatedContent.deleteBookmarkIconWidth)
+          .size(DrawerScreen.BookmarkAnnotatedContent.deleteBookmarkIconWidth)
           .padding(2.dp)
           .kurobaClickable(
             bounded = false,
@@ -539,7 +539,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
     isDead,
   ) {
     derivedStateOf {
-      BookmarksScreen.ThreadBookmarkStatsCombined(
+      DrawerScreen.ThreadBookmarkStatsCombined(
         bookmarkedThreadHasPosts = totalPosts > 0,
         newPostsAnimated = newPostsAnimated,
         newQuotesAnimated = newQuotesAnimated,
@@ -574,10 +574,10 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
   val bookmarkInlinedContent: ImmutableMap<String, InlineTextContent> = remember(isDead, fontSize) {
     val resultMap = mutableMapOf<String, InlineTextContent>()
 
-    BookmarksScreen.BookmarkAnnotatedContent.values().forEach { bookmarkAnnotatedContent ->
+    DrawerScreen.BookmarkAnnotatedContent.values().forEach { bookmarkAnnotatedContent ->
       resultMap[bookmarkAnnotatedContent.id] = InlineTextContent(
         placeholder = Placeholder(fontSize, fontSize, PlaceholderVerticalAlign.Center),
-        children = { BookmarksScreen.BookmarkAnnotatedContent.Content(bookmarkAnnotatedContent, isDead) }
+        children = { DrawerScreen.BookmarkAnnotatedContent.Content(bookmarkAnnotatedContent, isDead) }
       )
     }
 
@@ -629,11 +629,11 @@ private fun BookmarkThumbnail(
     val transformations = remember(key1 = isDead, key2 = watching) {
       if (isDead) {
         listOf(
-          BookmarksScreen.BookmarkAnnotatedContent.circleCropTransformation,
-          BookmarksScreen.BookmarkAnnotatedContent.grayscaleTransformation
+          DrawerScreen.BookmarkAnnotatedContent.circleCropTransformation,
+          DrawerScreen.BookmarkAnnotatedContent.grayscaleTransformation
         )
       } else {
-        listOf(BookmarksScreen.BookmarkAnnotatedContent.circleCropTransformation)
+        listOf(DrawerScreen.BookmarkAnnotatedContent.circleCropTransformation)
       }
     }
 
@@ -655,7 +655,7 @@ private fun BookmarkThumbnail(
         val state = painter.state
 
         if (state is AsyncImagePainter.State.Error) {
-          logcatError(BookmarksScreen.TAG) {
+          logcatError(DrawerScreen.TAG) {
             "BookmarkThumbnail() url=${thumbnailUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
           }
 
@@ -679,7 +679,7 @@ private fun convertBookmarkStateToText(
   context: Context,
   chanTheme: ChanTheme,
   threadDescriptor: ThreadDescriptor,
-  threadBookmarkStatsCombined: BookmarksScreen.ThreadBookmarkStatsCombined
+  threadBookmarkStatsCombined: DrawerScreen.ThreadBookmarkStatsCombined
 ): AnnotatedString {
   val bookmarkedThreadHasPosts = threadBookmarkStatsCombined.bookmarkedThreadHasPosts
   val newPostsAnimated = threadBookmarkStatsCombined.newPostsAnimated
@@ -820,19 +820,19 @@ private fun convertBookmarkStateToText(
         append(" ")
       }
 
-      appendInlineContent(BookmarksScreen.BookmarkAnnotatedContent.ThreadDeleted.id)
+      appendInlineContent(DrawerScreen.BookmarkAnnotatedContent.ThreadDeleted.id)
     } else if (isArchived) {
       if (length > 0) {
         append(" ")
       }
 
-      appendInlineContent(BookmarksScreen.BookmarkAnnotatedContent.ThreadArchived.id)
+      appendInlineContent(DrawerScreen.BookmarkAnnotatedContent.ThreadArchived.id)
     } else if (isClosed) {
       if (length > 0) {
         append(" ")
       }
 
-      appendInlineContent(BookmarksScreen.BookmarkAnnotatedContent.ThreadClosed.id)
+      appendInlineContent(DrawerScreen.BookmarkAnnotatedContent.ThreadClosed.id)
     }
 
     if (isError) {
@@ -840,9 +840,9 @@ private fun convertBookmarkStateToText(
         append(" ")
       }
 
-      appendInlineContent(BookmarksScreen.BookmarkAnnotatedContent.ThreadError.id)
+      appendInlineContent(DrawerScreen.BookmarkAnnotatedContent.ThreadError.id)
     }
   }
 }
 
-private fun dragKey(threadDescriptor: ThreadDescriptor) = "${BookmarksScreen.BookmarkAnnotatedContent.bookmarkItemKey}_${threadDescriptor.asKey()}"
+private fun dragKey(threadDescriptor: ThreadDescriptor) = "${DrawerScreen.BookmarkAnnotatedContent.bookmarkItemKey}_${threadDescriptor.asKey()}"

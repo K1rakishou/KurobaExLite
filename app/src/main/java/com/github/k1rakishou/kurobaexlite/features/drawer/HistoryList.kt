@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.bookmarks
+package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -174,7 +174,7 @@ fun HistoryList(
               ),
               SnackbarContentItem.Spacer(space = 8.dp),
               SnackbarContentItem.Button(
-                key = BookmarksScreen.HistorySnackbarButton.UndoNavHistoryDeletion,
+                key = DrawerScreen.HistorySnackbarButton.UndoNavHistoryDeletion,
                 text = context.getString(R.string.undo),
                 data = Pair(index, uiNavElement)
               ),

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.bookmarks
+package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column

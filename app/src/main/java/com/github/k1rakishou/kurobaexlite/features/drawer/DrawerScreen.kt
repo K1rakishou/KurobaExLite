@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.features.bookmarks
+package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import android.content.Context
 import android.os.Bundle
@@ -82,12 +82,12 @@ import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import kotlin.time.Duration.Companion.milliseconds
 
-class BookmarksScreen(
+class DrawerScreen(
   screenArgs: Bundle? = null,
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(screenArgs, componentActivity, navigationRouter) {
-  private val bookmarksScreenViewModel: BookmarksScreenViewModel by componentActivity.viewModel()
+  private val drawerScreenViewModel: DrawerScreenViewModel by componentActivity.viewModel()
 
   private val bookmarksFloatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
@@ -190,7 +190,7 @@ class BookmarksScreen(
   private suspend fun onPruneInactiveBookmarksItemClicked(
     context: Context
   ) {
-    val deadBookmarksCount = bookmarksScreenViewModel.countDeadBookmarks()
+    val deadBookmarksCount = drawerScreenViewModel.countDeadBookmarks()
     if (deadBookmarksCount <= 0) {
       snackbarManager.toast(message = appResources.string(R.string.bookmark_screen_prune_dead_bookmarks_no_inactive_bookmarks))
       return
@@ -215,7 +215,7 @@ class BookmarksScreen(
             buttonText = R.string.bookmark_screen_prune_dead_bookmarks_dialog_positive_button,
             isActionDangerous = true,
             onClick = {
-              bookmarksScreenViewModel.pruneDeadBookmarks(
+              drawerScreenViewModel.pruneDeadBookmarks(
                 onFinished = { deleteResult ->
                   if (deleteResult.isFailure) {
                     val errorMessage = deleteResult.exceptionOrThrow()
@@ -354,7 +354,7 @@ private fun ContentInternal(
   showBookmarkOptions: () -> Unit,
   showRevertBookmarkDeletion: (ThreadBookmark, Int) -> Unit
 ) {
-  val bookmarksScreenViewModel = koinRememberViewModel<BookmarksScreenViewModel>()
+  val drawerScreenViewModel = koinRememberViewModel<DrawerScreenViewModel>()
   val historyScreenViewModel = koinRememberViewModel<HistoryScreenViewModel>()
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val snackbarManager = koinRemember<SnackbarManager>()
@@ -394,19 +394,19 @@ private fun ContentInternal(
     key1 = Unit,
     block = {
       snackbarManager.snackbarElementsClickFlow.collectLatest { snackbarClickable ->
-        if (snackbarClickable.key !is BookmarksScreen.BookmarksSnackbarButton) {
+        if (snackbarClickable.key !is DrawerScreen.BookmarksSnackbarButton) {
           return@collectLatest
         }
 
-        when (snackbarClickable.key as BookmarksScreen.BookmarksSnackbarButton) {
-          BookmarksScreen.BookmarksSnackbarButton.UndoThreadBookmarkDeletion -> {
+        when (snackbarClickable.key as DrawerScreen.BookmarksSnackbarButton) {
+          DrawerScreen.BookmarksSnackbarButton.UndoThreadBookmarkDeletion -> {
             val pair = snackbarClickable.data as? Pair<Int, ThreadBookmark>
               ?: return@collectLatest
 
             val prevPosition = pair.first
             val threadBookmark = pair.second
 
-            bookmarksScreenViewModel.undoBookmarkDeletion(threadBookmark, prevPosition)
+            drawerScreenViewModel.undoBookmarkDeletion(threadBookmark, prevPosition)
           }
         }
       }
@@ -416,12 +416,12 @@ private fun ContentInternal(
     key1 = Unit,
     block = {
       snackbarManager.snackbarElementsClickFlow.collectLatest { snackbarClickable ->
-        if (snackbarClickable.key !is BookmarksScreen.HistorySnackbarButton) {
+        if (snackbarClickable.key !is DrawerScreen.HistorySnackbarButton) {
           return@collectLatest
         }
 
-        when (snackbarClickable.key as BookmarksScreen.HistorySnackbarButton) {
-          BookmarksScreen.HistorySnackbarButton.UndoNavHistoryDeletion -> {
+        when (snackbarClickable.key as DrawerScreen.HistorySnackbarButton) {
+          DrawerScreen.HistorySnackbarButton.UndoNavHistoryDeletion -> {
             val pair = snackbarClickable.data as? Pair<Int, UiNavigationElement>
               ?: return@collectLatest
 
@@ -437,14 +437,14 @@ private fun ContentInternal(
   DisposableEffect(
     key1 = Unit,
     effect = {
-      onDispose { bookmarksScreenViewModel.clearMarkedBookmarks() }
+      onDispose { drawerScreenViewModel.clearMarkedBookmarks() }
     }
   )
 
   LaunchedEffect(
     key1 = Unit,
     block = {
-      bookmarksScreenViewModel.backgroundWatcherEventsFlow.collect {
+      drawerScreenViewModel.backgroundWatcherEventsFlow.collect {
         pullToRefreshState.stopRefreshing()
       }
     }
