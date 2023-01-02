@@ -50,7 +50,7 @@ class AppSettings(
   val drawerContentType by lazy { EnumSetting(DrawerContentType.Bookmarks, "drawer_content_type", DrawerContentType::class.java, dataStore) }
 
   val globalFontSizeMultiplier by lazy {
-    val defaultValue = if (isTablet) 125 else 100
+    val defaultValue = if (isTablet) 115 else 100
     return@lazy RangeSetting(
       minValue = 100,
       maxValue = 150,
