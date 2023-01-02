@@ -521,11 +521,10 @@ class ThreadScreenViewModel(
     postLoadResult: PostsLoadResult
   ) {
     if (postLoadResult.isNotEmpty()) {
-      val lastViewedOrLoadedPostDescriptor = loadChanThreadView.execute(threadDescriptor)
-        ?.let { chanThreadView ->
-          return@let chanThreadView.lastViewedPDForNewPosts
-            ?: chanThreadView.lastLoadedPostDescriptor
-        }
+      val chanThreadView = loadChanThreadView.execute(threadDescriptor)
+
+      val lastViewedOrLoadedPostDescriptor = chanThreadView?.lastViewedPDForNewPosts ?: chanThreadView?.lastLoadedPostDescriptor
+      val lastLoadedPostDescriptor = chanThreadView?.lastLoadedPostDescriptor
 
       if (lastViewedOrLoadedPostDescriptor != null) {
         snackbarManager.pushThreadNewPostsSnackbar(
@@ -533,23 +532,11 @@ class ThreadScreenViewModel(
             lastViewedOrLoadedPostDescriptor = lastViewedOrLoadedPostDescriptor
           ),
           updatedPostsCount = postLoadResult.updatePostsCountExcludingOriginalPost,
-          // TODO(KurobaEx): for now we can't use this because it will show "N deleted posts" snackbar
-          //  on each refresh. We need to somehow check that we have already notified the user about
-          //  these deleted posts so that we don't notify him on every thread update.
-//          deletedPostsCount = postLoadResult.deletedPostsCount,
-          deletedPostsCount = 0,
+          deletedPostsCount = postLoadResult.deletedPostsCountSinceLastLoaded(lastLoadedPostDescriptor),
           screenKey = screenKey
         )
       }
     }
-
-    updateLastLoadedAndViewedPosts(
-      key = "onPostsParsed",
-      threadDescriptor = threadDescriptor,
-      firstVisiblePostDescriptor = null,
-      lastVisiblePostDescriptor = null,
-      postListTouchingBottom = false
-    )
 
     val originalPost = postLoadResult.firstOrNull { postData -> postData is OriginalPostData }
     if (originalPost != null && (originalPost.archived || originalPost.closed || originalPost.deleted)) {
@@ -571,6 +558,14 @@ class ThreadScreenViewModel(
         isAfterAppLifecycleUpdate = false
       )
     }
+
+    updateLastLoadedAndViewedPosts(
+      key = "onPostsParsed",
+      threadDescriptor = threadDescriptor,
+      firstVisiblePostDescriptor = null,
+      lastVisiblePostDescriptor = null,
+      postListTouchingBottom = false
+    )
   }
 
   override fun onPostScrollChanged(

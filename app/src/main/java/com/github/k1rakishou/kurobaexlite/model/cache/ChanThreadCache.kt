@@ -4,6 +4,7 @@ import android.os.SystemClock
 import androidx.annotation.GuardedBy
 import com.github.k1rakishou.kurobaexlite.helpers.PostDiffer
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
+import com.github.k1rakishou.kurobaexlite.helpers.util.toHashSetOfKeysBy
 import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.OriginalPostData
@@ -56,11 +57,16 @@ class ChanThreadCache(
       val deletedPosts = mutableListOf<IPostData>()
       var needSorting = false
 
-      val allPostDescriptorsFromServer = postCellDataCollection.associateBy { it.postDescriptor }
+      val allPostDescriptorsFromServer = postCellDataCollection.toHashSetOfKeysBy { it.postDescriptor }
 
       val duration = measureTime {
         postCellDataCollection.forEach { postData ->
           val prevPostData = postsMap[postData.postDescriptor]
+
+          var postDeleted = prevPostData?.deleted ?: false
+          if (!isIncrementalUpdate) {
+            postDeleted = !allPostDescriptorsFromServer.contains(postData.postDescriptor)
+          }
 
           if (prevPostData != null && PostDiffer.postsDiffer(postData, prevPostData)) {
             val index = posts.indexOfFirst { oldPostData ->
@@ -68,14 +74,22 @@ class ChanThreadCache(
             }
             check(index >= 0) { "postMap contains this post but posts list does not!" }
 
-            val postDataWithPostIndex = postData.copy(originalPostOrder = posts[index].originalPostOrder)
+            val postDataWithPostIndex = postData.copy(
+              originalPostOrder = posts[index].originalPostOrder,
+              deleted = postDeleted
+            )
+
             posts[index] = postDataWithPostIndex
             postsMap[postDataWithPostIndex.postDescriptor] = postDataWithPostIndex
 
             updatedPosts += postDataWithPostIndex
           } else if (prevPostData == null) {
             val prevPostIndex = posts.lastOrNull()?.originalPostOrder ?: 0
-            val postDataWithPostIndex = postData.copy(originalPostOrder = prevPostIndex + 1)
+
+            val postDataWithPostIndex = postData.copy(
+              originalPostOrder = prevPostIndex + 1,
+              deleted = postDeleted
+            )
 
             posts.add(postDataWithPostIndex)
             postsMap[postDataWithPostIndex.postDescriptor] = postDataWithPostIndex
@@ -89,7 +103,7 @@ class ChanThreadCache(
 
         if (!isIncrementalUpdate) {
           posts.forEach { postData ->
-            if (!allPostDescriptorsFromServer.containsKey(postData.postDescriptor)) {
+            if (!allPostDescriptorsFromServer.contains(postData.postDescriptor)) {
               deletedPosts += postData
             }
           }

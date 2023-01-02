@@ -17,8 +17,6 @@ data class PostsLoadResult(
     get() = newPosts.size
   val updatedPostsCount: Int
     get() = updatedPosts.size
-  val deletedPostsCount: Int
-    get() = deletedPosts.size
   val newOrUpdatedCount: Int
     get() = newPostsCount + updatedPostsCount
 
@@ -98,6 +96,16 @@ data class PostsLoadResult(
 
   fun newPostsCountSinceLastViewedOrLoaded(lastViewedOrLoadedPostDescriptor: PostDescriptor): Int {
     return newPosts.count { postData -> postData.postDescriptor > lastViewedOrLoadedPostDescriptor }
+  }
+
+  fun deletedPostsCountSinceLastLoaded(lastLoadedPostDescriptor: PostDescriptor?): Int {
+    return deletedPosts.count { postData ->
+      if (lastLoadedPostDescriptor == null) {
+        return@count true
+      }
+
+      return@count postData.postDescriptor > lastLoadedPostDescriptor
+    }
   }
 
   fun isEmpty(): Boolean {

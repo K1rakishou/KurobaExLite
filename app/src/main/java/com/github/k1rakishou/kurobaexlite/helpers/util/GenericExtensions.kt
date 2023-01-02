@@ -442,7 +442,7 @@ inline fun buildAnnotatedString(
     .toAnnotatedString()
 }
 
-inline fun <T, K> Iterable<T>.toHashSetByKey(capacity: Int = 16, keySelector: (T) -> K): java.util.HashSet<T> {
+inline fun <T, K> kotlin.collections.Collection<T>.toHashSetByKey(capacity: Int = size, keySelector: (T) -> K): kotlin.collections.Set<T> {
   val keyDuplicateSet = mutableSetWithCap<K>(capacity)
   val resultHashSet = mutableSetWithCap<T>(capacity)
 
@@ -453,6 +453,16 @@ inline fun <T, K> Iterable<T>.toHashSetByKey(capacity: Int = 16, keySelector: (T
   }
 
   return resultHashSet
+}
+
+inline fun <T, K> kotlin.collections.Collection<T>.toHashSetOfKeysBy(capacity: Int = size, keySelector: (T) -> K): Set<K> {
+  val keyDuplicateSet = mutableSetWithCap<K>(capacity)
+
+  for (element in this) {
+    keyDuplicateSet.add(keySelector(element))
+  }
+
+  return keyDuplicateSet
 }
 
 inline fun <T> MutableCollection<T>.removeIfKt(filter: (T) -> Boolean): Boolean {

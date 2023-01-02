@@ -33,7 +33,6 @@ class GlobalSearchScreenViewModel(
 
   fun fullReload() {
     searchJob?.cancel()
-
     searchJob = viewModelScope.launch {
       try {
         val searchQuery = screenState.searchQuery?.takeIf { it.isNotEmpty() }
@@ -53,7 +52,6 @@ class GlobalSearchScreenViewModel(
 
   fun updateSearchQuery(searchQuery: String?, catalogDescriptor: CatalogDescriptor) {
     searchJob?.cancel()
-
     searchJob = viewModelScope.launch {
       try {
         delay(250L)
