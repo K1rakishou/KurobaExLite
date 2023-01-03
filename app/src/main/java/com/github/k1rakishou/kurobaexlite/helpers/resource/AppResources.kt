@@ -1,14 +1,27 @@
 package com.github.k1rakishou.kurobaexlite.helpers.resource
 
-import androidx.annotation.BoolRes
-import androidx.annotation.DimenRes
-import androidx.annotation.StringRes
+import android.content.Context
 import androidx.compose.ui.unit.Density
 
-interface AppResources {
-  val composeDensity: Density
+class AppResources(
+  private val appContext: Context
+) : IAppResources {
+  override val composeDensity by lazy { Density(appContext) }
 
-  fun string(@StringRes stringId: Int, vararg args: Any): String
-  fun dimension(@DimenRes dimenId: Int): Float
-  fun boolean(@BoolRes boolRes: Int): Boolean
+  override fun string(stringId: Int, vararg args: Any): String {
+    return if (args.isEmpty()) {
+      appContext.resources.getString(stringId)
+    } else {
+      appContext.resources.getString(stringId, *args)
+    }
+  }
+
+  override fun dimension(dimenId: Int): Float {
+    return appContext.resources.getDimension(dimenId)
+  }
+
+  override fun boolean(boolRes: Int): Boolean {
+    return appContext.resources.getBoolean(boolRes)
+  }
+
 }

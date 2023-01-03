@@ -49,7 +49,7 @@ class ChanPostCache(
     threads[threadDescriptor]?.resetLastFullUpdateTime()
   }
 
-  suspend fun onCatalogOrThreadAccessed(chanDescriptor: ChanDescriptor) {
+  override suspend fun onCatalogOrThreadAccessed(chanDescriptor: ChanDescriptor) {
     when (chanDescriptor) {
       is CatalogDescriptor -> catalogs[chanDescriptor]?.onCatalogAccessed()
       is ThreadDescriptor -> threads[chanDescriptor]?.onThreadAccessed()
@@ -125,7 +125,7 @@ class ChanPostCache(
     }
   }
 
-  suspend fun getManyForDescriptor(
+  override suspend fun getManyForDescriptor(
     chanDescriptor: ChanDescriptor,
     postDescriptors: Collection<PostDescriptor>
   ): List<IPostData> {
@@ -169,7 +169,7 @@ class ChanPostCache(
     return threads[threadDescriptor]?.getOriginalPost()
   }
 
-  suspend fun getLastPost(threadDescriptor: ThreadDescriptor): IPostData? {
+  override suspend fun getLastPost(threadDescriptor: ThreadDescriptor): IPostData? {
     return threads[threadDescriptor]?.getLastPost()
   }
 

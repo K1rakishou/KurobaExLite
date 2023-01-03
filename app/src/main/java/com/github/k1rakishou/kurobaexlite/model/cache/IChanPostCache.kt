@@ -15,8 +15,10 @@ interface IChanPostCache {
   suspend fun getNewPostsCount(postDescriptor: PostDescriptor): Int
   suspend fun getCatalogThreads(catalogDescriptor: CatalogDescriptor): List<OriginalPostData>
   suspend fun getOriginalPost(threadDescriptor: ThreadDescriptor): OriginalPostData?
+  suspend fun getLastPost(threadDescriptor: ThreadDescriptor): IPostData?
   suspend fun getThreadPosts(threadDescriptor: ThreadDescriptor): List<IPostData>
   suspend fun delete(chanDescriptor: ChanDescriptor)
+  suspend fun getManyForDescriptor(chanDescriptor: ChanDescriptor, postDescriptors: Collection<PostDescriptor>): List<IPostData>
   suspend fun insertCatalogThreads(catalogDescriptor: CatalogDescriptor, catalogThreads: Collection<IPostData>): PostsLoadResult
   suspend fun getLastLoadedPostForIncrementalUpdate(threadDescriptor: ThreadDescriptor): IPostData?
   suspend fun insertThreadPosts(
@@ -26,5 +28,6 @@ interface IChanPostCache {
   ): PostsLoadResult
 
   suspend fun resetThreadLastFullUpdateTime(threadDescriptor: ThreadDescriptor)
+  suspend fun onCatalogOrThreadAccessed(chanDescriptor: ChanDescriptor)
   fun listenForPostUpdates(chanDescriptor: ChanDescriptor): Flow<PostsLoadResult>
 }

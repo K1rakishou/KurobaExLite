@@ -4,16 +4,16 @@ import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.NavigationElement
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 
 class ModifyNavigationHistory(
   private val navigationHistoryManager: NavigationHistoryManager,
   private val chanPostCache: IChanPostCache,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
   private val appSettings: AppSettings
 ) {
 
@@ -30,7 +30,7 @@ class ModifyNavigationHistory(
       return
     }
 
-    val title = parsedPostDataCache.formatThreadToolbarTitle(
+    val title = parsedPostDataRepository.formatThreadToolbarTitle(
       postDescriptor = threadDescriptor.toOriginalPostDescriptor(),
       maxLength = AppConstants.navHistoryMaxTitleLength
     )
@@ -55,7 +55,7 @@ class ModifyNavigationHistory(
     }
 
     val navigationElements = threadDescriptors.map { threadDescriptor ->
-      val title = parsedPostDataCache.formatThreadToolbarTitle(
+      val title = parsedPostDataRepository.formatThreadToolbarTitle(
         postDescriptor = threadDescriptor.toOriginalPostDescriptor(),
         maxLength = AppConstants.navHistoryMaxTitleLength
       )

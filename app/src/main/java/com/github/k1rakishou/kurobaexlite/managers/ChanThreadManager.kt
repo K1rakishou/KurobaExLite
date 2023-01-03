@@ -3,12 +3,12 @@ package com.github.k1rakishou.kurobaexlite.managers
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.PostsLoadResult
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 class ChanThreadManager(
   private val siteManager: SiteManager,
   private val chanPostCache: IChanPostCache,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
   private val postBindProcessorCoordinator: PostBindProcessorCoordinator
 ) {
   private val _currentlyOpenedCatalogFlow = MutableStateFlow<CatalogDescriptor?>(null)
@@ -32,7 +32,7 @@ class ChanThreadManager(
     get() = _currentlyOpenedThreadFlow.value
 
   suspend fun delete(chanDescriptor: ChanDescriptor) {
-    parsedPostDataCache.delete(chanDescriptor)
+    parsedPostDataRepository.delete(chanDescriptor)
     chanPostCache.delete(chanDescriptor)
     postBindProcessorCoordinator.removeCached(chanDescriptor)
   }

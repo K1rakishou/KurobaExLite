@@ -6,9 +6,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
+import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostFilterHelper
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
@@ -20,15 +21,14 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.UpdateBookmarkInfoUponThreadOpen
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
+import com.github.k1rakishou.kurobaexlite.interactors.filtering.HideOrUnhidePost
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.navigation.ModifyNavigationHistory
 import com.github.k1rakishou.kurobaexlite.managers.ChanThreadManager
 import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
-import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
@@ -40,10 +40,14 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.IPostReplyChainRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
@@ -65,6 +69,9 @@ import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
 import org.koin.java.KoinJavaComponent.inject
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 import kotlin.time.seconds
@@ -73,15 +80,14 @@ import kotlin.time.seconds
 abstract class PostScreenViewModel(
   protected val savedStateHandle: SavedStateHandle
 ) : BaseViewModel() {
-  protected val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
-  protected val chanPostCache: ChanPostCache by inject(ChanPostCache::class.java)
+  protected val postReplyChainRepository: IPostReplyChainRepository by inject(IPostReplyChainRepository::class.java)
+  protected val chanPostCache: IChanPostCache by inject(IChanPostCache::class.java)
   protected val chanThreadManager: ChanThreadManager by inject(ChanThreadManager::class.java)
-  protected val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
+  protected val parsedPostDataRepository: ParsedPostDataRepository by inject(ParsedPostDataRepository::class.java)
   protected val postBindProcessorCoordinator: PostBindProcessorCoordinator by inject(PostBindProcessorCoordinator::class.java)
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   protected val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
-  protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
   protected val themeEngine: ThemeEngine by inject(ThemeEngine::class.java)
   protected val mediaViewerPostListScroller: MediaViewerPostListScroller by inject(MediaViewerPostListScroller::class.java)
   protected val modifyNavigationHistory: ModifyNavigationHistory by inject(ModifyNavigationHistory::class.java)
@@ -89,6 +95,9 @@ abstract class PostScreenViewModel(
   protected val loadChanCatalog: LoadChanCatalog by inject(LoadChanCatalog::class.java)
   protected val updateBookmarkInfoUponThreadOpen: UpdateBookmarkInfoUponThreadOpen by inject(UpdateBookmarkInfoUponThreadOpen::class.java)
   protected val fastScrollerMarksManager: FastScrollerMarksManager by inject(FastScrollerMarksManager::class.java)
+  protected val postFilterHelper: PostFilterHelper by inject(PostFilterHelper::class.java)
+  protected val postHideRepository: IPostHideRepository by inject(IPostHideRepository::class.java)
+  protected val hideOrUnhidePost: HideOrUnhidePost by inject(HideOrUnhidePost::class.java)
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
@@ -157,20 +166,16 @@ abstract class PostScreenViewModel(
     viewModelScope.launch {
       postBindProcessorCoordinator.pendingPostsForReparsingFlow
         .buffer(delay = 1.seconds, emitIfEmpty = false)
-        .collect { postDescriptorsForReparsing ->
-          val postCellDataList = postScreenState.getPosts(postDescriptorsForReparsing)
-          if (postCellDataList.isEmpty()) {
-            return@collect
-          }
+        .collect { postDescriptors ->
+          reparsePostDescriptorSuspend(postDescriptors)
+        }
+    }
 
-          val toParse = postCellDataList.mapNotNull { postCellData ->
-            val parsedPostDataContext = postCellData.parsedPostDataContext
-              ?: return@mapNotNull null
-
-            return@mapNotNull postCellData to parsedPostDataContext
-          }
-
-          reparsePostsSuspend(toParse)
+    viewModelScope.launch {
+      postHideRepository.postsToReparseFlow
+        .buffer(delay = 100.milliseconds, emitIfEmpty = false)
+        .collect { postDescriptors ->
+          reparsePostDescriptorSuspend(postDescriptors.flatten())
         }
     }
   }
@@ -269,14 +274,14 @@ abstract class PostScreenViewModel(
       return
     }
 
-    viewModelScope.launch(globalConstants.postParserDispatcher) {
+    viewModelScope.launch(postParserDispatcher) {
       reparsePostsSuspend(postCellDataList)
     }
   }
 
   fun reparseCatalogPostsWithNewViewMode() {
     reparseCatalogPostsWithNewViewModeJob?.cancel()
-    reparseCatalogPostsWithNewViewModeJob = viewModelScope.launch(globalConstants.postParserDispatcher) {
+    reparseCatalogPostsWithNewViewModeJob = viewModelScope.launch(postParserDispatcher) {
       val allCurrentPosts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)
         ?.data
         ?.postsCopy
@@ -300,20 +305,39 @@ abstract class PostScreenViewModel(
     }
   }
 
+  private suspend fun reparsePostDescriptorSuspend(
+    postDescriptors: List<PostDescriptor>
+  ) {
+    val postCellDataList = postScreenState.getPosts(postDescriptors)
+    if (postCellDataList.isEmpty()) {
+      return
+    }
+
+    val toParse = postCellDataList.mapNotNull { postCellData ->
+      val parsedPostDataContext = postCellData.parsedPostDataContext
+        ?: return@mapNotNull null
+
+      return@mapNotNull postCellData to parsedPostDataContext
+    }
+
+    reparsePostsSuspend(toParse)
+  }
+
   private suspend fun reparsePostsSuspend(postCellDataList: List<Pair<PostCellData, ParsedPostDataContext>>) {
     if (postCellDataList.isEmpty()) {
       return
     }
 
     val chanTheme = themeEngine.chanTheme
-    val parallelization = globalConstants.coresCount.coerceAtLeast(2)
+    val parallelization = AppConstants.coresCount.coerceAtLeast(2)
+    val chanDescriptor = postCellDataList.first().first.chanDescriptor
 
     val reparsedPostCellDataList = parallelForEach(
       dataList = postCellDataList,
       parallelization = parallelization,
-      dispatcher = globalConstants.postParserDispatcher
+      dispatcher = postParserDispatcher
     ) { (postCellData, parsedPostDataContext) ->
-      val newParsedPostData = parsedPostDataCache.calculateParsedPostData(
+      val newParsedPostData = parsedPostDataRepository.calculateParsedPostData(
         postCellData = postCellData,
         chanTheme = chanTheme,
         parsedPostDataContext = parsedPostDataContext
@@ -322,7 +346,8 @@ abstract class PostScreenViewModel(
       return@parallelForEach postCellData.copy(parsedPostData = newParsedPostData)
     }
 
-    postScreenState.insertOrUpdateMany(reparsedPostCellDataList)
+    val filteredPostCellDataList = postFilterHelper.filterPosts(chanDescriptor, reparsedPostCellDataList)
+    postScreenState.insertOrUpdateMany(filteredPostCellDataList)
   }
 
   fun reparsePostsByDescriptors(
@@ -333,7 +358,7 @@ abstract class PostScreenViewModel(
       return
     }
 
-    viewModelScope.launch(globalConstants.postParserDispatcher) {
+    viewModelScope.launch(postParserDispatcher) {
       reparsePostsByDescriptorsSuspend(
         chanDescriptor = chanDescriptor,
         postDescriptors = postDescriptors
@@ -358,16 +383,19 @@ abstract class PostScreenViewModel(
       return
     }
 
-    postCellDataList.forEach { postCellData ->
-      val parsedPostData = parsedPostDataCache.recalculatePostCellData(
+    val reparsedPostCellDataList = postCellDataList.map { postCellData ->
+      val parsedPostData = parsedPostDataRepository.recalculatePostCellData(
         chanDescriptor = chanDescriptor,
         postCellData = postCellData,
         chanTheme = chanTheme,
         parsedPostDataContext = postCellData.parsedPostDataContext!!
       )
 
-      postScreenState.insertOrUpdate(postCellData.copy(parsedPostData = parsedPostData))
+      return@map postCellData.copy(parsedPostData = parsedPostData)
     }
+
+    val filteredPostCellDataList = postFilterHelper.filterPosts(chanDescriptor, reparsedPostCellDataList)
+    postScreenState.insertOrUpdateMany(filteredPostCellDataList)
   }
 
   fun reparsePostSubject(postCellData: PostCellData, onPostSubjectParsed: (AnnotatedString?) -> Unit) {
@@ -380,8 +408,8 @@ abstract class PostScreenViewModel(
     viewModelScope.launch {
       val chanTheme = themeEngine.chanTheme
 
-      val parsedPostSubject = withContext(globalConstants.postParserDispatcher) {
-        return@withContext parsedPostDataCache.parseAndProcessPostSubject(
+      val parsedPostSubject = withContext(postParserDispatcher) {
+        return@withContext parsedPostDataRepository.parseAndProcessPostSubject(
           chanTheme = chanTheme,
           postIndex = postCellData.originalPostOrder,
           postDescriptor = postCellData.postDescriptor,
@@ -421,7 +449,7 @@ abstract class PostScreenViewModel(
     val chanTheme = themeEngine.chanTheme
     val initialBatchSize = if (globalUiInfoManager.isTablet) 32 else 16
 
-    return withContext(globalConstants.postParserDispatcher) {
+    return withContext(postParserDispatcher) {
       val startIndex = postDataList
         .indexOfFirst { postData -> postData.postDescriptor == startPostDescriptor }
         .takeIf { index -> index >= 0 }
@@ -459,10 +487,14 @@ abstract class PostScreenViewModel(
           null
         }
 
+        val postHideUi = postHideRepository.postHideForPostDescriptor(postData.postDescriptor)
+          ?.toPostHideUi()
+
         resultList += PostCellData.fromPostData(
           chanDescriptor = chanDescriptor,
           postData = postData,
-          parsedPostData = parsedPostData
+          parsedPostData = parsedPostData,
+          postHideUi = postHideUi
         )
       }
 
@@ -480,7 +512,7 @@ abstract class PostScreenViewModel(
   ) {
     val chanTheme = themeEngine.chanTheme
 
-    withContext(globalConstants.postParserDispatcher) {
+    withContext(postParserDispatcher) {
       val startIndex = postCellDataList
         .indexOfFirst { postData -> postData.postDescriptor == startPostDescriptor }
         .takeIf { index -> index >= 0 }
@@ -518,13 +550,13 @@ abstract class PostScreenViewModel(
     currentParseJob?.cancel()
     currentParseJob = null
 
-    currentParseJob = viewModelScope.launch(globalConstants.postParserDispatcher) {
+    currentParseJob = viewModelScope.launch(postParserDispatcher) {
       if (postDataList.isEmpty()) {
         withContext(NonCancellable) { onPostsParsed(emptyList()) }
         return@launch
       }
 
-      val chunksCount = globalConstants.coresCount.coerceAtLeast(2)
+      val chunksCount = AppConstants.coresCount.coerceAtLeast(2)
       val chunkSize = ((postDataList.size / chunksCount) + 1).coerceAtLeast(chunksCount)
       val chanTheme = themeEngine.chanTheme
       val isParsingCatalog = chanDescriptor is CatalogDescriptor
@@ -549,7 +581,7 @@ abstract class PostScreenViewModel(
             .bidirectionalSequenceIndexed(startPosition = 0)
             .chunked(chunkSize)
             .mapIndexed { chunkIndex, postDataListChunk ->
-              return@mapIndexed async(globalConstants.postParserDispatcher) {
+              return@mapIndexed async(postParserDispatcher) {
                 logcat(TAG, LogPriority.VERBOSE) {
                   "parseRemainingPostsAsyncRegular() running chunk ${chunkIndex} with " +
                     "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
@@ -571,11 +603,15 @@ abstract class PostScreenViewModel(
                     forced = parsePostsOptions.forced
                   )
 
+                  val postHideUi = postHideRepository.postHideForPostDescriptor(postData.postDescriptor)
+                    ?.toPostHideUi()
+
                   mutex.withLock {
                     resultMap[postData.postDescriptor] = PostCellData.fromPostData(
                       chanDescriptor = chanDescriptor,
                       postData = postData,
-                      parsedPostData = parsedPostData
+                      parsedPostData = parsedPostData,
+                      postHideUi = postHideUi
                     )
                   }
                 }
@@ -596,7 +632,7 @@ abstract class PostScreenViewModel(
         if (parsePostsOptions.parseRepliesTo) {
           val postDescriptors = postDataList.map { postData -> postData.postDescriptor }
           val postDataMap = postDataList.associateBy { postData -> postData.postDescriptor }
-          val repliesToPostDescriptorSet = postReplyChainManager.getManyRepliesTo(postDescriptors)
+          val repliesToPostDescriptorSet = postReplyChainRepository.getManyRepliesTo(postDescriptors)
 
           val repliesToPostDataSet = hashSetOf<IPostData>()
           repliesToPostDataSet += chanPostCache.getManyForDescriptor(chanDescriptor, repliesToPostDescriptorSet)
@@ -616,7 +652,7 @@ abstract class PostScreenViewModel(
               repliesToPostDataSet
                 .chunked(repliesToChunkSize)
                 .mapIndexed { chunkIndex, postDataListChunk ->
-                  return@mapIndexed async(globalConstants.postParserDispatcher) {
+                  return@mapIndexed async(postParserDispatcher) {
                     logcat(TAG, LogPriority.VERBOSE) {
                       "parseRemainingPostsAsyncReplies() running chunk ${chunkIndex} with " +
                         "${postDataListChunk.size} elements on thread ${Thread.currentThread().name}"
@@ -636,11 +672,15 @@ abstract class PostScreenViewModel(
                         forced = true
                       )
 
+                      val postHideUi = postHideRepository.postHideForPostDescriptor(postData.postDescriptor)
+                        ?.toPostHideUi()
+
                       mutex.withLock {
                         resultMap[postData.postDescriptor] = PostCellData.fromPostData(
                           chanDescriptor = chanDescriptor,
                           postData = postData,
-                          parsedPostData = parsedPostData
+                          parsedPostData = parsedPostData,
+                          postHideUi = postHideUi
                         )
                       }
                     }
@@ -664,12 +704,16 @@ abstract class PostScreenViewModel(
         val postsToSort = resultMap.values.toList()
 
         logcat(TAG) { "parseRemainingPostsAsync() sorting ${postsToSort.size} posts..." }
-        val (postCellDataListSorted, time) = measureTimedValue { sorter(postsToSort) }
-        logcat(TAG) { "parseRemainingPostsAsync() sorting ${postsToSort.size} done! Took $time" }
+        val (postCellDataListSorted, time1) = measureTimedValue { sorter(postsToSort) }
+        logcat(TAG) { "parseRemainingPostsAsync() sorting ${postsToSort.size} done! Took $time1" }
+
+        logcat(TAG) { "parseRemainingPostsAsync() filtering ${postsToSort.size} posts..." }
+        val postCellDataListFiltered = postFilterHelper.filterPosts(chanDescriptor, postCellDataListSorted)
+        logcat(TAG) { "parseRemainingPostsAsync() filtered ${postsToSort.size} done!" }
 
         ensureActive()
         showPostsLoadingSnackbarJob.cancel()
-        withContext(NonCancellable) { onPostsParsed(postCellDataListSorted) }
+        withContext(NonCancellable) { onPostsParsed(postCellDataListFiltered) }
 
         val deltaTime = SystemClock.elapsedRealtime() - startTime
         logcat(TAG) {
@@ -694,7 +738,7 @@ abstract class PostScreenViewModel(
     parsedPostDataContext: ParsedPostDataContext,
     forced: Boolean = false
   ): ParsedPostData {
-    return parsedPostDataCache.getOrCalculateParsedPostData(
+    return parsedPostDataRepository.getOrCalculateParsedPostData(
       chanDescriptor = chanDescriptor,
       postData = postData,
       parsedPostDataContext = parsedPostDataContext,
@@ -899,6 +943,10 @@ abstract class PostScreenViewModel(
     logcat(tag = TAG) { "restoreScrollPosition($chanDescriptor, $scrollToPost) Nothing to restore" }
   }
 
+  fun unhidePost(postDescriptor: PostDescriptor) {
+    viewModelScope.launch { hideOrUnhidePost.unhide(postDescriptor) }
+  }
+
   data class ParsePostsOptions(
     val forced: Boolean = false,
     // If set to true then along with new posts the posts these new posts reply to will be re-parsed
@@ -929,6 +977,22 @@ abstract class PostScreenViewModel(
 
     const val LAST_VISITED_CATALOG_KEY = "last_visited_catalog"
     const val LAST_VISITED_THREAD_KEY = "last_visited_thread"
+
+    @Suppress("MoveLambdaOutsideParentheses")
+    private val postParserDispatcher by lazy {
+      val threadNameFormat = "post_parser_thread_%d"
+      val mThreadId = AtomicInteger(0)
+
+      return@lazy Executors.newFixedThreadPool(
+        AppConstants.coresCount.coerceAtLeast(2),
+        { runnable ->
+          val thread = Thread(runnable)
+          thread.name = String.format(threadNameFormat, mThreadId.getAndIncrement())
+
+          return@newFixedThreadPool thread
+        }
+      ).asCoroutineDispatcher()
+    }
   }
 
 }

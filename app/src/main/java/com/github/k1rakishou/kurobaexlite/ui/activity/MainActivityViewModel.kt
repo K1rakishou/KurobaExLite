@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class MainActivityViewModel(
   private val loadBookmarks: LoadBookmarks,
   private val snackbarManager: SnackbarManager,
-  private val appResources: AppResources,
+  private val appResources: IAppResources,
 ) : BaseViewModel() {
   val rootNavigationRouter = MainNavigationRouter()
 

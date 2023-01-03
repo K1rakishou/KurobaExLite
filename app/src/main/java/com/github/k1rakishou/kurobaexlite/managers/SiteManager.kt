@@ -2,7 +2,7 @@ package com.github.k1rakishou.kurobaexlite.managers
 
 import android.content.Context
 import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
@@ -82,7 +82,7 @@ class SiteProvider(
   private val dvachDataSource by inject<DvachDataSource>(DvachDataSource::class.java)
   private val appSettings by inject<AppSettings>(AppSettings::class.java)
   private val moshi by inject<Moshi>(Moshi::class.java)
-  private val proxiedOkHttpClient by inject<ProxiedOkHttpClient>(ProxiedOkHttpClient::class.java)
+  private val proxiedOkHttpClient by inject<IKurobaOkHttpClient>(IKurobaOkHttpClient::class.java)
   private val loadChanCatalog by inject<LoadChanCatalog>(LoadChanCatalog::class.java)
   private val staticHtmlColorRepository by inject<StaticHtmlColorRepository>(StaticHtmlColorRepository::class.java)
 

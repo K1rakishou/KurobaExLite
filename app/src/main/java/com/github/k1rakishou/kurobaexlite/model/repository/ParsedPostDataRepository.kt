@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.model.cache
+package com.github.k1rakishou.kurobaexlite.model.repository
 
 import android.content.Context
 import android.text.format.DateUtils
@@ -31,7 +31,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.withLockNonCancellable
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
-import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
@@ -61,13 +60,13 @@ import logcat.logcat
 import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 
-class ParsedPostDataCache(
+class ParsedPostDataRepository(
   private val appContext: Context,
   private val coroutineScope: CoroutineScope,
   private val appSettings: AppSettings,
   private val postCommentParser: PostCommentParser,
   private val postCommentApplier: PostCommentApplier,
-  private val postReplyChainManager: PostReplyChainManager,
+  private val postReplyChainRepository: IPostReplyChainRepository,
   private val markedPostManager: MarkedPostManager
 ) {
   private val mutex = Mutex()
@@ -546,7 +545,7 @@ class ParsedPostDataCache(
     }
 
     if (repliesTo.isNotEmpty()) {
-      postReplyChainManager.insert(postDescriptor, repliesTo)
+      postReplyChainRepository.insert(postDescriptor, repliesTo)
     }
 
     return repliesTo
@@ -956,7 +955,7 @@ class ParsedPostDataCache(
       return AnnotatedString(text)
     }
 
-    val repliesFrom = postReplyChainManager.getRepliesFrom(postDescriptor)
+    val repliesFrom = postReplyChainRepository.getRepliesFrom(postDescriptor)
     if (repliesFrom.isNotEmpty()) {
       val repliesFromCount = repliesFrom.size
 

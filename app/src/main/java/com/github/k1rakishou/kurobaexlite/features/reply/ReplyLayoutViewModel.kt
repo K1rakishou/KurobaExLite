@@ -12,7 +12,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
@@ -62,7 +62,7 @@ class ReplyLayoutViewModel(
   private val addOrRemoveBookmark: AddOrRemoveBookmark,
   private val loadChanCatalog: LoadChanCatalog,
   private val localFilePicker: LocalFilePicker,
-  private val appResources: AppResources
+  private val appResources: IAppResources
 ) : BaseViewModel() {
   private val sendReplyJobMap = mutableMapOf<ScreenKey, Job>()
   private val manuallyCanceled = mutableSetOf<ScreenKey>()

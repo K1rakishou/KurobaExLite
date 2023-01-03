@@ -59,7 +59,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenVi
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostImageLongtapContextMenu
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostImageThumbnail
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -512,7 +512,7 @@ private fun ContentInternal(
   val mediaViewerPostListScroller: MediaViewerPostListScroller = koinRemember()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
   val snackbarManager: SnackbarManager = koinRemember()
-  val appResources: AppResources = koinRemember()
+  val appResources: IAppResources = koinRemember()
 
   val kurobaSnackbarState = rememberKurobaSnackbarState()
 

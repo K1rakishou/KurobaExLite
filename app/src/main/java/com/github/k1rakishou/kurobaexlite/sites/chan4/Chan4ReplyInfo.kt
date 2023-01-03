@@ -2,7 +2,7 @@ package com.github.k1rakishou.kurobaexlite.sites.chan4
 
 import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressRequestBody
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
 import com.github.k1rakishou.kurobaexlite.helpers.util.groupOrNull
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
@@ -34,7 +34,7 @@ import java.util.regex.Pattern
 
 class Chan4ReplyInfo(
   private val site: Chan4,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val loadChanCatalog: LoadChanCatalog
 ) : Site.ReplyInfo {
 

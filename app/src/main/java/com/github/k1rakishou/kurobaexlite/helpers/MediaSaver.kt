@@ -7,7 +7,6 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.annotation.GuardedBy
 import androidx.annotation.RequiresApi
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.executors.SerializedCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
@@ -20,11 +19,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.helpers.util.useBufferedSink
 import com.github.k1rakishou.kurobaexlite.helpers.util.useBufferedSource
 import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.imageNameForDiskStore
 import com.github.k1rakishou.kurobaexlite.model.data.mimeType
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,9 +50,8 @@ class MediaSaver(
   private val appScope: CoroutineScope,
   private val applicationContext: Context,
   private val androidHelpers: AndroidHelpers,
-  private val globalConstants: GlobalConstants,
   private val proxiedOkHttpClient: IKurobaOkHttpClient,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
 ) {
   private val activeDownloadsMutex = Mutex()
 
@@ -196,7 +194,7 @@ class MediaSaver(
         logcat { "savePostImagesInternal(${chanDescriptor}) start saving ${postImages.size} images" }
 
         postImages
-          .chunked(globalConstants.coresCount)
+          .chunked(AppConstants.coresCount)
           .forEach { batch ->
             val isCanceled = activeDownloadsMutex.withLock { activeDownloads[uuid]?.isCanceled ?: true }
             if (isCanceled) {
@@ -356,7 +354,7 @@ class MediaSaver(
     val postDescriptor = postImage.ownerPostDescriptor
     val originalPostDescriptor = postDescriptor.threadDescriptor.toOriginalPostDescriptor()
 
-    val threadTitle = parsedPostDataCache.getParsedPostData(originalPostDescriptor)?.parsedPostSubject
+    val threadTitle = parsedPostDataRepository.getParsedPostData(originalPostDescriptor)?.parsedPostSubject
       ?.mapNotNull { char -> if (char.isLetterOrDigit()) char else '_' }
       ?.let { charList -> String(charList.toCharArray()) }
 

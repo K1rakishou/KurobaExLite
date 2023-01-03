@@ -791,6 +791,47 @@ suspend fun <T, R> parallelForEach(
   }
 }
 
+suspend fun <T, R> parallelForEachOrdered(
+  dataList: Collection<T>,
+  parallelization: Int,
+  dispatcher: CoroutineDispatcher,
+  processFunc: suspend (T) -> R?
+): List<R> {
+  if (dataList.isEmpty()) {
+    return emptyList()
+  }
+
+  return supervisorScope {
+    val dataListIndexed = mutableListWithCap<DataIndexed<T>>(dataList.size)
+    dataList.forEachIndexed { index, data -> dataListIndexed += DataIndexed(data, index)  }
+
+    return@supervisorScope dataListIndexed
+      .chunked(parallelization)
+      .flatMap { dataChunk ->
+        return@flatMap dataChunk
+          .map { (data, index) ->
+            return@map async(dispatcher) {
+              try {
+                ensureActive()
+                return@async DataIndexed(processFunc(data), index)
+              } catch (error: Throwable) {
+                return@async null
+              }
+            }
+          }
+          .awaitAll()
+          .filterNotNull()
+      }
+      .sortedBy { (_, index) -> index }
+      .mapNotNull { (data, index) -> data }
+  }
+}
+
+private data class DataIndexed<T>(
+  val data: T,
+  val index: Int
+)
+
 @Suppress("UnnecessaryVariable")
 suspend fun <T : Any> retryableIoTask(attempts: Int, task: suspend (Int) -> T): T {
   require(attempts > 0) { "Bad attempts count: $attempts" }

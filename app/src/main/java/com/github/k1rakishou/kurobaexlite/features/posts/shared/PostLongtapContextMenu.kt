@@ -9,12 +9,15 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
+import com.github.k1rakishou.kurobaexlite.interactors.filtering.HideOrUnhidePost
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
-import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.IPostReplyChainRepository
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
@@ -33,10 +36,12 @@ class PostLongtapContextMenu(
 
   private val markedPostManager: MarkedPostManager by inject(MarkedPostManager::class.java)
   private val modifyMarkedPosts: ModifyMarkedPosts by inject(ModifyMarkedPosts::class.java)
-  private val postReplyChainManager: PostReplyChainManager by inject(PostReplyChainManager::class.java)
+  private val postReplyChainRepository: IPostReplyChainRepository by inject(IPostReplyChainRepository::class.java)
   private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val postBindProcessorCoordinator: PostBindProcessorCoordinator by inject(PostBindProcessorCoordinator::class.java)
+  private val postHideRepository: IPostHideRepository by inject(IPostHideRepository::class.java)
+  private val hideOrUnhidePost: HideOrUnhidePost by inject(HideOrUnhidePost::class.java)
 
   fun showMenu(
     postListOptions: PostListOptions,
@@ -74,6 +79,22 @@ class PostLongtapContextMenu(
           menuItemData = postCellData.postDescriptor,
           text = FloatingMenuItem.MenuItemText.Id(R.string.post_longtap_menu_load_inlined_content)
         )
+
+        if (postCellData.chanDescriptor is CatalogDescriptor || !postCellData.postDescriptor.isOP) {
+          if (postHideRepository.isPostHidden(postCellData.postDescriptor)) {
+            this += FloatingMenuItem.Text(
+              menuItemKey = UNHIDE_POST,
+              menuItemData = postCellData.postDescriptor,
+              text = FloatingMenuItem.MenuItemText.Id(R.string.post_longtap_menu_unhide_post)
+            )
+          } else {
+            this += FloatingMenuItem.Text(
+              menuItemKey = HIDE_POST,
+              menuItemData = postCellData.postDescriptor,
+              text = FloatingMenuItem.MenuItemText.Id(R.string.post_longtap_menu_hide_post)
+            )
+          }
+        }
 
         if (!postListOptions.isCatalogMode) {
           if (markedPostManager.isPostMarkedAsMine(postCellData.postDescriptor)) {
@@ -174,7 +195,7 @@ class PostLongtapContextMenu(
           return
         }
 
-        val postsToReparse = postReplyChainManager.getRepliesFrom(postDescriptor).toMutableSet()
+        val postsToReparse = postReplyChainRepository.getRepliesFrom(postDescriptor).toMutableSet()
         postsToReparse += postDescriptor
 
         reparsePostsFunc(postsToReparse)
@@ -187,7 +208,7 @@ class PostLongtapContextMenu(
           return
         }
 
-        val postsToReparse = postReplyChainManager.getRepliesFrom(postDescriptor).toMutableSet()
+        val postsToReparse = postReplyChainRepository.getRepliesFrom(postDescriptor).toMutableSet()
         postsToReparse += postDescriptor
 
         reparsePostsFunc(postsToReparse)
@@ -217,6 +238,16 @@ class PostLongtapContextMenu(
           postDescriptor = postCellData.postDescriptor
         )
       }
+      HIDE_POST -> {
+        hideOrUnhidePost.hide(
+          chanDescriptor = postCellData.chanDescriptor,
+          postDescriptor = postCellData.postDescriptor,
+          applyToReplies = true
+        )
+      }
+      UNHIDE_POST -> {
+        hideOrUnhidePost.unhide(postCellData.postDescriptor)
+      }
     }
   }
 
@@ -228,6 +259,8 @@ class PostLongtapContextMenu(
     private const val COPY_POST_URL = 4
     private const val POST_SELECTION = 5
     private const val LOAD_INLINED_CONTENT = 6
+    private const val HIDE_POST = 7
+    private const val UNHIDE_POST = 8
   }
 
 }

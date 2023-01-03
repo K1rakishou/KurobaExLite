@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.di
 
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostFilterHelper
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
@@ -14,13 +14,11 @@ import com.github.k1rakishou.kurobaexlite.managers.ISiteManager
 import com.github.k1rakishou.kurobaexlite.managers.LastVisitedEndpointManager
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.NavigationHistoryManager
-import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.ReportManager
 import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import org.koin.core.module.Module
 
 internal fun Module.managers() {
@@ -28,7 +26,6 @@ internal fun Module.managers() {
   single<ISiteManager> { get<SiteManager>() }
   single { ApplicationVisibilityManager() }
   single { CatalogManager() }
-  single { PostReplyChainManager() }
   single { ChanViewManager() }
   single { SnackbarManager(appContext = get()) }
   single { NavigationHistoryManager() }
@@ -40,8 +37,8 @@ internal fun Module.managers() {
   single {
     ChanThreadManager(
       siteManager = get(),
-      chanPostCache = get<ChanPostCache>(),
-      parsedPostDataCache = get(),
+      chanPostCache = get(),
+      parsedPostDataRepository = get(),
       postBindProcessorCoordinator = get()
     )
   }
@@ -53,7 +50,7 @@ internal fun Module.managers() {
       appScope = get(),
       appSettings = get(),
       androidHelpers = get(),
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      proxiedOkHttpClient = get(),
       moshi = get()
     )
   }
@@ -70,8 +67,8 @@ internal fun Module.managers() {
     FastScrollerMarksManager(
       appScope = get(),
       appSettings = get(),
-      parsedPostDataCache = get(),
-      chanPostCache = get<ChanPostCache>()
+      parsedPostDataRepository = get(),
+      chanPostCache = get()
     )
   }
 
@@ -87,12 +84,19 @@ internal fun Module.managers() {
       appScope = get(),
       appContext = get(),
       androidHelpers = get(),
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      proxiedOkHttpClient = get(),
       moshi = get(),
     )
   }
 
   single {
     RevealedSpoilerImages()
+  }
+
+  single {
+    PostFilterHelper(
+      postHideRepository = get(),
+      postReplyChainRepository = get()
+    )
   }
 }

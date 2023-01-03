@@ -3,7 +3,7 @@ package com.github.k1rakishou.kurobaexlite.sites.chan4
 import android.content.Context
 import androidx.compose.ui.text.AnnotatedString
 import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.Chan4PostParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -56,7 +56,7 @@ class Chan4(
   private val chan4DataSource: Chan4DataSource,
   private val appSettings: AppSettings,
   private val moshi: Moshi,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val staticHtmlColorRepository: StaticHtmlColorRepository,
   private val loadChanCatalog: LoadChanCatalog,
 ) : Site {

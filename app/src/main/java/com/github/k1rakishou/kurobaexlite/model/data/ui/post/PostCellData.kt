@@ -36,6 +36,7 @@ data class PostCellData(
   val deleted: Boolean,
   val closed: Boolean,
   val sticky: Sticky?,
+  val postHideUi: PostHideUi?,
   val bumpLimit: Boolean?,
   val imageLimit: Boolean?,
   val parsedPostData: ParsedPostData?,
@@ -71,11 +72,15 @@ data class PostCellData(
   @Immutable
   data class Sticky(val maxCapacity: Int?)
 
+  @Immutable
+  data class PostHideUi(val reason: String)
+
   companion object {
     fun fromPostData(
       chanDescriptor: ChanDescriptor,
       postData: IPostData,
-      parsedPostData: ParsedPostData?
+      parsedPostData: ParsedPostData?,
+      postHideUi: PostHideUi?
     ): PostCellData {
       BackgroundUtils.ensureBackgroundThread()
 
@@ -113,6 +118,7 @@ data class PostCellData(
         deleted = postData.deleted,
         closed = postData.closed,
         sticky = postData.sticky?.toPostCellDataSticky(),
+        postHideUi = postHideUi,
         bumpLimit = postData.bumpLimit,
         imageLimit = postData.imageLimit,
         parsedPostData = parsedPostData,

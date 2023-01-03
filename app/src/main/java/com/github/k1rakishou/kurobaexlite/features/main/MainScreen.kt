@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreen
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.Tuple4
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -32,10 +32,10 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
+import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
@@ -160,12 +160,12 @@ private fun ContentInternal(
   val insets = LocalWindowInsets.current
   val componentActivity = LocalComponentActivity.current
 
-  val appResources = koinRemember<AppResources>()
+  val appResources = koinRemember<IAppResources>()
   val mediaSaver = koinRemember<MediaSaver>()
   val snackbarManager = koinRemember<SnackbarManager>()
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
-  val chanPostCache = koinRemember<ChanPostCache>()
-  val parsedPostDataCache = koinRemember<ParsedPostDataCache>()
+  val chanPostCache = koinRemember<IChanPostCache>()
+  val parsedPostDataRepository = koinRemember<ParsedPostDataRepository>()
 
   val contentPadding = remember(
     key1 = insets.left,
@@ -188,7 +188,7 @@ private fun ContentInternal(
           appResources = appResources,
           mediaSaver = mediaSaver,
           chanPostCache = chanPostCache,
-          parsedPostDataCache = parsedPostDataCache
+          parsedPostDataRepository = parsedPostDataRepository
         )
       }
     }
@@ -256,10 +256,10 @@ private fun ContentInternal(
 private suspend fun onCancelMediaDownloadButtonClicked(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter,
-  appResources: AppResources,
+  appResources: IAppResources,
   mediaSaver: MediaSaver,
-  chanPostCache: ChanPostCache,
-  parsedPostDataCache: ParsedPostDataCache
+  chanPostCache: IChanPostCache,
+  parsedPostDataRepository: ParsedPostDataRepository
 ) {
   val activeDownloadsCount = mediaSaver.activeDownloadsCount()
 
@@ -297,7 +297,7 @@ private suspend fun onCancelMediaDownloadButtonClicked(
 
           val postDescriptor = chanPostCache.getOriginalPost(chanDescriptor)?.postDescriptor
           if (postDescriptor != null) {
-            threadTitle = parsedPostDataCache.formatThreadToolbarTitle(postDescriptor)
+            threadTitle = parsedPostDataRepository.formatThreadToolbarTitle(postDescriptor)
           }
 
           if (threadTitle.isNullOrEmpty()) {

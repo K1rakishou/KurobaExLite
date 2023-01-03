@@ -24,7 +24,7 @@ import androidx.compose.ui.util.fastForEach
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 class CatalogSelectionScreenToolbar(
   private val currentSiteKeyArg: SiteKey?,
-  private val appResources: AppResources,
+  private val appResources: IAppResources,
   private val defaultToolbarKey: String,
   private val defaultToolbarStateKey: String
 ) : KurobaChildToolbar() {
@@ -153,7 +153,7 @@ class CatalogSelectionScreenToolbar(
 
   class State(
     stateKey: String,
-    appResources: AppResources
+    appResources: IAppResources
   ) : SimpleToolbarState<CatalogSelectionScreen.ToolbarIcons>(
     saveableComponentKey = stateKey,
     title = appResources.string(R.string.board_selection_screen_toolbar_title),

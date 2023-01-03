@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.helpers.di
 
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddOrRemoveBookmark
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddToHistoryAllCatalogThreads
@@ -19,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.catalog.CatalogGlobalSearc
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadCatalogsForAllSites
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.RetrieveSiteCatalogList
+import com.github.k1rakishou.kurobaexlite.interactors.filtering.HideOrUnhidePost
 import com.github.k1rakishou.kurobaexlite.interactors.image_search.YandexImageSearch
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.LoadMarkedPosts
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
@@ -28,8 +28,6 @@ import com.github.k1rakishou.kurobaexlite.interactors.navigation.PersistNavigati
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThreadView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanCatalogView
 import com.github.k1rakishou.kurobaexlite.interactors.thread_view.UpdateChanThreadView
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import org.koin.core.module.Module
 
 internal fun Module.interactors() {
@@ -54,7 +52,7 @@ internal fun Module.interactors() {
     InstallMpvNativeLibrariesFromGithub(
       appContext = get(),
       moshi = get(),
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>()
+      proxiedOkHttpClient = get()
     )
   }
   single {
@@ -75,7 +73,7 @@ internal fun Module.interactors() {
       siteManager = get(),
       bookmarksManager = get(),
       replyNotificationsHelper = get(),
-      parsedPostDataCache = get(),
+      parsedPostDataRepository = get(),
       loadChanThreadView = get(),
       extractRepliesToMyPosts = get(),
       persistBookmarks = get(),
@@ -112,7 +110,7 @@ internal fun Module.interactors() {
   single {
     UpdatePostSeenForBookmark(
       appScope = get(),
-      chanPostCache = get<ChanPostCache>(),
+      chanPostCache = get(),
       bookmarksManager = get(),
       kurobaExLiteDatabase = get(),
     )
@@ -149,8 +147,8 @@ internal fun Module.interactors() {
   single {
     ModifyNavigationHistory(
       navigationHistoryManager = get(),
-      chanPostCache = get<ChanPostCache>(),
-      parsedPostDataCache = get(),
+      chanPostCache = get(),
+      parsedPostDataRepository = get(),
       appSettings = get()
     )
   }
@@ -166,9 +164,10 @@ internal fun Module.interactors() {
   single {
     CatalogGlobalSearch(
       globalSearchRepository = get(),
-      parsedPostDataCache = get(),
+      parsedPostDataRepository = get(),
+      postHideRepository = get(),
       postCommentApplier = get(),
-      themeEngine = get<ThemeEngine>()
+      themeEngine = get()
     )
   }
   single { PersistBookmarks(bookmarksManager = get(), kurobaExLiteDatabase = get()) }
@@ -176,8 +175,8 @@ internal fun Module.interactors() {
     UpdateBookmarkInfoUponThreadOpen(
       appScope = get(),
       bookmarksManager = get(),
-      chanPostCache = get<ChanPostCache>(),
-      parsedPostDataCache = get(),
+      chanPostCache = get(),
+      parsedPostDataRepository = get(),
       kurobaExLiteDatabase = get(),
     )
   }
@@ -185,10 +184,10 @@ internal fun Module.interactors() {
     BookmarkAllCatalogThreads(
       appScope = get(),
       appSettings = get(),
-      chanPostCache = get<ChanPostCache>(),
+      chanPostCache = get(),
       bookmarksManager = get(),
       kurobaExLiteDatabase = get(),
-      parsedPostDataCache = get(),
+      parsedPostDataRepository = get(),
       restartBookmarkBackgroundWatcher = get()
     )
   }
@@ -196,12 +195,12 @@ internal fun Module.interactors() {
     AddToHistoryAllCatalogThreads(
       appScope = get(),
       modifyNavigationHistory = get(),
-      chanPostCache = get<ChanPostCache>()
+      chanPostCache = get()
     )
   }
   single {
     YandexImageSearch(
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      proxiedOkHttpClient = get(),
       moshi = get()
     )
   }
@@ -209,6 +208,13 @@ internal fun Module.interactors() {
     LoadCatalogsForAllSites(
       siteManager = get(),
       retrieveSiteCatalogList = get(),
+    )
+  }
+  single {
+    HideOrUnhidePost(
+      postHideRepository = get(),
+      postReplyChainRepository = get(),
+      parsedPostDataRepository = get()
     )
   }
 }

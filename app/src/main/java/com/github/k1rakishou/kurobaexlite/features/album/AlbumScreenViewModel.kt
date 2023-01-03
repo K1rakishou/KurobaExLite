@@ -9,7 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
@@ -19,7 +19,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.managers.ChanViewManager
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.originalFileNameForPostCell
@@ -27,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,9 +41,9 @@ import java.util.*
 
 class AlbumScreenViewModel(
   private val appSettings: AppSettings,
-  private val appResources: AppResources,
+  private val appResources: IAppResources,
   private val chanViewManager: ChanViewManager,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
   private val chanPostCache: IChanPostCache,
   private val mediaSaver: MediaSaver,
 ) : BaseViewModel() {
@@ -297,7 +297,7 @@ class AlbumScreenViewModel(
   }
 
   private suspend fun mapPostImageToAlbumImage(postImage: IPostImage): AlbumImage {
-    val postSubject = parsedPostDataCache.getParsedPostData(postImage.ownerPostDescriptor)
+    val postSubject = parsedPostDataRepository.getParsedPostData(postImage.ownerPostDescriptor)
       ?.parsedPostSubject
 
     val imageInfo = buildString {

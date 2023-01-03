@@ -8,7 +8,7 @@ import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddToHistoryAllCatalogThreads
@@ -35,7 +35,7 @@ class CatalogScreenToolbarActionHandler(
   private val screenCoroutineScope: CoroutineScope
 ) {
   private val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
-  private val appResources: AppResources by inject(AppResources::class.java)
+  private val appResources: IAppResources by inject(IAppResources::class.java)
   private val appSettings: AppSettings by inject(AppSettings::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
   private val bookmarkAllCatalogThreads: BookmarkAllCatalogThreads by inject(BookmarkAllCatalogThreads::class.java)

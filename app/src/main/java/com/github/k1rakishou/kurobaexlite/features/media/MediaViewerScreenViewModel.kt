@@ -18,7 +18,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.CacheFileType
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressResponseBody
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
@@ -28,7 +28,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.interactors.InstallMpvNativeLibrariesFromGithub
-import com.github.k1rakishou.kurobaexlite.managers.PostReplyChainManager
 import com.github.k1rakishou.kurobaexlite.managers.RevealedSpoilerImages
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
@@ -42,6 +41,8 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.IPostReplyChainRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.ProducerScope
@@ -65,15 +66,16 @@ class MediaViewerScreenViewModel(
   val mpvSettings: MpvSettings,
   private val mpvInitializer: MpvInitializer,
   private val appSettings: AppSettings,
-  private val appResources: AppResources,
+  private val appResources: IAppResources,
   private val chanPostCache: IChanPostCache,
+  private val postHideRepository: IPostHideRepository,
   private val siteManager: SiteManager,
   private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val kurobaLruDiskCache: KurobaLruDiskCache,
   private val installMpvNativeLibrariesFromGithub: InstallMpvNativeLibrariesFromGithub,
   private val imageLoader: ImageLoader,
   private val mediaSaver: MediaSaver,
-  private val postReplyChainManager: PostReplyChainManager,
+  private val postReplyChainRepository: IPostReplyChainRepository,
   private val revealedSpoilerImages: RevealedSpoilerImages,
 ) : BaseViewModel() {
 
@@ -112,6 +114,10 @@ class MediaViewerScreenViewModel(
       }
 
       posts.forEach { post ->
+        if (postHideRepository.isPostHidden(post.postDescriptor)) {
+          return@forEach
+        }
+
         val imagesOfThisPost = post.images
           ?: return@forEach
 
@@ -394,7 +400,7 @@ class MediaViewerScreenViewModel(
 
   suspend fun getReplyCountToPost(postDescriptor: PostDescriptor): Int {
     return withContext(viewModelScope.coroutineContext) {
-      return@withContext postReplyChainManager.getRepliesFrom(postDescriptor).size
+      return@withContext postReplyChainRepository.getRepliesFrom(postDescriptor).size
     }
   }
 

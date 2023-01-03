@@ -232,8 +232,10 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       is ThreadDescriptor -> ThreadPostSorter.sortThreadPostCellData(posts)
     }
 
+    val filteredPosts = postFilterHelper.filterPosts(chanDescriptor, sortedPosts)
+
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(popupPostViewMode.chanDescriptor))
-    postScreenState.insertOrUpdateMany(sortedPosts)
+    postScreenState.insertOrUpdateMany(filteredPosts)
 
     return true
   }
@@ -246,7 +248,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     val postDescriptor = popupPostViewMode.postDescriptor
     postScreenState.updateChanDescriptor(chanDescriptor)
 
-    val repliesFrom = postReplyChainManager.getRepliesFrom(postDescriptor).toMutableSet()
+    val repliesFrom = postReplyChainRepository.getRepliesFrom(postDescriptor).toMutableSet()
     if (popupPostViewMode.includeThisPost) {
       repliesFrom += postDescriptor
     }
@@ -259,9 +261,10 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     )
 
     val sortedPosts = ThreadPostSorter.sortThreadPostCellData(posts)
+    val filteredPosts = postFilterHelper.filterPosts(chanDescriptor, sortedPosts)
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(chanDescriptor))
-    postScreenState.insertOrUpdateMany(sortedPosts)
+    postScreenState.insertOrUpdateMany(filteredPosts)
 
     return true
   }
@@ -305,8 +308,10 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       }
     }
 
+    val filteredPosts = postFilterHelper.filterPosts(chanDescriptor, sortedPosts)
+
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(chanDescriptor))
-    postScreenState.insertOrUpdateMany(sortedPosts)
+    postScreenState.insertOrUpdateMany(filteredPosts)
 
     return true
   }
@@ -346,7 +351,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
 
     val updatedPostDataList = withContext(Dispatchers.IO) {
       return@withContext postCellDataList.map { oldPostData ->
-        val oldParsedPostDataContext = parsedPostDataCache.getParsedPostData(
+        val oldParsedPostDataContext = parsedPostDataRepository.getParsedPostData(
           chanDescriptor = chanDescriptor,
           postDescriptor = oldPostData.postDescriptor
         )?.parsedPostDataContext
@@ -369,16 +374,20 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
             highlightedPostDescriptor = highlightedPostDescriptor
           )
 
-        val parsedPostData = parsedPostDataCache.calculateParsedPostData(
+        val parsedPostData = parsedPostDataRepository.calculateParsedPostData(
           postData = oldPostData,
           parsedPostDataContext = newParsedPostDataContext,
           chanTheme = chanTheme
         )
 
+        val postHideUi = postHideRepository.postHideForPostDescriptor(oldPostData.postDescriptor)
+          ?.toPostHideUi()
+
         return@map PostCellData.fromPostData(
           chanDescriptor = chanDescriptor,
           postData = oldPostData,
-          parsedPostData = parsedPostData
+          parsedPostData = parsedPostData,
+          postHideUi = postHideUi
         )
       }
     }

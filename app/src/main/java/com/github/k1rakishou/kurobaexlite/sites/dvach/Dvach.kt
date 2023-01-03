@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.compose.ui.text.AnnotatedString
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.DvachPostParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
@@ -56,7 +56,7 @@ class Dvach(
   private val appScope: CoroutineScope,
   private val dvachDataSource: DvachDataSource,
   private val appSettings: AppSettings,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient,
+  private val proxiedOkHttpClient: IKurobaOkHttpClient,
   private val staticHtmlColorRepository: StaticHtmlColorRepository,
   private val moshi: Moshi,
 ) : Site {

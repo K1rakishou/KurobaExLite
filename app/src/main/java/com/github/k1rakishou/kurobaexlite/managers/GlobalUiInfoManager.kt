@@ -14,7 +14,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutVisibility
 import com.github.k1rakishou.kurobaexlite.helpers.SaveableComponent
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.LayoutType
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
@@ -48,7 +48,7 @@ import logcat.logcat
 
 class GlobalUiInfoManager(
   appScope: CoroutineScope,
-  private val appResources: AppResources,
+  private val appResources: IAppResources,
   private val appSettings: AppSettings
 ) : SaveableComponent {
   private val job = SupervisorJob()

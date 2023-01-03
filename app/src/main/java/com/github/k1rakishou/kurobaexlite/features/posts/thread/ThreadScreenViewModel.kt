@@ -291,7 +291,7 @@ class ThreadScreenViewModel(
       val bookmarkDescriptor = threadDescriptor
         ?: return@post
 
-      val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(bookmarkDescriptor.toOriginalPostDescriptor())
+      val bookmarkTitle = parsedPostDataRepository.formatThreadToolbarTitle(bookmarkDescriptor.toOriginalPostDescriptor())
         ?: return@post
 
       val bookmarkThumbnail = chanPostCache.getOriginalPost(bookmarkDescriptor)

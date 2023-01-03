@@ -9,12 +9,12 @@ import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.buffer
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
 class FastScrollerMarksManager(
   private val appScope: CoroutineScope,
   private val appSettings: AppSettings,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
   private val chanPostCache: IChanPostCache
 ) {
   private val mutex = Mutex()
@@ -45,7 +45,7 @@ class FastScrollerMarksManager(
 
   init {
     appScope.launch {
-      parsedPostDataCache.chanDescriptorPostsUpdatedFlow
+      parsedPostDataRepository.chanDescriptorPostsUpdatedFlow
         .buffer(1.seconds, emitIfEmpty = false)
         .collect { chanDescriptors ->
           chanDescriptors.toSet().forEach { chanDescriptor ->
@@ -153,7 +153,7 @@ class FastScrollerMarksManager(
     for (postDescriptor in postDescriptors) {
       val prevFastScrollerMark = fastScrollerMark
 
-      val parsedPostData = parsedPostDataCache.getParsedPostData(postDescriptor)
+      val parsedPostData = parsedPostDataRepository.getParsedPostData(postDescriptor)
       if (parsedPostData == null) {
         if (prevFastScrollerMark != null) {
           val index = getPostIndex(posts, postDescriptor)

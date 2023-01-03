@@ -40,6 +40,8 @@ class KurobaExLiteApplication : Application() {
   override fun onCreate() {
     super.onCreate()
 
+    LogcatLogger.install(KurobaExLiteLogger())
+
     startKoin {
       modules(
         DependencyGraph.initialize(
@@ -58,8 +60,6 @@ class KurobaExLiteApplication : Application() {
       logcatError { "Unhandled exception in thread: ${thread.name}, error: ${throwable.asLog()}" }
       showCrashReportActivity(throwable)
     }
-
-    LogcatLogger.install(KurobaExLiteLogger())
   }
 
   private fun showCrashReportActivity(throwable: Throwable): Nothing {

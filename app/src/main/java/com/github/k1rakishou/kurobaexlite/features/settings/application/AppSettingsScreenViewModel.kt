@@ -15,7 +15,7 @@ import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreens
 import com.github.k1rakishou.kurobaexlite.features.settings.report.ReportIssueScreen
 import com.github.k1rakishou.kurobaexlite.features.themes.ThemesScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherBg
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherFg
@@ -44,7 +44,7 @@ class AppSettingsScreenViewModel(
   @SuppressLint("StaticFieldLeak") private val appContext: Context,
   private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers,
-  private val appResources: AppResources,
+  private val appResources: IAppResources,
   private val snackbarManager: SnackbarManager,
   private val updateManager: UpdateManager,
   private val themeEngine: ThemeEngine,

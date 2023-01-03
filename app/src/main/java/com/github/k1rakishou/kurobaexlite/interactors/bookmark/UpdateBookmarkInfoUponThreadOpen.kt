@@ -7,9 +7,9 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -17,7 +17,7 @@ class UpdateBookmarkInfoUponThreadOpen(
   private val appScope: CoroutineScope,
   private val bookmarksManager: BookmarksManager,
   private val chanPostCache: IChanPostCache,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase
 ) {
 
@@ -34,7 +34,7 @@ class UpdateBookmarkInfoUponThreadOpen(
         return@launch
       }
 
-      val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(
+      val bookmarkTitle = parsedPostDataRepository.formatThreadToolbarTitle(
         postDescriptor = threadDescriptor.toOriginalPostDescriptor(),
         maxLength = AppConstants.bookmarkMaxTitleLength
       ) ?: return@launch

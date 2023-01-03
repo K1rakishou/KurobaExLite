@@ -23,8 +23,6 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.features.screenshot.PostScreenshotScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.themes.ThemesScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityViewModel
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainerViewModel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.animateable_stack.AnimateableStackContainerViewModel
@@ -74,8 +72,8 @@ internal fun Module.viewModels() {
       appSettings = get(),
       appResources = get(),
       chanViewManager = get(),
-      parsedPostDataCache = get(),
-      chanPostCache = get<ChanPostCache>(),
+      parsedPostDataRepository = get(),
+      chanPostCache = get(),
       mediaSaver = get(),
     )
   }
@@ -106,14 +104,15 @@ internal fun Module.viewModels() {
       mpvInitializer = mpvInitializer,
       appSettings = get(),
       appResources = get(),
-      chanPostCache = get<ChanPostCache>(),
+      chanPostCache = get(),
+      postHideRepository = get(),
       siteManager = get(),
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      proxiedOkHttpClient = get(),
       kurobaLruDiskCache = get(),
       installMpvNativeLibrariesFromGithub = get(),
       imageLoader = get(),
       mediaSaver = get(),
-      postReplyChainManager = get(),
+      postReplyChainRepository = get(),
       revealedSpoilerImages = get()
     )
   }
@@ -145,7 +144,7 @@ internal fun Module.viewModels() {
   }
   viewModel {
     Chan4CaptchaViewModel(
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      proxiedOkHttpClient = get(),
       siteManager = get(),
       firewallBypassManager = get(),
       moshi = get(),
@@ -155,7 +154,7 @@ internal fun Module.viewModels() {
   }
   viewModel {
     DvachCaptchaScreenViewModel(
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      proxiedOkHttpClient = get(),
       siteManager = get(),
       moshi = get(),
     )

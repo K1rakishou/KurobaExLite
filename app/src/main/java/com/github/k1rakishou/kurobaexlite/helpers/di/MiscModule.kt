@@ -8,7 +8,6 @@ import coil.disk.DiskCache
 import com.github.k1rakishou.fsaf.BadPathSymbolResolutionStrategy
 import com.github.k1rakishou.fsaf.FileChooser
 import com.github.k1rakishou.fsaf.FileManager
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaSolverHelper
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
@@ -19,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.Chan4BoardFlagsJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
@@ -28,14 +28,13 @@ import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.processors.Chan4MathTagProcessor
 import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResourcesImpl
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.DialogSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.RemoteImageSearchSettings
 import com.github.k1rakishou.kurobaexlite.managers.SiteProvider
-import com.github.k1rakishou.kurobaexlite.model.cache.ChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
+import com.github.k1rakishou.kurobaexlite.themes.IThemeEngine
 import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
 import com.github.k1rakishou.kurobaexlite.themes.ThemeStorage
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityIntentHandler
@@ -83,7 +82,7 @@ internal fun Module.misc() {
     return@single diskCache
   }
 
-  single<ImageLoader> {
+  single {
     val applicationContext = get<Context>().applicationContext
     val diskCacheInit = { get<DiskCache>() }
 
@@ -99,14 +98,13 @@ internal fun Module.misc() {
     return@single imageLoader
   }
 
-  single<ProxiedOkHttpClient> {
+  single<IKurobaOkHttpClient> {
     ProxiedOkHttpClient(
       siteManager = get(),
       firewallBypassManager = get()
     )
   }
 
-  single { GlobalConstants(get()) }
   single { createMoshi() }
   single { PostCommentParser(siteManager = get()) }
   single {
@@ -118,28 +116,17 @@ internal fun Module.misc() {
   }
   single { FullScreenHelpers(get()) }
   single { AndroidHelpers(application = get(), snackbarManager = get()) }
-  single<ThemeEngine> { ThemeEngine(appScope = get(), appSettings = get(), themeStorage = get()) }
-  single<ThemeStorage> { ThemeStorage(appContext = get(), moshi = get(), fileManager = get()) }
+  single { ThemeEngine(appScope = get(), appSettings = get(), themeStorage = get()) }
+  single<IThemeEngine> { get<ThemeEngine>() }
+  single { ThemeStorage(appContext = get(), moshi = get(), fileManager = get()) }
   single { MediaViewerPostListScroller() }
   single { CrossThreadFollowHistory() }
   single { ClickedThumbnailBoundsStorage() }
   single { AppRestarter() }
   single {
-    ParsedPostDataCache(
-      appContext = get(),
-      coroutineScope = get(),
-      appSettings = get(),
-      postCommentParser = get(),
-      postCommentApplier = get(),
-      postReplyChainManager = get(),
-      markedPostManager = get()
-    )
-  }
-
-  single {
     Chan4MathTagProcessor(
-      chanPostCache = get<ChanPostCache>(),
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      chanPostCache = get(),
+      proxiedOkHttpClient = get(),
       appSettings = get()
     )
   }
@@ -153,13 +140,12 @@ internal fun Module.misc() {
       appScope = get(),
       applicationContext = get(),
       androidHelpers = get(),
-      globalConstants = get(),
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
-      parsedPostDataCache = get()
+      proxiedOkHttpClient = get(),
+      parsedPostDataRepository = get()
     )
   }
 
-  single<AppResources> { AppResourcesImpl(appContext = get()) }
+  single<IAppResources> { AppResources(appContext = get()) }
   single {
     LocalFilePicker(
       appContext = get(),
@@ -174,7 +160,7 @@ internal fun Module.misc() {
     RemoteFilePicker(
       appContext = get(),
       appScope = get(),
-      proxiedOkHttpClient = get<ProxiedOkHttpClient>(),
+      proxiedOkHttpClient = get(),
     )
   }
 
@@ -189,7 +175,7 @@ internal fun Module.misc() {
       notificationManager = get(),
       chanThreadManager = get(),
       bookmarksManager = get(),
-      themeEngine = get<ThemeEngine>(),
+      themeEngine = get(),
       postCommentParser = get(),
       persistBookmarks = get(),
     )

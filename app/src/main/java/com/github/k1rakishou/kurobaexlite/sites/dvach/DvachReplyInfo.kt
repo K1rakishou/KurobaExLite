@@ -2,7 +2,7 @@ package com.github.k1rakishou.kurobaexlite.sites.dvach
 
 import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
 import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressRequestBody
-import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit
 class DvachReplyInfo(
   private val site: Dvach,
   private val moshi: Moshi,
-  private val proxiedOkHttpClient: ProxiedOkHttpClient
+  private val proxiedOkHttpClient: IKurobaOkHttpClient
 ) : Site.ReplyInfo {
 
   override suspend fun replyUrl(chanDescriptor: ChanDescriptor): String {

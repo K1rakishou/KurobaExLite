@@ -63,18 +63,6 @@ abstract class PostScreenState(
   }
 
   @CallSuper
-  open fun insertOrUpdate(postCellData: PostCellData) {
-    doWithDataState { postsState ->
-      Snapshot.withMutableSnapshot {
-        postsState.insertOrUpdate(
-          postCellData = postCellData,
-          checkFirstPostIsOriginal = checkFirstPostIsOriginal
-        )
-      }
-    }
-  }
-
-  @CallSuper
   open fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     doWithDataState { postsState ->
       Snapshot.withMutableSnapshot {
@@ -135,6 +123,7 @@ abstract class PostScreenState(
 data class PreviousPostDataInfo(
   val hash: Murmur3Hash,
   val time: Long,
+  val hidden: Boolean = false,
   val alreadyAnimatedInsertion: Boolean = false
 )
 

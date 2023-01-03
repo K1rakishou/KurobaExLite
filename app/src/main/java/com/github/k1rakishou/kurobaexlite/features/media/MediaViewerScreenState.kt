@@ -12,7 +12,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.compose.saveable
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
@@ -28,7 +28,7 @@ import logcat.logcat
 class MediaViewerScreenState(
   private val savedStateHandle: SavedStateHandle,
   private val appSettings: AppSettings,
-  private val appResources: AppResources,
+  private val appResources: IAppResources,
   private val chanPostCache: IChanPostCache
 ) {
   var chanDescriptor: ChanDescriptor? = null

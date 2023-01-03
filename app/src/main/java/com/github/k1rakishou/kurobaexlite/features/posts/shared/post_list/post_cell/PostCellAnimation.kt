@@ -144,7 +144,8 @@ internal fun PostCellContainerInsertAnimation(
 
         onAnimationFinished()
       }
-    })
+    }
+  )
 
   val translationAnimated by translationAnimatable.asState()
   val alphaAnimated by alphaAnimatable.asState()
@@ -192,6 +193,14 @@ internal fun canAnimateUpdate(
     return false
   }
 
+  val isHidden = postCellData.postHideUi != null
+  val wasHidden = previousPostDataInfo.hidden
+
+  if (isHidden != wasHidden) {
+    previousPostDataInfoMap[postCellData.postDescriptor] = previousPostDataInfo.copy(hidden = isHidden)
+    return true
+  }
+
   return (previousPostDataInfo.time + updateAnimationTotalDurationMs) >= SystemClock.elapsedRealtime()
 }
 
@@ -202,6 +211,9 @@ internal fun canAnimateInsertion(
   inPopup: Boolean,
   postsParsedOnce: Boolean
 ): Boolean {
+  if (postCellData.postHideUi != null) {
+    return false
+  }
 
   if (
     previousPostDataInfoMap == null

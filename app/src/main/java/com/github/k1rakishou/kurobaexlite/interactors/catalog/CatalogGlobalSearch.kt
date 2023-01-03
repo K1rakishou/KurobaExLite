@@ -5,11 +5,12 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.GlobalSearchRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.themes.IThemeEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -18,7 +19,8 @@ import logcat.logcat
 
 class CatalogGlobalSearch(
   private val globalSearchRepository: GlobalSearchRepository,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
+  private val postHideRepository: IPostHideRepository,
   private val postCommentApplier: PostCommentApplier,
   private val themeEngine: IThemeEngine,
   private val dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -64,7 +66,7 @@ class CatalogGlobalSearch(
     // TODO(KurobaEx): multi-threading?
     val parsedPosts = withContext(dispatcher) {
       return@withContext posts.map { postData ->
-        val parsedPostData = parsedPostDataCache.calculateParsedPostData(
+        val parsedPostData = parsedPostDataRepository.calculateParsedPostData(
           postData = postData,
           parsedPostDataContext = ParsedPostDataContext(
             isParsingCatalog = true,
@@ -97,10 +99,14 @@ class CatalogGlobalSearch(
           parsedPostData
         }
 
+        val postHideUi = postHideRepository.postHideForPostDescriptor(postData.postDescriptor)
+          ?.toPostHideUi()
+
         return@map PostCellData.fromPostData(
           chanDescriptor = catalogDescriptor,
           postData = postData,
-          parsedPostData = updatedParsedPostData
+          parsedPostData = updatedParsedPostData,
+          postHideUi = postHideUi
         )
       }
     }

@@ -6,11 +6,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMe
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +27,7 @@ class BookmarkAllCatalogThreads(
   private val chanPostCache: IChanPostCache,
   private val bookmarksManager: BookmarksManager,
   private val kurobaExLiteDatabase: KurobaExLiteDatabase,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
   private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher,
   private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
@@ -56,7 +56,7 @@ class BookmarkAllCatalogThreads(
     val bookmarksToCreate = catalogThreads.mapNotNull { originalPostData ->
       val bookmarkDescriptor = originalPostData.postDescriptor.threadDescriptor
 
-      val bookmarkTitle = parsedPostDataCache.formatThreadToolbarTitle(
+      val bookmarkTitle = parsedPostDataRepository.formatThreadToolbarTitle(
         postDescriptor = bookmarkDescriptor.toOriginalPostDescriptor(),
         maxLength = AppConstants.bookmarkMaxTitleLength
       ) ?: return@mapNotNull null

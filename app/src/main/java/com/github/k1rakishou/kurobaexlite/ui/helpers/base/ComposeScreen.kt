@@ -8,11 +8,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.saveable.Saver
 import androidx.lifecycle.ViewModelProvider
 import com.github.k1rakishou.kurobaexlite.R
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.DialogSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
@@ -45,11 +44,10 @@ abstract class ComposeScreen protected constructor(
   val navigationRouter: NavigationRouter
 ) {
   protected val globalUiInfoManager: GlobalUiInfoManager by inject(GlobalUiInfoManager::class.java)
-  protected val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
   protected val appSettings: AppSettings by inject(AppSettings::class.java)
   protected val dialogSettings: DialogSettings by inject(DialogSettings::class.java)
   protected val appConstants: AppConstants by inject(AppConstants::class.java)
-  protected val appResources: AppResources by inject(AppResources::class.java)
+  protected val appResources: IAppResources by inject(IAppResources::class.java)
   protected val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   protected val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
 

@@ -12,30 +12,30 @@ import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.executors.SerializedCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
-import java.io.IOException
-import java.util.concurrent.CancellationException
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import logcat.logcat
+import java.io.IOException
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 class LocalFilePicker(
   private val appContext: Context,
   private val appScope: CoroutineScope,
   private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers,
-  private val appResources: AppResources,
+  private val appResources: IAppResources,
   private val coroutineDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AbstractFilePicker(appContext) {
   private var componentActivity: ComponentActivity? = null

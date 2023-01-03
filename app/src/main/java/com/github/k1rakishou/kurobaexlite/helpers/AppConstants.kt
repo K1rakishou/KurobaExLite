@@ -5,13 +5,14 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import java.util.concurrent.atomic.AtomicInteger
 
 object AppConstants {
+  val coresCount by lazy { Runtime.getRuntime().availableProcessors() }
+
   const val TEXT_SEPARATOR = " • "
   const val deleteNavHistoryTimeoutMs = 5000L
   const val deleteBookmarkTimeoutMs = 5000L
   const val minFlingVelocityPx = 5000f
   const val bookmarkMaxTitleLength = 120
   const val navHistoryMaxTitleLength = 180
-
   const val CREATE_NEW_ISSUE_URL = "https://github.com/K1rakishou/KurobaExLite/issues"
 
   object Transition {

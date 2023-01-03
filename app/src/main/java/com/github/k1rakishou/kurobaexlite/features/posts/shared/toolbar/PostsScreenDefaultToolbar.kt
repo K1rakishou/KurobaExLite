@@ -15,9 +15,9 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScre
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 
 abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScreenToolbarState> : KurobaChildToolbar() {
@@ -30,7 +30,7 @@ abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScr
   ) {
     val context = LocalContext.current
 
-    val parsedPostDataCache: ParsedPostDataCache = koinRemember()
+    val parsedPostDataRepository: ParsedPostDataRepository = koinRemember()
     val siteManager: SiteManager = koinRemember()
     val loadChanCatalog: LoadChanCatalog = koinRemember()
 
@@ -100,14 +100,14 @@ abstract class PostsScreenDefaultToolbar<TS : PostsScreenDefaultToolbar.PostsScr
                       return@collect
                     }
 
-                    parsedPostDataCache.doWithPostDataOnceItsLoaded(
+                    parsedPostDataRepository.doWithPostDataOnceItsLoaded(
                       isCatalog = false,
                       postDescriptor = originalPost.postDescriptor,
                       func = {
                         val state = defaultToolbarState()
                           ?: return@doWithPostDataOnceItsLoaded
 
-                        val title = parsedPostDataCache.formatThreadToolbarTitle(originalPost.postDescriptor)
+                        val title = parsedPostDataRepository.formatThreadToolbarTitle(originalPost.postDescriptor)
                           ?: return@doWithPostDataOnceItsLoaded
 
                         state.toolbarTitleState.value = title

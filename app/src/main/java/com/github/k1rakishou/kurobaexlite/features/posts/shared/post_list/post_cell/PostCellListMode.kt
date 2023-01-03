@@ -71,7 +71,6 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.helpers.util.unreachable
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.PostIcon
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -80,6 +79,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.elements.LoadingWheel
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
@@ -581,7 +581,7 @@ fun inlinedContentForPostCell(
 
     val resultMap = mutableMapOf<String, InlineTextContent>()
 
-    ParsedPostDataCache.PostCellIcon.values().forEach { postCellAnnotatedContent ->
+    ParsedPostDataRepository.PostCellIcon.values().forEach { postCellAnnotatedContent ->
       resultMap[postCellAnnotatedContent.id] = InlineTextContent(
         placeholder = Placeholder(
           width = postCellSubjectTextSizeSp,
@@ -590,14 +590,14 @@ fun inlinedContentForPostCell(
         ),
         children = {
           when (postCellAnnotatedContent) {
-            ParsedPostDataCache.PostCellIcon.Deleted,
-            ParsedPostDataCache.PostCellIcon.Closed,
-            ParsedPostDataCache.PostCellIcon.Archived,
-            ParsedPostDataCache.PostCellIcon.RollingSticky,
-            ParsedPostDataCache.PostCellIcon.Sticky -> {
+            ParsedPostDataRepository.PostCellIcon.Deleted,
+            ParsedPostDataRepository.PostCellIcon.Closed,
+            ParsedPostDataRepository.PostCellIcon.Archived,
+            ParsedPostDataRepository.PostCellIcon.RollingSticky,
+            ParsedPostDataRepository.PostCellIcon.Sticky -> {
               PostCellIcon(postCellAnnotatedContent)
             }
-            ParsedPostDataCache.PostCellIcon.CountryFlag -> {
+            ParsedPostDataRepository.PostCellIcon.CountryFlag -> {
               if (postCellData.countryFlag != null) {
                 PostCellIcon(
                   postDescriptor = postCellData.postDescriptor,
@@ -606,7 +606,7 @@ fun inlinedContentForPostCell(
                 )
               }
             }
-            ParsedPostDataCache.PostCellIcon.BoardFlag -> {
+            ParsedPostDataRepository.PostCellIcon.BoardFlag -> {
               if (postCellData.boardFlag != null) {
                 PostCellIcon(
                   postDescriptor = postCellData.postDescriptor,
@@ -628,7 +628,7 @@ fun inlinedContentForPostCell(
 private fun PostCellIcon(
   postDescriptor: PostDescriptor,
   flag: PostIcon,
-  postCellAnnotatedContent: ParsedPostDataCache.PostCellIcon
+  postCellAnnotatedContent: ParsedPostDataRepository.PostCellIcon
 ) {
   val context = LocalContext.current
   val postCellIconViewModel = koinRememberViewModel<PostCellIconViewModel>()
@@ -641,15 +641,15 @@ private fun PostCellIcon(
     key1 = Unit,
     block = {
       when (postCellAnnotatedContent) {
-        ParsedPostDataCache.PostCellIcon.Deleted,
-        ParsedPostDataCache.PostCellIcon.Closed,
-        ParsedPostDataCache.PostCellIcon.Archived,
-        ParsedPostDataCache.PostCellIcon.Sticky -> {
+        ParsedPostDataRepository.PostCellIcon.Deleted,
+        ParsedPostDataRepository.PostCellIcon.Closed,
+        ParsedPostDataRepository.PostCellIcon.Archived,
+        ParsedPostDataRepository.PostCellIcon.Sticky -> {
           error("Expected CountryFlag or BoardFlag but got ${postCellAnnotatedContent}")
         }
-        ParsedPostDataCache.PostCellIcon.CountryFlag,
-        ParsedPostDataCache.PostCellIcon.BoardFlag,
-        ParsedPostDataCache.PostCellIcon.RollingSticky -> {
+        ParsedPostDataRepository.PostCellIcon.CountryFlag,
+        ParsedPostDataRepository.PostCellIcon.BoardFlag,
+        ParsedPostDataRepository.PostCellIcon.RollingSticky -> {
           // no-op
         }
       }
@@ -711,14 +711,14 @@ private fun PostCellIcon(
 }
 
 @Composable
-private fun PostCellIcon(postCellIcon: ParsedPostDataCache.PostCellIcon) {
+private fun PostCellIcon(postCellIcon: ParsedPostDataRepository.PostCellIcon) {
   val drawableId = remember(key1 = postCellIcon) {
     when (postCellIcon) {
-      ParsedPostDataCache.PostCellIcon.Deleted -> R.drawable.trash_icon
-      ParsedPostDataCache.PostCellIcon.Archived -> R.drawable.archived_icon
-      ParsedPostDataCache.PostCellIcon.Closed -> R.drawable.closed_icon
-      ParsedPostDataCache.PostCellIcon.Sticky -> R.drawable.sticky_icon
-      ParsedPostDataCache.PostCellIcon.RollingSticky -> R.drawable.rolling_sticky_icon
+      ParsedPostDataRepository.PostCellIcon.Deleted -> R.drawable.trash_icon
+      ParsedPostDataRepository.PostCellIcon.Archived -> R.drawable.archived_icon
+      ParsedPostDataRepository.PostCellIcon.Closed -> R.drawable.closed_icon
+      ParsedPostDataRepository.PostCellIcon.Sticky -> R.drawable.sticky_icon
+      ParsedPostDataRepository.PostCellIcon.RollingSticky -> R.drawable.rolling_sticky_icon
       else -> error("Unexpected postCellIcon: ${postCellIcon}")
     }
   }

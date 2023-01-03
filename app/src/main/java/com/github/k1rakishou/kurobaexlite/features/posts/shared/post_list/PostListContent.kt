@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
@@ -723,6 +724,7 @@ private fun PostsListMode(
                 animateInsertion = animateInsertion,
                 animateUpdate = animateUpdate,
                 lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
+                postsScreenViewModelProvider = postsScreenViewModelProvider,
                 onPostBind = { postCellData -> postsScreenViewModel.onPostBind(postCellData) },
                 onPostUnbind = { postCellData -> postsScreenViewModel.onPostUnbind(postCellData) },
                 onCopySelectedText = onCopySelectedText,
@@ -893,6 +895,7 @@ private fun PostsGridMode(
                 animateInsertion = animateInsertion,
                 animateUpdate = animateUpdate,
                 lastViewedPostDescriptorForIndicator = lastViewedPostDescriptorForIndicator,
+                postsScreenViewModelProvider = postsScreenViewModelProvider,
                 onPostBind = { postCellData -> postsScreenViewModel.onPostBind(postCellData) },
                 onPostUnbind = { postCellData -> postsScreenViewModel.onPostUnbind(postCellData) },
                 onCopySelectedText = onCopySelectedText,
@@ -1139,6 +1142,7 @@ private fun PostCellContainer(
   animateInsertion: Boolean,
   animateUpdate: Boolean,
   lastViewedPostDescriptorForIndicator: PostDescriptor?,
+  postsScreenViewModelProvider: () -> PostScreenViewModel,
   onPostBind: (PostCellData) -> Unit,
   onPostUnbind: (PostCellData) -> Unit,
   onCopySelectedText: (String) -> Unit,
@@ -1156,6 +1160,7 @@ private fun PostCellContainer(
   val chanTheme = LocalChanTheme.current
   var isInTextSelectionMode by remember { mutableStateOf(false) }
   val isInPostSelectionMode by postListSelectionState.isInSelectionMode
+  val postHideUi = postCellData.postHideUi
 
   PostCellContainerAnimated(
     animateInsertion = animateInsertion,
@@ -1166,6 +1171,11 @@ private fun PostCellContainer(
         .kurobaClickable(
           enabled = !isInTextSelectionMode,
           onClick = {
+            if (postHideUi != null) {
+              postsScreenViewModelProvider().unhidePost(postCellData.postDescriptor)
+              return@kurobaClickable
+            }
+
             if (isInPostSelectionMode) {
               postListSelectionState.toggleSelection(postCellData.postDescriptor)
               return@kurobaClickable
@@ -1176,6 +1186,10 @@ private fun PostCellContainer(
             }
           },
           onLongClick = {
+            if (postHideUi != null) {
+              return@kurobaClickable
+            }
+
             if (isInPostSelectionMode) {
               postListSelectionState.toggleSelection(postCellData.postDescriptor)
               return@kurobaClickable
@@ -1185,30 +1199,49 @@ private fun PostCellContainer(
           }
         )
     ) {
-      PostCell(
-        postViewMode = postListOptions.postViewMode,
-        isCatalogMode = postListOptions.isCatalogMode,
-        textSelectionEnabled = textSelectionEnabled,
-        chanDescriptor = chanDescriptor,
-        currentlyOpenedThread = currentlyOpenedThread,
-        detectLinkableClicks = postListOptions.detectLinkableClicks,
-        postCellData = postCellData,
-        cellsPadding = cellsPadding,
-        postBlinkAnimationState = postBlinkAnimationState,
-        postListSelectionState = postListSelectionState,
-        onTextSelectionModeChanged = { inSelectionMode -> isInTextSelectionMode = inSelectionMode },
-        onPostBind = onPostBind,
-        onPostUnbind = onPostUnbind,
-        onCopySelectedText = onCopySelectedText,
-        onQuoteSelectedText = onQuoteSelectedText,
-        onPostCellCommentClicked = onPostCellCommentClicked,
-        onPostCellCommentLongClicked = onPostCellCommentLongClicked,
-        onPostRepliesClicked = onPostRepliesClicked,
-        onPostImageClicked = onPostImageClicked,
-        onPostImageLongClicked = onPostImageLongClicked,
-        onGoToPostClicked = onGoToPostClicked,
-        reparsePostSubject = reparsePostSubject
-      )
+      if (postHideUi != null) {
+        val additionalVerticalPadding = 8.dp
+
+        val resultPaddings = remember(key1 = cellsPadding) {
+          return@remember PaddingValues(
+            start = cellsPadding.calculateStartPadding(LayoutDirection.Ltr),
+            end = cellsPadding.calculateEndPadding(LayoutDirection.Ltr),
+            top = cellsPadding.calculateTopPadding() + additionalVerticalPadding,
+            bottom = cellsPadding.calculateBottomPadding() + additionalVerticalPadding
+          )
+        }
+
+        PostCellHidden(
+          modifier = Modifier
+            .padding(resultPaddings),
+          postHideUi = postHideUi,
+        )
+      } else {
+        PostCell(
+          postViewMode = postListOptions.postViewMode,
+          isCatalogMode = postListOptions.isCatalogMode,
+          textSelectionEnabled = textSelectionEnabled,
+          chanDescriptor = chanDescriptor,
+          currentlyOpenedThread = currentlyOpenedThread,
+          detectLinkableClicks = postListOptions.detectLinkableClicks,
+          postCellData = postCellData,
+          cellsPadding = cellsPadding,
+          postBlinkAnimationState = postBlinkAnimationState,
+          postListSelectionState = postListSelectionState,
+          onTextSelectionModeChanged = { inSelectionMode -> isInTextSelectionMode = inSelectionMode },
+          onPostBind = onPostBind,
+          onPostUnbind = onPostUnbind,
+          onCopySelectedText = onCopySelectedText,
+          onQuoteSelectedText = onQuoteSelectedText,
+          onPostCellCommentClicked = onPostCellCommentClicked,
+          onPostCellCommentLongClicked = onPostCellCommentLongClicked,
+          onPostRepliesClicked = onPostRepliesClicked,
+          onPostImageClicked = onPostImageClicked,
+          onPostImageLongClicked = onPostImageLongClicked,
+          onGoToPostClicked = onGoToPostClicked,
+          reparsePostSubject = reparsePostSubject
+        )
+      }
 
       val canDisplayLastViewedPostMarker = !isInPopup
         && !isCatalogMode
@@ -1234,6 +1267,24 @@ private fun PostCellContainer(
         )
       }
     }
+  }
+}
+
+@Composable
+private fun PostCellHidden(modifier: Modifier = Modifier, postHideUi: PostCellData.PostHideUi) {
+  val chanTheme = LocalChanTheme.current
+
+  Box(
+    modifier = Modifier
+      .fillMaxWidth()
+      .requiredHeightIn(min = 48.dp)
+      .then(modifier),
+    contentAlignment = Alignment.CenterStart
+  ) {
+    KurobaComposeText(
+      text = postHideUi.reason,
+      color = chanTheme.textColorHint
+    )
   }
 }
 

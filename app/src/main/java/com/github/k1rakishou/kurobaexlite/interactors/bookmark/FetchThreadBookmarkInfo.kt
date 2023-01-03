@@ -13,7 +13,6 @@ import com.github.k1rakishou.kurobaexlite.interactors.thread_view.LoadChanThread
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.local.StickyThread
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ThreadBookmarkInfoPostObject
@@ -21,6 +20,7 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookma
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmarkReply
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.Dispatchers
 import logcat.LogPriority
 import logcat.logcat
@@ -32,7 +32,7 @@ class FetchThreadBookmarkInfo(
   private val siteManager: SiteManager,
   private val bookmarksManager: BookmarksManager,
   private val replyNotificationsHelper: ReplyNotificationsHelper,
-  private val parsedPostDataCache: ParsedPostDataCache,
+  private val parsedPostDataRepository: ParsedPostDataRepository,
   private val loadChanThreadView: LoadChanThreadView,
   private val extractRepliesToMyPosts: ExtractRepliesToMyPosts,
   private val persistBookmarks: PersistBookmarks,
@@ -300,7 +300,7 @@ class FetchThreadBookmarkInfo(
       val subject = threadBookmarkData.subject()
       val originalPostComment = threadBookmarkData.originalPostComment()
 
-      val updatedTitle = parsedPostDataCache.formatBookmarkTitle(subject, originalPostComment)
+      val updatedTitle = parsedPostDataRepository.formatBookmarkTitle(subject, originalPostComment)
       if (updatedTitle != null) {
         threadBookmark.title = updatedTitle
       }

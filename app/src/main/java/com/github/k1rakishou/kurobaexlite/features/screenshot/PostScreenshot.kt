@@ -22,24 +22,25 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.base.GlobalConstants
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.PostCell
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.post_cell.rememberPostBlinkAnimationState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.rememberPostListSelectionState
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.screenshot.ScreenshotResult
 import com.github.k1rakishou.kurobaexlite.helpers.screenshot.screenshot
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
-import com.github.k1rakishou.kurobaexlite.model.cache.ParsedPostDataCache
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -57,8 +58,7 @@ class PostScreenshot {
 
   private var callback: ((Int, CompletableDeferred<Result<Bitmap>>) -> Unit)? = null
 
-  private val parsedPostDataCache: ParsedPostDataCache by inject(ParsedPostDataCache::class.java)
-  private val globalConstants: GlobalConstants by inject(GlobalConstants::class.java)
+  private val parsedPostDataRepository: ParsedPostDataRepository by inject(ParsedPostDataRepository::class.java)
 
   @Composable
   fun ScreenshotContainer(
@@ -170,20 +170,19 @@ class PostScreenshot {
       return false
     }
 
-    val parallelization = globalConstants.coresCount.coerceAtLeast(2)
-    val postParserDispatcher = globalConstants.postParserDispatcher
+    val parallelization = AppConstants.coresCount.coerceAtLeast(2)
 
     val updatedPosts = parallelForEach(
       dataList = posts,
       parallelization = parallelization,
-      dispatcher = postParserDispatcher
+      dispatcher = Dispatchers.Default
     ) { postCellData ->
       val oldParsedPostData = postCellData.parsedPostData
         ?: return@parallelForEach postCellData
 
       val updateParsedPostDataContext = oldParsedPostData.parsedPostDataContext.copy(revealFullPostComment = true)
 
-      val newParsedPostData = parsedPostDataCache.calculateParsedPostData(
+      val newParsedPostData = parsedPostDataRepository.calculateParsedPostData(
         postCellData = postCellData,
         parsedPostDataContext = updateParsedPostDataContext,
         chanTheme = chanTheme
