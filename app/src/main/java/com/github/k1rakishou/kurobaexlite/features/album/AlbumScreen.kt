@@ -47,7 +47,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
@@ -559,7 +558,8 @@ private fun ContentInternal(
     return
   }
 
-  if (album.albumImages.isEmpty()) {
+  val albumImages = album.albumImages
+  if (albumImages.isEmpty()) {
     KurobaComposeError(errorMessage = stringResource(id = R.string.album_screen_album_empty))
     return
   }
@@ -629,22 +629,21 @@ private fun ContentInternal(
     lazyGridState = lazyGridState,
     contentPadding = paddingValues,
     content = {
-      val albumImages = album.albumImages
+      items(
+        count = albumImages.size,
+        key = { index -> albumImages[index].postImage.uniqueKey() },
+        itemContent = { index ->
+          val albumImage = albumImages[index]
 
-      albumImages.fastForEach { albumImage ->
-        item(
-          key = albumImage.postImage.uniqueKey(),
-          content = {
-            AlbumImageItem(
-              isInSelectionMode = isInSelectionMode,
-              albumShowImageInfo = albumShowImageInfo,
-              albumImage = albumImage,
-              onThumbnailClicked = onThumbnailClicked,
-              onThumbnailLongClicked = onThumbnailLongClicked,
-            )
-          }
-        )
-      }
+          AlbumImageItem(
+            isInSelectionMode = isInSelectionMode,
+            albumShowImageInfo = albumShowImageInfo,
+            albumImage = albumImage,
+            onThumbnailClicked = onThumbnailClicked,
+            onThumbnailLongClicked = onThumbnailLongClicked,
+          )
+        }
+      )
     }
   )
 

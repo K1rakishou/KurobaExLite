@@ -26,6 +26,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -44,6 +45,7 @@ class AlbumScreenViewModel(
   private val appResources: IAppResources,
   private val chanViewManager: ChanViewManager,
   private val parsedPostDataRepository: ParsedPostDataRepository,
+  private val postHideRepository: IPostHideRepository,
   private val chanPostCache: IChanPostCache,
   private val mediaSaver: MediaSaver,
 ) : BaseViewModel() {
@@ -179,7 +181,7 @@ class AlbumScreenViewModel(
       _album.emit(album)
       updateToolbarTitleInfo(album)
 
-      logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${album.albumImages.size} album images" }
+      logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${album.albumImages.size} album images (initially)" }
     }
 
     chanPostCache.listenForPostUpdates(chanDescriptor)
@@ -194,7 +196,7 @@ class AlbumScreenViewModel(
           currentAlbum.albumImages.forEach { albumImage -> _allImageKeys.add(albumImage.postImage.serverFileName) }
           _album.emit(currentAlbum)
 
-          logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${currentAlbum.albumImages.size} album images" }
+          logcat(TAG) { "loadAlbumAndListenForUpdates() loaded ${currentAlbum.albumImages.size} album images (update)" }
         }
 
         val newAlbumImages = mutableListOf<AlbumImage>()
@@ -248,7 +250,6 @@ class AlbumScreenViewModel(
   ): Album {
     return withContext(Dispatchers.Default) {
       val albumImages = mutableListWithCap<AlbumImage>(32)
-      var currentIndex = 0
       var imageToScrollTo: IPostImage? = null
 
       val lastViewedPostDescriptor = when (chanDescriptor) {
@@ -269,17 +270,19 @@ class AlbumScreenViewModel(
       }
 
       postDataList.forEachIndexed { index, postData ->
+        if (postHideRepository.isPostHidden(postData.postDescriptor)) {
+          return@forEachIndexed
+        }
+
         if (postData.postDescriptor == lastViewedPostDescriptor) {
-          if (postData.images.isNotNullNorEmpty()) {
-            imageToScrollTo = postData.images?.firstOrNull()
+          imageToScrollTo = if (postData.images.isNotNullNorEmpty()) {
+            postData.images?.firstOrNull()
           } else {
-            imageToScrollTo = findFirstSuitableImageCloseToIndex(postDataList, index)
+            findFirstSuitableImageCloseToIndex(postDataList, index)
           }
         }
 
         postData.images?.let { postImages ->
-          ++currentIndex
-
           val mappedToAlbumImages = postImages
             .map { postImage -> mapPostImageToAlbumImage(postImage) }
 

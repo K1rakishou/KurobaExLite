@@ -73,6 +73,7 @@ internal fun Module.viewModels() {
       appResources = get(),
       chanViewManager = get(),
       parsedPostDataRepository = get(),
+      postHideRepository = get(),
       chanPostCache = get(),
       mediaSaver = get(),
     )
