@@ -66,6 +66,11 @@ abstract class AbstractSitePostParser(
     postDescriptor: PostDescriptor,
     parserContext: PostCommentParser.PostCommentParserContext
   ) {
+    val allChildTextIsBlank = childTextParts.all { textPartMut -> textPartMut.text.isBlank() }
+    if (allChildTextIsBlank) {
+      return
+    }
+
     parseAnyTagStyleAttribute(htmlTag, childTextParts)
     parseAnyTagSizeAttribute(htmlTag, childTextParts)
     parseAnyTagColorAttribute(htmlTag, childTextParts)
