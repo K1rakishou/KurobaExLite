@@ -803,17 +803,17 @@ suspend fun <T, R> parallelForEachOrdered(
 
   return supervisorScope {
     val dataListIndexed = mutableListWithCap<DataIndexed<T>>(dataList.size)
-    dataList.forEachIndexed { index, data -> dataListIndexed += DataIndexed(data, index)  }
+    dataList.forEachIndexed { order, data -> dataListIndexed += DataIndexed(data, order)  }
 
     return@supervisorScope dataListIndexed
       .chunked(parallelization)
       .flatMap { dataChunk ->
         return@flatMap dataChunk
-          .map { (data, index) ->
+          .map { (data, order) ->
             return@map async(dispatcher) {
               try {
                 ensureActive()
-                return@async DataIndexed(processFunc(data), index)
+                return@async DataIndexed(processFunc(data), order)
               } catch (error: Throwable) {
                 return@async null
               }
@@ -822,14 +822,14 @@ suspend fun <T, R> parallelForEachOrdered(
           .awaitAll()
           .filterNotNull()
       }
-      .sortedBy { (_, index) -> index }
-      .mapNotNull { (data, index) -> data }
+      .sortedBy { (_, order) -> order }
+      .mapNotNull { (data, _) -> data }
   }
 }
 
 private data class DataIndexed<T>(
   val data: T,
-  val index: Int
+  val order: Int
 )
 
 @Suppress("UnnecessaryVariable")

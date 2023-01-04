@@ -286,7 +286,7 @@ class PopupPostsScreen(
       return@HandleBackPresses stopPresenting()
     }
 
-    if (postsAsyncDataState !is AsyncData.Uninitialized && postsAsyncDataState !is AsyncData.Loading) {
+    if (postsAsyncDataState !is AsyncData.Uninitialized) {
       PopupPostsScreenContentLayout(
         popupPostViewMode = popupPostViewMode,
         postListOptions = postListOptions,
@@ -673,7 +673,6 @@ private fun PopupPostsScreenContent(
       onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
       onCurrentlyTouchingPostList = { touching -> /*no-op*/ },
       onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
-      loadingContent = { lazyItemScope, isInPopup -> /*no-op*/ },
     )
   }
 

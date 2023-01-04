@@ -7,10 +7,12 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewMo
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PopupPostsScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
+import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.flatMapNotNull
+import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEachOrdered
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosition
@@ -27,7 +29,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.withContext
 
 class DefaultPopupPostsScreenViewModel(
   savedStateHandle: SavedStateHandle
@@ -39,9 +40,7 @@ class MediaViewerPopupPostsScreenViewModel(
 
 abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHandle) : PostScreenViewModel(savedStateHandle) {
   private val threadScreenState = PopupPostsScreenState()
-  private val _postDataStateMap = mutableMapOf<ScreenKey, PostDataState>()
-  val postDataStateMap: Map<ScreenKey, PostDataState>
-    get() = _postDataStateMap
+  private val postDataStateMap = mutableMapOf<ScreenKey, PostDataState>()
 
   private val _scrollRestorationEventFlow = MutableSharedFlow<LazyColumnRememberedPositionEvent>(extraBufferCapacity = Channel.UNLIMITED)
   override val scrollRestorationEventFlow: SharedFlow<LazyColumnRememberedPositionEvent>
@@ -58,7 +57,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
   }
 
   private fun getOrCreatePostDataStateForScreen(screenKey: ScreenKey, chanDescriptor: ChanDescriptor): PostDataState {
-    return _postDataStateMap.getOrPut(
+    return postDataStateMap.getOrPut(
       key = screenKey,
       defaultValue = { PostDataState(chanDescriptor) }
     )
@@ -142,6 +141,8 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       }
     }
 
+    postScreenState.postsAsyncDataState.value = AsyncData.Loading
+
     val result = when (popupPostViewMode) {
       is PopupPostsScreen.PopupPostViewMode.ReplyTo -> {
         loadReplyTo(screenKey, chanDescriptor, popupPostViewMode)
@@ -162,7 +163,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
   }
 
   suspend fun popReplyChain(screenKey: ScreenKey): Boolean {
-    val postDataState = _postDataStateMap.get(screenKey)
+    val postDataState = postDataStateMap.get(screenKey)
       ?: return false
 
     postDataState.postReplyChainStack.removeLastOrNull()
@@ -194,8 +195,8 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
   }
 
   fun clearPostReplyChainStack(screenKey: ScreenKey) {
-    val postDataState = _postDataStateMap.remove(screenKey)
-    if (_postDataStateMap.isEmpty()) {
+    val postDataState = postDataStateMap.remove(screenKey)
+    if (postDataStateMap.isEmpty()) {
       postScreenState.postsAsyncDataState.value = AsyncData.Uninitialized
     }
 
@@ -349,47 +350,49 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     val chanTheme = themeEngine.chanTheme
     val postViewMode = PostViewMode.List
 
-    val updatedPostDataList = withContext(Dispatchers.IO) {
-      return@withContext postCellDataList.map { oldPostData ->
-        val oldParsedPostDataContext = parsedPostDataRepository.getParsedPostData(
-          chanDescriptor = chanDescriptor,
-          postDescriptor = oldPostData.postDescriptor
-        )?.parsedPostDataContext
+    val updatedPostDataList = parallelForEachOrdered(
+      dataList = postCellDataList,
+      parallelization = AppConstants.coresCount.coerceAtLeast(2),
+      dispatcher = Dispatchers.Default
+    ) { oldPostData ->
+      val oldParsedPostDataContext = parsedPostDataRepository.getParsedPostData(
+        chanDescriptor = chanDescriptor,
+        postDescriptor = oldPostData.postDescriptor
+      )?.parsedPostDataContext
 
-        val highlightedPostDescriptor = when (popupPostViewMode) {
-          is PopupPostsScreen.PopupPostViewMode.PostList -> null
-          is PopupPostsScreen.PopupPostViewMode.RepliesFrom -> popupPostViewMode.postDescriptor
-          is PopupPostsScreen.PopupPostViewMode.ReplyTo -> popupPostViewMode.postDescriptor
-        }
-
-        val newParsedPostDataContext = oldParsedPostDataContext
-          ?.copy(
-            isParsingCatalog = chanDescriptor is CatalogDescriptor,
-            postViewMode = postViewMode,
-            highlightedPostDescriptor = highlightedPostDescriptor
-          )
-          ?: ParsedPostDataContext(
-            isParsingCatalog = chanDescriptor is CatalogDescriptor,
-            postViewMode = postViewMode,
-            highlightedPostDescriptor = highlightedPostDescriptor
-          )
-
-        val parsedPostData = parsedPostDataRepository.calculateParsedPostData(
-          postData = oldPostData,
-          parsedPostDataContext = newParsedPostDataContext,
-          chanTheme = chanTheme
-        )
-
-        val postHideUi = postHideRepository.postHideForPostDescriptor(oldPostData.postDescriptor)
-          ?.toPostHideUi()
-
-        return@map PostCellData.fromPostData(
-          chanDescriptor = chanDescriptor,
-          postData = oldPostData,
-          parsedPostData = parsedPostData,
-          postHideUi = postHideUi
-        )
+      val highlightedPostDescriptor = when (popupPostViewMode) {
+        is PopupPostsScreen.PopupPostViewMode.PostList -> null
+        is PopupPostsScreen.PopupPostViewMode.RepliesFrom -> popupPostViewMode.postDescriptor
+        is PopupPostsScreen.PopupPostViewMode.ReplyTo -> popupPostViewMode.postDescriptor
       }
+
+      val newParsedPostDataContext = oldParsedPostDataContext
+        ?.copy(
+          isParsingCatalog = chanDescriptor is CatalogDescriptor,
+          postViewMode = postViewMode,
+          highlightedPostDescriptor = highlightedPostDescriptor
+        )
+        ?: ParsedPostDataContext(
+          isParsingCatalog = chanDescriptor is CatalogDescriptor,
+          postViewMode = postViewMode,
+          highlightedPostDescriptor = highlightedPostDescriptor
+        )
+
+      val parsedPostData = parsedPostDataRepository.calculateParsedPostData(
+        postData = oldPostData,
+        parsedPostDataContext = newParsedPostDataContext,
+        chanTheme = chanTheme
+      )
+
+      val postHideUi = postHideRepository.postHideForPostDescriptor(oldPostData.postDescriptor)
+        ?.toPostHideUi()
+
+      return@parallelForEachOrdered PostCellData.fromPostData(
+        chanDescriptor = chanDescriptor,
+        postData = oldPostData,
+        parsedPostData = parsedPostData,
+        postHideUi = postHideUi
+      )
     }
 
     when (popupPostViewMode) {

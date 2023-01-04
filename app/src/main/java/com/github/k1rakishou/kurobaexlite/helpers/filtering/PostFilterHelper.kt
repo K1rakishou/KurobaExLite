@@ -43,10 +43,15 @@ class PostFilterHelper(
       return posts
     }
 
-    val mutex = Mutex()
-
-    val allPostDescriptors = posts.toHashSetOfKeysBy { it.postDescriptor }
     val postHides = postHideRepository.postHidesForChanDescriptor(chanDescriptor).toMutableMap()
+    if (postHides.isEmpty()) {
+      return posts
+    }
+
+    // TODO: Filters. Also checks filters here.
+
+    val mutex = Mutex()
+    val allPostDescriptors = posts.toHashSetOfKeysBy { it.postDescriptor }
     val processingCatalog = chanDescriptor is CatalogDescriptor
 
     val toHide = mutableListOf<ChanPostHide>()
