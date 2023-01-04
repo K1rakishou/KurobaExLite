@@ -57,6 +57,9 @@ class PostFilterHelper(
     val toHide = mutableListOf<ChanPostHide>()
     val toUnhide = mutableSetOf<PostDescriptor>()
 
+    // TODO: It's probably better to only process posts that have ChanPostHides associated with them and all their replies
+    //  (both from and to posts). Should be more performant than processing every single post in a thread with all their
+    //  replies. For now this should be fine because it's only noticeably slow for 10k+ posts threads.
     val filteredPosts = parallelForEachOrdered(
       dataList = posts,
       parallelization = AppConstants.coresCount,

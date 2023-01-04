@@ -19,6 +19,8 @@ data class PostsLoadResult(
     get() = updatedPosts.size
   val newOrUpdatedCount: Int
     get() = newPostsCount + updatedPostsCount
+  val totalPostsCount: Int
+    get() = newPosts.size + updatedPosts.size + unchangedPosts.size + deletedPosts.size
 
   // Original post is going to be updated every time a new post is added/updated in the thread
   // so we need to skip it here
@@ -94,8 +96,12 @@ data class PostsLoadResult(
     return resultList
   }
 
-  fun newPostsCountSinceLastViewedOrLoaded(lastViewedOrLoadedPostDescriptor: PostDescriptor): Int {
-    return newPosts.count { postData -> postData.postDescriptor > lastViewedOrLoadedPostDescriptor }
+  fun newPostsCountSinceLastLoaded(lastLoadedPostDescriptor: PostDescriptor?): Int {
+    if (lastLoadedPostDescriptor == null) {
+      return newPosts.size
+    }
+
+    return newPosts.count { postData -> postData.postDescriptor > lastLoadedPostDescriptor }
   }
 
   fun deletedPostsCountSinceLastLoaded(lastLoadedPostDescriptor: PostDescriptor?): Int {

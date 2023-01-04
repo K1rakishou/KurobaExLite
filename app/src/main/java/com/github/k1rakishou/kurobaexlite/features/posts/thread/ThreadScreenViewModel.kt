@@ -487,7 +487,7 @@ class ThreadScreenViewModel(
       sorter = { postCellDataCollection -> ThreadPostSorter.sortThreadPostCellData(postCellDataCollection) },
       onStartParsingPosts = {
         snackbarManager.pushCatalogOrThreadPostsLoadingSnackbar(
-          postsCount = postLoadResult.newPostsCount,
+          postsCount = postLoadResult.totalPostsCount,
           screenKey = screenKey
         )
       },
@@ -521,21 +521,14 @@ class ThreadScreenViewModel(
     postLoadResult: PostsLoadResult
   ) {
     if (postLoadResult.isNotEmpty()) {
-      val chanThreadView = loadChanThreadView.execute(threadDescriptor)
+      val lastLoadedPostDescriptor = loadChanThreadView.execute(threadDescriptor)?.lastLoadedPostDescriptor
 
-      val lastViewedOrLoadedPostDescriptor = chanThreadView?.lastViewedPDForNewPosts ?: chanThreadView?.lastLoadedPostDescriptor
-      val lastLoadedPostDescriptor = chanThreadView?.lastLoadedPostDescriptor
-
-      if (lastViewedOrLoadedPostDescriptor != null) {
-        snackbarManager.pushThreadNewPostsSnackbar(
-          newPostsCount = postLoadResult.newPostsCountSinceLastViewedOrLoaded(
-            lastViewedOrLoadedPostDescriptor = lastViewedOrLoadedPostDescriptor
-          ),
-          updatedPostsCount = postLoadResult.updatePostsCountExcludingOriginalPost,
-          deletedPostsCount = postLoadResult.deletedPostsCountSinceLastLoaded(lastLoadedPostDescriptor),
-          screenKey = screenKey
-        )
-      }
+      snackbarManager.pushThreadNewPostsSnackbar(
+        newPostsCount = postLoadResult.newPostsCountSinceLastLoaded(lastLoadedPostDescriptor),
+        updatedPostsCount = postLoadResult.updatePostsCountExcludingOriginalPost,
+        deletedPostsCount = postLoadResult.deletedPostsCountSinceLastLoaded(lastLoadedPostDescriptor),
+        screenKey = screenKey
+      )
     }
 
     val originalPost = postLoadResult.firstOrNull { postData -> postData is OriginalPostData }
@@ -577,13 +570,18 @@ class ThreadScreenViewModel(
       snackbarManager.popThreadNewPostsSnackbar()
     }
 
-    updateLastLoadedAndViewedPosts(
-      key = "onPostScrollChanged",
-      threadDescriptor = firstVisiblePostData.postDescriptor.threadDescriptor,
-      firstVisiblePostDescriptor = firstVisiblePostData.postDescriptor,
-      lastVisiblePostDescriptor = lastVisiblePostData.postDescriptor,
-      postListTouchingBottom = postListTouchingBottom
-    )
+    val contentLoaded = postScreenState.contentLoaded.value
+    val contentDrawnOnce = postScreenState.contentDrawnOnce.value
+
+    if (contentLoaded && contentDrawnOnce) {
+      updateLastLoadedAndViewedPosts(
+        key = "onPostScrollChanged",
+        threadDescriptor = firstVisiblePostData.postDescriptor.threadDescriptor,
+        firstVisiblePostDescriptor = firstVisiblePostData.postDescriptor,
+        lastVisiblePostDescriptor = lastVisiblePostData.postDescriptor,
+        postListTouchingBottom = postListTouchingBottom
+      )
+    }
 
     updatePostSeenForBookmark.onPostViewed(lastVisiblePostData.postDescriptor)
   }
