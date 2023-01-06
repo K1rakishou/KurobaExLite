@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.di
 
-import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostFilterHelper
+import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostHideHelper
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaManager
@@ -94,7 +94,7 @@ internal fun Module.managers() {
   }
 
   single {
-    PostFilterHelper(
+    PostHideHelper(
       postHideRepository = get(),
       postReplyChainRepository = get()
     )

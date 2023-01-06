@@ -12,13 +12,22 @@ import java.util.concurrent.ConcurrentHashMap
 class PostReplyChainRepository : IPostReplyChainRepository {
   private val replyChains = ConcurrentHashMap<ThreadDescriptor, ThreadReplyChain>()
 
-  override suspend fun insert(postDescriptor: PostDescriptor, repliesTo: Set<PostDescriptor>) {
+  override suspend fun insertRepliesTo(postDescriptor: PostDescriptor, repliesTo: Set<PostDescriptor>) {
     val threadReplyChain = replyChains.getOrPut(
       key = postDescriptor.threadDescriptor,
       defaultValue = { ThreadReplyChain() }
     )
 
-    threadReplyChain.insert(postDescriptor, repliesTo)
+    threadReplyChain.insertRepliesTo(postDescriptor, repliesTo)
+  }
+
+  override suspend fun insertRepliesFrom(postDescriptor: PostDescriptor, repliesFrom: Set<PostDescriptor>) {
+    val threadReplyChain = replyChains.getOrPut(
+      key = postDescriptor.threadDescriptor,
+      defaultValue = { ThreadReplyChain() }
+    )
+
+    threadReplyChain.insertRepliesFrom(postDescriptor, repliesFrom)
   }
 
   override suspend fun getRepliesTo(postDescriptor: PostDescriptor): Set<PostDescriptor> {
@@ -33,6 +42,13 @@ class PostReplyChainRepository : IPostReplyChainRepository {
       ?: return emptySet()
 
     return threadReplyChain.getRepliesFrom(postDescriptor)
+  }
+
+  override suspend fun getAllRepliesFromRecursively(postDescriptor: PostDescriptor): Map<PostDescriptor, Set<PostDescriptor>> {
+    val threadReplyChain = replyChains[postDescriptor.threadDescriptor]
+      ?: return emptyMap()
+
+    return threadReplyChain.getAllRepliesFromRecursively(postDescriptor)
   }
 
   override suspend fun getManyRepliesTo(postDescriptors: List<PostDescriptor>): Set<PostDescriptor> {
@@ -129,7 +145,7 @@ private class ThreadReplyChain {
   @GuardedBy("mutex")
   private val replyFromMap = mutableMapWithCap<PostDescriptor, MutableSet<PostDescriptor>>(128)
 
-  suspend fun insert(postDescriptor: PostDescriptor, repliesTo: Set<PostDescriptor>) {
+  suspend fun insertRepliesTo(postDescriptor: PostDescriptor, repliesTo: Set<PostDescriptor>) {
     mutex.withLockNonCancellable {
       replyToMap[postDescriptor] = repliesTo.toMutableSet()
 
@@ -144,12 +160,49 @@ private class ThreadReplyChain {
     }
   }
 
+  suspend fun insertRepliesFrom(postDescriptor: PostDescriptor, repliesFrom: Set<PostDescriptor>) {
+    mutex.withLockNonCancellable {
+      replyFromMap[postDescriptor] = repliesFrom.toMutableSet()
+
+      for (replyFromDescriptor in repliesFrom) {
+        val repliesTo = replyToMap.getOrPut(
+          key = replyFromDescriptor,
+          defaultValue = { mutableSetOf() }
+        )
+
+        repliesTo.add(postDescriptor)
+      }
+    }
+  }
+
   suspend fun getRepliesTo(postDescriptor: PostDescriptor): Set<PostDescriptor> {
     return mutex.withLockNonCancellable { replyToMap[postDescriptor]?.toSet() ?: emptySet() }
   }
 
   suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor> {
     return mutex.withLockNonCancellable { replyFromMap[postDescriptor]?.toSet() ?: emptySet() }
+  }
+
+  suspend fun getAllRepliesFromRecursively(postDescriptor: PostDescriptor): Map<PostDescriptor, Set<PostDescriptor>> {
+    return mutex.withLockNonCancellable {
+      val collectedReplies = linkedMapOf<PostDescriptor, Set<PostDescriptor>>()
+      getAllRepliesFromRecursivelyInternal(postDescriptor, collectedReplies)
+      return@withLockNonCancellable collectedReplies
+    }
+  }
+
+  private fun getAllRepliesFromRecursivelyInternal(
+    postDescriptor: PostDescriptor,
+    collectedReplies: MutableMap<PostDescriptor, Set<PostDescriptor>>
+  ) {
+    val replies = replyFromMap[postDescriptor]
+      ?: return
+
+    collectedReplies[postDescriptor] = replies
+
+    for (reply in replies) {
+      getAllRepliesFromRecursivelyInternal(reply, collectedReplies)
+    }
   }
 
 }

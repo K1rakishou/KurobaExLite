@@ -1,8 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.filtering
 
-import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostFilterHelper
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanPostHide
-import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
@@ -20,26 +18,19 @@ class HideOrUnhidePost(
       return
     }
 
-    val reason = PostFilterHelper.hiddenManuallyReason(
-      parsedPostDataRepository = parsedPostDataRepository,
-      chanDescriptor = chanDescriptor,
-      postDescriptor = postDescriptor
-    )
-
     val chanPostHides = mutableListOf<ChanPostHide>()
+
+    val repliesToHiddenPosts = postReplyChainRepository.getRepliesTo(postDescriptor)
+      .filter { postDescriptor -> postHideRepository.isPostHidden(postDescriptor) }
 
     chanPostHides += ChanPostHide(
       postDescriptor = postDescriptor,
       applyToReplies = applyToReplies,
-      manuallyUnhidden = false,
-      reason = reason
-    )
+      hiddenManually = true
+    ).also { chanPostHide -> chanPostHide.addReplies(repliesToHiddenPosts) }
 
     if (applyToReplies) {
-      chanPostHides += findRepliesToMapToChanPostHides(
-        chanDescriptor = chanDescriptor,
-        replyToPostDescriptor = postDescriptor
-      )
+      chanPostHides += findRepliesToMapToChanPostHides(postDescriptor)
     }
 
     postHideRepository.createOrUpdate(chanDescriptor, chanPostHides)
@@ -50,11 +41,10 @@ class HideOrUnhidePost(
       return
     }
 
-    postHideRepository.update(postDescriptor) { chanPostHide -> chanPostHide.copy(manuallyUnhidden = true) }
+    postHideRepository.update(postDescriptor) { chanPostHide -> chanPostHide.unhidePost() }
   }
 
   private suspend fun findRepliesToMapToChanPostHides(
-    chanDescriptor: ChanDescriptor,
     replyToPostDescriptor: PostDescriptor
   ): List<ChanPostHide> {
     val resultPostDescriptors = mutableSetOf<PostDescriptor>()
@@ -67,18 +57,14 @@ class HideOrUnhidePost(
     )
 
     return resultPostDescriptors.map { postDescriptor ->
-      val reason = PostFilterHelper.replyToHiddenPostReason(
-        processingCatalog = chanDescriptor is CatalogDescriptor,
-        postDescriptor = postDescriptor,
-        replyToPostDescriptor = replyToPostDescriptor
-      )
+      val repliesToHiddenPosts = postReplyChainRepository.getRepliesTo(postDescriptor)
+        .filter { postDescriptor -> postHideRepository.isPostHidden(postDescriptor) }
 
       return@map ChanPostHide(
         postDescriptor = postDescriptor,
         applyToReplies = true,
-        manuallyUnhidden = false,
-        reason = reason
-      )
+        hiddenManually = true
+      ).also { chanPostHide -> chanPostHide.addReplies(repliesToHiddenPosts) }
     }
   }
 

@@ -545,7 +545,7 @@ class ParsedPostDataRepository(
     }
 
     if (repliesTo.isNotEmpty()) {
-      postReplyChainRepository.insert(postDescriptor, repliesTo)
+      postReplyChainRepository.insertRepliesTo(postDescriptor, repliesTo)
     }
 
     return repliesTo

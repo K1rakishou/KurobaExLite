@@ -777,12 +777,8 @@ suspend fun <T, R> parallelForEach(
         return@flatMap dataChunk
           .map { data ->
             return@map async(dispatcher) {
-              try {
-                ensureActive()
-                return@async processFunc(data)
-              } catch (error: Throwable) {
-                return@async null
-              }
+              ensureActive()
+              return@async processFunc(data)
             }
           }
           .awaitAll()
@@ -811,16 +807,11 @@ suspend fun <T, R> parallelForEachOrdered(
         return@flatMap dataChunk
           .map { (data, order) ->
             return@map async(dispatcher) {
-              try {
-                ensureActive()
-                return@async DataIndexed(processFunc(data), order)
-              } catch (error: Throwable) {
-                return@async null
-              }
+              ensureActive()
+              return@async DataIndexed(processFunc(data), order)
             }
           }
           .awaitAll()
-          .filterNotNull()
       }
       .sortedBy { (_, order) -> order }
       .mapNotNull { (data, _) -> data }

@@ -9,7 +9,7 @@ import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostFilterHelper
+import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostHideHelper
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
@@ -95,7 +95,7 @@ abstract class PostScreenViewModel(
   protected val loadChanCatalog: LoadChanCatalog by inject(LoadChanCatalog::class.java)
   protected val updateBookmarkInfoUponThreadOpen: UpdateBookmarkInfoUponThreadOpen by inject(UpdateBookmarkInfoUponThreadOpen::class.java)
   protected val fastScrollerMarksManager: FastScrollerMarksManager by inject(FastScrollerMarksManager::class.java)
-  protected val postFilterHelper: PostFilterHelper by inject(PostFilterHelper::class.java)
+  protected val postHideHelper: PostHideHelper by inject(PostHideHelper::class.java)
   protected val postHideRepository: IPostHideRepository by inject(IPostHideRepository::class.java)
   protected val hideOrUnhidePost: HideOrUnhidePost by inject(HideOrUnhidePost::class.java)
 
@@ -346,7 +346,7 @@ abstract class PostScreenViewModel(
       return@parallelForEach postCellData.copy(parsedPostData = newParsedPostData)
     }
 
-    val filteredPostCellDataList = postFilterHelper.filterPosts(chanDescriptor, reparsedPostCellDataList)
+    val filteredPostCellDataList = postHideHelper.filterPosts(chanDescriptor, reparsedPostCellDataList)
     postScreenState.insertOrUpdateMany(filteredPostCellDataList)
   }
 
@@ -394,7 +394,7 @@ abstract class PostScreenViewModel(
       return@map postCellData.copy(parsedPostData = parsedPostData)
     }
 
-    val filteredPostCellDataList = postFilterHelper.filterPosts(chanDescriptor, reparsedPostCellDataList)
+    val filteredPostCellDataList = postHideHelper.filterPosts(chanDescriptor, reparsedPostCellDataList)
     postScreenState.insertOrUpdateMany(filteredPostCellDataList)
   }
 
@@ -708,7 +708,7 @@ abstract class PostScreenViewModel(
         logcat(TAG) { "parseRemainingPostsAsync() sorting ${postsToSort.size} done! Took $time1" }
 
         logcat(TAG) { "parseRemainingPostsAsync() filtering ${postsToSort.size} posts..." }
-        val postCellDataListFiltered = postFilterHelper.filterPosts(chanDescriptor, postCellDataListSorted)
+        val postCellDataListFiltered = postHideHelper.filterPosts(chanDescriptor, postCellDataListSorted)
         logcat(TAG) { "parseRemainingPostsAsync() filtered ${postsToSort.size} done!" }
 
         ensureActive()

@@ -108,15 +108,17 @@ class PostHideRepository : IPostHideRepository {
   override suspend fun isPostHidden(postDescriptor: PostDescriptor): Boolean {
     return mutex.withLock {
       val chanPostHide = postHides[postDescriptor]
-      if (chanPostHide == null) {
-        return@withLock false
+        ?: return@withLock false
+
+      if (chanPostHide.hiddenManually) {
+        return@withLock true
       }
 
-      if (chanPostHide.manuallyUnhidden) {
-        return@withLock false
+      if (chanPostHide.repliesToHiddenPostsAreEmpty()) {
+        return@withLock true
       }
 
-      return@withLock true
+      return@withLock false
     }
   }
 

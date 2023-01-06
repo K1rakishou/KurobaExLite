@@ -233,7 +233,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       is ThreadDescriptor -> ThreadPostSorter.sortThreadPostCellData(posts)
     }
 
-    val filteredPosts = postFilterHelper.filterPosts(chanDescriptor, sortedPosts)
+    val filteredPosts = postHideHelper.filterPosts(chanDescriptor, sortedPosts)
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(popupPostViewMode.chanDescriptor))
     postScreenState.insertOrUpdateMany(filteredPosts)
@@ -262,7 +262,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     )
 
     val sortedPosts = ThreadPostSorter.sortThreadPostCellData(posts)
-    val filteredPosts = postFilterHelper.filterPosts(chanDescriptor, sortedPosts)
+    val filteredPosts = postHideHelper.filterPosts(chanDescriptor, sortedPosts)
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(chanDescriptor))
     postScreenState.insertOrUpdateMany(filteredPosts)
@@ -309,7 +309,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       }
     }
 
-    val filteredPosts = postFilterHelper.filterPosts(chanDescriptor, sortedPosts)
+    val filteredPosts = postHideHelper.filterPosts(chanDescriptor, sortedPosts)
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(chanDescriptor))
     postScreenState.insertOrUpdateMany(filteredPosts)

@@ -1,5 +1,6 @@
 package helpers
 
+import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.helpers.parser.Chan4PostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.managers.ISiteManager
@@ -13,7 +14,7 @@ import junit.framework.TestCase
 import org.junit.Test
 
 class PostCommentParserTest : TestCase() {
-  private val chan4PostParser = Chan4PostParser()
+  private val chan4PostParser = Chan4PostParser(staticHtmlColorRepository = StaticHtmlColorRepository())
   private val fakeSiteKey = SiteKey("test")
 
   private lateinit var fakeSiteManager: ISiteManager
@@ -82,6 +83,8 @@ class PostCommentParserTest : TestCase() {
       postSubjectUnparsed = "",
       postCommentUnparsed = comment,
       images = null,
+      opMark = false,
+      sage = false,
       timeMs = System.currentTimeMillis(),
       name = null,
       tripcode = null,
