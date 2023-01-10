@@ -136,25 +136,6 @@ class DvachDataSource(
     }
   }
 
-  private fun parseSupportedIcons(icons: List<DvachBoardIconJson>?): List<BoardFlag> {
-    if (icons.isNullOrEmpty()) {
-      return emptyList()
-    }
-
-    val flags = mutableListWithCap<BoardFlag>(icons.size + 1)
-    flags += BoardFlag.defaultEntry()
-
-    icons.forEach { dvachBoardIconJson ->
-      flags += BoardFlag(
-        key = dvachBoardIconJson.url,
-        name = dvachBoardIconJson.name,
-        flagId = dvachBoardIconJson.num
-      )
-    }
-
-    return flags
-  }
-
   override suspend fun loadCatalog(input: CatalogDescriptor): Result<CatalogData> {
     return withContext(Dispatchers.IO) {
       return@withContext Result.Try {
@@ -831,6 +812,25 @@ class DvachDataSource(
         dvachSiteSettings.passcodeCookie.write("")
       }
     }
+  }
+
+  private fun parseSupportedIcons(icons: List<DvachBoardIconJson>?): List<BoardFlag> {
+    if (icons.isNullOrEmpty()) {
+      return emptyList()
+    }
+
+    val flags = mutableListWithCap<BoardFlag>(icons.size + 1)
+    flags += BoardFlag.defaultEntry()
+
+    icons.forEach { dvachBoardIconJson ->
+      flags += BoardFlag(
+        key = dvachBoardIconJson.url,
+        name = dvachBoardIconJson.name,
+        flagId = dvachBoardIconJson.num
+      )
+    }
+
+    return flags
   }
 
   private fun parseName(defaultName: String, name: String): ParsedName {

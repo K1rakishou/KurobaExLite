@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.model.repository
 
 import androidx.annotation.GuardedBy
+import com.github.k1rakishou.kurobaexlite.helpers.util.linkedMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanPostHide
@@ -27,10 +28,18 @@ class PostHideRepository : IPostHideRepository {
 
   override suspend fun postHidesForChanDescriptor(chanDescriptor: ChanDescriptor): Map<PostDescriptor, ChanPostHide> {
     return mutex.withLock {
-      return@withLock hiddenPosts[chanDescriptor]
+      val postHides = hiddenPosts[chanDescriptor]
         ?.mapNotNull { postDescriptor -> postHides[postDescriptor] }
-        ?.associateBy { chanPostHide -> chanPostHide.postDescriptor }
-        ?: emptyMap()
+        ?.sortedBy { chanPostHide -> chanPostHide.postDescriptor }
+
+      if (postHides.isNullOrEmpty()) {
+        return@withLock emptyMap()
+      }
+
+      val resultMap = linkedMapWithCap<PostDescriptor, ChanPostHide>(postHides.size)
+      postHides.forEach { chanPostHide -> resultMap[chanPostHide.postDescriptor] = chanPostHide }
+
+      return@withLock resultMap
     }
   }
 
@@ -106,20 +115,7 @@ class PostHideRepository : IPostHideRepository {
   }
 
   override suspend fun isPostHidden(postDescriptor: PostDescriptor): Boolean {
-    return mutex.withLock {
-      val chanPostHide = postHides[postDescriptor]
-        ?: return@withLock false
-
-      if (chanPostHide.hiddenManually) {
-        return@withLock true
-      }
-
-      if (chanPostHide.repliesToHiddenPostsAreEmpty()) {
-        return@withLock true
-      }
-
-      return@withLock false
-    }
+    return mutex.withLock { postHides[postDescriptor]?.isHidden() ?: false }
   }
 
 }

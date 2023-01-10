@@ -26,6 +26,8 @@ import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -787,7 +789,7 @@ suspend fun <T, R> parallelForEach(
   }
 }
 
-suspend fun <T, R> parallelForEachOrdered(
+suspend fun <T, R> parallelForEachPreserveOrder(
   dataList: Collection<T>,
   parallelization: Int,
   dispatcher: CoroutineDispatcher,
@@ -804,14 +806,22 @@ suspend fun <T, R> parallelForEachOrdered(
     return@supervisorScope dataListIndexed
       .chunked(parallelization)
       .flatMap { dataChunk ->
-        return@flatMap dataChunk
+        val deferredWithOrderPairs = dataChunk
           .map { (data, order) ->
-            return@map async(dispatcher) {
+            val job = async(context = dispatcher, start = CoroutineStart.LAZY) {
               ensureActive()
               return@async DataIndexed(processFunc(data), order)
             }
+
+            return@map job to order
           }
-          .awaitAll()
+
+        val deferredList = mutableListWithCap<Deferred<DataIndexed<R?>>>(deferredWithOrderPairs.size)
+        deferredWithOrderPairs
+          .sortedBy { (_, order) -> order }
+          .forEach { (deferred, _) -> deferredList += deferred }
+
+        return@flatMap deferredList.awaitAll()
       }
       .sortedBy { (_, order) -> order }
       .mapNotNull { (data, _) -> data }

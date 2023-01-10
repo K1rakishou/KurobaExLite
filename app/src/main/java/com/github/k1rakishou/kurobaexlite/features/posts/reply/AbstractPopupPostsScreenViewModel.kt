@@ -12,7 +12,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.sort.CatalogThreadSorter
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.flatMapNotNull
-import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEachOrdered
+import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEachPreserveOrder
 import com.github.k1rakishou.kurobaexlite.model.data.IPostData
 import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.data.ui.LazyColumnRememberedPosition
@@ -233,7 +233,11 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       is ThreadDescriptor -> ThreadPostSorter.sortThreadPostCellData(posts)
     }
 
-    val filteredPosts = postHideHelper.filterPosts(chanDescriptor, sortedPosts)
+    val filteredPosts = postHideHelper.filterPosts(
+      chanDescriptor = chanDescriptor,
+      changedPosts = sortedPosts,
+      postCellDataByPostDescriptor = null
+    )
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(popupPostViewMode.chanDescriptor))
     postScreenState.insertOrUpdateMany(filteredPosts)
@@ -261,8 +265,11 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       postCellDataList = chanPostCache.getManyForDescriptor(chanDescriptor, repliesFrom)
     )
 
-    val sortedPosts = ThreadPostSorter.sortThreadPostCellData(posts)
-    val filteredPosts = postHideHelper.filterPosts(chanDescriptor, sortedPosts)
+    val filteredPosts = postHideHelper.filterPosts(
+      chanDescriptor = chanDescriptor,
+      changedPosts = ThreadPostSorter.sortThreadPostCellData(posts),
+      postCellDataByPostDescriptor = null
+    )
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(chanDescriptor))
     postScreenState.insertOrUpdateMany(filteredPosts)
@@ -309,7 +316,11 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       }
     }
 
-    val filteredPosts = postHideHelper.filterPosts(chanDescriptor, sortedPosts)
+    val filteredPosts = postHideHelper.filterPosts(
+      chanDescriptor = chanDescriptor,
+      changedPosts = sortedPosts,
+      postCellDataByPostDescriptor = null
+    )
 
     postScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(chanDescriptor))
     postScreenState.insertOrUpdateMany(filteredPosts)
@@ -350,7 +361,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
     val chanTheme = themeEngine.chanTheme
     val postViewMode = PostViewMode.List
 
-    val updatedPostDataList = parallelForEachOrdered(
+    val updatedPostDataList = parallelForEachPreserveOrder(
       dataList = postCellDataList,
       parallelization = AppConstants.coresCount.coerceAtLeast(2),
       dispatcher = Dispatchers.Default
@@ -387,7 +398,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
       val postHideUi = postHideRepository.postHideForPostDescriptor(oldPostData.postDescriptor)
         ?.toPostHideUi()
 
-      return@parallelForEachOrdered PostCellData.fromPostData(
+      return@parallelForEachPreserveOrder PostCellData.fromPostData(
         chanDescriptor = chanDescriptor,
         postData = oldPostData,
         parsedPostData = parsedPostData,

@@ -24,4 +24,8 @@ class AppResources(
     return appContext.resources.getBoolean(boolRes)
   }
 
+  override fun getQuantityString(stringId: Int, quantity: Int, vararg formatArgs: Any): String {
+    return appContext.resources.getQuantityString(stringId, quantity, *formatArgs)
+  }
+
 }

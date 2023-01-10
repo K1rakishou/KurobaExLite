@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.model.repository
 
-import android.content.Context
 import android.text.format.DateUtils
 import androidx.annotation.GuardedBy
 import androidx.compose.foundation.text.appendInlineContent
@@ -8,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
@@ -19,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPart
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.BackgroundUtils
@@ -61,9 +62,9 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicBoolean
 
 class ParsedPostDataRepository(
-  private val appContext: Context,
   private val coroutineScope: CoroutineScope,
   private val appSettings: AppSettings,
+  private val appResources: IAppResources,
   private val postCommentParser: PostCommentParser,
   private val postCommentApplier: PostCommentApplier,
   private val postReplyChainRepository: IPostReplyChainRepository,
@@ -476,8 +477,17 @@ class ParsedPostDataRepository(
     } catch (error: Throwable) {
       logcatError(TAG) { "Error parsing ${postDescriptor}! Error: ${error.asLog()}" }
 
-      val postComment = "Error parsing ${postDescriptor}!\n\nError: ${error.errorMessageOrClassName(userReadable = true)}"
-      val postCommentAnnotated = AnnotatedString(postComment)
+      val postComment = "An exception has been thrown while parsing \'${postDescriptor.asReadableString()}\' post!\n" +
+        "Error message: \'${error.errorMessageOrClassName(userReadable = true)}\'\n" +
+        "-------------------------------------\n" +
+        "Error stacktrace: ${error.asLog()}\n" +
+        "-------------------------------------\n" +
+        "Report this error on Github."
+
+      val postCommentAnnotated = androidx.compose.ui.text.buildAnnotatedString {
+        pushStyle(style = SpanStyle(fontWeight = FontWeight.SemiBold))
+        append(postComment)
+      }
 
       return ParsedPostData(
         parsedPostParts = emptyList(),
@@ -898,7 +908,7 @@ class ParsedPostDataRepository(
               R.plurals.reply_with_number
             }
 
-            val repliesText = appContext.resources.getQuantityString(
+            val repliesText = appResources.getQuantityString(
               stringId,
               repliesCount,
               repliesCount
@@ -920,7 +930,7 @@ class ParsedPostDataRepository(
               R.plurals.image_with_number
             }
 
-            val imagesText = appContext.resources.getQuantityString(
+            val imagesText = appResources.getQuantityString(
               stringId,
               imagesCount,
               imagesCount
@@ -942,7 +952,7 @@ class ParsedPostDataRepository(
               R.plurals.poster_with_number
             }
 
-            val imagesText = appContext.resources.getQuantityString(
+            val imagesText = appResources.getQuantityString(
               stringId,
               postersCount,
               postersCount
@@ -959,7 +969,7 @@ class ParsedPostDataRepository(
     if (repliesFrom.isNotEmpty()) {
       val repliesFromCount = repliesFrom.size
 
-      val text = appContext.resources.getQuantityString(
+      val text = appResources.getQuantityString(
         R.plurals.reply_with_number,
         repliesFromCount,
         repliesFromCount

@@ -62,6 +62,15 @@ abstract class PostScreenState(
     return postAsyncData.data.getPosts(postDescriptors)
   }
 
+  fun getPost(postDescriptor: PostDescriptor): PostCellData? {
+    val postAsyncData = postsAsyncDataState.value
+    if (postAsyncData !is AsyncData.Data) {
+      return null
+    }
+
+    return postAsyncData.data.getPost(postDescriptor)
+  }
+
   @CallSuper
   open fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     doWithDataState { postsState ->

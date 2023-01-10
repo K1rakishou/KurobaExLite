@@ -79,6 +79,14 @@ class PostsState(
     return rwLock.read { postIndexes[postDescriptor] }
   }
 
+  fun getPost(postDescriptor: PostDescriptor): PostCellData? {
+    return rwLock.read {
+      val postIndex = postIndexes[postDescriptor]
+        ?: return@read null
+      return@read _posts.getOrNull(postIndex)
+    }
+  }
+
   fun getPosts(postDescriptors: Collection<PostDescriptor>): List<PostCellData> {
     val resultList = mutableListWithCap<PostCellData>(postDescriptors.size)
 

@@ -11,4 +11,5 @@ interface IAppResources {
   fun string(@StringRes stringId: Int, vararg args: Any): String
   fun dimension(@DimenRes dimenId: Int): Float
   fun boolean(@BoolRes boolRes: Int): Boolean
+  fun getQuantityString(stringId: Int, quantity: Int, vararg formatArgs: Any): String
 }

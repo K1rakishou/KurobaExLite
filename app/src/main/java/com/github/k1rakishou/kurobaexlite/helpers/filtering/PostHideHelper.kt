@@ -1,9 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.helpers.filtering
 
 import androidx.annotation.VisibleForTesting
-import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.util.linkedMapWithCap
-import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEachOrdered
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanPostHide
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -25,12 +24,20 @@ class PostHideHelper(
 ) {
 
   @OptIn(ExperimentalTime::class)
-  suspend fun filterPosts(chanDescriptor: ChanDescriptor, posts: List<PostCellData>): List<PostCellData> {
-    logcat(TAG) { "filterPosts() processing ${posts.size} posts..." }
+  suspend fun filterPosts(
+    chanDescriptor: ChanDescriptor,
+    changedPosts: List<PostCellData>,
+    postCellDataByPostDescriptor: ((PostDescriptor) -> PostCellData?)?
+  ): List<PostCellData> {
+    logcat(TAG) { "filterPosts() processing..." }
 
     val (resultPosts, duration) = measureTimedValue {
       withContext(Dispatchers.Default) {
-        val postProcessResult = processPosts(chanDescriptor, posts)
+        val postProcessResult = processPosts(
+          chanDescriptor = chanDescriptor,
+          changedPosts = changedPosts,
+          postCellDataByPostDescriptor = postCellDataByPostDescriptor
+        )
 
         if (postProcessResult.toHide.isNotEmpty()) {
           postHideRepository.createOrUpdate(chanDescriptor, postProcessResult.toHide)
@@ -44,45 +51,58 @@ class PostHideHelper(
       }
     }
 
-    logcat(TAG) { "filterPosts() processing ${posts.size} posts... done, took ${duration}" }
+    logcat(TAG) { "filterPosts() processing... done, took ${duration}" }
     return resultPosts
   }
 
   @VisibleForTesting
-  suspend fun processPosts(chanDescriptor: ChanDescriptor, posts: List<PostCellData>): PostProcessResult {
-    if (posts.isEmpty()) {
-      return PostProcessResult(posts)
+  suspend fun processPosts(
+    chanDescriptor: ChanDescriptor,
+    changedPosts: List<PostCellData>,
+    postCellDataByPostDescriptor: ((PostDescriptor) -> PostCellData?)? = null
+  ): PostProcessResult {
+    if (changedPosts.isEmpty()) {
+      logcat(TAG) { "filterPosts() posts is empty" }
+      return PostProcessResult(changedPosts)
     }
 
-    val postHidesAsMap = postHideRepository.postHidesForChanDescriptor(chanDescriptor)
-    if (postHidesAsMap.isEmpty()) {
-      return PostProcessResult(posts)
+    val postHidesAsMapBeforeFiltering = postHideRepository.postHidesForChanDescriptor(chanDescriptor)
+    if (postHidesAsMapBeforeFiltering.isEmpty()) {
+      logcat(TAG) { "filterPosts() postHidesAsMapBeforeFiltering is empty" }
+      return PostProcessResult(changedPosts)
     }
 
     // TODO: Filters. Also checks filters here.
 
+    val changedPostsAsLinkedMap = linkedMapWithCap<PostDescriptor, PostCellData>(changedPosts.size)
+    changedPosts.forEach { postCellData -> changedPostsAsLinkedMap[postCellData.postDescriptor] = postCellData }
+
+    val postHidesAsMap = postHidesAsMapBeforeFiltering
+      .filter { (_, chanPostHide) -> changedPostsAsLinkedMap.containsKey(chanPostHide.postDescriptor) }
+
+    if (postHidesAsMap.isEmpty()) {
+      logcat(TAG) { "filterPosts() postHidesAsMap is empty" }
+      return PostProcessResult(changedPosts)
+    }
+
     val mutex = Mutex()
     val processingCatalog = chanDescriptor is CatalogDescriptor
 
-    val postsAsLinkedMap = linkedMapWithCap<PostDescriptor, PostCellData>(posts.size)
-    posts.forEach { postCellData -> postsAsLinkedMap[postCellData.postDescriptor] = postCellData }
-
     val toHide = mutableMapOf<PostDescriptor, ChanPostHide>()
     val toUnhide = mutableSetOf<PostDescriptor>()
+    val postHides = postHidesAsMap.values.toList()
 
-    parallelForEachOrdered(
-      dataList = postHidesAsMap.values.toList(),
-      parallelization = AppConstants.coresCount,
-      dispatcher = Dispatchers.Default
-    ) { chanPostHide ->
+    for (chanPostHide in postHides) {
+      chanPostHide.removeRepliesMatching(toUnhide)
+
       processSinglePost(
         processingCatalog = processingCatalog,
         chanPostHide = chanPostHide,
         getPostCellData = { postDescriptor ->
-          mutex.withLock { postsAsLinkedMap[postDescriptor] }
+          mutex.withLock { changedPostsAsLinkedMap[postDescriptor] ?: postCellDataByPostDescriptor?.invoke(postDescriptor) }
         },
         setPostCellData = { postCellData ->
-          mutex.withLock { postsAsLinkedMap[postCellData.postDescriptor] = postCellData }
+          mutex.withLock { changedPostsAsLinkedMap[postCellData.postDescriptor] = postCellData }
         },
         addPostHide = { newChanPostHide ->
           mutex.withLock { toHide[newChanPostHide.postDescriptor] = newChanPostHide }
@@ -96,8 +116,10 @@ class PostHideHelper(
       )
     }
 
+    logcat(TAG) { "filterPosts() postHides: ${postHides.size}, toHide: ${toHide.size}, toUnhide: ${toUnhide.size}" }
+
     return PostProcessResult(
-      posts = postsAsLinkedMap.values.toList(),
+      posts = changedPostsAsLinkedMap.values.toList(),
       toHide = toHide.values.toList(),
       toUnhide = toUnhide
     )
@@ -126,17 +148,15 @@ class PostHideHelper(
     val postHideUi = chanPostHide.takeIf { chanPostHide -> chanPostHide.isHidden() }?.toPostHideUi()
     val nowHidden = postHideUi != null
 
-    if (wasHidden == nowHidden) {
-      // Nothing changed so do nothing
-      return
-    }
+    if (wasHidden != nowHidden || postCellData.postHideUi != postHideUi) {
+      if (nowHidden) {
+        addPostHide(chanPostHide)
+      } else {
+        addPostUnhide(thisPostDescriptor)
+      }
 
-    if (nowHidden) {
-      addPostHide(chanPostHide)
-    } else {
-      addPostUnhide(thisPostDescriptor)
+      setPostCellData(postCellData.copy(postHideUi = postHideUi))
     }
-    setPostCellData(postCellData.copy(postHideUi = postHideUi))
 
     if (processingCatalog) {
       // Do not process replies when filtering catalog threads (makes no sense)
@@ -184,7 +204,7 @@ class PostHideHelper(
     setPostCellData: suspend (PostCellData) -> Unit,
     addPostHide: suspend (ChanPostHide) -> Unit,
     addPostUnhide: suspend (PostDescriptor) -> Unit,
-    getChanPostHide: suspend (PostDescriptor) -> ChanPostHide?,
+    getChanPostHide: suspend (PostDescriptor) -> ChanPostHide?
   ) {
     val childPostCellData = getPostCellData(childPostDescriptor)
       ?: return
@@ -212,7 +232,7 @@ class PostHideHelper(
         newOrUpdateChanPostHide = ChanPostHide(
           postDescriptor = childPostDescriptor,
           applyToReplies = parentChanPostHide.applyToReplies,
-          hiddenManually = false
+          state = ChanPostHide.State.Unspecified
         )
       }
 
@@ -224,18 +244,75 @@ class PostHideHelper(
 
       // Parent is not hidden and child is, we need to check whether the child can be unhidden. For that we need:
       // 1. Check whether the child is hidden manually.
-      // 2. Check whether child replies to any hidden posts.
+      // 2. Try to find any ChanPostHide that is currently hidden and has applyToReplies set to true for each post this
+      //    post replies to (traverse upwards). If there are none then this post is not hidden anymore.
+      //    If there is at least one then it's hidden.
       // If any of the above are true then the child must stay hidden. Otherwise unhide the child post.
 
-      if (childChanPostHide.isHidden()) {
+      if (childChanPostHide.state == ChanPostHide.State.HiddenManually) {
+        // Post is hidden manually.
+
         childChanPostHide.addReplies(listOf(parentPostDescriptor))
-      } else {
-        childChanPostHide.removeReplies(listOf(parentPostDescriptor))
-        addPostUnhide(childPostDescriptor)
+        setPostCellData(childPostCellData.copy(postHideUi = childChanPostHide.toPostHideUi()))
+        return
       }
 
+      if (childChanPostHide.state == ChanPostHide.State.UnhiddenManually) {
+        childChanPostHide.clearPostHides()
+        addPostUnhide(childPostDescriptor)
+        setPostCellData(childPostCellData.copy(postHideUi = childChanPostHide.toPostHideUi()))
+        return
+      }
+
+      val repliesTo = postReplyChainRepository.getRepliesTo(childChanPostHide.postDescriptor)
+
+      val firstNonNullParentChanPostHide = findFirstNonNullHiddenParentChanPostHide(
+        alreadyVisited = mutableSetWithCap<PostDescriptor>(repliesTo.size * 2),
+        repliesTo = repliesTo,
+        getChanPostHide = getChanPostHide
+      )
+
+      if (firstNonNullParentChanPostHide != null) {
+        // Post does not reply to any hidden posts.
+
+        childChanPostHide.addReplies(listOf(parentPostDescriptor))
+        setPostCellData(childPostCellData.copy(postHideUi = childChanPostHide.toPostHideUi()))
+        return
+      }
+
+      childChanPostHide.removeReplies(listOf(parentPostDescriptor))
+      addPostUnhide(childPostDescriptor)
       setPostCellData(childPostCellData.copy(postHideUi = childChanPostHide.toPostHideUi()))
     }
+  }
+
+  private suspend fun findFirstNonNullHiddenParentChanPostHide(
+    alreadyVisited: MutableSet<PostDescriptor>,
+    repliesTo: Set<PostDescriptor>,
+    getChanPostHide: suspend (PostDescriptor) -> ChanPostHide?
+  ): ChanPostHide? {
+    for (replyTo in repliesTo) {
+      if (!alreadyVisited.add(replyTo)) {
+        continue
+      }
+
+      var chanPostHide = getChanPostHide(replyTo)
+      if (chanPostHide != null && chanPostHide.applyToReplies && chanPostHide.isHidden()) {
+        return chanPostHide
+      }
+
+      chanPostHide = findFirstNonNullHiddenParentChanPostHide(
+        alreadyVisited = alreadyVisited,
+        repliesTo = postReplyChainRepository.getRepliesTo(replyTo),
+        getChanPostHide = getChanPostHide
+      )
+
+      if (chanPostHide != null) {
+        return chanPostHide
+      }
+    }
+
+    return null
   }
 
   data class PostProcessResult(

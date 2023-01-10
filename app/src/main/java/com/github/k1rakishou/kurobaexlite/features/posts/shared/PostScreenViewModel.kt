@@ -346,7 +346,12 @@ abstract class PostScreenViewModel(
       return@parallelForEach postCellData.copy(parsedPostData = newParsedPostData)
     }
 
-    val filteredPostCellDataList = postHideHelper.filterPosts(chanDescriptor, reparsedPostCellDataList)
+    val filteredPostCellDataList = postHideHelper.filterPosts(
+      chanDescriptor = chanDescriptor,
+      changedPosts = reparsedPostCellDataList,
+      postCellDataByPostDescriptor = { postDescriptor -> postScreenState.getPost(postDescriptor) }
+    )
+
     postScreenState.insertOrUpdateMany(filteredPostCellDataList)
   }
 
@@ -394,7 +399,12 @@ abstract class PostScreenViewModel(
       return@map postCellData.copy(parsedPostData = parsedPostData)
     }
 
-    val filteredPostCellDataList = postHideHelper.filterPosts(chanDescriptor, reparsedPostCellDataList)
+    val filteredPostCellDataList = postHideHelper.filterPosts(
+      chanDescriptor = chanDescriptor,
+      changedPosts = reparsedPostCellDataList,
+      postCellDataByPostDescriptor = { postDescriptor -> postScreenState.getPost(postDescriptor) }
+    )
+
     postScreenState.insertOrUpdateMany(filteredPostCellDataList)
   }
 
@@ -708,7 +718,11 @@ abstract class PostScreenViewModel(
         logcat(TAG) { "parseRemainingPostsAsync() sorting ${postsToSort.size} done! Took $time1" }
 
         logcat(TAG) { "parseRemainingPostsAsync() filtering ${postsToSort.size} posts..." }
-        val postCellDataListFiltered = postHideHelper.filterPosts(chanDescriptor, postCellDataListSorted)
+        val postCellDataListFiltered = postHideHelper.filterPosts(
+          chanDescriptor = chanDescriptor,
+          changedPosts = postCellDataListSorted,
+          postCellDataByPostDescriptor = null
+        )
         logcat(TAG) { "parseRemainingPostsAsync() filtered ${postsToSort.size} done!" }
 
         ensureActive()

@@ -45,9 +45,9 @@ internal fun Module.model() {
   single<IPostReplyChainRepository> { PostReplyChainRepository() }
   single {
     ParsedPostDataRepository(
-      appContext = get(),
       coroutineScope = get(),
       appSettings = get(),
+      appResources = get(),
       postCommentParser = get(),
       postCommentApplier = get(),
       postReplyChainRepository = get(),

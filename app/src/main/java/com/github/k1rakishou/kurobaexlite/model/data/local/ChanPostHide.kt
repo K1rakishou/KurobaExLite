@@ -6,7 +6,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 class ChanPostHide(
   val postDescriptor: PostDescriptor,
   val applyToReplies: Boolean,
-  val hiddenManually: Boolean,
+  val state: State = State.Unspecified,
   repliesToHiddenPosts: Set<PostDescriptor> = emptySet()
 ) {
   private val repliesToHiddenPosts = mutableSetOf<PostDescriptor>()
@@ -27,11 +27,6 @@ class ChanPostHide(
   @Synchronized
   fun repliesToHiddenPostsContain(postDescriptor: PostDescriptor): Boolean {
     return repliesToHiddenPosts.contains(postDescriptor)
-  }
-
-  @Synchronized
-  fun repliesToHiddenPostsAreEmpty(): Boolean {
-    return repliesToHiddenPosts.isEmpty()
   }
 
   @Synchronized
@@ -56,12 +51,27 @@ class ChanPostHide(
   }
 
   @Synchronized
+  fun removeRepliesMatching(postDescriptors: Set<PostDescriptor>) {
+    val toRemove = mutableSetOf<PostDescriptor>()
+
+    repliesToHiddenPosts.forEach { postDescriptor ->
+      if (postDescriptor in postDescriptors) {
+        toRemove += postDescriptor
+      }
+    }
+
+    if (toRemove.isNotEmpty()) {
+      repliesToHiddenPosts.removeAll(toRemove)
+    }
+  }
+
+  @Synchronized
   fun hideFlagsDiffer(other: ChanPostHide): Boolean {
     if (applyToReplies != other.applyToReplies) {
       return true
     }
 
-    if (hiddenManually != other.hiddenManually) {
+    if (state != other.state) {
       return true
     }
 
@@ -73,14 +83,14 @@ class ChanPostHide(
   }
 
   fun unhidePost(): ChanPostHide {
-    val copiedChanPostHide = copy(hiddenManually = false)
-    copiedChanPostHide.clearPostHides()
-    return copiedChanPostHide
+    return copy(state = State.UnhiddenManually, repliesToHiddenPosts = emptySet())
   }
 
   @Synchronized
   fun isHidden(): Boolean {
-    if (hiddenManually) {
+    if (state == State.UnhiddenManually) {
+      return false
+    } else if (state == State.HiddenManually) {
       return true
     }
 
@@ -94,7 +104,9 @@ class ChanPostHide(
   @Synchronized
   fun toPostHideUi(): PostCellData.PostHideUi? {
     val reason = kotlin.run {
-      if (hiddenManually) {
+      if (state == State.UnhiddenManually) {
+        return@run null
+      } else if (state == State.HiddenManually) {
         return@run formatPostHiddenManually(postDescriptor)
       }
 
@@ -115,13 +127,13 @@ class ChanPostHide(
   fun copy(
     postDescriptor: PostDescriptor? = null,
     applyToReplies: Boolean? = null,
-    hiddenManually: Boolean? = null,
+    state: State? = null,
     repliesToHiddenPosts: Set<PostDescriptor>? = null
   ): ChanPostHide {
     return ChanPostHide(
       postDescriptor = postDescriptor ?: this.postDescriptor,
       applyToReplies = applyToReplies ?: this.applyToReplies,
-      hiddenManually = hiddenManually ?: this.hiddenManually,
+      state = state ?: this.state,
       repliesToHiddenPosts = repliesToHiddenPosts ?: this.repliesToHiddenPosts
     )
   }
@@ -134,7 +146,7 @@ class ChanPostHide(
 
     if (postDescriptor != other.postDescriptor) return false
     if (applyToReplies != other.applyToReplies) return false
-    if (hiddenManually != other.hiddenManually) return false
+    if (state != other.state) return false
     if (repliesToHiddenPosts != other.repliesToHiddenPosts) return false
 
     return true
@@ -143,13 +155,19 @@ class ChanPostHide(
   override fun hashCode(): Int {
     var result = postDescriptor.hashCode()
     result = 31 * result + applyToReplies.hashCode()
-    result = 31 * result + hiddenManually.hashCode()
+    result = 31 * result + state.hashCode()
     result = 31 * result + repliesToHiddenPosts.hashCode()
     return result
   }
 
   override fun toString(): String {
-    return "ChanPostHide(postDescriptor=$postDescriptor, applyToReplies=$applyToReplies, hiddenManually=$hiddenManually, repliesToHiddenPosts=$repliesToHiddenPosts)"
+    return "ChanPostHide(postDescriptor=$postDescriptor, applyToReplies=$applyToReplies, state=${state}, repliesToHiddenPosts=$repliesToHiddenPosts)"
+  }
+
+  enum class State {
+    Unspecified,
+    HiddenManually,
+    UnhiddenManually
   }
 
   companion object {

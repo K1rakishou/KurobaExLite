@@ -20,18 +20,11 @@ class HideOrUnhidePost(
 
     val chanPostHides = mutableListOf<ChanPostHide>()
 
-    val repliesToHiddenPosts = postReplyChainRepository.getRepliesTo(postDescriptor)
-      .filter { postDescriptor -> postHideRepository.isPostHidden(postDescriptor) }
-
     chanPostHides += ChanPostHide(
       postDescriptor = postDescriptor,
       applyToReplies = applyToReplies,
-      hiddenManually = true
-    ).also { chanPostHide -> chanPostHide.addReplies(repliesToHiddenPosts) }
-
-    if (applyToReplies) {
-      chanPostHides += findRepliesToMapToChanPostHides(postDescriptor)
-    }
+      state = ChanPostHide.State.HiddenManually
+    )
 
     postHideRepository.createOrUpdate(chanDescriptor, chanPostHides)
   }
@@ -42,30 +35,6 @@ class HideOrUnhidePost(
     }
 
     postHideRepository.update(postDescriptor) { chanPostHide -> chanPostHide.unhidePost() }
-  }
-
-  private suspend fun findRepliesToMapToChanPostHides(
-    replyToPostDescriptor: PostDescriptor
-  ): List<ChanPostHide> {
-    val resultPostDescriptors = mutableSetOf<PostDescriptor>()
-
-    postReplyChainRepository.findPostWithRepliesRecursive(
-      postDescriptor = replyToPostDescriptor,
-      includeRepliesFrom = true,
-      includeRepliesTo = false,
-      resultPostDescriptors = resultPostDescriptors
-    )
-
-    return resultPostDescriptors.map { postDescriptor ->
-      val repliesToHiddenPosts = postReplyChainRepository.getRepliesTo(postDescriptor)
-        .filter { postDescriptor -> postHideRepository.isPostHidden(postDescriptor) }
-
-      return@map ChanPostHide(
-        postDescriptor = postDescriptor,
-        applyToReplies = true,
-        hiddenManually = true
-      ).also { chanPostHide -> chanPostHide.addReplies(repliesToHiddenPosts) }
-    }
   }
 
 }

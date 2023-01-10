@@ -195,8 +195,12 @@ private class ThreadReplyChain {
     postDescriptor: PostDescriptor,
     collectedReplies: MutableMap<PostDescriptor, Set<PostDescriptor>>
   ) {
-    val replies = replyFromMap[postDescriptor]
+    val replies = replyFromMap[postDescriptor]?.takeIf { it.isNotEmpty() }
       ?: return
+
+    if (collectedReplies.containsKey(postDescriptor)) {
+      return
+    }
 
     collectedReplies[postDescriptor] = replies
 
