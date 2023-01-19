@@ -5,6 +5,7 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostListOptions
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
@@ -33,6 +34,7 @@ class PostLongtapContextMenu(
   private val screenCoroutineScope: CoroutineScope
 ) {
   private val replyLayoutViewModel by componentActivity.viewModel<ReplyLayoutViewModel>()
+  private val threadScreenViewModel by componentActivity.viewModel<ThreadScreenViewModel>()
 
   private val markedPostManager: MarkedPostManager by inject(MarkedPostManager::class.java)
   private val modifyMarkedPosts: ModifyMarkedPosts by inject(ModifyMarkedPosts::class.java)
@@ -244,6 +246,19 @@ class PostLongtapContextMenu(
           postDescriptor = postCellData.postDescriptor,
           applyToReplies = true
         )
+
+        val currentlyOpenedThreadFlow = threadScreenViewModel.currentlyOpenedThreadFlow.value
+        val postDescriptor = postCellData.postDescriptor
+
+        if (postDescriptor.isOP &&
+          postCellData.chanDescriptor is CatalogDescriptor &&
+          postDescriptor.threadDescriptor == currentlyOpenedThreadFlow
+        ) {
+          threadScreenViewModel.loadThread(
+            threadDescriptor = null,
+            loadOptions = PostScreenViewModel.LoadOptions(forced = true)
+          )
+        }
       }
       UNHIDE_POST -> {
         hideOrUnhidePost.unhide(postCellData.postDescriptor)

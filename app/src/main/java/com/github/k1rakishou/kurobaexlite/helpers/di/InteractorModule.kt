@@ -212,9 +212,7 @@ internal fun Module.interactors() {
   }
   single {
     HideOrUnhidePost(
-      postHideRepository = get(),
-      postReplyChainRepository = get(),
-      parsedPostDataRepository = get()
+      postHideRepository = get()
     )
   }
 }

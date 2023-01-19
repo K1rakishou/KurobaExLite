@@ -4,13 +4,9 @@ import com.github.k1rakishou.kurobaexlite.model.data.local.ChanPostHide
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
-import com.github.k1rakishou.kurobaexlite.model.repository.IPostReplyChainRepository
-import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 
 class HideOrUnhidePost(
-  private val postHideRepository: IPostHideRepository,
-  private val postReplyChainRepository: IPostReplyChainRepository,
-  private val parsedPostDataRepository: ParsedPostDataRepository
+  private val postHideRepository: IPostHideRepository
 ) {
 
   suspend fun hide(chanDescriptor: ChanDescriptor, postDescriptor: PostDescriptor, applyToReplies: Boolean) {
