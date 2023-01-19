@@ -72,9 +72,9 @@ import org.koin.java.KoinJavaComponent.inject
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
-import kotlin.time.seconds
 
 @OptIn(ExperimentalTime::class)
 abstract class PostScreenViewModel(
