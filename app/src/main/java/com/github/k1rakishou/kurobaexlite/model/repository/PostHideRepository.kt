@@ -114,6 +114,31 @@ class PostHideRepository : IPostHideRepository {
     }
   }
 
+  override suspend fun delete(postDescriptor: PostDescriptor) {
+    delete(listOf(postDescriptor))
+  }
+
+  override suspend fun delete(
+    postDescriptors: Collection<PostDescriptor>,
+  ) {
+    val toEmit = mutex.withLock {
+      val toEmit = mutableListOf<PostDescriptor>()
+
+      for (postDescriptor in postDescriptors) {
+        val prevChanPostHide = postHides.remove(postDescriptor)
+          ?: continue
+
+        toEmit += prevChanPostHide.postDescriptor
+      }
+
+      return@withLock toEmit
+    }
+
+    if (toEmit.isNotEmpty()) {
+      _postsToReparseFlow.emit(toEmit)
+    }
+  }
+
   override suspend fun isPostHidden(postDescriptor: PostDescriptor): Boolean {
     return mutex.withLock { postHides[postDescriptor]?.isHidden() ?: false }
   }

@@ -13,5 +13,7 @@ interface IPostHideRepository {
   suspend fun createOrUpdate(chanDescriptor: ChanDescriptor, chanPostHides: Collection<ChanPostHide>)
   suspend fun update(postDescriptor: PostDescriptor, updater: (ChanPostHide) -> ChanPostHide)
   suspend fun update(postDescriptors: Collection<PostDescriptor>, updater: (ChanPostHide) -> ChanPostHide)
+  suspend fun delete(postDescriptor: PostDescriptor)
+  suspend fun delete(postDescriptors: Collection<PostDescriptor>)
   suspend fun isPostHidden(postDescriptor: PostDescriptor): Boolean
 }

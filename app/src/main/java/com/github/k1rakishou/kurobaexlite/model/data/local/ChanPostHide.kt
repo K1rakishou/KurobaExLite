@@ -83,7 +83,11 @@ class ChanPostHide(
   }
 
   fun unhidePost(): ChanPostHide {
-    return copy(state = State.UnhiddenManually, repliesToHiddenPosts = emptySet())
+    return if (repliesToHiddenPosts.isEmpty()) {
+      copy(state = State.Unspecified)
+    } else {
+      copy(state = State.UnhiddenManually)
+    }
   }
 
   @Synchronized

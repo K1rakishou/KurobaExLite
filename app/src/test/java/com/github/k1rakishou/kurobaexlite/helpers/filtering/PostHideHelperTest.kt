@@ -411,10 +411,10 @@ class PostHideHelperTest {
       fourthPost = resultPosts[3]
       fifthPost = resultPosts[4]
 
-      val chanPostHide1 = toHide[0]
-      val chanPostHide2 = toHide[1]
-      val chanPostHide3 = toHide[2]
-      val chanPostHide4 = toHide[3]
+      val chanPostHide1 = toHide.first { it.postDescriptor.postNo == 2L }
+      val chanPostHide2 = toHide.first { it.postDescriptor.postNo == 3L }
+      val chanPostHide3 = toHide.first { it.postDescriptor.postNo == 4L }
+      val chanPostHide4 = toHide.first { it.postDescriptor.postNo == 5L }
 
       kotlin.run {
         assertNull(firstPost.postHideUi)

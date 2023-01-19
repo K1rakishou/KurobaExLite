@@ -1,8 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.model.repository
 
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 
 interface IPostReplyChainRepository {
+  suspend fun copyThreadReplyChain(threadDescriptor: ThreadDescriptor): ThreadReplyChainCopy?
+
   suspend fun insertRepliesTo(postDescriptor: PostDescriptor, repliesTo: Set<PostDescriptor>)
   suspend fun insertRepliesFrom(postDescriptor: PostDescriptor, repliesFrom: Set<PostDescriptor>)
 
@@ -15,7 +18,7 @@ interface IPostReplyChainRepository {
    * Get descriptors of posts that **reply to this post**
    * */
   suspend fun getRepliesFrom(postDescriptor: PostDescriptor): Set<PostDescriptor>
-  suspend fun getAllRepliesFromRecursively(postDescriptor: PostDescriptor): Map<PostDescriptor, Set<PostDescriptor>>
+  suspend fun getAllRepliesFromRecursively(postDescriptor: PostDescriptor): Set<PostDescriptor>
   suspend fun getManyRepliesTo(postDescriptors: List<PostDescriptor>): Set<PostDescriptor>
 
   suspend fun findPostWithRepliesRecursive(
