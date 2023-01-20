@@ -2,8 +2,10 @@ package com.github.k1rakishou.kurobaexlite.helpers.filtering
 
 import androidx.annotation.VisibleForTesting
 import com.github.k1rakishou.kurobaexlite.helpers.util.linkedMapWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableIteration
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableSetWithCap
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanPostHide
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
@@ -41,24 +43,17 @@ class PostHideHelper(
         )
 
         if (postProcessResult.toHide.isNotEmpty()) {
-          postHideRepository.createOrUpdate(chanDescriptor, postProcessResult.toHide)
+          postHideRepository.createOrUpdate(chanDescriptor, postProcessResult.toHide).unwrap()
+        }
+
+        if (postProcessResult.toDelete.isNotEmpty()) {
+          postHideRepository.delete(postProcessResult.toDelete).unwrap()
         }
 
         if (postProcessResult.toUnhide.isNotEmpty()) {
-          val toDelete = mutableSetOf<PostDescriptor>()
-
-          postHideRepository.update(postProcessResult.toUnhide) { chanPostHide ->
-            val updatedChanPostHide = chanPostHide.unhidePost()
-            if (!updatedChanPostHide.isHidden()) {
-              toDelete += chanPostHide.postDescriptor
-            }
-
-            return@update updatedChanPostHide
-          }
-
-          if (toDelete.isNotEmpty()) {
-            postHideRepository.delete(toDelete)
-          }
+          postHideRepository
+            .update(postProcessResult.toUnhide) { chanPostHide -> chanPostHide.unhidePost() }
+            .unwrap()
         }
 
         return@withContext postProcessResult.posts
@@ -80,7 +75,11 @@ class PostHideHelper(
       return PostProcessResult(changedPosts)
     }
 
-    val postHidesAsMap = postHideRepository.postHidesForChanDescriptor(chanDescriptor)
+    val postHidesAsMap = when (chanDescriptor) {
+      is CatalogDescriptor -> postHideRepository.postHidesForCatalog(chanDescriptor, changedPosts.map { it.postDescriptor })
+      is ThreadDescriptor -> postHideRepository.postHidesForThread(chanDescriptor)
+    }
+
     if (postHidesAsMap.isEmpty()) {
       logcat(TAG) { "filterPosts() postHidesAsMap is empty" }
       return PostProcessResult(changedPosts)
@@ -125,12 +124,31 @@ class PostHideHelper(
       )
     }
 
-    logcat(TAG) { "filterPosts() postHides: ${postHides.size}, toHide: ${toHide.size}, toUnhide: ${toUnhide.size}" }
+    val toDelete = mutableSetOf<PostDescriptor>()
+    processPostHidesToDelete(postHidesAsMap, toDelete)
+
+    // If a PostDescriptor exists in both toUnhide and toDelete then remove it from toUnhide since we are going to delete
+    // it anyway to do less work
+    toUnhide.mutableIteration { mutableIterator, postDescriptor ->
+      if (postDescriptor in toDelete) {
+        mutableIterator.remove()
+      }
+
+      return@mutableIteration true
+    }
+
+    logcat(TAG) {
+      "filterPosts() postHides: ${postHides.size}, " +
+        "toHide: ${toHide.size}, " +
+        "toUnhide: ${toUnhide.size}, " +
+        "toDelete: ${toDelete.size}"
+    }
 
     return PostProcessResult(
       posts = changedPostsAsLinkedMap.values.toList(),
       toHide = toHide.values.toList(),
-      toUnhide = toUnhide
+      toUnhide = toUnhide,
+      toDelete = toDelete
     )
   }
 
@@ -277,10 +295,53 @@ class PostHideHelper(
     return null
   }
 
+  private fun processPostHidesToDelete(
+    postHidesAsMap: Map<PostDescriptor, ChanPostHide>,
+    toDelete: MutableSet<PostDescriptor>
+  ) {
+    val alreadyVisited = mutableSetWithCap<PostDescriptor>(128)
+
+    for ((postDescriptor, _) in postHidesAsMap.entries) {
+      alreadyVisited.clear()
+
+      val rootUnhiddenPostHide = findRootUnhiddenPostHide(postDescriptor, alreadyVisited, postHidesAsMap)
+      if (rootUnhiddenPostHide != null) {
+        toDelete += postDescriptor
+      }
+    }
+  }
+
+  private fun findRootUnhiddenPostHide(
+    postDescriptor: PostDescriptor,
+    alreadyVisited: MutableSet<PostDescriptor>,
+    postHidesAsMap: Map<PostDescriptor, ChanPostHide>,
+  ): ChanPostHide? {
+    if (!alreadyVisited.add(postDescriptor)) {
+      return null
+    }
+
+    val chanPostHide = postHidesAsMap[postDescriptor]
+      ?: return null
+
+    if (chanPostHide.isRoot() && !chanPostHide.isHidden()) {
+      return chanPostHide
+    }
+
+    for (replyToHiddenPost in chanPostHide.repliesToHiddenPostsUnsafe) {
+      val innerChanPostHide = findRootUnhiddenPostHide(replyToHiddenPost, alreadyVisited, postHidesAsMap)
+      if (innerChanPostHide != null) {
+        return innerChanPostHide
+      }
+    }
+
+    return null
+  }
+
   data class PostProcessResult(
     val posts: List<PostCellData>,
     val toHide: List<ChanPostHide> = emptyList(),
-    val toUnhide: Set<PostDescriptor> = emptySet()
+    val toUnhide: Set<PostDescriptor> = emptySet(),
+    val toDelete: Set<PostDescriptor> = emptySet(),
   )
 
   companion object {

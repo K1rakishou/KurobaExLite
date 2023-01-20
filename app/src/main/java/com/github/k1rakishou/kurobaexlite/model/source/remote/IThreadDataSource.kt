@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.model.source
+package com.github.k1rakishou.kurobaexlite.model.source.remote
 
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 

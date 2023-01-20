@@ -13,9 +13,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostHideHelper
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequence
 import com.github.k1rakishou.kurobaexlite.helpers.util.bidirectionalSequenceIndexed
 import com.github.k1rakishou.kurobaexlite.helpers.util.buffer
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
 import com.github.k1rakishou.kurobaexlite.helpers.util.parallelForEach
@@ -196,6 +198,16 @@ abstract class PostScreenViewModel(
     postScreenState.onStartLoading(threadDescriptor)
 
     if (threadDescriptor != null) {
+      postHideRepository.deleteOlderThanThreeMonths()
+        .onFailure { error ->
+          logcatError(TAG) { "deleteOlderThanThreeMonths() error: ${error.asLogIfImportantOrErrorMessage()}" }
+        }
+        .onSuccess { deleted ->
+          if (deleted >= 0) {
+            logcat(TAG) { "deleteOlderThanThreeMonths() -> ${deleted}" }
+          }
+        }
+
       loadChanCatalog.await(threadDescriptor)
       loadMarkedPosts.load(threadDescriptor)
     }
@@ -215,6 +227,16 @@ abstract class PostScreenViewModel(
     postScreenState.onStartLoading(catalogDescriptor)
 
     if (catalogDescriptor != null) {
+      postHideRepository.deleteOlderThanThreeMonths()
+        .onFailure { error ->
+          logcatError(TAG) { "deleteOlderThanThreeMonths() error: ${error.asLogIfImportantOrErrorMessage()}" }
+        }
+        .onSuccess { deleted ->
+          if (deleted >= 0) {
+            logcat(TAG) { "deleteOlderThanThreeMonths() -> ${deleted}" }
+          }
+        }
+
       loadChanCatalog.await(catalogDescriptor)
     }
 

@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.interactors.filtering
 
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.model.data.local.ChanPostHide
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -22,7 +23,7 @@ class HideOrUnhidePost(
       state = ChanPostHide.State.HiddenManually
     )
 
-    postHideRepository.createOrUpdate(chanDescriptor, chanPostHides)
+    postHideRepository.createOrUpdate(chanDescriptor, chanPostHides).unwrap()
   }
 
   suspend fun unhide(postDescriptor: PostDescriptor) {
@@ -30,7 +31,7 @@ class HideOrUnhidePost(
       return
     }
 
-    postHideRepository.update(postDescriptor) { chanPostHide -> chanPostHide.unhidePost() }
+    postHideRepository.update(postDescriptor) { chanPostHide -> chanPostHide.unhidePost() }.unwrap()
   }
 
 }

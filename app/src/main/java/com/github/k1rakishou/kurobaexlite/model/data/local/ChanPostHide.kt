@@ -1,7 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.model.data.local
 
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanPostHideEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanPostHideReplyEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.PostKey
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import org.joda.time.DateTime
 
 class ChanPostHide(
   val postDescriptor: PostDescriptor,
@@ -10,6 +14,8 @@ class ChanPostHide(
   repliesToHiddenPosts: Set<PostDescriptor> = emptySet()
 ) {
   private val repliesToHiddenPosts = mutableSetOf<PostDescriptor>()
+  val repliesToHiddenPostsUnsafe: Set<PostDescriptor>
+    get() = repliesToHiddenPosts
 
   init {
     this.repliesToHiddenPosts.forEach { postDescriptor ->
@@ -17,6 +23,11 @@ class ChanPostHide(
     }
 
     this.repliesToHiddenPosts.addAll(repliesToHiddenPosts)
+  }
+
+  @Synchronized
+  fun isRoot(): Boolean {
+    return repliesToHiddenPosts.isEmpty()
   }
 
   @Synchronized
@@ -128,6 +139,30 @@ class ChanPostHide(
     return PostCellData.PostHideUi(reason)
   }
 
+  fun toChanPostHideEntity(): ChanPostHideEntity {
+    val state = when (state) {
+      State.Unspecified -> ChanPostHideEntity.Unspecified
+      State.HiddenManually -> ChanPostHideEntity.HiddenManually
+      State.UnhiddenManually -> ChanPostHideEntity.UnhiddenManually
+    }
+
+    return ChanPostHideEntity(
+      postKey = PostKey.fromPostDescriptor(postDescriptor),
+      applyToReplies = applyToReplies,
+      state = state,
+      insertedOn = DateTime.now().millis
+    )
+  }
+
+  fun toChanPostHideReplyEntity(): List<ChanPostHideReplyEntity> {
+    return repliesToHiddenPosts.map { replyPostDescriptor ->
+      return@map ChanPostHideReplyEntity(
+        ownerPostKey = PostKey.fromPostDescriptor(postDescriptor),
+        repliesToHiddenPost = PostKey.fromPostDescriptor(replyPostDescriptor)
+      )
+    }
+  }
+
   fun copy(
     postDescriptor: PostDescriptor? = null,
     applyToReplies: Boolean? = null,
@@ -185,6 +220,26 @@ class ChanPostHide(
     ): String {
       return "Post (${postDescriptor.postNo}) hidden because it replies to ${repliesToHiddenPosts.size} hidden post(s)"
     }
+
+    fun fromChanPostHideEntity(
+      chanPostHideEntity: ChanPostHideEntity,
+      chanPostHideReplyEntities: List<ChanPostHideReplyEntity>
+    ): ChanPostHide {
+      val state = when (chanPostHideEntity.state) {
+        ChanPostHideEntity.Unspecified -> ChanPostHide.State.Unspecified
+        ChanPostHideEntity.HiddenManually -> ChanPostHide.State.HiddenManually
+        ChanPostHideEntity.UnhiddenManually -> ChanPostHide.State.UnhiddenManually
+        else -> error("Unknown ChanPostHideEntity.stat: ${chanPostHideEntity.state}")
+      }
+
+      return ChanPostHide(
+        postDescriptor = chanPostHideEntity.postKey.postDescriptor,
+        applyToReplies = chanPostHideEntity.applyToReplies,
+        state = state,
+        repliesToHiddenPosts = chanPostHideReplyEntities.map { it.repliesToHiddenPost.postDescriptor }.toSet()
+      )
+    }
+
   }
 
 }

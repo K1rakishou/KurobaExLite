@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.model.source.chan4
+package com.github.k1rakishou.kurobaexlite.model.source.remote.chan4
 
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlReader
 import com.github.k1rakishou.kurobaexlite.helpers.html.SearchException

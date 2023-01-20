@@ -6,8 +6,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkH
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
-import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
-import com.github.k1rakishou.kurobaexlite.model.source.dvach.DvachDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.chan4.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.dvach.DvachDataSource
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4

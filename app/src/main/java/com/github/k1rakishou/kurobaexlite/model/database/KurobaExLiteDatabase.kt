@@ -13,6 +13,10 @@ import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogFlagDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogFlagEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanCatalogSortOrderEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanPostHideDao
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanPostHideEntity
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanPostHideReplyDao
+import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanPostHideReplyEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewDao
 import com.github.k1rakishou.kurobaexlite.model.data.entity.ChanThreadViewEntity
 import com.github.k1rakishou.kurobaexlite.model.data.entity.MarkedPostDao
@@ -29,6 +33,7 @@ import com.github.k1rakishou.kurobaexlite.model.database.converters.HttpUrlTypeC
 import com.github.k1rakishou.kurobaexlite.model.database.migations.Migration_v1_to_v2
 import com.github.k1rakishou.kurobaexlite.model.database.migations.Migration_v2_to_v3
 import com.github.k1rakishou.kurobaexlite.model.database.migations.Migration_v3_to_v4
+import com.github.k1rakishou.kurobaexlite.model.database.migations.Migration_v4_to_v5
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -42,9 +47,11 @@ import kotlinx.coroutines.withContext
     ThreadBookmarkEntity::class,
     ThreadBookmarkReplyEntity::class,
     ThreadBookmarkSortOrderEntity::class,
-    ChanCatalogFlagEntity::class
+    ChanCatalogFlagEntity::class,
+    ChanPostHideEntity::class,
+    ChanPostHideReplyEntity::class,
   ],
-  version = 4,
+  version = 5,
   exportSchema = true
 )
 @TypeConverters(
@@ -92,6 +99,7 @@ abstract class KurobaExLiteDatabase : RoomDatabase(), Daos {
           Migration_v1_to_v2(),
           Migration_v2_to_v3(),
           Migration_v3_to_v4(),
+          Migration_v4_to_v5(),
         )
         .build()
     }
@@ -105,4 +113,6 @@ interface Daos {
   val chanCatalogDao: ChanCatalogDao
   val threadBookmarkDao: ThreadBookmarkDao
   val chanCatalogFlagDao: ChanCatalogFlagDao
+  val chanPostHideDao: ChanPostHideDao
+  val chanPostHideReplyDao: ChanPostHideReplyDao
 }

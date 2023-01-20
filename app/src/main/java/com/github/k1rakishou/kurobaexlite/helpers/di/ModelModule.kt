@@ -10,8 +10,10 @@ import com.github.k1rakishou.kurobaexlite.model.repository.IPostReplyChainReposi
 import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.PostHideRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.PostReplyChainRepository
-import com.github.k1rakishou.kurobaexlite.model.source.chan4.Chan4DataSource
-import com.github.k1rakishou.kurobaexlite.model.source.dvach.DvachDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.local.IPostHideLocalSource
+import com.github.k1rakishou.kurobaexlite.model.source.local.PostHideLocalSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.chan4.Chan4DataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.dvach.DvachDataSource
 import org.koin.core.module.Module
 
 internal fun Module.model() {
@@ -41,7 +43,8 @@ internal fun Module.model() {
   }
   single { GlobalSearchRepository(siteManager = get()) }
   single { StaticHtmlColorRepository() }
-  single<IPostHideRepository> { PostHideRepository() }
+  single<IPostHideLocalSource> { PostHideLocalSource(kurobaExLiteDatabase = get()) }
+  single<IPostHideRepository> { PostHideRepository(postHideLocalSource = get()) }
   single<IPostReplyChainRepository> { PostReplyChainRepository() }
   single {
     ParsedPostDataRepository(

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.model.source.dvach
+package com.github.k1rakishou.kurobaexlite.model.source.remote.dvach
 
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlUnescape
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
@@ -46,14 +46,14 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.SiteKey
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.model.source.IBoardDataSource
-import com.github.k1rakishou.kurobaexlite.model.source.IBookmarkDataSource
-import com.github.k1rakishou.kurobaexlite.model.source.ICatalogDataSource
-import com.github.k1rakishou.kurobaexlite.model.source.ICatalogPagesDataSource
-import com.github.k1rakishou.kurobaexlite.model.source.IGlobalSearchDataSource
-import com.github.k1rakishou.kurobaexlite.model.source.ILoginDataSource
-import com.github.k1rakishou.kurobaexlite.model.source.ILogoutDataSource
-import com.github.k1rakishou.kurobaexlite.model.source.IThreadDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.IBoardDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.IBookmarkDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.ICatalogDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.ICatalogPagesDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.IGlobalSearchDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.ILoginDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.ILogoutDataSource
+import com.github.k1rakishou.kurobaexlite.model.source.remote.IThreadDataSource
 import com.github.k1rakishou.kurobaexlite.sites.dvach.Dvach
 import com.github.k1rakishou.kurobaexlite.sites.settings.DvachSiteSettings
 import com.squareup.moshi.Moshi

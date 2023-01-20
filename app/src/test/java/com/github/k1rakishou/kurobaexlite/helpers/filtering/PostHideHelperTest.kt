@@ -43,9 +43,9 @@ class PostHideHelperTest {
       val postCreator = PostCreator(threadDescriptor)
       val posts = postCreator.createPosts(1)
 
-      coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns emptyMap()
+      coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns emptyMap()
 
-      val (resultPosts, toHide, toUnhide) = postHideHelper.processPosts(
+      val (resultPosts, toHide, toUnhide, toDelete) = postHideHelper.processPosts(
         postCreator.chanDescriptor,
         posts
       )
@@ -53,6 +53,7 @@ class PostHideHelperTest {
       assertEquals(1, resultPosts.size)
       assertEquals(0, toHide.size)
       assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
 
       assertNull(resultPosts.first().postHideUi)
     }
@@ -80,7 +81,7 @@ class PostHideHelperTest {
           )
         )
 
-        coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
       }
 
       kotlin.run {
@@ -90,7 +91,7 @@ class PostHideHelperTest {
         )
       }
 
-      val (resultPosts, toHide, toUnhide) = postHideHelper.processPosts(
+      val (resultPosts, toHide, toUnhide, toDelete) = postHideHelper.processPosts(
         postCreator.chanDescriptor,
         posts
       )
@@ -111,6 +112,7 @@ class PostHideHelperTest {
 
       assertEquals(1, toHide.size)
       assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
     }
   }
 
@@ -137,7 +139,7 @@ class PostHideHelperTest {
           )
         )
 
-        coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
       }
 
       /**
@@ -156,7 +158,7 @@ class PostHideHelperTest {
         )
       }
 
-      val (resultPosts, toHide, toUnhide) = postHideHelper.processPosts(
+      val (resultPosts, toHide, toUnhide, toDelete) = postHideHelper.processPosts(
         postCreator.chanDescriptor,
         posts
       )
@@ -164,6 +166,7 @@ class PostHideHelperTest {
       assertEquals(3, resultPosts.size)
       assertEquals(3, toHide.size)
       assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
 
       firstPost = resultPosts[0]
       secondPost = resultPosts[1]
@@ -240,7 +243,7 @@ class PostHideHelperTest {
           )
         )
 
-        coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
       }
 
       /**
@@ -263,7 +266,7 @@ class PostHideHelperTest {
         )
       }
 
-      val (resultPosts, toHide, toUnhide) = postHideHelper.processPosts(
+      val (resultPosts, toHide, toUnhide, toDelete) = postHideHelper.processPosts(
         postCreator.chanDescriptor,
         posts
       )
@@ -271,6 +274,7 @@ class PostHideHelperTest {
       assertEquals(4, resultPosts.size)
       assertEquals(4, toHide.size)
       assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
 
       firstPost = resultPosts[0]
       secondPost = resultPosts[1]
@@ -357,7 +361,7 @@ class PostHideHelperTest {
           )
         )
 
-        coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
       }
 
       /**
@@ -396,7 +400,7 @@ class PostHideHelperTest {
         )
       }
 
-      val (resultPosts, toHide, toUnhide) = postHideHelper.processPosts(
+      val (resultPosts, toHide, toUnhide, toDelete) = postHideHelper.processPosts(
         postCreator.chanDescriptor,
         posts
       )
@@ -404,6 +408,7 @@ class PostHideHelperTest {
       assertEquals(5, resultPosts.size)
       assertEquals(4, toHide.size)
       assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
 
       firstPost = resultPosts[0]
       secondPost = resultPosts[1]
@@ -492,7 +497,7 @@ class PostHideHelperTest {
           )
         )
 
-        coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
       }
 
       /**
@@ -512,7 +517,7 @@ class PostHideHelperTest {
         )
       }
 
-      val (resultPosts, toHide, toUnhide) = postHideHelper.processPosts(
+      val (resultPosts, toHide, toUnhide, toDelete) = postHideHelper.processPosts(
         postCreator.chanDescriptor,
         posts
       )
@@ -520,259 +525,268 @@ class PostHideHelperTest {
       assertEquals(3, resultPosts.size)
       assertEquals(2, toHide.size)
       assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
     }
   }
 
   @Test
   fun `Should be able to unhide hidden posts`() {
     runTest {
-      repeat(10) {
-        val postHideHelper = PostHideHelper(
-          postHideRepository = postHideRepository,
-          postReplyChainRepository = postReplyChainRepository
-        )
+      val postHideHelper = PostHideHelper(
+        postHideRepository = postHideRepository,
+        postReplyChainRepository = postReplyChainRepository
+      )
 
-        val postCreator = PostCreator(threadDescriptor)
-        val posts = postCreator.createPosts(5)
-        val firstPost = posts[0]
-        val secondPost = posts[1]
-        val thirdPost = posts[2]
-        val fourthPost = posts[3]
-        val fifthPost = posts[4]
+      val postCreator = PostCreator(threadDescriptor)
+      val posts = postCreator.createPosts(5)
+      val firstPost = posts[0]
+      val secondPost = posts[1]
+      val thirdPost = posts[2]
+      val fourthPost = posts[3]
+      val fifthPost = posts[4]
 
-        kotlin.run {
-          coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns emptyMap()
-        }
-
-        /**
-         *  Reply direction: from right to left
-         *  <----------------------------------+
-         *        +----< Post2 <----+
-         *        |                 |
-         *  Post1 +----< Post3 <----+-----< Post5
-         *        |                 |
-         *        +----< Post4 <----+
-         * */
-        kotlin.run {
-          postReplyChainRepository.insertRepliesFrom(firstPost.postDescriptor, setOf(secondPost.postDescriptor))
-          postReplyChainRepository.insertRepliesFrom(firstPost.postDescriptor, setOf(thirdPost.postDescriptor))
-          postReplyChainRepository.insertRepliesFrom(firstPost.postDescriptor, setOf(fourthPost.postDescriptor))
-          postReplyChainRepository.insertRepliesFrom(secondPost.postDescriptor, setOf(fifthPost.postDescriptor))
-          postReplyChainRepository.insertRepliesFrom(thirdPost.postDescriptor, setOf(fifthPost.postDescriptor))
-          postReplyChainRepository.insertRepliesFrom(fourthPost.postDescriptor, setOf(fifthPost.postDescriptor))
-          postReplyChainRepository.insertRepliesFrom(fifthPost.postDescriptor, setOf())
-        }
-
-        var postProcessResult = postHideHelper.processPosts(postCreator.chanDescriptor, posts)
-        var resultPosts = postProcessResult.posts
-        var toHide = postProcessResult.toHide
-        var toUnhide = postProcessResult.toUnhide
-
-        assertEquals(5, resultPosts.size)
-        assertEquals(0, toHide.size)
-        assertEquals(0, toUnhide.size)
-
-        // Hide the 2nd post. This should hide the 5th post as well since "applyToReplies == true"
-        kotlin.run {
-          val testChanPostHide = mapOf(
-            secondPost.postDescriptor to ChanPostHide(
-              postDescriptor = secondPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.HiddenManually
-            )
-          )
-
-          coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
-        }
-
-        postProcessResult = postHideHelper.processPosts(
-          postCreator.chanDescriptor,
-          resultPosts
-        )
-
-        resultPosts = postProcessResult.posts
-        toHide = postProcessResult.toHide
-        toUnhide = postProcessResult.toUnhide
-
-        assertEquals(5, resultPosts.size)
-        assertEquals(2, toHide.size)
-        assertEquals(0, toUnhide.size)
-        assertEquals(2, resultPosts.count { postCellData -> postCellData.postHideUi != null })
-
-        toHide.forEach { chanPostHide ->
-          if (chanPostHide.postDescriptor.postNo == 5L) {
-            assertEquals(ChanPostHide.State.Unspecified, chanPostHide.state)
-          } else {
-            assertEquals(ChanPostHide.State.HiddenManually, chanPostHide.state)
-          }
-        }
-
-        assertNull(resultPosts[0].postHideUi)
-        assertNull(resultPosts[2].postHideUi)
-        assertNull(resultPosts[3].postHideUi)
-
-        assertEquals("Post (2) hidden manually", resultPosts[1].postHideUi?.reason)
-        assertEquals("Post (5) hidden because it replies to 1 hidden post(s)", resultPosts[4].postHideUi?.reason)
-
-        // Hide 2nd, 3rd and 4th posts. This should not change the 5th post.
-        kotlin.run {
-          val testChanPostHide = mapOf(
-            secondPost.postDescriptor to ChanPostHide(
-              postDescriptor = secondPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.HiddenManually
-            ),
-            thirdPost.postDescriptor to ChanPostHide(
-              postDescriptor = thirdPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.HiddenManually
-            ),
-            fourthPost.postDescriptor to ChanPostHide(
-              postDescriptor = fourthPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.HiddenManually
-            )
-          )
-
-          coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
-        }
-
-        postProcessResult = postHideHelper.processPosts(
-          postCreator.chanDescriptor,
-          resultPosts
-        )
-
-        resultPosts = postProcessResult.posts
-        toHide = postProcessResult.toHide
-        toUnhide = postProcessResult.toUnhide
-
-        assertEquals(5, resultPosts.size)
-        // toHide does not contain the 2nd post here because it was already hidden on the previous step
-        assertEquals(3, toHide.size)
-        assertEquals(0, toUnhide.size)
-        assertEquals(4, resultPosts.count { postCellData -> postCellData.postHideUi != null })
-
-        toHide.forEach { chanPostHide ->
-          if (chanPostHide.postDescriptor.postNo == 5L) {
-            assertEquals(ChanPostHide.State.Unspecified, chanPostHide.state)
-          } else {
-            assertEquals(ChanPostHide.State.HiddenManually, chanPostHide.state)
-          }
-        }
-
-        assertNull(resultPosts[0].postHideUi)
-        assertEquals("Post (2) hidden manually", resultPosts[1].postHideUi?.reason)
-        assertEquals("Post (3) hidden manually", resultPosts[2].postHideUi?.reason)
-        assertEquals("Post (4) hidden manually", resultPosts[3].postHideUi?.reason)
-        assertEquals("Post (5) hidden because it replies to 3 hidden post(s)", resultPosts[4].postHideUi?.reason)
-
-        // Unhide 2nd and 4th posts. The 5th post should still remain hidden.
-        kotlin.run {
-          val testChanPostHide = mapOf(
-            secondPost.postDescriptor to ChanPostHide(
-              postDescriptor = secondPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.UnhiddenManually
-            ),
-            thirdPost.postDescriptor to ChanPostHide(
-              postDescriptor = thirdPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.HiddenManually
-            ),
-            fourthPost.postDescriptor to ChanPostHide(
-              postDescriptor = fourthPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.UnhiddenManually
-            ),
-            fifthPost.postDescriptor to ChanPostHide(
-              postDescriptor = fifthPost.postDescriptor,
-              applyToReplies = true,
-              repliesToHiddenPosts = setOf(
-                secondPost.postDescriptor,
-                thirdPost.postDescriptor,
-                fourthPost.postDescriptor
-              )
-            )
-          )
-
-          coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
-        }
-
-        postProcessResult = postHideHelper.processPosts(
-          postCreator.chanDescriptor,
-          resultPosts
-        )
-
-        resultPosts = postProcessResult.posts
-        toHide = postProcessResult.toHide
-        toUnhide = postProcessResult.toUnhide
-
-        assertEquals(5, resultPosts.size)
-        assertEquals(1, toHide.size)
-        assertEquals(2, toUnhide.size)
-        assertEquals(2, resultPosts.count { postCellData -> postCellData.postHideUi != null })
-
-        toHide.forEach { chanPostHide ->
-          if (chanPostHide.postDescriptor.postNo == 5L) {
-            assertEquals(ChanPostHide.State.Unspecified, chanPostHide.state)
-          } else {
-            assertEquals(ChanPostHide.State.HiddenManually, chanPostHide.state)
-          }
-        }
-
-        assertNull(resultPosts[0].postHideUi)
-        assertNull(resultPosts[1].postHideUi)
-        assertEquals("Post (3) hidden manually", resultPosts[2].postHideUi?.reason)
-        assertNull(resultPosts[3].postHideUi)
-        assertEquals("Post (5) hidden because it replies to 1 hidden post(s)", resultPosts[4].postHideUi?.reason)
-
-        // Unhide the last 3rd post. This 5th post should get unhidden as well.
-        kotlin.run {
-          val testChanPostHide = mapOf(
-            secondPost.postDescriptor to ChanPostHide(
-              postDescriptor = secondPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.UnhiddenManually
-            ),
-            thirdPost.postDescriptor to ChanPostHide(
-              postDescriptor = thirdPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.UnhiddenManually
-            ),
-            fourthPost.postDescriptor to ChanPostHide(
-              postDescriptor = fourthPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.UnhiddenManually
-            ),
-            fifthPost.postDescriptor to ChanPostHide(
-              postDescriptor = fifthPost.postDescriptor,
-              applyToReplies = true,
-              state = ChanPostHide.State.UnhiddenManually,
-              repliesToHiddenPosts = setOf(
-                secondPost.postDescriptor,
-                thirdPost.postDescriptor,
-                fourthPost.postDescriptor
-              )
-            )
-          )
-
-          coEvery { postHideRepository.postHidesForChanDescriptor(threadDescriptor) } returns testChanPostHide
-        }
-
-        postProcessResult = postHideHelper.processPosts(
-          postCreator.chanDescriptor,
-          resultPosts
-        )
-
-        resultPosts = postProcessResult.posts
-        toHide = postProcessResult.toHide
-        toUnhide = postProcessResult.toUnhide
-
-        assertEquals(5, resultPosts.size)
-        assertEquals(0, toHide.size)
-        assertEquals(2, toUnhide.size)
-        assertEquals(0, resultPosts.count { postCellData -> postCellData.postHideUi != null })
+      kotlin.run {
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns emptyMap()
       }
+
+      /**
+       *  Reply direction: from right to left
+       *  <----------------------------------+
+       *        +----< Post2 <----+
+       *        |                 |
+       *  Post1 +----< Post3 <----+-----< Post5
+       *        |                 |
+       *        +----< Post4 <----+
+       * */
+      kotlin.run {
+        postReplyChainRepository.insertRepliesFrom(firstPost.postDescriptor, setOf(secondPost.postDescriptor))
+        postReplyChainRepository.insertRepliesFrom(firstPost.postDescriptor, setOf(thirdPost.postDescriptor))
+        postReplyChainRepository.insertRepliesFrom(firstPost.postDescriptor, setOf(fourthPost.postDescriptor))
+        postReplyChainRepository.insertRepliesFrom(secondPost.postDescriptor, setOf(fifthPost.postDescriptor))
+        postReplyChainRepository.insertRepliesFrom(thirdPost.postDescriptor, setOf(fifthPost.postDescriptor))
+        postReplyChainRepository.insertRepliesFrom(fourthPost.postDescriptor, setOf(fifthPost.postDescriptor))
+        postReplyChainRepository.insertRepliesFrom(fifthPost.postDescriptor, setOf())
+      }
+
+      var postProcessResult = postHideHelper.processPosts(postCreator.chanDescriptor, posts)
+      var resultPosts = postProcessResult.posts
+      var toHide = postProcessResult.toHide
+      var toUnhide = postProcessResult.toUnhide
+      var toDelete = postProcessResult.toDelete
+
+      assertEquals(5, resultPosts.size)
+      assertEquals(0, toHide.size)
+      assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
+
+      // Hide the 2nd post. This should hide the 5th post as well since "applyToReplies == true"
+      kotlin.run {
+        val testChanPostHide = mapOf(
+          secondPost.postDescriptor to ChanPostHide(
+            postDescriptor = secondPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.HiddenManually
+          )
+        )
+
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
+      }
+
+      postProcessResult = postHideHelper.processPosts(
+        postCreator.chanDescriptor,
+        resultPosts
+      )
+
+      resultPosts = postProcessResult.posts
+      toHide = postProcessResult.toHide
+      toUnhide = postProcessResult.toUnhide
+      toDelete = postProcessResult.toDelete
+
+      assertEquals(5, resultPosts.size)
+      assertEquals(2, toHide.size)
+      assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
+      assertEquals(2, resultPosts.count { postCellData -> postCellData.postHideUi != null })
+
+      toHide.forEach { chanPostHide ->
+        if (chanPostHide.postDescriptor.postNo == 5L) {
+          assertEquals(ChanPostHide.State.Unspecified, chanPostHide.state)
+        } else {
+          assertEquals(ChanPostHide.State.HiddenManually, chanPostHide.state)
+        }
+      }
+
+      assertNull(resultPosts[0].postHideUi)
+      assertNull(resultPosts[2].postHideUi)
+      assertNull(resultPosts[3].postHideUi)
+
+      assertEquals("Post (2) hidden manually", resultPosts[1].postHideUi?.reason)
+      assertEquals("Post (5) hidden because it replies to 1 hidden post(s)", resultPosts[4].postHideUi?.reason)
+
+      // Hide 2nd, 3rd and 4th posts. This should not change the 5th post.
+      kotlin.run {
+        val testChanPostHide = mapOf(
+          secondPost.postDescriptor to ChanPostHide(
+            postDescriptor = secondPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.HiddenManually
+          ),
+          thirdPost.postDescriptor to ChanPostHide(
+            postDescriptor = thirdPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.HiddenManually
+          ),
+          fourthPost.postDescriptor to ChanPostHide(
+            postDescriptor = fourthPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.HiddenManually
+          )
+        )
+
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
+      }
+
+      postProcessResult = postHideHelper.processPosts(
+        postCreator.chanDescriptor,
+        resultPosts
+      )
+
+      resultPosts = postProcessResult.posts
+      toHide = postProcessResult.toHide
+      toUnhide = postProcessResult.toUnhide
+      toDelete = postProcessResult.toDelete
+
+      assertEquals(5, resultPosts.size)
+      // toHide does not contain the 2nd post here because it was already hidden on the previous step
+      assertEquals(3, toHide.size)
+      assertEquals(0, toUnhide.size)
+      assertEquals(0, toDelete.size)
+      assertEquals(4, resultPosts.count { postCellData -> postCellData.postHideUi != null })
+
+      toHide.forEach { chanPostHide ->
+        if (chanPostHide.postDescriptor.postNo == 5L) {
+          assertEquals(ChanPostHide.State.Unspecified, chanPostHide.state)
+        } else {
+          assertEquals(ChanPostHide.State.HiddenManually, chanPostHide.state)
+        }
+      }
+
+      assertNull(resultPosts[0].postHideUi)
+      assertEquals("Post (2) hidden manually", resultPosts[1].postHideUi?.reason)
+      assertEquals("Post (3) hidden manually", resultPosts[2].postHideUi?.reason)
+      assertEquals("Post (4) hidden manually", resultPosts[3].postHideUi?.reason)
+      assertEquals("Post (5) hidden because it replies to 3 hidden post(s)", resultPosts[4].postHideUi?.reason)
+
+      // Unhide 2nd and 4th posts. The 5th post should still remain hidden.
+      kotlin.run {
+        val testChanPostHide = mapOf(
+          secondPost.postDescriptor to ChanPostHide(
+            postDescriptor = secondPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.UnhiddenManually
+          ),
+          thirdPost.postDescriptor to ChanPostHide(
+            postDescriptor = thirdPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.HiddenManually
+          ),
+          fourthPost.postDescriptor to ChanPostHide(
+            postDescriptor = fourthPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.UnhiddenManually
+          ),
+          fifthPost.postDescriptor to ChanPostHide(
+            postDescriptor = fifthPost.postDescriptor,
+            applyToReplies = true,
+            repliesToHiddenPosts = setOf(
+              secondPost.postDescriptor,
+              thirdPost.postDescriptor,
+              fourthPost.postDescriptor
+            )
+          )
+        )
+
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
+      }
+
+      postProcessResult = postHideHelper.processPosts(
+        postCreator.chanDescriptor,
+        resultPosts
+      )
+
+      resultPosts = postProcessResult.posts
+      toHide = postProcessResult.toHide
+      toUnhide = postProcessResult.toUnhide
+      toDelete = postProcessResult.toDelete
+
+      assertEquals(5, resultPosts.size)
+      assertEquals(1, toHide.size)
+      assertEquals(0, toUnhide.size)
+      assertEquals(2, toDelete.size)
+      assertEquals(2, resultPosts.count { postCellData -> postCellData.postHideUi != null })
+
+      toHide.forEach { chanPostHide ->
+        if (chanPostHide.postDescriptor.postNo == 5L) {
+          assertEquals(ChanPostHide.State.Unspecified, chanPostHide.state)
+        } else {
+          assertEquals(ChanPostHide.State.HiddenManually, chanPostHide.state)
+        }
+      }
+
+      assertNull(resultPosts[0].postHideUi)
+      assertNull(resultPosts[1].postHideUi)
+      assertEquals("Post (3) hidden manually", resultPosts[2].postHideUi?.reason)
+      assertNull(resultPosts[3].postHideUi)
+      assertEquals("Post (5) hidden because it replies to 1 hidden post(s)", resultPosts[4].postHideUi?.reason)
+
+      // Unhide the last 3rd post. This 5th post should get unhidden as well.
+      kotlin.run {
+        val testChanPostHide = mapOf(
+          secondPost.postDescriptor to ChanPostHide(
+            postDescriptor = secondPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.UnhiddenManually
+          ),
+          thirdPost.postDescriptor to ChanPostHide(
+            postDescriptor = thirdPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.UnhiddenManually
+          ),
+          fourthPost.postDescriptor to ChanPostHide(
+            postDescriptor = fourthPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.UnhiddenManually
+          ),
+          fifthPost.postDescriptor to ChanPostHide(
+            postDescriptor = fifthPost.postDescriptor,
+            applyToReplies = true,
+            state = ChanPostHide.State.UnhiddenManually,
+            repliesToHiddenPosts = setOf(
+              secondPost.postDescriptor,
+              thirdPost.postDescriptor,
+              fourthPost.postDescriptor
+            )
+          )
+        )
+
+        coEvery { postHideRepository.postHidesForThread(threadDescriptor) } returns testChanPostHide
+      }
+
+      postProcessResult = postHideHelper.processPosts(
+        postCreator.chanDescriptor,
+        resultPosts
+      )
+
+      resultPosts = postProcessResult.posts
+      toHide = postProcessResult.toHide
+      toUnhide = postProcessResult.toUnhide
+      toDelete = postProcessResult.toDelete
+
+      assertEquals(5, resultPosts.size)
+      assertEquals(0, toHide.size)
+      assertEquals(0, toUnhide.size)
+      assertEquals(4, toDelete.size)
+      assertEquals(0, resultPosts.count { postCellData -> postCellData.postHideUi != null })
     }
   }
 
