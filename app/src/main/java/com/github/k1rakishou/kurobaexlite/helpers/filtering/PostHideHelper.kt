@@ -15,9 +15,10 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.IPostReplyChainRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.ThreadReplyChainCopy
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.withContext
 import logcat.logcat
+import java.util.concurrent.Executors
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTimedValue
 
@@ -35,7 +36,7 @@ class PostHideHelper(
     logcat(TAG) { "filterPosts() processing..." }
 
     val (resultPosts, duration) = measureTimedValue {
-      withContext(Dispatchers.Default) {
+      withContext(filterDispatcher) {
         val postProcessResult = processPosts(
           chanDescriptor = chanDescriptor,
           changedPosts = changedPosts,
@@ -109,7 +110,10 @@ class PostHideHelper(
         processingCatalog = processingCatalog,
         chanPostHide = chanPostHide,
         threadReplyChainCopy = threadReplyChainCopy,
-        getPostCellData = { postDescriptor -> changedPostsAsLinkedMap[postDescriptor] ?: postCellDataByPostDescriptor?.invoke(postDescriptor) },
+        getPostCellData = { postDescriptor ->
+          return@processSinglePost changedPostsAsLinkedMap[postDescriptor]
+            ?: postCellDataByPostDescriptor?.invoke(postDescriptor)
+        },
         setPostCellData = { postCellData -> changedPostsAsLinkedMap[postCellData.postDescriptor] = postCellData },
         addPostHide = { newChanPostHide -> toHide[newChanPostHide.postDescriptor] = newChanPostHide },
         addPostUnhide = { newPostDescriptor -> toUnhide += newPostDescriptor },
@@ -352,6 +356,10 @@ class PostHideHelper(
 
   companion object {
     private const val TAG = "PostHideHelper"
+
+    private val filterDispatcher = Executors
+      .newFixedThreadPool(1, { runnable -> Thread(runnable, "FilterThread") })
+      .asCoroutineDispatcher()
   }
 
 }
