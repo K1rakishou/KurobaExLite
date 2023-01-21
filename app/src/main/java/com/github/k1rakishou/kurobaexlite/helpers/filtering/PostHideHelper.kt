@@ -238,12 +238,18 @@ class PostHideHelper(
 
         val hiddenReplies = filterHiddenReplies(repliesTo, getChanPostHide)
         newOrUpdateChanPostHide.addReplies(hiddenReplies)
-        addPostHide(newOrUpdateChanPostHide)
-        setPostCellData(childPostCellData.copy(postHideUi = newOrUpdateChanPostHide.toPostHideUi()))
+
+        if (newOrUpdateChanPostHide.isHidden()) {
+          addPostHide(newOrUpdateChanPostHide)
+          setPostCellData(childPostCellData.copy(postHideUi = newOrUpdateChanPostHide.toPostHideUi()))
+        }
       } else {
         childChanPostHide?.clearPostHides()
-        addPostUnhide(replyFrom)
-        setPostCellData(childPostCellData.copy(postHideUi = childChanPostHide?.toPostHideUi()))
+
+        if (childChanPostHide == null || !childChanPostHide.isHidden()) {
+          addPostUnhide(replyFrom)
+          setPostCellData(childPostCellData.copy(postHideUi = childChanPostHide?.toPostHideUi()))
+        }
       }
     }
   }
