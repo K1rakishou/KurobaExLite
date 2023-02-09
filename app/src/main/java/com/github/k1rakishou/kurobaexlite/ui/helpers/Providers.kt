@@ -4,6 +4,8 @@ import android.view.View
 import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.LocalMinimumInteractiveComponentEnforcement
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -113,6 +115,7 @@ fun ProvideComponentActivity(
   }
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ProvideKurobaViewConfiguration(
   content: @Composable () -> Unit
@@ -123,8 +126,10 @@ fun ProvideKurobaViewConfiguration(
     KurobaViewConfiguration(android.view.ViewConfiguration.get(context))
   }
 
-  CompositionLocalProvider(LocalViewConfiguration provides kurobaViewConfiguration) {
-    content()
+  CompositionLocalProvider(LocalMinimumInteractiveComponentEnforcement provides false) {
+    CompositionLocalProvider(LocalViewConfiguration provides kurobaViewConfiguration) {
+      content()
+    }
   }
 }
 
