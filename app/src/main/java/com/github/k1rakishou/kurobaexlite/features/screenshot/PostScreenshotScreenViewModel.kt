@@ -86,10 +86,16 @@ class PostScreenshotScreenViewModel(
             val fileName = "KurobaExLite_Screenshot_${formatter.print(DateTime.now())}.png"
             val bitmap = concatenateBitmaps(chunks)
 
-            if (androidHelpers.isAndroidQ()) {
-              saveScreenshotAndroidQAndAbove(appContext, bitmap, fileName)
-            } else {
-              saveScreenshotAndroidPAndBelow(bitmap, fileName)
+            try {
+              if (androidHelpers.isAndroidQ()) {
+                saveScreenshotAndroidQAndAbove(appContext, bitmap, fileName)
+              } else {
+                saveScreenshotAndroidPAndBelow(bitmap, fileName)
+              }
+            } finally {
+              if (!bitmap.isRecycled) {
+                bitmap.recycle()
+              }
             }
           }
         } finally {
@@ -237,8 +243,7 @@ class PostScreenshotScreenViewModel(
       ?: throw ScreenshotSaveException("contentResolver.openOutputStream() returned null")
   }
 
-  class ScreenshotSaveException(message: String) : ClientException("Failed to save screenshot on disk, reason: $message") {
-  }
+  class ScreenshotSaveException(message: String) : ClientException("Failed to save screenshot on disk, reason: $message")
 
   companion object {
     private const val TAG = "PostScreenshotScreenViewModel"
