@@ -17,6 +17,7 @@ import kotlinx.coroutines.CoroutineName
 import logcat.LogPriority
 import logcat.LogcatLogger
 import logcat.asLog
+import logcat.logcat
 import org.koin.core.context.GlobalContext.startKoin
 import org.koin.java.KoinJavaComponent.inject
 import kotlin.system.exitProcess
@@ -41,6 +42,7 @@ class KurobaExLiteApplication : Application() {
     super.onCreate()
 
     LogcatLogger.install(KurobaExLiteLogger())
+    logcat(TAG) { "=== Application started ===" }
 
     startKoin {
       modules(
@@ -96,6 +98,8 @@ class KurobaExLiteApplication : Application() {
 
   companion object {
     const val GLOBAL_TAG = "KurobaExLite"
+
+    private const val TAG = "KurobaExLiteApplication"
   }
 
 }

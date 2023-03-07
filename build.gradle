@@ -5,10 +5,7 @@ buildscript {
         ksp = "1.8.10-1.0.9"
         kotlin_coroutines_version = "1.6.4"
         compose_version = "1.4.0-beta02"
-        // TODO:
-        //  Updating koin to the latest version causes crashes (Fails to inject SavedStateHandle into viewmodels).
-        //  Probably need to use "by stateViewModel()"/"getStateViewModel()" to fix that.
-        koin_version = "3.2.0-beta-1"
+        koin_version = "3.3.3"
         okhttp = "4.10.0"
         moshi = "1.14.0"
         coil = "2.2.2"
