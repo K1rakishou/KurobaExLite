@@ -7,7 +7,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.decodeUrlOrNull
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.removeAllBefore
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
+import com.github.k1rakishou.kurobaexlite.ui.themes.ChanThemeColorId
 import java.nio.charset.StandardCharsets
 
 open class Chan4PostParser(

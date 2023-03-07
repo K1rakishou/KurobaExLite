@@ -78,7 +78,6 @@ import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.model.data.local.BoardFlag
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
@@ -89,6 +88,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaLabelText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.verticalScrollbar
+import com.github.k1rakishou.kurobaexlite.ui.themes.ChanTheme
 import java.util.regex.Pattern
 
 private val InlineQuoteRegex by lazy { Pattern.compile("^(>.*)", Pattern.MULTILINE) }

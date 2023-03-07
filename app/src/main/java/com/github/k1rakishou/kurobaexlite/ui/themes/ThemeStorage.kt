@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.themes
+package com.github.k1rakishou.kurobaexlite.ui.themes
 
 import android.content.Context
 import android.net.Uri
@@ -13,8 +13,8 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.removeExtensionFromFileNa
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
 import com.github.k1rakishou.kurobaexlite.helpers.util.useBufferedSink
 import com.github.k1rakishou.kurobaexlite.model.ClientException
-import com.github.k1rakishou.kurobaexlite.themes.def.Kuroneko
-import com.github.k1rakishou.kurobaexlite.themes.def.Shironeko
+import com.github.k1rakishou.kurobaexlite.ui.themes.def.Kuroneko
+import com.github.k1rakishou.kurobaexlite.ui.themes.def.Shironeko
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi

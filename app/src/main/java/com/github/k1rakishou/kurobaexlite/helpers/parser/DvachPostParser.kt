@@ -3,7 +3,7 @@ package com.github.k1rakishou.kurobaexlite.helpers.parser
 import com.github.k1rakishou.kurobaexlite.helpers.html.HtmlTag
 import com.github.k1rakishou.kurobaexlite.helpers.html.StaticHtmlColorRepository
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
+import com.github.k1rakishou.kurobaexlite.ui.themes.ChanThemeColorId
 
 class DvachPostParser(
   staticHtmlColorRepository: StaticHtmlColorRepository

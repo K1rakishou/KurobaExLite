@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.themes
+package com.github.k1rakishou.kurobaexlite.ui.themes
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color

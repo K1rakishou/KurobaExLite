@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.themes
+package com.github.k1rakishou.kurobaexlite.ui.themes
 
 interface IThemeEngine {
   val chanTheme: ChanTheme

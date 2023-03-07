@@ -1,8 +1,8 @@
-package com.github.k1rakishou.kurobaexlite.themes.def
+package com.github.k1rakishou.kurobaexlite.ui.themes.def
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
-import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.themes.ChanTheme
 
 @Stable
 data class Kuroneko(

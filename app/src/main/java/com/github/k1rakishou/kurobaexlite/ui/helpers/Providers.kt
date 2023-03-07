@@ -32,8 +32,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.window.layout.WindowMetricsCalculator
 import com.github.k1rakishou.kurobaexlite.helpers.RuntimePermissionsHelper
-import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine
 
 val LocalChanTheme = staticCompositionLocalOf<ChanTheme> { error("LocalChanTheme not provided") }
 val LocalComponentActivity = staticCompositionLocalOf<ComponentActivity> { error("LocalComponentActivity not provided") }

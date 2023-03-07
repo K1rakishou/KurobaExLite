@@ -5,7 +5,7 @@ import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import androidx.core.view.WindowCompat
-import com.github.k1rakishou.kurobaexlite.themes.ChanTheme
+import com.github.k1rakishou.kurobaexlite.ui.themes.ChanTheme
 
 class FullScreenHelpers(
   private val androidHelpers: AndroidHelpers

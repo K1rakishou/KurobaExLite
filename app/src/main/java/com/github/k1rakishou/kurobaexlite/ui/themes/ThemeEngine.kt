@@ -1,11 +1,11 @@
-package com.github.k1rakishou.kurobaexlite.themes
+package com.github.k1rakishou.kurobaexlite.ui.themes
 import android.graphics.Color
 import androidx.annotation.FloatRange
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.ColorUtils
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
-import com.github.k1rakishou.kurobaexlite.themes.def.Kuroneko
-import com.github.k1rakishou.kurobaexlite.themes.def.Shironeko
+import com.github.k1rakishou.kurobaexlite.ui.themes.def.Kuroneko
+import com.github.k1rakishou.kurobaexlite.ui.themes.def.Shironeko
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.min

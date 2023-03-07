@@ -5,7 +5,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.readUtfString
 import com.github.k1rakishou.kurobaexlite.helpers.util.writeUtfString
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.github.k1rakishou.kurobaexlite.themes.ChanThemeColorId
+import com.github.k1rakishou.kurobaexlite.ui.themes.ChanThemeColorId
 import okio.Buffer
 
 @Immutable

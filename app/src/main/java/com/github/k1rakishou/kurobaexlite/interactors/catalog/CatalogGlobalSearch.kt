@@ -11,7 +11,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.GlobalSearchRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.IPostHideRepository
 import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
-import com.github.k1rakishou.kurobaexlite.themes.IThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.themes.IThemeEngine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

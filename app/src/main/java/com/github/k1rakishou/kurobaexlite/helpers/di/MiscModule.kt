@@ -34,10 +34,10 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.DialogSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.RemoteImageSearchSettings
 import com.github.k1rakishou.kurobaexlite.managers.SiteProvider
 import com.github.k1rakishou.kurobaexlite.model.database.KurobaExLiteDatabase
-import com.github.k1rakishou.kurobaexlite.themes.IThemeEngine
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine
-import com.github.k1rakishou.kurobaexlite.themes.ThemeStorage
 import com.github.k1rakishou.kurobaexlite.ui.activity.MainActivityIntentHandler
+import com.github.k1rakishou.kurobaexlite.ui.themes.IThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine
+import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeStorage
 import com.squareup.moshi.Moshi
 import org.koin.core.module.Module
 import java.io.File

@@ -1,4 +1,4 @@
-package com.github.k1rakishou.kurobaexlite.themes
+package com.github.k1rakishou.kurobaexlite.ui.themes
 
 import android.annotation.SuppressLint
 import android.graphics.Typeface
@@ -24,7 +24,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
-import com.github.k1rakishou.kurobaexlite.themes.ThemeEngine.Companion.manipulateColor
+import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine.Companion.manipulateColor
 
 @SuppressLint("ResourceType")
 @Stable
