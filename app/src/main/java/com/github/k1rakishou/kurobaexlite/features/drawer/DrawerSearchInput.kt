@@ -15,13 +15,18 @@ import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -39,9 +44,14 @@ fun DrawerSearchInput(
   searchQuery: TextFieldValue,
   searchingBookmarks: Boolean,
   onSearchQueryChanged: (TextFieldValue) -> Unit,
-  onClearSearchQueryClicked: () -> Unit
+  onClearSearchQueryClicked: () -> Unit,
+  onFocusChanged: (Boolean) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
+  val focusRequester = FocusRequester.Default
+  val focusManager = LocalFocusManager.current
+
+  var isSearchInputFocused by remember { mutableStateOf(false) }
 
   val bgColor = remember(key1 = chanTheme.backColor) {
     return@remember if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
@@ -57,6 +67,11 @@ fun DrawerSearchInput(
     stringResource(id = R.string.type_to_search_history_hint)
   }
 
+  DisposableEffect(
+    key1 = Unit,
+    effect = { onDispose { onFocusChanged(false) } }
+  )
+
   Column(
     modifier = modifier.then(
       Modifier
@@ -70,13 +85,20 @@ fun DrawerSearchInput(
       val density = LocalDensity.current
       var textFieldHeight by remember { mutableStateOf(0.dp) }
 
-      if (searchQuery.text.isNotEmpty() && textFieldHeight > 0.dp) {
+      if (isSearchInputFocused || (searchQuery.text.isNotEmpty() && textFieldHeight > 0.dp)) {
         Spacer(modifier = Modifier.width(4.dp))
 
         KurobaComposeClickableIcon(
           modifier = Modifier.size(textFieldHeight),
           drawableId = R.drawable.ic_baseline_clear_24,
-          onClick = { onClearSearchQueryClicked() }
+          onClick = {
+            if (searchQuery.text.isNotEmpty() && textFieldHeight > 0.dp) {
+              onClearSearchQueryClicked()
+            } else if (isSearchInputFocused) {
+              focusRequester.freeFocus()
+              focusManager.clearFocus(force = true)
+            }
+          }
         )
 
         Spacer(modifier = Modifier.width(4.dp))
@@ -86,6 +108,11 @@ fun DrawerSearchInput(
         modifier = Modifier
           .fillMaxWidth()
           .wrapContentHeight()
+          .focusRequester(focusRequester)
+          .onFocusChanged { focusState ->
+            onFocusChanged(focusState.isFocused)
+            isSearchInputFocused = focusState.isFocused
+          }
           .onGloballyPositioned { layoutCoordinates ->
             with(density) { textFieldHeight = layoutCoordinates.size.height.toDp() }
           },

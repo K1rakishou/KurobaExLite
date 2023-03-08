@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -477,58 +478,19 @@ private fun ContentInternal(
     stateSaver = TextFieldValue.Saver
   ) { mutableStateOf<TextFieldValue>(TextFieldValue()) }
 
-  val iconSize = 36.dp
-
   GradientBackground(modifier = Modifier.consumeClicks()) {
     Column(modifier = Modifier.fillMaxSize()) {
       Spacer(modifier = Modifier.height(windowInsets.top))
 
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        DrawerSearchInput(
-          modifier = Modifier
-            .weight(1f)
-            .wrapContentHeight(),
-          searchQuery = searchQuery,
-          searchingBookmarks = drawerContentType == DrawerContentType.Bookmarks,
-          onSearchQueryChanged = { query -> searchQuery = query },
-          onClearSearchQueryClicked = { searchQuery = TextFieldValue() }
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        DrawerContentTypeToggleIcon(iconSize = iconSize)
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        DrawerThemeToggleIcon(appSettings, iconSize)
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        KurobaComposeIcon(
-          modifier = Modifier
-            .size(iconSize)
-            .kurobaClickable(bounded = false, onClick = { showDownloadsScreen() }),
-          drawableId = R.drawable.ic_baseline_download_24
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        KurobaComposeIcon(
-          modifier = Modifier
-            .size(iconSize)
-            .kurobaClickable(bounded = false, onClick = { openAppSettings() }),
-          drawableId = R.drawable.ic_baseline_settings_24
-        )
-
-        KurobaComposeIcon(
-          modifier = Modifier
-            .size(iconSize)
-            .kurobaClickable(bounded = false, onClick = { showBookmarkOptions() }),
-          drawableId = R.drawable.ic_baseline_more_vert_24
-        )
-
-        Spacer(modifier = Modifier.width(8.dp))
-      }
+      DrawerHeader(
+        searchQuery = searchQuery,
+        drawerContentType = drawerContentType,
+        appSettings = appSettings,
+        showDownloadsScreen = showDownloadsScreen,
+        openAppSettings = openAppSettings,
+        showBookmarkOptions = showBookmarkOptions,
+        onSearchQueryChanged = { newSearchQuery -> searchQuery = newSearchQuery }
+      )
 
       Box(
         modifier = Modifier
@@ -561,6 +523,74 @@ private fun ContentInternal(
             }
           }
         }
+      }
+    }
+  }
+}
+
+@Composable
+private fun DrawerHeader(
+  searchQuery: TextFieldValue,
+  drawerContentType: DrawerContentType?,
+  appSettings: AppSettings,
+  showDownloadsScreen: () -> Unit,
+  openAppSettings: () -> Unit,
+  showBookmarkOptions: () -> Unit,
+  onSearchQueryChanged: (TextFieldValue) -> Unit
+) {
+  val iconSize = 36.dp
+  var isSearchInputFocused by remember { mutableStateOf(false) }
+
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    DrawerSearchInput(
+      modifier = Modifier
+        .weight(1f)
+        .wrapContentHeight(),
+      searchQuery = searchQuery,
+      searchingBookmarks = drawerContentType == DrawerContentType.Bookmarks,
+      onSearchQueryChanged = onSearchQueryChanged,
+      onClearSearchQueryClicked = { onSearchQueryChanged(TextFieldValue()) },
+      onFocusChanged = { focused -> isSearchInputFocused = focused }
+    )
+
+    Spacer(modifier = Modifier.width(8.dp))
+
+    DrawerContentTypeToggleIcon(iconSize = iconSize)
+
+    Spacer(modifier = Modifier.width(8.dp))
+
+    AnimatedVisibility(
+      visible = !isSearchInputFocused
+    ) {
+      Row {
+        DrawerThemeToggleIcon(appSettings, iconSize)
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(iconSize)
+            .kurobaClickable(bounded = false, onClick = { showDownloadsScreen() }),
+          drawableId = R.drawable.ic_baseline_download_24
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(iconSize)
+            .kurobaClickable(bounded = false, onClick = { openAppSettings() }),
+          drawableId = R.drawable.ic_baseline_settings_24
+        )
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(iconSize)
+            .kurobaClickable(bounded = false, onClick = { showBookmarkOptions() }),
+          drawableId = R.drawable.ic_baseline_more_vert_24
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
       }
     }
   }
