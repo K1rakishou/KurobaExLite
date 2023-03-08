@@ -1,6 +1,8 @@
 package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.FocusInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -50,8 +52,10 @@ fun DrawerSearchInput(
   val chanTheme = LocalChanTheme.current
   val focusRequester = FocusRequester.Default
   val focusManager = LocalFocusManager.current
+  val mutableInteractionSource = remember { MutableInteractionSource() }
 
   var isSearchInputFocused by remember { mutableStateOf(false) }
+  var prevFocus by remember { mutableStateOf<FocusInteraction.Focus?>(null) }
 
   val bgColor = remember(key1 = chanTheme.backColor) {
     return@remember if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
@@ -97,6 +101,11 @@ fun DrawerSearchInput(
             } else if (isSearchInputFocused) {
               focusRequester.freeFocus()
               focusManager.clearFocus(force = true)
+
+              if (prevFocus != null) {
+                mutableInteractionSource.tryEmit(FocusInteraction.Unfocus(prevFocus!!))
+                prevFocus = null
+              }
             }
           }
         )
@@ -112,6 +121,7 @@ fun DrawerSearchInput(
           .onFocusChanged { focusState ->
             onFocusChanged(focusState.isFocused)
             isSearchInputFocused = focusState.isFocused
+            prevFocus = FocusInteraction.Focus()
           }
           .onGloballyPositioned { layoutCoordinates ->
             with(density) { textFieldHeight = layoutCoordinates.size.height.toDp() }
@@ -125,7 +135,8 @@ fun DrawerSearchInput(
         fontSize = 18.sp,
         textFieldPadding = remember { PaddingValues(vertical = 4.dp, horizontal = 4.dp) },
         labelText = labelText,
-        onValueChange = { newValue -> onSearchQueryChanged(newValue) }
+        onValueChange = { newValue -> onSearchQueryChanged(newValue) },
+        interactionSource = mutableInteractionSource
       )
     }
 

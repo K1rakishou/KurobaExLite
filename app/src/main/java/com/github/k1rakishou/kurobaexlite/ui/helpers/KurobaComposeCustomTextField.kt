@@ -20,9 +20,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -112,8 +110,6 @@ fun KurobaComposeCustomTextField(
     )
   }
 
-  var localInput by remember { mutableStateOf(value) }
-
   KurobaComposeCustomTextFieldInternal(
     singleLine = singleLine,
     labelText = labelText,
@@ -122,7 +118,7 @@ fun KurobaComposeCustomTextField(
     labelTextContent = {
       KurobaCustomLabelText(
         enabled = enabled,
-        inputText = localInput.text,
+        inputText = value.text,
         labelText = labelText,
         fontSize = updatedFontSize,
         parentBackgroundColor = parentBackgroundColor,
@@ -149,14 +145,13 @@ fun KurobaComposeCustomTextField(
           visualTransformation = visualTransformation,
           interactionSource = interactionSource,
           onValueChange = { text ->
-            localInput = text
             onValueChange(text)
           }
         )
       }
     },
     textCounterContent = {
-      val currentCounter = localInput.text.length
+      val currentCounter = value.text.length
       val maxCounter = maxTextLength
       val counterText = remember(key1 = currentCounter, key2 = maxCounter) { "$currentCounter / $maxCounter" }
       val counterTextColor = if (currentCounter > maxCounter) {
