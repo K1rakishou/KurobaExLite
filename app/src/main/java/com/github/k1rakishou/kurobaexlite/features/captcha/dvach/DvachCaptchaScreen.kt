@@ -46,8 +46,8 @@ import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.sites.dvach.Dvach
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeMessage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
@@ -219,9 +219,9 @@ class DvachCaptchaScreen(
         }
         is AsyncData.Error -> {
           val error = (captchaInfoAsync as AsyncData.Error).error
-          KurobaComposeError(
+          KurobaComposeMessage(
             modifier = Modifier.fillMaxSize(),
-            errorMessage = error.errorMessageOrClassName(userReadable = true)
+            message = error.errorMessageOrClassName(userReadable = true)
           )
         }
         is AsyncData.Data -> {

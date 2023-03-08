@@ -58,8 +58,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleTool
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeMessage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextField
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
@@ -479,11 +479,11 @@ private fun BuildImageSearchResults(
       return
     }
     is AsyncData.Error -> {
-      KurobaComposeError(
+      KurobaComposeMessage(
         modifier = Modifier
           .fillMaxSize()
           .padding(bottom = windowInsets.bottom),
-        errorMessage = searchResults.error.errorMessageOrClassName(userReadable = true)
+        message = searchResults.error.errorMessageOrClassName(userReadable = true)
       )
 
       return

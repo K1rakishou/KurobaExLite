@@ -22,6 +22,7 @@ import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.imageNameForDiskStore
 import com.github.k1rakishou.kurobaexlite.model.data.mimeType
+import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import kotlinx.coroutines.CompletableDeferred
@@ -29,7 +30,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -58,44 +59,16 @@ class MediaSaver(
   @GuardedBy("activeDownloads")
   private val activeDownloads = mutableMapOf<String, ActiveDownload>()
 
-  private val _activeDownloadsInfoFlow = MutableSharedFlow<String?>(
-    extraBufferCapacity = 1,
-    onBufferOverflow = BufferOverflow.DROP_OLDEST
+  private val _activeDownloadsInfoFlow = MutableSharedFlow<List<ActiveDownloadInfo>?>(
+    extraBufferCapacity = Channel.UNLIMITED,
   )
-  val activeDownloadsInfoFlow: SharedFlow<String?>
+  val activeDownloadsInfoFlow: SharedFlow<List<ActiveDownloadInfo>?>
     get() = _activeDownloadsInfoFlow.asSharedFlow()
 
   private val batchDownloadExecutor = SerializedCoroutineExecutor(appScope)
 
-  suspend fun getActiveDownloadsCopy(): List<ActiveDownload> {
-    return activeDownloadsMutex.withLock { activeDownloads.values.map { it.copy() } }
-  }
-
-  suspend fun activeDownloadsCount(): Int {
-    return activeDownloadsMutex.withLock { activeDownloads.values.count { activeDownload -> !activeDownload.isCanceled } }
-  }
-
-  suspend fun cancelTheOnlyDownload(): Boolean {
-    logcat(TAG) { "cancelTheOnlyDownload()" }
-
-    val canceled = activeDownloadsMutex.withLock {
-      if (activeDownloads.size != 1) {
-        return@withLock false
-      }
-
-      val activeDownload = activeDownloads.values.firstOrNull()
-        ?: return@withLock false
-
-      activeDownload.cancel()
-
-      return@withLock true
-    }
-
-    if (canceled) {
-      notifyListeners()
-    }
-
-    return canceled
+  suspend fun allActiveDownloads(): List<ActiveDownload> {
+    return activeDownloadsMutex.withLock { activeDownloads.values.toList().filterNot { it.isCanceled } }
   }
 
   suspend fun cancelDownloadByUuid(uuid: String) {
@@ -105,7 +78,7 @@ class MediaSaver(
       activeDownloads[uuid]?.cancel()
     }
 
-    notifyListeners()
+    notifyListeners(uuid)
   }
 
   suspend fun savePostImages(
@@ -130,7 +103,7 @@ class MediaSaver(
       )
     }
 
-    notifyListeners()
+    notifyListeners(uuid)
 
     batchDownloadExecutor.post {
       try {
@@ -167,7 +140,7 @@ class MediaSaver(
         )
       }
 
-      notifyListeners()
+      notifyListeners(uuid)
 
       savePostImageInternal(
         uuid = uuid,
@@ -178,7 +151,7 @@ class MediaSaver(
       logcat { "savePostImage() end saving '${postImage.fullImageAsString}' image" }
 
       activeDownloadsMutex.withLock { activeDownloads.remove(uuid) }
-      notifyListeners()
+      notifyListeners(uuid)
     }
   }
 
@@ -218,7 +191,7 @@ class MediaSaver(
               activeDownload.failed = failedImages.get()
             }
 
-            notifyListeners()
+            notifyListeners(uuid)
           }
 
         return@supervisorScope ActiveDownload(
@@ -232,7 +205,7 @@ class MediaSaver(
         logcat { "savePostImagesInternal(${chanDescriptor}) end saving ${postImages.size} images" }
 
         activeDownloadsMutex.withLock { activeDownloads.remove(uuid) }
-        notifyListeners()
+        notifyListeners(uuid)
       }
     }
   }
@@ -279,9 +252,9 @@ class MediaSaver(
 
             responseBody.useBufferedSource { bufferedSource ->
               if (androidHelpers.isAndroidQ()) {
-                savePostImageAndroidQAndAbove(postImage, bufferedSource)
+                savePostImageAndroidQAndAbove(chanDescriptor, postImage, bufferedSource)
               } else {
-                savePostImageAndroidPAndBelow(postImage, bufferedSource)
+                savePostImageAndroidPAndBelow(chanDescriptor, postImage, bufferedSource)
               }
             }
           }
@@ -301,9 +274,13 @@ class MediaSaver(
   }
 
   @Suppress("DEPRECATION")
-  private suspend fun savePostImageAndroidPAndBelow(postImage: IPostImage, bufferedSource: BufferedSource) {
+  private suspend fun savePostImageAndroidPAndBelow(
+    chanDescriptor: ChanDescriptor,
+    postImage: IPostImage,
+    bufferedSource: BufferedSource
+  ) {
     val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    val outputDir = File(downloadsDir, getFullDir(postImage, APP_FILES_DIR))
+    val outputDir = File(downloadsDir, getFullDir(chanDescriptor, postImage, APP_FILES_DIR))
 
     if (!outputDir.exists()) {
       check(outputDir.mkdirs()) { "\'${outputDir.absolutePath}\' mkdirs() failed" }
@@ -327,9 +304,13 @@ class MediaSaver(
   }
 
   @RequiresApi(Build.VERSION_CODES.Q)
-  private suspend fun savePostImageAndroidQAndAbove(postImage: IPostImage, bufferedSource: BufferedSource) {
+  private suspend fun savePostImageAndroidQAndAbove(
+    chanDescriptor: ChanDescriptor,
+    postImage: IPostImage,
+    bufferedSource: BufferedSource
+  ) {
     val contentResolver = applicationContext.contentResolver
-    val outputDir = "${Environment.DIRECTORY_DOWNLOADS}/${getFullDir(postImage, APP_FILES_DIR)}"
+    val outputDir = "${Environment.DIRECTORY_DOWNLOADS}/${getFullDir(chanDescriptor, postImage, APP_FILES_DIR)}"
     val fileName = postImage.imageNameForDiskStore()
 
     val contentValues = ContentValues()
@@ -350,8 +331,25 @@ class MediaSaver(
     }
   }
 
-  private suspend fun getFullDir(postImage: IPostImage, appFilesDir: String): String {
+  private suspend fun getFullDir(
+    chanDescriptor: ChanDescriptor,
+    postImage: IPostImage,
+    appFilesDir: String
+  ): String {
     val postDescriptor = postImage.ownerPostDescriptor
+
+    if (chanDescriptor is CatalogDescriptor) {
+      return buildString {
+        append(appFilesDir)
+        append("/")
+        append(postDescriptor.siteKeyActual)
+        append("/")
+        append(postDescriptor.boardCode)
+        append("/")
+        append("catalog_images")
+      }
+    }
+
     val originalPostDescriptor = postDescriptor.threadDescriptor.toOriginalPostDescriptor()
 
     val threadTitle = parsedPostDataRepository.getParsedPostData(originalPostDescriptor)?.parsedPostSubject
@@ -391,36 +389,68 @@ class MediaSaver(
     }
   }
 
-  private suspend fun notifyListeners() {
-    val activeDownloadsInfo = activeDownloadsMutex.withLock {
-      val nonCanceledActiveDownloads = activeDownloads.values
-        .filter { activeDownload -> !activeDownload.isCanceled }
+  private suspend fun notifyListeners(uuid: String) {
+    notifyListeners(listOf(uuid))
+  }
 
-      if (nonCanceledActiveDownloads.isEmpty()) {
+  private suspend fun notifyListeners(uuids: List<String>) {
+    val activeDownloadsInfo = activeDownloadsMutex.withLock {
+      if (activeDownloads.isEmpty()) {
         return@withLock null
       }
 
-      if (nonCanceledActiveDownloads.size == 1) {
-        val activeDownload = nonCanceledActiveDownloads.firstOrNull()
-          ?: return@withLock null
+      val uuidsSet = uuids.toSet()
 
-        return@withLock "Downloaded: ${activeDownload.downloaded}, " +
-          "Failed: ${activeDownload.failed}, " +
-          "Total: ${activeDownload.total}"
+      val filteredActiveDownloads = activeDownloads.values
+        .filter { activeDownload -> activeDownload.uuid in uuidsSet }
+
+      if (filteredActiveDownloads.isEmpty()) {
+        return@withLock emptyList()
+      }
+
+      if (filteredActiveDownloads.size == 1) {
+        val activeDownload = filteredActiveDownloads.firstOrNull()
+          ?: return@withLock emptyList()
+
+        val activeDownloadInfo = ActiveDownloadInfo(
+          uuid = activeDownload.uuid,
+          chanDescriptor = activeDownload.chanDescriptor,
+          downloaded = activeDownload.downloaded,
+          failed = activeDownload.failed,
+          total = activeDownload.total,
+          canceled = activeDownload.isCanceled
+        )
+
+        return@withLock listOf(activeDownloadInfo)
       } else {
-        val totalDownloaded = nonCanceledActiveDownloads.sumOf { it.downloaded }
-        val totalFailed = nonCanceledActiveDownloads.sumOf { it.failed }
-        val total = nonCanceledActiveDownloads.sumOf { it.total }
-
-        return@withLock "Downloaded: ${totalDownloaded}, " +
-          "Failed: ${totalFailed}, " +
-          "Total: ${total}, " +
-          "Active downloads: ${nonCanceledActiveDownloads.size}"
+        return@withLock filteredActiveDownloads.map { activeDownload ->
+          return@map ActiveDownloadInfo(
+            uuid = activeDownload.uuid,
+            chanDescriptor = activeDownload.chanDescriptor,
+            downloaded = activeDownload.downloaded,
+            failed = activeDownload.failed,
+            total = activeDownload.total,
+            canceled = activeDownload.isCanceled
+          )
+        }
       }
     }
 
-    _activeDownloadsInfoFlow.tryEmit(activeDownloadsInfo)
+    if (activeDownloadsInfo == null) {
+      _activeDownloadsInfoFlow.emit(null)
+    } else {
+      _activeDownloadsInfoFlow.emit(activeDownloadsInfo)
+    }
   }
+
+  data class ActiveDownloadInfo(
+    val uuid: String,
+    val chanDescriptor: ChanDescriptor,
+    val downloaded: Int,
+    val failed: Int,
+    val total: Int,
+    val canceled: Boolean
+  )
 
   data class ActiveDownload(
     val uuid: String,
@@ -429,6 +459,7 @@ class MediaSaver(
     var failed: Int,
     val total: Int
   ) {
+
     private val canceled = AtomicBoolean(false)
     val isCanceled: Boolean
       get() = canceled.get()

@@ -32,7 +32,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleTool
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeDivider
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeMessage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -172,7 +172,7 @@ class SiteSettingsScreen(
     ) {
       KurobaComposeFadeIn {
         if (siteSettingItems.isEmpty()) {
-          KurobaComposeError(errorMessage = stringResource(id = R.string.site_settings_site_has_no_settings))
+          KurobaComposeMessage(message = stringResource(id = R.string.site_settings_site_has_no_settings))
         } else {
           LazyColumnWithFastScroller(
             lazyListContainerModifier = Modifier.fillMaxSize(),

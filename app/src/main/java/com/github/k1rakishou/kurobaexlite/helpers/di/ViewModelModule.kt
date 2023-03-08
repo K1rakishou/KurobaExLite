@@ -6,6 +6,7 @@ import com.github.k1rakishou.kurobaexlite.features.album.AlbumScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaViewModel
 import com.github.k1rakishou.kurobaexlite.features.captcha.dvach.DvachCaptchaScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.downloads.DownloadsScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.drawer.DrawerScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.drawer.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
@@ -209,5 +210,8 @@ internal fun Module.viewModels() {
   }
   viewModel {
     ThemesScreenViewModel(themeStorage = get(), themeEngine = get())
+  }
+  viewModel {
+    DownloadsScreenViewModel(mediaSaver = get())
   }
 }

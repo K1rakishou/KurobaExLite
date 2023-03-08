@@ -59,8 +59,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.FlowMainAxisAlignment
 import com.github.k1rakishou.kurobaexlite.ui.elements.FlowRow
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCard
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCustomUnitText
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeMessage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeSnappingSlider
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
@@ -419,11 +419,11 @@ class Chan4CaptchaScreen(
             null
           }
           is AsyncData.Error -> {
-            KurobaComposeError(
+            KurobaComposeMessage(
               modifier = Modifier
                 .fillMaxSize()
                 .padding(vertical = 16.dp),
-              errorMessage = cia.error.errorMessageOrClassName(userReadable = true)
+              message = cia.error.errorMessageOrClassName(userReadable = true)
             )
 
             null

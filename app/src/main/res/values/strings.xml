@@ -159,6 +159,14 @@
     <string name="settings_screen_toolbar_title">Settings</string>
     <string name="settings_screen_requires_app_restart">Requires app restart!</string>
 
+    <string name="downloads_screen_toolbar_title">Active downloads</string>
+    <string name="downloads_screen_active_download_catalog_prefix">Catalog \'%1$s\'</string>
+    <string name="downloads_screen_active_download_thread_prefix">Thread \'%1$s\'</string>
+    <string name="downloads_screen_no_active_downloads">No active downloads</string>
+    <string name="downloads_screen_downloaded_and_failed">Downloaded: %1$d, Failed: %2$d</string>
+    <string name="downloads_screen_total">Total to download: %1$d</string>
+    <string name="downloads_screen_cancel_download_title">Cancel download?</string>
+
     <string name="themes_screen_toolbar_title">Themes</string>
     <string name="themes_screen_dark_theme_type_name">Dark</string>
     <string name="themes_screen_light_theme_type_name">Light</string>
@@ -213,6 +221,7 @@
     <string name="catalog_sort_order_thread_activity">Thread activity</string>
 
     <string name="media_viewer_failed_to_find_image_in_images">Failed to find previous image in images</string>
+    <string name="media_viewer_download_start">Downloading \'%1$d\' image(s)</string>
     <string name="media_viewer_download_success">Successfully downloaded \'%1$s\'</string>
     <string name="media_viewer_download_success_multiple">Batch download finished. Downloaded: \'%1$d\', Failed: \'%2$d\', Total: \'%3$d\'</string>
     <string name="media_viewer_download_failed">Failed to download \'%1$s\', error=\'%2$s\'</string>
@@ -234,11 +243,6 @@
     <string name="media_viewer_no_images_to_show">No images to show</string>
     <string name="media_viewer_new_images_added">%1$d new image(s)</string>
     <string name="media_viewer_media_not_supported">Media \'%1$s\' is not supported</string>
-
-    <string name="media_saver_select_download_to_cancel">Select which active download to cancel</string>
-    <string name="media_saver_snackbar_catalog_prefix">Catalog \'%1$s\'</string>
-    <string name="media_saver_snackbar_thread_prefix">Thread \'%1$s\'</string>
-    <string name="media_saver_snackbar_postfix">with total: %1$d images to download</string>
 
     <string name="history_screen_toolbar_title">History</string>
     <string name="navigation_history_screen_removed_navigation_item_text">Removed history \'%1$s\'</string>

@@ -45,7 +45,7 @@ fun DrawerSearchInput(
 
   val bgColor = remember(key1 = chanTheme.backColor) {
     return@remember if (ThemeEngine.isDarkColor(chanTheme.backColor)) {
-      ThemeEngine.manipulateColor(chanTheme.backColor, 1.3f)
+      ThemeEngine.manipulateColor(chanTheme.backColor, 1.5f)
     } else {
       ThemeEngine.manipulateColor(chanTheme.backColor, 0.7f)
     }

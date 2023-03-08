@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.transform.CircleCropTransformation
 import com.github.k1rakishou.kurobaexlite.R
+import com.github.k1rakishou.kurobaexlite.features.downloads.DownloadsScreen
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.application.AppSettingsScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
@@ -110,6 +111,7 @@ class DrawerScreen(
 
     ContentInternal(
       openAppSettings = { openAppSettings() },
+      showDownloadsScreen = { showDownloadsScreen() },
       showBookmarkOptions = {
         coroutineScope.launch {
           showBookmarkOptions(
@@ -255,6 +257,23 @@ class DrawerScreen(
     )
   }
 
+  private fun showDownloadsScreen() {
+    val currentPagerPageScreenKey = globalUiInfoManager.currentPage()?.screenKey
+      ?: return
+
+    val currentChildRouter = navigationRouter.getChildRouterByKeyOrNull(currentPagerPageScreenKey)
+      ?: return
+
+    globalUiInfoManager.closeDrawer()
+
+    val downloadsScreen = ComposeScreen.createScreen<DownloadsScreen>(
+      componentActivity = componentActivity,
+      navigationRouter = currentChildRouter
+    )
+
+    currentChildRouter.pushScreen(downloadsScreen)
+  }
+
   private fun openAppSettings() {
     val currentPagerPageScreenKey = globalUiInfoManager.currentPage()?.screenKey
       ?: return
@@ -351,6 +370,7 @@ class DrawerScreen(
 @Composable
 private fun ContentInternal(
   openAppSettings: () -> Unit,
+  showDownloadsScreen: () -> Unit,
   showBookmarkOptions: () -> Unit,
   showRevertBookmarkDeletion: (ThreadBookmark, Int) -> Unit
 ) {
@@ -481,6 +501,15 @@ private fun ContentInternal(
         Spacer(modifier = Modifier.width(8.dp))
 
         DrawerThemeToggleIcon(appSettings, iconSize)
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(iconSize)
+            .kurobaClickable(bounded = false, onClick = { showDownloadsScreen() }),
+          drawableId = R.drawable.ic_baseline_download_24
+        )
 
         Spacer(modifier = Modifier.width(8.dp))
 

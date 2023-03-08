@@ -80,8 +80,8 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleTool
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarState
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbarStateBuilder
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
-import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeError
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicator
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeMessage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyVerticalGridWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
@@ -463,6 +463,17 @@ private fun BoxScope.ToolbarInternal(
           AlbumScreen.SelectionToolbarIcons.Download -> {
             albumScreenViewModel.downloadSelectedImages(
               chanDescriptor = chanDescriptor,
+              onStart = { imagesToDownload ->
+                val message = context.resources.getString(
+                  R.string.media_viewer_download_start,
+                  imagesToDownload
+                )
+
+                snackbarManager.toast(
+                  message = message,
+                  screenKey = MainScreen.SCREEN_KEY
+                )
+              },
               onResult = { activeDownload ->
                 if (activeDownload == null) {
                   return@downloadSelectedImages
@@ -560,7 +571,7 @@ private fun ContentInternal(
 
   val albumImages = album.albumImages
   if (albumImages.isEmpty()) {
-    KurobaComposeError(errorMessage = stringResource(id = R.string.album_screen_album_empty))
+    KurobaComposeMessage(message = stringResource(id = R.string.album_screen_album_empty))
     return
   }
 

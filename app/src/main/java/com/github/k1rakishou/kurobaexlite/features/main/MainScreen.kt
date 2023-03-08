@@ -20,41 +20,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.unit.dp
-import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreen
-import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
-import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.Tuple4
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
-import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
-import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
-import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
-import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.navigation.MainNavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.navigation.RouterHost
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarContentItem
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.GradientBackground
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowSizeClass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
-import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 val LocalMainUiLayoutMode = staticCompositionLocalOf<MainUiLayoutMode> { error("LocalMainUiLayoutMode not initialized") }
 
@@ -158,14 +141,7 @@ private fun ContentInternal(
   handleBackPresses: @Composable () -> Unit
 ) {
   val insets = LocalWindowInsets.current
-  val componentActivity = LocalComponentActivity.current
-
-  val appResources = koinRemember<IAppResources>()
-  val mediaSaver = koinRemember<MediaSaver>()
-  val snackbarManager = koinRemember<SnackbarManager>()
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
-  val chanPostCache = koinRemember<IChanPostCache>()
-  val parsedPostDataRepository = koinRemember<ParsedPostDataRepository>()
 
   val contentPadding = remember(
     key1 = insets.left,
@@ -173,51 +149,6 @@ private fun ContentInternal(
   ) { PaddingValues(start = insets.left, end = insets.right) }
 
   val kurobaSnackbarState = rememberKurobaSnackbarState()
-
-  LaunchedEffect(
-    key1 = Unit,
-    block = {
-      snackbarManager.snackbarElementsClickFlow.collectLatest { snackbarClickable ->
-        if (snackbarClickable.key != MediaSaverSnackbarButton.CancelDownload) {
-          return@collectLatest
-        }
-
-        onCancelMediaDownloadButtonClicked(
-          componentActivity = componentActivity,
-          navigationRouter = navigationRouterProvider(),
-          appResources = appResources,
-          mediaSaver = mediaSaver,
-          chanPostCache = chanPostCache,
-          parsedPostDataRepository = parsedPostDataRepository
-        )
-      }
-    }
-  )
-
-  LaunchedEffect(
-    key1 = Unit,
-    block = {
-      mediaSaver.activeDownloadsInfoFlow.collect { activeDownloadsInfo ->
-        if (activeDownloadsInfo == null) {
-          kurobaSnackbarState.popSnackbar(SnackbarId.ActiveDownloadsInfo)
-          return@collect
-        }
-
-        kurobaSnackbarState.pushSnackbar(
-          SnackbarInfo(
-            snackbarId = SnackbarId.ActiveDownloadsInfo,
-            aliveUntil = null,
-            content = listOf(
-              SnackbarContentItem.LoadingIndicator,
-              SnackbarContentItem.Spacer(12.dp),
-              SnackbarContentItem.Text(activeDownloadsInfo),
-              SnackbarContentItem.Spacer(12.dp),
-              SnackbarContentItem.Button(MediaSaverSnackbarButton.CancelDownload, null, appResources.string(R.string.cancel))
-            )
-          )
-        )
-      }
-    })
 
   handleBackPresses()
 
@@ -251,97 +182,4 @@ private fun ContentInternal(
       )
     }
   }
-}
-
-private suspend fun onCancelMediaDownloadButtonClicked(
-  componentActivity: ComponentActivity,
-  navigationRouter: NavigationRouter,
-  appResources: IAppResources,
-  mediaSaver: MediaSaver,
-  chanPostCache: IChanPostCache,
-  parsedPostDataRepository: ParsedPostDataRepository
-) {
-  val activeDownloadsCount = mediaSaver.activeDownloadsCount()
-
-  if (activeDownloadsCount <= 0) {
-    return
-  }
-
-  if (activeDownloadsCount == 1) {
-    if (mediaSaver.cancelTheOnlyDownload()) {
-      return
-    }
-  }
-
-  val activeDownloads = mediaSaver.getActiveDownloadsCopy()
-  if (activeDownloads.size <= 1) {
-    return
-  }
-
-  val menuItems = mutableListOf<FloatingMenuItem>()
-
-  menuItems += FloatingMenuItem.TextHeader(
-    text = FloatingMenuItem.MenuItemText.Id(R.string.media_saver_select_download_to_cancel)
-  )
-
-  activeDownloads.forEach { activeDownload ->
-    val chanDescriptor = activeDownload.chanDescriptor
-
-    val menuItemText = buildString {
-      when (chanDescriptor) {
-        is CatalogDescriptor -> {
-          append(appResources.string(R.string.media_saver_snackbar_catalog_prefix, "${chanDescriptor.siteKeyActual}/${chanDescriptor.boardCode}"))
-        }
-        is ThreadDescriptor -> {
-          var threadTitle: String? = null
-
-          val postDescriptor = chanPostCache.getOriginalPost(chanDescriptor)?.postDescriptor
-          if (postDescriptor != null) {
-            threadTitle = parsedPostDataRepository.formatThreadToolbarTitle(postDescriptor)
-          }
-
-          if (threadTitle.isNullOrEmpty()) {
-            append(appResources.string(R.string.media_saver_snackbar_thread_prefix,
-              "${chanDescriptor.siteKeyActual}/${chanDescriptor.boardCode}/${chanDescriptor.threadNo}"))
-          } else {
-            append(appResources.string(R.string.media_saver_snackbar_thread_prefix, threadTitle))
-          }
-        }
-      }
-
-      append(" ")
-      append(appResources.string(R.string.media_saver_snackbar_postfix, activeDownload.total))
-    }
-
-    menuItems += FloatingMenuItem.Text(
-      menuItemKey = activeDownload.uuid,
-      text = FloatingMenuItem.MenuItemText.String(menuItemText)
-    )
-  }
-
-  if (menuItems.isEmpty()) {
-    return
-  }
-
-  val selectedDownloadUuid = suspendCancellableCoroutine<String?> { cancellableContinuation ->
-    val floatingMenuItemScreen = FloatingMenuScreen(
-      componentActivity = componentActivity,
-      navigationRouter = navigationRouter,
-      menuItems = menuItems,
-      floatingMenuKey = FloatingMenuScreen.MEDIA_SAVER_ACTIVE_DOWNLOAD_SELECTOR,
-      onMenuItemClicked = { clickedMenuItem -> cancellableContinuation.resumeSafe(clickedMenuItem.menuItemKey as String) }
-    )
-
-    navigationRouter.presentScreen(floatingMenuItemScreen)
-  }
-
-  if (selectedDownloadUuid == null) {
-    return
-  }
-
-  mediaSaver.cancelDownloadByUuid(selectedDownloadUuid)
-}
-
-private enum class MediaSaverSnackbarButton {
-  CancelDownload
 }
