@@ -25,6 +25,7 @@ import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine
 import kotlinx.coroutines.CompletableDeferred
@@ -59,6 +60,10 @@ class AppSettingsScreenViewModel(
   private val _showMenuItemsFlow = MutableSharedFlow<DisplayedMenuOptions>(extraBufferCapacity = Channel.RENDEZVOUS)
   val showMenuItemsFlow: SharedFlow<DisplayedMenuOptions>
     get() = _showMenuItemsFlow.asSharedFlow()
+
+  private val _showDialogFlow = MutableSharedFlow<DialogScreenParameters>(extraBufferCapacity = Channel.RENDEZVOUS)
+  val showDialogFlow: SharedFlow<DialogScreenParameters>
+    get() = _showDialogFlow.asSharedFlow()
 
   private val _showSliderDialogFlow = MutableSharedFlow<SliderDialogParameters>(extraBufferCapacity = Channel.RENDEZVOUS)
   val showSliderDialogFlow: SharedFlow<SliderDialogParameters>
@@ -190,6 +195,23 @@ class AppSettingsScreenViewModel(
       }
     )
     builder.group(
+      groupKey = "experimental_group",
+      groupName = appResources.string(R.string.settings_screen_experimental_layout_group),
+      builder = {
+        string(
+          title = appResources.string(R.string.settings_screen_experimental_user_agent),
+          enabled = true,
+          delegate = appSettings.userAgent,
+          showDialogScreen = { dialogParameters ->
+            val dialogScreenParams = DialogScreenParameters(dialogParameters)
+            _showDialogFlow.emit(dialogScreenParams)
+
+            dialogScreenParams.await()
+          },
+        )
+      }
+    )
+    builder.group(
       groupKey = "about_group",
       groupName = appResources.string(R.string.settings_screen_about_layout_group),
       builder = {
@@ -292,6 +314,20 @@ class AppSettingsScreenViewModel(
     val items: List<FloatingMenuItem>,
     val result: CompletableDeferred<String?>
   )
+
+  data class DialogScreenParameters(
+    val dialogScreenParams: DialogScreen.Params
+  ) {
+    private val deferred: CompletableDeferred<Unit> = CompletableDeferred()
+
+    fun complete(value: Unit) {
+      deferred.complete(value)
+    }
+
+    suspend fun await() {
+      return deferred.await()
+    }
+  }
 
   data class SliderDialogParameters(
     val title: String,

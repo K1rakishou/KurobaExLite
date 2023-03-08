@@ -81,7 +81,12 @@ class AppSettings(
   val isDarkThemeUsed by lazy { BooleanSetting(true, "is_dark_theme_used", dataStore) }
 
   val userAgent by lazy {
-    val userAgent = try {
+    val userAgent = defaultUserAgent()
+    StringSetting(userAgent, "user_agent", dataStore)
+  }
+
+  private fun defaultUserAgent(): String {
+    return try {
       WebSettings.getDefaultUserAgent(appContext)
     } catch (error: Throwable) {
       // Who knows what may happen if the user deletes webview from the system so just in case
@@ -89,8 +94,6 @@ class AppSettings(
       logcatError(TAG) { "WebSettings.getDefaultUserAgent() error: ${error.asLog()}" }
       String.format(USER_AGENT_FORMAT, Build.VERSION.RELEASE, Build.MODEL)
     }
-
-    StringSetting(userAgent, "user_agent", dataStore)
   }
 
   suspend fun calculateFontSizeInPixels(fontSize: Int): Int {

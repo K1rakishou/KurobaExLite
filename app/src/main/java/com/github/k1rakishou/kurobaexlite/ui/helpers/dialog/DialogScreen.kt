@@ -284,6 +284,7 @@ class DialogScreen(
   companion object {
     const val CATALOG_OVERFLOW_OPEN_THREAD_BY_IDENTIFIER = "catalog_overflow_open_thread_by_identifier_dialog"
     const val OPEN_EXTERNAL_THREAD = "open_external_thread"
+    const val APP_SETTINGS_SCREEN_DIALOG = "app_settings_screen_dialog"
 
     private val id = AtomicLong(0)
 

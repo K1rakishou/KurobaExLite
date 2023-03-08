@@ -344,6 +344,9 @@
     <string name="settings_screen_app_themes_title">Themes</string>
     <string name="settings_screen_app_themes_subtitle">Current theme: \'%1$s\'</string>
 
+    <string name="settings_screen_experimental_layout_group">Experimental</string>
+    <string name="settings_screen_experimental_user_agent">User agent</string>
+
     <string name="settings_screen_about_layout_group">About</string>
     <string name="settings_screen_check_for_updates">Current version: %1$s-%2$s-%3$s</string>
     <string name="settings_screen_check_for_updates_description">Click to check for updates</string>

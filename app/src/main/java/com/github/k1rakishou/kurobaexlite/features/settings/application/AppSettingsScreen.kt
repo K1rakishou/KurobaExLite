@@ -43,6 +43,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
 import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
+import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.DialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.dialog.SliderDialogScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
@@ -135,6 +136,17 @@ class AppSettingsScreen(
       },
       displaySliderDialogAndWaitForResult = { sliderDialogParameters ->
         coroutineScope.launch { displaySliderDialogAndWaitForResult(sliderDialogParameters) }
+      },
+      displayDialogAndWaitForResult = { dialogScreenParameters ->
+        val dialogScreen = DialogScreen(
+          dialogKey = DialogScreen.APP_SETTINGS_SCREEN_DIALOG,
+          componentActivity = componentActivity,
+          navigationRouter = navigationRouter,
+          params = dialogScreenParameters.dialogScreenParams,
+          onDismissed = { dialogScreenParameters.complete(Unit) }
+        )
+
+        navigationRouter.presentScreen(dialogScreen)
       }
     )
   }
@@ -203,7 +215,8 @@ class AppSettingsScreen(
 private fun ContentInternal(
   displayMenuOptionsAndWaitForResult: (AppSettingsScreenViewModel.DisplayedMenuOptions) -> Unit,
   displayScreen: (AppSettingsScreenViewModel.DisplayScreenRequest) -> Unit,
-  displaySliderDialogAndWaitForResult: (AppSettingsScreenViewModel.SliderDialogParameters) -> Unit
+  displaySliderDialogAndWaitForResult: (AppSettingsScreenViewModel.SliderDialogParameters) -> Unit,
+  displayDialogAndWaitForResult: (AppSettingsScreenViewModel.DialogScreenParameters) -> Unit
 ) {
   val appSettingsScreenViewModel: AppSettingsScreenViewModel = koinRememberViewModel()
 
@@ -221,6 +234,15 @@ private fun ContentInternal(
     block = {
       appSettingsScreenViewModel.showSliderDialogFlow.collectLatest { sliderDialogParameters ->
         displaySliderDialogAndWaitForResult(sliderDialogParameters)
+      }
+    }
+  )
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      appSettingsScreenViewModel.showDialogFlow.collectLatest { dialogParameters ->
+        displayDialogAndWaitForResult(dialogParameters)
       }
     }
   )
