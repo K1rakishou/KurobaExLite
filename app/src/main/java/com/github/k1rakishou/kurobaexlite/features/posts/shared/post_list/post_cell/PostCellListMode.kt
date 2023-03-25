@@ -694,7 +694,7 @@ private fun PostCellIcon(
       modifier = Modifier.fillMaxSize(),
       model = imageRequest,
       contentDescription = "Poster flag",
-      contentScale = ContentScale.Crop,
+      contentScale = ContentScale.Fit,
       onState = { state -> imageStateMut = state }
     )
 
