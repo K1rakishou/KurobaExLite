@@ -46,8 +46,8 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
-import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -278,15 +278,14 @@ private fun ReplyLayoutLeftPartCustomLayout(
   formattingButtonsContent: @Composable () -> Unit,
   replyAttachmentsContent: @Composable () -> Unit
 ) {
-  SubcomposeLayout(
+  Layout(
+    contents = listOf(additionalInputsContent, replyInputContent, formattingButtonsContent, replyAttachmentsContent),
     modifier = modifier,
-    measurePolicy = { constraints ->
-      val additionalInputsContentMeasurables = subcompose("additionalInputsContent", additionalInputsContent)
-      val replyInputContentMeasurable = subcompose("replyInputContent", replyInputContent)
-        .ensureSingleMeasurable()
-      val formattingButtonsContentMeasurable = subcompose("formattingButtonsContent", formattingButtonsContent)
-        .ensureSingleMeasurable()
-      val replyAttachmentsContentMeasurables = subcompose("replyAttachmentsContent", replyAttachmentsContent)
+    measurePolicy = { measurables, constraints ->
+      val additionalInputsContentMeasurables = measurables[0]
+      val replyInputContentMeasurable = measurables[1].ensureSingleMeasurable()
+      val formattingButtonsContentMeasurable = measurables[2].ensureSingleMeasurable()
+      val replyAttachmentsContentMeasurables = measurables[3]
 
       val placeables = mutableListWithCap<Placeable>(
         additionalInputsContentMeasurables.size +
@@ -326,7 +325,7 @@ private fun ReplyLayoutLeftPartCustomLayout(
       val totalWidth = placeables.maxBy { it.measuredHeight }.width
       val totalHeight = placeables.fold(0) { acc, placeable -> acc + placeable.measuredHeight }
 
-      return@SubcomposeLayout layout(totalWidth, totalHeight) {
+      return@Layout layout(totalWidth, totalHeight) {
         var yOffset = 0
 
         placeables.fastForEach { placeable ->
