@@ -2,7 +2,6 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,14 +19,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
 import coil.network.HttpException
 import coil.request.ImageRequest
 import coil.size.Size
@@ -79,18 +78,23 @@ fun PostImageThumbnail(
     }
   )
 
-  BoxWithConstraints(
+  var maxParentWidth by remember { mutableStateOf(0) }
+  var maxParentHeight by remember { mutableStateOf(0) }
+
+  Box(
     modifier = Modifier
       .background(bgColor)
+      .onGloballyPositioned { layoutCoordinates ->
+        maxParentWidth = layoutCoordinates.size.width
+        maxParentHeight = layoutCoordinates.size.height
+      }
       .kurobaClickable(
         onLongClick = { onLongClick(postImage) },
         onClick = { onClick(postImage) }
       )
+      .then(modifier)
   ) {
     val density = LocalDensity.current
-
-    val maxParentHeight = constraints.maxHeight
-    val maxParentWidth = constraints.maxWidth
 
     val thumbnailUrl = remember(key1 = revealSpoiler) {
       if (!revealSpoiler && postImage.thumbnailSpoiler != null) {
@@ -120,59 +124,83 @@ fun PostImageThumbnail(
       }
     )
 
-    Box(modifier = modifier) {
-      if (imageRequest != null) {
-        SubcomposeAsyncImage(
-          modifier = Modifier.fillMaxSize(),
-          model = imageRequest,
-          contentDescription = "Post image thumbnail",
-          contentScale = contentScale,
-          content = {
-            val state = painter.state
+    if (imageRequest != null) {
+      var imageState by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
 
-            if (state is AsyncImagePainter.State.Success) {
-              SubcomposeAsyncImageContent(modifier = Modifier.fillMaxSize())
+      AsyncImage(
+        modifier = Modifier.fillMaxSize(),
+        model = imageRequest,
+        contentDescription = "Post image thumbnail",
+        contentScale = contentScale,
+        onState = { state -> imageState = state }
+      )
 
-              if (postImage.imageType() == ImageType.Video) {
-                KurobaComposeIcon(
-                  modifier = Modifier.requiredSize(32.dp),
-                  drawableId = R.drawable.ic_play_circle_outline_white_24dp,
-                  iconColor = Color.White
-                )
-              }
-            } else if (state is AsyncImagePainter.State.Error) {
-              Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-              ) {
-                LaunchedEffect(
-                  key1 = state,
-                  block = {
-                    logcatError {
-                      "PostImageThumbnail() url=${postImage.thumbnailAsUrl}, " +
-                        "postDescriptor=${postImage.ownerPostDescriptor}, " +
-                        "error=${state.result.throwable.errorMessageOrClassName()}"
-                    }
-                  }
-                )
+      ImageOverlay(
+        modifier = Modifier.fillMaxSize(),
+        imageState = imageState,
+        postImage = postImage,
+        maxParentWidth = maxParentWidth,
+        maxParentHeight = maxParentHeight,
+        displayErrorMessage = displayErrorMessage,
+        showShimmerEffectWhenLoading = showShimmerEffectWhenLoading
+      )
+    }
+  }
+}
 
-                PostImageThumbnailError(
-                  displayErrorMessage = displayErrorMessage,
-                  state = state,
-                  density = density,
-                  maxParentHeight = maxParentHeight,
-                  maxParentWidth = maxParentWidth
-                )
-              }
-            } else if (
-              (state is AsyncImagePainter.State.Empty || state is AsyncImagePainter.State.Loading)
-              && showShimmerEffectWhenLoading
-            ) {
-              Shimmer(modifier = Modifier.fillMaxSize())
+@Composable
+fun ImageOverlay(
+  modifier: Modifier = Modifier,
+  imageState: AsyncImagePainter.State,
+  postImage: IPostImage,
+  maxParentWidth: Int,
+  maxParentHeight: Int,
+  displayErrorMessage: Boolean,
+  showShimmerEffectWhenLoading: Boolean
+) {
+  val density = LocalDensity.current
+
+  Box(
+    modifier = modifier,
+    contentAlignment = Alignment.Center
+  ) {
+    if (imageState is AsyncImagePainter.State.Success) {
+      if (postImage.imageType() == ImageType.Video) {
+        KurobaComposeIcon(
+          modifier = Modifier.requiredSize(32.dp),
+          drawableId = R.drawable.ic_play_circle_outline_white_24dp,
+          iconColor = Color.White
+        )
+      }
+    } else if (imageState is AsyncImagePainter.State.Error) {
+      Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+      ) {
+        LaunchedEffect(
+          key1 = imageState,
+          block = {
+            logcatError {
+              "PostImageThumbnail() url=${postImage.thumbnailAsUrl}, " +
+                "postDescriptor=${postImage.ownerPostDescriptor}, " +
+                "error=${imageState.result.throwable.errorMessageOrClassName()}"
             }
           }
         )
+
+        PostImageThumbnailError(
+          displayErrorMessage = displayErrorMessage,
+          state = imageState,
+          density = density,
+          maxParentWidth = maxParentWidth,
+          maxParentHeight = maxParentHeight
+        )
       }
+    } else if (
+      (imageState is AsyncImagePainter.State.Empty || imageState is AsyncImagePainter.State.Loading)
+      && showShimmerEffectWhenLoading
+    ) {
+      Shimmer(modifier = Modifier.fillMaxSize())
     }
   }
 }
@@ -182,8 +210,8 @@ private fun PostImageThumbnailError(
   displayErrorMessage: Boolean,
   state: AsyncImagePainter.State.Error,
   density: Density,
-  maxParentHeight: Int,
-  maxParentWidth: Int
+  maxParentWidth: Int,
+  maxParentHeight: Int
 ) {
   Column(
     horizontalAlignment = Alignment.CenterHorizontally

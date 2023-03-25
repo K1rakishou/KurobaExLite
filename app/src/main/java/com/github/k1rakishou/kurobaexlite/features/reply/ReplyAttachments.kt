@@ -17,7 +17,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,9 +28,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import coil.request.videoFrameMillis
 import com.github.k1rakishou.kurobaexlite.R
@@ -115,52 +116,55 @@ private fun AttachedMediaThumbnail(
       .width(mediaWidth)
       .height(mediaHeight)
   ) {
-    SubcomposeAsyncImage(
-      modifier = Modifier
-        .fillMaxSize()
-        .padding(horizontal = paddings / 2, vertical = paddings / 2)
-        .kurobaClickable(onClick = { onAttachedMediaClicked(attachedMedia) }),
-      model = ImageRequest.Builder(context)
+    val imageRequest = remember(key1 = attachedMediaFile, key2 = mediaHeightPx) {
+      return@remember ImageRequest.Builder(context)
         .data(attachedMediaFile)
         .crossfade(true)
         .size(mediaHeightPx)
         .videoFrameMillis(frameMillis = 1000L)
-        .build(),
-      contentDescription = "Attached media",
-      contentScale = ContentScale.Crop,
-      content = {
-        val state = painter.state
+        .build()
+    }
 
-        if (state is AsyncImagePainter.State.Error) {
-          logcatError {
-            "AttachedMediaThumbnail() attachedMediaFilePath=${attachedMediaFile.path}, " +
-              "error=${state.result.throwable.errorMessageOrClassName()}"
-          }
+    var imageStateMut by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
+    val imageState = imageStateMut
 
-          val isFailedToDecodeVideoFrameError = (state.result.throwable as? IllegalStateException)
-            ?.message
-            ?.contains(COIL_FAILED_TO_DECODE_FRAME_ERROR_MSG)
-            ?: false
+    Box {
+      AsyncImage(
+        modifier = Modifier
+          .fillMaxSize()
+          .padding(horizontal = paddings / 2, vertical = paddings / 2)
+          .kurobaClickable(onClick = { onAttachedMediaClicked(attachedMedia) }),
+        model = imageRequest,
+        contentDescription = "Attached media",
+        contentScale = ContentScale.Crop,
+        onState = { state -> imageStateMut = state }
+      )
 
-          val drawableId = if (isFailedToDecodeVideoFrameError) {
-            R.drawable.ic_baseline_movie_24
-          } else {
-            R.drawable.ic_baseline_warning_24
-          }
-
-          KurobaComposeIcon(
-            modifier = Modifier
-              .size(24.dp)
-              .align(Alignment.Center),
-            drawableId = drawableId
-          )
-
-          return@SubcomposeAsyncImage
+      if (imageState is AsyncImagePainter.State.Error) {
+        logcatError {
+          "AttachedMediaThumbnail() attachedMediaFilePath=${attachedMediaFile.path}, " +
+            "error=${imageState.result.throwable.errorMessageOrClassName()}"
         }
 
-        SubcomposeAsyncImageContent()
+        val isFailedToDecodeVideoFrameError = (imageState.result.throwable as? IllegalStateException)
+          ?.message
+          ?.contains(COIL_FAILED_TO_DECODE_FRAME_ERROR_MSG)
+          ?: false
+
+        val drawableId = if (isFailedToDecodeVideoFrameError) {
+          R.drawable.ic_baseline_movie_24
+        } else {
+          R.drawable.ic_baseline_warning_24
+        }
+
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(24.dp)
+            .align(Alignment.Center),
+          drawableId = drawableId
+        )
       }
-    )
+    }
 
     val iconBgColor = remember { Color.Black.copy(alpha = 0.5f) }
 

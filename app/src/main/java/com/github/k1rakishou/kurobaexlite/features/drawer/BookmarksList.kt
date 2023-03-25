@@ -8,6 +8,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -55,9 +56,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
@@ -646,32 +646,31 @@ private fun BookmarkThumbnail(
         .build()
     }
 
-    SubcomposeAsyncImage(
-      modifier = Modifier.fillMaxSize(),
-      model = imageRequest,
-      contentScale = ContentScale.Crop,
-      contentDescription = "Bookmark thumbnail",
-      content = {
-        val state = painter.state
+    var imageStateMut by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
+    val imageState = imageStateMut
 
-        if (state is AsyncImagePainter.State.Error) {
-          logcatError(DrawerScreen.TAG) {
-            "BookmarkThumbnail() url=${thumbnailUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
-          }
+    Box {
+      AsyncImage(
+        modifier = Modifier.fillMaxSize(),
+        model = imageRequest,
+        contentDescription = "Bookmark thumbnail",
+        contentScale = ContentScale.Crop,
+        onState = { state -> imageStateMut = state }
+      )
 
-          KurobaComposeIcon(
-            modifier = Modifier
-              .size(iconWidthDp, iconHeightDp)
-              .align(Alignment.Center),
-            drawableId = R.drawable.ic_baseline_warning_24
-          )
-
-          return@SubcomposeAsyncImage
+      if (imageState is AsyncImagePainter.State.Error) {
+        logcatError(DrawerScreen.TAG) {
+          "BookmarkThumbnail() url=${thumbnailUrl}, error=${imageState.result.throwable.errorMessageOrClassName()}"
         }
 
-        SubcomposeAsyncImageContent()
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(iconWidthDp, iconHeightDp)
+            .align(Alignment.Center),
+          drawableId = R.drawable.ic_baseline_warning_24
+        )
       }
-    )
+    }
   }
 }
 

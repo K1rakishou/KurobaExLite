@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,9 +40,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import coil.size.Size
 import coil.transform.CircleCropTransformation
@@ -469,36 +469,39 @@ private fun NavigationIcon(
       }
     }
 
-    SubcomposeAsyncImage(
-      modifier = Modifier.fillMaxSize(),
-      model = ImageRequest.Builder(context)
+    val imageRequest = remember(key1 = navigationIconUrl) {
+      return@remember ImageRequest.Builder(context)
         .data(navigationIconUrl)
         .crossfade(true)
         .transformations(circleCropTransformation)
         .size(Size.ORIGINAL)
-        .build(),
-      contentScale = ContentScale.Crop,
-      contentDescription = "Navigation icon",
-      content = {
-        val state = painter.state
+        .build()
+    }
 
-        if (state is AsyncImagePainter.State.Error) {
-          logcatError(TAG) {
-            "NavigationIcon() url=${navigationIconUrl}, error=${state.result.throwable.errorMessageOrClassName()}"
-          }
+    var imageStateMut by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
+    val imageState = imageStateMut
 
-          KurobaComposeIcon(
-            modifier = Modifier
-              .size(iconWidthDp, iconHeightDp)
-              .align(Alignment.Center),
-            drawableId = R.drawable.ic_baseline_warning_24
-          )
+    Box {
+      AsyncImage(
+        modifier = Modifier.fillMaxSize(),
+        model = imageRequest,
+        contentDescription = "Navigation item thumbnail",
+        contentScale = ContentScale.Crop,
+        onState = { state -> imageStateMut = state }
+      )
 
-          return@SubcomposeAsyncImage
+      if (imageState is AsyncImagePainter.State.Error) {
+        logcatError(TAG) {
+          "NavigationIcon() url=${navigationIconUrl}, error=${imageState.result.throwable.errorMessageOrClassName()}"
         }
 
-        SubcomposeAsyncImageContent()
+        KurobaComposeIcon(
+          modifier = Modifier
+            .size(iconWidthDp, iconHeightDp)
+            .align(Alignment.Center),
+          drawableId = R.drawable.ic_baseline_warning_24
+        )
       }
-    )
+    }
   }
 }

@@ -36,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -50,9 +51,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
 import coil.size.Size
 import com.github.k1rakishou.kurobaexlite.R
@@ -686,28 +686,30 @@ private fun PostCellIcon(
     return
   }
 
-  SubcomposeAsyncImage(
-    modifier = Modifier.fillMaxSize(),
-    model = imageRequest,
-    content = {
-      val state = painter.state
-      if (state is AsyncImagePainter.State.Error) {
-        logcatError("PostCellIcon") {
-          "Failed to load icon \'${iconUrl}\', error: ${state.result.throwable.errorMessageOrClassName()}"
-        }
+  var imageStateMut by remember { mutableStateOf<AsyncImagePainter.State>(AsyncImagePainter.State.Empty) }
+  val imageState = imageStateMut
 
-        Image(
-          modifier = Modifier.fillMaxSize(),
-          painter = painterResource(id = R.drawable.error_icon),
-          contentDescription = "Error loading poster flag"
-        )
+  Box {
+    AsyncImage(
+      modifier = Modifier.fillMaxSize(),
+      model = imageRequest,
+      contentDescription = "Poster flag",
+      contentScale = ContentScale.Crop,
+      onState = { state -> imageStateMut = state }
+    )
 
-      } else if (state is AsyncImagePainter.State.Success) {
-        SubcomposeAsyncImageContent(modifier = Modifier.fillMaxSize())
+    if (imageState is AsyncImagePainter.State.Error) {
+      logcatError("PostCellIcon") {
+        "Failed to load icon \'${iconUrl}\', error: ${imageState.result.throwable.errorMessageOrClassName()}"
       }
-    },
-    contentDescription = "Poster flag"
-  )
+
+      Image(
+        modifier = Modifier.fillMaxSize(),
+        painter = painterResource(id = R.drawable.error_icon),
+        contentDescription = "Error loading poster flag"
+      )
+    }
+  }
 }
 
 @Composable
