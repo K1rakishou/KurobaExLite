@@ -162,7 +162,12 @@ class MediaViewerScreen(
   private val appRestarter: AppRestarter by inject(AppRestarter::class.java)
 
   private val linkableClickHelper by lazy {
-    LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
+    return@lazy LinkableClickHelper(
+      componentActivity = componentActivity,
+      navigationRouter = navigationRouter,
+      screenCoroutineScope = screenCoroutineScope,
+      appResources = appResources
+    )
   }
 
   override val screenKey: ScreenKey = SCREEN_KEY

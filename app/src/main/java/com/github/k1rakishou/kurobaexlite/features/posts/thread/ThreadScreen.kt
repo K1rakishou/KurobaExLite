@@ -102,7 +102,12 @@ class ThreadScreen(
   }
 
   private val linkableClickHelper by lazy {
-    LinkableClickHelper(componentActivity, navigationRouter, screenCoroutineScope)
+    return@lazy LinkableClickHelper(
+      componentActivity = componentActivity,
+      navigationRouter = navigationRouter,
+      screenCoroutineScope = screenCoroutineScope,
+      appResources = appResources
+    )
   }
 
   private val postLongtapContextMenu by lazy {

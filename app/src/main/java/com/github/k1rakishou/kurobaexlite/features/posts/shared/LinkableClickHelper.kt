@@ -7,6 +7,7 @@ import com.github.k1rakishou.kurobaexlite.features.posts.reply.PopupPostsScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.CrossThreadFollowHistory
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.cache.IChanPostCache
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
@@ -23,7 +24,8 @@ import org.koin.java.KoinJavaComponent.inject
 class LinkableClickHelper(
   private val componentActivity: ComponentActivity,
   private val navigationRouter: NavigationRouter,
-  private val screenCoroutineScope: CoroutineScope
+  private val screenCoroutineScope: CoroutineScope,
+  private val appResources: IAppResources
 ) {
   private val androidHelpers: AndroidHelpers by inject(AndroidHelpers::class.java)
   private val crossThreadFollowHistory: CrossThreadFollowHistory by inject(CrossThreadFollowHistory::class.java)
@@ -54,7 +56,8 @@ class LinkableClickHelper(
         // TODO(KurobaEx):
       }
       is TextPartSpan.Linkable.Url -> {
-        // TODO(KurobaEx):
+        androidHelpers.copyToClipboard("Link", linkable.url)
+        snackbarManager.toast(appResources.string(R.string.thread_toolbar_url_copied_to_clipboard))
       }
     }
   }
