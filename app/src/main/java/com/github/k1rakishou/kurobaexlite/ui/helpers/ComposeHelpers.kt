@@ -1,5 +1,9 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,6 +18,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.isUnspecified
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -76,4 +81,47 @@ fun collectTextFontSize(defaultFontSize: KurobaTextUnit): TextUnit {
 
 fun TextUnit.coerceIn(min: TextUnit? = null, max: TextUnit? = null): KurobaTextUnit {
   return KurobaTextUnit(fontSize = this, min = min, max = max)
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+suspend fun LazyStaggeredGridState.scrollToItemConsumeCancellation(
+  index: Int,
+  scrollOffset: Int = 0
+) {
+  try {
+    scrollToItem(index, scrollOffset)
+  } catch (error: CancellationException) {
+    // no-op
+    // Just consume the exception. We want this in cases when we scroll from inside of a flow collection method.
+    // The scrolling can fail and it may throw CancellationException which will also cancel the flow collection.
+    // We don't want that and that's why this method exists
+  }
+}
+
+suspend fun LazyGridState.scrollToItemConsumeCancellation(
+  index: Int,
+  scrollOffset: Int = 0
+) {
+  try {
+    scrollToItem(index, scrollOffset)
+  } catch (error: CancellationException) {
+    // no-op
+    // Just consume the exception. We want this in cases when we scroll from inside of a flow collection method.
+    // The scrolling can fail and it may throw CancellationException which will also cancel the flow collection.
+    // We don't want that and that's why this method exists
+  }
+}
+
+suspend fun LazyListState.scrollToItemConsumeCancellation(
+  index: Int,
+  scrollOffset: Int = 0
+) {
+  try {
+    scrollToItem(index, scrollOffset)
+  } catch (error: CancellationException) {
+    // no-op
+    // Just consume the exception. We want this in cases when we scroll from inside of a flow collection method.
+    // The scrolling can fail and it may throw CancellationException which will also cancel the flow collection.
+    // We don't want that and that's why this method exists
+  }
 }

@@ -99,6 +99,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.GenericLazyStateWr
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyListStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -635,6 +636,13 @@ private fun PopupPostsScreenContent(
             ),
             rememberedPosition = rememberedPosition
           )
+
+          awaitFrame()
+
+          // After clicking post replies we want to reset the current scroll position to 0th element because otherwise
+          // it will stay the same as before so if we go from one long list to another the scroll position won't be at
+          // the very beginning which doesn't look good.
+          lazyListStateWrapper.scrollToItem(0, 0)
         }
       },
       onCopySelectedText = { selectedText ->
