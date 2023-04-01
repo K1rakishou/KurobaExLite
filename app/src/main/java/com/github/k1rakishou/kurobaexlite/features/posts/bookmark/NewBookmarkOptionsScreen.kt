@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeCheckbox
+import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
@@ -99,29 +100,47 @@ class NewBookmarkOptionsScreen(
 
       Spacer(modifier = Modifier.height(16.dp))
 
-      KurobaComposeCheckbox(
+      Row(
         modifier = Modifier
           .fillMaxWidth()
-          .heightIn(min = 42.dp)
-          .padding(horizontal = 8.dp, vertical = 8.dp)
-          .graphicsLayer {
-            alpha = if (doNotShowNewBookmarkDialogOptions == null) {
-              disabledAlpha
-            } else {
-              enabledAlpha
+          .wrapContentHeight(),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        KurobaComposeCheckbox(
+          modifier = Modifier
+            .weight(1f)
+            .heightIn(min = 42.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .graphicsLayer {
+              alpha = if (doNotShowNewBookmarkDialogOptions == null) {
+                disabledAlpha
+              } else {
+                enabledAlpha
+              }
+            },
+          enabled = doNotShowNewBookmarkDialogOptions != null,
+          currentlyChecked = doNotShowNewBookmarkDialogOptions == true,
+          text = stringResource(id = R.string.new_bookmark_options_screen_do_not_show_this_dialog),
+          onCheckChanged = {
+            if (doNotShowNewBookmarkDialogOptions == null) {
+              return@KurobaComposeCheckbox
             }
-          },
-        enabled = doNotShowNewBookmarkDialogOptions != null,
-        currentlyChecked = doNotShowNewBookmarkDialogOptions == true,
-        text = stringResource(id = R.string.new_bookmark_options_screen_do_not_show_this_dialog),
-        onCheckChanged = {
-          if (doNotShowNewBookmarkDialogOptions == null) {
-            return@KurobaComposeCheckbox
-          }
 
-          doNotShowNewBookmarkDialogOptionsMut = !doNotShowNewBookmarkDialogOptions
-        }
-      )
+            doNotShowNewBookmarkDialogOptionsMut = !doNotShowNewBookmarkDialogOptions
+          }
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        KurobaComposeClickableIcon(
+          drawableId = R.drawable.ic_baseline_help_outline_24,
+          onClick = {
+            snackbarManager.toast(messageId = R.string.new_bookmark_options_screen_do_not_show_this_dialog_hint)
+          }
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+      }
 
       Row(horizontalArrangement = Arrangement.End) {
         Spacer(modifier = Modifier.weight(1f))

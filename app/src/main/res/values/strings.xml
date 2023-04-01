@@ -415,6 +415,7 @@
     <string name="post_screenshot_screen_take_screenshot_error">Failed to store screenshot on disk, error: \'%1$s\'</string>
 
     <string name="new_bookmark_options_screen_start_watching_thread">Start watching thread</string>
-    <string name="new_bookmark_options_screen_do_not_show_this_dialog">Do not show this dialog anymore (Longtap the bookmark icon to show it again)</string>
+    <string name="new_bookmark_options_screen_do_not_show_this_dialog">Do not show this dialog anymore</string>
+    <string name="new_bookmark_options_screen_do_not_show_this_dialog_hint">Longtap the bookmark icon to show it again</string>
 
 </resources>
