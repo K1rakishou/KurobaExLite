@@ -8,19 +8,19 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
@@ -39,7 +39,6 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -84,6 +83,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
+import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.collectTextFontSize
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.ReorderableState
@@ -108,15 +108,15 @@ fun BookmarksList(
 ) {
   val windowInsets = LocalWindowInsets.current
 
-  val drawerScreenViewModel: DrawerScreenViewModel = koinRememberViewModel()
+  val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
   val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   val contentPadding = remember(key1 = windowInsets) { PaddingValues(bottom = windowInsets.bottom) }
   val pullToRefreshToPadding = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
 
-  val bookmarkListBeforeFiltering = drawerScreenViewModel.bookmarksList
-  val canUseFancyAnimations by drawerScreenViewModel.canUseFancyAnimations
+  val bookmarkListBeforeFiltering = bookmarksScreenViewModel.bookmarksList
+  val canUseFancyAnimations by bookmarksScreenViewModel.canUseFancyAnimations
 
   var bookmarkList by remember { mutableStateOf(bookmarkListBeforeFiltering) }
   var isInSearchMode by remember { mutableStateOf(false) }
@@ -154,7 +154,7 @@ fun BookmarksList(
   PullToRefresh(
     pullToRefreshState = pullToRefreshState,
     topPadding = pullToRefreshToPadding,
-    onTriggered = { drawerScreenViewModel.forceRefreshBookmarks() }
+    onTriggered = { bookmarksScreenViewModel.forceRefreshBookmarks() }
   ) {
     LazyColumnWithFastScroller(
       lazyListContainerModifier = Modifier
@@ -164,8 +164,8 @@ fun BookmarksList(
         .reorderable(
           state = reorderableState,
           canDragOver = { key, _ -> (key as? String)?.startsWith(DrawerScreen.BookmarkAnnotatedContent.bookmarkItemKey) == true },
-          onMove = { from, to -> drawerScreenViewModel.onMove(from, to) },
-          onDragEnd = { from, to -> drawerScreenViewModel.onMoveConfirmed(from, to) }
+          onMove = { from, to -> bookmarksScreenViewModel.onMove(from, to) },
+          onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from, to) }
         ),
       lazyListState = reorderableState.lazyListState,
       contentPadding = contentPadding,
@@ -221,10 +221,10 @@ fun BookmarksList(
                   globalUiInfoManager.closeDrawer(withAnimation = true)
                 },
                 onBookmarkThumbnailClicked = { threadDescriptor ->
-                  drawerScreenViewModel.toggleBookmarkWatchState(threadDescriptor)
+                  bookmarksScreenViewModel.toggleBookmarkWatchState(threadDescriptor)
                 },
                 onBookmarkDeleted = { clickedThreadBookmarkUi ->
-                  drawerScreenViewModel.deleteBookmark(
+                  bookmarksScreenViewModel.deleteBookmark(
                     threadDescriptor = clickedThreadBookmarkUi.threadDescriptor,
                     onBookmarkDeleted = { deletedBookmark, oldPosition ->
                       showRevertBookmarkDeletion(deletedBookmark, oldPosition)
@@ -252,15 +252,12 @@ private fun LazyItemScope.ThreadBookmarkItem(
   onBookmarkDeleted: (ThreadBookmarkUi) -> Unit
 ) {
   val chanTheme = LocalChanTheme.current
-  val defaultItemHeight = dimensionResource(id = R.dimen.history_or_bookmark_item_height)
   val animationDurationMs = 500
 
-  val drawerScreenViewModel: DrawerScreenViewModel = koinRememberViewModel()
+  val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
   val postCommentApplier: PostCommentApplier = koinRemember()
-  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   val isDrawerCurrentlyOpened by listenForDrawerVisibilityEvents()
-  val globalFontSizeMultiplier by globalUiInfoManager.globalFontSizeMultiplier.collectAsState()
 
   val textAnimationSpec = remember(key1 = isDrawerCurrentlyOpened) {
     if (isDrawerCurrentlyOpened && canUseFancyAnimations) {
@@ -270,7 +267,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
     }
   }
 
-  val defaultBgColor = if (drawerScreenViewModel.bookmarksToMark.containsKey(threadBookmarkUi.threadDescriptor)) {
+  val defaultBgColor = if (bookmarksScreenViewModel.bookmarksToMark.containsKey(threadBookmarkUi.threadDescriptor)) {
     chanTheme.accentColor.copy(alpha = 0.3f)
   } else {
     chanTheme.backColor
@@ -309,13 +306,11 @@ private fun LazyItemScope.ThreadBookmarkItem(
     }
   }
 
-  val itemHeight = defaultItemHeight * (globalFontSizeMultiplier / 100f)
-
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .height(itemHeight)
-      .padding(vertical = 2.dp)
+      .wrapContentHeight()
+      .padding(vertical = 4.dp)
       .draggedItem(offset)
       .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
       .drawBehind {
@@ -378,12 +373,15 @@ private fun LazyItemScope.ThreadBookmarkItem(
     Spacer(modifier = Modifier.width(4.dp))
 
     Column(
-      modifier = Modifier.weight(1f)
+      modifier = Modifier
+        .wrapContentHeight()
+        .weight(1f),
+      verticalArrangement = Arrangement.Center
     ) {
       ThreadBookmarkTitleInfo(
         modifier = Modifier
           .fillMaxWidth()
-          .weight(0.5f),
+          .wrapContentHeight(),
         title = title,
         searchQuery = searchQuery,
         chanTheme = chanTheme,
@@ -395,7 +393,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
       ThreadBookmarkAdditionalInfo(
         modifier = Modifier
           .fillMaxWidth()
-          .weight(0.5f),
+          .wrapContentHeight(),
         threadDescriptor = threadBookmarkUi.threadDescriptor,
         threadBookmarkStatsUi = threadBookmarkStatsUi,
         textAnimationSpecProvider = { textAnimationSpec },
@@ -417,7 +415,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
 }
 
 @Composable
-private fun ColumnScope.ThreadBookmarkTitleInfo(
+private fun ThreadBookmarkTitleInfo(
   modifier: Modifier = Modifier,
   title: String?,
   searchQuery: String,
@@ -452,10 +450,10 @@ private fun ColumnScope.ThreadBookmarkTitleInfo(
       }
     }
 
-    KurobaComposeText(
-      modifier = modifier,
+    KurobaComposeCustomUnitText(
+      modifier = Modifier.fillMaxWidth(),
       text = textFormatted,
-      fontSize = 15.sp,
+      fontSize = 15.sp.coerceIn(min = 13.sp, max = 18.sp),
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
@@ -478,7 +476,7 @@ private fun listenForDrawerVisibilityEvents(): State<Boolean> {
 }
 
 @Composable
-private fun ColumnScope.ThreadBookmarkAdditionalInfo(
+private fun ThreadBookmarkAdditionalInfo(
   modifier: Modifier,
   threadDescriptor: ThreadDescriptor,
   threadBookmarkStatsUi: ThreadBookmarkStatsUi,
@@ -568,7 +566,7 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
     )
   }
 
-  val defaultFontSize = rememberKurobaTextUnit(fontSize = 13.sp)
+  val defaultFontSize = rememberKurobaTextUnit(fontSize = 13.sp, min = 15.sp, max = 18.sp)
   val fontSize = collectTextFontSize(defaultFontSize)
 
   val bookmarkInlinedContent: ImmutableMap<String, InlineTextContent> = remember(isDead, fontSize) {
@@ -586,7 +584,6 @@ private fun ColumnScope.ThreadBookmarkAdditionalInfo(
 
   KurobaComposeCustomUnitText(
     modifier = modifier,
-    color = Color.Unspecified,
     fontSize = defaultFontSize,
     text = bookmarkAdditionalInfoText,
     inlineContent = bookmarkInlinedContent

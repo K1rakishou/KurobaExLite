@@ -91,7 +91,7 @@ fun HomeScreenMiniDrawerLayout() {
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
-  val drawerScreenViewModel = koinRememberViewModel<DrawerScreenViewModel>()
+  val bookmarksScreenViewModel = koinRememberViewModel<BookmarksScreenViewModel>()
   val historyScreenViewModel = koinRememberViewModel<HistoryScreenViewModel>()
 
   val drawerContentTypeMut by appSettings.drawerContentType.listen().collectAsState(initial = null)
@@ -115,7 +115,7 @@ fun HomeScreenMiniDrawerLayout() {
             }
         }
         DrawerContentType.Bookmarks -> {
-          drawerScreenViewModel.bookmarksListFlow
+          bookmarksScreenViewModel.bookmarksListFlow
             .collect { threadBookmarkUiList ->
               miniDrawerElements = MiniDrawerElement.Bookmark.fromThreadBookmarks(threadBookmarkUiList)
             }

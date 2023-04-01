@@ -81,6 +81,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.isUnspecified
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
@@ -472,7 +473,7 @@ fun KurobaComposeCustomUnitText(
   inlineContent: ImmutableMap<String, InlineTextContent> = persistentMapOf(),
   onTextLayout: (TextLayoutResult) -> Unit = {},
 ) {
-  val textColorPrimary = if (color == null) {
+  val textColorPrimary = if (color == null || color.isUnspecified) {
     val chanTheme = LocalChanTheme.current
     chanTheme.textColorPrimary
   } else {

@@ -15,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.AddToHistoryAllCa
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.BookmarkAllCatalogThreads
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
+import com.github.k1rakishou.kurobaexlite.model.data.local.ParsedPostDataContext
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
@@ -89,7 +90,17 @@ class CatalogScreenToolbarActionHandler(
         screenCoroutineScope.launch {
           val newCatalogPostViewMode = (menuItem.menuItemKey as PostViewMode).toPostViewModeSetting()
           appSettings.catalogPostViewMode.write(newCatalogPostViewMode)
-          catalogScreenViewModel.reparseCatalogPostsWithNewViewMode()
+
+          catalogScreenViewModel.reparsePostsWithNewContext { parsedPostDataContext ->
+            val catalogPostViewMode = appSettings.catalogPostViewMode.read().toPostViewMode()
+
+            return@reparsePostsWithNewContext parsedPostDataContext
+              ?.copy(postViewMode = catalogPostViewMode)
+              ?: ParsedPostDataContext(
+                isParsingCatalog = true,
+                postViewMode = catalogPostViewMode
+              )
+          }
         }
       }
       is CatalogGridModeColumnCountOption -> {

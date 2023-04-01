@@ -89,7 +89,7 @@ class DrawerScreen(
   componentActivity: ComponentActivity,
   navigationRouter: NavigationRouter
 ) : ComposeScreen(screenArgs, componentActivity, navigationRouter) {
-  private val drawerScreenViewModel: DrawerScreenViewModel by componentActivity.viewModel()
+  private val bookmarksScreenViewModel: BookmarksScreenViewModel by componentActivity.viewModel()
 
   private val bookmarksFloatingMenuItems: List<FloatingMenuItem> by lazy {
     listOf(
@@ -193,7 +193,7 @@ class DrawerScreen(
   private suspend fun onPruneInactiveBookmarksItemClicked(
     context: Context
   ) {
-    val deadBookmarksCount = drawerScreenViewModel.countDeadBookmarks()
+    val deadBookmarksCount = bookmarksScreenViewModel.countDeadBookmarks()
     if (deadBookmarksCount <= 0) {
       snackbarManager.toast(message = appResources.string(R.string.bookmark_screen_prune_dead_bookmarks_no_inactive_bookmarks))
       return
@@ -218,7 +218,7 @@ class DrawerScreen(
             buttonText = R.string.bookmark_screen_prune_dead_bookmarks_dialog_positive_button,
             isActionDangerous = true,
             onClick = {
-              drawerScreenViewModel.pruneDeadBookmarks(
+              bookmarksScreenViewModel.pruneDeadBookmarks(
                 onFinished = { deleteResult ->
                   if (deleteResult.isFailure) {
                     val errorMessage = deleteResult.exceptionOrThrow()
@@ -375,7 +375,7 @@ private fun ContentInternal(
   showBookmarkOptions: () -> Unit,
   showRevertBookmarkDeletion: (ThreadBookmark, Int) -> Unit
 ) {
-  val drawerScreenViewModel = koinRememberViewModel<DrawerScreenViewModel>()
+  val bookmarksScreenViewModel = koinRememberViewModel<BookmarksScreenViewModel>()
   val historyScreenViewModel = koinRememberViewModel<HistoryScreenViewModel>()
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val snackbarManager = koinRemember<SnackbarManager>()
@@ -427,7 +427,7 @@ private fun ContentInternal(
             val prevPosition = pair.first
             val threadBookmark = pair.second
 
-            drawerScreenViewModel.undoBookmarkDeletion(threadBookmark, prevPosition)
+            bookmarksScreenViewModel.undoBookmarkDeletion(threadBookmark, prevPosition)
           }
         }
       }
@@ -458,14 +458,14 @@ private fun ContentInternal(
   DisposableEffect(
     key1 = Unit,
     effect = {
-      onDispose { drawerScreenViewModel.clearMarkedBookmarks() }
+      onDispose { bookmarksScreenViewModel.clearMarkedBookmarks() }
     }
   )
 
   LaunchedEffect(
     key1 = Unit,
     block = {
-      drawerScreenViewModel.backgroundWatcherEventsFlow.collect {
+      bookmarksScreenViewModel.backgroundWatcherEventsFlow.collect {
         pullToRefreshState.stopRefreshing()
       }
     }

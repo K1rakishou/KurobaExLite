@@ -158,18 +158,20 @@ class CatalogScreenDefaultToolbar(
                     text = toolbarSubtitle!!,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    fontSize = 12.sp
+                    fontSize = 12.sp.coerceIn(min = 12.sp, max = 12.sp)
                   )
                 }
               }
 
               if (showClickableMenuIcon) {
-                KurobaComposeIcon(drawableId = R.drawable.ic_baseline_arrow_drop_down_24)
+                KurobaComposeIcon(
+                  drawableId = R.drawable.ic_baseline_arrow_drop_down_24
+                )
 
                 Spacer(modifier = Modifier.width(8.dp))
               }
             } else {
-              Row {
+              Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(modifier = Modifier.width(8.dp))
 
                 KurobaComposeThemeDependantText(
@@ -182,7 +184,9 @@ class CatalogScreenDefaultToolbar(
                 Spacer(modifier = Modifier.weight(1f))
 
                 if (showClickableMenuIcon) {
-                  KurobaComposeIcon(drawableId = R.drawable.ic_baseline_arrow_drop_down_24)
+                  KurobaComposeIcon(
+                    drawableId = R.drawable.ic_baseline_arrow_drop_down_24
+                  )
 
                   Spacer(modifier = Modifier.width(8.dp))
                 }

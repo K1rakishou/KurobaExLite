@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.features.captcha.dvach
 
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
@@ -37,7 +38,7 @@ class DvachCaptchaScreenViewModel(
     activeJob = null
     currentInputValue.value = TextFieldValue()
 
-    activeJob = mainScope.launch {
+    activeJob = viewModelScope.launch {
       val captchaIdUrl = (siteManager.bySiteKey(Dvach.SITE_KEY) as? Dvach)
         ?.let { dvach -> (dvach.siteCaptcha as SiteCaptcha.DvachCaptcha).formatCaptchaRequestUrl(dvach.currentDomain) }
 

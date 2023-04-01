@@ -121,6 +121,9 @@ class ThreadScreenViewModel(
     loadThreadJob?.cancel()
     loadThreadJob = null
 
+    updateChanThreadViewExecutor.stopAll()
+    bookmarkThreadExecutor.stop()
+
     threadAutoUpdater.stopAutoUpdaterLoop()
     themeEngine.removeListener(this)
   }

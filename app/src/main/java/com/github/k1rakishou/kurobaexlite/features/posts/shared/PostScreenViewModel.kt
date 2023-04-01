@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
+import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
+import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostHideHelper
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
@@ -103,7 +105,7 @@ abstract class PostScreenViewModel(
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
-  private var reparseCatalogPostsWithNewViewModeJob: Job? = null
+  private var reparsePostsWithNewContextJobs = arrayOfNulls<Job?>(2)
 
   protected val _postsFullyParsedOnceFlow = MutableStateFlow(false)
   val postsFullyParsedOnceFlow: StateFlow<Boolean>
@@ -180,6 +182,19 @@ abstract class PostScreenViewModel(
           reparsePostDescriptorSuspend(postDescriptors.flatten())
         }
     }
+  }
+
+  override fun onCleared() {
+    super.onCleared()
+
+    currentParseJob?.cancel()
+    currentParseJob = null
+
+    updatePostsParsedOnceJob?.cancel()
+    updatePostsParsedOnceJob = null
+
+    reparsePostsWithNewContextJobs.forEach { it?.cancel() }
+    reparsePostsWithNewContextJobs.fill(null)
   }
 
   abstract fun reload(
@@ -301,29 +316,32 @@ abstract class PostScreenViewModel(
     }
   }
 
-  fun reparseCatalogPostsWithNewViewMode() {
-    reparseCatalogPostsWithNewViewModeJob?.cancel()
-    reparseCatalogPostsWithNewViewModeJob = viewModelScope.launch(postParserDispatcher) {
+  fun reparsePostsWithNewContext(
+    parsedPostDataContextBuilder: suspend (ParsedPostDataContext?) -> ParsedPostDataContext
+  ) {
+    val jobIndex = when (this) {
+      is ThreadScreenViewModel -> 0
+      is CatalogScreenViewModel -> 1
+      else -> {
+        logcatError(TAG) { "Unexpected viewModel: ${this::class.java.simpleName}" }
+        return
+      }
+    }
+
+    reparsePostsWithNewContextJobs[jobIndex]?.cancel()
+    reparsePostsWithNewContextJobs[jobIndex] = viewModelScope.launch(postParserDispatcher) {
       val allCurrentPosts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)
         ?.data
         ?.postsCopy
         ?: return@launch
 
-      val catalogPostViewMode = appSettings.catalogPostViewMode.read().toPostViewMode()
-
       val postCellDataList = allCurrentPosts.map { postCellData ->
-        val newParsedPostDataContext = postCellData.parsedPostDataContext
-          ?.copy(postViewMode = catalogPostViewMode)
-          ?: ParsedPostDataContext(
-            isParsingCatalog = true,
-            postViewMode = catalogPostViewMode
-          )
-
+        val newParsedPostDataContext = parsedPostDataContextBuilder(postCellData.parsedPostDataContext)
         return@map postCellData to newParsedPostDataContext
       }
 
       reparsePostsSuspend(postCellDataList)
-      reparseCatalogPostsWithNewViewModeJob = null
+      reparsePostsWithNewContextJobs[jobIndex] = null
     }
   }
 

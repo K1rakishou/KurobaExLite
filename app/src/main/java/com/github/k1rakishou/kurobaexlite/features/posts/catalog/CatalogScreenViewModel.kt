@@ -71,6 +71,9 @@ class CatalogScreenViewModel(
   override fun onCleared() {
     super.onCleared()
 
+    loadCatalogJob?.cancel()
+    loadCatalogJob = null
+
     themeEngine.removeListener(this)
   }
 

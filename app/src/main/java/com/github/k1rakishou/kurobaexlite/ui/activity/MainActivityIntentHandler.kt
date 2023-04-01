@@ -2,7 +2,7 @@ package com.github.k1rakishou.kurobaexlite.ui.activity
 
 import android.content.Intent
 import androidx.activity.ComponentActivity
-import com.github.k1rakishou.kurobaexlite.features.drawer.DrawerScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.drawer.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.PostScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
@@ -23,18 +23,18 @@ class MainActivityIntentHandler(
 ) {
   private var threadScreenViewModelLazy: Lazy<ThreadScreenViewModel>? = null
   private var catalogScreenViewModelLazy: Lazy<CatalogScreenViewModel>? = null
-  private var drawerScreenViewModelLazy: Lazy<DrawerScreenViewModel>? = null
+  private var bookmarksScreenViewModelLazy: Lazy<BookmarksScreenViewModel>? = null
 
   fun onCreate(componentActivity: ComponentActivity) {
     this.threadScreenViewModelLazy = componentActivity.viewModel()
     this.catalogScreenViewModelLazy = componentActivity.viewModel()
-    this.drawerScreenViewModelLazy = componentActivity.viewModel()
+    this.bookmarksScreenViewModelLazy = componentActivity.viewModel()
   }
 
   fun onDestroy() {
     this.threadScreenViewModelLazy = null
     this.catalogScreenViewModelLazy = null
-    this.drawerScreenViewModelLazy = null
+    this.bookmarksScreenViewModelLazy = null
   }
 
   suspend fun onNewIntent(intent: Intent): Boolean {
@@ -77,7 +77,7 @@ class MainActivityIntentHandler(
     if (threadDescriptors.size > 1) {
       logcat(TAG) { "onReplyNotificationClicked() threadDescriptors.size > 1 openDrawer()" }
 
-      drawerScreenViewModelLazy?.value?.markBookmarks(threadDescriptors)
+      bookmarksScreenViewModelLazy?.value?.markBookmarks(threadDescriptors)
       globalUiInfoManager.openDrawer(withAnimation = true)
       return
     }

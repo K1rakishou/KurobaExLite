@@ -29,7 +29,7 @@ import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import logcat.logcat
 
-class DrawerScreenViewModel(
+class BookmarksScreenViewModel(
   private val androidHelpers: AndroidHelpers,
   private val bookmarksManager: BookmarksManager,
   private val catalogPagesRepository: CatalogPagesRepository,

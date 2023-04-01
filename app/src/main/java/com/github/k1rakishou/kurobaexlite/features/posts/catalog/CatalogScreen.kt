@@ -26,7 +26,7 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
-import com.github.k1rakishou.kurobaexlite.features.drawer.DrawerScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.drawer.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.drawer.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.main.LocalMainUiLayoutMode
@@ -593,7 +593,7 @@ private fun BoxScope.CatalogPostListScreen(
   val catalogScreenViewModel = koinRememberViewModel<CatalogScreenViewModel>()
   val threadScreenViewModel = koinRememberViewModel<ThreadScreenViewModel>()
   val historyScreenViewModel = koinRememberViewModel<HistoryScreenViewModel>()
-  val drawerScreenViewModel = koinRememberViewModel<DrawerScreenViewModel>()
+  val bookmarksScreenViewModel = koinRememberViewModel<BookmarksScreenViewModel>()
   val homeScreenViewModel = koinRememberViewModel<HomeScreenViewModel>()
   val snackbarManager = koinRemember<SnackbarManager>()
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
@@ -768,7 +768,7 @@ private fun BoxScope.CatalogPostListScreen(
           // Force init the view models after a catalog or thread is loaded to make sure they start
           // processing events from everywhere round
           historyScreenViewModel.forceInit()
-          drawerScreenViewModel.forceInit()
+          bookmarksScreenViewModel.forceInit()
         }
     }
   )

@@ -7,7 +7,7 @@ import com.github.k1rakishou.kurobaexlite.features.boards.CatalogSelectionScreen
 import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaViewModel
 import com.github.k1rakishou.kurobaexlite.features.captcha.dvach.DvachCaptchaScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.downloads.DownloadsScreenViewModel
-import com.github.k1rakishou.kurobaexlite.features.drawer.DrawerScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.drawer.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.drawer.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.login.chan4.Chan4LoginScreenViewModel
@@ -163,7 +163,7 @@ internal fun Module.viewModels() {
   }
 
   viewModel {
-    DrawerScreenViewModel(
+    BookmarksScreenViewModel(
       androidHelpers = get(),
       bookmarksManager = get(),
       catalogPagesRepository = get(),

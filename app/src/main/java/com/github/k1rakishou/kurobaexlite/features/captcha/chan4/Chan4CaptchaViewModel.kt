@@ -253,7 +253,7 @@ class Chan4CaptchaViewModel(
     captchaTtlUpdateJob?.cancel()
     captchaTtlUpdateJob = null
 
-    captchaTtlUpdateJob = mainScope.launch(Dispatchers.Main) {
+    captchaTtlUpdateJob = viewModelScope.launch(Dispatchers.Main) {
       while (isActive) {
         val captchaInfoAsyncData = captchaInfoToShow.value
 

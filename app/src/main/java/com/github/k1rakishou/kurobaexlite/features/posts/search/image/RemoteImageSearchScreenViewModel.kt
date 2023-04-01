@@ -151,7 +151,7 @@ class RemoteImageSearchScreenViewModel(
     activeSearchJob?.cancel()
     activeSearchJob = null
 
-    activeSearchJob = mainScope.launch {
+    activeSearchJob = viewModelScope.launch {
       if (debounce) {
         delay(1000L)
       }
