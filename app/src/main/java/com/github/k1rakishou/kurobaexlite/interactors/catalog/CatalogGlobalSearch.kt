@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.interactors.catalog
 
 import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentApplier
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.withContext
 import logcat.logcat
 
 class CatalogGlobalSearch(
+  private val appSettings: AppSettings,
   private val globalSearchRepository: GlobalSearchRepository,
   private val parsedPostDataRepository: ParsedPostDataRepository,
   private val postHideRepository: IPostHideRepository,
@@ -62,6 +64,7 @@ class CatalogGlobalSearch(
 
     val chanTheme = themeEngine.chanTheme
     val postViewMode = PostViewMode.List
+    val postCommentFontSizePixels = appSettings.calculateFontSizeInPixels(16)
 
     // TODO(KurobaEx): multi-threading?
     val parsedPosts = withContext(dispatcher) {
@@ -71,7 +74,8 @@ class CatalogGlobalSearch(
           parsedPostDataContext = ParsedPostDataContext(
             isParsingCatalog = true,
             postViewMode = postViewMode,
-            revealFullPostComment = true
+            revealFullPostComment = true,
+            postCommentFontSizePixels = postCommentFontSizePixels
           ),
           chanTheme = chanTheme
         )

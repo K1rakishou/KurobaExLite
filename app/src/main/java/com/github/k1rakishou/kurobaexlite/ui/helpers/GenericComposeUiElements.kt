@@ -633,6 +633,7 @@ fun KurobaComposeTextButton(
       KurobaComposeText(
         text = text,
         modifier = Modifier.wrapContentSize(),
+        color = Color.White,
         fontSize = fontSize,
         textAlign = TextAlign.Center
       )

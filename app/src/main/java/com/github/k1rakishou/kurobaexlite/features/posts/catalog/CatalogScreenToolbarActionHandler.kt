@@ -91,14 +91,16 @@ class CatalogScreenToolbarActionHandler(
           val newCatalogPostViewMode = (menuItem.menuItemKey as PostViewMode).toPostViewModeSetting()
           appSettings.catalogPostViewMode.write(newCatalogPostViewMode)
 
-          catalogScreenViewModel.reparsePostsWithNewContext { parsedPostDataContext ->
+          catalogScreenViewModel.reparseCurrentPostsWithNewContext { parsedPostDataContext ->
             val catalogPostViewMode = appSettings.catalogPostViewMode.read().toPostViewMode()
+            val postCommentFontSizePixels = appSettings.calculateFontSizeInPixels(16)
 
-            return@reparsePostsWithNewContext parsedPostDataContext
+            return@reparseCurrentPostsWithNewContext parsedPostDataContext
               ?.copy(postViewMode = catalogPostViewMode)
               ?: ParsedPostDataContext(
                 isParsingCatalog = true,
-                postViewMode = catalogPostViewMode
+                postViewMode = catalogPostViewMode,
+                postCommentFontSizePixels = postCommentFontSizePixels
               )
           }
         }

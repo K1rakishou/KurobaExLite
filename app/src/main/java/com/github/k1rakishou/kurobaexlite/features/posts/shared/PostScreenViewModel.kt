@@ -182,6 +182,40 @@ abstract class PostScreenViewModel(
           reparsePostDescriptorSuspend(postDescriptors.flatten())
         }
     }
+
+    viewModelScope.launch {
+      appSettings.globalFontSizeMultiplier.listen(eagerly = false)
+        .collect { globalFontSizeMultiplier ->
+          val isParsingCatalog = when (chanDescriptor) {
+            is CatalogDescriptor -> true
+            is ThreadDescriptor -> false
+            else -> return@collect
+          }
+
+          val postViewMode = currentPostViewMode()
+          val postCommentFontSizePixels = appSettings.calculateFontSizeInPixels(16)
+
+          logcat(TAG) {
+            "globalFontSizeMultiplier changed: ${globalFontSizeMultiplier}, " +
+              "reparsing posts (isParsingCatalog: ${isParsingCatalog}, " +
+              "postViewMode: ${postViewMode}, " +
+              "postCommentFontSizePixels: ${postCommentFontSizePixels})"
+          }
+
+          reparseCurrentPostsWithNewContext { parsedPostDataContext ->
+            if (parsedPostDataContext != null) {
+              return@reparseCurrentPostsWithNewContext parsedPostDataContext
+                .copy(postCommentFontSizePixels = postCommentFontSizePixels)
+            }
+
+            return@reparseCurrentPostsWithNewContext ParsedPostDataContext(
+              isParsingCatalog = isParsingCatalog,
+              postViewMode = postViewMode,
+              postCommentFontSizePixels = postCommentFontSizePixels
+            )
+          }
+        }
+    }
   }
 
   override fun onCleared() {
@@ -316,7 +350,7 @@ abstract class PostScreenViewModel(
     }
   }
 
-  fun reparsePostsWithNewContext(
+  fun reparseCurrentPostsWithNewContext(
     parsedPostDataContextBuilder: suspend (ParsedPostDataContext?) -> ParsedPostDataContext
   ) {
     val jobIndex = when (this) {
@@ -517,7 +551,7 @@ abstract class PostScreenViewModel(
       }
 
       val resultList = mutableListWithCap<PostCellData>(postDataList.size)
-
+      val postCommentFontSizePixels = appSettings.calculateFontSizeInPixels(16)
 
       for (index in postDataList.indices) {
         val postData = postDataList[index]
@@ -529,7 +563,8 @@ abstract class PostScreenViewModel(
             chanTheme = chanTheme,
             parsedPostDataContext = ParsedPostDataContext(
               isParsingCatalog = isCatalogMode,
-              postViewMode = postViewMode
+              postViewMode = postViewMode,
+              postCommentFontSizePixels = postCommentFontSizePixels
             ),
             forced = forced
           )
@@ -561,6 +596,7 @@ abstract class PostScreenViewModel(
     postViewMode: PostViewMode
   ) {
     val chanTheme = themeEngine.chanTheme
+    val postCommentFontSizePixels = appSettings.calculateFontSizeInPixels(16)
 
     withContext(postParserDispatcher) {
       val startIndex = postCellDataList
@@ -580,7 +616,8 @@ abstract class PostScreenViewModel(
           chanTheme = chanTheme,
           parsedPostDataContext = ParsedPostDataContext(
             isParsingCatalog = isCatalogMode,
-            postViewMode = postViewMode
+            postViewMode = postViewMode,
+            postCommentFontSizePixels = postCommentFontSizePixels
           )
         )
       }
@@ -610,6 +647,7 @@ abstract class PostScreenViewModel(
       val chunkSize = ((postDataList.size / chunksCount) + 1).coerceAtLeast(chunksCount)
       val chanTheme = themeEngine.chanTheme
       val isParsingCatalog = chanDescriptor is CatalogDescriptor
+      val postCommentFontSizePixels = appSettings.calculateFontSizeInPixels(16)
 
       val mutex = Mutex()
       val resultMap = mutableMapWithCap<PostDescriptor, PostCellData>(postDataList.size)
@@ -648,7 +686,8 @@ abstract class PostScreenViewModel(
                     chanTheme = chanTheme,
                     parsedPostDataContext = ParsedPostDataContext(
                       isParsingCatalog = isParsingCatalog,
-                      postViewMode = postViewMode
+                      postViewMode = postViewMode,
+                      postCommentFontSizePixels = postCommentFontSizePixels
                     ),
                     forced = parsePostsOptions.forced
                   )
@@ -718,6 +757,7 @@ abstract class PostScreenViewModel(
                         parsedPostDataContext = ParsedPostDataContext(
                           isParsingCatalog = isParsingCatalog,
                           postViewMode = postViewMode,
+                          postCommentFontSizePixels = postCommentFontSizePixels
                         ),
                         forced = true
                       )
@@ -999,6 +1039,14 @@ abstract class PostScreenViewModel(
 
   fun unhidePost(postDescriptor: PostDescriptor) {
     viewModelScope.launch { hideOrUnhidePost.unhide(postDescriptor) }
+  }
+
+  private suspend fun currentPostViewMode(): PostViewMode {
+    if (this is CatalogScreenViewModel) {
+      return appSettings.catalogPostViewMode.read().toPostViewMode()
+    }
+
+    return PostViewMode.List
   }
 
   data class ParsePostsOptions(

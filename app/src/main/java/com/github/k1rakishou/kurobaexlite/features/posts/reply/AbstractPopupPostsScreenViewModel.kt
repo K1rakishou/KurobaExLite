@@ -360,6 +360,7 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
 
     val chanTheme = themeEngine.chanTheme
     val postViewMode = PostViewMode.List
+    val postCommentFontSizePixels = appSettings.calculateFontSizeInPixels(16)
 
     val updatedPostDataList = parallelForEachPreserveOrder(
       dataList = postCellDataList,
@@ -381,12 +382,14 @@ abstract class AbstractPopupPostsScreenViewModel(savedStateHandle: SavedStateHan
         ?.copy(
           isParsingCatalog = chanDescriptor is CatalogDescriptor,
           postViewMode = postViewMode,
-          highlightedPostDescriptor = highlightedPostDescriptor
+          highlightedPostDescriptor = highlightedPostDescriptor,
+          postCommentFontSizePixels = postCommentFontSizePixels
         )
         ?: ParsedPostDataContext(
           isParsingCatalog = chanDescriptor is CatalogDescriptor,
           postViewMode = postViewMode,
-          highlightedPostDescriptor = highlightedPostDescriptor
+          highlightedPostDescriptor = highlightedPostDescriptor,
+          postCommentFontSizePixels = postCommentFontSizePixels
         )
 
       val parsedPostData = parsedPostDataRepository.calculateParsedPostData(

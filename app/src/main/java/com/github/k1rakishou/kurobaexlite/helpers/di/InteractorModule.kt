@@ -163,6 +163,7 @@ internal fun Module.interactors() {
   }
   single {
     CatalogGlobalSearch(
+      appSettings = get(),
       globalSearchRepository = get(),
       parsedPostDataRepository = get(),
       postHideRepository = get(),

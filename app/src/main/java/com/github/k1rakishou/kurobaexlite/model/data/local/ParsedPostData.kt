@@ -42,6 +42,7 @@ data class ParsedPostData(
 data class ParsedPostDataContext(
   val isParsingCatalog: Boolean,
   val postViewMode: PostViewMode,
+  val postCommentFontSizePixels: Int,
   val revealFullPostComment: Boolean = false,
   val textSpoilerOpenedPositionSet: Set<SpoilerPosition> = emptySet(),
   val highlightedPostDescriptor: PostDescriptor? = null

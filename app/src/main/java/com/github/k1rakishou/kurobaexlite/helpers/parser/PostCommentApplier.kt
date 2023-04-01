@@ -41,7 +41,6 @@ class PostCommentApplier(
     textParts: List<TextPart>,
     parsedPostDataContext: ParsedPostDataContext
   ): AnnotatedString {
-    val defaultPostCommentFontSize = appSettings.calculateFontSizeInPixels(16)
     val capacity = textParts.sumOf { it.text.length }
 
     return buildAnnotatedString(capacity = capacity) {
@@ -50,7 +49,6 @@ class PostCommentApplier(
       for (textPart in textParts) {
         val (text, overflowHappened) = processTextPart(
           postDescriptor = postDescriptor,
-          defaultPostCommentFontSize = defaultPostCommentFontSize,
           markedPosts = markedPosts,
           chanTheme = chanTheme,
           textPart = textPart,
@@ -130,7 +128,6 @@ class PostCommentApplier(
   @Suppress("UnnecessaryVariable")
   private suspend fun processTextPart(
     postDescriptor: PostDescriptor,
-    defaultPostCommentFontSize: Int,
     markedPosts: Map<PostDescriptor, Set<MarkedPost>>,
     chanTheme: ChanTheme,
     textPart: TextPart,
@@ -147,7 +144,7 @@ class PostCommentApplier(
     val textPartProcessed = appliedDataResult.textPart
 
     val resultString = buildAnnotatedString(capacity = textPartProcessed.text.length) {
-      pushStyle(style = SpanStyle(fontSize = defaultPostCommentFontSize.sp))
+      pushStyle(style = SpanStyle(fontSize = parsedPostDataContext.postCommentFontSizePixels.sp))
 
       val (textPartText, overflow) = trimTextPartIfNeeded(
         totalLength = totalLength,
@@ -177,7 +174,7 @@ class PostCommentApplier(
 
       if (textPartProcessed.spans.isNotEmpty()) {
         processTextPartSpans(
-          defaultPostCommentFontSize = defaultPostCommentFontSize,
+          defaultPostCommentFontSize = parsedPostDataContext.postCommentFontSizePixels,
           markedPosts = markedPosts,
           spans = textPartProcessed.spans,
           chanTheme = chanTheme,
@@ -188,7 +185,7 @@ class PostCommentApplier(
 
       if (overflow) {
         append("\n")
-        append(buildClickToViewFullSpan(defaultPostCommentFontSize, chanTheme))
+        append(buildClickToViewFullSpan(parsedPostDataContext.postCommentFontSizePixels, chanTheme))
       }
     }
 
