@@ -24,6 +24,7 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaChildToolbar
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarLayout
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeThemeDependantText
+import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -61,7 +62,7 @@ class SimpleToolbar<T : Any>(
                 text = toolbarTitle!!,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 16.sp
+                fontSize = 16.sp.coerceIn(min = 16.sp, max = 16.sp)
               )
 
               Spacer(modifier = Modifier.width(8.dp))
@@ -72,7 +73,7 @@ class SimpleToolbar<T : Any>(
                 text = toolbarSubtitle!!,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 12.sp
+                fontSize = 12.sp.coerceIn(min = 12.sp, max = 12.sp)
               )
             }
           }
