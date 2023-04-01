@@ -59,7 +59,7 @@ fun KurobaComposeSnappingSlider(
       .then(
         Modifier
           .widthIn(min = 144.dp)
-          .height(32.dp)
+          .height(42.dp)
       )
   ) {
     val trackColor = chanTheme.accentColor
