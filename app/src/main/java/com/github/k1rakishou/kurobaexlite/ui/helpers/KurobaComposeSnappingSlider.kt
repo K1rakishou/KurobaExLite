@@ -31,18 +31,22 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.github.k1rakishou.kurobaexlite.helpers.util.quantize
 import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine
 import kotlinx.coroutines.CancellationException
-import kotlin.math.roundToInt
 
 @Composable
 fun KurobaComposeSnappingSlider(
   modifier: Modifier = Modifier,
   slideOffsetState: MutableState<Float>,
   onValueChange: (Float) -> Unit,
-  slideSteps: Int? = null,
+  sliderSteps: Int? = null,
   interactionSource: MutableInteractionSource = remember { MutableInteractionSource() }
 ) {
+  if (sliderSteps != null) {
+    require(sliderSteps > 0) { "sliderSteps must be greater than zero!" }
+  }
+
   val chanTheme = LocalChanTheme.current
   val density = LocalDensity.current
   val thumbRadiusNormal = with(density) { 12.dp.toPx() }
@@ -72,31 +76,23 @@ fun KurobaComposeSnappingSlider(
       }
     }
 
-    val maxWidthPx = constraints.maxWidth.toFloat()
     val rawOffsetState = remember { mutableStateOf(0f) }
     var rawOffsetInPx by rawOffsetState
 
-    fun rawOffsetToUserValue(rawOffsetPx: Float, maxWidthPx: Float): Float {
-      if (slideSteps != null) {
-        val slideStepPx = (maxWidthPx / slideSteps.coerceAtLeast(1).toFloat()).coerceIn(1f, maxWidthPx)
-        val userValue = ((rawOffsetPx / slideStepPx).roundToInt() * slideStepPx.roundToInt()).toFloat() / maxWidthPx
-
-        return userValue.coerceIn(0f, 1f)
-      }
-
-      return rawOffsetPx / maxWidthPx
-    }
-
     val draggableState = rememberDraggableState(
       onDelta = { delta ->
+        val maxWidthPx = constraints.maxWidth.toFloat()
+
         rawOffsetInPx = (rawOffsetInPx + delta).coerceIn(0f, maxWidthPx)
-        slideOffsetState.value = rawOffsetToUserValue(rawOffsetInPx, maxWidthPx)
+        slideOffsetState.value = rawOffsetToUserValue(sliderSteps, rawOffsetInPx, maxWidthPx)
         onValueChange(slideOffset)
       }
     )
 
     val gestureEndAction = rememberUpdatedState<(Float) -> Unit> {
-      slideOffsetState.value = rawOffsetToUserValue(rawOffsetInPx, maxWidthPx)
+      val maxWidthPx = constraints.maxWidth.toFloat()
+
+      slideOffsetState.value = rawOffsetToUserValue(sliderSteps, rawOffsetInPx, maxWidthPx)
       onValueChange(slideOffset)
     }
 
@@ -131,7 +127,7 @@ fun KurobaComposeSnappingSlider(
         .sliderPressModifier(
           draggableState = draggableState,
           interactionSource = interactionSource,
-          maxPx = maxWidthPx,
+          maxPx = constraints.maxWidth.toFloat(),
           isRtl = false,
           rawOffset = rawOffsetState,
           gestureEndAction = gestureEndAction,
@@ -166,6 +162,16 @@ fun KurobaComposeSnappingSlider(
       }
     )
   }
+}
+
+private fun rawOffsetToUserValue(sliderSteps: Int?, rawOffsetPx: Float, maxWidthPx: Float): Float {
+  if (sliderSteps == null) {
+    return rawOffsetPx / maxWidthPx
+  }
+
+  return (rawOffsetPx / maxWidthPx)
+    .quantize(precision = 1f / sliderSteps)
+    .coerceIn(0f, 1f)
 }
 
 private fun Modifier.sliderPressModifier(

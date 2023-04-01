@@ -27,6 +27,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextBarButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.ScreenCallbackStorage
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ComposeScreen
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
+import com.github.k1rakishou.kurobaexlite.ui.helpers.consumeClicks
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingComposeScreen
 
 class SliderDialogScreen(
@@ -70,10 +71,12 @@ class SliderDialogScreen(
     val dialogTitleLocal = dialogTitle
 
     Column(
-      modifier = Modifier.padding(
-        horizontal = 16.dp,
-        vertical = 8.dp
-      )
+      modifier = Modifier
+        .padding(
+          horizontal = 16.dp,
+          vertical = 8.dp
+        )
+        .consumeClicks(enabled = true)
     ) {
       if (dialogTitleLocal != null) {
         KurobaComposeText(
@@ -105,7 +108,7 @@ class SliderDialogScreen(
           KurobaComposeSnappingSlider(
             modifier = Modifier.weight(1f),
             slideOffsetState = slideOffsetState,
-            slideSteps = sliderSteps,
+            sliderSteps = sliderSteps,
             onValueChange = { newValue -> slideOffset = newValue.coerceIn(0f, 1f) }
           )
 

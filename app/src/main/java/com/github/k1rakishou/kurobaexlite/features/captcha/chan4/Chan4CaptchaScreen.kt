@@ -235,7 +235,7 @@ class Chan4CaptchaScreen(
       BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         KurobaComposeSnappingSlider(
           slideOffsetState = scrollValueState,
-          slideSteps = SLIDE_STEPS,
+          sliderSteps = SLIDE_STEPS,
           modifier = Modifier
             .wrapContentHeight()
             .fillMaxWidth()
