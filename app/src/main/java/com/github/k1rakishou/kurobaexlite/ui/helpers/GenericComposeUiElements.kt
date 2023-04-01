@@ -993,6 +993,7 @@ fun KurobaComposeTextField(
   value: TextFieldValue,
   modifier: Modifier = Modifier,
   onValueChange: (TextFieldValue) -> Unit,
+  fontSize: KurobaTextUnit = KurobaTextUnit(16.sp),
   maxLines: Int = Int.MAX_VALUE,
   singleLine: Boolean = false,
   keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
@@ -1035,13 +1036,12 @@ fun KurobaComposeTextField(
   }
 
   CompositionLocalProvider(LocalTextSelectionColors provides textSelectionColors) {
+    val textFontSize = collectTextFontSize(defaultFontSize = fontSize)
     val colors = chanTheme.textFieldColors()
 
     // If color is not provided via the text style, use content color as a default
-    val textColor = textStyle.color.takeOrElse {
-      colors.textColor(enabled).value
-    }
-    val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
+    val textColor = textStyle.color.takeOrElse { colors.textColor(enabled).value }
+    val mergedTextStyle = textStyle.merge(TextStyle(color = textColor, fontSize = textFontSize))
 
     val isFocused by interactionSource.collectIsFocusedAsState()
 
