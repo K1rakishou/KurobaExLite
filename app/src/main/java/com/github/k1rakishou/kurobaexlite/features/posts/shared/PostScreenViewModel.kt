@@ -9,7 +9,6 @@ import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostScreenState
-import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
 import com.github.k1rakishou.kurobaexlite.helpers.filtering.PostHideHelper
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
@@ -105,7 +104,7 @@ abstract class PostScreenViewModel(
 
   private var currentParseJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
-  private var reparsePostsWithNewContextJobs = arrayOfNulls<Job?>(2)
+  private var reparsePostsWithNewContextJobs = mutableMapOf<String, Job>()
 
   protected val _postsFullyParsedOnceFlow = MutableStateFlow(false)
   val postsFullyParsedOnceFlow: StateFlow<Boolean>
@@ -227,8 +226,8 @@ abstract class PostScreenViewModel(
     updatePostsParsedOnceJob?.cancel()
     updatePostsParsedOnceJob = null
 
-    reparsePostsWithNewContextJobs.forEach { it?.cancel() }
-    reparsePostsWithNewContextJobs.fill(null)
+    reparsePostsWithNewContextJobs.values.forEach { it.cancel() }
+    reparsePostsWithNewContextJobs.clear()
   }
 
   abstract fun reload(
@@ -353,17 +352,11 @@ abstract class PostScreenViewModel(
   fun reparseCurrentPostsWithNewContext(
     parsedPostDataContextBuilder: suspend (ParsedPostDataContext?) -> ParsedPostDataContext
   ) {
-    val jobIndex = when (this) {
-      is ThreadScreenViewModel -> 0
-      is CatalogScreenViewModel -> 1
-      else -> {
-        logcatError(TAG) { "Unexpected viewModel: ${this::class.java.simpleName}" }
-        return
-      }
-    }
+    val jobId = this::class.java.name
+    logcat(TAG, LogPriority.VERBOSE) { "reparseCurrentPostsWithNewContext() jobId: ${jobId}" }
 
-    reparsePostsWithNewContextJobs[jobIndex]?.cancel()
-    reparsePostsWithNewContextJobs[jobIndex] = viewModelScope.launch(postParserDispatcher) {
+    reparsePostsWithNewContextJobs[jobId]?.cancel()
+    reparsePostsWithNewContextJobs[jobId] = viewModelScope.launch(postParserDispatcher) {
       val allCurrentPosts = (postScreenState.postsAsyncDataState.value as? AsyncData.Data)
         ?.data
         ?.postsCopy
@@ -375,7 +368,7 @@ abstract class PostScreenViewModel(
       }
 
       reparsePostsSuspend(postCellDataList)
-      reparsePostsWithNewContextJobs[jobIndex] = null
+      reparsePostsWithNewContextJobs.remove(jobId)
     }
   }
 
