@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -310,12 +309,12 @@ class Chan4CaptchaScreen(
         backgroundColor = bgColor,
         shape = remember { RoundedCornerShape(4.dp) }
       ) {
-        Text(
+        KurobaComposeCustomUnitText(
           modifier = Modifier
             .padding(horizontal = 8.dp, vertical = 4.dp),
           text = captchaSuggestion,
           color = textColor,
-          fontSize = 18.sp
+          fontSize = 18.sp.coerceIn(min = 18.sp, max = 18.sp)
         )
       }
     }

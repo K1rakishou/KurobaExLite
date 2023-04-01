@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -629,7 +630,7 @@ fun KurobaComposeTextButton(
     enabled = enabled,
     modifier = modifier,
     buttonContent = {
-      Text(
+      KurobaComposeText(
         text = text,
         modifier = Modifier.wrapContentSize(),
         fontSize = fontSize,
@@ -653,7 +654,7 @@ private fun KurobaComposeButton(
     enabled = enabled,
     modifier = Modifier
       .wrapContentWidth()
-      .height(36.dp)
+      .heightIn(min = 36.dp)
       .then(modifier),
     content = buttonContent,
     colors = chanTheme.buttonColors()
@@ -715,7 +716,7 @@ fun KurobaComposeTextBarButton(
   text: String,
   enabled: Boolean = true,
   customTextColor: Color? = null,
-  fontSize: TextUnit = TextUnit.Unspecified,
+  fontSize: TextUnit = 14.sp,
   onClick: () -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
@@ -734,7 +735,7 @@ fun KurobaComposeTextBarButton(
         textColor.copy(alpha = ContentAlpha.disabled)
       }
 
-      Text(
+      KurobaComposeText(
         modifier = Modifier
           .wrapContentSize()
           .align(Alignment.CenterVertically),
@@ -755,7 +756,7 @@ fun KurobaComposeTextBarButton(
   text: AnnotatedString,
   enabled: Boolean = true,
   customTextColor: Color? = null,
-  fontSize: TextUnit = TextUnit.Unspecified,
+  fontSize: TextUnit = 14.sp,
   onClick: () -> Unit,
 ) {
   val chanTheme = LocalChanTheme.current
@@ -776,7 +777,7 @@ fun KurobaComposeTextBarButton(
         textColor.copy(alpha = ContentAlpha.disabled)
       }
 
-      Text(
+      KurobaComposeText(
         text = text,
         color = modifiedTextColor,
         modifier = Modifier
