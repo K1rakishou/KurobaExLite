@@ -685,7 +685,6 @@ private fun colorizeReplyInputText(
     append(text)
 
     val textAlpha = if (replyLayoutEnabled) 1f else disabledAlpha
-
     val textColor = chanTheme.textColorPrimary.copy(alpha = textAlpha)
     val postInlineQuoteColor = chanTheme.postInlineQuoteColor.copy(alpha = textAlpha)
     val quoteColor = chanTheme.postQuoteColor.copy(alpha = textAlpha)

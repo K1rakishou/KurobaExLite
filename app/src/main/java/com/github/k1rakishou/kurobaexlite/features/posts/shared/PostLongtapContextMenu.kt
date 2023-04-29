@@ -8,12 +8,16 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list.PostLi
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCHelper
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.interactors.filtering.HideOrUnhidePost
 import com.github.k1rakishou.kurobaexlite.interactors.marked_post.ModifyMarkedPosts
+import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.MarkedPostManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
@@ -23,6 +27,7 @@ import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuItem
 import com.github.k1rakishou.kurobaexlite.ui.helpers.floating.FloatingMenuScreen
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -44,6 +49,12 @@ class PostLongtapContextMenu(
   private val postBindProcessorCoordinator: PostBindProcessorCoordinator by inject(PostBindProcessorCoordinator::class.java)
   private val postHideRepository: IPostHideRepository by inject(IPostHideRepository::class.java)
   private val hideOrUnhidePost: HideOrUnhidePost by inject(HideOrUnhidePost::class.java)
+  private val kpncHelper: KPNCHelper by inject(KPNCHelper::class.java)
+  private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
+  private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
+
+  private var startWatchingPostJob: Job? = null
+  private var stopWatchingPostJob: Job? = null
 
   fun showMenu(
     postListOptions: PostListOptions,
@@ -199,8 +210,21 @@ class PostLongtapContextMenu(
 
         val postsToReparse = postReplyChainRepository.getRepliesFrom(postDescriptor).toMutableSet()
         postsToReparse += postDescriptor
-
         reparsePostsFunc(postsToReparse)
+
+        if (bookmarksManager.contains(postDescriptor.threadDescriptor) && kpncHelper.isKpncEnabled()) {
+          startWatchingPostJob?.cancel()
+          startWatchingPostJob = screenCoroutineScope.launch {
+            val kpncAppInfoError = kpncHelper.kpncAppInfo().errorAsReadableString()
+            if (kpncAppInfoError != null) {
+              snackbarManager.errorToast(kpncAppInfoError)
+              return@launch
+            }
+
+            kpncHelper.startWatchingPost(postDescriptor)
+              .onFailure { error -> snackbarManager.toast(error.errorMessageOrClassName(userReadable = true)) }
+          }
+        }
       }
       MARK_UNMARK_POST_AS_OWN -> {
         val postDescriptor = menuItem.data as? PostDescriptor
@@ -212,8 +236,21 @@ class PostLongtapContextMenu(
 
         val postsToReparse = postReplyChainRepository.getRepliesFrom(postDescriptor).toMutableSet()
         postsToReparse += postDescriptor
-
         reparsePostsFunc(postsToReparse)
+
+        if (bookmarksManager.contains(postDescriptor.threadDescriptor) && kpncHelper.isKpncEnabled()) {
+          stopWatchingPostJob?.cancel()
+          stopWatchingPostJob = screenCoroutineScope.launch {
+            val kpncAppInfoError = kpncHelper.kpncAppInfo().errorAsReadableString()
+            if (kpncAppInfoError != null) {
+              snackbarManager.errorToast(kpncAppInfoError)
+              return@launch
+            }
+
+            kpncHelper.stopWatchingPost(postDescriptor)
+              .onFailure { error -> snackbarManager.toast(error.errorMessageOrClassName(userReadable = true)) }
+          }
+        }
       }
       COPY_POST_URL -> {
         val postDescriptor = menuItem.data as? PostDescriptor

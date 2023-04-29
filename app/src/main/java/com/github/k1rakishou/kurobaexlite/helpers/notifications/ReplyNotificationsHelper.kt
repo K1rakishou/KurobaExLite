@@ -84,27 +84,27 @@ class ReplyNotificationsHelper(
             is BookmarksManager.Event.Updated -> true
           }
         }
-        .collect { showOrUpdateNotifications() }
+        .collect { showOrUpdateNotificationsDebounced() }
     }
   }
 
-  fun showOrUpdateNotifications() {
+  private fun showOrUpdateNotificationsDebounced() {
     debouncer.post(NOTIFICATIONS_UPDATE_DEBOUNCE_TIME) {
       if (!working.compareAndSet(false, true)) {
         return@post
       }
 
       try {
-        showOrUpdateNotificationsInternal()
+        showOrUpdateNotificationsSuspend()
       } finally {
         working.set(false)
       }
     }
   }
 
-  private suspend fun showOrUpdateNotificationsInternal() {
+  suspend fun showOrUpdateNotificationsSuspend() {
     if (!appSettings.replyNotifications.read()) {
-      logcat(TAG) { "showOrUpdateNotificationsInternal() appSettings.replyNotifications == false" }
+      logcat(TAG) { "showOrUpdateNotificationsSuspend() appSettings.replyNotifications == false" }
       return
     }
 
@@ -114,7 +114,7 @@ class ReplyNotificationsHelper(
     val unreadNotificationsGrouped = bookmarksManager.getActiveThreadBookmarkReplies()
 
     logcat(TAG, LogPriority.VERBOSE) {
-      "showOrUpdateNotificationsInternal() " +
+      "showOrUpdateNotificationsSuspend() " +
         "currentlyOpenedThread=${currentlyOpenedThread}, " +
         "unreadNotificationsGrouped=${unreadNotificationsGrouped.size}"
     }
@@ -150,7 +150,7 @@ class ReplyNotificationsHelper(
     )
 
     logcat(TAG, LogPriority.VERBOSE) {
-      "showOrUpdateNotificationsInternal() updatedBookmarkDescriptors=${updatedBookmarkDescriptors.size}"
+      "showOrUpdateNotificationsSuspend() updatedBookmarkDescriptors=${updatedBookmarkDescriptors.size}"
     }
 
     persistBookmarks.await(updatedBookmarkDescriptors)

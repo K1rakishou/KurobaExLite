@@ -65,6 +65,7 @@ internal fun Module.viewModels() {
       updatePostSeenForBookmark = get(),
       catalogPagesRepository = get(),
       applicationVisibilityManager = get(),
+      kpncHelper = get()
     )
   }
 
@@ -135,6 +136,7 @@ internal fun Module.viewModels() {
       captchaManager = get(),
       siteManager = get(),
       snackbarManager = get(),
+      kpncHelper = get(),
       remoteFilePicker = get(),
       modifyMarkedPosts = get(),
       addOrRemoveBookmark = get(),

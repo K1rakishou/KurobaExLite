@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
+import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCHelper
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
@@ -57,6 +58,7 @@ class ReplyLayoutViewModel(
   private val captchaManager: CaptchaManager,
   private val siteManager: SiteManager,
   private val snackbarManager: SnackbarManager,
+  private val kpncHelper: KPNCHelper,
   private val remoteFilePicker: RemoteFilePicker,
   private val modifyMarkedPosts: ModifyMarkedPosts,
   private val addOrRemoveBookmark: AddOrRemoveBookmark,
@@ -145,20 +147,32 @@ class ReplyLayoutViewModel(
   }
 
   fun showToast(chanDescriptor: ChanDescriptor, message: String, toastId: String? = null) {
-    showToast(chanDescriptor, ReplyLayoutState.ToastMessage(message, toastId))
+    showToast(chanDescriptor, ReplyLayoutState.ToastMessage(message, toastId), false)
   }
 
-  fun showToast(chanDescriptor: ChanDescriptor, toastMessage: ReplyLayoutState.ToastMessage) {
+  fun showErrorToast(chanDescriptor: ChanDescriptor, message: String, toastId: String? = null) {
+    showToast(chanDescriptor, ReplyLayoutState.ToastMessage(message, toastId), true)
+  }
+
+  fun showToast(chanDescriptor: ChanDescriptor, toastMessage: ReplyLayoutState.ToastMessage, errorToast: Boolean = false) {
     val screenKey = when (chanDescriptor) {
       is CatalogDescriptor -> CatalogScreen.SCREEN_KEY
       is ThreadDescriptor -> ThreadScreen.SCREEN_KEY
     }
 
-    snackbarManager.toast(
-      message = toastMessage.message,
-      screenKey = screenKey,
-      toastId = toastMessage.toastId ?: SnackbarManager.nextToastId()
-    )
+    if (errorToast) {
+      snackbarManager.errorToast(
+        message = toastMessage.message,
+        screenKey = screenKey,
+        toastId = toastMessage.toastId ?: SnackbarManager.nextToastId()
+      )
+    } else {
+      snackbarManager.toast(
+        message = toastMessage.message,
+        screenKey = screenKey,
+        toastId = toastMessage.toastId ?: SnackbarManager.nextToastId()
+      )
+    }
   }
 
   fun sendReply(chanDescriptor: ChanDescriptor, replyLayoutState: ReplyLayoutState) {
@@ -603,6 +617,21 @@ class ReplyLayoutViewModel(
             bookmarkTitle = null,
             bookmarkThumbnail = null
           )
+
+          if (kpncHelper.isKpncEnabled()) {
+            launch {
+              val kpncAppInfoError = kpncHelper.kpncAppInfo().errorAsReadableString()
+              if (kpncAppInfoError != null) {
+                showErrorToast(chanDescriptor, kpncAppInfoError)
+                return@launch
+              }
+
+              kpncHelper.startWatchingPost(postDescriptor)
+                .onFailure { error ->
+                  showErrorToast(chanDescriptor, error.errorMessageOrClassName(userReadable = true))
+                }
+            }
+          }
 
           showToast(chanDescriptor, appResources.string(R.string.reply_view_model_reply_sent_successfully))
           replyLayoutState.onReplySendFinishedSuccessfully(postDescriptor)

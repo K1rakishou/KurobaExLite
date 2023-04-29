@@ -19,20 +19,31 @@ class RestartBookmarkBackgroundWatcher(
 ) {
   private val jobRef = AtomicReference<Job?>(null)
 
-  fun restart(addInitialDelay: Boolean) {
+  fun restart(
+    addInitialDelay: Boolean,
+    postUrlsToCheck: List<String> = emptyList()
+  ) {
     jobRef.getAndSet(null)?.cancel()
 
     val job = appScope.launch {
-      BookmarkBackgroundWatcherWorker.restartBackgroundWork(
-        appContext = appContext,
-        flavorType = androidHelpers.getFlavorType(),
-        appSettings = appSettings,
-        isInForeground = applicationVisibilityManager.isAppInForeground(),
-        addInitialDelay = addInitialDelay
-      )
+      restartSuspend(addInitialDelay, postUrlsToCheck)
     }
 
     jobRef.set(job)
+  }
+
+  private suspend fun restartSuspend(
+    addInitialDelay: Boolean,
+    postUrlsToCheck: List<String>
+  ) {
+    BookmarkBackgroundWatcherWorker.restartBackgroundWork(
+      appContext = appContext,
+      flavorType = androidHelpers.getFlavorType(),
+      appSettings = appSettings,
+      isInForeground = applicationVisibilityManager.isAppInForeground(),
+      addInitialDelay = addInitialDelay,
+      postUrlsToCheck = postUrlsToCheck
+    )
   }
 
 }

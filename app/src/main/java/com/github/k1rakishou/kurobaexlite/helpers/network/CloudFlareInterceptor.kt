@@ -99,18 +99,16 @@ class CloudFlareInterceptor(
 
     synchronized(this) { sitesThatRequireCloudFlareCache.add(host) }
 
-    if (request.method.equals("GET", ignoreCase = true)) {
-      val site = siteManager.byUrl(request.url)
-      if (site != null) {
-        val siteKey = site.siteKey
+    val site = siteManager.byUrl(request.url)
+    if (site != null) {
+      val siteKey = site.siteKey
 
-        firewallBypassManager.onFirewallDetected(
-          firewallType = FirewallType.Cloudflare,
-          siteKey = siteKey,
-          urlToOpen = site.firewallChallengeEndpoint ?: request.url,
-          originalRequestUrl = request.url
-        )
-      }
+      firewallBypassManager.onFirewallDetected(
+        firewallType = FirewallType.Cloudflare,
+        siteKey = siteKey,
+        urlToOpen = site.firewallChallengeEndpoint ?: request.url,
+        originalRequestUrl = request.url
+      )
     }
 
     // We only want to throw this exception when loading a site's thread endpoint. In any other

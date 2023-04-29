@@ -18,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.Chan4BoardFlagsJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCHelper
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
@@ -189,6 +190,7 @@ internal fun Module.misc() {
   }
 
   single { Chan4CaptchaSolverHelper(moshi = get(), appContext = get()) }
+  single { KPNCHelper(moshi = get(), appContext = get(), siteManager = get()) }
 }
 
 private fun createMoshi(): Moshi {

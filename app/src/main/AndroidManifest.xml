@@ -18,6 +18,13 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="https" />
         </intent>
+
+        <intent>
+            <action android:name="com.github.k1rakishou.kpnc.get_info" />
+        </intent>
+        <intent>
+            <action android:name="com.github.k1rakishou.kpnc.start_watching_post" />
+        </intent>
     </queries>
 
     <application
@@ -45,6 +52,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".ui.activity.CrashReportActivity"
             android:launchMode="singleTask"
@@ -57,6 +65,16 @@
         <receiver
             android:name=".helpers.notifications.ReplyNotificationDeleteIntentBroadcastReceiver"
             android:exported="false" />
+        <receiver
+            android:name=".helpers.kpnc.KPNCBroadcastReceiver"
+            android:exported="true"
+            android:enabled="true">
+
+            <intent-filter>
+                <action android:name="com.github.k1rakishou.kurobaexlite.on_new_replies_received" />
+            </intent-filter>
+
+        </receiver>
     </application>
 
 </manifest>

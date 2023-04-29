@@ -72,14 +72,14 @@ class LoadBookmarks(
   }
 
   private suspend fun restartWorkIfNeeded(shouldRestartWork: Boolean) {
-    val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
-    if (activeBookmarksCount <= 0) {
-      logcat(TAG) { "No active bookmarks loaded, doing nothing" }
+    if (!shouldRestartWork) {
+      logcat(TAG) { "shouldRestartWork is false" }
       return
     }
 
-    if (!shouldRestartWork) {
-      logcat(TAG) { "activeBookmarksCount is greater than zero but restartWork flag is false" }
+    val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
+    if (activeBookmarksCount <= 0) {
+      logcat(TAG) { "No active bookmarks loaded, doing nothing" }
       return
     }
 

@@ -1,19 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.features.captcha.chan4
 
-import android.app.Activity
-import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.util.resumeValueSafe
+import com.github.k1rakishou.kurobaexlite.helpers.util.sendOrderedBroadcastSuspend
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withTimeoutOrNull
 import logcat.logcat
 
 
@@ -113,32 +109,7 @@ class Chan4CaptchaSolverHelper(
       broadcastReceiver.activityInfo.name
     )
 
-    return withTimeoutOrNull(10_000) {
-      suspendCancellableCoroutine<Bundle?> { cancellableContinuation ->
-        try {
-          context.sendOrderedBroadcast(
-            intent,
-            null,
-            object : BroadcastReceiver() {
-              override fun onReceive(context: Context?, resultIntent: Intent?) {
-                cancellableContinuation.resumeValueSafe(getResultExtras(false))
-              }
-            },
-            null,
-            Activity.RESULT_OK,
-            null,
-            null
-          )
-        } catch (error: Throwable) {
-          logcatError(TAG) {
-            "sendBroadcastInternal() context.sendOrderedBroadcast() " +
-              "action=${intent.action} error: ${error.asLogIfImportantOrErrorMessage()}"
-          }
-
-          cancellableContinuation.resumeValueSafe(null)
-        }
-      }
-    }
+    return sendOrderedBroadcastSuspend(context, intent)
   }
 
   @JsonClass(generateAdapter = true)

@@ -41,14 +41,19 @@ class FetchThreadBookmarkInfo(
 ) {
 
   suspend fun await(
-    bookmarkDescriptors: List<ThreadDescriptor>,
+    bookmarkDescriptorsToCheck: List<ThreadDescriptor>,
     updateCurrentlyOpenedThread: Boolean,
   ): Result<Unit> {
-    logcat(TAG) { "bookmarkDescriptorsCount=${bookmarkDescriptors.size}" }
+    if (bookmarkDescriptorsToCheck.isEmpty()) {
+      logcat(TAG) { "await() bookmarkDescriptorsToCheck is empty" }
+      return Result.success(Unit)
+    }
+
+    logcat(TAG) { "await() bookmarkDescriptorsCount=${bookmarkDescriptorsToCheck.size}" }
 
     return Result
       .Try {
-        val fetchResults = fetchThreadBookmarkInfoBatched(bookmarkDescriptors)
+        val fetchResults = fetchThreadBookmarkInfoBatched(bookmarkDescriptorsToCheck)
         processResults(
           fetchResults = fetchResults,
           updateCurrentlyOpenedThread = updateCurrentlyOpenedThread
@@ -109,7 +114,7 @@ class FetchThreadBookmarkInfo(
 
     if (fetchResults.isEmpty()) {
       logcat(TAG) { "fetchThreadBookmarkInfoUseCase.execute() returned no fetch results" }
-      replyNotificationsHelper.showOrUpdateNotifications()
+      replyNotificationsHelper.showOrUpdateNotificationsSuspend()
       return
     }
 
@@ -122,7 +127,7 @@ class FetchThreadBookmarkInfo(
       return
     }
 
-    replyNotificationsHelper.showOrUpdateNotifications()
+    replyNotificationsHelper.showOrUpdateNotificationsSuspend()
   }
 
   private suspend fun processResultsInternal(fetchResults: List<ThreadBookmarkFetchResult>) {

@@ -1,7 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.helpers.util
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
 import android.os.Binder
+import android.os.Bundle
 import android.os.Parcelable
 import android.util.Size
 import android.util.SizeF
@@ -28,15 +32,18 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
@@ -308,10 +315,23 @@ inline fun Any.logcatVerbose(
   logcat(priority = LogPriority.VERBOSE, tag = tag, message = message)
 }
 
+inline fun logcatDebug(
+  tag: String,
+  message: () -> String
+) {
+  logcat(priority = LogPriority.DEBUG, tag = tag, message = message)
+}
+
+inline fun Any.logcatDebug(
+  tag: String? = null,
+  message: () -> String
+) {
+  logcat(priority = LogPriority.DEBUG, tag = tag, message = message)
+}
+
 fun lerpFloat(from: Float, to: Float, progress: Float): Float {
   return from + progress * (to - from)
 }
-
 
 inline fun <T, R> List<T>.bidirectionalMap(
   startPosition: Int = size / 2,
@@ -1149,4 +1169,38 @@ fun String.removeAllBefore(delimiter: String, removeDelimiter: Boolean = true): 
   }
 
   return substring(index)
+}
+
+suspend fun sendOrderedBroadcastSuspend(
+  context: Context,
+  intent: Intent
+): Bundle? {
+  return withTimeoutOrNull(30_000) {
+    return@withTimeoutOrNull withContext(Dispatchers.IO) {
+      return@withContext suspendCancellableCoroutine<Bundle?> { cancellableContinuation ->
+        try {
+          context.sendOrderedBroadcast(
+            intent,
+            null,
+            object : BroadcastReceiver() {
+              override fun onReceive(context: Context?, resultIntent: Intent?) {
+                cancellableContinuation.resumeValueSafe(getResultExtras(false))
+              }
+            },
+            null,
+            Activity.RESULT_OK,
+            null,
+            null
+          )
+        } catch (error: Throwable) {
+          logcatError("sendOrderedBroadcastSuspend") {
+            "context.sendOrderedBroadcast() " +
+              "action=${intent.action} error: ${error.asLogIfImportantOrErrorMessage()}"
+          }
+
+          cancellableContinuation.resumeValueSafe(null)
+        }
+      }
+    }
+  }
 }
