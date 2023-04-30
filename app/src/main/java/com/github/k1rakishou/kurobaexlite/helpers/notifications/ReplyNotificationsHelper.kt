@@ -399,7 +399,7 @@ class ReplyNotificationsHelper(
 
       NotificationCompat.Builder(
         appContext,
-        AppConstants.Notifications.Reply.REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID
+        AppConstants.Notifications.Reply.REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID_V2
       )
     } else {
       logcat(TAG) { "showSummaryNotification() Using REPLY_SUMMARY_SILENT_NOTIFICATION_CHANNEL_ID" }
@@ -696,14 +696,15 @@ class ReplyNotificationsHelper(
     onlyHasNewRepliesFromCurrentThread: Boolean
   ): NotificationCompat.Builder {
     if (hasNewReplies) {
+      setLights(themeEngine.chanTheme.accentColor.toArgb(), 1000, 1000)
+
       if (!onlyHasNewRepliesFromCurrentThread) {
         logcat(TAG) { "Using vibration" }
-        setDefaults(Notification.DEFAULT_VIBRATE)
+        setSound(null)
+        setVibrate(VIBRATION_PATTERN)
       } else {
         logcat(TAG) { "Not using vibration" }
       }
-
-      setLights(themeEngine.chanTheme.accentColor.toArgb(), 1000, 1000)
     }
 
     return this
@@ -823,7 +824,13 @@ class ReplyNotificationsHelper(
 
     logcat(TAG) { "setupChannels() called" }
 
+    // Delete the old channel
     AppConstants.Notifications.Reply.REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID.let { channelId ->
+      notificationManagerCompat.deleteNotificationChannel(channelId)
+    }
+
+    // Use new channel with updated vibration pattern
+    AppConstants.Notifications.Reply.REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID_V2.let { channelId ->
       if (notificationManagerCompat.getNotificationChannel(channelId) == null) {
         logcat(TAG) { "setupChannels() creating ${channelId} channel" }
 
@@ -838,6 +845,8 @@ class ReplyNotificationsHelper(
         summaryChannel.enableLights(true)
         summaryChannel.lightColor = themeEngine.chanTheme.accentColor.toArgb()
         summaryChannel.enableVibration(true)
+        summaryChannel.vibrationPattern = VIBRATION_PATTERN
+        logcat(TAG) { "setupChannels() Using vibration pattern: ${VIBRATION_PATTERN}" }
 
         notificationManagerCompat.createNotificationChannel(summaryChannel)
       }
@@ -967,6 +976,8 @@ class ReplyNotificationsHelper(
     private const val NOTIFICATIONS_UPDATE_DEBOUNCE_TIME = 1000L
     private const val MAX_THUMBNAIL_REQUESTS_PER_BATCH = 8
     private const val MAX_NOTIFICATION_LINE_LENGTH = 128
+
+    val VIBRATION_PATTERN = longArrayOf(0, 300, 100, 100, 100, 100, 100, 100)
 
     // For Android O and above
     private val notificationsGroup by lazy { "${TAG}_${BuildConfig.APPLICATION_ID}" }

@@ -70,8 +70,12 @@ object AppConstants {
 
       const val NOTIFICATION_TAG_PREFIX = "reply_"
 
+      @Deprecated("Use REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID_V2")
       const val REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID = "${BuildConfig.APPLICATION_ID}_reply_summary_notifications_channel"
+      const val REPLY_SUMMARY_NOTIFICATION_CHANNEL_ID_V2 = "${BuildConfig.APPLICATION_ID}_reply_summary_notifications_channel_v2"
+
       const val REPLY_SUMMARY_NOTIFICATION_NAME = "Notification channel for new replies summary"
+
       const val REPLY_SUMMARY_SILENT_NOTIFICATION_CHANNEL_ID = "${BuildConfig.APPLICATION_ID}_reply_summary_silent_notifications_channel"
       const val REPLY_SUMMARY_SILENT_NOTIFICATION_NAME = "Notification channel for new replies summary (silent)"
       const val REPLY_NOTIFICATION_CHANNEL_ID = "${BuildConfig.APPLICATION_ID}_replies_notifications_channel"
