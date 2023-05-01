@@ -39,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.CornerRadius
@@ -206,29 +205,30 @@ private fun ReplyInputLeftPart(
         )
 
         Column {
-          if (replyLayoutState.isCatalogMode) {
-            SubjectTextField(
-              replyLayoutState = replyLayoutState,
-              replyLayoutEnabled = replyLayoutEnabled,
-              onMoveFocus = { focusManager.moveFocus(FocusDirection.Down) }
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-          }
-
-          NameTextField(
-            replyLayoutState = replyLayoutState,
-            replyLayoutEnabled = replyLayoutEnabled,
-            onMoveFocus = { focusManager.moveFocus(FocusDirection.Down) }
-          )
-
-          Spacer(modifier = Modifier.height(4.dp))
-
-          OptionsTextField(
-            replyLayoutState = replyLayoutState,
-            replyLayoutEnabled = replyLayoutEnabled,
-            onMoveFocus = { focusManager.moveFocus(FocusDirection.Down) }
-          )
+          // TODO: Disabled until Google fixes this https://issuetracker.google.com/issues/270629170 bug
+//          if (replyLayoutState.isCatalogMode) {
+//            SubjectTextField(
+//              replyLayoutState = replyLayoutState,
+//              replyLayoutEnabled = replyLayoutEnabled,
+//              onMoveFocus = { focusManager.moveFocus(FocusDirection.Down) }
+//            )
+//
+//            Spacer(modifier = Modifier.height(4.dp))
+//          }
+//
+//          NameTextField(
+//            replyLayoutState = replyLayoutState,
+//            replyLayoutEnabled = replyLayoutEnabled,
+//            onMoveFocus = { focusManager.moveFocus(FocusDirection.Down) }
+//          )
+//
+//          Spacer(modifier = Modifier.height(4.dp))
+//
+//          OptionsTextField(
+//            replyLayoutState = replyLayoutState,
+//            replyLayoutEnabled = replyLayoutEnabled,
+//            onMoveFocus = { focusManager.moveFocus(FocusDirection.Down) }
+//          )
 
           FlagSelector(
             replyLayoutState = replyLayoutState,
