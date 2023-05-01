@@ -77,6 +77,7 @@ internal fun Module.interactors() {
       loadChanThreadView = get(),
       extractRepliesToMyPosts = get(),
       persistBookmarks = get(),
+      postCommentParser = get(),
       appSettings = get(),
       androidHelpers = get(),
     )

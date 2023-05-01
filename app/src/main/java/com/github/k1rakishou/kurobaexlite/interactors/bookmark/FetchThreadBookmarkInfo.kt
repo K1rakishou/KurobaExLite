@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.interactors.bookmark
 
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
+import com.github.k1rakishou.kurobaexlite.helpers.parser.PostCommentParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.Try
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
@@ -36,6 +37,7 @@ class FetchThreadBookmarkInfo(
   private val loadChanThreadView: LoadChanThreadView,
   private val extractRepliesToMyPosts: ExtractRepliesToMyPosts,
   private val persistBookmarks: PersistBookmarks,
+  private val postCommentParser: PostCommentParser,
   private val appSettings: AppSettings,
   private val androidHelpers: AndroidHelpers
 ) {
@@ -303,9 +305,12 @@ class FetchThreadBookmarkInfo(
     // Update bookmark title if it's not set
     if (threadBookmark.title == null) {
       val subject = threadBookmarkData.subject()
-      val originalPostComment = threadBookmarkData.originalPostComment()
 
-      val updatedTitle = parsedPostDataRepository.formatBookmarkTitle(subject, originalPostComment)
+      val updatedTitle = parsedPostDataRepository.formatBookmarkTitle(
+        subject = subject,
+        comment = { postCommentParsed(threadBookmarkData) }
+      )
+
       if (updatedTitle != null) {
         threadBookmark.title = updatedTitle
       }
@@ -317,6 +322,18 @@ class FetchThreadBookmarkInfo(
     }
 
     threadBookmark.clearFirstFetchFlag()
+  }
+
+  private fun postCommentParsed(threadBookmarkData: ThreadBookmarkData): String? {
+    val originalPostComment = threadBookmarkData.originalPostComment()
+    if (originalPostComment == null) {
+      return null
+    }
+
+    return postCommentParser.parsePostComment(
+      postCommentUnparsed = originalPostComment,
+      postDescriptor = threadBookmarkData.postObjects.first().postDescriptor()
+    ).joinToString(separator = "", transform = { textPart -> textPart.text })
   }
 
   private fun createOrUpdateReplyToMyPosts(
