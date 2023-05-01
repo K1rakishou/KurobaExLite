@@ -20,19 +20,18 @@ class RestartBookmarkBackgroundWatcher(
   private val jobRef = AtomicReference<Job?>(null)
 
   fun restart(
-    addInitialDelay: Boolean,
-    postUrlsToCheck: List<String> = emptyList()
+    addInitialDelay: Boolean
   ) {
     jobRef.getAndSet(null)?.cancel()
 
     val job = appScope.launch {
-      restartSuspend(addInitialDelay, postUrlsToCheck)
+      restartSuspend(addInitialDelay, emptyList())
     }
 
     jobRef.set(job)
   }
 
-  private suspend fun restartSuspend(
+  suspend fun restartSuspend(
     addInitialDelay: Boolean,
     postUrlsToCheck: List<String>
   ) {

@@ -4,12 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.os.bundleOf
-import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kurobaexlite.helpers.util.ignore
-import com.github.k1rakishou.kurobaexlite.helpers.util.logcatDebug
-import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookmarkInfo
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
+import com.github.k1rakishou.kurobaexlite.interactors.bookmark.RestartBookmarkBackgroundWatcher
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -25,6 +22,7 @@ class KPNCBroadcastReceiver : BroadcastReceiver(), KoinComponent {
   private val siteManager: SiteManager by inject()
   private val bookmarksManager: BookmarksManager by inject()
   private val loadBookmarks: LoadBookmarks by inject()
+  private val restartBookmarkBackgroundWatcher: RestartBookmarkBackgroundWatcher by inject()
 
   private val mainScope = MainScope()
 
@@ -34,15 +32,18 @@ class KPNCBroadcastReceiver : BroadcastReceiver(), KoinComponent {
 
   override fun onReceive(context: Context?, intent: Intent?) {
     if (context == null || intent == null) {
+      setResultExtras(bundleOf())
       return
     }
 
     val action = intent.action
     if (action.isNullOrEmpty()) {
+      setResultExtras(bundleOf())
       return
     }
 
     if (action != ACTION_ON_NEW_REPLIES_RECEIVED) {
+      setResultExtras(bundleOf())
       return
     }
 
@@ -51,6 +52,7 @@ class KPNCBroadcastReceiver : BroadcastReceiver(), KoinComponent {
     val postUrls = intent.getStringArrayExtra(POST_URLS_PARAM)?.toList() ?: emptyList()
     if (postUrls.isEmpty()) {
       logcat(TAG) { "postUrls is empty" }
+      setResultExtras(bundleOf())
       return
     }
 
@@ -61,28 +63,14 @@ class KPNCBroadcastReceiver : BroadcastReceiver(), KoinComponent {
         logcat(TAG) { "Got ${postUrls.size} post urls from KPNC" }
         postUrls.forEach { postUrl -> logcat(TAG) { "postUrl: ${postUrl}" } }
 
-        logcat(TAG) { "fetchThreadBookmarkInfo.await()..." }
-
-        val loadBookmarksResult = loadBookmarks.executeSuspend()
-          .onFailure { error ->
-            logcatError(TAG) { "loadBookmarks.executeSuspend() -> error: ${error.asLogIfImportantOrErrorMessage()}" }
-          }
-
-        if (loadBookmarksResult.isSuccess) {
-          val bookmarkDescriptorsToCheck = getBookmarkDescriptorsToCheck(postUrls)
-          if (bookmarkDescriptorsToCheck.isNotEmpty()) {
-            fetchThreadBookmarkInfo.await(
-              bookmarkDescriptorsToCheck = bookmarkDescriptorsToCheck,
-              updateCurrentlyOpenedThread = false
-            )
-              .onFailure { error ->
-                logcatError(TAG) { "fetchThreadBookmarkInfo.await() error: ${error.asLogIfImportantOrErrorMessage()}" }
-              }
-              .ignore()
-          } else {
-            logcatDebug(TAG) { "bookmarkDescriptorsToCheck is empty" }
-          }
-        }
+        // TODO: This is not good because this won't wake up the phone from deep doze mode. The only way to wake up the
+        //  phone from doze mode is to actually get the FCM. Right now this task is delegated to a different app so it
+        //  won't work here. I need to merge that app into this one to fix it. This is bad because this app will have a
+        //  Google dependency which many people won't like. For now leave it like this.
+        restartBookmarkBackgroundWatcher.restartSuspend(
+          addInitialDelay = false,
+          postUrlsToCheck = postUrls
+        )
 
         logcat(TAG) { "fetchThreadBookmarkInfo.await()... done" }
       } finally {

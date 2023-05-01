@@ -58,7 +58,6 @@ class BookmarkBackgroundWatcherWorker(
     val isInForeground = applicationVisibilityManager.isAppInForeground()
     if (!isInForeground && kpncHelper.isKpncEnabledAndAccountIsValid() && postUrlsToCheck.isEmpty()) {
       logcat(TAG) { "doWork() disabling WorkManager because KPNC is installed and application is in background" }
-      // TODO: cancel the work here?
       return Result.success()
     }
 
