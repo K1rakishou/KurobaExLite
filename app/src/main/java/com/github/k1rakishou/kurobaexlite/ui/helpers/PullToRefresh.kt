@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.infiniteRepeatable
@@ -16,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -34,12 +36,14 @@ import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAll
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
+import kotlinx.coroutines.flow.collectLatest
 
 @Stable
 class PullToRefreshState {
@@ -69,6 +73,7 @@ fun PullToRefresh(
   onTriggered: () -> Unit,
   content: @Composable () -> Unit
 ) {
+  val view = LocalView.current
   val density = LocalDensity.current
   val chanTheme = LocalChanTheme.current
 
@@ -83,6 +88,19 @@ fun PullToRefresh(
   var animatingRefresh by pullToRefreshState.animatingRefreshState
   var animatingBack by pullToRefreshState.animatingBackState
   val pullingBlocked by remember { derivedStateOf { animatingRefresh || animatingBack } }
+  val passedPullThreshold by remember { derivedStateOf { pullToRefreshPulledPx > pullThresholdPx } }
+
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      snapshotFlow { passedPullThreshold }
+        .collectLatest { passed ->
+          if (passed) {
+            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+          }
+        }
+    }
+  )
 
   val nestedScrollConnection = remember {
     object : NestedScrollConnection {
@@ -123,7 +141,7 @@ fun PullToRefresh(
       }
 
       override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
-        if (pullToRefreshPulledPx > pullThresholdPx) {
+        if (passedPullThreshold) {
           animatingBack = false
           animatingRefresh = true
         } else {
@@ -247,13 +265,13 @@ fun PullToRefresh(
           trianglePath.moveTo(cx - triangleWidth, cy)   // left bottom
           trianglePath.close()
 
-          val circleColor = if (pullToRefreshPulledPx > pullThresholdPx) {
+          val circleColor = if (passedPullThreshold) {
             chanTheme.accentColor
           } else {
             Color.White
           }
 
-          val progressIndicatorColor = if (pullToRefreshPulledPx > pullThresholdPx) {
+          val progressIndicatorColor = if (passedPullThreshold) {
             Color.White
           } else {
             chanTheme.accentColor
