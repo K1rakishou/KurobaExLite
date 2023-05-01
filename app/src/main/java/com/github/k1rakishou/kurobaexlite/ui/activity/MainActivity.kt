@@ -84,6 +84,8 @@ class MainActivity : ComponentActivity(),
     fileChooser.setCallbacks(this)
     themeEngine.addListener(this)
 
+    onThemeChanged(themeEngine.chanTheme)
+
     setContent {
       ProvideEverything(
         componentActivity = this,
