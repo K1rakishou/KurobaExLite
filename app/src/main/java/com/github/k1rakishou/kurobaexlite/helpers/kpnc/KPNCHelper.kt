@@ -133,9 +133,65 @@ class KPNCHelper(
   }
 
   suspend fun stopWatchingPost(postDescriptor: PostDescriptor): Result<Unit> {
+    if (!isKpncEnabled()) {
+      return Result.success(Unit)
+    }
+
+    if (!isKpncAccountValid()) {
+      logcatError(TAG) { "stopWatchingPost() KPNC account is not valid" }
+      return Result.failure(WatchPostError(postDescriptor, "KPNC account is not valid"))
+    }
+
     logcatDebug(TAG) { "stopWatchingPost(${postDescriptor})" }
 
-    // TODO:
+    val site = siteManager.bySiteKey(postDescriptor.siteKey)
+    if (site == null) {
+      logcatError(TAG) { "stopWatchingPost() site not found for key ${postDescriptor.siteKey}" }
+      return Result.failure(WatchPostError(postDescriptor, "Site is not supported"))
+    }
+
+    val postUrl = site.desktopUrl(postDescriptor.threadDescriptor, postDescriptor.postNo, postDescriptor.postSubNo)
+    if (postUrl.isNullOrEmpty()) {
+      logcatError(TAG) { "stopWatchingPost() failed to convert ${postDescriptor} into url" }
+      return Result.failure(WatchPostError(postDescriptor, "Site is not supported"))
+    }
+
+    val intent = Intent(ACTION_STOP_WATCHING_POST)
+    intent.putExtra(POST_URL, postUrl)
+
+    val resultBundle = sendBroadcastInternal(appContext, intent)
+    if (resultBundle == null) {
+      logcatError(TAG) { "stopWatchingPost() resultBundle == null" }
+      return Result.failure(WatchPostError(postDescriptor, "Error communicating with KPNC"))
+    }
+
+    val unwatchPostResultJson = resultBundle.getString(ACTION_STOP_WATCHING_POST_RESULT, null)
+    if (unwatchPostResultJson.isNullOrEmpty()) {
+      logcatError(TAG) { "stopWatchingPost() unwatchPostResultJson == null" }
+      return Result.failure(WatchPostError(postDescriptor, "KPNC didn't send a response"))
+    }
+
+    val unwatchPostResult = moshi
+      .adapter<UnwatchPostResult>(UnwatchPostResult::class.java)
+      .fromJson(unwatchPostResultJson)
+
+    if (unwatchPostResult == null) {
+      logcatError(TAG) { "stopWatchingPost() unwatchPostResult == null, unwatchPostResultJson: \'$unwatchPostResultJson\'" }
+      return Result.failure(WatchPostError(postDescriptor, "UnwatchPostResult json conversion failed"))
+    }
+
+    if (unwatchPostResult.error != null) {
+      logcatError(TAG) { "stopWatchingPost() Error while trying to execute KPNC request: ${unwatchPostResult.error}" }
+      return Result.failure(WatchPostError(postDescriptor, unwatchPostResult.error))
+    }
+
+    val success = unwatchPostResult.data?.success == true
+    if (!success) {
+      logcatError(TAG) { "stopWatchingPost() unwatchPostResult.data.success == false" }
+      return Result.failure(WatchPostError(postDescriptor, "KPNC returned unsuccessful result"))
+    }
+
+    logcatDebug(TAG) { "stopWatchingPost() success!" }
     return Result.success(Unit)
   }
 
@@ -200,6 +256,12 @@ class KPNCHelper(
     override val error: String? = null
   ) : GenericResult<DefaultSuccessResult>()
 
+  @JsonClass(generateAdapter = true)
+  data class UnwatchPostResult(
+    override val data: DefaultSuccessResult? = null,
+    override val error: String? = null
+  ) : GenericResult<DefaultSuccessResult>()
+
   abstract class GenericResult<T> {
     abstract val data: T?
     abstract val error: String?
@@ -224,9 +286,11 @@ class KPNCHelper(
     private const val ACTION_GET_INFO = "$PACKAGE.get_info"
     private const val ACTION_GET_INFO_RESULT = "$PACKAGE.get_info_result"
 
-    private const val ACTION_START_WATCHING_POST = "$PACKAGE.start_watching_post"
     private const val POST_URL = "post_url"
+    private const val ACTION_START_WATCHING_POST = "$PACKAGE.start_watching_post"
     private const val ACTION_START_WATCHING_POST_RESULT = "$PACKAGE.start_watching_post_result"
+    private const val ACTION_STOP_WATCHING_POST = "$PACKAGE.stop_watching_post"
+    private const val ACTION_STOP_WATCHING_POST_RESULT = "$PACKAGE.stop_watching_post_result"
   }
 
 }
