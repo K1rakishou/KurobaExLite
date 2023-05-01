@@ -210,6 +210,11 @@ private fun GlobalSearchList(
     lazyListState = lazyListState,
     contentPadding = paddingValues,
     content = {
+      if (pageLoadError != null && postsAsync !is AsyncData.Data) {
+        item(key = "list_error_first_load") { PageLoadErrorContent(pageLoadError)  }
+        return@LazyColumnWithFastScroller
+      }
+
       val foundPosts = when (val state = postsAsync) {
         AsyncData.Uninitialized -> {
           // no-op

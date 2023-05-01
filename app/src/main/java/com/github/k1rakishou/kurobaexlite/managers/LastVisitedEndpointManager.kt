@@ -28,7 +28,7 @@ class LastVisitedEndpointManager(
       }
 
       // Wait a little bit for the UI to initialize
-      delay(500)
+      delay(250)
       _lastVisitedCatalogFlow.emit(lastVisitedCatalog)
     }
   }
@@ -40,7 +40,7 @@ class LastVisitedEndpointManager(
       }
 
       // Wait a little bit for the UI to initialize
-      delay(500)
+      delay(250)
       _lastVisitedThreadFlow.emit(lastVisitedThread)
     }
   }

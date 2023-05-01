@@ -38,7 +38,6 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
@@ -122,14 +121,6 @@ class DownloadsScreen(
 
       return@HandleBackPresses popScreen()
     }
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
-        snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
-      }
-    )
 
     ContentInternal()
   }

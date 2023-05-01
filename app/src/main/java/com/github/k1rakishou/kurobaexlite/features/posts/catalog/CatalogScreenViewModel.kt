@@ -130,13 +130,14 @@ class CatalogScreenViewModel(
       resetPosition(catalogDescriptor)
     }
 
-    snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
-
     loadCatalogJob = viewModelScope.launch {
       loadCatalogInternal(
         catalogDescriptor = catalogDescriptor,
         loadOptions = loadOptions,
-        onReloadFinished = onReloadFinished
+        onReloadFinished = {
+          snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
+          onReloadFinished?.invoke()
+        }
       )
     }
   }

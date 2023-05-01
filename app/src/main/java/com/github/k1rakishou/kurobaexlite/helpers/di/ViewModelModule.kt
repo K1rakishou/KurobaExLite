@@ -64,8 +64,7 @@ internal fun Module.viewModels() {
       addOrRemoveBookmark = get(),
       updatePostSeenForBookmark = get(),
       catalogPagesRepository = get(),
-      applicationVisibilityManager = get(),
-      kpncHelper = get()
+      applicationVisibilityManager = get()
     )
   }
 

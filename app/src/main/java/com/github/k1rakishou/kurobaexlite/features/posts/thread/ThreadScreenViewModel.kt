@@ -13,7 +13,6 @@ import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.PostsState
 import com.github.k1rakishou.kurobaexlite.features.posts.shared.state.ThreadScreenPostsState
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.executors.RendezvousCoroutineExecutor
-import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCHelper
 import com.github.k1rakishou.kurobaexlite.helpers.settings.PostViewMode
 import com.github.k1rakishou.kurobaexlite.helpers.sort.ThreadPostSorter
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
@@ -60,8 +59,7 @@ class ThreadScreenViewModel(
   private val addOrRemoveBookmark: AddOrRemoveBookmark,
   private val updatePostSeenForBookmark: UpdatePostSeenForBookmark,
   private val catalogPagesRepository: CatalogPagesRepository,
-  private val applicationVisibilityManager: ApplicationVisibilityManager,
-  private val kpncHelper: KPNCHelper
+  private val applicationVisibilityManager: ApplicationVisibilityManager
 ) : PostScreenViewModel(savedStateHandle), ThemeEngine.ThemeChangesListener {
   private val screenKey: ScreenKey = ThreadScreen.SCREEN_KEY
 
@@ -283,11 +281,17 @@ class ThreadScreenViewModel(
     loadThreadJob?.cancel()
     loadThreadJob = null
 
-    snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
-
     loadThreadJob = viewModelScope.launch {
       resetTimer()
-      loadThreadInternal(threadDescriptor, loadOptions, onReloadFinished)
+      loadThreadInternal(
+        threadDescriptor = threadDescriptor,
+        loadOptions = loadOptions,
+        onReloadFinished = {
+          snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
+          snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
+          onReloadFinished?.invoke()
+        }
+      )
     }
   }
 

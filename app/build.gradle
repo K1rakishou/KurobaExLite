@@ -162,7 +162,7 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.core:core-ktx:1.9.0'
+    implementation 'androidx.core:core-ktx:1.10.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
     implementation "androidx.compose.ui:ui:$compose_version"
@@ -174,9 +174,9 @@ dependencies {
     implementation 'androidx.work:work-runtime-ktx:2.8.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
-    implementation 'androidx.activity:activity-compose:1.7.0'
+    implementation 'androidx.activity:activity-compose:1.7.1'
     implementation "androidx.datastore:datastore-preferences:1.0.0"
-    implementation "androidx.window:window:1.1.0-beta01"
+    implementation "androidx.window:window:1.1.0-beta02"
     implementation "io.insert-koin:koin-core:$koin_version"
     implementation "io.insert-koin:koin-android:$koin_version"
     implementation 'dev.chrisbanes.snapper:snapper:0.3.0'

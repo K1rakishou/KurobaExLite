@@ -28,7 +28,6 @@ import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingGroup
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreen
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
-import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarId
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarContainer
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.KurobaToolbarIcon
 import com.github.k1rakishou.kurobaexlite.ui.elements.toolbar.presets.SimpleToolbar
@@ -118,14 +117,6 @@ class AppSettingsScreen(
 
       return@HandleBackPresses popScreen()
     }
-
-    LaunchedEffect(
-      key1 = Unit,
-      block = {
-        snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
-        snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
-      }
-    )
 
     ContentInternal(
       displayMenuOptionsAndWaitForResult = { displayedMenuOptions ->

@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -764,7 +766,9 @@ private fun RowScope.HomeScreenMiniDrawer(
     modifier = Modifier
       .fillMaxHeight()
       .width(miniDrawerWidth),
-    visible = miniDrawerDisplayed
+    visible = miniDrawerDisplayed,
+    enter = fadeIn(),
+    exit = fadeOut(),
   ) {
     Box(modifier = Modifier.fillMaxSize()) {
       HomeScreenMiniDrawerLayout()

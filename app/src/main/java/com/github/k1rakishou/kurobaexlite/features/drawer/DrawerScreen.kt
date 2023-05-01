@@ -407,6 +407,14 @@ private fun ContentInternal(
     return
   }
 
+  LaunchedEffect(
+    key1 = Unit,
+    block = {
+      snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedCatalog)
+      snackbarManager.popSnackbar(SnackbarId.ReloadLastVisitedThread)
+    }
+  )
+
   val lazyListState = rememberLazyListState()
   val reorderableState = rememberReorderState(lazyListState = lazyListState)
   val pullToRefreshState = rememberPullToRefreshState()
