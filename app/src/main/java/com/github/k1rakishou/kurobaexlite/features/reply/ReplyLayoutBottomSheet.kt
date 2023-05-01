@@ -1,8 +1,11 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -183,27 +186,35 @@ fun ReplyLayoutBottomSheet(
           .toDp()
       }
 
-      content(
-        targetReplyLayoutHeight,
-        draggableState,
-        { dragStartPositionY = dragOffsetAnimatable.value },
-        { velocity ->
-          performFling(
-            density = density,
-            anchorsUpdated = anchorsUpdated,
-            dragStartPositionY = dragStartPositionY,
-            currentPositionY = dragOffsetAnimatable.value,
-            threshold = threshold,
-            replyLayoutState = replyLayoutState,
-            lastDragPosition = lastDragPosition,
-            anchors = anchors,
-            draggableState = draggableState,
-            velocity = velocity,
-            updateDragStartPositionY = { dragStartPositionY = 0 },
-            updateReplyLayoutVisibility = { newReplyLayoutVisibility -> currentReplyLayoutVisibility = newReplyLayoutVisibility }
-          )
-        }
-      )
+      AnimatedVisibility(
+        visible = currentReplyLayoutVisibility != ReplyLayoutVisibility.Collapsed,
+        enter = fadeIn(),
+        exit = fadeOut()
+      ) {
+        content(
+          targetReplyLayoutHeight,
+          draggableState,
+          { dragStartPositionY = dragOffsetAnimatable.value },
+          { velocity ->
+            performFling(
+              density = density,
+              anchorsUpdated = anchorsUpdated,
+              dragStartPositionY = dragStartPositionY,
+              currentPositionY = dragOffsetAnimatable.value,
+              threshold = threshold,
+              replyLayoutState = replyLayoutState,
+              lastDragPosition = lastDragPosition,
+              anchors = anchors,
+              draggableState = draggableState,
+              velocity = velocity,
+              updateDragStartPositionY = { dragStartPositionY = 0 },
+              updateReplyLayoutVisibility = { newReplyLayoutVisibility ->
+                currentReplyLayoutVisibility = newReplyLayoutVisibility
+              }
+            )
+          }
+        )
+      }
     }
   }
 }
