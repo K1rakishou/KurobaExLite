@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.ui.helpers
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,6 +31,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.github.k1rakishou.kurobaexlite.managers.FastScrollerMarksManager
+import com.github.k1rakishou.kurobaexlite.ui.helpers.gesture.awaitPointerSlopOrCancellationWithPass
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyGridStateWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyItemInfoWrapper
 import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.LazyLayoutInfoWrapper
@@ -298,69 +299,78 @@ suspend fun <ItemInfo : LazyItemInfoWrapper, LayoutInfo : LazyLayoutInfoWrapper<
   scrollbarWidth: Int,
   onScrollbarDragStateUpdated: (Float?) -> Unit
 ) {
-  forEachGesture {
-    awaitPointerEventScope {
-      val downEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
-      if (downEvent.type != PointerEventType.Press) {
-        return@awaitPointerEventScope
+  awaitEachGesture {
+    val downEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+    if (downEvent.type != PointerEventType.Press) {
+      return@awaitEachGesture
+    }
+
+    val down = downEvent.changes.firstOrNull()
+      ?: return@awaitEachGesture
+
+    if (down.position.x < (width - scrollbarWidth)) {
+      return@awaitEachGesture
+    }
+
+    val touchSlopDetected = awaitPointerSlopOrCancellationWithPass(
+      pointerId = down.id,
+      pointerEventPass = PointerEventPass.Initial,
+      onPointerSlopReached = { change, _ ->
+        down.consume()
+        change.consume()
       }
+    ) != null
 
-      val down = downEvent.changes.firstOrNull()
-        ?: return@awaitPointerEventScope
+    if (!touchSlopDetected) {
+      return@awaitEachGesture
+    }
 
-      if (down.position.x < (width - scrollbarWidth)) {
-        return@awaitPointerEventScope
-      }
+    var job: Job? = null
 
-      down.consume()
+    try {
+      while (true) {
+        val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+        if (nextEvent.type != PointerEventType.Move) {
+          break
+        }
 
-      var job: Job? = null
+        for (change in nextEvent.changes) {
+          change.consume()
+        }
 
-      try {
-        while (true) {
-          val nextEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
-          if (nextEvent.type != PointerEventType.Move) {
-            break
-          }
+        nextEvent.changes.lastOrNull()?.let { lastChange ->
+          job = coroutineScope.launch {
+            val touchY = lastChange.position.y - paddingTop
+            val scrollbarTrackHeight = lazyStateWrapper.viewportHeight - paddingBottom - paddingTop
 
-          for (change in nextEvent.changes) {
-            change.consume()
-          }
+            val touchFraction = (touchY / scrollbarTrackHeight).coerceIn(0f, 1f)
+            val itemsCount = (lazyStateWrapper.totalItemsCount - lazyStateWrapper.fullyVisibleItemsCount)
 
-          nextEvent.changes.lastOrNull()?.let { lastChange ->
-            job = coroutineScope.launch {
-              val touchY = lastChange.position.y - paddingTop
-              val scrollbarTrackHeight = lazyStateWrapper.viewportHeight - paddingBottom - paddingTop
+            var scrollToIndex = (itemsCount.toFloat() * touchFraction).roundToInt()
+            if (touchFraction == 0f) {
+              scrollToIndex = 0
+            } else if (touchFraction == 1f) {
+              // We want to use the actual last item index for scrolling when touchFraction == 1f
+              // because otherwise we may end up not at the very bottom of the list but slightly
+              // above it (like 1 element's height)
+              scrollToIndex = lazyStateWrapper.totalItemsCount
+            }
 
-              val touchFraction = (touchY / scrollbarTrackHeight).coerceIn(0f, 1f)
-              val itemsCount = (lazyStateWrapper.totalItemsCount - lazyStateWrapper.fullyVisibleItemsCount)
+            lazyStateWrapper.scrollToItem(scrollToIndex)
 
-              var scrollToIndex = (itemsCount.toFloat() * touchFraction).roundToInt()
-              if (touchFraction == 0f) {
-                scrollToIndex = 0
-              } else if (touchFraction == 1f) {
-                // We want to use the actual last item index for scrolling when touchFraction == 1f
-                // because otherwise we may end up not at the very bottom of the list but slightly
-                // above it (like 1 element's height)
-                scrollToIndex = lazyStateWrapper.totalItemsCount
-              }
-
-              lazyStateWrapper.scrollToItem(scrollToIndex)
-
-              if (isActive) {
-                onScrollbarDragStateUpdated(touchFraction)
-              }
+            if (isActive) {
+              onScrollbarDragStateUpdated(touchFraction)
             }
           }
         }
-      } finally {
-        // Make sure the coroutine doesn't overwrite the onScrollbarDragStateUpdated() with non-null
-        // value because otherwise the scrollbar will stuck in "dragging" state.
-        job?.cancel()
-        job = null
-
-        onScrollbarDragStateUpdated(null)
       }
+    } finally {
+      // Make sure the coroutine doesn't overwrite the onScrollbarDragStateUpdated() with non-null
+      // value because otherwise the scrollbar will stuck in "dragging" state.
+      job?.cancel()
+      job = null
+
+      onScrollbarDragStateUpdated(null)
     }
   }
 }
