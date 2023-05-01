@@ -627,6 +627,12 @@ class ReplyLayoutViewModel(
               }
 
               kpncHelper.startWatchingPost(postDescriptor)
+                .onSuccess {
+                  showToast(
+                    chanDescriptor,
+                    appResources.string(R.string.watching_post, postDescriptor.asReadableString())
+                  )
+                }
                 .onFailure { error ->
                   showErrorToast(chanDescriptor, error.errorMessageOrClassName(userReadable = true))
                 }

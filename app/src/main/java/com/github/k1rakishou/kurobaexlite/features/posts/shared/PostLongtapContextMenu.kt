@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.features.reply.ReplyLayoutViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCHelper
 import com.github.k1rakishou.kurobaexlite.helpers.post_bind.PostBindProcessorCoordinator
+import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.interactors.filtering.HideOrUnhidePost
@@ -52,6 +53,7 @@ class PostLongtapContextMenu(
   private val kpncHelper: KPNCHelper by inject(KPNCHelper::class.java)
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
   private val snackbarManager: SnackbarManager by inject(SnackbarManager::class.java)
+  private val appResources: IAppResources by inject(IAppResources::class.java)
 
   private var startWatchingPostJob: Job? = null
   private var stopWatchingPostJob: Job? = null
@@ -212,17 +214,26 @@ class PostLongtapContextMenu(
         postsToReparse += postDescriptor
         reparsePostsFunc(postsToReparse)
 
-        if (bookmarksManager.contains(postDescriptor.threadDescriptor) && kpncHelper.isKpncEnabled()) {
-          startWatchingPostJob?.cancel()
-          startWatchingPostJob = screenCoroutineScope.launch {
-            val kpncAppInfoError = kpncHelper.kpncAppInfo().errorAsReadableString()
-            if (kpncAppInfoError != null) {
-              snackbarManager.errorToast(kpncAppInfoError)
-              return@launch
-            }
+        if (kpncHelper.isKpncEnabled()) {
+          if (bookmarksManager.contains(postDescriptor.threadDescriptor)) {
+            startWatchingPostJob?.cancel()
+            startWatchingPostJob = screenCoroutineScope.launch {
+              val kpncAppInfoError = kpncHelper.kpncAppInfo().errorAsReadableString()
+              if (kpncAppInfoError != null) {
+                snackbarManager.errorToast(kpncAppInfoError)
+                return@launch
+              }
 
-            kpncHelper.startWatchingPost(postDescriptor)
-              .onFailure { error -> snackbarManager.toast(error.errorMessageOrClassName(userReadable = true)) }
+              kpncHelper.startWatchingPost(postDescriptor)
+                .onSuccess {
+                  snackbarManager.toast(
+                    appResources.string(R.string.watching_post, postDescriptor.asReadableString())
+                  )
+                }
+                .onFailure { error -> snackbarManager.toast(error.errorMessageOrClassName(userReadable = true)) }
+            }
+          } else {
+            snackbarManager.toast(appResources.string(R.string.cannot_start_watching_post_no_bookmark))
           }
         }
       }
@@ -238,7 +249,7 @@ class PostLongtapContextMenu(
         postsToReparse += postDescriptor
         reparsePostsFunc(postsToReparse)
 
-        if (bookmarksManager.contains(postDescriptor.threadDescriptor) && kpncHelper.isKpncEnabled()) {
+        if (kpncHelper.isKpncEnabled()) {
           stopWatchingPostJob?.cancel()
           stopWatchingPostJob = screenCoroutineScope.launch {
             val kpncAppInfoError = kpncHelper.kpncAppInfo().errorAsReadableString()
@@ -248,6 +259,11 @@ class PostLongtapContextMenu(
             }
 
             kpncHelper.stopWatchingPost(postDescriptor)
+              .onSuccess {
+                snackbarManager.toast(
+                  appResources.string(R.string.post_unwatched, postDescriptor.asReadableString())
+                )
+              }
               .onFailure { error -> snackbarManager.toast(error.errorMessageOrClassName(userReadable = true)) }
           }
         }

@@ -418,4 +418,8 @@
     <string name="new_bookmark_options_screen_do_not_show_this_dialog">Do not show this dialog anymore</string>
     <string name="new_bookmark_options_screen_do_not_show_this_dialog_hint">Longtap the bookmark icon to show it again</string>
 
+    <string name="watching_post">Watching post \'%1$s\'</string>
+    <string name="post_unwatched">No longer watching post \'%1$s\'</string>
+    <string name="cannot_start_watching_post_no_bookmark">Cannot start watching post because thread is not bookmarked</string>
+
 </resources>
