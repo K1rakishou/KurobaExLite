@@ -359,6 +359,20 @@ class ReplyNotificationsHelper(
     unreadNotificationsGrouped: Map<ThreadDescriptor, List<ThreadBookmarkReply>>,
     currentlyOpenedThread: ThreadDescriptor?
   ): Boolean {
+    unreadNotificationsGrouped.entries.forEach { (threadDescriptor, threadBookmarkReplies) ->
+      threadBookmarkReplies.forEach { threadBookmarkReply ->
+        logcat(TAG) {
+          "showSummaryNotification() " +
+            "threadNo: ${threadDescriptor.threadNo}, " +
+            "postNo: ${threadBookmarkReply.postDescriptor.postNo}, " +
+            "repliesTo: ${threadBookmarkReply.repliesTo.postNo}, " +
+            "alreadyNotified: ${threadBookmarkReply.alreadyNotified}, " +
+            "alreadySeen: ${threadBookmarkReply.alreadySeen}, " +
+            "alreadyRead: ${threadBookmarkReply.alreadyRead}, "
+        }
+      }
+    }
+
     val unseenRepliesCount = unreadNotificationsGrouped.values
       .flatten()
       .count { threadBookmarkReplyView -> !threadBookmarkReplyView.alreadySeen }
@@ -788,30 +802,44 @@ class ReplyNotificationsHelper(
     yourPostNo: Long
   ): String {
     val postCommentBuilder = StringBuilder(parsedComment)
-
     val quoteMatcher = QUOTE_REGEX.matcher(postCommentBuilder)
+
+    var lengthDiff = 0
+
     while (quoteMatcher.find()) {
       val postNo = quoteMatcher.group(1)?.toLongOrNull()
         ?: continue
 
-      val startIndex = quoteMatcher.start(1)
-      val endIndex = quoteMatcher.end(1)
+      val startIndex = quoteMatcher.start(1) - lengthDiff
+      val endIndex = quoteMatcher.end(1) - lengthDiff
 
       if (startIndex >= endIndex || startIndex >= postCommentBuilder.length || endIndex >= postCommentBuilder.length) {
         continue
       }
 
       if (postNo == yourPostNo) {
-        postCommentBuilder.replace(startIndex, endIndex, "(You)")
+        val you = "(You)"
+        postCommentBuilder.replace(startIndex, endIndex, you)
+
+        lengthDiff += (endIndex - startIndex) - you.length
       } else {
-        val shortPostNo = postNo % 10000
-        postCommentBuilder.replace(startIndex, endIndex, "$shortPostNo")
+        val shortPostNo = "${postNo % 10000}"
+        postCommentBuilder.replace(startIndex, endIndex, shortPostNo)
+
+        lengthDiff += (endIndex - startIndex) - shortPostNo.length
       }
     }
 
+    lengthDiff = 0
+
     val links = LINK_EXTRACTOR.extractLinks(postCommentBuilder)
     for (link in links) {
-      postCommentBuilder.replace(link.beginIndex, link.endIndex, "*Link*")
+      val startIndex = link.beginIndex - lengthDiff
+      val endIndex = link.endIndex - lengthDiff
+      val linkText = "*Link*"
+
+      postCommentBuilder.replace(startIndex, endIndex, linkText)
+      lengthDiff += (endIndex - startIndex) - linkText.length
     }
 
     return postCommentBuilder.toString()

@@ -22,6 +22,9 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.FetchThreadBookma
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
+import com.github.k1rakishou.kurobaexlite.managers.SiteManager
+import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
+import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import logcat.logcat
@@ -34,6 +37,7 @@ class BookmarkBackgroundWatcherWorker(
 ) : CoroutineWorker(context, params) {
   private val kpncHelper: KPNCHelper by inject(KPNCHelper::class.java)
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
+  private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
   private val fetchThreadBookmarkInfo: FetchThreadBookmarkInfo by inject(FetchThreadBookmarkInfo::class.java)
   private val appSettings: AppSettings by inject(AppSettings::class.java)
@@ -77,14 +81,14 @@ class BookmarkBackgroundWatcherWorker(
       return Result.failure()
     }
 
-    val activeBookmarkDescriptors = bookmarksManager.getActiveBookmarkDescriptors()
-    if (activeBookmarkDescriptors.isEmpty()) {
-      logcat(TAG) { "activeBookmarkDescriptors are empty, doing nothing" }
+    val bookmarkDescriptorsToCheck = getBookmarkDescriptorsToCheck(postUrlsToCheck)
+    if (bookmarkDescriptorsToCheck.isEmpty()) {
+      logcat(TAG) { "bookmarkDescriptorsToCheck are empty, doing nothing" }
       return Result.success()
     }
 
     fetchThreadBookmarkInfo.await(
-      bookmarkDescriptorsToCheck = activeBookmarkDescriptors,
+      bookmarkDescriptorsToCheck = bookmarkDescriptorsToCheck,
       updateCurrentlyOpenedThread = false
     )
       .onFailure { error ->
@@ -94,26 +98,57 @@ class BookmarkBackgroundWatcherWorker(
       }
       .onSuccess { logcat(TAG) { "doWork() fetchThreadBookmarkInfo() success" } }
 
-    val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
-    if (activeBookmarksCount > 0) {
-      logcat(TAG) { "doWork() activeBookmarksCount: ${activeBookmarksCount} restarting the work" }
-
-      withContext(NonCancellable) {
-        restartBackgroundWork(
-          appContext = applicationContext,
-          flavorType = androidHelpers.getFlavorType(),
-          appSettings = appSettings,
-          isInForeground = isInForeground,
-          addInitialDelay = true,
-          postUrlsToCheck = emptyList()
-        )
-      }
+    if (postUrlsToCheck.isNotEmpty()) {
+      logcat(TAG) { "doWork() postUrlsToCheck is not empty, do not restart the work" }
     } else {
-      logcat(TAG) { "doWork() activeBookmarksCount: ${activeBookmarksCount} the work loop is finished" }
+      val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
+      if (activeBookmarksCount > 0) {
+        logcat(TAG) { "doWork() activeBookmarksCount: ${activeBookmarksCount} restarting the work" }
+
+        withContext(NonCancellable) {
+          restartBackgroundWork(
+            appContext = applicationContext,
+            flavorType = androidHelpers.getFlavorType(),
+            appSettings = appSettings,
+            isInForeground = isInForeground,
+            addInitialDelay = true,
+            postUrlsToCheck = emptyList()
+          )
+        }
+      } else {
+        logcat(TAG) { "doWork() activeBookmarksCount: ${activeBookmarksCount} the work loop is finished" }
+      }
     }
 
     logcat(TAG) { "doWork() end" }
     return Result.success()
+  }
+
+  private suspend fun getBookmarkDescriptorsToCheck(postUrlsToCheck: List<String>): List<ThreadDescriptor> {
+    if (postUrlsToCheck.isEmpty()) {
+      return bookmarksManager.getActiveBookmarkDescriptors()
+    }
+
+    val threadDescriptors = postUrlsToCheck
+      .mapNotNull { postUrl ->
+        val resolvedDescriptor = siteManager.resolveDescriptorFromRawIdentifier(postUrl)
+          ?: return@mapNotNull null
+
+        return@mapNotNull when (resolvedDescriptor) {
+          is ResolvedDescriptor.CatalogOrThread -> null
+          is ResolvedDescriptor.Post -> resolvedDescriptor.postDescriptor.threadDescriptor
+        }
+      }
+      .toHashSet()
+      .toList()
+
+    if (threadDescriptors.isEmpty()) {
+      return emptyList()
+    }
+
+    return bookmarksManager.getBookmarks(threadDescriptors)
+      .filter { threadBookmark -> threadBookmark.watching() }
+      .map { threadBookmark -> threadBookmark.threadDescriptor }
   }
 
   companion object {
