@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -79,7 +78,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefresh
 import com.github.k1rakishou.kurobaexlite.ui.helpers.PullToRefreshState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.Shimmer
@@ -106,14 +104,9 @@ fun BookmarksList(
   reorderableState: ReorderableState,
   showRevertBookmarkDeletion: (ThreadBookmark, Int) -> Unit
 ) {
-  val windowInsets = LocalWindowInsets.current
-
   val bookmarksScreenViewModel: BookmarksScreenViewModel = koinRememberViewModel()
   val threadScreenViewModel: ThreadScreenViewModel = koinRememberViewModel()
   val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
-
-  val contentPadding = remember(key1 = windowInsets) { PaddingValues(bottom = windowInsets.bottom) }
-  val pullToRefreshToPadding = remember(key1 = contentPadding) { contentPadding.calculateTopPadding() }
 
   val bookmarkListBeforeFiltering = bookmarksScreenViewModel.bookmarksList
   val canUseFancyAnimations by bookmarksScreenViewModel.canUseFancyAnimations
@@ -153,7 +146,6 @@ fun BookmarksList(
 
   PullToRefresh(
     pullToRefreshState = pullToRefreshState,
-    topPadding = pullToRefreshToPadding,
     onTriggered = { bookmarksScreenViewModel.forceRefreshBookmarks() }
   ) {
     LazyColumnWithFastScroller(
@@ -168,7 +160,6 @@ fun BookmarksList(
           onDragEnd = { from, to -> bookmarksScreenViewModel.onMoveConfirmed(from, to) }
         ),
       lazyListState = reorderableState.lazyListState,
-      contentPadding = contentPadding,
       content = {
         if (bookmarkList.isEmpty()) {
           if (isInSearchMode) {

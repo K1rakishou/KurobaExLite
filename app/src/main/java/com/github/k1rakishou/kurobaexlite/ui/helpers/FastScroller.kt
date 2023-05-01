@@ -65,7 +65,7 @@ fun LazyColumnWithFastScroller(
   scrollbarWidth: Int = DefaultScrollbarWidth(),
   scrollbarHeight: Int = DefaultScrollbarHeight(),
   lazyListState: LazyListState,
-  contentPadding: PaddingValues,
+  contentPadding: PaddingValues = remember { PaddingValues() },
   fastScrollerMarks: FastScrollerMarksManager.FastScrollerMarks? = null,
   userScrollEnabled: Boolean = true,
   onFastScrollerDragStateChanged: ((Boolean) -> Unit)? = null,

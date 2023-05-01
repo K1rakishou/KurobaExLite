@@ -141,6 +141,7 @@ class MainActivity : ComponentActivity(),
     }
   }
 
+  @Deprecated("Deprecated in Java")
   override fun onBackPressed() {
     backPressExecutor.post {
       if (mainActivityViewModel.onBackBackPressed()) {

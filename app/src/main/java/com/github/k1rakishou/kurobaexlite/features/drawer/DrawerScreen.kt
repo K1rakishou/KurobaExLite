@@ -482,16 +482,6 @@ private fun ContentInternal(
     Column(modifier = Modifier.fillMaxSize()) {
       Spacer(modifier = Modifier.height(windowInsets.top))
 
-      DrawerHeader(
-        searchQuery = searchQuery,
-        drawerContentType = drawerContentType,
-        appSettings = appSettings,
-        showDownloadsScreen = showDownloadsScreen,
-        openAppSettings = openAppSettings,
-        showBookmarkOptions = showBookmarkOptions,
-        onSearchQueryChanged = { newSearchQuery -> searchQuery = newSearchQuery }
-      )
-
       Box(
         modifier = Modifier
           .fillMaxWidth()
@@ -524,12 +514,24 @@ private fun ContentInternal(
           }
         }
       }
+
+      DrawerFooter(
+        searchQuery = searchQuery,
+        drawerContentType = drawerContentType,
+        appSettings = appSettings,
+        showDownloadsScreen = showDownloadsScreen,
+        openAppSettings = openAppSettings,
+        showBookmarkOptions = showBookmarkOptions,
+        onSearchQueryChanged = { newSearchQuery -> searchQuery = newSearchQuery }
+      )
+
+      Spacer(modifier = Modifier.height(windowInsets.bottom))
     }
   }
 }
 
 @Composable
-private fun DrawerHeader(
+private fun DrawerFooter(
   searchQuery: TextFieldValue,
   drawerContentType: DrawerContentType?,
   appSettings: AppSettings,

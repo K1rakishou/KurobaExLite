@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -65,7 +64,6 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeIcon
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LazyColumnWithFastScroller
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalWindowInsets
 import com.github.k1rakishou.kurobaexlite.ui.helpers.coerceIn
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import kotlinx.coroutines.delay
@@ -84,7 +82,6 @@ private const val noHistoryFoundMessageItemKey = "no_history_found_message"
 fun HistoryList(
   searchQuery: String,
 ) {
-  val windowInsets = LocalWindowInsets.current
   val context = LocalContext.current
 
   val historyScreenViewModel: HistoryScreenViewModel = koinRememberViewModel()
@@ -92,10 +89,6 @@ fun HistoryList(
 
   val navigationHistoryListBeforeFiltering = historyScreenViewModel.navigationHistoryList
   val lazyListState = rememberLazyListState()
-
-  val contentPadding = remember(key1 = windowInsets) {
-    PaddingValues(bottom = windowInsets.bottom)
-  }
 
   var navigationHistoryList by remember { mutableStateOf(navigationHistoryListBeforeFiltering) }
   var isInSearchMode by remember { mutableStateOf(false) }
@@ -186,7 +179,6 @@ fun HistoryList(
   LazyColumnWithFastScroller(
     lazyListContainerModifier = Modifier.fillMaxSize(),
     lazyListState = lazyListState,
-    contentPadding = contentPadding,
     content = {
       if (navigationHistoryList.isEmpty()) {
         if (isInSearchMode) {
