@@ -6,7 +6,7 @@ import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -67,7 +67,7 @@ fun PullToRefresh(
   pullToRefreshEnabled: Boolean = true,
   topPadding: Dp = 0.dp,
   circleRadius: Dp = 16.dp,
-  pullThreshold: Dp = 128.dp,
+  pullThreshold: Dp = 100.dp,
   pullToRefreshState: PullToRefreshState,
   canPull: () -> Boolean = { true },
   onTriggered: () -> Unit,
@@ -194,29 +194,27 @@ fun PullToRefresh(
       .pointerInput(
         key1 = Unit,
         block = {
-          forEachGesture {
-            awaitPointerEventScope {
-              val firstEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
-              if (firstEvent.type != PointerEventType.Press) {
-                return@awaitPointerEventScope
-              }
+          awaitEachGesture {
+            val firstEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+            if (firstEvent.type != PointerEventType.Press) {
+              return@awaitEachGesture
+            }
 
-              isTouching = true
+            isTouching = true
 
-              try {
-                while (true) {
-                  val maybeUpOrCancel = awaitPointerEvent(pass = PointerEventPass.Initial)
-                  if (maybeUpOrCancel.type == PointerEventType.Release) {
-                    break
-                  }
-
-                  if (maybeUpOrCancel.changes.fastAll { it.changedToUpIgnoreConsumed() }) {
-                    break
-                  }
+            try {
+              while (true) {
+                val maybeUpOrCancel = awaitPointerEvent(pass = PointerEventPass.Initial)
+                if (maybeUpOrCancel.type == PointerEventType.Release) {
+                  break
                 }
-              } finally {
-                isTouching = false
+
+                if (maybeUpOrCancel.changes.fastAll { it.changedToUpIgnoreConsumed() }) {
+                  break
+                }
               }
+            } finally {
+              isTouching = false
             }
           }
         }

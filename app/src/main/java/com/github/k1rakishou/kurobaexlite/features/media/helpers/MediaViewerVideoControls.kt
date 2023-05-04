@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.media.helpers
 
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.forEachGesture
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -246,31 +246,29 @@ suspend fun PointerInputScope.processTapToSeekGesture(
   updateSeekHint: (Int?) -> Unit,
   seekTo: (Int) -> Unit
 ) {
-  forEachGesture {
-    awaitPointerEventScope {
-      awaitFirstDown(requireUnconsumed = false)
+  awaitEachGesture {
+    awaitFirstDown(requireUnconsumed = false)
 
-      if (!videoStartedPlaying()) {
-        return@awaitPointerEventScope
-      }
+    if (!videoStartedPlaying()) {
+      return@awaitEachGesture
+    }
 
-      try {
-        blockAutoPositionUpdateState()
+    try {
+      blockAutoPositionUpdateState()
 
-        while (true) {
-          val event = awaitPointerEvent(PointerEventPass.Main)
-          if (event.type != PointerEventType.Move) {
-            break
-          }
-
-          updateHint(videoDuration, lastSlideOffset, updateSeekHint)
+      while (true) {
+        val event = awaitPointerEvent(PointerEventPass.Main)
+        if (event.type != PointerEventType.Move) {
+          break
         }
-      } finally {
-        updateSeekHint(null)
-        seek(videoDuration, lastSlideOffset, seekTo)
 
-        unBlockAutoPositionUpdateState()
+        updateHint(videoDuration, lastSlideOffset, updateSeekHint)
       }
+    } finally {
+      updateSeekHint(null)
+      seek(videoDuration, lastSlideOffset, seekTo)
+
+      unBlockAutoPositionUpdateState()
     }
   }
 }

@@ -1,6 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.posts.shared.post_list
 
-import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -23,29 +23,27 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 
 internal suspend fun PointerInputScope.detectTouches(onCurrentlyTouching: (Boolean) -> Unit) {
-  forEachGesture {
-    awaitPointerEventScope {
-      val down = awaitPointerEvent(pass = PointerEventPass.Initial)
-      if (down.type != PointerEventType.Press) {
-        return@awaitPointerEventScope
-      }
+  awaitEachGesture {
+    val down = awaitPointerEvent(pass = PointerEventPass.Initial)
+    if (down.type != PointerEventType.Press) {
+      return@awaitEachGesture
+    }
 
-      onCurrentlyTouching(true)
+    onCurrentlyTouching(true)
 
-      try {
-        while (true) {
-          val up = awaitPointerEvent(pass = PointerEventPass.Initial)
-          if (up.changes.fastAll { it.changedToUp() }) {
-            break
-          }
-
-          if (up.type == PointerEventType.Release || up.type == PointerEventType.Exit) {
-            break
-          }
+    try {
+      while (true) {
+        val up = awaitPointerEvent(pass = PointerEventPass.Initial)
+        if (up.changes.fastAll { it.changedToUp() }) {
+          break
         }
-      } finally {
-        onCurrentlyTouching(false)
+
+        if (up.type == PointerEventType.Release || up.type == PointerEventType.Exit) {
+          break
+        }
       }
+    } finally {
+      onCurrentlyTouching(false)
     }
   }
 }

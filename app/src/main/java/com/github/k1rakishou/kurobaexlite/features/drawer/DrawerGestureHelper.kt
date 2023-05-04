@@ -1,7 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.drawer
 
 import android.os.SystemClock
-import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -42,26 +42,26 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
   onDraggingDrawer: (dragging: Boolean, time: Long, current: Float) -> Unit
 ) {
   coroutineScope {
-    forEachGesture {
+    awaitEachGesture {
       var prevDragPositionX = 0f
       var prevTime = SystemClock.elapsedRealtime()
       var dragDownEvent: PointerInputChange? = null
 
-      val firstEvent = awaitPointerEventScope {
+      val firstEvent = kotlin.run {
         val firstEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
         if (firstEvent.type != PointerEventType.Press) {
-          return@awaitPointerEventScope null
+          return@run null
         }
 
         if (drawerWidth <= 0) {
-          return@awaitPointerEventScope null
+          return@run null
         }
 
         val downEvent = firstEvent.changes.firstOrNull()
-          ?: return@awaitPointerEventScope null
+          ?: return@run null
 
         if (!isGestureCurrentlyAllowed()) {
-          return@awaitPointerEventScope null
+          return@run null
         }
 
         dragDownEvent = downEvent
@@ -83,21 +83,21 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           }
 
           if (touchSlopChange == null || overSlop == null) {
-            return@awaitPointerEventScope null
+            return@run null
           }
 
           if (downEvent.position.x > drawerWidth) {
-            return@awaitPointerEventScope null
+            return@run null
           }
         } else {
           onStopConsumingScrollEvents()
 
           if (mainUiLayoutMode == MainUiLayoutMode.Split) {
-            return@awaitPointerEventScope null
+            return@run null
           }
 
           if (downEvent.position.x > drawerLongtapGestureWidthZonePx) {
-            return@awaitPointerEventScope null
+            return@run null
           }
 
           for (change in firstEvent.changes) {
@@ -111,7 +111,7 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           )
 
           if (longPress == null || longPress.position.x > drawerLongtapGestureWidthZonePx) {
-            return@awaitPointerEventScope null
+            return@run null
           }
 
           onLongtapDragGestureDetected()
@@ -124,11 +124,11 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           onDraggingDrawer(true, downEvent.uptimeMillis, downEvent.position.x)
         }
 
-        return@awaitPointerEventScope firstEvent
+        return@run firstEvent
       }
 
       if (firstEvent == null || dragDownEvent == null) {
-        return@forEachGesture
+        return@awaitEachGesture
       }
 
       try {
@@ -136,28 +136,26 @@ suspend fun PointerInputScope.detectDrawerDragGestures(
           change.consume()
         }
 
-        awaitPointerEventScope {
-          while (isActive) {
-            val moveEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
-            for (change in moveEvent.changes) {
-              change.consume()
-            }
-
-            val drag = moveEvent.changes.firstOrNull { it.id == dragDownEvent!!.id }
-              ?: break
-
-            if (drag.changedToUpIgnoreConsumed()) {
-              break
-            }
-
-            prevDragPositionX = drag.position.x
-            prevTime = drag.uptimeMillis
-
-            drag.historical.fastForEach { historicalChange ->
-              onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
-            }
-            onDraggingDrawer(true, drag.uptimeMillis, drag.position.x)
+        while (isActive) {
+          val moveEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+          for (change in moveEvent.changes) {
+            change.consume()
           }
+
+          val drag = moveEvent.changes.firstOrNull { it.id == dragDownEvent!!.id }
+            ?: break
+
+          if (drag.changedToUpIgnoreConsumed()) {
+            break
+          }
+
+          prevDragPositionX = drag.position.x
+          prevTime = drag.uptimeMillis
+
+          drag.historical.fastForEach { historicalChange ->
+            onDraggingDrawer(true, historicalChange.uptimeMillis, historicalChange.position.x)
+          }
+          onDraggingDrawer(true, drag.uptimeMillis, drag.position.x)
         }
       } finally {
         onDraggingDrawer(false, prevTime, prevDragPositionX)

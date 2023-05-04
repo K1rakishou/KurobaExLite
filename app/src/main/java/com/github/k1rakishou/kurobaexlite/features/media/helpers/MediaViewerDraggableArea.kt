@@ -8,7 +8,7 @@ import android.text.TextPaint
 import android.view.animation.LinearInterpolator
 import android.widget.Scroller
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.gestures.forEachGesture
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.size
@@ -45,11 +45,11 @@ import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.gesture.awaitPointerSlopOrCancellationWithPass
-import kotlin.math.absoluteValue
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
+import kotlin.math.absoluteValue
 
 private val flingVelocity = 7000f
 private val flingAnimationDuration = 250
@@ -188,87 +188,87 @@ fun DraggableArea(
         block = {
           val velocityTracker = VelocityTracker()
 
-          forEachGesture {
-            awaitPointerEventScope {
-              velocityTracker.resetTracking()
+          awaitEachGesture {
+            velocityTracker.resetTracking()
 
-              val downEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
-              if (ignoreAllMotionEvents) {
-                return@awaitPointerEventScope
-              }
+            val downEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+            if (ignoreAllMotionEvents) {
+              return@awaitEachGesture
+            }
 
-              val firstChange = downEvent.changes.firstOrNull()
-              if (firstChange == null) {
-                return@awaitPointerEventScope
-              }
+            val firstChange = downEvent.changes.firstOrNull()
+            if (firstChange == null) {
+              return@awaitEachGesture
+            }
 
-              var skipGesture = false
+            var skipGesture = false
 
-              val touchSlopChange = awaitPointerSlopOrCancellationWithPass(
-                pointerId = firstChange.id,
-                pointerEventPass = PointerEventPass.Initial,
-                onPointerSlopReached = { change, overSlop ->
-                  if (!isDragGestureAllowedFunc(change.position, firstChange.position)) {
-                    skipGesture = true
-                    return@awaitPointerSlopOrCancellationWithPass
-                  }
-
-                  if (overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
-                    change.consume()
-                  }
-                }
-              )
-
-              if (touchSlopChange == null || skipGesture) {
-                return@awaitPointerEventScope
-              }
-
-              downEvent.changes.fastForEach { pointerInputChange ->
-                velocityTracker.addPointerInputChange(pointerInputChange)
-                pointerInputChange.consume()
-              }
-
-              velocityTracker.addPointerInputChange(touchSlopChange)
-
-              val startPosition = touchSlopChange.position
-              var currentDist = 0f
-
-              try {
-                while (true) {
-                  val moveEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
-                  val moveChange = moveEvent.changes.firstOrNull()
-
-                  if (moveChange == null || moveChange.changedToUpIgnoreConsumed()) {
-                    break
-                  }
-
-                  moveChange.consume()
-                  velocityTracker.addPointerInputChange(moveChange)
-
-                  currentPosition = moveChange.position - startPosition
-                  currentDist = (moveChange.position - startPosition).getDistance()
-                  showCloseViewerLabel = currentDist.absoluteValue > distToClose
-                }
-              } finally {
-                val velocity = velocityTracker.calculateVelocity()
-                val velocityHypot = Math
-                  .hypot(velocity.x.toDouble(), velocity.y.toDouble())
-                  .toFloat()
-
-                when {
-                  velocityHypot.absoluteValue > flingVelocity -> {
-                    endActionChannel.trySend(EndAction.Fling(currentPosition, velocity))
-                  }
-                  currentDist > distToClose -> {
-                    endActionChannel.trySend(EndAction.Close)
-                  }
-                  else -> {
-                    endActionChannel.trySend(EndAction.ScrollBack(currentPosition))
-                  }
+            val touchSlopChange = awaitPointerSlopOrCancellationWithPass(
+              pointerId = firstChange.id,
+              pointerEventPass = PointerEventPass.Initial,
+              onPointerSlopReached = { change, overSlop ->
+                if (!isDragGestureAllowedFunc(change.position, firstChange.position)) {
+                  skipGesture = true
+                  return@awaitPointerSlopOrCancellationWithPass
                 }
 
-                ignoreAllMotionEvents = true
+                if (overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
+                  change.consume()
+                }
               }
+            )
+
+            if (touchSlopChange == null || skipGesture) {
+              return@awaitEachGesture
+            }
+
+            downEvent.changes.fastForEach { pointerInputChange ->
+              velocityTracker.addPointerInputChange(pointerInputChange)
+              pointerInputChange.consume()
+            }
+
+            velocityTracker.addPointerInputChange(touchSlopChange)
+
+            val startPosition = touchSlopChange.position
+            var currentDist = 0f
+
+            try {
+              while (true) {
+                val moveEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+                val moveChange = moveEvent.changes.firstOrNull()
+
+                if (moveChange == null || moveChange.changedToUpIgnoreConsumed()) {
+                  break
+                }
+
+                moveChange.consume()
+                velocityTracker.addPointerInputChange(moveChange)
+
+                currentPosition = moveChange.position - startPosition
+                currentDist = (moveChange.position - startPosition).getDistance()
+                showCloseViewerLabel = currentDist.absoluteValue > distToClose
+              }
+            } finally {
+              val velocity = velocityTracker.calculateVelocity()
+              val velocityHypot = Math
+                .hypot(velocity.x.toDouble(), velocity.y.toDouble())
+                .toFloat()
+
+              when {
+                velocityHypot.absoluteValue > flingVelocity -> {
+                  endActionChannel.trySend(EndAction.Fling(currentPosition, velocity))
+                }
+
+                currentDist > distToClose -> {
+                  endActionChannel.trySend(EndAction.Close)
+                }
+
+                else -> {
+                  endActionChannel.trySend(EndAction.ScrollBack(currentPosition))
+                }
+              }
+
+              ignoreAllMotionEvents = true
             }
           }
         }

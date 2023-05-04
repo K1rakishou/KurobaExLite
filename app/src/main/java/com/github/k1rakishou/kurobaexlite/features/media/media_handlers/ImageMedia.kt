@@ -3,9 +3,7 @@ package com.github.k1rakishou.kurobaexlite.features.media.media_handlers
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntSize
@@ -111,16 +109,12 @@ fun DisplayFullImage(
   val maxScale = remember(key1 = postImageDataLoadState.postImage, key2 = availableSize) {
     val postImage = postImageDataLoadState.postImage
 
-    var scale = Math.min(
+    val scale = Math.min(
       availableSize.width.toFloat() / postImage.width.toFloat(),
       availableSize.height.toFloat() / postImage.height.toFloat()
     )
 
-    if (scale < 2f) {
-      scale += 2f
-    }
-
-    return@remember scale
+    return@remember scale * 3f
   }
 
   val state = rememberComposeSubsamplingScaleImageState(
@@ -132,13 +126,12 @@ fun DisplayFullImage(
     minimumScaleType = { MinimumScaleType.ScaleTypeCustom },
     imageDecoderProvider = imageDecoderProvider
   )
-  val stateUpdated by rememberUpdatedState(newValue = state)
 
   LaunchedEffect(
-    key1 = Unit,
+    key1 = state,
     block = {
       val isDragGestureAllowed: (Offset, Offset) -> Boolean = func@ { currPosition, startPosition ->
-        val panInfo = stateUpdated.getPanInfo()
+        val panInfo = state.getPanInfo()
         if (panInfo == null) {
           return@func false
         }

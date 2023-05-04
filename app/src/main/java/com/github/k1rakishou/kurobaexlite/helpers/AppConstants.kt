@@ -10,7 +10,7 @@ object AppConstants {
   const val TEXT_SEPARATOR = " • "
   const val deleteNavHistoryTimeoutMs = 5000L
   const val deleteBookmarkTimeoutMs = 5000L
-  const val minFlingVelocityPx = 5000f
+  const val minFlingVelocityPx = 4000f
   const val bookmarkMaxTitleLength = 120
   const val navHistoryMaxTitleLength = 180
   const val CREATE_NEW_ISSUE_URL = "https://github.com/K1rakishou/KurobaExLite/issues"
