@@ -12,11 +12,10 @@ import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 
 class ClientAppNotifierImpl(
-  private val appCoroutineScope: CoroutineScope,
   private val siteManager: SiteManager,
   private val bookmarksManager: BookmarksManager,
   private val loadBookmarks: LoadBookmarks,
@@ -35,38 +34,38 @@ class ClientAppNotifierImpl(
         logcatDebug(TAG) { "onRepliesReceived() postUrl: ${postUrl}" }
       }
 
-      onRepliesReceivedInternal(postUrls)
+      logcatDebug(TAG) { "onRepliesReceivedInternal() start" }
+      runBlocking(Dispatchers.IO) { onRepliesReceivedInternal(postUrls) }
+      logcatDebug(TAG) { "onRepliesReceivedInternal() end" }
     }
   }
 
-  private fun onRepliesReceivedInternal(postUrls: List<String>) {
-    appCoroutineScope.launch {
-      postUrls.forEach { postUrl -> logcatDebug(TAG) { "postUrl: ${postUrl}" } }
-      logcatDebug(TAG) { "fetchThreadBookmarkInfo.await()..." }
+  private suspend fun onRepliesReceivedInternal(postUrls: List<String>) {
+    postUrls.forEach { postUrl -> logcatDebug(TAG) { "postUrl: ${postUrl}" } }
+    logcatDebug(TAG) { "fetchThreadBookmarkInfo.await()..." }
 
-      val loadBookmarksResult = loadBookmarks.executeSuspend()
-        .onFailure { error ->
-          logcatError(TAG) { "loadBookmarks.executeSuspend() -> error: ${error.asLogIfImportantOrErrorMessage()}" }
-        }
-
-      if (loadBookmarksResult.isSuccess) {
-        val bookmarkDescriptorsToCheck = getBookmarkDescriptorsToCheck(postUrls)
-        if (bookmarkDescriptorsToCheck.isNotEmpty()) {
-          fetchThreadBookmarkInfo.await(
-            bookmarkDescriptorsToCheck = bookmarkDescriptorsToCheck,
-            updateCurrentlyOpenedThread = false
-          )
-            .onFailure { error ->
-              logcatError(TAG) { "fetchThreadBookmarkInfo.await() error: ${error.asLogIfImportantOrErrorMessage()}" }
-            }
-            .ignore()
-        } else {
-          logcatDebug(TAG) { "bookmarkDescriptorsToCheck is empty" }
-        }
+    val loadBookmarksResult = loadBookmarks.executeSuspend()
+      .onFailure { error ->
+        logcatError(TAG) { "loadBookmarks.executeSuspend() -> error: ${error.asLogIfImportantOrErrorMessage()}" }
       }
 
-      logcatDebug(TAG) { "fetchThreadBookmarkInfo.await()... done" }
+    if (loadBookmarksResult.isSuccess) {
+      val bookmarkDescriptorsToCheck = getBookmarkDescriptorsToCheck(postUrls)
+      if (bookmarkDescriptorsToCheck.isNotEmpty()) {
+        fetchThreadBookmarkInfo.await(
+          bookmarkDescriptorsToCheck = bookmarkDescriptorsToCheck,
+          updateCurrentlyOpenedThread = false
+        )
+          .onFailure { error ->
+            logcatError(TAG) { "fetchThreadBookmarkInfo.await() error: ${error.asLogIfImportantOrErrorMessage()}" }
+          }
+          .ignore()
+      } else {
+        logcatDebug(TAG) { "bookmarkDescriptorsToCheck is empty" }
+      }
     }
+
+    logcatDebug(TAG) { "fetchThreadBookmarkInfo.await()... done" }
   }
 
   private suspend fun getBookmarkDescriptorsToCheck(postUrlsToCheck: List<String>): List<ThreadDescriptor> {
