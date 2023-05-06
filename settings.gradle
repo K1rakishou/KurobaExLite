@@ -8,3 +8,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "KurobaExLite"
 include ':app'
+include ':kpnc'

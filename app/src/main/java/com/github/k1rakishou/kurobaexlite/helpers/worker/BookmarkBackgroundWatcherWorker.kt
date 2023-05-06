@@ -55,20 +55,21 @@ class BookmarkBackgroundWatcherWorker(
   private suspend fun doWorkInternal(): Result {
     logcat(TAG) { "doWork() start" }
 
+    // TODO: remove  POST_URLS_TO_CHECK, we don't use it anymore
     val postUrlsToCheck = inputData.getStringArray(POST_URLS_TO_CHECK)?.toList() ?: emptyList()
     logcat(TAG) { "doWork() postUrlsToCheck: ${postUrlsToCheck.size}" }
     postUrlsToCheck.forEach { postUrlToCheck -> logcat(TAG) { "postUrlToCheck: ${postUrlToCheck}" } }
 
     val isInForeground = applicationVisibilityManager.isAppInForeground()
     if (!isInForeground && kpncHelper.isKpncEnabledAndAccountIsValid() && postUrlsToCheck.isEmpty()) {
-      logcat(TAG) { "doWork() disabling WorkManager because KPNC is installed and application is in background" }
+      logcat(TAG) { "doWork() disabling WorkManager because KPNC is enabled and application is in background" }
       return Result.success()
     }
 
     if (!isInForeground) {
       val kpncAppInfo = kpncHelper.kpncAppInfo()
-      if (kpncAppInfo is KPNCAppInfo.Installed && !kpncAppInfo.isAccountValid) {
-        logcat(TAG) { "doWork() kpncInfo is installed but account is not valid, resuming WorkManager" }
+      if (kpncAppInfo is KPNCAppInfo.Success && !kpncAppInfo.isAccountValid) {
+        logcat(TAG) { "doWork() kpncInfo is enabled but account is not valid, resuming WorkManager" }
       }
     } else {
       logcat(TAG) { "doWork() application is in foreground, resuming WorkManager" }

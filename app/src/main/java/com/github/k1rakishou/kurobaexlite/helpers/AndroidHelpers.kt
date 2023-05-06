@@ -97,8 +97,8 @@ class AndroidHelpers(
 
   fun getFlavorType(): FlavorType {
     return when (BuildConfig.FLAVOR_TYPE) {
-      0 -> FlavorType.Production
-      1 -> FlavorType.Development
+      0 -> FlavorType.Development
+      1 -> FlavorType.Production
       else -> throw RuntimeException("Unknown flavor type " + BuildConfig.FLAVOR_TYPE)
     }
   }

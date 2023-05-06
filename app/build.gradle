@@ -42,22 +42,9 @@ android {
     flavorDimensions "default"
 
     productFlavors {
-        // FLAVOR_TYPE 0 - production build
-        // FLAVOR_TYPE 1 - development build
+        // FLAVOR_TYPE 0 - development build
+        // FLAVOR_TYPE 1 - production build
 
-        production {
-            dimension "default"
-            applicationIdSuffix ""
-            apkVersionNameSuffix = ""
-
-            buildConfigField "int", "FLAVOR_TYPE", "0"
-
-            manifestPlaceholders = [
-                    appName              : "KurobaExLite",
-                    iconLoc              : "@mipmap/ic_launcher_release",
-                    fileProviderAuthority: "${defaultConfig.applicationId}${applicationIdSuffix}.fileprovider"
-            ]
-        }
         development {
             dimension "default"
             // Different app ids for different flavors so that the users are able to install both
@@ -65,12 +52,25 @@ android {
             applicationIdSuffix ".dev"
             apkVersionNameSuffix = "-dev"
 
-            buildConfigField "int", "FLAVOR_TYPE", "1"
+            buildConfigField "int", "FLAVOR_TYPE", "0"
 
             // The same as in stable flavor
             manifestPlaceholders = [
                     appName              : "KurobaExLite-dev",
                     iconLoc              : "@mipmap/ic_launcher_dev",
+                    fileProviderAuthority: "${defaultConfig.applicationId}${applicationIdSuffix}.fileprovider"
+            ]
+        }
+        production {
+            dimension "default"
+            applicationIdSuffix ""
+            apkVersionNameSuffix = ""
+
+            buildConfigField "int", "FLAVOR_TYPE", "1"
+
+            manifestPlaceholders = [
+                    appName              : "KurobaExLite",
+                    iconLoc              : "@mipmap/ic_launcher_release",
                     fileProviderAuthority: "${defaultConfig.applicationId}${applicationIdSuffix}.fileprovider"
             ]
         }
@@ -162,6 +162,8 @@ android {
 }
 
 dependencies {
+    implementation project(':kpnc')
+
     implementation 'androidx.core:core-ktx:1.10.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'

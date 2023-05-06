@@ -1,74 +1,53 @@
 package com.github.k1rakishou.kurobaexlite.helpers.kpnc
 
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.os.Bundle
+import android.content.SharedPreferences
+import com.github.k1rakishou.kpnc.AppConstants
+import com.github.k1rakishou.kpnc.helpers.isUserIdValid
+import com.github.k1rakishou.kpnc.model.repository.AccountRepository
+import com.github.k1rakishou.kpnc.model.repository.PostRepository
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatDebug
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import com.github.k1rakishou.kurobaexlite.helpers.util.sendOrderedBroadcastSuspend
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
-import com.squareup.moshi.Json
-import com.squareup.moshi.JsonClass
-import com.squareup.moshi.Moshi
 
 class KPNCHelper(
-  private val appContext: Context,
-  private val moshi: Moshi,
-  private val siteManager: SiteManager
+  private val siteManager: SiteManager,
+  private val sharedPrefs: SharedPreferences,
+  private val accountRepository: AccountRepository,
+  private val postRepository: PostRepository,
 ) {
-  @Volatile private var kpncAppInfo: KPNCAppInfo? = null
 
   suspend fun kpncAppInfo(): KPNCAppInfo {
-    if (kpncAppInfo != null) {
-      return kpncAppInfo!!
+    val userId = sharedPrefs.getString(AppConstants.PrefKeys.USER_ID, null)
+      ?.takeIf { userId -> isUserIdValid(userId) }
+    val instanceAddress = sharedPrefs.getString(AppConstants.PrefKeys.INSTANCE_ADDRESS, null)
+      ?.takeIf { instanceAddress -> instanceAddress.isNotNullNorBlank() }
+
+    if (instanceAddress == null || userId == null) {
+      logcatDebug(TAG) { "Bad userId: ${userId} or instanceAddress: ${instanceAddress}" }
+      return KPNCAppInfo.Error(errorMessage = "Bad userId: ${userId} or instanceAddress: ${instanceAddress}")
     }
 
-    logcatDebug(TAG) { "kpncAppInfo()" }
-    val intent = Intent(ACTION_GET_INFO)
+    logcatDebug(TAG) { "InstanceAddress and UserId are OK" }
 
-    val resultBundle = sendBroadcastInternal(appContext, intent)
-    if (resultBundle == null) {
-      logcatError(TAG) { "kpncAppInfo() resultBundle == null" }
-      return KPNCAppInfo.NotInstalled
+    val accountInfoResult = accountRepository.getAccountInfo(instanceAddress, userId)
+    if (accountInfoResult.isFailure) {
+      val exception = accountInfoResult.exceptionOrNull()!!
+      logcatDebug(TAG) { "getAccountInfo() error: ${exception.asLogIfImportantOrErrorMessage()}" }
+
+      return KPNCAppInfo.Error(exception.errorMessageOrClassName(userReadable = true))
     }
 
-    val kpncInfoJson = resultBundle.getString(ACTION_GET_INFO_RESULT)
-    if (kpncInfoJson.isNullOrEmpty()) {
-      logcatError(TAG) { "kpncAppInfo() kpncInfoJson == null" }
-      return KPNCAppInfo.NotInstalled
-    }
+    val isValid = accountInfoResult.getOrNull()!!.isValid
+    logcatDebug(TAG) { "getAccountInfo() success, isValid: ${isValid}" }
 
-    val kpncInfoResult = moshi.adapter<KPNCInfoResult>(KPNCInfoResult::class.java).fromJson(kpncInfoJson)
-    if (kpncInfoResult == null) {
-      logcatError(TAG) { "kpncAppInfo() kpncInfoJson conversion failed" }
-      return KPNCAppInfo.NotInstalled
-    }
-
-    if (kpncInfoResult.error != null) {
-      logcatError(TAG) { "kpncAppInfo() Error while trying to execute KPNC request: ${kpncInfoResult.error}" }
-      return KPNCAppInfo.Error(kpncInfoResult.error)
-    }
-
-    val kpncInfo = kpncInfoResult.data!!
-    if (kpncInfo.appApiVersion != API_VERSION) {
-      logcatError(TAG) { "kpncAppInfo() appApiVersion (${kpncInfo.appApiVersion}) != API_VERSION ($API_VERSION)" }
-      return KPNCAppInfo.InstalledVersionMismatch(
-        expected = API_VERSION,
-        actual = kpncInfo.appApiVersion
-      )
-    }
-
-    if (kpncInfo.isAccountValid) {
-      kpncAppInfo = KPNCAppInfo.Installed(isAccountValid = true)
-    }
-
-    logcatDebug(TAG) { "kpncAppInfo() success, isAccountValid = ${kpncInfo.isAccountValid}" }
-    return kpncAppInfo!!
+    return KPNCAppInfo.Success(isAccountValid = isValid)
   }
-  
+
   suspend fun startWatchingPost(postDescriptor: PostDescriptor): Result<Unit> {
     if (!isKpncEnabled()) {
       return Result.success(Unit)
@@ -93,36 +72,17 @@ class KPNCHelper(
       return Result.failure(WatchPostError(postDescriptor, "Site is not supported"))
     }
 
-    val intent = Intent(ACTION_START_WATCHING_POST)
-    intent.putExtra(POST_URL, postUrl)
+    logcatDebug(TAG) { "Got ACTION_START_WATCHING_POST" }
 
-    val resultBundle = sendBroadcastInternal(appContext, intent)
-    if (resultBundle == null) {
-      logcatError(TAG) { "startWatchingPost() resultBundle == null" }
-      return Result.failure(WatchPostError(postDescriptor, "Error communicating with KPNC"))
+    val watchPostResult = postRepository.watchPost(postUrl)
+    if (watchPostResult.isFailure) {
+      val exception = watchPostResult.exceptionOrNull()!!
+      logcatError(TAG) { "handleStartWatchingPost(${postUrl}) error: ${exception.asLogIfImportantOrErrorMessage()}" }
+
+      return Result.failure(exception)
     }
 
-    val watchPostResultJson = resultBundle.getString(ACTION_START_WATCHING_POST_RESULT, null)
-    if (watchPostResultJson.isNullOrEmpty()) {
-      logcatError(TAG) { "startWatchingPost() watchPostResultJson == null" }
-      return Result.failure(WatchPostError(postDescriptor, "KPNC didn't send a response"))
-    }
-
-    val watchPostResult = moshi
-      .adapter<WatchPostResult>(WatchPostResult::class.java)
-      .fromJson(watchPostResultJson)
-
-    if (watchPostResult == null) {
-      logcatError(TAG) { "startWatchingPost() watchPostResult == null, watchPostResultJson: \'$watchPostResultJson\'" }
-      return Result.failure(WatchPostError(postDescriptor, "WatchPostResult json conversion failed"))
-    }
-
-    if (watchPostResult.error != null) {
-      logcatError(TAG) { "startWatchingPost() Error while trying to execute KPNC request: ${watchPostResult.error}" }
-      return Result.failure(WatchPostError(postDescriptor, watchPostResult.error))
-    }
-
-    val success = watchPostResult.data?.success == true
+    val success = watchPostResult.getOrThrow()
     if (!success) {
       logcatError(TAG) { "startWatchingPost() watchPostResult.data.success == false" }
       return Result.failure(WatchPostError(postDescriptor, "KPNC returned unsuccessful result"))
@@ -156,36 +116,15 @@ class KPNCHelper(
       return Result.failure(WatchPostError(postDescriptor, "Site is not supported"))
     }
 
-    val intent = Intent(ACTION_STOP_WATCHING_POST)
-    intent.putExtra(POST_URL, postUrl)
+    val unwatchPostResult = postRepository.unwatchPost(postUrl)
+    if (unwatchPostResult.isFailure) {
+      val exception = unwatchPostResult.exceptionOrNull()!!
+      logcatError(TAG) { "handleStopWatchingPost(${postUrl}) error: ${exception.asLogIfImportantOrErrorMessage()}" }
 
-    val resultBundle = sendBroadcastInternal(appContext, intent)
-    if (resultBundle == null) {
-      logcatError(TAG) { "stopWatchingPost() resultBundle == null" }
-      return Result.failure(WatchPostError(postDescriptor, "Error communicating with KPNC"))
+      return Result.failure(exception)
     }
 
-    val unwatchPostResultJson = resultBundle.getString(ACTION_STOP_WATCHING_POST_RESULT, null)
-    if (unwatchPostResultJson.isNullOrEmpty()) {
-      logcatError(TAG) { "stopWatchingPost() unwatchPostResultJson == null" }
-      return Result.failure(WatchPostError(postDescriptor, "KPNC didn't send a response"))
-    }
-
-    val unwatchPostResult = moshi
-      .adapter<UnwatchPostResult>(UnwatchPostResult::class.java)
-      .fromJson(unwatchPostResultJson)
-
-    if (unwatchPostResult == null) {
-      logcatError(TAG) { "stopWatchingPost() unwatchPostResult == null, unwatchPostResultJson: \'$unwatchPostResultJson\'" }
-      return Result.failure(WatchPostError(postDescriptor, "UnwatchPostResult json conversion failed"))
-    }
-
-    if (unwatchPostResult.error != null) {
-      logcatError(TAG) { "stopWatchingPost() Error while trying to execute KPNC request: ${unwatchPostResult.error}" }
-      return Result.failure(WatchPostError(postDescriptor, unwatchPostResult.error))
-    }
-
-    val success = unwatchPostResult.data?.success == true
+    val success = unwatchPostResult.getOrThrow()
     if (!success) {
       logcatError(TAG) { "stopWatchingPost() unwatchPostResult.data.success == false" }
       return Result.failure(WatchPostError(postDescriptor, "KPNC returned unsuccessful result"))
@@ -215,62 +154,8 @@ class KPNCHelper(
       return false
     }
 
-    return (kpncAppInfo() as? KPNCAppInfo.Installed)?.isAccountValid == true
+    return (kpncAppInfo() as? KPNCAppInfo.Success)?.isAccountValid == true
   }
-
-  private suspend fun sendBroadcastInternal(context: Context, intent: Intent): Bundle? {
-    val broadcastReceiversInfo = context.packageManager.queryBroadcastReceivers(intent, 0)
-    logcatDebug(TAG) { "broadcastReceiversInfo=${broadcastReceiversInfo.size}" }
-
-    val broadcastReceiver = broadcastReceiversInfo.firstOrNull()
-      ?: return null
-
-    logcatDebug(TAG) { "Using packageName: ${broadcastReceiver.activityInfo.packageName}, "
-      "name: ${broadcastReceiver.activityInfo.name}" }
-
-    intent.component = ComponentName(
-      broadcastReceiver.activityInfo.packageName,
-      broadcastReceiver.activityInfo.name
-    )
-
-    return sendOrderedBroadcastSuspend(context, intent)
-  }
-
-  @JsonClass(generateAdapter = true)
-  data class KPNCInfoResult(
-    override val data: KPNCInfoJson? = null,
-    override val error: String? = null
-  ) : GenericResult<KPNCInfoJson>()
-
-  @JsonClass(generateAdapter = true)
-  data class KPNCInfoJson(
-    @Json(name = "app_api_version")
-    val appApiVersion: Int,
-    @Json(name = "is_account_valid")
-    val isAccountValid: Boolean
-  )
-
-  @JsonClass(generateAdapter = true)
-  data class WatchPostResult(
-    override val data: DefaultSuccessResult? = null,
-    override val error: String? = null
-  ) : GenericResult<DefaultSuccessResult>()
-
-  @JsonClass(generateAdapter = true)
-  data class UnwatchPostResult(
-    override val data: DefaultSuccessResult? = null,
-    override val error: String? = null
-  ) : GenericResult<DefaultSuccessResult>()
-
-  abstract class GenericResult<T> {
-    abstract val data: T?
-    abstract val error: String?
-  }
-
-  @JsonClass(generateAdapter = true)
-  data class DefaultSuccessResult(
-    val success: Boolean = true
-  )
 
   open class KPNCError(message: String) : ClientException(message)
 
@@ -279,18 +164,6 @@ class KPNCHelper(
 
   companion object {
     private const val TAG = "KPNCHelper"
-
-    private const val API_VERSION = 1
-    private const val PACKAGE = "com.github.k1rakishou.kpnc"
-    
-    private const val ACTION_GET_INFO = "$PACKAGE.get_info"
-    private const val ACTION_GET_INFO_RESULT = "$PACKAGE.get_info_result"
-
-    private const val POST_URL = "post_url"
-    private const val ACTION_START_WATCHING_POST = "$PACKAGE.start_watching_post"
-    private const val ACTION_START_WATCHING_POST_RESULT = "$PACKAGE.start_watching_post_result"
-    private const val ACTION_STOP_WATCHING_POST = "$PACKAGE.stop_watching_post"
-    private const val ACTION_STOP_WATCHING_POST_RESULT = "$PACKAGE.stop_watching_post_result"
   }
 
 }
@@ -298,15 +171,11 @@ class KPNCHelper(
 sealed class KPNCAppInfo {
   fun errorAsReadableString(): String? {
     return when (this) {
-      NotInstalled -> "KPNC is not installed"
       is Error -> "Error while trying to check KPNC status: \'${this.errorMessage}\'"
-      is InstalledVersionMismatch -> "KPNC is installed but wrong version. Expected: ${this.expected}, actual: ${this.actual}"
-      is Installed -> null
+      is Success -> null
     }
   }
 
-  object NotInstalled : KPNCAppInfo()
   data class Error(val errorMessage: String) : KPNCAppInfo()
-  data class InstalledVersionMismatch(val expected: Int, val actual: Int) : KPNCAppInfo()
-  data class Installed(val isAccountValid: Boolean) : KPNCAppInfo()
+  data class Success(val isAccountValid: Boolean) : KPNCAppInfo()
 }

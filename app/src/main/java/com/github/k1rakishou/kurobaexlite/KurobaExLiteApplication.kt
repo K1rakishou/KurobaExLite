@@ -4,11 +4,13 @@ import android.app.Application
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import com.github.k1rakishou.kpnc.KpncDependencyGraph
 import com.github.k1rakishou.kurobaexlite.helpers.di.DependencyGraph
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
 import com.github.k1rakishou.kurobaexlite.helpers.notifications.ReplyNotificationsHelper
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.mutableListWithCap
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.ui.activity.CrashReportActivity
 import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine
@@ -19,6 +21,7 @@ import logcat.LogcatLogger
 import logcat.asLog
 import logcat.logcat
 import org.koin.core.context.GlobalContext.startKoin
+import org.koin.core.module.Module
 import org.koin.java.KoinJavaComponent.inject
 import kotlin.system.exitProcess
 
@@ -44,14 +47,8 @@ class KurobaExLiteApplication : Application() {
     LogcatLogger.install(KurobaExLiteLogger())
     logcat(TAG) { "=== Application started ===" }
 
-    startKoin {
-      modules(
-        DependencyGraph.initialize(
-          application = this@KurobaExLiteApplication,
-          appCoroutineScope = appCoroutineScope
-        )
-      )
-    }
+    val modules = collectModules()
+    startKoin { modules(modules) }
 
     registerActivityLifecycleCallbacks(applicationVisibilityManager)
     themeEngine.init()
@@ -62,6 +59,20 @@ class KurobaExLiteApplication : Application() {
       logcatError { "Unhandled exception in thread: ${thread.name}, error: ${throwable.asLog()}" }
       showCrashReportActivity(throwable)
     }
+  }
+
+  private fun collectModules(): MutableList<Module> {
+    val modules = mutableListWithCap<Module>(16)
+
+    modules += KpncDependencyGraph.initialize(
+      applicationContext = this@KurobaExLiteApplication
+    )
+
+    modules += DependencyGraph.initialize(
+      application = this@KurobaExLiteApplication,
+      appCoroutineScope = appCoroutineScope
+    )
+    return modules
   }
 
   private fun showCrashReportActivity(throwable: Throwable): Nothing {

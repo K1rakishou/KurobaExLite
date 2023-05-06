@@ -59,22 +59,21 @@
             android:theme="@style/DefaultTheme"
             android:process=":crashReportProcess" />
 
+        <service
+            android:name="com.github.k1rakishou.kpnc.domain.KPNCFirebaseService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".helpers.picker.SelectedFilePickerBroadcastReceiver"
             android:exported="false" />
         <receiver
             android:name=".helpers.notifications.ReplyNotificationDeleteIntentBroadcastReceiver"
             android:exported="false" />
-        <receiver
-            android:name=".helpers.kpnc.KPNCBroadcastReceiver"
-            android:exported="true"
-            android:enabled="true">
 
-            <intent-filter>
-                <action android:name="com.github.k1rakishou.kurobaexlite.on_new_replies_received" />
-            </intent-filter>
-
-        </receiver>
     </application>
 
 </manifest>

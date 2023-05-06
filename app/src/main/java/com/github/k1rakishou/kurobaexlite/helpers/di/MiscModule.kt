@@ -8,6 +8,7 @@ import coil.disk.DiskCache
 import com.github.k1rakishou.fsaf.BadPathSymbolResolutionStrategy
 import com.github.k1rakishou.fsaf.FileChooser
 import com.github.k1rakishou.fsaf.FileManager
+import com.github.k1rakishou.kpnc.domain.ClientAppNotifier
 import com.github.k1rakishou.kurobaexlite.features.captcha.chan4.Chan4CaptchaSolverHelper
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
@@ -18,6 +19,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.Chan4BoardFlagsJsonAdapter
 import com.github.k1rakishou.kurobaexlite.helpers.FullScreenHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.MediaSaver
 import com.github.k1rakishou.kurobaexlite.helpers.cache.disk_lru.KurobaLruDiskCache
+import com.github.k1rakishou.kurobaexlite.helpers.kpnc.ClientAppNotifierImpl
 import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCHelper
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.ProxiedOkHttpClient
@@ -190,7 +192,23 @@ internal fun Module.misc() {
   }
 
   single { Chan4CaptchaSolverHelper(moshi = get(), appContext = get()) }
-  single { KPNCHelper(moshi = get(), appContext = get(), siteManager = get()) }
+  single {
+    KPNCHelper(
+      siteManager = get(),
+      sharedPrefs = get(),
+      accountRepository = get(),
+      postRepository = get(),
+    )
+  }
+  single<ClientAppNotifier> {
+    ClientAppNotifierImpl(
+      appCoroutineScope = get(),
+      siteManager = get(),
+      bookmarksManager = get(),
+      loadBookmarks = get(),
+      fetchThreadBookmarkInfo = get(),
+    )
+  }
 }
 
 private fun createMoshi(): Moshi {
