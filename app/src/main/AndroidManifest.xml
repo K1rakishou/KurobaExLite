@@ -18,13 +18,6 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="https" />
         </intent>
-
-        <intent>
-            <action android:name="com.github.k1rakishou.kpnc.get_info" />
-        </intent>
-        <intent>
-            <action android:name="com.github.k1rakishou.kpnc.start_watching_post" />
-        </intent>
     </queries>
 
     <application

@@ -10,7 +10,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
 import com.github.k1rakishou.kurobaexlite.features.posts.catalog.CatalogScreen
 import com.github.k1rakishou.kurobaexlite.features.posts.thread.ThreadScreen
-import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCHelper
+import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNSHelper
 import com.github.k1rakishou.kurobaexlite.helpers.picker.LocalFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.picker.RemoteFilePicker
 import com.github.k1rakishou.kurobaexlite.helpers.resource.IAppResources
@@ -58,7 +58,7 @@ class ReplyLayoutViewModel(
   private val captchaManager: CaptchaManager,
   private val siteManager: SiteManager,
   private val snackbarManager: SnackbarManager,
-  private val kpncHelper: KPNCHelper,
+  private val kpnsHelper: KPNSHelper,
   private val remoteFilePicker: RemoteFilePicker,
   private val modifyMarkedPosts: ModifyMarkedPosts,
   private val addOrRemoveBookmark: AddOrRemoveBookmark,
@@ -618,15 +618,15 @@ class ReplyLayoutViewModel(
             bookmarkThumbnail = null
           )
 
-          if (kpncHelper.isKpncEnabled()) {
+          if (kpnsHelper.isKpnsEnabled()) {
             launch {
-              val kpncAppInfoError = kpncHelper.kpncAppInfo().errorAsReadableString()
-              if (kpncAppInfoError != null) {
-                showErrorToast(chanDescriptor, kpncAppInfoError)
+              val kpnsAccountInfoError = kpnsHelper.kpnsAccountInfo().errorAsReadableString()
+              if (kpnsAccountInfoError != null) {
+                showErrorToast(chanDescriptor, kpnsAccountInfoError)
                 return@launch
               }
 
-              kpncHelper.startWatchingPost(postDescriptor)
+              kpnsHelper.startWatchingPost(postDescriptor)
                 .onSuccess {
                   showToast(
                     chanDescriptor,

@@ -136,7 +136,7 @@ internal fun Module.viewModels() {
       captchaManager = get(),
       siteManager = get(),
       snackbarManager = get(),
-      kpncHelper = get(),
+      kpnsHelper = get(),
       remoteFilePicker = get(),
       modifyMarkedPosts = get(),
       addOrRemoveBookmark = get(),

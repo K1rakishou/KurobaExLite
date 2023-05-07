@@ -21,6 +21,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherBg
 import com.github.k1rakishou.kurobaexlite.helpers.settings.WatcherFg
 import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.RangeSetting
+import com.github.k1rakishou.kurobaexlite.helpers.worker.BookmarkBackgroundWatcherWorker
 import com.github.k1rakishou.kurobaexlite.interactors.bookmark.RestartBookmarkBackgroundWatcher
 import com.github.k1rakishou.kurobaexlite.managers.SnackbarManager
 import com.github.k1rakishou.kurobaexlite.managers.UpdateManager
@@ -141,7 +142,18 @@ class AppSettingsScreenViewModel(
         boolean(
           title = appResources.string(R.string.settings_screen_push_notifications),
           subtitleBuilder = { append(appResources.string(R.string.settings_screen_push_notifications_description)) },
-          delegate = appSettings.pushNotifications
+          delegate = appSettings.pushNotifications,
+          onSettingUpdated = {
+            val pushNotificationsEnabled = appSettings.pushNotifications.read()
+            if (pushNotificationsEnabled) {
+              BookmarkBackgroundWatcherWorker.cancelBackgroundBookmarkWatching(
+                appContext = appContext,
+                flavorType = androidHelpers.getFlavorType()
+              )
+            } else {
+              restartBookmarkBackgroundWatcher.restart(addInitialDelay = true)
+            }
+          }
         )
 
         link(

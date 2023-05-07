@@ -3,7 +3,6 @@ package com.github.k1rakishou.kurobaexlite.helpers.worker
 import android.content.Context
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
@@ -12,8 +11,8 @@ import androidx.work.WorkerParameters
 import androidx.work.await
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.AppConstants
-import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCAppInfo
-import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNCHelper
+import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNSAccountInfo
+import com.github.k1rakishou.kurobaexlite.helpers.kpnc.KPNSHelper
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
@@ -23,8 +22,6 @@ import com.github.k1rakishou.kurobaexlite.interactors.bookmark.LoadBookmarks
 import com.github.k1rakishou.kurobaexlite.managers.ApplicationVisibilityManager
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
-import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
-import com.github.k1rakishou.kurobaexlite.sites.ResolvedDescriptor
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import logcat.logcat
@@ -35,7 +32,7 @@ class BookmarkBackgroundWatcherWorker(
   context: Context,
   params: WorkerParameters
 ) : CoroutineWorker(context, params) {
-  private val kpncHelper: KPNCHelper by inject(KPNCHelper::class.java)
+  private val kpncHelper: KPNSHelper by inject(KPNSHelper::class.java)
   private val bookmarksManager: BookmarksManager by inject(BookmarksManager::class.java)
   private val siteManager: SiteManager by inject(SiteManager::class.java)
   private val applicationVisibilityManager: ApplicationVisibilityManager by inject(ApplicationVisibilityManager::class.java)
@@ -55,20 +52,15 @@ class BookmarkBackgroundWatcherWorker(
   private suspend fun doWorkInternal(): Result {
     logcat(TAG) { "doWork() start" }
 
-    // TODO: remove  POST_URLS_TO_CHECK, we don't use it anymore
-    val postUrlsToCheck = inputData.getStringArray(POST_URLS_TO_CHECK)?.toList() ?: emptyList()
-    logcat(TAG) { "doWork() postUrlsToCheck: ${postUrlsToCheck.size}" }
-    postUrlsToCheck.forEach { postUrlToCheck -> logcat(TAG) { "postUrlToCheck: ${postUrlToCheck}" } }
-
     val isInForeground = applicationVisibilityManager.isAppInForeground()
-    if (!isInForeground && kpncHelper.isKpncEnabledAndAccountIsValid() && postUrlsToCheck.isEmpty()) {
+    if (!isInForeground && kpncHelper.isKpncEnabledAndAccountIsValid()) {
       logcat(TAG) { "doWork() disabling WorkManager because KPNC is enabled and application is in background" }
       return Result.success()
     }
 
     if (!isInForeground) {
-      val kpncAppInfo = kpncHelper.kpncAppInfo()
-      if (kpncAppInfo is KPNCAppInfo.Success && !kpncAppInfo.isAccountValid) {
+      val kpncAppInfo = kpncHelper.kpnsAccountInfo()
+      if (kpncAppInfo is KPNSAccountInfo.Success && !kpncAppInfo.isAccountValid) {
         logcat(TAG) { "doWork() kpncInfo is enabled but account is not valid, resuming WorkManager" }
       }
     } else {
@@ -82,7 +74,7 @@ class BookmarkBackgroundWatcherWorker(
       return Result.failure()
     }
 
-    val bookmarkDescriptorsToCheck = getBookmarkDescriptorsToCheck(postUrlsToCheck)
+    val bookmarkDescriptorsToCheck = bookmarksManager.getActiveBookmarkDescriptors()
     if (bookmarkDescriptorsToCheck.isEmpty()) {
       logcat(TAG) { "bookmarkDescriptorsToCheck are empty, doing nothing" }
       return Result.success()
@@ -99,80 +91,45 @@ class BookmarkBackgroundWatcherWorker(
       }
       .onSuccess { logcat(TAG) { "doWork() fetchThreadBookmarkInfo() success" } }
 
-    if (postUrlsToCheck.isNotEmpty()) {
-      logcat(TAG) { "doWork() postUrlsToCheck is not empty, do not restart the work" }
-    } else {
-      val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
-      if (activeBookmarksCount > 0) {
-        logcat(TAG) { "doWork() activeBookmarksCount: ${activeBookmarksCount} restarting the work" }
+    val activeBookmarksCount = bookmarksManager.watchingBookmarksCount()
+    if (activeBookmarksCount > 0) {
+      logcat(TAG) { "doWork() activeBookmarksCount: ${activeBookmarksCount} restarting the work" }
 
-        withContext(NonCancellable) {
-          restartBackgroundWork(
-            appContext = applicationContext,
-            flavorType = androidHelpers.getFlavorType(),
-            appSettings = appSettings,
-            isInForeground = isInForeground,
-            addInitialDelay = true,
-            postUrlsToCheck = emptyList()
-          )
-        }
-      } else {
-        logcat(TAG) { "doWork() activeBookmarksCount: ${activeBookmarksCount} the work loop is finished" }
+      withContext(NonCancellable) {
+        restartBackgroundWork(
+          appContext = applicationContext,
+          flavorType = androidHelpers.getFlavorType(),
+          appSettings = appSettings,
+          isInForeground = isInForeground,
+          addInitialDelay = true
+        )
       }
+    } else {
+      logcat(TAG) { "doWork() activeBookmarksCount: ${activeBookmarksCount} the work loop is finished" }
     }
 
     logcat(TAG) { "doWork() end" }
     return Result.success()
   }
 
-  private suspend fun getBookmarkDescriptorsToCheck(postUrlsToCheck: List<String>): List<ThreadDescriptor> {
-    if (postUrlsToCheck.isEmpty()) {
-      return bookmarksManager.getActiveBookmarkDescriptors()
-    }
-
-    val threadDescriptors = postUrlsToCheck
-      .mapNotNull { postUrl ->
-        val resolvedDescriptor = siteManager.resolveDescriptorFromRawIdentifier(postUrl)
-          ?: return@mapNotNull null
-
-        return@mapNotNull when (resolvedDescriptor) {
-          is ResolvedDescriptor.CatalogOrThread -> null
-          is ResolvedDescriptor.Post -> resolvedDescriptor.postDescriptor.threadDescriptor
-        }
-      }
-      .toHashSet()
-      .toList()
-
-    if (threadDescriptors.isEmpty()) {
-      return emptyList()
-    }
-
-    return bookmarksManager.getBookmarks(threadDescriptors)
-      .filter { threadBookmark -> threadBookmark.watching() }
-      .map { threadBookmark -> threadBookmark.threadDescriptor }
-  }
-
   companion object {
     private const val TAG = "BookmarkBackgroundWatcherWorker"
-
-    const val POST_URLS_TO_CHECK = "post_urls_to_check"
 
     suspend fun restartBackgroundWork(
       appContext: Context,
       flavorType: AndroidHelpers.FlavorType,
       appSettings: AppSettings,
       isInForeground: Boolean,
-      addInitialDelay: Boolean,
-      postUrlsToCheck: List<String>
+      addInitialDelay: Boolean
     ) {
       val tag = AppConstants.WorkerTags.getUniqueTag(flavorType)
-      logcat(TAG) { "restartBackgroundWork() called tag=${tag}, postUrlsToCheck=${postUrlsToCheck.size}" }
+      logcat(TAG) { "restartBackgroundWork() called tag=${tag}" }
 
       val constraints = Constraints.Builder()
         .setRequiredNetworkType(NetworkType.CONNECTED)
         .build()
 
-      val backgroundIntervalMillis = if (addInitialDelay && postUrlsToCheck.isEmpty()) {
+      val backgroundIntervalMillis = if (addInitialDelay) {
         if (isInForeground) {
           appSettings.watcherIntervalForegroundSeconds.read().seconds * 1000L
         } else {
@@ -182,15 +139,10 @@ class BookmarkBackgroundWatcherWorker(
         1000L
       }
 
-      val data = Data.Builder()
-        .putStringArray(POST_URLS_TO_CHECK, postUrlsToCheck.toTypedArray())
-        .build()
-
       val workRequest = OneTimeWorkRequestBuilder<BookmarkBackgroundWatcherWorker>()
         .addTag(tag)
         .setInitialDelay(backgroundIntervalMillis, TimeUnit.MILLISECONDS)
         .setConstraints(constraints)
-        .setInputData(data)
         .build()
 
       WorkManager
