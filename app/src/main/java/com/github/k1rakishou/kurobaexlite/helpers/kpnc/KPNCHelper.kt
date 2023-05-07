@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.helpers.kpnc
 
 import android.content.SharedPreferences
+import androidx.annotation.GuardedBy
 import com.github.k1rakishou.kpnc.AppConstants
 import com.github.k1rakishou.kpnc.helpers.isUserIdValid
 import com.github.k1rakishou.kpnc.model.repository.AccountRepository
@@ -14,6 +15,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
+import java.util.concurrent.TimeUnit
 
 class KPNCHelper(
   private val siteManager: SiteManager,
@@ -22,8 +24,53 @@ class KPNCHelper(
   private val accountRepository: AccountRepository,
   private val postRepository: PostRepository,
 ) {
+  @GuardedBy("this")
+  private var kpncAccountInfoCached: KPNCAccountInfoCached? = null
 
   suspend fun kpncAppInfo(): KPNCAppInfo {
+    val now = System.currentTimeMillis()
+
+    val kpncAppInfoFromCache = synchronized(this) {
+      val kpncAccountInfoCachedLocal = kpncAccountInfoCached
+      if (kpncAccountInfoCachedLocal == null) {
+        logcatDebug(TAG) { "kpncAppInfo() kpncAccountInfoCachedLocal is null" }
+        return@synchronized null
+      }
+
+      if (now >= kpncAccountInfoCachedLocal.validUntilMs) {
+        logcatDebug(TAG) {
+          "kpncAppInfo() kpncAccountInfoCachedLocal now >= kpncAccountInfoCachedLocal.validUntilMs " +
+            "(${now} >= ${kpncAccountInfoCachedLocal.validUntilMs}, " +
+            "delta: ${kpncAccountInfoCachedLocal.validUntilMs - now})"
+        }
+
+        return@synchronized null
+      }
+
+      if (now - kpncAccountInfoCachedLocal.lastAccountValidationTimeMs > FIFTEEN_MINUTES) {
+        logcatDebug(TAG) {
+          "kpncAppInfo() now - kpncAccountInfoCachedLocal.lastAccountValidationTimeMs > FIFTEEN_MINUTES " +
+            "(${now - kpncAccountInfoCachedLocal.lastAccountValidationTimeMs} >= ${FIFTEEN_MINUTES})"
+        }
+
+        return@synchronized null
+      }
+
+      logcatDebug(TAG) { "kpncAppInfo() everything is OK" }
+
+      return@synchronized KPNCAppInfo.Success(
+        isAccountValid = true,
+        validUntilMs = kpncAccountInfoCachedLocal.validUntilMs
+      )
+    }
+
+    if (kpncAppInfoFromCache != null) {
+      logcatDebug(TAG) { "kpncAppInfo() kpncAppInfoFromCache != null" }
+      return kpncAppInfoFromCache
+    }
+
+    logcatDebug(TAG) { "kpncAppInfo() kpncAppInfoFromCache == null" }
+
     val userId = sharedPrefs.getString(AppConstants.PrefKeys.USER_ID, null)
       ?.takeIf { userId -> isUserIdValid(userId) }
     val instanceAddress = sharedPrefs.getString(AppConstants.PrefKeys.INSTANCE_ADDRESS, null)
@@ -44,10 +91,30 @@ class KPNCHelper(
       return KPNCAppInfo.Error(exception.errorMessageOrClassName(userReadable = true))
     }
 
-    val isValid = accountInfoResult.getOrNull()!!.isValid
-    logcatDebug(TAG) { "getAccountInfo() success, isValid: ${isValid}" }
+    val accountInfoResponse = accountInfoResult.getOrNull()
+    if (accountInfoResponse == null) {
+      return KPNCAppInfo.Error("accountInfoResponse is null")
+    }
 
-    return KPNCAppInfo.Success(isAccountValid = isValid)
+    val validUntilMs = accountInfoResponse.validUntil
+    if (validUntilMs == null) {
+      return KPNCAppInfo.Error("validUntil is null")
+    }
+
+    val isValid = accountInfoResponse.isValid
+    logcatDebug(TAG) { "getAccountInfo() success, isValid: ${isValid}, validUntilMs: ${validUntilMs}" }
+
+    synchronized(this) {
+      kpncAccountInfoCached = KPNCAccountInfoCached(
+        validUntilMs = validUntilMs,
+        lastAccountValidationTimeMs = System.currentTimeMillis()
+      )
+    }
+
+    return KPNCAppInfo.Success(
+      isAccountValid = isValid,
+      validUntilMs = validUntilMs
+    )
   }
 
   suspend fun startWatchingPost(postDescriptor: PostDescriptor): Result<Unit> {
@@ -157,9 +224,16 @@ class KPNCHelper(
 
   companion object {
     private const val TAG = "KPNCHelper"
+
+    private val FIFTEEN_MINUTES = TimeUnit.MINUTES.toMillis(15)
   }
 
 }
+
+private data class KPNCAccountInfoCached(
+  val validUntilMs: Long,
+  val lastAccountValidationTimeMs: Long
+)
 
 sealed class KPNCAppInfo {
   fun errorAsReadableString(): String? {
@@ -170,5 +244,8 @@ sealed class KPNCAppInfo {
   }
 
   data class Error(val errorMessage: String) : KPNCAppInfo()
-  data class Success(val isAccountValid: Boolean) : KPNCAppInfo()
+  data class Success(
+    val isAccountValid: Boolean,
+    val validUntilMs: Long
+  ) : KPNCAppInfo()
 }
