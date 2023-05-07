@@ -5,7 +5,7 @@ import com.github.k1rakishou.kpnc.model.data.network.ServerResponseWrapper
 import com.squareup.moshi.Moshi
 import okhttp3.Response
 
-inline fun <ServerResponse, reified Wrapper : ServerResponseWrapper<ServerResponse>> extractServerResponse(
+internal inline fun <ServerResponse, reified Wrapper : ServerResponseWrapper<ServerResponse>> extractServerResponse(
   moshi: Moshi,
   response: Response
 ): ServerResponse {

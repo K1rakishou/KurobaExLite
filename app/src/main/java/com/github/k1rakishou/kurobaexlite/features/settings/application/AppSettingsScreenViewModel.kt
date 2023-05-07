@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kurobaexlite.BuildConfig
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.base.BaseViewModel
+import com.github.k1rakishou.kurobaexlite.features.kpnc.KPNCScreen
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreen
 import com.github.k1rakishou.kurobaexlite.features.settings.items.SettingScreenBuilder
@@ -135,6 +136,30 @@ class AppSettingsScreenViewModel(
         boolean(
           title = appResources.string(R.string.settings_screen_reply_notifications),
           delegate = appSettings.replyNotifications
+        )
+
+        boolean(
+          title = appResources.string(R.string.settings_screen_push_notifications),
+          subtitleBuilder = { append(appResources.string(R.string.settings_screen_push_notifications_description)) },
+          delegate = appSettings.pushNotifications
+        )
+
+        link(
+          key = "push_notifications_settings_screen",
+          title = appResources.string(R.string.settings_screen_push_notifications_settings_screen),
+          dependencies = listOf(appSettings.pushNotifications),
+          onClicked = {
+            val displayScreenRequest = DisplayScreenRequest(
+              screenBuilder = { componentActivity, navigationRouter ->
+                ComposeScreen.createScreen<KPNCScreen>(
+                  componentActivity = componentActivity,
+                  navigationRouter = navigationRouter
+                )
+              }
+            )
+
+            _showScreenFlow.tryEmit(displayScreenRequest)
+          }
         )
       }
     )

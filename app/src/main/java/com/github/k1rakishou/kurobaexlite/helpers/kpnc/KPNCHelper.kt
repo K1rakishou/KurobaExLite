@@ -5,6 +5,7 @@ import com.github.k1rakishou.kpnc.AppConstants
 import com.github.k1rakishou.kpnc.helpers.isUserIdValid
 import com.github.k1rakishou.kpnc.model.repository.AccountRepository
 import com.github.k1rakishou.kpnc.model.repository.PostRepository
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
@@ -17,6 +18,7 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 class KPNCHelper(
   private val siteManager: SiteManager,
   private val sharedPrefs: SharedPreferences,
+  private val appSettings: AppSettings,
   private val accountRepository: AccountRepository,
   private val postRepository: PostRepository,
 ) {
@@ -71,8 +73,6 @@ class KPNCHelper(
       logcatError(TAG) { "startWatchingPost() failed to convert ${postDescriptor} into url" }
       return Result.failure(WatchPostError(postDescriptor, "Site is not supported"))
     }
-
-    logcatDebug(TAG) { "Got ACTION_START_WATCHING_POST" }
 
     val watchPostResult = postRepository.watchPost(postUrl)
     if (watchPostResult.isFailure) {
@@ -139,14 +139,7 @@ class KPNCHelper(
   }
 
   suspend fun isKpncEnabled(): Boolean {
-//    val kpncInfo = kpncAppInfo()
-//    if (kpncInfo !is KPNCAppInfo.Installed) {
-//      return false
-//    }
-//
-//    return true
-    // TODO: Check whether a setting is enabled or not here
-    return true
+    return appSettings.pushNotifications.read()
   }
 
   private suspend fun isKpncAccountValid(): Boolean {

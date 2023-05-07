@@ -10,5 +10,5 @@ data class UpdateTokenRequest(
   @Json(name = "firebase_token")
   val firebaseToken: String,
   @Json(name = "application_type")
-  val applicationType: ApplicationType
+  val applicationType: Int
 )

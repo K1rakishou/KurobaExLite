@@ -29,7 +29,7 @@ class AccountRepositoryImpl(
       return@withContext Result.Try {
         val accountInfoRequest = AccountInfoRequest(
           userId = userId,
-          applicationType = ApplicationType.fromFlavor()
+          applicationType = ApplicationType.fromFlavor().value
         )
 
         val updateTokenRequestJson = moshi.adapter(AccountInfoRequest::class.java)

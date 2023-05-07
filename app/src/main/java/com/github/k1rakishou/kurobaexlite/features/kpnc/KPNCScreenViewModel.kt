@@ -1,8 +1,6 @@
-package com.github.k1rakishou.kpnc.ui.main
+package com.github.k1rakishou.kurobaexlite.features.kpnc
 
-import androidx.lifecycle.ViewModel
 
-/*
 import android.content.SharedPreferences
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -11,28 +9,26 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.k1rakishou.kpnc.AppConstants
 import com.github.k1rakishou.kpnc.domain.GoogleServicesChecker
-import com.github.k1rakishou.kpnc.domain.MessageReceiver
 import com.github.k1rakishou.kpnc.domain.TokenUpdater
-import com.github.k1rakishou.kpnc.helpers.asLogIfImportantOrErrorMessage
-import com.github.k1rakishou.kpnc.helpers.errorMessageOrClassName
-import com.github.k1rakishou.kpnc.helpers.isNotNullNorBlank
-import com.github.k1rakishou.kpnc.helpers.logcatDebug
-import com.github.k1rakishou.kpnc.helpers.logcatError
 import com.github.k1rakishou.kpnc.helpers.retrieveFirebaseToken
-import com.github.k1rakishou.kpnc.helpers.unwrap
 import com.github.k1rakishou.kpnc.model.data.ui.AccountInfo
 import com.github.k1rakishou.kpnc.model.data.ui.UiResult
 import com.github.k1rakishou.kpnc.model.repository.AccountRepository
+import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
+import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatDebug
+import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
+import com.github.k1rakishou.kurobaexlite.model.ClientException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import org.joda.time.DateTime
 
-class MainViewModel(
+class KPNCScreenViewModel(
   private val sharedPrefs: SharedPreferences,
   private val googleServicesChecker: GoogleServicesChecker,
-  private val messageReceiver: MessageReceiver,
   private val tokenUpdater: TokenUpdater,
   private val accountRepository: AccountRepository,
 ) : ViewModel() {
@@ -105,64 +101,76 @@ class MainViewModel(
       withContext(Dispatchers.IO) {
         _accountInfo.value = UiResult.Loading
 
-        val firebaseToken = sharedPrefs.getString(AppConstants.PrefKeys.TOKEN, null)
+        var firebaseToken = sharedPrefs.getString(AppConstants.PrefKeys.TOKEN, null)
         if (firebaseToken.isNullOrEmpty()) {
-          return@withContext
+          retrieveFirebaseToken()
+            .onFailure { error -> _firebaseToken.value = UiResult.Error(error) }
+            .onSuccess { token ->
+              sharedPrefs.edit { putString(AppConstants.PrefKeys.TOKEN, token) }
+              _firebaseToken.value = UiResult.Value(token)
+            }
+
+          firebaseToken = sharedPrefs.getString(AppConstants.PrefKeys.TOKEN, null)
+          if (firebaseToken.isNullOrEmpty()) {
+            if (_accountInfo.value !is UiResult.Error) {
+              _accountInfo.value = UiResult.Error(KPNCException("Failed to retrieve FirebaseToken"))
+            }
+
+            return@withContext
+          }
         }
 
         try {
-          withTimeout(20_000) {
-            val tokenUpdateResult = tokenUpdater.updateToken(instanceAddress, userId, firebaseToken)
-              .onFailure { error ->
-                logcatError(TAG) { "tokenUpdater.updateToken() " +
-                  "error: ${error.asLogIfImportantOrErrorMessage()}" }
-              }
-
-            val tokenUpdated = if (tokenUpdateResult.isFailure) {
-              logcatError(TAG) {
-                "updateFirebaseToken() updateToken() " +
-                  "error: ${tokenUpdateResult.exceptionOrNull()!!.errorMessageOrClassName()}"
-              }
-
-              _accountInfo.value = UiResult.Error(tokenUpdateResult.exceptionOrNull()!!)
-              return@withTimeout
-            } else {
-              tokenUpdateResult.getOrThrow()
+          val tokenUpdateResult = tokenUpdater.updateToken(instanceAddress, userId, firebaseToken)
+            .onFailure { error ->
+              logcatError(TAG) { "tokenUpdater.updateToken() " +
+                "error: ${error.asLogIfImportantOrErrorMessage()}" }
             }
 
-            if (!tokenUpdated) {
-              logcatError(TAG) { "updateFirebaseToken() updateToken() returned false" }
-              _accountInfo.value = UiResult.Error(tokenUpdateResult.exceptionOrNull()!!)
-              return@withTimeout
+          val tokenUpdated = if (tokenUpdateResult.isFailure) {
+            logcatError(TAG) {
+              "updateFirebaseToken() updateToken() " +
+                "error: ${tokenUpdateResult.exceptionOrNull()!!.errorMessageOrClassName()}"
             }
 
-            val accountInfoResult = accountRepository.getAccountInfo(instanceAddress, userId)
-            if (accountInfoResult.isFailure) {
-              logcatError(TAG) {
-                "updateFirebaseToken() error: " +
-                  "${accountInfoResult.exceptionOrNull()?.asLogIfImportantOrErrorMessage()}"
-              }
-
-              _accountInfo.value = UiResult.Error(accountInfoResult.exceptionOrNull()!!)
-              return@withTimeout
-            }
-
-            val accountInfoResponse = accountInfoResult.getOrThrow()
-
-            val accountInfo = AccountInfo(
-              accountId = accountInfoResponse.accountId,
-              isValid = accountInfoResponse.isValid,
-              validUntil = DateTime(accountInfoResponse.validUntil),
-            )
-
-            sharedPrefs.edit {
-              putString(AppConstants.PrefKeys.USER_ID, userId)
-              putString(AppConstants.PrefKeys.INSTANCE_ADDRESS, instanceAddress)
-            }
-            _accountInfo.value = UiResult.Value(accountInfo)
-
-            logcatDebug(TAG) { "updateFirebaseToken() success" }
+            _accountInfo.value = UiResult.Error(tokenUpdateResult.exceptionOrNull()!!)
+            return@withContext
+          } else {
+            tokenUpdateResult.getOrThrow()
           }
+
+          if (!tokenUpdated) {
+            logcatError(TAG) { "updateFirebaseToken() updateToken() returned false" }
+            _accountInfo.value = UiResult.Error(tokenUpdateResult.exceptionOrNull()!!)
+            return@withContext
+          }
+
+          val accountInfoResult = accountRepository.getAccountInfo(instanceAddress, userId)
+          if (accountInfoResult.isFailure) {
+            logcatError(TAG) {
+              "updateFirebaseToken() error: " +
+                "${accountInfoResult.exceptionOrNull()?.asLogIfImportantOrErrorMessage()}"
+            }
+
+            _accountInfo.value = UiResult.Error(accountInfoResult.exceptionOrNull()!!)
+            return@withContext
+          }
+
+          val accountInfoResponse = accountInfoResult.getOrThrow()
+
+          val accountInfo = AccountInfo(
+            accountId = accountInfoResponse.accountId,
+            isValid = accountInfoResponse.isValid,
+            validUntil = DateTime(accountInfoResponse.validUntil),
+          )
+
+          sharedPrefs.edit {
+            putString(AppConstants.PrefKeys.USER_ID, userId)
+            putString(AppConstants.PrefKeys.INSTANCE_ADDRESS, instanceAddress)
+          }
+          _accountInfo.value = UiResult.Value(accountInfo)
+
+          logcatDebug(TAG) { "updateFirebaseToken() success" }
         } catch (error: Throwable) {
           logcatDebug(TAG) { "updateFirebaseToken() error: ${error.asLogIfImportantOrErrorMessage()}" }
           _accountInfo.value = UiResult.Error(error)
@@ -184,11 +192,10 @@ class MainViewModel(
     }
   }
 
+  class KPNCException(message: String) : ClientException(message)
+
   companion object {
     private const val TAG = "MainViewModel"
   }
 
 }
-*/
-
-class MainViewModel : ViewModel()

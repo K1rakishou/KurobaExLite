@@ -230,10 +230,10 @@ class PostLongtapContextMenu(
                     appResources.string(R.string.watching_post, postDescriptor.asReadableString())
                   )
                 }
-                .onFailure { error -> snackbarManager.toast(error.errorMessageOrClassName(userReadable = true)) }
+                .onFailure { error -> snackbarManager.errorToast(error.errorMessageOrClassName(userReadable = true)) }
             }
           } else {
-            snackbarManager.toast(appResources.string(R.string.cannot_start_watching_post_no_bookmark))
+            snackbarManager.errorToast(appResources.string(R.string.cannot_start_watching_post_no_bookmark))
           }
         }
       }
@@ -264,7 +264,7 @@ class PostLongtapContextMenu(
                   appResources.string(R.string.post_unwatched, postDescriptor.asReadableString())
                 )
               }
-              .onFailure { error -> snackbarManager.toast(error.errorMessageOrClassName(userReadable = true)) }
+              .onFailure { error -> snackbarManager.errorToast(error.errorMessageOrClassName(userReadable = true)) }
           }
         }
       }

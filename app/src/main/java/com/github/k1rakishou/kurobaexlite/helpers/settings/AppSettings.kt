@@ -68,6 +68,7 @@ class AppSettings(
   val watcherIntervalForegroundSeconds by lazy { EnumSetting(WatcherFg.SEC_30, "watcher_interval_foreground_seconds", WatcherFg::class.java, dataStore) }
   val watcherIntervalBackgroundSeconds by lazy { EnumSetting(WatcherBg.MIN_30, "watcher_interval_background_seconds", WatcherBg::class.java, dataStore) }
   val replyNotifications by lazy { BooleanSetting(true, "reply_notifications_enabled", dataStore) }
+  val pushNotifications by lazy { BooleanSetting(false, "push_notifications", dataStore) }
   val lastUpdateCheckTime by lazy { NumberSetting<Long>(0L, "last_update_check_time", dataStore) }
   val lastCheckedVersionCode by lazy { NumberSetting<Long>(0L, "last_checked_version_code", dataStore) }
   val notifyAboutBetaUpdates by lazy { BooleanSetting(true, "notify_about_beta_updates", dataStore) }

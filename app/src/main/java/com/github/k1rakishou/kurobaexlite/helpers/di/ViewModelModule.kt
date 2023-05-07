@@ -10,6 +10,7 @@ import com.github.k1rakishou.kurobaexlite.features.downloads.DownloadsScreenView
 import com.github.k1rakishou.kurobaexlite.features.drawer.BookmarksScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.drawer.HistoryScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.home.HomeScreenViewModel
+import com.github.k1rakishou.kurobaexlite.features.kpnc.KPNCScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.login.chan4.Chan4LoginScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.login.dvach.DvachLoginScreenViewModel
 import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
@@ -214,5 +215,13 @@ internal fun Module.viewModels() {
   }
   viewModel {
     DownloadsScreenViewModel(mediaSaver = get())
+  }
+  viewModel {
+    KPNCScreenViewModel(
+      sharedPrefs = get(),
+      googleServicesChecker = get(),
+      tokenUpdater = get(),
+      accountRepository = get(),
+    )
   }
 }

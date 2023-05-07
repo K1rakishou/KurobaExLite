@@ -196,13 +196,13 @@ internal fun Module.misc() {
     KPNCHelper(
       siteManager = get(),
       sharedPrefs = get(),
+      appSettings = get(),
       accountRepository = get(),
       postRepository = get(),
     )
   }
   single<ClientAppNotifier> {
     ClientAppNotifierImpl(
-      appCoroutineScope = get(),
       siteManager = get(),
       bookmarksManager = get(),
       loadBookmarks = get(),

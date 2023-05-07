@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.k1rakishou.kurobaexlite.helpers.settings.impl.BooleanSetting
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
@@ -20,9 +21,10 @@ class LinkSettingItem(
   key: String,
   title: String,
   subtitle: AnnotatedString? = null,
+  dependencies: List<BooleanSetting> = emptyList(),
   val enabled: Boolean = true,
   val onClicked: () -> Unit
-) : SettingItem(key, title, subtitle, emptyList()) {
+) : SettingItem(key, title, subtitle, dependencies) {
 
   @Composable
   override fun Content() {

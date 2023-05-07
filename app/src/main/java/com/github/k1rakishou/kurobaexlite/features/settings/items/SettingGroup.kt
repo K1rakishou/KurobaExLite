@@ -72,6 +72,7 @@ class SettingGroupBuilder(
   fun link(
     key: String,
     title: String,
+    dependencies: List<BooleanSetting> = emptyList(),
     enabled: Boolean = true,
     subtitleBuilder: (AnnotatedString.Builder.() -> Unit)? = null,
     onClicked: () -> Unit
@@ -80,6 +81,7 @@ class SettingGroupBuilder(
       key = key,
       title = title,
       subtitle = buildSubtitle(subtitleBuilder),
+      dependencies = dependencies,
       enabled = enabled,
       onClicked = onClicked,
     )

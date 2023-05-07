@@ -41,7 +41,7 @@ class PostRepositoryImpl(
         val watchPostRequest = WatchPostRequest(
           userId = userId,
           postUrl = postUrl,
-          applicationType = ApplicationType.fromFlavor()
+          applicationType = ApplicationType.fromFlavor().value
         )
 
         val watchPostRequestJson = moshi.adapter(WatchPostRequest::class.java)
@@ -83,7 +83,7 @@ class PostRepositoryImpl(
         val unwatchPostRequest = UnwatchPostRequest(
           userId = userId,
           postUrl = postUrl,
-          applicationType = ApplicationType.fromFlavor()
+          applicationType = ApplicationType.fromFlavor().value
         )
 
         val unwatchPostRequestJson = moshi.adapter(UnwatchPostRequest::class.java)

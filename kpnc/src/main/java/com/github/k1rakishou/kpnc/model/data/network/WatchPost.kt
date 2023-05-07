@@ -10,7 +10,7 @@ data class WatchPostRequest(
   @Json(name = "post_url")
   val postUrl: String,
   @Json(name = "application_type")
-  val applicationType: ApplicationType
+  val applicationType: Int
 )
 
 @JsonClass(generateAdapter = true)

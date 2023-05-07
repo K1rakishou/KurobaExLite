@@ -8,7 +8,7 @@ data class AccountInfoRequest(
   @Json(name = "user_id")
   val userId: String,
   @Json(name = "application_type")
-  val applicationType: ApplicationType
+  val applicationType: Int
 )
 
 @JsonClass(generateAdapter = true)

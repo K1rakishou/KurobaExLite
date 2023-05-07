@@ -18,9 +18,6 @@ import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfo
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarInfoEvent
 import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.SnackbarType
 import com.github.k1rakishou.kurobaexlite.ui.helpers.base.ScreenKey
-import java.util.concurrent.atomic.AtomicLong
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,6 +25,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
+import java.util.concurrent.atomic.AtomicLong
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 class SnackbarManager(
   private val appContext: Context
@@ -77,8 +77,8 @@ class SnackbarManager(
   // A toast is a snack too
   fun toast(
     @StringRes messageId: Int,
-    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
     toastId: String = nextToastId(),
+    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {
     toast(
@@ -105,8 +105,8 @@ class SnackbarManager(
 
   fun toast(
     message: String,
-    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
     toastId: String = nextToastId(),
+    screenKey: ScreenKey = MainScreen.SCREEN_KEY,
     duration: Duration = STANDARD_DELAY.milliseconds
   ) {
     pushSnackbar(
@@ -149,6 +149,12 @@ class SnackbarManager(
         snackbarType = SnackbarType.ErrorToast
       )
     )
+  }
+
+  fun hideToast(
+    toastId: String
+  ) {
+    _snackbarEventFlow.tryEmit(SnackbarInfoEvent.Pop(id = SnackbarId.Toast(toastId)))
   }
 
   fun pushSnackbar(snackbarInfo: SnackbarInfo) {

@@ -73,7 +73,7 @@ class TokenUpdaterImpl(
         val updateTokenRequest = UpdateTokenRequest(
           userId = userIdToUse,
           firebaseToken = token,
-          applicationType = ApplicationType.fromFlavor()
+          applicationType = ApplicationType.fromFlavor().value
         )
 
         val updateTokenRequestJson = moshi.adapter(UpdateTokenRequest::class.java)

@@ -16,10 +16,8 @@ import com.github.k1rakishou.kpnc.model.repository.AccountRepository
 import com.github.k1rakishou.kpnc.model.repository.AccountRepositoryImpl
 import com.github.k1rakishou.kpnc.model.repository.PostRepository
 import com.github.k1rakishou.kpnc.model.repository.PostRepositoryImpl
-import com.github.k1rakishou.kpnc.ui.main.MainViewModel
 import com.squareup.moshi.Moshi
 import okhttp3.OkHttpClient
-import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -30,23 +28,9 @@ object KpncDependencyGraph {
     val modules = mutableListOf<Module>()
     modules += module {
       singletons(applicationContext)
-      viewModels()
     }
 
     return modules
-  }
-
-  private fun Module.viewModels() {
-    viewModel {
-      MainViewModel(
-        // TODO:
-//        sharedPrefs = get(),
-//        googleServicesChecker = get(),
-//        messageReceiver = get(),
-//        tokenUpdater = get(),
-//        accountRepository = get()
-      )
-    }
   }
 
   private fun Module.singletons(applicationContext: Context) {
