@@ -9,7 +9,7 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.with
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -498,7 +498,8 @@ private fun ContentInternal(
         AnimatedContent(
           targetState = drawerContentType,
           transitionSpec = {
-            fadeIn(animationSpec = tween(220, delayMillis = 90)) with
+            // Animated content seems to be broken and always uses the default transitionSpec (which applies scaling too)
+            fadeIn(animationSpec = tween(220, delayMillis = 90)) togetherWith
               fadeOut(animationSpec = tween(90))
           }
         ) { state ->

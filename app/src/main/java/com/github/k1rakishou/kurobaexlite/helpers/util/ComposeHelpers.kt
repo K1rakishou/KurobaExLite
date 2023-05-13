@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.helpers.util
 
+import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.GestureCancellationException
@@ -11,7 +12,10 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -213,9 +217,49 @@ private class PressGestureScopeImpl(
 fun rememberPagerState(
   key1: Any,
   @IntRange(from = 0) initialPage: Int = 0,
+  @FloatRange(from = 0.0, to = 1.0) initialPageOffsetFraction: Float = 0f,
+  updatedPageCount: () -> Int
 ): PagerState {
-  return rememberSaveable(key1, saver = PagerState.Saver) {
-    PagerState(initialPage = initialPage)
+  return rememberSaveable(key1, saver = KurobaPagerState.Saver) {
+    KurobaPagerState(
+      initialPage = initialPage,
+      initialPageOffsetFraction = initialPageOffsetFraction,
+      updatedPageCount = updatedPageCount
+    )
+  }
+}
+
+
+@ExperimentalFoundationApi
+class KurobaPagerState(
+  initialPage: Int,
+  initialPageOffsetFraction: Float,
+  updatedPageCount: () -> Int
+) : PagerState(initialPage, initialPageOffsetFraction) {
+
+  var pageCountState = mutableStateOf(updatedPageCount)
+  override val pageCount: Int get() = pageCountState.value.invoke()
+
+  companion object {
+    /**
+     * To keep current page and current page offset saved
+     */
+    val Saver: Saver<KurobaPagerState, *> = listSaver(
+      save = {
+        listOf(
+          it.currentPage,
+          it.currentPageOffsetFraction,
+          it.pageCount
+        )
+      },
+      restore = {
+        KurobaPagerState(
+          initialPage = it[0] as Int,
+          initialPageOffsetFraction = it[1] as Float,
+          updatedPageCount = { it[2] as Int }
+        )
+      }
+    )
   }
 }
 

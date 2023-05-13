@@ -372,7 +372,9 @@ private fun ContentInternal(
   // 2 years old. So for the time being we have to hack around the issue.
   val pagerState = rememberPagerState(
     key1 = orientation,
-    initialPage = initialScreenIndex
+    initialPage = initialScreenIndex,
+    initialPageOffsetFraction = 0f,
+    updatedPageCount = { pagesWrapper.pagesCount }
   )
 
   LaunchedEffect(
