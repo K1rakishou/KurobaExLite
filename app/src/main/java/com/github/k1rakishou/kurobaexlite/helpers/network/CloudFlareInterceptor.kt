@@ -205,6 +205,7 @@ class CloudFlareInterceptor(
     private val cloudflareNeedles = arrayOf(
       "<title>Just a moment".toByteArray(StandardCharsets.UTF_8),
       "<title>Please wait".toByteArray(StandardCharsets.UTF_8),
+      "<title>4chan - Verification Required".toByteArray(StandardCharsets.UTF_8),
       "Checking your browser before accessing".toByteArray(StandardCharsets.UTF_8),
       "Browser Integrity Check".toByteArray(StandardCharsets.UTF_8)
     )
