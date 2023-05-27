@@ -8,12 +8,14 @@ import android.view.animation.LinearInterpolator
 import android.widget.Scroller
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -25,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -39,12 +40,11 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.fastForEach
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalChanTheme
-import com.github.k1rakishou.kurobaexlite.ui.helpers.gesture.awaitPointerSlopOrCancellationWithPass
+import com.github.k1rakishou.kurobaexlite.ui.helpers.modifier.reorder.awaitPointerSlopOrCancellation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
@@ -59,10 +59,9 @@ private val boldTypeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
 
 
 @Composable
-fun DraggableArea(
+fun MediaViewerDraggableArea(
   availableSize: IntSize,
   closeScreen: () -> Unit,
-  isDragGestureAllowedFunc: (currentPosition: Offset, startPosition: Offset) -> Boolean,
   content: @Composable () -> Unit
 ) {
   val context = LocalContext.current
@@ -74,7 +73,7 @@ fun DraggableArea(
 
   var currentPosition by remember { mutableStateOf(Offset(0f, 0f)) }
   var ignoreAllMotionEvents by remember { mutableStateOf(false) }
-  var contentAlpha by remember { mutableStateOf(1f) }
+  var contentAlpha by remember { mutableFloatStateOf(1f) }
   var showCloseViewerLabel by remember { mutableStateOf(false) }
 
   LaunchedEffect(
@@ -190,29 +189,21 @@ fun DraggableArea(
           val velocityTracker = VelocityTracker()
 
           awaitEachGesture {
-            val downEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+            val firstChange = awaitFirstDown(requireUnconsumed = false)
             if (ignoreAllMotionEvents) {
-              return@awaitEachGesture
-            }
-
-            val firstChange = downEvent.changes.firstOrNull()
-            if (firstChange == null) {
               return@awaitEachGesture
             }
 
             var skipGesture = false
 
-            val touchSlopChange = awaitPointerSlopOrCancellationWithPass(
+            val touchSlopChange = awaitPointerSlopOrCancellation(
               pointerId = firstChange.id,
-              pointerEventPass = PointerEventPass.Initial,
+              pointerType = firstChange.type,
               onPointerSlopReached = { change, overSlop ->
-                if (!isDragGestureAllowedFunc(change.position, firstChange.position)) {
-                  skipGesture = true
-                  return@awaitPointerSlopOrCancellationWithPass
-                }
-
                 if (overSlop.y.absoluteValue > overSlop.x.absoluteValue) {
                   change.consume()
+                } else {
+                  skipGesture = true
                 }
               }
             )
@@ -223,11 +214,8 @@ fun DraggableArea(
 
             velocityTracker.resetTracking()
 
-            downEvent.changes.fastForEach { pointerInputChange ->
-              velocityTracker.addPointerInputChange(pointerInputChange)
-              pointerInputChange.consume()
-            }
-
+            velocityTracker.addPointerInputChange(firstChange)
+            firstChange.consume()
             velocityTracker.addPointerInputChange(touchSlopChange)
 
             val startPosition = touchSlopChange.position
@@ -235,7 +223,7 @@ fun DraggableArea(
 
             try {
               while (true) {
-                val moveEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
+                val moveEvent = awaitPointerEvent()
 
                 val moveChange = moveEvent.changes.firstOrNull()
                 if (moveChange == null || moveChange.changedToUpIgnoreConsumed()) {

@@ -6,7 +6,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import coil.imageLoader
@@ -24,7 +23,6 @@ import kotlinx.coroutines.launch
 fun DisplayFullImage(
   availableSize: IntSize,
   postImageDataLoadState: ImageLoadState.Ready,
-  setIsDragGestureAllowedFunc: ((currPosition: Offset, startPosition: Offset) -> Boolean) -> Unit,
   onFullImageLoaded: () -> Unit,
   onFullImageFailedToLoad: () -> Unit,
   onImageTapped: () -> Unit,

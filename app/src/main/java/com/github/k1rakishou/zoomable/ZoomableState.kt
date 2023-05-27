@@ -6,8 +6,6 @@ import androidx.compose.animation.core.AnimationVector
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDecay
 import androidx.compose.animation.core.animateTo
-import androidx.compose.animation.core.exponentialDecay
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +57,7 @@ import kotlin.math.abs
 @Composable
 fun rememberZoomableState(
   zoomSpec: ZoomSpec = ZoomSpec(),
+  animationSpec: AnimationSpec = AnimationSpec(),
   autoApplyTransformations: Boolean = true,
 ): ZoomableState {
   val state = rememberSaveable(saver = ZoomableState.Saver) {
@@ -67,6 +66,7 @@ fun rememberZoomableState(
     )
   }.also {
     it.zoomSpec = zoomSpec
+    it.animationSpec = animationSpec
     it.layoutDirection = LocalLayoutDirection.current
   }
 
@@ -166,6 +166,7 @@ class ZoomableState internal constructor(
   internal var rawTransformation: RawTransformation? by mutableStateOf(initialTransformation)
 
   internal var zoomSpec by mutableStateOf(ZoomSpec())
+  internal var animationSpec by mutableStateOf(AnimationSpec())
   internal var layoutDirection: LayoutDirection by mutableStateOf(LayoutDirection.Ltr)
 
   /**
@@ -405,7 +406,7 @@ class ZoomableState internal constructor(
         targetValue = 1f,
         // Without a low visibility threshold, spring() makes a huge
         // jump on its last frame causing a few frames to be dropped.
-        animationSpec = tween(durationMillis = 250)
+        animationSpec = animationSpec.zoomAnimationSpec
       ) {
         val animatedZoom = start.zoom.copy(
           userZoom = lerp(
@@ -446,7 +447,7 @@ class ZoomableState internal constructor(
       var previous = start.zoom.userZoom
       AnimationState(initialValue = previous).animateTo(
         targetValue = userZoomWithinBounds,
-        animationSpec = tween(durationMillis = 250)
+        animationSpec = animationSpec.zoomAnimationSpec
       ) {
         transformBy(
           centroid = start.lastCentroid,
@@ -459,13 +460,14 @@ class ZoomableState internal constructor(
 
   internal suspend fun fling(velocity: Velocity, density: Density) {
     val start = rawTransformation!!
+
     transformableState.transform(MutatePriorities.FlingAnimation) {
       var previous = start.offset
       AnimationState(
         typeConverter = Offset.VectorConverter,
         initialValue = previous,
         initialVelocityVector = AnimationVector(velocity.x, velocity.y)
-      ).animateDecay(exponentialDecay(frictionMultiplier = 2f)) {
+      ).animateDecay(animationSpec.flingAnimationSpec) {
         transformBy(
           centroid = start.lastCentroid,
           panChange = value - previous

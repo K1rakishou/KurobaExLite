@@ -50,7 +50,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
@@ -75,10 +74,9 @@ import com.github.k1rakishou.chan.core.mpv.MPVLib
 import com.github.k1rakishou.chan.core.mpv.MpvSettings
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
-import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreen.Companion.defaultIsDragGestureAllowedFunc
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.ClickedThumbnailBoundsStorage
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.DisplayLoadingProgressIndicator
-import com.github.k1rakishou.kurobaexlite.features.media.helpers.DraggableArea
+import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerDraggableArea
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPostListScroller
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerPreviewStrip
 import com.github.k1rakishou.kurobaexlite.features.media.helpers.MediaViewerScreenVideoControls
@@ -532,8 +530,6 @@ class MediaViewerScreen(
     val SCREEN_KEY = ScreenKey("MediaViewerScreen")
 
     private const val NEW_MEDIA_VIEWER_IMAGES_ADDED_TOAST_ID = "new_media_viewer_images_added_toast_id"
-
-    internal val defaultIsDragGestureAllowedFunc: (currPosition: Offset, startPosition: Offset) -> Boolean = { _, _ -> true }
   }
 }
 
@@ -1534,14 +1530,10 @@ private fun PageContent(
   }
 
   val coroutineScope = rememberCoroutineScope()
-  var isDragGestureAllowedFunc by remember { mutableStateOf(defaultIsDragGestureAllowedFunc) }
 
-  DraggableArea(
+  MediaViewerDraggableArea(
     availableSize = availableSize,
-    closeScreen = { stopPresenting() },
-    isDragGestureAllowedFunc = { currPosition, startPosition ->
-      isDragGestureAllowedFunc(currPosition, startPosition)
-    }
+    closeScreen = { stopPresenting() }
   ) {
     when (postImageDataLoadState) {
       is ImageLoadState.PreparingForLoading -> {
@@ -1593,7 +1585,6 @@ private fun PageContent(
             DisplayFullImage(
               availableSize = availableSize,
               postImageDataLoadState = postImageDataLoadState,
-              setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
               onFullImageLoaded = { fullMediaLoaded = true },
               onFullImageFailedToLoad = { fullMediaLoaded = false },
               onImageTapped = { onMediaTapped() },
@@ -1613,11 +1604,6 @@ private fun PageContent(
               block = { mediaState.isMutedState.value = muteByDefault }
             )
 
-            LaunchedEffect(
-              key1 = Unit,
-              block = { isDragGestureAllowedFunc = defaultIsDragGestureAllowedFunc }
-            )
-
             DisplayVideo(
               pageIndex = page,
               pagerState = pagerState,
@@ -1633,11 +1619,6 @@ private fun PageContent(
             )
           }
           is MediaState.Unsupported -> {
-            LaunchedEffect(
-              key1 = Unit,
-              block = { isDragGestureAllowedFunc = defaultIsDragGestureAllowedFunc }
-            )
-
             DisplayUnsupportedMedia(
               toolbarHeight = toolbarHeight,
               postImageDataLoadState = postImageDataLoadState,

@@ -14,7 +14,7 @@ data class ZoomSpec(
    * as a form of visual feedback that the content can't be zoomed any further. When set to false,
    * content will keep zooming in a free-form manner even when it goes beyond its boundaries.
    */
-  val preventOverOrUnderZoom: Boolean = true,
+  val preventOverOrUnderZoom: Boolean = true
 ) {
   internal val range = ZoomRange(maxZoomAsRatioOfSize = maxZoomFactor)
 }

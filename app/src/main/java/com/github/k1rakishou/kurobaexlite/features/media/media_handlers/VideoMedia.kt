@@ -58,6 +58,9 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeLoadingIndicat
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
+import com.github.k1rakishou.zoomable.ZoomSpec
+import com.github.k1rakishou.zoomable.rememberZoomableState
+import com.github.k1rakishou.zoomable.zoomable
 import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
@@ -244,14 +247,18 @@ fun DisplayVideo(
 
   val logObserver = rememberLogObserver(videoMediaState)
 
+  val zoomSpec = remember { ZoomSpec(maxZoomFactor = 3f) }
+  val zoomableState = rememberZoomableState(zoomSpec = zoomSpec)
+
   Box(
     modifier = Modifier.fillMaxSize()
   ) {
     AndroidView(
       modifier = Modifier
         .fillMaxSize()
-        .kurobaClickable(
-          hasClickIndication = false,
+        // TODO: there is a bug currently which is tracked here: https://github.com/saket/telephoto/issues/21
+        .zoomable(
+          state = zoomableState,
           onClick = { onVideoTapped() }
         ),
       factory = { viewContext ->
