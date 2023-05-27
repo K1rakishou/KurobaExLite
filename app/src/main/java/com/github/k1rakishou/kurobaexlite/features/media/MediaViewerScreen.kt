@@ -104,6 +104,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.lerpFloat
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
 import com.github.k1rakishou.kurobaexlite.managers.MainUiLayoutMode
 import com.github.k1rakishou.kurobaexlite.model.data.IPostImage
 import com.github.k1rakishou.kurobaexlite.model.data.ImageType
@@ -114,6 +115,8 @@ import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
 import com.github.k1rakishou.kurobaexlite.navigation.NavigationRouter
 import com.github.k1rakishou.kurobaexlite.ui.elements.InsetsAwareBox
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.KurobaSnackbarContainer
+import com.github.k1rakishou.kurobaexlite.ui.elements.snackbar.rememberKurobaSnackbarState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaBottomSheet
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaBottomSheetState
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeClickableIcon
@@ -555,6 +558,7 @@ private fun MediaViewerContent(
   val toolbarHeight = dimensionResource(id = R.dimen.toolbar_height)
 
   val clickedThumbnailBoundsStorage: ClickedThumbnailBoundsStorage = koinRemember()
+  val globalUiInfoManager: GlobalUiInfoManager = koinRemember()
 
   var clickedThumbnailBounds by remember { mutableStateOf(clickedThumbnailBoundsStorage.getBounds()) }
   var transitionFinished by remember { mutableStateOf(false) }
@@ -568,6 +572,8 @@ private fun MediaViewerContent(
 
   var pagerStateHolder by remember { mutableStateOf<PagerState?>(null) }
   val coroutineScope = rememberCoroutineScope()
+
+  val kurobaSnackbarState = rememberKurobaSnackbarState()
 
   Box(
     modifier = Modifier
@@ -686,6 +692,13 @@ private fun MediaViewerContent(
           clickedThumbnailBoundsStorage.consumeBounds()
         }
       }
+    )
+
+    KurobaSnackbarContainer(
+      modifier = Modifier.fillMaxSize(),
+      screenKey = screenKey,
+      isTablet = globalUiInfoManager.isTablet,
+      kurobaSnackbarState = kurobaSnackbarState
     )
   }
 }
