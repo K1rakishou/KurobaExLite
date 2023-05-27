@@ -1,6 +1,5 @@
 package com.github.k1rakishou.kurobaexlite.features.media.helpers
 
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.os.SystemClock
@@ -22,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -50,6 +50,7 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlin.math.absoluteValue
+import android.graphics.Color as AndroidColor
 
 private val flingVelocity = 7000f
 private val flingAnimationDuration = 250
@@ -69,7 +70,7 @@ fun DraggableArea(
   val androidHelpers = koinRemember<AndroidHelpers>()
 
   val distToClose = with(density) { 200.dp.toPx() }
-  val endActionChannel = remember { Channel<EndAction>(Channel.RENDEZVOUS) }
+  val endActionChannel = remember { Channel<EndAction>(Channel.CONFLATED) }
 
   var currentPosition by remember { mutableStateOf(Offset(0f, 0f)) }
   var ignoreAllMotionEvents by remember { mutableStateOf(false) }
@@ -189,8 +190,6 @@ fun DraggableArea(
           val velocityTracker = VelocityTracker()
 
           awaitEachGesture {
-            velocityTracker.resetTracking()
-
             val downEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
             if (ignoreAllMotionEvents) {
               return@awaitEachGesture
@@ -222,6 +221,8 @@ fun DraggableArea(
               return@awaitEachGesture
             }
 
+            velocityTracker.resetTracking()
+
             downEvent.changes.fastForEach { pointerInputChange ->
               velocityTracker.addPointerInputChange(pointerInputChange)
               pointerInputChange.consume()
@@ -235,8 +236,8 @@ fun DraggableArea(
             try {
               while (true) {
                 val moveEvent = awaitPointerEvent(pass = PointerEventPass.Initial)
-                val moveChange = moveEvent.changes.firstOrNull()
 
+                val moveChange = moveEvent.changes.firstOrNull()
                 if (moveChange == null || moveChange.changedToUpIgnoreConsumed()) {
                   break
                 }
@@ -254,59 +255,66 @@ fun DraggableArea(
                 .hypot(velocity.x.toDouble(), velocity.y.toDouble())
                 .toFloat()
 
-              when {
+              val eventSent = when {
                 velocityHypot.absoluteValue > flingVelocity -> {
-                  endActionChannel.trySend(EndAction.Fling(currentPosition, velocity))
+                  endActionChannel.trySend(EndAction.Fling(currentPosition, velocity)).isSuccess
                 }
 
                 currentDist > distToClose -> {
-                  endActionChannel.trySend(EndAction.Close)
+                  endActionChannel.trySend(EndAction.Close).isSuccess
                 }
 
                 else -> {
-                  endActionChannel.trySend(EndAction.ScrollBack(currentPosition))
+                  endActionChannel.trySend(EndAction.ScrollBack(currentPosition)).isSuccess
                 }
               }
 
-              ignoreAllMotionEvents = true
+              ignoreAllMotionEvents = eventSent
             }
           }
         }
       )
       .absoluteOffset { IntOffset(currentPosition.x.toInt(), currentPosition.y.toInt()) }
       .graphicsLayer { alpha = contentAlpha }
-      .composed {
-        val chanTheme = LocalChanTheme.current
-        val textSize = with(LocalDensity.current) { 30.sp.toPx() }
-        val text = stringResource(id = R.string.media_viewer_close_label_text)
-        val labelAlpha by animateFloatAsState(targetValue = if (showCloseViewerLabel) 1f else 0f)
-
-        val textPaint = remember {
-          TextPaint().apply {
-            this.textSize = textSize
-            this.color = chanTheme.accentColor.toArgb()
-            this.style = Paint.Style.FILL
-            this.typeface = boldTypeface
-            this.setShadowLayer(4f, 0f, 0f, Color.BLACK)
-          }
-        }
-
-        val textWidth = remember { textPaint.measureText(text) }
-
-        return@composed Modifier.drawWithContent {
-          drawContent()
-
-          if (labelAlpha > 0f) {
-            val posX = (size.width - textWidth) / 2f
-            val poxY = (size.height - textSize) / 2f
-
-            textPaint.alpha = (255f * labelAlpha).toInt()
-            drawContext.canvas.nativeCanvas.drawText(text, posX, poxY, textPaint)
-          }
-        }
-      }
+      .overlayModifier(showCloseViewerLabel)
   ) {
     content()
+  }
+}
+
+private fun Modifier.overlayModifier(showCloseViewerLabel: Boolean): Modifier {
+  return composed {
+    val chanTheme = LocalChanTheme.current
+    val textSize = with(LocalDensity.current) { 30.sp.toPx() }
+    val text = stringResource(id = R.string.media_viewer_close_label_text)
+    val labelAlpha by animateFloatAsState(targetValue = if (showCloseViewerLabel) 1f else 0f)
+    val overlayAlpha by animateFloatAsState(targetValue = if (showCloseViewerLabel) 0.75f else 0f)
+
+    val textPaint = remember {
+      TextPaint().apply {
+        this.textSize = textSize
+        this.color = chanTheme.accentColor.toArgb()
+        this.style = Paint.Style.FILL
+        this.typeface = boldTypeface
+        this.setShadowLayer(4f, 0f, 0f, AndroidColor.BLACK)
+      }
+    }
+
+    val textWidth = remember { textPaint.measureText(text) }
+
+    return@composed Modifier.drawWithContent {
+      drawContent()
+
+      if (labelAlpha > 0f) {
+        drawRect(color = Color.Black.copy(alpha = overlayAlpha))
+
+        val posX = (size.width - textWidth) / 2f
+        val poxY = (size.height - textSize) / 2f
+
+        textPaint.alpha = (255f * labelAlpha).toInt()
+        drawContext.canvas.nativeCanvas.drawText(text, posX, poxY, textPaint)
+      }
+    }
   }
 }
 

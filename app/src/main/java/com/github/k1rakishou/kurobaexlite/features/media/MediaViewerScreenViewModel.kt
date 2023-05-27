@@ -255,7 +255,7 @@ class MediaViewerScreenViewModel(
 
       val resultFile = loadImageResult.getOrThrow()
       logcat(TAG, LogPriority.VERBOSE) { "loadFullImageAndGetFile() Successfully loaded \'$fullImageUrl\'" }
-      send(ImageLoadState.Ready(postImageData, resultFile))
+      send(ImageLoadState.Ready(postImageData, resultFile, resultFile.absolutePath))
 
       revealedSpoilerImages.onFullImageOpened(postImageData)
     }

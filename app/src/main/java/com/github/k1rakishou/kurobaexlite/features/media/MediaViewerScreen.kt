@@ -373,7 +373,7 @@ class MediaViewerScreen(
 
     // We can just stream videos without having to load them first
     if (postImageDataLoadState.postImage.imageType() == ImageType.Video) {
-      mediaViewerScreenState.mediaListMutable().set(index, ImageLoadState.Ready(postImageData, null))
+      mediaViewerScreenState.mediaListMutable().set(index, ImageLoadState.Ready(postImageData, null, null))
       return
     }
 
@@ -1591,12 +1591,9 @@ private fun PageContent(
 
         when (mediaState) {
           is MediaState.Static -> {
-            val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "Can't stream static images" }
-
             DisplayFullImage(
               availableSize = availableSize,
               postImageDataLoadState = postImageDataLoadState,
-              imageFile = imageFile,
               setIsDragGestureAllowedFunc = { func -> isDragGestureAllowedFunc = func },
               onFullImageLoaded = { fullMediaLoaded = true },
               onFullImageFailedToLoad = { fullMediaLoaded = false },

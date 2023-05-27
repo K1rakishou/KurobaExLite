@@ -149,7 +149,8 @@ android {
                 "-Xopt-in=kotlin.Experimental",
                 "-Xopt-in=kotlin.RequiresOptIn",
                 "-Xopt-in=kotlin.ExperimentalStdlibApi",
-                "-Xopt-in=coil.annotation.ExperimentalCoilApi"
+                "-Xopt-in=coil.annotation.ExperimentalCoilApi",
+                "-Xcontext-receivers",
         ]
     }
     buildFeatures {
@@ -164,7 +165,7 @@ android {
 dependencies {
     implementation project(':kpnc')
 
-    implementation 'androidx.core:core-ktx:1.10.0'
+    implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.9.0'
     implementation "androidx.compose.ui:ui:$compose_version"
@@ -178,7 +179,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
     implementation 'androidx.activity:activity-compose:1.7.1'
     implementation "androidx.datastore:datastore-preferences:1.0.0"
-    implementation "androidx.window:window:1.1.0-beta02"
+    implementation "androidx.window:window:1.1.0-rc01"
     implementation "io.insert-koin:koin-core:$koin_version"
     implementation "io.insert-koin:koin-android:$koin_version"
     implementation 'dev.chrisbanes.snapper:snapper:0.3.0'
@@ -197,7 +198,6 @@ dependencies {
     runtimeOnly "org.jetbrains.kotlin:kotlin-reflect:${kotlin_version}"
 
     implementation 'com.github.K1rakishou:image-decoder:7929849762'
-    implementation 'com.github.K1rakishou:ComposeSubsamplingScaleImage:e98f7d0fb3'
     implementation 'com.github.K1rakishou:ComposeCustomTextSelection:8724bc088d'
     implementation "com.github.K1rakishou:Fuck-Storage-Access-Framework:v1.1.2"
 

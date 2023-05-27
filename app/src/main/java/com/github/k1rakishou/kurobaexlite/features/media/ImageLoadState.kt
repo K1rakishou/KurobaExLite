@@ -31,6 +31,7 @@ sealed class ImageLoadState {
 
   data class Ready(
     override val postImage: IPostImage,
-    val imageFile: File?
+    val imageFile: File?,
+    val imageFilePath: String?
   ) : ImageLoadState()
 }

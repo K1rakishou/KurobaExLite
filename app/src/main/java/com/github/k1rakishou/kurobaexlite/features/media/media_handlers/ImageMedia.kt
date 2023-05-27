@@ -2,158 +2,82 @@ package com.github.k1rakishou.kurobaexlite.features.media.media_handlers
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
-import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImage
-import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageDecoder
-import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageEventListener
-import com.github.k1rakishou.cssi_lib.ComposeSubsamplingScaleImageSource
-import com.github.k1rakishou.cssi_lib.ImageDecoderProvider
-import com.github.k1rakishou.cssi_lib.ImageSourceProvider
-import com.github.k1rakishou.cssi_lib.MaxTileSize
-import com.github.k1rakishou.cssi_lib.MinimumScaleType
-import com.github.k1rakishou.cssi_lib.ScrollableContainerDirection
-import com.github.k1rakishou.cssi_lib.rememberComposeSubsamplingScaleImageState
+import coil.imageLoader
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
-import com.github.k1rakishou.kurobaexlite.features.media.MediaViewerScreenViewModel
-import com.github.k1rakishou.kurobaexlite.helpers.decoder.TachiyomiImageDecoder
-import com.github.k1rakishou.kurobaexlite.helpers.util.Try
-import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
-import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
-import java.io.File
+import com.github.k1rakishou.zoomable.ZoomSpec
+import com.github.k1rakishou.zoomable.ZoomableAsyncImage
+import com.github.k1rakishou.zoomable.rememberZoomableImageState
+import com.github.k1rakishou.zoomable.rememberZoomableState
+import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.launch
 
 @Composable
 fun DisplayFullImage(
   availableSize: IntSize,
   postImageDataLoadState: ImageLoadState.Ready,
-  imageFile: File,
   setIsDragGestureAllowedFunc: ((currPosition: Offset, startPosition: Offset) -> Boolean) -> Unit,
   onFullImageLoaded: () -> Unit,
   onFullImageFailedToLoad: () -> Unit,
   onImageTapped: () -> Unit,
   reloadImage: () -> Unit
 ) {
-  val eventListener = object : ComposeSubsamplingScaleImageEventListener() {
-    override fun onFailedToProvideSource(error: Throwable) {
-      super.onFailedToProvideSource(error)
+  val imageLoader = LocalContext.current.imageLoader
+  val context = LocalContext.current
 
-      reloadImage()
-    }
-
-    override fun onFailedToDecodeImageInfo(error: Throwable) {
-      val url = postImageDataLoadState.fullImageUrlAsString
-      logcatError { "onFailedToDecodeImageInfo() url=$url, error=${error.errorMessageOrClassName()}" }
-
-      onFullImageFailedToLoad()
-    }
-
-    override fun onFailedToLoadFullImage(error: Throwable) {
-      val url = postImageDataLoadState.fullImageUrlAsString
-      logcatError { "onFailedToLoadFullImage() url=$url, error=${error.errorMessageOrClassName()}" }
-
-      onFullImageFailedToLoad()
-    }
-
-    override fun onFullImageLoaded() {
-      onFullImageLoaded()
-    }
-
-    override fun onFailedToDecodeTile(tileIndex: Int, totalTilesInTopLayer: Int, error: Throwable) {
-      logcatError {
-        "onFailedToDecodeTile() tileIndex=$tileIndex, totalTilesInTopLayer: $totalTilesInTopLayer, " +
-          "error=${error.errorMessageOrClassName()}"
-      }
-    }
-
-    override fun onInitializationCanceled() {
-      logcatError { "onInitializationCanceled()" }
-    }
-  }
-
-  val imageSourceProvider = remember(key1 = imageFile) {
-    object : ImageSourceProvider {
-      override suspend fun provide(): Result<ComposeSubsamplingScaleImageSource> {
-        return Result.Try {
-          val inputStream = try {
-            imageFile.inputStream()
-          } catch (error: Throwable) {
-            throw MediaViewerScreenViewModel.ImageLoadException(
-              postImageDataLoadState.fullImageUrl,
-              "Failed to open input stream of file: ${imageFile.name}, " +
-                "exists: ${imageFile.exists()}, " +
-                "length: ${imageFile.length()}, " +
-                "canRead: ${imageFile.canRead()}"
-            )
-          }
-
-          return@Try ComposeSubsamplingScaleImageSource(
-            debugKey = postImageDataLoadState.uniqueKey(),
-            inputStream = inputStream
-          )
-        }
-      }
-    }
-  }
-
-  val imageDecoderProvider = remember {
-    object : ImageDecoderProvider {
-      override suspend fun provide(): ComposeSubsamplingScaleImageDecoder {
-        return TachiyomiImageDecoder()
-      }
-    }
-  }
-
-  val maxScale = remember(key1 = postImageDataLoadState.postImage, key2 = availableSize) {
+  val maxZoomFactor = remember(key1 = postImageDataLoadState.postImage, key2 = availableSize) {
     val postImage = postImageDataLoadState.postImage
-
     val scale = Math.min(
       availableSize.width.toFloat() / postImage.width.toFloat(),
       availableSize.height.toFloat() / postImage.height.toFloat()
     )
-
     return@remember scale * 3f
   }
 
-  val state = rememberComposeSubsamplingScaleImageState(
-    maxScale,
-    scrollableContainerDirection = ScrollableContainerDirection.Horizontal,
-    doubleTapZoom = 2f.coerceAtLeast(maxScale),
-    maxScale = maxScale,
-    maxMaxTileSize = { MaxTileSize.Auto() },
-    minimumScaleType = { MinimumScaleType.ScaleTypeCustom },
-    imageDecoderProvider = imageDecoderProvider
-  )
+  val zoomSpec = remember { ZoomSpec(maxZoomFactor = maxZoomFactor) }
+  val zoomableState = rememberZoomableState(zoomSpec = zoomSpec)
+  val zoomableImageState = rememberZoomableImageState(zoomableState)
 
-  LaunchedEffect(
-    key1 = state,
-    block = {
-      val isDragGestureAllowed: (Offset, Offset) -> Boolean = func@ { currPosition, startPosition ->
-        val panInfo = state.getPanInfo()
-        if (panInfo == null) {
-          return@func false
+  val imageFile = checkNotNull(postImageDataLoadState.imageFile) { "imageFile is null" }
+  val imageFilePath = checkNotNull(postImageDataLoadState.imageFilePath) { "imageFilePath is null" }
+
+  val currentOnFullImageLoaded = rememberUpdatedState(newValue = onFullImageLoaded)
+  val currentOnFullImageFailedToLoad = rememberUpdatedState(newValue = onFullImageFailedToLoad)
+
+  val coroutineScope = rememberCoroutineScope()
+
+  val model = remember(key1 = imageFilePath) {
+    ImageRequest.Builder(context)
+      .data(imageFile)
+      .listener(
+        onSuccess = { _, _ ->
+          coroutineScope.launch {
+            awaitFrame()
+            currentOnFullImageLoaded.value()
+          }
+        },
+        onError = { _, _ ->
+          currentOnFullImageFailedToLoad.value()
         }
+      )
+      .memoryCachePolicy(CachePolicy.DISABLED)
+      .build()
+  }
 
-        if (currPosition.y - startPosition.y > 0 && !panInfo.touchesTop()) {
-          return@func false
-        } else if (currPosition.y - startPosition.y < 0 && !panInfo.touchesBottom()) {
-          return@func false
-        }
-
-        return@func true
-      }
-
-      setIsDragGestureAllowedFunc(isDragGestureAllowed)
-    }
-  )
-
-  ComposeSubsamplingScaleImage(
+  ZoomableAsyncImage(
     modifier = Modifier.fillMaxSize(),
-    state = state,
-    imageSourceProvider = imageSourceProvider,
-    eventListener = eventListener,
-    onImageTapped = { onImageTapped() }
+    model = model,
+    state = zoomableImageState,
+    imageLoader = imageLoader,
+    onClick = { onImageTapped() },
+    contentDescription = null
   )
 }
