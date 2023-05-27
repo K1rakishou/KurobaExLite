@@ -74,6 +74,7 @@ abstract class PostScreenState(
   @CallSuper
   open fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     doWithDataState { postsState ->
+      // TODO: this crashes sometimes with "error: androidx.compose.runtime.snapshots.SnapshotApplyConflictException"
       Snapshot.withMutableSnapshot {
         postsState.insertOrUpdateMany(
           postCellDataCollection = postCellDataCollection,

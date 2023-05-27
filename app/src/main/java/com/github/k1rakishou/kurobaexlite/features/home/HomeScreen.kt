@@ -372,15 +372,10 @@ private fun ContentInternal(
   // 2 years old. So for the time being we have to hack around the issue.
   val pagerState = rememberPagerState(
     key1 = orientation,
-    initialPage = initialScreenIndex
+    initialPage = initialScreenIndex,
+    initialPageOffsetFraction = 0f,
+    updatedPageCount = { pagesWrapper.pagesCount }
   )
-
-//  val pagerState = rememberPagerState(
-//    key1 = orientation,
-//    initialPage = initialScreenIndex,
-//    initialPageOffsetFraction = 0f,
-//    updatedPageCount = { pagesWrapper.pagesCount }
-//  )
 
   LaunchedEffect(
     key1 = Unit,
@@ -673,7 +668,6 @@ private fun HomeScreenContentActual(
       HorizontalPager(
         modifier = Modifier.fillMaxSize(),
         state = pagerState,
-        pageCount = pagesWrapper.pagesCount,
         beyondBoundsPageCount = 1,
         key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey()}
       ) { page ->

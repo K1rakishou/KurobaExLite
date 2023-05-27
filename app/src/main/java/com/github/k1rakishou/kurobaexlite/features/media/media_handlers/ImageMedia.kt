@@ -35,11 +35,12 @@ fun DisplayFullImage(
 
   val maxZoomFactor = remember(key1 = postImageDataLoadState.postImage, key2 = availableSize) {
     val postImage = postImageDataLoadState.postImage
-    val scale = Math.min(
-      availableSize.width.toFloat() / postImage.width.toFloat(),
-      availableSize.height.toFloat() / postImage.height.toFloat()
+    val maxZoomFactor = Math.max(
+      postImage.width.toFloat() / availableSize.width.toFloat(),
+      postImage.height.toFloat()/ availableSize.height.toFloat()
     )
-    return@remember scale * 3f
+
+    return@remember maxZoomFactor.coerceIn(3f, 8f)
   }
 
   val zoomSpec = remember { ZoomSpec(maxZoomFactor = maxZoomFactor) }

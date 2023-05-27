@@ -1318,7 +1318,7 @@ private fun MediaViewerPagerContainer(
   var initialScrollHappened by remember { mutableStateOf(false) }
   val initialScrollHappenedUpdated by rememberUpdatedState(newValue = initialScrollHappened)
 
-  val pagerState = rememberPagerState()
+  val pagerState = rememberPagerState(pageCount = { mediaList.size })
   val currentPageIndex by remember { derivedStateOf { pagerState.currentPage } }
   val isScrollInProgress by remember { derivedStateOf { pagerState.isScrollInProgress } }
 
@@ -1433,7 +1433,6 @@ private fun MediaViewerPagerContainer(
 
   HorizontalPager(
     modifier = Modifier.fillMaxSize(),
-    pageCount = mediaList.size,
     state = pagerState,
     key = { page -> mediaList.getOrNull(page)?.uniqueKey() ?: page }
   ) { page ->
