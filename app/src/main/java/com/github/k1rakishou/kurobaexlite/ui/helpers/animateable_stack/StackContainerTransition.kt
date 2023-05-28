@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -61,8 +62,8 @@ internal fun <T : DisposableElement> StackContainerTransition(
     }
   }
 
-  var scaleAnimated by remember { mutableStateOf(scaleInitial) }
-  var alphaAnimated by remember { mutableStateOf(alphaInitial) }
+  var scaleAnimated by remember { mutableFloatStateOf(scaleInitial) }
+  var alphaAnimated by remember { mutableFloatStateOf(alphaInitial) }
   var canRender by remember { mutableStateOf(canRenderInitial) }
 
   LaunchedEffect(

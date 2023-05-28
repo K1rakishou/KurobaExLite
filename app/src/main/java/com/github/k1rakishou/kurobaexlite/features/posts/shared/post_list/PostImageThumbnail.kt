@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -78,8 +79,8 @@ fun PostImageThumbnail(
     }
   )
 
-  var maxParentWidth by remember { mutableStateOf(0) }
-  var maxParentHeight by remember { mutableStateOf(0) }
+  var maxParentWidth by remember { mutableIntStateOf(0) }
+  var maxParentHeight by remember { mutableIntStateOf(0) }
 
   Box(
     modifier = Modifier
@@ -94,8 +95,6 @@ fun PostImageThumbnail(
       )
       .then(modifier)
   ) {
-    val density = LocalDensity.current
-
     val thumbnailUrl = remember(key1 = revealSpoiler) {
       if (!revealSpoiler && postImage.thumbnailSpoiler != null) {
         val spoilerUrl = postImage.thumbnailSpoiler!!.spoilerThumbnailUrl(postImage.ownerPostDescriptor.catalogDescriptor)

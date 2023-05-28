@@ -8,6 +8,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,7 +33,7 @@ fun KurobaComposeFadeIn(
   }
 
   var visible by rememberSaveableResettable(key1) { mutableStateOf(false) }
-  val contentAlpha = remember { mutableStateOf(0f) }
+  val contentAlpha = remember { mutableFloatStateOf(0f) }
 
   Box(
     modifier = modifier.then(

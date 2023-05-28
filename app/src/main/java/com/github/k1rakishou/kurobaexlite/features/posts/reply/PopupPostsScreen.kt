@@ -333,7 +333,7 @@ class PopupPostsScreen(
 
           navigationRouter.presentScreen(mediaViewerScreen)
         },
-        onPostImageLongClicked = { chanDescriptor, longClickedImage ->
+        onPostImageLongClicked = { _, longClickedImage ->
           postImageLongtapContextMenu.showMenu(
             postImage = longClickedImage,
             viewProvider = { view }
@@ -554,7 +554,7 @@ private fun PopupPostsScreenContent(
       postListOptions = postListOptions,
       postListSelectionState = postListSelectionState,
       postsScreenViewModelProvider = { popupPostsScreenViewModel },
-      onPostCellClicked = { postCellData -> /*no-op*/ },
+      onPostCellClicked = {  /*no-op*/ },
       onPostCellLongClicked = { postCellData ->
         postLongtapContextMenuProvider().showMenu(
           postListOptions = postListOptions,
@@ -682,10 +682,10 @@ private fun PopupPostsScreenContent(
 
         stopPresenting()
       },
-      onPostListScrolled = { delta -> /*no-op*/ },
-      onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
-      onCurrentlyTouchingPostList = { touching -> /*no-op*/ },
-      onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
+      onPostListScrolled = { /*no-op*/ },
+      onPostListTouchingTopOrBottomStateChanged = { /*no-op*/ },
+      onCurrentlyTouchingPostList = { /*no-op*/ },
+      onFastScrollerDragStateChanged = { /*no-op*/ },
     )
   }
 

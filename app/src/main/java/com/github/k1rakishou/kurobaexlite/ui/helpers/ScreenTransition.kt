@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -61,8 +62,8 @@ fun ScreenTransition(
     is NavigationRouter.ScreenAnimation.Remove -> false
   }
 
-  var scaleAnimated by remember(key1 = screenAnimation) { mutableStateOf(scaleInitial) }
-  var alphaAnimated by remember(key1 = screenAnimation) { mutableStateOf(alphaInitial) }
+  var scaleAnimated by remember(key1 = screenAnimation) { mutableFloatStateOf(scaleInitial) }
+  var alphaAnimated by remember(key1 = screenAnimation) { mutableFloatStateOf(alphaInitial) }
   var canRender by remember(key1 = screenAnimation) { mutableStateOf(canRenderInitial) }
 
   LaunchedEffect(

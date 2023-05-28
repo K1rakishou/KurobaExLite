@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -64,7 +64,7 @@ class SliderDialogScreen(
 
     val slideOffsetState = remember {
       val sliderOffset = (currentValue - minValue).toFloat() / (maxValue - minValue).toFloat()
-      return@remember mutableStateOf(sliderOffset)
+      return@remember mutableFloatStateOf(sliderOffset)
     }
     var slideOffset by slideOffsetState
 

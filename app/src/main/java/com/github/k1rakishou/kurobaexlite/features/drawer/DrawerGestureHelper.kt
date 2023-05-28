@@ -204,7 +204,7 @@ private suspend fun AwaitPointerEventScope.kurobaAwaitLongPressOrCancellation(
 
         if (
           event.changes.fastAny {
-            it.consumed.downChange || it.isOutOfBounds(size, extendedTouchPadding)
+            it.isConsumed || it.isOutOfBounds(size, extendedTouchPadding)
           }
         ) {
           finished = true // Canceled

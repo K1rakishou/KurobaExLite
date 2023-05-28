@@ -11,6 +11,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Relation
+import androidx.room.RewriteQueriesToDropUnusedColumns
 import androidx.room.Transaction
 import androidx.room.Update
 import com.github.k1rakishou.kurobaexlite.helpers.util.mutableMapWithCap
@@ -93,6 +94,7 @@ data class ChanCatalogEntitySorted(
 abstract class ChanCatalogDao {
 
   @Transaction
+  @RewriteQueriesToDropUnusedColumns
   @Query("""
     SELECT * FROM chan_catalogs
     INNER JOIN chan_catalog_sort_order

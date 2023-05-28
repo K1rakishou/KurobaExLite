@@ -29,6 +29,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -268,7 +269,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
     chanTheme.selectedOnBackColor.copy(alpha = 0.5f)
   }
 
-  var threadBookmarkHash by remember { mutableStateOf(threadBookmarkUi.hashCode()) }
+  var threadBookmarkHash by remember { mutableIntStateOf(threadBookmarkUi.hashCode()) }
   val bgAnimatable = remember { Animatable(defaultBgColor) }
 
   LaunchedEffect(

@@ -547,7 +547,7 @@ class CatalogScreen(
 
           navigationRouter.presentScreen(mediaViewerScreen)
         },
-        onPostImageLongClicked = { chanDescriptor, longClickedImage ->
+        onPostImageLongClicked = { _, longClickedImage ->
           postImageLongtapContextMenu.showMenu(
             postImage = longClickedImage,
             viewProvider = { view }
@@ -722,13 +722,13 @@ private fun BoxScope.CatalogPostListScreen(
         startPostSelection = startPostSelection
       )
     },
-    onLinkableClicked = { postCellData, linkable ->
+    onLinkableClicked = { _, _ ->
       // no-op (for now?)
     },
-    onLinkableLongClicked = { postCellData, linkable ->
+    onLinkableLongClicked = { _, _ ->
       // no-op (for now?)
     },
-    onPostRepliesClicked = { chanDescriptor, postDescriptor ->
+    onPostRepliesClicked = { _, _ ->
       // no-op
     },
     onCopySelectedText = {
@@ -814,7 +814,7 @@ private fun BoxScope.CatalogPostListScreen(
     replyLayoutState = replyLayoutStateProvider(),
     navigationRouterProvider = navigationRouterProvider,
     onReplayLayoutHeightChanged = { newHeightDp -> replyLayoutContainerHeight = newHeightDp },
-    onAttachedMediaClicked = { attachedMedia ->
+    onAttachedMediaClicked = {
       // TODO(KurobaEx): show options
       snackbarManager.toast(
         message = "Media editor is not implemented yet",

@@ -35,7 +35,6 @@ internal fun inlinedContentForPostCellComment(postCellData: PostCellData): Immut
     return persistentMapOf()
   }
 
-  val context = LocalContext.current
   val chan4MathTagProcessor = koinRemember<Chan4MathTagProcessor>()
 
   var formulas by remember { mutableStateOf<Map<String, CachedFormulaUi>>(emptyMap()) }

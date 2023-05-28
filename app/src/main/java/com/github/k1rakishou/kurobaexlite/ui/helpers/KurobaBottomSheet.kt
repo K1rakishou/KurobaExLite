@@ -21,7 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -158,7 +158,7 @@ fun KurobaBottomSheet(
     kurobaBottomSheetState.fullAvailableHeight = fullHeight
 
     val peekHeightPx = with(LocalDensity.current) { sheetPeekHeight.toPx() }
-    var bottomSheetHeight by remember { mutableStateOf(fullHeight) }
+    var bottomSheetHeight by remember { mutableFloatStateOf(fullHeight) }
 
     val anchors = remember(key1 = insets.top) {
       mapOf(

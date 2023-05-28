@@ -11,16 +11,17 @@ import androidx.compose.material.swipeable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import kotlin.math.abs
-import kotlin.math.sign
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
+import kotlin.math.abs
+import kotlin.math.sign
 
 
 @Stable
@@ -60,12 +61,12 @@ open class KurobaSwipeableState<T>(
   val overflow: State<Float> get() = overflowState
 
   // Use `Float.NaN` as a placeholder while the state is uninitialised.
-  private val offsetState = mutableStateOf(0f)
-  private val overflowState = mutableStateOf(0f)
+  private val offsetState = mutableFloatStateOf(0f)
+  private val overflowState = mutableFloatStateOf(0f)
 
   // the source of truth for the "real"(non ui) position
   // basically position in bounds + overflow
-  private val absoluteOffset = mutableStateOf(0f)
+  private val absoluteOffset = mutableFloatStateOf(0f)
 
   // current animation target, if animating, otherwise null
   private val animationTarget = mutableStateOf<Float?>(null)
@@ -143,7 +144,7 @@ open class KurobaSwipeableState<T>(
 
   internal var thresholds: (Float, Float) -> Float by mutableStateOf({ _, _ -> 0f })
 
-  internal var velocityThreshold by mutableStateOf(0f)
+  internal var velocityThreshold by mutableFloatStateOf(0f)
 
   internal var resistance: ResistanceConfig? by mutableStateOf(null)
 

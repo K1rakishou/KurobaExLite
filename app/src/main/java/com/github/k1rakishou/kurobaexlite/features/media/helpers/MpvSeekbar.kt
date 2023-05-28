@@ -19,8 +19,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -32,8 +32,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CancellationException
+import kotlin.math.roundToInt
 
 @Composable
 fun MpvSeekbar(
@@ -77,7 +77,7 @@ fun MpvSeekbar(
 
   BoxWithConstraints(modifier) {
     val maxWidthPx = constraints.maxWidth.toFloat()
-    val rawOffsetState = remember { mutableStateOf(0f) }
+    val rawOffsetState = remember { mutableFloatStateOf(0f) }
     var rawOffsetInPx by rawOffsetState
 
     fun rawOffsetToUserValue(rawOffsetPx: Float, maxWidthPx: Float): Float {

@@ -1,6 +1,7 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,7 +23,7 @@ sealed class MediaState {
     override val pageIndex: Int,
     muteByDefault: Boolean
   ) : MediaState() {
-    val slideOffsetState = mutableStateOf(0f)
+    val slideOffsetState = mutableFloatStateOf(0f)
     val blockAutoPositionUpdateState = mutableStateOf(false)
 
     val playerInitializedState = mutableStateOf(true)

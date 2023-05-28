@@ -2,6 +2,7 @@ package com.github.k1rakishou.kurobaexlite.model.data.ui.bookmarks
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import com.github.k1rakishou.kurobaexlite.model.data.local.bookmark.ThreadBookmark
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -121,19 +122,19 @@ class ThreadBookmarkStatsUi private constructor(
   private val _watching = mutableStateOf(watching)
   val watching: State<Boolean>
     get() = _watching
-  private val _newPosts = mutableStateOf(newPosts)
+  private val _newPosts = mutableIntStateOf(newPosts)
   val newPosts: State<Int>
     get() = _newPosts
-  private val _newQuotes = mutableStateOf(newQuotes)
+  private val _newQuotes = mutableIntStateOf(newQuotes)
   val newQuotes: State<Int>
     get() = _newQuotes
-  private val _totalPosts = mutableStateOf(totalPosts)
+  private val _totalPosts = mutableIntStateOf(totalPosts)
   val totalPosts: State<Int>
     get() = _totalPosts
-  private val _currentPage = mutableStateOf(currentPage)
+  private val _currentPage = mutableIntStateOf(currentPage)
   val currentPage: State<Int>
     get() = _currentPage
-  private val _totalPages = mutableStateOf(totalPages)
+  private val _totalPages = mutableIntStateOf(totalPages)
   val totalPages: State<Int>
     get() = _totalPages
   private val _isBumpLimit = mutableStateOf(isBumpLimit)

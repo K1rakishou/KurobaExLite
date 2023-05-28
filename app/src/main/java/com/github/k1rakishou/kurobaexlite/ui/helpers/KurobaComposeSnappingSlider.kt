@@ -20,8 +20,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -76,7 +76,7 @@ fun KurobaComposeSnappingSlider(
       }
     }
 
-    val rawOffsetState = remember { mutableStateOf(0f) }
+    val rawOffsetState = remember { mutableFloatStateOf(0f) }
     var rawOffsetInPx by rawOffsetState
 
     val draggableState = rememberDraggableState(

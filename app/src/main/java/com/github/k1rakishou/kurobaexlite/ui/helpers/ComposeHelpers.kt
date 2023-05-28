@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -54,7 +54,9 @@ fun collectTextFontSize(defaultFontSize: KurobaTextUnit): TextUnit {
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   val coroutineScope = rememberCoroutineScope()
 
-  var globalFontSizeMultiplier by remember { mutableStateOf(globalUiInfoManager.globalFontSizeMultiplier.value / 100f) }
+  var globalFontSizeMultiplier by remember {
+    mutableFloatStateOf(globalUiInfoManager.globalFontSizeMultiplier.value / 100f)
+  }
 
   LaunchedEffect(
     key1 = Unit,

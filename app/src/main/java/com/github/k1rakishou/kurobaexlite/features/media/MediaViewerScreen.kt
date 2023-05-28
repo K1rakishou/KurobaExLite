@@ -761,10 +761,8 @@ private fun MediaViewerBottomSheet(
       postListOptions = postListOptions,
       postListSelectionState = postListSelectionState,
       postsScreenViewModelProvider = { popupPostsScreenViewModel },
-      onPostCellClicked = { postCellData -> /*no-op*/ },
-      onPostCellLongClicked = { postCellData ->
-        // no-op
-      },
+      onPostCellClicked = { /*no-op*/ },
+      onPostCellLongClicked = { /*no-op*/ },
       onLinkableClicked = { postCellData, linkable ->
         linkableClickHelperProvider().processClickedLinkable(
           context = context,
@@ -806,17 +804,14 @@ private fun MediaViewerBottomSheet(
       onCopySelectedText = { selectedText ->
         androidHelpers.copyToClipboard("Selected text", selectedText)
       },
-      onQuoteSelectedText = { withText, selectedText, postCellData ->
+      onQuoteSelectedText = { _, _, _ ->
         // no-op
       },
-      onPostImageClicked = { chanDescriptor, clickedPostImage, thumbnailBoundsInRoot ->
+      onPostImageClicked = { _, clickedPostImage, _ ->
         val imageToScrollToIndex = mediaViewerScreenState.mediaList
           .indexOfFirst { it.uniqueKey() == clickedPostImage.uniqueKey() }
           .takeIf { index -> index >= 0 }
-
-        if (imageToScrollToIndex == null) {
-          return@PostListContent
-        }
+          ?: return@PostListContent
 
         coroutineScope.launch { kurobaBottomSheetState.collapse() }
         scrollToImagesByIndex(imageToScrollToIndex)
@@ -834,10 +829,10 @@ private fun MediaViewerBottomSheet(
 
         onOpeningCatalogOrThread()
       },
-      onPostListScrolled = { delta -> /*no-op*/ },
-      onPostListTouchingTopOrBottomStateChanged = { touching -> /*no-op*/ },
-      onCurrentlyTouchingPostList = { touching -> /*no-op*/ },
-      onFastScrollerDragStateChanged = { dragging -> /*no-op*/ },
+      onPostListScrolled = { /*no-op*/ },
+      onPostListTouchingTopOrBottomStateChanged = { /*no-op*/ },
+      onCurrentlyTouchingPostList = { /*no-op*/ },
+      onFastScrollerDragStateChanged = { /*no-op*/ },
     )
   }
 

@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -496,7 +497,7 @@ class Chan4CaptchaViewModel(
     captchaSolution: Chan4CaptchaSolverHelper.CaptchaSolution?
   ) {
     var currentInputValue = mutableStateOf(TextFieldValue())
-    var sliderValue = mutableStateOf(0f)
+    var sliderValue = mutableFloatStateOf(0f)
     val captchaSolution = mutableStateOf<Chan4CaptchaSolverHelper.CaptchaSolution?>(captchaSolution)
 
     fun widthDiff(): Int {

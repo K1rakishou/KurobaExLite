@@ -105,7 +105,7 @@ internal suspend fun OkHttpClient.suspendCall(request: Request): Result<Response
 internal suspend inline fun <reified T : Any?> OkHttpClient.suspendConvertWithJsonAdapter(
   request: Request,
   adapter: JsonAdapter<T>
-): Result<out T> {
+): Result<T> {
   return withContext(Dispatchers.IO) {
     return@withContext Result.Try {
       logcat(priority = LogPriority.VERBOSE) { "suspendConvertWithJsonAdapter() url='${request.url}' start" }

@@ -34,6 +34,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -353,7 +354,7 @@ private fun KurobaSnackbarItem(
     SnackbarType.ErrorToast -> chanTheme.errorColor
   }
 
-  var animatedAlpha by remember { mutableStateOf(0f) }
+  var animatedAlpha by remember { mutableFloatStateOf(0f) }
   var fadeInOrOutAnimationJob by remember { mutableStateOf<Job?>(null) }
 
   val snackbarAnimationUpdated by rememberUpdatedState(newValue = snackbarAnimation)

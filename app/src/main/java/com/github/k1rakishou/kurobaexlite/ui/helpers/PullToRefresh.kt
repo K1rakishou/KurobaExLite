@@ -14,6 +14,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -81,7 +82,7 @@ fun PullToRefresh(
   val topPaddingPx = remember(key1 = topPadding) { with(density) { topPadding.toPx() } }
   val pullThresholdPx = remember(key1 = pullThreshold) { with(density) { pullThreshold.toPx() } }
 
-  var pullToRefreshPulledPx by remember { mutableStateOf(0f) }
+  var pullToRefreshPulledPx by remember { mutableFloatStateOf(0f) }
   var isTouching by remember { mutableStateOf(false) }
   var isPulling by remember { mutableStateOf(false) }
   var refreshRotationAnimation by remember { mutableStateOf<Float?>(null) }

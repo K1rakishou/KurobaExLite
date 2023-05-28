@@ -73,7 +73,7 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine
 import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import java.util.*
+import java.util.Locale
 
 class Chan4CaptchaScreen(
   screenArgs: Bundle? = null,
@@ -131,7 +131,6 @@ class Chan4CaptchaScreen(
 
   @Composable
   private fun BuildCaptchaWindowSliderOrInput() {
-    val chanTheme = LocalChanTheme.current
     val captchaInfoAsync by chan4CaptchaViewModel.captchaInfoToShow
     val captchaInfo = (captchaInfoAsync as? AsyncData.Data)?.data
 
