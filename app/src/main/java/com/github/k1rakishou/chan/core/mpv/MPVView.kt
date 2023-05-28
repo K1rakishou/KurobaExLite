@@ -10,8 +10,8 @@ import com.github.k1rakishou.chan.core.mpv.MPVLib.mpvFormat.MPV_FORMAT_INT64
 import com.github.k1rakishou.chan.core.mpv.MPVLib.mpvFormat.MPV_FORMAT_NONE
 import com.github.k1rakishou.chan.core.mpv.MPVLib.mpvFormat.MPV_FORMAT_STRING
 import com.github.k1rakishou.kurobaexlite.helpers.annotations.DoNotStrip
-import kotlin.reflect.KProperty
 import logcat.logcat
+import kotlin.reflect.KProperty
 
 /**
  * Taken from https://github.com/mpv-android/mpv-android
@@ -89,6 +89,7 @@ class MPVView(
             Property("audio", MPV_FORMAT_FLAG),
             Property("mute", MPV_FORMAT_STRING),
             Property("hwdec", MPV_FORMAT_STRING),
+            Property("osd-dimensions", MPV_FORMAT_STRING),
             Property("video-params", MPV_FORMAT_NONE),
             Property("video-format", MPV_FORMAT_NONE),
         )

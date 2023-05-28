@@ -34,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -48,6 +49,7 @@ import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.main.MainScreen
 import com.github.k1rakishou.kurobaexlite.features.media.ImageLoadState
 import com.github.k1rakishou.kurobaexlite.features.media.MediaState
+import com.github.k1rakishou.kurobaexlite.features.media.VideoParameters
 import com.github.k1rakishou.kurobaexlite.helpers.executors.DebouncingCoroutineExecutor
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -59,8 +61,11 @@ import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeText
 import com.github.k1rakishou.kurobaexlite.ui.helpers.KurobaComposeTextButton
 import com.github.k1rakishou.kurobaexlite.ui.helpers.kurobaClickable
 import com.github.k1rakishou.zoomable.ZoomSpec
+import com.github.k1rakishou.zoomable.ZoomableContentLocation
 import com.github.k1rakishou.zoomable.rememberZoomableState
 import com.github.k1rakishou.zoomable.zoomable
+import com.squareup.moshi.JsonClass
+import com.squareup.moshi.Moshi
 import logcat.LogPriority
 import logcat.asLog
 import logcat.logcat
@@ -247,8 +252,23 @@ fun DisplayVideo(
 
   val logObserver = rememberLogObserver(videoMediaState)
 
+  val videoParameters by videoMediaState.videoParameters
   val zoomSpec = remember { ZoomSpec(maxZoomFactor = 3f) }
   val zoomableState = rememberZoomableState(zoomSpec = zoomSpec)
+
+  LaunchedEffect(key1 = videoParameters) {
+    val vp = videoParameters
+      ?: return@LaunchedEffect
+
+    val size = Size(
+      width = vp.width.toFloat(),
+      height = vp.height.toFloat()
+    )
+
+    zoomableState.setContentLocation(
+      ZoomableContentLocation.scaledInsideAndCenterAligned(size)
+    )
+  }
 
   Box(
     modifier = Modifier.fillMaxSize()
@@ -256,7 +276,6 @@ fun DisplayVideo(
     AndroidView(
       modifier = Modifier
         .fillMaxSize()
-        // TODO: there is a bug currently which is tracked here: https://github.com/saket/telephoto/issues/21
         .zoomable(
           state = zoomableState,
           onClick = { onVideoTapped() }
@@ -447,6 +466,8 @@ private fun rememberEventObserver(
   val blockAutoPositionUpdateState by videoMediaState.blockAutoPositionUpdateState
   val blockAutoPositionUpdateUpdated by rememberUpdatedState(newValue = blockAutoPositionUpdateState)
 
+  val moshi = koinRemember<Moshi>()
+
   return remember {
     object : MPVLib.EventObserver {
       private var doAfterPlayerInitialized: ((MPVView) -> Unit)? = null
@@ -538,6 +559,23 @@ private fun rememberEventObserver(
 
             videoMediaState.hardwareDecodingEnabledState.value = usingHardwareDecoding
             videoMediaStateSaveableUpdated.wasHardwareDecodingEnabled = usingHardwareDecoding
+          }
+          "osd-dimensions" -> {
+            val osdDimensionsJson = moshi
+              .adapter(OsdDimensionsJson::class.java)
+              .fromJson(value)
+
+            osdDimensionsJson?.let { json ->
+              val scaledWidth = json.scaledWidth
+              val scaledHeight = json.scaledHeight
+
+              if (scaledWidth > 0 && scaledHeight > 0) {
+                videoMediaState.videoParameters.value = VideoParameters(
+                  width = scaledWidth,
+                  height = scaledHeight
+                )
+              }
+            }
           }
         }
       }
@@ -779,4 +817,19 @@ private class VideoMediaStateSaveable(
     )
   }
 
+}
+
+@JsonClass(generateAdapter = true)
+internal data class OsdDimensionsJson(
+  val w: Int,
+  val h: Int,
+  val mt: Int,
+  val mb: Int,
+  val ml: Int,
+  val mr: Int,
+) {
+  val scaledWidth: Int
+    get() = w - ml - mr
+  val scaledHeight: Int
+    get() = h - mt - mb
 }

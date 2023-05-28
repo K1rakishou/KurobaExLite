@@ -1,5 +1,6 @@
 package com.github.k1rakishou.kurobaexlite.features.media
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +37,7 @@ sealed class MediaState {
     val demuxerCacheDurationState = mutableStateOf<Long?>(null)
     val durationState = mutableStateOf<Long?>(null)
     val playbackError = mutableStateOf<String?>(null)
+    val videoParameters = mutableStateOf<VideoParameters?>(null)
 
     val muteEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
     val playPauseEventFlow = MutableSharedFlow<Unit>(extraBufferCapacity = Channel.UNLIMITED)
@@ -92,3 +94,9 @@ sealed class MediaState {
   ) : MediaState()
 
 }
+
+@Immutable
+data class VideoParameters(
+  val width: Int,
+  val height: Int,
+)
