@@ -1,5 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -197,14 +202,11 @@ private fun ReplyInputLeftPart(
       .fillMaxSize()
       .padding(horizontal = 8.dp),
     additionalInputsContent = {
-      if (replyLayoutVisibilityState == ReplyLayoutVisibility.Expanded) {
-        DisposableEffect(
-          key1 = Unit,
-          effect = {
-            onDispose { replyInputFocusRequest.requestFocus() }
-          }
-        )
-
+      AnimatedVisibility(
+        visible = replyLayoutVisibilityState == ReplyLayoutVisibility.Expanded,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+      ) {
         Column {
           if (replyLayoutState.isCatalogMode) {
             SubjectTextField(
