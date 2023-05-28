@@ -379,7 +379,7 @@ private fun rememberLogObserver(
   }
   val errorMessages = remember { mutableListOf<String>() }
 
-  fun showErrorSnackbar(errorMessage: String) {
+  fun showErrorOverlay(errorMessage: String) {
     // Don't care about this error, videos still play just fine
     if (errorMessage.contains("ffmpeg tls:")) {
       return
@@ -405,11 +405,10 @@ private fun rememberLogObserver(
       when (level) {
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_FATAL -> {
           logcatError(MPV_TAG) { "[FATAL] ${prefix} ${text}" }
-          showErrorSnackbar(errorMessage = "[FATAL] ${prefix} ${text}")
+          showErrorOverlay(errorMessage = "[FATAL] ${prefix} ${text}")
         }
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_ERROR -> {
           logcatError(MPV_TAG) { "[ERROR] ${prefix} ${text}" }
-          showErrorSnackbar(errorMessage = "[ERROR] ${prefix} ${text}")
         }
         MPVLib.mpvLogLevel.MPV_LOG_LEVEL_INFO -> {
           logcat(MPV_TAG) { "[INFO] ${prefix} ${text}" }
@@ -424,8 +423,8 @@ private fun rememberLogObserver(
 
           logcat(MPV_TAG, LogPriority.WARN) { "[WARNING] ${prefix} ${text}" }
 
-          if (prefix.contains("ffmpeg") && text.contains("https: HTTP error")) {
-            showErrorSnackbar(errorMessage = "[ERROR] ${prefix} ${text}")
+          if (prefix.contains("ffmpeg") && text.contains("HTTP error")) {
+            showErrorOverlay(errorMessage = "[ERROR] ${prefix} ${text}")
           }
         }
       }
