@@ -414,7 +414,7 @@ open class NavigationRouter(
     }
 
     companion object {
-      private const val defaultAnimationDuration = 200
+      private const val defaultAnimationDuration = 250
     }
 
   }

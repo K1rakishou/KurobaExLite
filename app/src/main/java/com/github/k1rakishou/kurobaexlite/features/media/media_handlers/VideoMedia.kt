@@ -98,11 +98,11 @@ fun DisplayVideo(
   onPlayerLoaded: () -> Unit,
   onPlayerUnloaded: () -> Unit,
   onVideoTapped: () -> Unit,
-  videoMediaState: MediaState.Video?,
+  videoMediaState: MediaState.Video,
   installMpvLibsFromGithubButtonClicked: () -> Unit,
   toggleMuteByDefaultState: () -> Unit
 ) {
-  if (pagerState.currentPage != pageIndex || videoMediaState == null) {
+  if (pagerState.currentPage != pageIndex) {
     LaunchedEffect(
       key1 = Unit,
       block = { onPlayerUnloaded() }
@@ -627,6 +627,8 @@ private fun rememberEventObserver(
                 mpvView.muteUnmute(videoMediaStateUpdated.isMutedState.value)
                 mpvView.pauseUnpause(videoMediaStateUpdated.isPausedState.value)
               }
+
+              videoMediaState.videoStartedPlayingState.value = true
             }
 
             onVideoStartedPlaying()

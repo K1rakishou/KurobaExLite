@@ -62,8 +62,8 @@ fun ScreenTransition(
     is NavigationRouter.ScreenAnimation.Remove -> false
   }
 
-  var scaleAnimated by remember(key1 = screenAnimation) { mutableFloatStateOf(scaleInitial) }
-  var alphaAnimated by remember(key1 = screenAnimation) { mutableFloatStateOf(alphaInitial) }
+  val scaleAnimated = remember(key1 = screenAnimation) { mutableFloatStateOf(scaleInitial) }
+  val alphaAnimated = remember(key1 = screenAnimation) { mutableFloatStateOf(alphaInitial) }
   var canRender by remember(key1 = screenAnimation) { mutableStateOf(canRenderInitial) }
 
   LaunchedEffect(
@@ -89,8 +89,8 @@ fun ScreenTransition(
                 easing = FastOutSlowInEasing
               )
             ) { animationProgress, _ ->
-              scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
-              alphaAnimated = animationProgress
+              scaleAnimated.floatValue = lerpFloat(scaleStart, scaleEnd, animationProgress)
+              alphaAnimated.floatValue = animationProgress
 
               homeNavigationScreen?.updateAnimationProgress(animationProgress)
             }
@@ -113,8 +113,8 @@ fun ScreenTransition(
                 easing = FastOutSlowInEasing
               )
             ) { animationProgress, _ ->
-              scaleAnimated = lerpFloat(scaleStart, scaleEnd, animationProgress)
-              alphaAnimated = 1f - animationProgress
+              scaleAnimated.floatValue = lerpFloat(scaleStart, scaleEnd, animationProgress)
+              alphaAnimated.floatValue = 1f - animationProgress
 
               homeNavigationScreen?.updateAnimationProgress(1f - animationProgress)
             }
@@ -125,7 +125,7 @@ fun ScreenTransition(
           canRender = false
         }
         is NavigationRouter.ScreenAnimation.Fade -> {
-          scaleAnimated = 1f
+          scaleAnimated.floatValue = 1f
 
           val initialValue = when (screenAnimation.fadeType) {
             NavigationRouter.ScreenAnimation.FadeType.In -> 0f
@@ -150,7 +150,7 @@ fun ScreenTransition(
                 easing = FastOutSlowInEasing
               )
             ) { animationProgress, _ ->
-              alphaAnimated = animationProgress
+              alphaAnimated.floatValue = animationProgress
               homeNavigationScreen?.updateAnimationProgress(animationProgress)
             }
           } finally {
@@ -163,15 +163,15 @@ fun ScreenTransition(
           }
         }
         is NavigationRouter.ScreenAnimation.Set -> {
-          scaleAnimated = 1f
-          alphaAnimated = 1f
+          scaleAnimated.floatValue = 1f
+          alphaAnimated.floatValue = 1f
           homeNavigationScreen?.updateAnimationProgress(1f)
           onScreenAnimationFinished(screenAnimation)
           canRender = true
         }
         is NavigationRouter.ScreenAnimation.Remove -> {
-          scaleAnimated = 0f
-          alphaAnimated = 0f
+          scaleAnimated.floatValue = 0f
+          alphaAnimated.floatValue = 0f
           homeNavigationScreen?.updateAnimationProgress(0f)
           onScreenAnimationFinished(screenAnimation)
           canRender = false
@@ -185,17 +185,15 @@ fun ScreenTransition(
       Box(
         modifier = Modifier
           .fillMaxSize()
-          .graphicsLayer {
-            alpha = alphaAnimated
-          }
+          .graphicsLayer { alpha = alphaAnimated.floatValue }
           .drawBehind { drawRect(composeScreen.backgroundColor) }
       ) {
         Box(
           modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
-              scaleX = scaleAnimated
-              scaleY = scaleAnimated
+              scaleX = scaleAnimated.floatValue
+              scaleY = scaleAnimated.floatValue
             }
         ) {
           content()
@@ -206,9 +204,9 @@ fun ScreenTransition(
         modifier = Modifier
           .fillMaxSize()
           .graphicsLayer {
-            alpha = alphaAnimated
-            scaleX = scaleAnimated
-            scaleY = scaleAnimated
+            alpha = alphaAnimated.floatValue
+            scaleX = scaleAnimated.floatValue
+            scaleY = scaleAnimated.floatValue
           }
       ) {
         content()

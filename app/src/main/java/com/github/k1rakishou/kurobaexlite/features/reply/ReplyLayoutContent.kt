@@ -583,7 +583,7 @@ private fun ColumnScope.ReplyTextField(
         prevReplyLayoutVisibility == ReplyLayoutVisibility.Collapsed &&
         replyLayoutVisibility == ReplyLayoutVisibility.Opened
       ) {
-        focusRequesterProvider().requestFocus()
+        focusRequesterProvider().freeFocusSafe()
         localSoftwareKeyboardController?.show()
       } else if (
         prevReplyLayoutVisibility != ReplyLayoutVisibility.Collapsed &&

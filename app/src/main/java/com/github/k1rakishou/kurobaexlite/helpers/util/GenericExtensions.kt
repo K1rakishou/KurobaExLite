@@ -1127,7 +1127,7 @@ suspend fun CompletableDeferred<*>.awaitSilently() {
 
 fun FocusRequester.freeFocusSafe() {
   try {
-    // Sometimes crashes with NPE somewhere inside findFocusNode()
+    // Sometimes crashes
     freeFocus()
   } catch (ignored: Throwable) {
 
