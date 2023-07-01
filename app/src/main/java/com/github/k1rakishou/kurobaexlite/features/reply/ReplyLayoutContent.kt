@@ -202,11 +202,7 @@ private fun ReplyInputLeftPart(
       .fillMaxSize()
       .padding(horizontal = 8.dp),
     additionalInputsContent = {
-      AnimatedVisibility(
-        visible = replyLayoutVisibilityState == ReplyLayoutVisibility.Expanded,
-        enter = fadeIn() + expandVertically(),
-        exit = fadeOut() + shrinkVertically()
-      ) {
+      if (replyLayoutVisibilityState == ReplyLayoutVisibility.Expanded) {
         Column {
           if (replyLayoutState.isCatalogMode) {
             SubjectTextField(
