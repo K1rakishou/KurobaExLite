@@ -73,6 +73,7 @@ class MpvInitializer(
 
     MPVLib.mpvSetOptionString("vo", "gpu")
     MPVLib.mpvSetOptionString("gpu-context", "android")
+    MPVLib.mpvSetOptionString("opengl-es", "yes")
     MPVLib.mpvSetOptionString("hwdec", hwdec)
     MPVLib.mpvSetOptionString("hwdec-codecs", "h264,hevc,mpeg4,mpeg2video,vp8,vp9,av1")
     MPVLib.mpvSetOptionString("ao", "audiotrack,opensles")
@@ -80,6 +81,16 @@ class MpvInitializer(
 
     val demuxerCacheSize = mpvSettings.demuxerCacheSizeBytes
     val demuxerBackCacheSize = (demuxerCacheSize / 3)
+
+    val mpvCertFile = mpvSettings.mpvCertFile
+    if (mpvCertFile.exists() && mpvCertFile.canRead()) {
+      logcat(TAG) { "init() using certificate located at '${mpvCertFile.absolutePath}'" }
+
+      MPVLib.mpvSetOptionString("tls-verify", "yes")
+      MPVLib.mpvSetOptionString("tls-ca-file", mpvCertFile.absolutePath)
+    } else {
+      logcat(TAG) { "init() certificate file not found" }
+    }
 
     // TODO(KurobaEx): this shit doesn't work for some reason.
     //  There is nothing being cached on the disk.

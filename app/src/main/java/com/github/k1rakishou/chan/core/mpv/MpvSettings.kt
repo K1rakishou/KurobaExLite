@@ -18,6 +18,8 @@ class MpvSettings(
   }
 
   val mpvNativeLibsDir = File(appContext.filesDir, MPV_NATIVE_LIBS_DIR_NAME)
+  val mpvCertsDir = File(appContext.filesDir, MPV_CERTS_DIR)
+  val mpvCertFile = File(appContext.filesDir, MPV_CERT_FILE)
 
   val demuxerCacheSizeBytes: Long
     get() {
@@ -40,5 +42,7 @@ class MpvSettings(
     private const val ONE_MEGABYTE = 1024L * 1024L
 
     private const val MPV_NATIVE_LIBS_DIR_NAME = "mpv/libs"
+    private const val MPV_CERTS_DIR = "mpv/certs"
+    private const val MPV_CERT_FILE = "${MPV_CERTS_DIR}/cacert.pem"
   }
 }

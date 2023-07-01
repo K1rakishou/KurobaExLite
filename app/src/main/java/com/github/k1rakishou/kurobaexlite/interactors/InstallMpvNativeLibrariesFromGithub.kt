@@ -137,7 +137,7 @@ class InstallMpvNativeLibrariesFromGithub(
           }
 
         logcat(TAG) { "Extracting archived libs into \'${mpvSettings.mpvNativeLibsDir}\'" }
-        extractArchiveAndMoveToLibsDirectory(mpvLibsZipArchiveFile, mpvSettings.mpvNativeLibsDir)
+        extractArchiveAndMoveToLibsDirectory(mpvLibsZipArchiveFile, mpvSettings.mpvNativeLibsDir, mpvSettings.mpvCertsDir)
         logcat(TAG) { "Done" }
       }
     } catch (error: Throwable) {
@@ -152,9 +152,17 @@ class InstallMpvNativeLibrariesFromGithub(
     logcat(TAG) { "All done" }
   }
 
-  private fun extractArchiveAndMoveToLibsDirectory(mpvLibsFile: File, mpvNativeLibsDir: File) {
+  private fun extractArchiveAndMoveToLibsDirectory(
+    mpvLibsFile: File,
+    mpvNativeLibsDir: File,
+    mpvCertsDir: File
+  ) {
     if (!mpvNativeLibsDir.exists()) {
       check(mpvNativeLibsDir.mkdirs()) { "Failed to create '${mpvNativeLibsDir.absolutePath}'" }
+    }
+
+    if (!mpvCertsDir.exists()) {
+      check(mpvCertsDir.mkdirs()) { "Failed to create '${mpvCertsDir.absolutePath}'" }
     }
 
     mpvLibsFile.inputStream().use { inputStream ->
@@ -167,24 +175,41 @@ class InstallMpvNativeLibrariesFromGithub(
           zipEntry = zipInputStream.nextEntry
             ?: break
 
-          val fileName = zipEntry.name
-          logcat(TAG) { "Read zipEntry.name: \'${fileName}\'" }
+          if (zipEntry.isDirectory) {
+            logcat(TAG) { "Skipping directory '${zipEntry.name}'" }
+            continue
+          }
 
-          if (!zipEntry.isDirectory && fileName.endsWith(".so")) {
-            val libName = fileName.split(delimiters = arrayOf("/", "\\")).lastOrNull()
-            if (libName.isNotNullNorBlank()) {
-              val outputMpvLibFile = File(mpvNativeLibsDir, libName)
+          val fileName = zipEntry.name.split(delimiters = arrayOf("/", "\\")).lastOrNull()
+          if (fileName.isNullOrBlank()) {
+            logcatError(TAG) { "Bad file name: '${fileName}', zipEntry.name: '${zipEntry.name}'" }
+            continue
+          }
 
-              logcat(TAG) { "Moving \'${fileName}\' from archive to \'${outputMpvLibFile.absolutePath}\' file" }
+          logcat(TAG) { "fileName: \'${fileName}\'" }
 
-              outputMpvLibFile.outputStream().use { outputStream ->
-                zipInputStream.copyTo(outputStream)
-              }
-            } else {
-              logcat(TAG) { "Invalid name: \'$libName\'" }
+          if (fileName.endsWith(".so")) {
+            val outputMpvLibFile = File(mpvNativeLibsDir, fileName)
+
+            logcat(TAG) { "Moving \'${fileName}\' from archive to \'${outputMpvLibFile.absolutePath}\' file" }
+
+            outputMpvLibFile.outputStream().use { outputStream ->
+              zipInputStream.copyTo(outputStream)
             }
 
             logcat(TAG) { "Done" }
+          } else if (fileName == "cacert.pem") {
+            val outputMpvCertFile = File(mpvCertsDir, fileName)
+
+            logcat(TAG) { "Moving \'${fileName}\' from archive to \'${outputMpvCertFile.absolutePath}\' file" }
+
+            outputMpvCertFile.outputStream().use { outputStream ->
+              zipInputStream.copyTo(outputStream)
+            }
+
+            logcat(TAG) { "Done" }
+          } else {
+            logcat(TAG) { "'${fileName}' is an unknown file, skipping" }
           }
 
           zipInputStream.closeEntry()
