@@ -426,5 +426,26 @@
     <string name="watching_post">Watching post \'%1$s\'</string>
     <string name="post_unwatched">No longer watching post \'%1$s\'</string>
     <string name="cannot_start_watching_post_no_bookmark">Cannot start watching post because thread is not bookmarked</string>
+    <string name="copied_to_clipboard">%1$s copied to clipboard</string>
+    <string name="checking_for_google_services_availability">Checking for Google services availability…</string>
+    <string name="instance_address">Instance address</string>
+    <string name="userid_128">UserId (%1$s/128)</string>
+    <string name="userid_length_must_be_within_32_128_characters_range">UserId length must be within 32..128 characters range</string>
+    <string name="logout">Logout</string>
+    <string name="login">Login</string>
+    <string name="not_logged_in">Not logged in</string>
+    <string name="google_services_detected">Google services detected</string>
+    <string name="google_services_are_missing">Google services are missing</string>
+    <string name="google_services_are_currently_updating">Google services are currently updating</string>
+    <string name="google_services_need_to_be_updated">Google services need to be updated</string>
+    <string name="google_services_are_disabled">Google services are disabled</string>
+    <string name="google_services_are_not_working_correctly">Google services are not working correctly</string>
+    <string name="google_services_unknown_error">Google services unknown error</string>
+    <string name="loading_account_info">Loading account info…</string>
+    <string name="failed_to_load_account_error">Failed to load account, error: %1$s</string>
+    <string name="account_id">Account id: %1$s</string>
+    <string name="loading_firebase_token">Loading firebase token…</string>
+    <string name="failed_to_load_firebase_token_error">Failed to load firebase token, error: %1$s</string>
+    <string name="firebase_token">Firebase token: %1$s</string>
 
 </resources>

@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,7 @@ import com.github.k1rakishou.kpnc.model.data.ui.UiResult
 import com.github.k1rakishou.kurobaexlite.R
 import com.github.k1rakishou.kurobaexlite.features.home.HomeNavigationScreen
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
+import com.github.k1rakishou.kurobaexlite.helpers.resource.AppResources
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
@@ -167,6 +169,7 @@ private fun ScreenContentInternal(
 
   val snackbarManager = koinRemember<SnackbarManager>()
   val androidHelpers = koinRemember<AndroidHelpers>()
+  val appResources = koinRemember<AppResources>()
 
   val scrollState = rememberScrollState()
   val additionalPadding = 8.dp
@@ -216,7 +219,7 @@ private fun ScreenContentInternal(
       copyToClipboard = { label, content ->
         androidHelpers.copyToClipboard(label, content)
         snackbarManager.toast(
-          message = "${label} copied to clipboard",
+          message = appResources.string(R.string.copied_to_clipboard, label),
           toastId = TOAST_ID
         )
       },
@@ -241,7 +244,7 @@ private fun Content(
   onLogout: () -> Unit
 ) {
   if (googleServicesCheckResult == GoogleServicesChecker.Result.Empty) {
-    KurobaComposeText(text = "Checking for Google services availability...")
+    KurobaComposeText(text = stringResource(R.string.checking_for_google_services_availability))
     return
   }
 
@@ -277,12 +280,14 @@ private fun Content(
   var isError by remember { mutableStateOf(!isUserIdValid(userId.text)) }
   val isLoggedIn = (accountInfo as? UiResult.Value)?.value?.isValid == true
 
+  val appResources = koinRemember<AppResources>()
+
   KurobaComposeTextField(
     modifier = Modifier
       .wrapContentHeight()
       .fillMaxWidth(),
     enabled = !isLoggedIn,
-    label = { Text(text = "Instance address") },
+    label = { Text(text = stringResource(R.string.instance_address)) },
     value = instanceAddress,
     onValueChange = { instanceAddress = it }
   )
@@ -294,7 +299,7 @@ private fun Content(
       .wrapContentHeight()
       .fillMaxWidth(),
     enabled = !isLoggedIn,
-    label = { Text(text = "UserId (${userId.text.length}/128)") },
+    label = { Text(text = stringResource(R.string.userid_128, userId.text.length)) },
     isError = isError,
     value = userId,
     onValueChange = {
@@ -302,7 +307,7 @@ private fun Content(
       isError = !isUserIdValid(userId.text)
 
       if (isError) {
-        showToast(true, "UserId length must be within 32..128 characters range")
+        showToast(true, appResources.string(R.string.userid_length_must_be_within_32_128_characters_range))
       } else {
         hideToast(true)
       }
@@ -329,9 +334,9 @@ private fun Content(
     KurobaComposeTextButton(
       enabled = buttonEnabled,
       text = if (isLoggedIn) {
-        "Logout"
+        stringResource(R.string.logout)
       } else {
-        "Login"
+        stringResource(R.string.login)
       },
       onClick = {
         if (isLoggedIn) {
@@ -365,7 +370,7 @@ private fun AccountInfo(
         KurobaComposeText(
           modifier = Modifier.weight(1f),
           fontSize = fontSize,
-          text = "Not logged in"
+          text = stringResource(R.string.not_logged_in)
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -433,13 +438,13 @@ private fun GoogleServices(
 ) {
   val googleServicesCheckResultText = when (googleServicesCheckResult) {
     GoogleServicesChecker.Result.Empty -> return
-    GoogleServicesChecker.Result.Success -> "Google services detected"
-    GoogleServicesChecker.Result.ServiceMissing -> "Google services are missing"
-    GoogleServicesChecker.Result.ServiceUpdating -> "Google services are currently updating"
-    GoogleServicesChecker.Result.ServiceUpdateRequired -> "Google services need to be updated"
-    GoogleServicesChecker.Result.ServiceDisabled -> "Google services are disabled"
-    GoogleServicesChecker.Result.ServiceInvalid -> "Google services are not working correctly"
-    GoogleServicesChecker.Result.Unknown -> "Google services unknown error"
+    GoogleServicesChecker.Result.Success -> stringResource(R.string.google_services_detected)
+    GoogleServicesChecker.Result.ServiceMissing -> stringResource(R.string.google_services_are_missing)
+    GoogleServicesChecker.Result.ServiceUpdating -> stringResource(R.string.google_services_are_currently_updating)
+    GoogleServicesChecker.Result.ServiceUpdateRequired -> stringResource(R.string.google_services_need_to_be_updated)
+    GoogleServicesChecker.Result.ServiceDisabled -> stringResource(R.string.google_services_are_disabled)
+    GoogleServicesChecker.Result.ServiceInvalid -> stringResource(R.string.google_services_are_not_working_correctly)
+    GoogleServicesChecker.Result.Unknown -> stringResource(R.string.google_services_unknown_error)
   }
 
   Row(
@@ -494,15 +499,17 @@ fun AccountId(
       is UiResult.Loading -> {
         KurobaComposeText(
           fontSize = fontSize,
-          text = "Loading account info..."
+          text = stringResource(R.string.loading_account_info)
         )
       }
       is UiResult.Error -> {
         KurobaComposeText(
           modifier = Modifier.weight(1f),
           fontSize = fontSize,
-          text = "Failed to load account, " +
-            "error: ${accountInfo.throwable.errorMessageOrClassName(userReadable = true)}"
+          text = stringResource(
+            R.string.failed_to_load_account_error,
+            accountInfo.throwable.errorMessageOrClassName(userReadable = true)
+          )
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -520,7 +527,7 @@ fun AccountId(
             .weight(1f)
             .clickable { copyToClipboard("AccountId", accountInfo.value.accountId) },
           fontSize = fontSize,
-          text = "Account id: ${accountInfo.value.accountId}"
+          text = stringResource(R.string.account_id, accountInfo.value.accountId)
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -551,15 +558,17 @@ private fun FirebaseToken(
       is UiResult.Loading -> {
         KurobaComposeText(
           fontSize = fontSize,
-          text = "Loading firebase token..."
+          text = stringResource(R.string.loading_firebase_token)
         )
       }
       is UiResult.Error -> {
         KurobaComposeText(
           modifier = Modifier.weight(1f),
           fontSize = fontSize,
-          text = "Failed to load firebase token, " +
-            "error: ${firebaseToken.throwable.errorMessageOrClassName(userReadable = true)}"
+          text = stringResource(
+            R.string.failed_to_load_firebase_token_error,
+            firebaseToken.throwable.errorMessageOrClassName(userReadable = true)
+          )
         )
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -577,7 +586,7 @@ private fun FirebaseToken(
             .weight(1f)
             .clickable { copyToClipboard("FirebaseToken", firebaseToken.value) },
           fontSize = fontSize,
-          text = "Firebase token: ${firebaseToken.value}"
+          text = stringResource(R.string.firebase_token, firebaseToken.value)
         )
 
         Spacer(modifier = Modifier.width(8.dp))
