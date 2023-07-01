@@ -8,7 +8,7 @@ plugins {
 android {
     compileSdk 34
 
-    productFlavors.all {
+    productFlavors.configureEach {
         ext.apkVersionNameSuffix = null
     }
 
@@ -139,11 +139,11 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '17'
 
         freeCompilerArgs = [
                 "-Xopt-in=kotlin.Experimental",
@@ -177,9 +177,9 @@ dependencies {
     implementation 'androidx.work:work-runtime-ktx:2.8.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
-    implementation 'androidx.activity:activity-compose:1.7.1'
+    implementation 'androidx.activity:activity-compose:1.7.2'
     implementation "androidx.datastore:datastore-preferences:1.0.0"
-    implementation "androidx.window:window:1.1.0-rc01"
+    implementation "androidx.window:window:1.2.0-alpha03"
     implementation "io.insert-koin:koin-core:$koin_version"
     implementation "io.insert-koin:koin-android:$koin_version"
     implementation 'dev.chrisbanes.snapper:snapper:0.3.0'
@@ -197,7 +197,6 @@ dependencies {
 
     runtimeOnly "org.jetbrains.kotlin:kotlin-reflect:${kotlin_version}"
 
-    implementation 'com.github.K1rakishou:image-decoder:7929849762'
     implementation 'com.github.K1rakishou:ComposeCustomTextSelection:8724bc088d'
     implementation "com.github.K1rakishou:Fuck-Storage-Access-Framework:v1.1.2"
 
