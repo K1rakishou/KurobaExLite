@@ -51,6 +51,7 @@ class CloudFlareCheckBypassWebClient(
     success(domainOrHost, actualCookie)
   }
 
+  @Deprecated("Deprecated in Java")
   override fun onReceivedError(
     view: WebView?,
     errorCode: Int,
