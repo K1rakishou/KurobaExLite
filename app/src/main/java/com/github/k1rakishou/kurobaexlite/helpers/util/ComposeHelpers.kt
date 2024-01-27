@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.snapshots.SnapshotApplyResult
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.connect
@@ -25,7 +27,10 @@ import androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationExceptio
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.unit.Density
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.android.awaitFrame
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import logcat.LogPriority
@@ -278,4 +283,37 @@ fun Color.toArgbUnsigned(): UInt {
     ((color[0] * 255.0f + 0.5f).toUInt() shl 16) or
     ((color[1] * 255.0f + 0.5f).toUInt() shl 8) or
     (color[2] * 255.0f + 0.5f).toUInt()
+}
+
+suspend fun <R> withMutableSnapshotRepeatable(
+  block: () -> R
+): R {
+  return coroutineScope {
+    while (isActive) {
+      val mutableSnapshot = Snapshot.takeMutableSnapshot()
+      var disposed = false
+
+      try {
+        val result = mutableSnapshot.enter(block)
+
+        when (mutableSnapshot.apply()) {
+          is SnapshotApplyResult.Failure -> {
+            mutableSnapshot.dispose()
+            disposed = true
+
+            awaitFrame()
+          }
+          SnapshotApplyResult.Success -> {
+            return@coroutineScope result
+          }
+        }
+      } finally {
+        if (!disposed) {
+          mutableSnapshot.dispose()
+        }
+      }
+    }
+
+    throw CancellationException()
+  }
 }

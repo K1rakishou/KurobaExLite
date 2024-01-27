@@ -456,7 +456,7 @@ private fun PostListInternal(
   val postsScreenViewModel = postsScreenViewModelProvider()
   val lastViewedPostDescriptorForIndicator by postsScreenViewModel.postScreenState.lastViewedPostForIndicator.collectAsState()
   val currentlyOpenedThread by postsScreenViewModel.currentlyOpenedThreadFlow.collectAsState()
-  val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
+  val searchQuery by postsScreenViewModel.postScreenState.searchQueryFlow
 
   val contentPadding = remember(key1 = searchQuery, key2 = postListOptions.contentPadding) {
     if (searchQuery.isNullOrEmpty()) {

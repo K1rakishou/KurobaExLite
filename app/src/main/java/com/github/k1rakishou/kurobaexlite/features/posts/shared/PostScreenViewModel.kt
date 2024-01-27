@@ -48,6 +48,7 @@ import com.github.k1rakishou.kurobaexlite.model.repository.IPostReplyChainReposi
 import com.github.k1rakishou.kurobaexlite.model.repository.ParsedPostDataRepository
 import com.github.k1rakishou.kurobaexlite.ui.themes.ChanTheme
 import com.github.k1rakishou.kurobaexlite.ui.themes.ThemeEngine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -103,6 +104,7 @@ abstract class PostScreenViewModel(
   protected val hideOrUnhidePost: HideOrUnhidePost by inject(HideOrUnhidePost::class.java)
 
   private var currentParseJob: Job? = null
+  private var updateSearchQueryJob: Job? = null
   private var updatePostsParsedOnceJob: Job? = null
   private var reparsePostsWithNewContextJobs = mutableMapOf<String, Job>()
 
@@ -853,7 +855,10 @@ abstract class PostScreenViewModel(
   }
 
   fun updateSearchQuery(searchQuery: String?) {
-    postScreenState.onSearchQueryUpdated(searchQuery)
+    updateSearchQueryJob?.cancel()
+    updateSearchQueryJob = viewModelScope.launch(Dispatchers.Main.immediate) {
+      postScreenState.onSearchQueryUpdated(searchQuery)
+    }
   }
 
   fun onPostBind(postCellData: PostCellData) {

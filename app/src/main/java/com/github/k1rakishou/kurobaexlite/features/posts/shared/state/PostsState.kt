@@ -170,56 +170,6 @@ class PostsState(
 
   /**
    * Called with an opened mutable snapshot!
-   * Do not call directly! Use PostScreenState.insertOrUpdate() instead!
-   * */
-  fun insertOrUpdate(
-    postCellData: PostCellData,
-    checkFirstPostIsOriginal: Boolean
-  ) {
-    val descriptorsMatch = when (chanDescriptor) {
-      is CatalogDescriptor -> postCellData.postDescriptor.catalogDescriptor == chanDescriptor
-      is ThreadDescriptor -> postCellData.postDescriptor.threadDescriptor == chanDescriptor
-    }
-
-    if (!descriptorsMatch) {
-      return
-    }
-
-    var postsAsStateNeedUpdate = false
-
-    rwLock.write {
-      val index = postIndexes[postCellData.postDescriptor]
-      if (index == null) {
-        val nextPostIndex = postIndexes.values.maxOrNull()?.plus(1) ?: 0
-        postIndexes[postCellData.postDescriptor] = nextPostIndex
-
-        postsAsStateNeedUpdate = true
-        // We assume that posts can only be inserted at the end of the post list
-        _posts += postCellData
-      } else {
-        _lastUpdatedOn = SystemClock.elapsedRealtime()
-
-        postsAsStateNeedUpdate = _posts[index] != postCellData
-        _posts[index] = postCellData
-      }
-
-      if (androidHelpers.isDevFlavor()) {
-        checkPostsCorrectness(
-          checkFirstPostIsOriginal = checkFirstPostIsOriginal,
-          inputPostsCount = 1
-        )
-      }
-
-      if (postsAsStateNeedUpdate) {
-        _postsForUi.value = _posts.toList()
-      }
-
-      updatePostListAnimationInfoMap(listOf(postCellData))
-    }
-  }
-
-  /**
-   * Called with an opened mutable snapshot!
    * Do not call directly! Use PostScreenState.insertOrUpdateMany() instead!
    * */
   fun insertOrUpdateMany(

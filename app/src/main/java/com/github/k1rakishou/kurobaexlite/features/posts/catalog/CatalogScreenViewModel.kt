@@ -234,12 +234,8 @@ class CatalogScreenViewModel(
       forced = true
     )
 
-    val catalogThreadsState = PostsState(catalogDescriptor)
-
-    Snapshot.withMutableSnapshot {
-      catalogScreenState.postsAsyncDataState.value = AsyncData.Data(catalogThreadsState)
-      catalogScreenState.insertOrUpdateMany(initialParsedPosts)
-    }
+    catalogScreenState.postsAsyncDataState.value = AsyncData.Data(PostsState(catalogDescriptor))
+    catalogScreenState.insertOrUpdateMany(initialParsedPosts)
 
     parseRemainingPostsAsync(
       chanDescriptor = catalogDescriptor,

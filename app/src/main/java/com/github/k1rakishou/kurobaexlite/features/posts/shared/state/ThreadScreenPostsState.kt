@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class ThreadScreenPostsState : PostScreenState(checkFirstPostIsOriginal = true) {
   val originalPostState = MutableStateFlow<PostCellData?>(null)
 
-  override fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
+  override suspend fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     super.insertOrUpdateMany(postCellDataCollection)
 
     postCellDataCollection.forEach { postCellData ->

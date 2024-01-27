@@ -2,9 +2,11 @@ package com.github.k1rakishou.kurobaexlite.features.posts.shared.state
 
 import androidx.annotation.CallSuper
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import com.github.k1rakishou.kurobaexlite.base.AsyncData
 import com.github.k1rakishou.kurobaexlite.helpers.hash.Murmur3Hash
+import com.github.k1rakishou.kurobaexlite.helpers.util.withMutableSnapshotRepeatable
 import com.github.k1rakishou.kurobaexlite.model.data.ui.ThreadStatusCellData
 import com.github.k1rakishou.kurobaexlite.model.data.ui.post.PostCellData
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
@@ -21,8 +23,8 @@ abstract class PostScreenState(
   val postsAsyncDataState = MutableStateFlow<AsyncData<PostsState>>(AsyncData.Uninitialized)
   val threadCellDataState = MutableStateFlow<ThreadStatusCellData?>(null)
 
-  private val _searchQueryFlow = MutableStateFlow<String?>(null)
-  val searchQueryFlow: StateFlow<String?>
+  private val _searchQueryFlow = mutableStateOf<String?>(null)
+  val searchQueryFlow: State<String?>
     get() = _searchQueryFlow
 
   val currentSearchQuery: String?
@@ -72,10 +74,9 @@ abstract class PostScreenState(
   }
 
   @CallSuper
-  open fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
+  open suspend fun insertOrUpdateMany(postCellDataCollection: Collection<PostCellData>) {
     doWithDataState { postsState ->
-      // TODO: this crashes sometimes with "error: androidx.compose.runtime.snapshots.SnapshotApplyConflictException"
-      Snapshot.withMutableSnapshot {
+      withMutableSnapshotRepeatable {
         postsState.insertOrUpdateMany(
           postCellDataCollection = postCellDataCollection,
           checkFirstPostIsOriginal = checkFirstPostIsOriginal
@@ -84,12 +85,12 @@ abstract class PostScreenState(
     }
   }
 
-  fun onSearchQueryUpdated(searchQuery: String?) {
+  suspend fun onSearchQueryUpdated(searchQuery: String?) {
     doWithDataState { postsState ->
-      Snapshot.withMutableSnapshot {
+      withMutableSnapshotRepeatable {
         if (_searchQueryFlow.value != searchQuery) {
-          postsState.onSearchQueryUpdated(searchQuery)
           _searchQueryFlow.value = searchQuery
+          postsState.onSearchQueryUpdated(searchQuery)
         }
       }
     }
@@ -118,7 +119,7 @@ abstract class PostScreenState(
     _contentDrawnOnce.value = true
   }
 
-  private fun <T> doWithDataState(func: (PostsState) -> T): T? {
+  private suspend fun <T> doWithDataState(func: suspend (PostsState) -> T): T? {
     val postAsyncData = postsAsyncDataState.value
     if (postAsyncData is AsyncData.Data) {
       return func(postAsyncData.data)

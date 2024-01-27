@@ -189,7 +189,7 @@ fun <ToolbarType : KurobaChildToolbar> PostListSearchButtons(
   val searchToolbar = searchToolbarProvider()
 
   val postsAsyncData by postsScreenViewModel.postScreenState.postsAsyncDataState.collectAsState()
-  val searchQueryMut by postsScreenViewModel.postScreenState.searchQueryFlow.collectAsState()
+  val searchQueryMut by postsScreenViewModel.postScreenState.searchQueryFlow
   val foundEntries by searchToolbar.foundEntries
 
   val searchQuery = searchQueryMut
