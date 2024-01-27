@@ -231,17 +231,15 @@ class Chan4CaptchaScreen(
     Spacer(modifier = Modifier.height(8.dp))
 
     if (captchaInfo.needSlider()) {
-      BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        KurobaComposeSnappingSlider(
-          slideOffsetState = scrollValueState,
-          sliderSteps = SLIDE_STEPS,
-          modifier = Modifier
-            .wrapContentHeight()
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-          onValueChange = { newValue -> scrollValueState.value = newValue }
-        )
-      }
+      KurobaComposeSnappingSlider(
+        slideOffsetState = scrollValueState,
+        sliderSteps = SLIDE_STEPS,
+        modifier = Modifier
+          .wrapContentHeight()
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+        onValueChange = { newValue -> scrollValueState.floatValue = newValue }
+      )
 
       Spacer(modifier = Modifier.height(8.dp))
     }

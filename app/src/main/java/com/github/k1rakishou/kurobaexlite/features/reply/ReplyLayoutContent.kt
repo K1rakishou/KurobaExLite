@@ -1,13 +1,10 @@
 package com.github.k1rakishou.kurobaexlite.features.reply
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.DraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -41,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusDirection
@@ -190,8 +186,6 @@ private fun ReplyInputLeftPart(
     is SendReplyState.Finished -> true
   }
 
-  val replyInputFocusRequest = remember { FocusRequester() }
-
   LaunchedEffect(
     key1 = replyLayoutState.chanDescriptor,
     block = { replyLayoutViewModel.loadLastUsedFlag(replyLayoutState.chanDescriptor) }
@@ -241,7 +235,6 @@ private fun ReplyInputLeftPart(
     replyInputContent = {
       Column {
         ReplyTextField(
-          focusRequesterProvider = { replyInputFocusRequest },
           replyLayoutState = replyLayoutState,
           replyLayoutEnabled = replyLayoutEnabled
         )
@@ -541,15 +534,14 @@ private fun ColumnScope.OptionsTextField(
 }
 
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun ColumnScope.ReplyTextField(
-  focusRequesterProvider: () -> FocusRequester,
+private fun ReplyTextField(
   replyLayoutState: ReplyLayoutState,
   replyLayoutEnabled: Boolean
 ) {
   val chanTheme = LocalChanTheme.current
   val localSoftwareKeyboardController = LocalSoftwareKeyboardController.current
+  val focusManager = LocalFocusManager.current
 
   val globalUiInfoManager = koinRemember<GlobalUiInfoManager>()
   var prevReplyLayoutVisibility by remember { mutableStateOf<ReplyLayoutVisibility>(ReplyLayoutVisibility.Collapsed) }
@@ -572,6 +564,8 @@ private fun ColumnScope.ReplyTextField(
     }
   }
 
+  val focusRequester = remember { FocusRequester() }
+
   LaunchedEffect(
     key1 = replyLayoutVisibility,
     block = {
@@ -579,17 +573,23 @@ private fun ColumnScope.ReplyTextField(
         prevReplyLayoutVisibility == ReplyLayoutVisibility.Collapsed &&
         replyLayoutVisibility == ReplyLayoutVisibility.Opened
       ) {
-        focusRequesterProvider().freeFocusSafe()
+        focusRequester.freeFocusSafe()
         localSoftwareKeyboardController?.show()
       } else if (
         prevReplyLayoutVisibility != ReplyLayoutVisibility.Collapsed &&
         replyLayoutVisibility == ReplyLayoutVisibility.Collapsed
       ) {
-        focusRequesterProvider().freeFocusSafe()
+        focusRequester.freeFocusSafe()
 
         if (!globalUiInfoManager.isAnyReplyLayoutOpened()) {
           localSoftwareKeyboardController?.hide()
         }
+      } else if (
+        prevReplyLayoutVisibility != ReplyLayoutVisibility.Expanded &&
+        replyLayoutVisibility == ReplyLayoutVisibility.Expanded
+      ) {
+        focusRequester.freeFocusSafe()
+        focusManager.clearFocus()
       }
 
       prevReplyLayoutVisibility = replyLayoutVisibility
@@ -600,7 +600,7 @@ private fun ColumnScope.ReplyTextField(
     key1 = Unit,
     effect = {
       onDispose {
-        focusRequesterProvider().freeFocusSafe()
+        focusRequester.freeFocusSafe()
 
         if (!globalUiInfoManager.isAnyReplyLayoutOpened()) {
           localSoftwareKeyboardController?.hide()
@@ -646,11 +646,14 @@ private fun ColumnScope.ReplyTextField(
     Modifier
   }
 
+  val mutableInteractionSource = remember { MutableInteractionSource() }
+
   KurobaComposeTextField(
     modifier = Modifier
       .fillMaxSize()
       .padding(vertical = 4.dp)
-      .focusRequester(focusRequesterProvider())
+      .focusable(interactionSource = mutableInteractionSource)
+      .focusRequester(focusRequester)
       .then(minHeightModifier),
     enabled = replyLayoutEnabled,
     value = replyText,
@@ -669,7 +672,8 @@ private fun ColumnScope.ReplyTextField(
         interactionSource = interactionSource
       )
     },
-    onValueChange = { newTextFieldValue -> replyLayoutState.onReplyTextChanged(newTextFieldValue) }
+    onValueChange = { newTextFieldValue -> replyLayoutState.onReplyTextChanged(newTextFieldValue) },
+    interactionSource = mutableInteractionSource
   )
 }
 

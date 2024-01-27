@@ -510,7 +510,7 @@ class Chan4CaptchaViewModel(
 
     fun reset() {
       currentInputValue.value = TextFieldValue()
-      sliderValue.value = 0f
+      sliderValue.floatValue = 0f
     }
 
     fun needSlider(): Boolean = bgBitmap != null

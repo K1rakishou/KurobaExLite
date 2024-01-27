@@ -668,7 +668,7 @@ private fun HomeScreenContentActual(
       HorizontalPager(
         modifier = Modifier.fillMaxSize(),
         state = pagerState,
-        beyondBoundsPageCount = 1,
+        outOfBoundsPageCount = 1,
         key = { index -> pagesWrapper.pageByIndex(index)!!.screenKey()}
       ) { page ->
         val childPage = remember(key1 = page) { pagesWrapper.pageByIndex(page) }

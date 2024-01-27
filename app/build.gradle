@@ -15,7 +15,7 @@ android {
     defaultConfig {
         applicationId "com.github.k1rakishou.kurobaexlite"
         minSdk 21
-        targetSdk 32
+        targetSdk 33
         versionCode 10010
         versionName "1.0.10"
         archivesBaseName = "KurobaExLite"
@@ -165,21 +165,21 @@ android {
 dependencies {
     implementation project(':kpnc')
 
-    implementation 'androidx.core:core-ktx:1.10.1'
+    implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'com.google.android.material:material:1.11.0'
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.animation:animation:$compose_version"
     implementation "androidx.compose.foundation:foundation:$compose_version"
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
     implementation "androidx.compose.ui:ui-util:$compose_version"
-    implementation 'androidx.work:work-runtime-ktx:2.8.1'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1'
-    implementation 'androidx.activity:activity-compose:1.7.2'
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2'
+    implementation 'androidx.activity:activity-compose:1.8.2'
     implementation "androidx.datastore:datastore-preferences:1.0.0"
-    implementation "androidx.window:window:1.2.0-alpha03"
+    implementation "androidx.window:window:1.2.0"
     implementation "io.insert-koin:koin-core:$koin_version"
     implementation "io.insert-koin:koin-android:$koin_version"
     implementation 'dev.chrisbanes.snapper:snapper:0.3.0'

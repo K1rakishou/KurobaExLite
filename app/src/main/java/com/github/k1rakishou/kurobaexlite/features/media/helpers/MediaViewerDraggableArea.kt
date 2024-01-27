@@ -14,11 +14,11 @@ import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
@@ -71,10 +71,10 @@ fun MediaViewerDraggableArea(
   val distToClose = with(density) { 200.dp.toPx() }
   val endActionChannel = remember { Channel<EndAction>(Channel.CONFLATED) }
 
-  var currentPosition by remember { mutableStateOf(Offset(0f, 0f)) }
-  var ignoreAllMotionEvents by remember { mutableStateOf(false) }
-  var contentAlpha by remember { mutableFloatStateOf(1f) }
-  var showCloseViewerLabel by remember { mutableStateOf(false) }
+  val currentPosition = remember { mutableStateOf(Offset(0f, 0f)) }
+  val ignoreAllMotionEvents = remember { mutableStateOf(false) }
+  val contentAlpha = remember { mutableFloatStateOf(1f) }
+  val showCloseViewerLabel = remember { mutableStateOf(false) }
 
   LaunchedEffect(
     key1 = Unit,
@@ -113,7 +113,7 @@ fun MediaViewerDraggableArea(
               scroller.startScroll(startX, startY, deltaX, deltaY, 125)
             }
             is EndAction.Close -> {
-              contentAlpha = 0f
+              contentAlpha.value = 0f
               closeScreen()
               return@consumeEach
             }
@@ -139,10 +139,10 @@ fun MediaViewerDraggableArea(
                 }
               }
 
-              currentPosition = Offset(scroller.currX.toFloat(), scroller.currY.toFloat())
+              currentPosition.value = Offset(scroller.currX.toFloat(), scroller.currY.toFloat())
 
               if (endAction is EndAction.Fling) {
-                contentAlpha = calculateAlpha(
+                contentAlpha.value = calculateAlpha(
                   startX = scroller.startX.toFloat(),
                   startY = scroller.startY.toFloat(),
                   currX = scroller.currX.toFloat(),
@@ -157,13 +157,13 @@ fun MediaViewerDraggableArea(
             }
           } catch (error: Throwable) {
             scroller.abortAnimation()
-            currentPosition = Offset(scroller.currX.toFloat(), scroller.currY.toFloat())
+            currentPosition.value = Offset(scroller.currX.toFloat(), scroller.currY.toFloat())
           }
         } finally {
-          ignoreAllMotionEvents = false
+          ignoreAllMotionEvents.value = false
 
           if (endAction is EndAction.Fling) {
-            contentAlpha = 0f
+            contentAlpha.value = 0f
             closeScreen()
           }
         }
@@ -184,13 +184,14 @@ fun MediaViewerDraggableArea(
     modifier = Modifier
       .size(availableSizeDp)
       .pointerInput(
-        key1 = Unit,
+        currentPosition,
+        showCloseViewerLabel,
+        ignoreAllMotionEvents,
+        endActionChannel,
         block = {
-          val velocityTracker = VelocityTracker()
-
           awaitEachGesture {
             val firstChange = awaitFirstDown(requireUnconsumed = false)
-            if (ignoreAllMotionEvents) {
+            if (ignoreAllMotionEvents.value) {
               return@awaitEachGesture
             }
 
@@ -212,7 +213,7 @@ fun MediaViewerDraggableArea(
               return@awaitEachGesture
             }
 
-            velocityTracker.resetTracking()
+            val velocityTracker = VelocityTracker()
 
             velocityTracker.addPointerInputChange(firstChange)
             firstChange.consume()
@@ -233,9 +234,9 @@ fun MediaViewerDraggableArea(
                 moveChange.consume()
                 velocityTracker.addPointerInputChange(moveChange)
 
-                currentPosition = moveChange.position - startPosition
+                currentPosition.value = moveChange.position - startPosition
                 currentDist = (moveChange.position - startPosition).getDistance()
-                showCloseViewerLabel = currentDist.absoluteValue > distToClose
+                showCloseViewerLabel.value = currentDist.absoluteValue > distToClose
               }
             } finally {
               val velocity = velocityTracker.calculateVelocity()
@@ -245,7 +246,7 @@ fun MediaViewerDraggableArea(
 
               val eventSent = when {
                 velocityHypot.absoluteValue > flingVelocity -> {
-                  endActionChannel.trySend(EndAction.Fling(currentPosition, velocity)).isSuccess
+                  endActionChannel.trySend(EndAction.Fling(currentPosition.value, velocity)).isSuccess
                 }
 
                 currentDist > distToClose -> {
@@ -253,30 +254,31 @@ fun MediaViewerDraggableArea(
                 }
 
                 else -> {
-                  endActionChannel.trySend(EndAction.ScrollBack(currentPosition)).isSuccess
+                  endActionChannel.trySend(EndAction.ScrollBack(currentPosition.value)).isSuccess
                 }
               }
 
-              ignoreAllMotionEvents = eventSent
+              ignoreAllMotionEvents.value = eventSent
             }
           }
         }
       )
-      .absoluteOffset { IntOffset(currentPosition.x.toInt(), currentPosition.y.toInt()) }
-      .graphicsLayer { alpha = contentAlpha }
+      .absoluteOffset { IntOffset(currentPosition.value.x.toInt(), currentPosition.value.y.toInt()) }
+      .graphicsLayer { alpha = contentAlpha.value }
       .overlayModifier(showCloseViewerLabel)
   ) {
     content()
   }
 }
 
-private fun Modifier.overlayModifier(showCloseViewerLabel: Boolean): Modifier {
+@Suppress("AnimateAsStateLabel")
+private fun Modifier.overlayModifier(showCloseViewerLabel: State<Boolean>): Modifier {
   return composed {
     val chanTheme = LocalChanTheme.current
     val textSize = with(LocalDensity.current) { 30.sp.toPx() }
     val text = stringResource(id = R.string.media_viewer_close_label_text)
-    val labelAlpha by animateFloatAsState(targetValue = if (showCloseViewerLabel) 1f else 0f)
-    val overlayAlpha by animateFloatAsState(targetValue = if (showCloseViewerLabel) 0.75f else 0f)
+    val labelAlpha by animateFloatAsState(targetValue = if (showCloseViewerLabel.value) 1f else 0f)
+    val overlayAlpha by animateFloatAsState(targetValue = if (showCloseViewerLabel.value) 0.75f else 0f)
 
     val textPaint = remember {
       TextPaint().apply {

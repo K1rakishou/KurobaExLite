@@ -72,6 +72,7 @@ class KurobaExLiteApplication : Application() {
       application = this@KurobaExLiteApplication,
       appCoroutineScope = appCoroutineScope
     )
+
     return modules
   }
 

@@ -291,7 +291,6 @@ private fun LazyItemScope.ThreadBookmarkItem(
     }
   )
 
-  val bookmarkBgColor by bgAnimatable.asState()
   val offset by remember(key1 = threadBookmarkUi.threadDescriptor) {
     derivedStateOf {
       reorderableState.offsetByKey(dragKey(threadBookmarkUi.threadDescriptor))
@@ -307,7 +306,7 @@ private fun LazyItemScope.ThreadBookmarkItem(
       .kurobaClickable(onClick = { onBookmarkClicked(threadBookmarkUi) })
       .drawBehind {
         if (reorderableState.draggedKey == dragKey(threadBookmarkUi.threadDescriptor)) {
-          drawRect(bookmarkBgColor)
+          drawRect(bgAnimatable.value)
         }
       }
       .animateItemPlacement(),
