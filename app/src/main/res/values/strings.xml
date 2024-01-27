@@ -337,7 +337,7 @@
     <string name="settings_screen_background_watcher_update_interval">Thread watcher background update interval</string>
     <string name="settings_screen_reply_notifications">Show reply notification</string>
     <string name="settings_screen_push_notifications">Enable push notifications</string>
-    <string name="settings_screen_push_notifications_description">Push notifications is a paid feature. However, you can host the backend by yourself since it\'s open-source. Push notifications are the reason why this app has a Firebase dependency now (There is no simple way to avoid it).</string>
+    <string name="settings_screen_push_notifications_description">You will have to host the backend by yourself because it needs one. Push notifications are the reason why this app has a Firebase dependency now (There is no simple way to avoid it).</string>
     <string name="settings_screen_push_notifications_settings_screen">Push notifications settings</string>
 
     <string name="settings_screen_history_group">History</string>
