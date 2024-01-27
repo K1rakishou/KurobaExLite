@@ -31,7 +31,6 @@ class Chan4SiteSettings(
 
   val rememberCaptchaCookies by lazy { BooleanSetting(true, "remember_captcha_cookies", dataStore) }
   val chan4CaptchaCookie by lazy { StringSetting("", "chan4_captcha_cookie", dataStore) }
-  val channel4CaptchaCookie by lazy { StringSetting("", "channel4_captcha_cookie", dataStore) }
   val passcodeCookie by lazy { StringSetting("", "passcode_cookie", dataStore) }
 
   override val cloudFlareClearanceCookie: MapSetting<String, String> by lazy {
@@ -67,12 +66,6 @@ class Chan4SiteSettings(
       StringSettingItem(
         title = appContext.resources.getString(R.string.chan4_setting_4chan_cookie),
         delegate = chan4CaptchaCookie,
-        showDialogScreen = showDialogScreen,
-        settingDisplayFormatter = { token -> token.asFormattedToken() }
-      ),
-      StringSettingItem(
-        title = appContext.resources.getString(R.string.chan4_setting_4channel_cookie),
-        delegate = channel4CaptchaCookie,
         showDialogScreen = showDialogScreen,
         settingDisplayFormatter = { token -> token.asFormattedToken() }
       ),

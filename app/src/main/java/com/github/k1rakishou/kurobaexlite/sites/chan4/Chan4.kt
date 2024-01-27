@@ -57,8 +57,7 @@ class Chan4(
   private val appSettings: AppSettings,
   private val moshi: Moshi,
   private val proxiedOkHttpClient: IKurobaOkHttpClient,
-  private val staticHtmlColorRepository: StaticHtmlColorRepository,
-  private val loadChanCatalog: LoadChanCatalog,
+  private val staticHtmlColorRepository: StaticHtmlColorRepository
 ) : Site {
   private val chan4CatalogInfo by lazy { CatalogInfo(chan4DataSource) }
   private val chan4ThreadInfo by lazy { ThreadInfo(chan4DataSource) }
@@ -66,7 +65,7 @@ class Chan4(
   private val chan4PostImageInfo by lazy { PostImageInfo() }
   private val chan4RequestModifier by lazy { Chan4RequestModifier(this, appSettings) }
   private val chan4SiteSettings by lazy { Chan4SiteSettings(appContext, moshi, defaultDomain) }
-  private val chan4ReplyInfo by lazy { Chan4ReplyInfo(this, proxiedOkHttpClient, loadChanCatalog) }
+  private val chan4ReplyInfo by lazy { Chan4ReplyInfo(this, proxiedOkHttpClient) }
   private val chan4BookmarkInfo by lazy { BookmarkInfo(chan4DataSource) }
   private val chan4CatalogPagesInfo by lazy { CatalogPagesInfo(chan4DataSource) }
   private val chan4GlobalSearchInfo by lazy { GlobalSearchInfo(chan4DataSource) }
@@ -405,15 +404,7 @@ class Chan4(
 
       val host = requestBuilder.build().url.host
 
-      val captchaCookie = when {
-        host.contains("4channel") -> chan4SiteSettings.channel4CaptchaCookie.read()
-        host.contains("4chan") -> chan4SiteSettings.chan4CaptchaCookie.read()
-        else -> {
-          logcatError(TAG) { "Unexpected host: '$host'" }
-          return
-        }
-      }
-
+      val captchaCookie = chan4SiteSettings.chan4CaptchaCookie.read()
       if (captchaCookie.isEmpty()) {
         return
       }
@@ -432,8 +423,7 @@ class Chan4(
     val SITE_KEY = SiteKey("4chan")
 
     private val siteDomains = arrayOf(
-      "4chan.org",
-      "4channel.org",
+      "4chan.org"
     )
 
     private val mediaDomains = arrayOf(

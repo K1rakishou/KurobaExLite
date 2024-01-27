@@ -34,21 +34,11 @@ import java.util.regex.Pattern
 
 class Chan4ReplyInfo(
   private val site: Chan4,
-  private val proxiedOkHttpClient: IKurobaOkHttpClient,
-  private val loadChanCatalog: LoadChanCatalog
+  private val proxiedOkHttpClient: IKurobaOkHttpClient
 ) : Site.ReplyInfo {
 
   override suspend fun replyUrl(chanDescriptor: ChanDescriptor): String {
-    val workSafe = loadChanCatalog.await(chanDescriptor.catalogDescriptor())
-      .getOrNull()
-      ?.workSafe
-      ?: false
-
-    return if (workSafe) {
-      "https://sys.4channel.org/${chanDescriptor.boardCode}/post"
-    } else {
-      "https://sys.4chan.org/${chanDescriptor.boardCode}/post"
-    }
+    return "https://sys.4chan.org/${chanDescriptor.boardCode}/post"
   }
 
   override fun sendReply(replyData: ReplyData): Flow<ReplyEvent> {
@@ -292,14 +282,7 @@ class Chan4ReplyInfo(
       return
     }
 
-    val oldCookie = when {
-      domain.contains("4channel") -> chan4Settings.channel4CaptchaCookie.read()
-      domain.contains("4chan") -> chan4Settings.chan4CaptchaCookie.read()
-      else -> {
-        logcatError(TAG) { "setChan4CaptchaHeader() unexpected domain: '$domain'" }
-        null
-      }
-    }
+    val oldCookie = chan4Settings.chan4CaptchaCookie.read()
 
     logcat(TAG) {
       "oldCookie='${oldCookie.asFormattedToken()}', " +
@@ -321,11 +304,7 @@ class Chan4ReplyInfo(
       return
     }
 
-    when {
-      domain.contains("4channel") -> chan4Settings.channel4CaptchaCookie.write(newCookie)
-      domain.contains("4chan") -> chan4Settings.chan4CaptchaCookie.write(newCookie)
-      else -> logcatError(TAG) { "setChan4CaptchaHeader() unexpected domain: '$domain'" }
-    }
+    chan4Settings.chan4CaptchaCookie.write(newCookie)
   }
 
   private fun extractTimeToWait(rateLimitMatcher: Matcher): Long {

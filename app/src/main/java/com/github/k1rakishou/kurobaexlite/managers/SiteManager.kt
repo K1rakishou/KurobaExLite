@@ -95,8 +95,7 @@ class SiteProvider(
       appSettings = appSettings,
       moshi = moshi,
       proxiedOkHttpClient = proxiedOkHttpClient,
-      staticHtmlColorRepository = staticHtmlColorRepository,
-      loadChanCatalog = loadChanCatalog
+      staticHtmlColorRepository = staticHtmlColorRepository
     )
 
     sites[Dvach.SITE_KEY] = Dvach(

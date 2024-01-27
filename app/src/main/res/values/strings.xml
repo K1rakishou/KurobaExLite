@@ -366,7 +366,6 @@
 
     <string name="chan4_setting_remember_captcha_cookies">Remember captcha cookies</string>
     <string name="chan4_setting_4chan_cookie">4chan captcha cookie</string>
-    <string name="chan4_setting_4channel_cookie">4channel captcha cookie</string>
     <string name="chan4_setting_passcode">4chan passcode</string>
     <string name="chan4_setting_passcode_not_logged_in">Not logged in</string>
     <string name="chan4_setting_passcode_enter_token_and_pin">Enter 4chan passcode Token and PIN</string>

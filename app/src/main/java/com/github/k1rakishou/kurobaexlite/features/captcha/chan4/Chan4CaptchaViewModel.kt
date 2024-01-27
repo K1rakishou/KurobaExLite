@@ -375,28 +375,17 @@ class Chan4CaptchaViewModel(
   }
 
   private suspend fun formatCaptchaUrl(chanDescriptor: ChanDescriptor, boardCode: String): String {
-    val chanCatalog = loadChanCatalog.await(chanDescriptor.catalogDescriptor())
-      .getOrNull()
-
-    val host = if (chanCatalog == null || chanCatalog.workSafe) {
-      "4channel"
-    } else {
-      "4chan"
-    }
-
     return when (chanDescriptor) {
       is CatalogDescriptor -> {
-        "https://sys.$host.org/captcha?board=${boardCode}"
+        "https://sys.4chan.org/captcha?board=${boardCode}"
       }
       is ThreadDescriptor -> {
-        "https://sys.$host.org/captcha?board=${boardCode}&thread_id=${chanDescriptor.threadNo}"
+        "https://sys.4chan.org/captcha?board=${boardCode}&thread_id=${chanDescriptor.threadNo}"
       }
     }
   }
 
   private fun chanDescriptorFromCaptchaUrl(requestUrl: HttpUrl): ChanDescriptor? {
-    // https://sys.$host.org/captcha?board=${boardCode}&thread_id=${chanDescriptor.threadNo}
-
     val boardCode = requestUrl.queryParameter("board") ?: return null
     val threadNo = requestUrl.queryParameter("thread_id")?.toLongOrNull()
 
