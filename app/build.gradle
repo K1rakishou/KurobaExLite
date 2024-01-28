@@ -185,6 +185,7 @@ dependencies {
     implementation 'dev.chrisbanes.snapper:snapper:0.3.0'
     implementation 'com.squareup.logcat:logcat:0.1'
     implementation "com.squareup.okhttp3:okhttp:${okhttp}"
+    implementation "com.squareup.okhttp3:logging-interceptor:${okhttp}"
     implementation "io.ktor:ktor-client-android:${ktor}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlin_coroutines_version}"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:${kotlin_coroutines_version}"
