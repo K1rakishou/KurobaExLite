@@ -1,18 +1,20 @@
 package com.github.k1rakishou.kurobaexlite.sites.chan4
 
-import com.github.k1rakishou.kurobaexlite.features.reply.AttachedMedia
-import com.github.k1rakishou.kurobaexlite.helpers.network.ProgressRequestBody
+import android.webkit.MimeTypeMap
+import com.github.k1rakishou.kurobaexlite.helpers.network.CloudFlareInterceptor
 import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkHttpClient
+import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.Generators
 import com.github.k1rakishou.kurobaexlite.helpers.util.asFormattedToken
+import com.github.k1rakishou.kurobaexlite.helpers.util.domain
+import com.github.k1rakishou.kurobaexlite.helpers.util.extractFileNameExtension
 import com.github.k1rakishou.kurobaexlite.helpers.util.groupOrNull
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.suspendCall
 import com.github.k1rakishou.kurobaexlite.helpers.util.unwrap
-import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.model.data.local.ReplyData
-import com.github.k1rakishou.kurobaexlite.model.descriptors.CatalogDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ChanDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.PostDescriptor
 import com.github.k1rakishou.kurobaexlite.model.descriptors.ThreadDescriptor
@@ -20,15 +22,19 @@ import com.github.k1rakishou.kurobaexlite.sites.ReplyEvent
 import com.github.k1rakishou.kurobaexlite.sites.ReplyResponse
 import com.github.k1rakishou.kurobaexlite.sites.Site
 import com.github.k1rakishou.kurobaexlite.sites.settings.Chan4SiteSettings
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flowOn
 import logcat.logcat
 import okhttp3.Headers
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.MultipartBody
+import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.jsoup.Jsoup
+import org.koin.core.context.GlobalContext
+import java.io.IOException
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
@@ -36,6 +42,7 @@ class Chan4ReplyInfo(
   private val site: Chan4,
   private val proxiedOkHttpClient: IKurobaOkHttpClient
 ) : Site.ReplyInfo {
+  private val appSettings: AppSettings by lazy { GlobalContext.get().get() }
 
   override suspend fun replyUrl(chanDescriptor: ChanDescriptor): String {
     return "https://sys.4chan.org/${chanDescriptor.boardCode}/post"
@@ -46,24 +53,28 @@ class Chan4ReplyInfo(
       send(ReplyEvent.Start)
 
       try {
-        val requestBuilder = Request.Builder()
+        val request = run {
+          val requestBuilder = Request.Builder()
+          val replyUrl = replyUrl(replyData.chanDescriptor)
 
-        val multipartBody = initReplyBody(
-          replyData = replyData,
-          onProgress = { progress -> trySend(ReplyEvent.Progress(progress)) }
-        )
+          requestBuilder.url(replyUrl)
 
-        val replyUrl = replyUrl(replyData.chanDescriptor)
+          val boundary = "------WebKitFormBoundary${Generators.generateHttpBoundary()}"
+          val request = buildRequest(
+            requestBuilder = requestBuilder,
+            replyData = replyData,
+            replyUrl = replyUrl,
+            boundary = boundary
+          ).toRequestBody()
 
-        requestBuilder.url(replyUrl)
-        requestBuilder.addHeader("Referer", replyUrl)
-        requestBuilder.post(multipartBody)
-        site.requestModifier().modifyReplyRequest(requestBuilder)
+          requestBuilder.post(request)
+          site.requestModifier().modifyReplyRequest(requestBuilder)
 
-        val request = requestBuilder.build()
+          requestBuilder.build()
+        }
 
         proxiedOkHttpClient.okHttpClient().suspendCall(request).unwrap().use { response ->
-          setChan4CaptchaHeader(response.headers)
+          updateCookies(response.headers)
 
           val replyResponse = processResponse(
             chanDescriptor = replyData.chanDescriptor,
@@ -75,6 +86,130 @@ class Chan4ReplyInfo(
 
       } catch (error: Throwable) {
         send(ReplyEvent.Error(error))
+      }
+    }.flowOn(Dispatchers.IO)
+  }
+
+  private suspend fun buildRequest(
+    requestBuilder: Request.Builder,
+    replyData: ReplyData,
+    replyUrl: String,
+    boundary: String
+  ): String {
+    val capacity = replyData.attachedMediaList.sumOf { attachedMedia -> attachedMedia.asFile.length() } + 4096
+    val requestBody = buildRequestBody("--${boundary}", replyData)
+
+    val request = buildString(capacity = capacity.toInt()) {
+      arrayOf("Referer", "User-Agent", "Accept-Encoding", "Cookie", "Content-Type", "Content-Length", "Host", "Connection")
+        .forEach { header -> requestBuilder.removeHeader(header) }
+
+      requestBuilder.addHeader("Host", "sys.4chan.org")
+      requestBuilder.addHeader("User-Agent", appSettings.userAgent.read())
+      requestBuilder.addHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
+      requestBuilder.addHeader("Accept-Language", "en-US,en;q=0.5")
+      requestBuilder.addHeader("Accept-Encoding", "gzip")
+      requestBuilder.addHeader("Content-Type", "multipart/form-data; boundary=${boundary}")
+      requestBuilder.addHeader("Content-Length", "${requestBody.length}")
+      requestBuilder.addHeader("Origin", "https://boards.4chan.org")
+      requestBuilder.addHeader("Connection", "Keep-Alive")
+      requestBuilder.addHeader("Referer", replyUrl)
+      requestBuilder.addHeader("Cookie", readCookies(replyUrl.toHttpUrl()))
+      requestBuilder.addHeader("Sec-Fetch-Dest", "document")
+      requestBuilder.addHeader("Sec-Fetch-Mode", "navigate")
+      requestBuilder.addHeader("Sec-Fetch-Site", "same-site")
+      requestBuilder.addHeader("Sec-Fetch-User", "?1")
+      append(requestBody)
+      appendRequestLine()
+    }
+
+    return request
+  }
+
+  private fun buildRequestBody(boundary: String, replyData: ReplyData): String {
+    val capacity = replyData.attachedMediaList.sumOf { attachedMedia -> attachedMedia.asFile.length() } + 1024
+
+    fun StringBuilder.appendFormDataSegment(name: String, value: String?) {
+      val actualValue = value ?: ""
+
+      appendRequestLine(boundary)
+      appendRequestLine("Content-Disposition: form-data; name=\"${name}\"")
+      appendRequestLine("Content-Length: ${actualValue.length}")
+      appendRequestLine()
+      appendRequestLine(actualValue)
+    }
+
+    val chanDescriptor = replyData.chanDescriptor
+
+    return buildString(capacity = capacity.toInt()) {
+      appendFormDataSegment("MAX_FILE_SIZE", "2097152")
+      appendFormDataSegment("mode", "regist")
+      appendFormDataSegment("pwd", "2eb728d0b0694cb3bb79173c5556ee7e")
+
+      if (chanDescriptor is ThreadDescriptor) {
+        val threadNo = chanDescriptor.threadNo
+        appendFormDataSegment("resto", threadNo.toString())
+      }
+
+      appendFormDataSegment("com", replyData.message)
+
+      when (val captchaSolution = replyData.captchaSolution) {
+        is CaptchaSolution.ChallengeWithSolution -> {
+          appendFormDataSegment("t-challenge", captchaSolution.challenge)
+          appendFormDataSegment("t-response", captchaSolution.solution)
+        }
+        is CaptchaSolution.UsePasscode -> {
+          // no-op
+        }
+        null -> {
+          // no-op
+        }
+      }
+
+      val attachedMedia = replyData.attachedMediaList.firstOrNull()
+      if (attachedMedia != null) {
+        val extension = attachedMedia.fileName.extractFileNameExtension()
+          ?: throw IOException("AttachedFileHasNoName")
+        val fileChars = attachedMedia.asFile.readText().toCharArray()
+
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+
+        appendRequestLine(boundary)
+        appendRequestLine("Content-Disposition: form-data; name=\"upfile\"; filename=\"${attachedMedia.fileName}\"")
+        appendRequestLine("Content-Type: ${mimeType}")
+        appendRequestLine()
+        appendRequestLine(fileChars)
+      }
+
+      append("${boundary}--")
+    }
+  }
+
+  private suspend fun readCookies(requestUrl: HttpUrl): String {
+    val domainOrHost = requestUrl.domain() ?: requestUrl.host
+    val host = requestUrl.host
+
+    val cloudflareCookie = site.siteSettings.cloudFlareClearanceCookie.get(domainOrHost)
+
+    return buildString {
+      if (cloudflareCookie.isNotNullNorEmpty()) {
+        logcat(TAG) { "readCookies() domainOrHost=${domainOrHost}, cf_clearance=${cloudflareCookie.asFormattedToken()}" }
+        append("${CloudFlareInterceptor.CF_CLEARANCE}=$cloudflareCookie")
+      }
+
+      val chan4SiteSettings = site.siteSettings as Chan4SiteSettings
+
+      val rememberCaptchaCookies = chan4SiteSettings.rememberCaptchaCookies.read()
+      if (rememberCaptchaCookies) {
+        val captchaCookie = chan4SiteSettings.chan4CaptchaCookie.read()
+        if (captchaCookie.isNotBlank()) {
+          logcat(TAG) { "readCookies() host=${host}, captchaCookie=${captchaCookie.asFormattedToken()}" }
+
+          if (isNotEmpty()) {
+            append("; ")
+          }
+
+          append("${Chan4.Chan4RequestModifier.CAPTCHA_COOKIE_KEY}=${captchaCookie}")
+        }
       }
     }
   }
@@ -155,99 +290,11 @@ class Chan4ReplyInfo(
       "(bad threadNo: \'${threadNo}\' or postNo: \'${postNo}\') see logs for more info!")
   }
 
-  private fun initReplyBody(
-    replyData: ReplyData,
-    onProgress: (Float) -> Unit
-  ): MultipartBody {
-    val chanDescriptor = replyData.chanDescriptor
-    val formBuilder = MultipartBody.Builder()
-    formBuilder.setType(MultipartBody.FORM)
-    formBuilder.addFormDataPart("mode", "regist")
-
-    if (replyData.password.isNotNullNorEmpty()) {
-      formBuilder.addFormDataPart("pwd", replyData.password)
-    }
-
-    if (chanDescriptor is ThreadDescriptor) {
-      val threadNo = chanDescriptor.threadNo
-      formBuilder.addFormDataPart("resto", threadNo.toString())
-    }
-
-    if (replyData.name.isNotNullNorEmpty()) {
-      formBuilder.addFormDataPart("name", replyData.name)
-    }
-
-    if (replyData.options.isNotNullNorEmpty()) {
-      formBuilder.addFormDataPart("email", replyData.options)
-    }
-
-    if (chanDescriptor is CatalogDescriptor && replyData.subject.isNotNullNorEmpty()) {
-      formBuilder.addFormDataPart("sub", replyData.subject)
-    }
-
-    formBuilder.addFormDataPart("com", replyData.message)
-
-    when (val captchaSolution = replyData.captchaSolution) {
-      is CaptchaSolution.ChallengeWithSolution -> {
-        formBuilder.addFormDataPart("t-challenge", captchaSolution.challenge)
-        formBuilder.addFormDataPart("t-response", captchaSolution.solution)
-      }
-      is CaptchaSolution.UsePasscode -> {
-        // no-op
-      }
-      null -> {
-        // no-op
-      }
-    }
-
-    if (replyData.flag != null) {
-      formBuilder.addFormDataPart("flag", replyData.flag.key)
-    }
-
-    val attachedMedia = replyData.attachedMediaList.firstOrNull()
-    if (attachedMedia != null) {
-      attachFile(
-        formBuilder = formBuilder,
-        attachedMedia = attachedMedia,
-        progressListener = { progress -> onProgress(progress) }
-      )
-
-      // TODO(KurobaEx):
-      //  if (replyFileMetaInfo.spoiler) {
-      //    formBuilder.addFormDataPart("spoiler", "on")
-      //  }
-    }
-
-    return formBuilder.build()
-  }
-
-  private fun attachFile(
-    formBuilder: MultipartBody.Builder,
-    attachedMedia: AttachedMedia,
-    progressListener: ProgressRequestBody.ProgressRequestListener,
-  ) {
-    val mediaType = "application/octet-stream".toMediaType()
-    val attachedMediaFile = attachedMedia.asFile
-
-    val progressRequestBody = ProgressRequestBody(
-      fileIndex = 1,
-      totalFiles = 1,
-      delegate = attachedMediaFile.asRequestBody(mediaType),
-      progressListener
-    )
-
-    formBuilder.addFormDataPart(
-      "upfile",
-      attachedMedia.actualFileName,
-      progressRequestBody
-    )
-  }
-
-  private suspend fun setChan4CaptchaHeader(headers: Headers) {
+  private suspend fun updateCookies(headers: Headers) {
     val chan4Settings = site.siteSettings as Chan4SiteSettings
 
     if (!chan4Settings.rememberCaptchaCookies.read()) {
-      logcat(TAG) { "setChan4CaptchaHeader() rememberCaptchaCookies is false" }
+      logcat(TAG) { "updateCookies() rememberCaptchaCookies is false" }
       return
     }
 
@@ -257,7 +304,7 @@ class Chan4ReplyInfo(
       ?.second
 
     if (wholeCookieHeader.isNullOrEmpty()) {
-      logcat(TAG) { "setChan4CaptchaHeader() Set-Cookie header not found" }
+      logcat(TAG) { "updateCookies() Set-Cookie header not found" }
       return
     }
 
@@ -269,16 +316,16 @@ class Chan4ReplyInfo(
       .substringAfter(DOMAIN_PREFIX)
       .substringBefore(';')
 
-    logcat(TAG) { "setChan4CaptchaHeader() newCookie='${newCookie.asFormattedToken()}', " +
+    logcat(TAG) { "updateCookies() newCookie='${newCookie.asFormattedToken()}', " +
       "domain='${domain}', wholeCookieHeader='${wholeCookieHeader}'" }
 
     if (newCookie.isEmpty()) {
-      logcat(TAG) { "setChan4CaptchaHeader() newCookie is empty" }
+      logcat(TAG) { "updateCookies() newCookie is empty" }
       return
     }
 
     if (domain.isEmpty()) {
-      logcat(TAG) { "setChan4CaptchaHeader() domain is empty" }
+      logcat(TAG) { "updateCookies() domain is empty" }
       return
     }
 
@@ -290,21 +337,22 @@ class Chan4ReplyInfo(
         "domain='${domain}'"
     }
 
-    if (oldCookie != null && oldCookie.isNotEmpty()) {
-      logcat(TAG) { "setChan4CaptchaHeader() cookie is still ok. oldCookie='${oldCookie.asFormattedToken()}'" }
+    if (oldCookie != null && oldCookie.isNotEmpty() && oldCookie == newCookie) {
+      logcat(TAG) { "updateCookies() cookie is still ok. oldCookie='${oldCookie.asFormattedToken()}'" }
       return
     }
 
-    logcat(TAG) { "setChan4CaptchaHeader() cookie needs to be updated. " +
+    logcat(TAG) { "updateCookies() cookie needs to be updated. " +
       "oldCookie='${oldCookie.asFormattedToken()}', domain='${domain}'" }
 
     if (domain.isNullOrEmpty() || newCookie.isNullOrEmpty()) {
-      logcat(TAG) { "setChan4CaptchaHeader() failed to parse 4chan_pass " +
+      logcat(TAG) { "updateCookies() failed to parse 4chan_pass " +
         "cookie (${newCookie.asFormattedToken()}) or domain (${domain})" }
       return
     }
 
     chan4Settings.chan4CaptchaCookie.write(newCookie)
+    logcat(TAG) { "updateCookies() successfully updated cookie with '${newCookie.asFormattedToken()}'" }
   }
 
   private fun extractTimeToWait(rateLimitMatcher: Matcher): Long {
@@ -335,6 +383,10 @@ class Chan4ReplyInfo(
 
     return null
   }
+
+  private fun StringBuilder.appendRequestLine(): StringBuilder = append("\r\n")
+  private fun StringBuilder.appendRequestLine(value: String?): StringBuilder = append(value).appendRequestLine()
+  private fun StringBuilder.appendRequestLine(value: CharArray): StringBuilder = append(value).appendRequestLine()
 
   companion object {
     private const val TAG = "Chan4ReplyInfo"

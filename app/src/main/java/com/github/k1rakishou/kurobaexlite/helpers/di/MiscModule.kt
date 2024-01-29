@@ -103,6 +103,7 @@ internal fun Module.misc() {
 
   single<IKurobaOkHttpClient> {
     ProxiedOkHttpClient(
+      context = get(),
       siteManager = get(),
       firewallBypassManager = get(),
       androidHelpers = get()

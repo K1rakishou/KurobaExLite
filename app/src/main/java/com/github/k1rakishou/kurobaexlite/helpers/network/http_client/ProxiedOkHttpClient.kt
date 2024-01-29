@@ -1,14 +1,15 @@
 package com.github.k1rakishou.kurobaexlite.helpers.network.http_client
 
+import android.content.Context
 import com.github.k1rakishou.kurobaexlite.helpers.AndroidHelpers
 import com.github.k1rakishou.kurobaexlite.helpers.network.CloudFlareInterceptor
 import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 
 class ProxiedOkHttpClient(
+  private val context: Context,
   private val siteManager: SiteManager,
   private val firewallBypassManager: FirewallBypassManager,
   private val androidHelpers: AndroidHelpers
@@ -23,8 +24,8 @@ class ProxiedOkHttpClient(
       .addNetworkInterceptor(GzipInterceptor())
       .also { builder ->
         if (androidHelpers.isDevFlavor() && loggingInterceptorEnabled) {
-          val loggingInterceptor = HttpLoggingInterceptor()
-          loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
+          val loggingInterceptor = KurobaHttpLoggingInterceptor(context)
+          loggingInterceptor.setLevel(KurobaHttpLoggingInterceptor.Level.BODY)
           builder.addNetworkInterceptor(loggingInterceptor)
         }
       }
@@ -36,6 +37,7 @@ class ProxiedOkHttpClient(
   }
 
   companion object {
+    // TODO: don't forget to change me back to false!!!
     private const val loggingInterceptorEnabled = false
   }
 

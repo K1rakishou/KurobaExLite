@@ -13,11 +13,17 @@ import kotlinx.coroutines.flow.map
 class StringSetting(
   override val defaultValue: String,
   override val settingKey: String,
-  dataStore: DataStore<Preferences>
+  dataStore: DataStore<Preferences>,
+  private val overrideReads: (() -> String)? = null,
 ) : AbstractSetting<String>(dataStore) {
   private val prefsKey: Preferences.Key<String> = stringPreferencesKey(settingKey)
 
   override suspend fun read(): String {
+    val overrideReadsLocal = overrideReads
+    if (overrideReadsLocal != null) {
+      return overrideReadsLocal()
+    }
+
     val cached = cachedValue
     if (cached != null) {
       return cached

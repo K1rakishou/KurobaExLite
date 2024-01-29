@@ -8,6 +8,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.network.http_client.IKurobaOkH
 import com.github.k1rakishou.kurobaexlite.helpers.parser.AbstractSitePostParser
 import com.github.k1rakishou.kurobaexlite.helpers.parser.DvachPostParser
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.COOKIE_HEADER_NAME
 import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
@@ -469,7 +470,7 @@ class Dvach(
         return
       }
 
-      imageRequestBuilder.addHeader("Cookie", "${USER_CODE_COOKIE_KEY}=${userCodeCookie}")
+      imageRequestBuilder.addHeader(COOKIE_HEADER_NAME, "${USER_CODE_COOKIE_KEY}=${userCodeCookie}")
     }
 
   }

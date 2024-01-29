@@ -15,6 +15,7 @@ import androidx.compose.ui.text.input.getSelectedText
 import androidx.compose.ui.text.input.getTextAfterSelection
 import androidx.compose.ui.text.input.getTextBeforeSelection
 import com.github.k1rakishou.kurobaexlite.helpers.executors.KurobaCoroutineScope
+import com.github.k1rakishou.kurobaexlite.helpers.util.Generators
 import com.github.k1rakishou.kurobaexlite.interactors.catalog.LoadChanCatalog
 import com.github.k1rakishou.kurobaexlite.managers.CaptchaSolution
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -408,6 +409,7 @@ class ReplyLayoutState(
       chanDescriptor = chanDescriptor,
       message = replyText.value.text,
       subject = subject.value.text.takeIf { it.isNotEmpty() },
+      password = Generators.generateRandomHexString(16),
       name = name.value.text.takeIf { it.isNotEmpty() },
       flag = flag.value,
       options = options.value.text.takeIf { it.isNotEmpty() },
@@ -531,16 +533,11 @@ class ReplyLayoutState(
 @Parcelize
 data class AttachedMedia(
   val path: String,
-  val fileName: String? = null
+  val fileName: String
 ): Parcelable {
 
   @IgnoredOnParcel
   val asFile by lazy { File(path) }
-
-  val actualFileName: String
-    get() {
-      return fileName ?: asFile.name
-    }
 
   fun exists(): Boolean = asFile.exists()
 

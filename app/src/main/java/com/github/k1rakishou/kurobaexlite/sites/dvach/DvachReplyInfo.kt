@@ -262,7 +262,7 @@ class DvachReplyInfo(
       progressListener
     )
 
-    formBuilder.addFormDataPart("file[]", attachedMedia.actualFileName, progressRequestBody)
+    formBuilder.addFormDataPart("file[]", attachedMedia.fileName, progressRequestBody)
   }
 
   @JsonClass(generateAdapter = true)

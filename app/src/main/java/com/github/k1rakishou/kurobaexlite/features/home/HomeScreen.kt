@@ -55,6 +55,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRemember
 import com.github.k1rakishou.kurobaexlite.helpers.util.koinRememberViewModel
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
+import com.github.k1rakishou.kurobaexlite.helpers.util.putSerializableMap
 import com.github.k1rakishou.kurobaexlite.helpers.util.rememberPagerState
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.BookmarksManager
@@ -108,7 +109,6 @@ class HomeScreen(
 
   override val screenKey: ScreenKey = SCREEN_KEY
 
-  @Suppress("UnnecessaryVariable")
   @Composable
   override fun Content() {
     ContentInternal(
@@ -120,12 +120,13 @@ class HomeScreen(
       },
       navigationRouterProvider = { navigationRouter },
       homeScreenPageConverterProvider = { homeScreenPageConverter },
-      showSiteFirewallBypassController = { firewallType, urlToOpen, originalRequestUrl, siteKey ->
+      showSiteFirewallBypassController = { firewallType, urlToOpen, originalRequestUrl, siteKey, cookieMap ->
         showSiteFirewallBypassController(
           firewallType = firewallType,
           urlToOpen = urlToOpen,
           originalRequestUrl = originalRequestUrl,
-          siteKey = siteKey
+          siteKey = siteKey,
+          cookieMap = cookieMap
         )
       },
       handleBackPresses = { pagesWrapper ->
@@ -172,9 +173,17 @@ class HomeScreen(
     firewallType: FirewallType,
     urlToOpen: HttpUrl,
     originalRequestUrl: HttpUrl,
-    siteKey: SiteKey
+    siteKey: SiteKey,
+    cookieMap: Map<String, String>
   ) {
-    logcat(TAG) { "Launching SiteFirewallBypassScreen(${firewallType}, ${urlToOpen}, ${originalRequestUrl}, ${siteKey})" }
+    logcat(TAG) {
+      "Launching SiteFirewallBypassScreen(" +
+      "firewallType: ${firewallType}, " +
+      "urlToOpen: ${urlToOpen}, " +
+      "originalRequestUrl: ${originalRequestUrl}, " +
+      "siteKey: ${siteKey}, " +
+      "cookieMap: ${cookieMap})"
+    }
 
     val bypassResult = suspendCancellableCoroutine<BypassResult> { continuation ->
       val siteFirewallBypassScreen = ComposeScreen.createScreen<SiteFirewallBypassScreen>(
@@ -186,6 +195,11 @@ class HomeScreen(
             firewallType
           )
           putSerializable(SiteFirewallBypassScreen.URL_TO_OPEN, urlToOpen.toString())
+          putSerializableMap(
+            key = SiteFirewallBypassScreen.COOKIES,
+            map = cookieMap,
+            mapper = { key, value -> SiteFirewallBypassScreen.serializeCookieEntry(key, value) }
+          )
         },
         callbacks = {
           callback<BypassResult>(
@@ -298,7 +312,7 @@ private fun ContentInternal(
   isDrawerDragGestureCurrentlyAllowed: (AbstractPage<ComposeScreenWithToolbar<*>>, Boolean) -> Boolean,
   navigationRouterProvider: () -> NavigationRouter,
   homeScreenPageConverterProvider: () -> HomeScreenPageConverter,
-  showSiteFirewallBypassController: suspend (FirewallType, HttpUrl, HttpUrl, SiteKey) -> Unit,
+  showSiteFirewallBypassController: suspend (FirewallType, HttpUrl, HttpUrl, SiteKey, Map<String, String>) -> Unit,
   handleBackPresses: @Composable (HomeScreenPageConverter.PagesWrapper) -> Unit
 ) {
   val context = LocalContext.current
@@ -780,7 +794,7 @@ private fun RowScope.HomeScreenMiniDrawer(
 @Composable
 private fun ListenForFirewallBypassManagerEvents(
   navigationRouterProvider: () -> NavigationRouter,
-  showSiteFirewallBypassController: suspend (FirewallType, HttpUrl, HttpUrl, SiteKey) -> Unit
+  showSiteFirewallBypassController: suspend (FirewallType, HttpUrl, HttpUrl, SiteKey, Map<String, String>) -> Unit
 ) {
   val firewallBypassManager: FirewallBypassManager = koinRemember()
 
@@ -800,10 +814,11 @@ private fun ListenForFirewallBypassManagerEvents(
         val urlToOpen = showFirewallControllerInfo.urlToOpen
         val originalRequestUrl = showFirewallControllerInfo.originalRequestUrl
         val siteKey = showFirewallControllerInfo.siteKey
+        val cookieMap = showFirewallControllerInfo.cookieMap
         val onFinished = showFirewallControllerInfo.onFinished
 
         try {
-          showSiteFirewallBypassController(firewallType, urlToOpen, originalRequestUrl, siteKey)
+          showSiteFirewallBypassController(firewallType, urlToOpen, originalRequestUrl, siteKey, cookieMap)
         } finally {
           onFinished.complete(Unit)
           logcat(HomeScreen.TAG) { "showFirewallControllerInfo.onFinished() invoked" }

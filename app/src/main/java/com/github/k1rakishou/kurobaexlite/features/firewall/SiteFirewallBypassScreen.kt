@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import com.github.k1rakishou.kurobaexlite.helpers.util.Generators
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.model.FirewallType
@@ -38,6 +39,7 @@ class SiteFirewallBypassScreen(
 ) : FloatingComposeScreen(screenArgs, componentActivity, navigationRouter) {
   private val firewallType by requireArgumentLazy<FirewallType>(FIREWALL_TYPE)
   private val urlToOpen by requireArgumentLazy<String>(URL_TO_OPEN)
+  private val cookies by mapArgumentLazy(COOKIES) { bundle -> deserializeCookieEntry(bundle) }
 
   private val cookieManager by lazy { CookieManager.getInstance() }
   private val webClient by lazy { createWebClient() }
@@ -88,6 +90,7 @@ class SiteFirewallBypassScreen(
     val context = LocalContext.current
     val webClientLocal = webClient
     val urlToOpenLocal = urlToOpen
+    val cookiesLocal = cookies
 
     var webViewMut by remember { mutableStateOf<WebView?>(null) }
     val webViewLocal = webViewMut
@@ -118,10 +121,11 @@ class SiteFirewallBypassScreen(
         logcat(TAG) { "initWebViewAndLoadPage()" }
 
         initWebViewAndLoadPage(
+          context = context,
           webView = webViewLocal,
           webClient = webClientLocal,
           urlToOpen = urlToOpenLocal,
-          context = context
+          cookiesToSet = cookiesLocal
         )
       }
     )
@@ -130,11 +134,14 @@ class SiteFirewallBypassScreen(
 
   @SuppressLint("SetJavaScriptEnabled")
   private suspend fun initWebViewAndLoadPage(
+    context: Context,
     webView: WebView,
     webClient: WebViewClient,
     urlToOpen: String,
-    context: Context
+    cookiesToSet: Map<String, String>
   ) {
+    logcat(TAG) { "initWebViewAndLoadPage() urlToOpen: ${urlToOpen}, cookiesToSet: ${cookiesToSet}" }
+
     webView.stopLoading()
     webView.clearCache(true)
     webView.clearFormData()
@@ -156,12 +163,18 @@ class SiteFirewallBypassScreen(
     webSettings.useWideViewPort = true
     webSettings.loadWithOverviewMode = true
     webSettings.userAgentString = appSettings.userAgent.read()
-    webSettings.cacheMode = WebSettings.LOAD_NO_CACHE
+    webSettings.cacheMode = WebSettings.LOAD_DEFAULT
     webSettings.domStorageEnabled = true
     webSettings.databaseEnabled = true
 
     webView.webViewClient = webClient
-    webView.loadUrl(urlToOpen)
+
+    val extraHeaders = mutableMapOf<String, String>()
+    // Fuck you g**gle. Why are you including this header with app's package name by default? Who the fuck asked you to do this?
+    extraHeaders["X-Requested-With"] = Generators.generateRandomHexString(symbolsCount = 30)
+    extraHeaders.putAll(cookiesToSet)
+
+    webView.loadUrl(urlToOpen, extraHeaders)
 
     waitAndHandleResult()
   }
@@ -213,7 +226,24 @@ class SiteFirewallBypassScreen(
 
     const val FIREWALL_TYPE = "firewall_type"
     const val URL_TO_OPEN = "url_to_open"
-
+    const val COOKIES = "cookies"
     const val ON_RESULT = "on_result"
+
+    private const val COOKIE_KEY = "cookie_map_key"
+    private const val COOKIE_VALUE = "cookie_map_value"
+
+    fun serializeCookieEntry(key: String, value: String): Bundle {
+      return Bundle().apply {
+        putString(COOKIE_KEY, key)
+        putString(COOKIE_VALUE, value)
+      }
+    }
+
+    fun deserializeCookieEntry(bundle: Bundle): Pair<String, String>? {
+      val key = bundle.getString(COOKIE_KEY) ?: return null
+      val value = bundle.getString(COOKIE_VALUE) ?: return null
+
+      return key to value
+    }
   }
 }

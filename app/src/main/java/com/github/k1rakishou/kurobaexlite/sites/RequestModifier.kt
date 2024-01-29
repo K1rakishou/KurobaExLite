@@ -4,6 +4,7 @@ import androidx.annotation.CallSuper
 import coil.request.ImageRequest
 import com.github.k1rakishou.kurobaexlite.helpers.network.CloudFlareInterceptor
 import com.github.k1rakishou.kurobaexlite.helpers.settings.AppSettings
+import com.github.k1rakishou.kurobaexlite.helpers.util.COOKIE_HEADER_NAME
 import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
@@ -21,9 +22,8 @@ open class RequestModifier<T : Site>(
   open suspend fun modifyReplyRequest(requestBuilder: Request.Builder) {
     addCloudflareClearanceCookie(requestBuilder)
 
-    if (site is Chan4) {
-      requestBuilder.addHeader(userAgentHeaderKey, appSettings.specialUserAgentFor4chanPosting)
-    } else {
+    if (site !is Chan4) {
+      // We set User-Agent header manually for 4chan
       requestBuilder.addHeader(userAgentHeaderKey, appSettings.userAgent.read())
     }
 
@@ -110,7 +110,7 @@ open class RequestModifier<T : Site>(
     val cloudflareCookie = site.siteSettings.cloudFlareClearanceCookie.get(domainOrHost)
 
     if (cloudflareCookie.isNotNullNorEmpty()) {
-      imageRequestBuilder.addHeader("Cookie", "${CloudFlareInterceptor.CF_CLEARANCE}=$cloudflareCookie")
+      imageRequestBuilder.addHeader(COOKIE_HEADER_NAME, "${CloudFlareInterceptor.CF_CLEARANCE}=$cloudflareCookie")
     }
   }
 

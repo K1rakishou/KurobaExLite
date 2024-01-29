@@ -381,7 +381,7 @@ class Chan4(
 
       val passcodeCookie = (site.siteSettings as Chan4SiteSettings).passcodeCookie.read()
       if (passcodeCookie.isNotEmpty()) {
-        requestBuilder.addHeader("Cookie", "pass_id=$passcodeCookie")
+        requestBuilder.appendCookieHeader("pass_id=$passcodeCookie")
       }
 
       addChan4CookieHeader(site, requestBuilder)
@@ -414,7 +414,7 @@ class Chan4(
     }
 
     companion object {
-      private const val CAPTCHA_COOKIE_KEY = "4chan_pass"
+      const val CAPTCHA_COOKIE_KEY = "4chan_pass"
     }
   }
 

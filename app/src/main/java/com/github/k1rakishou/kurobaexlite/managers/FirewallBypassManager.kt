@@ -41,7 +41,8 @@ class FirewallBypassManager(
     firewallType: FirewallType,
     siteKey: SiteKey,
     urlToOpen: HttpUrl,
-    originalRequestUrl: HttpUrl
+    originalRequestUrl: HttpUrl,
+    cookieMap: Map<String, String>
   ) {
     if (!applicationVisibilityManager.isAppInForeground()) {
       // No point to do anything here since there is most likely no activity currently alive
@@ -82,6 +83,7 @@ class FirewallBypassManager(
         siteKey = siteKey,
         urlToOpen = urlToOpen,
         originalRequestUrl = originalRequestUrl,
+        cookieMap = cookieMap,
         onFinished = completableDeferred
       )
 
@@ -126,6 +128,7 @@ class FirewallBypassManager(
     val siteKey: SiteKey,
     val urlToOpen: HttpUrl,
     val originalRequestUrl: HttpUrl,
+    val cookieMap: Map<String, String>,
     val onFinished: CompletableDeferred<Unit>
   )
 

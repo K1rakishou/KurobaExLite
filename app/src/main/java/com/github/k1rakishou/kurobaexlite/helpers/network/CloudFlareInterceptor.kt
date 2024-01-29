@@ -1,14 +1,17 @@
 package com.github.k1rakishou.kurobaexlite.helpers.network
 
 import androidx.annotation.GuardedBy
+import com.github.k1rakishou.kurobaexlite.helpers.util.appendCookieHeader
 import com.github.k1rakishou.kurobaexlite.helpers.util.containsPattern
 import com.github.k1rakishou.kurobaexlite.helpers.util.domain
+import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorBlank
 import com.github.k1rakishou.kurobaexlite.helpers.util.isNotNullNorEmpty
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.managers.FirewallBypassManager
 import com.github.k1rakishou.kurobaexlite.managers.SiteManager
 import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException
 import com.github.k1rakishou.kurobaexlite.model.FirewallType
+import com.github.k1rakishou.kurobaexlite.sites.chan4.Chan4
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
 import logcat.logcat
@@ -103,11 +106,23 @@ class CloudFlareInterceptor(
     if (site != null) {
       val siteKey = site.siteKey
 
+      val domainOrHost = request.url.domain()
+        ?: request.url.host
+
+      val cookie = runBlocking { site.siteSettings.cloudFlareClearanceCookie.get(domainOrHost) }
+
+      val cookieMap: Map<String, String> = if (cookie.isNotNullNorBlank()) {
+        mapOf(Chan4.Chan4RequestModifier.CAPTCHA_COOKIE_KEY to cookie)
+      } else {
+        emptyMap()
+      }
+
       firewallBypassManager.onFirewallDetected(
         firewallType = FirewallType.Cloudflare,
         siteKey = siteKey,
         urlToOpen = site.firewallChallengeEndpoint ?: request.url,
-        originalRequestUrl = request.url
+        originalRequestUrl = request.url,
+        cookieMap = cookieMap
       )
     }
 
@@ -178,7 +193,7 @@ class CloudFlareInterceptor(
     }
 
     return prevRequest.newBuilder()
-      .addHeader("Cookie", "$CF_CLEARANCE=$cloudFlareClearanceCookie")
+      .appendCookieHeader("$CF_CLEARANCE=$cloudFlareClearanceCookie")
       .build()
   }
 

@@ -20,9 +20,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.ViewModel
+import com.github.k1rakishou.kurobaexlite.BuildConfig
+import com.github.k1rakishou.kurobaexlite.helpers.network.CloudFlareInterceptor
 import com.github.k1rakishou.kurobaexlite.helpers.parser.TextPartSpan
 import com.github.k1rakishou.kurobaexlite.model.BadStatusResponseException
 import com.github.k1rakishou.kurobaexlite.model.BypassException
+import com.github.k1rakishou.kurobaexlite.model.ClientException
 import com.github.k1rakishou.kurobaexlite.model.EmptyBodyResponseException
 import com.github.k1rakishou.kurobaexlite.model.FirewallDetectedException
 import com.github.k1rakishou.kurobaexlite.ui.helpers.LocalComponentActivity
@@ -72,6 +75,7 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 
+private const val TAG = "GenericExtensions"
 
 fun <T> CancellableContinuation<T>.resumeValueSafe(value: T) {
   if (isActive) {
@@ -734,24 +738,44 @@ inline fun <reified T : ViewModel> ComponentActivity.koinViewModel(): T {
   return this.viewModel<T>().value
 }
 
-private const val COOKIE_HEADER_NAME = "Cookie"
+const val COOKIE_HEADER_NAME = "Cookie"
 
-fun Request.Builder.appendCookieHeader(value: String): Request.Builder {
+fun Request.Builder.appendCookieHeader(newCookie: String): Request.Builder {
   val request = build()
 
-  val cookies = request.header(COOKIE_HEADER_NAME)
-  if (cookies == null) {
-    return addHeader(COOKIE_HEADER_NAME, value)
+  val oldCookies = request.header(COOKIE_HEADER_NAME)
+  if (oldCookies.isNullOrBlank()) {
+    return addHeader(COOKIE_HEADER_NAME, newCookie)
   }
 
-  // Absolute retardiation but OkHttp doesn't allow doing it differently (or maybe I just don't know?)
-  val fullCookieValue = request.newBuilder()
-    .removeHeader(COOKIE_HEADER_NAME)
-    .addHeader(COOKIE_HEADER_NAME, "${cookies}; ${value}")
-    .build()
-    .header(COOKIE_HEADER_NAME)!!
+  if (!newCookie.contains(";")) {
+    val cookieParts = newCookie.indexOfFirst { char -> char == '=' }
+      ?.let { indexOfSeparator ->
+        return@let listOf(
+          newCookie.substringSafe(0, indexOfSeparator),
+          newCookie.substringSafe(indexOfSeparator + 1)
+        )
+      }
 
-  return header(COOKIE_HEADER_NAME, fullCookieValue)
+    if (cookieParts != null) {
+      val separateCookies = oldCookies.split("; ").map { it.trim() }
+      val key = cookieParts.get(0)
+
+      val cookieAlreadyAdded = separateCookies.any { cookie -> cookie.startsWith("${key}=") }
+      if (cookieAlreadyAdded) {
+        return this
+      }
+    }
+  } else {
+    if (BuildConfig.DEBUG) {
+      throw IllegalStateException("newCookie contains ';' separate cookies! newCookie: '${newCookie}'")
+    }
+
+    logcatError(TAG) { "newCookie contains ';' separate cookies! newCookie: '${newCookie}'" }
+  }
+
+  return removeHeader(COOKIE_HEADER_NAME)
+    .header(COOKIE_HEADER_NAME, "${oldCookies}; ${newCookie}")
 }
 
 fun String?.asFormattedToken(@FloatRange(from = 0.0, to = 1.0) percent: Float = 0.4f): String {

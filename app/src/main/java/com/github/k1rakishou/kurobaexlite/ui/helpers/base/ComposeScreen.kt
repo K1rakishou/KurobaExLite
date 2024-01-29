@@ -17,6 +17,7 @@ import com.github.k1rakishou.kurobaexlite.helpers.settings.DialogSettings
 import com.github.k1rakishou.kurobaexlite.helpers.util.asLogIfImportantOrErrorMessage
 import com.github.k1rakishou.kurobaexlite.helpers.util.errorMessageOrClassName
 import com.github.k1rakishou.kurobaexlite.helpers.util.exceptionOrThrow
+import com.github.k1rakishou.kurobaexlite.helpers.util.getSerializableMap
 import com.github.k1rakishou.kurobaexlite.helpers.util.logcatError
 import com.github.k1rakishou.kurobaexlite.helpers.util.resumeSafe
 import com.github.k1rakishou.kurobaexlite.managers.GlobalUiInfoManager
@@ -133,6 +134,26 @@ abstract class ComposeScreen protected constructor(
 
   protected fun <T : Any> argumentOrDefaultLazy(key: String, default: T): Lazy<T> {
     return lazy { savedStateViewModel.getArgumentOrNull(key) ?: default }
+  }
+
+  protected fun mapArgumentLazy(key: String, mapper: (Bundle) -> Pair<String, String>?): Lazy<Map<String, String>> {
+    return lazy {
+      val listOfBundles = savedStateViewModel.getArgumentOrNull<ArrayList<Bundle>>(key)
+      if (listOfBundles.isNullOrEmpty()) {
+        return@lazy emptyMap<String, String>()
+      }
+
+      val resultMap = mutableMapOf<String, String>()
+
+      listOfBundles.forEach { bundle ->
+        val (key, value) = mapper(bundle)
+          ?: return@forEach
+
+        resultMap[key] = value
+      }
+
+      return@lazy resultMap
+    }
   }
 
   protected fun <T : Any> requireArgumentLazy(key: String): Lazy<T> {

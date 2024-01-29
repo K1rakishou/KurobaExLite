@@ -35,16 +35,6 @@ class AppSettings(
 
   val processorsCount by lazy { Runtime.getRuntime().availableProcessors() }
 
-  val specialUserAgentFor4chanPosting by lazy {
-    buildString {
-      val applicationLabel = appContext.packageManager.getApplicationLabel(appContext.applicationInfo)
-
-      append(applicationLabel)
-      append(" ")
-      append(BuildConfig.VERSION_NAME)
-    }
-  }
-
   val layoutType by lazy { EnumSetting<LayoutType>(LayoutType.Auto, "layout_type", LayoutType::class.java, dataStore) }
   val historyEnabled by lazy { BooleanSetting(true, "history_enabled", dataStore) }
   val drawerContentType by lazy { EnumSetting(DrawerContentType.Bookmarks, "drawer_content_type", DrawerContentType::class.java, dataStore) }
@@ -114,8 +104,7 @@ class AppSettings(
     const val ALBUM_MIN_COLUMN_COUNT = 0
     const val ALBUM_MAX_COLUMN_COUNT = 5
 
-    private const val USER_AGENT_FORMAT =
-      "Mozilla/5.0 (Linux; Android %s; %s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.127 Mobile Safari/537.36"
+    private const val USER_AGENT_FORMAT = "Mozilla/5.0 (Linux; Android %s; %s) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.127 Mobile Safari/537.36"
   }
 
 }
