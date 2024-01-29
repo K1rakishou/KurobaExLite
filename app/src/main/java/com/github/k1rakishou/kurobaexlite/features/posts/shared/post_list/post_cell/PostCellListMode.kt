@@ -751,7 +751,8 @@ private fun PostCellComment(
 
   if (postComment.isNotNullNorBlank()) {
     PostCellCommentSelectionWrapper(
-      textSelectionEnabled = textSelectionEnabled && !isInPostSelectionMode,
+      // TODO: fix me !!!!!!!!!!
+      textSelectionEnabled = false, // textSelectionEnabled && !isInPostSelectionMode,
       onCopySelectedText = onCopySelectedText,
       onQuoteSelectedText = { withText, selectedText -> onQuoteSelectedText(withText, selectedText, postCellData) },
       onTextSelectionModeChanged = { inSelectionMode ->

@@ -161,7 +161,7 @@ class FloatingMenuScreen(
   ) {
     Column(
       modifier = Modifier
-        .wrapContentHeight()
+        .heightIn(min = 36.dp)
         .fillMaxWidth()
     ) {
       Box {
