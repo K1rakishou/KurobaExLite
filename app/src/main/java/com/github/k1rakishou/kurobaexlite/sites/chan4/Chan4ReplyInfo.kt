@@ -141,9 +141,8 @@ class Chan4ReplyInfo(
     val chanDescriptor = replyData.chanDescriptor
 
     return buildString(capacity = capacity.toInt()) {
-      appendFormDataSegment("MAX_FILE_SIZE", "2097152")
       appendFormDataSegment("mode", "regist")
-      appendFormDataSegment("pwd", "2eb728d0b0694cb3bb79173c5556ee7e")
+      appendFormDataSegment("pwd", Generators.generateRandomHexString(symbolsCount = 16))
 
       if (chanDescriptor is ThreadDescriptor) {
         val threadNo = chanDescriptor.threadNo
